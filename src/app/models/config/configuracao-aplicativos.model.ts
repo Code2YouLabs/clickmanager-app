@@ -26,6 +26,8 @@ export interface AplicativoCatalogo {
   icone: string;
   imagem: string;
   rota: string;
+  modulo: string;
+  permissao: string;
 }
 
 export const APLICATIVOS_CATALOGO: readonly AplicativoCatalogo[] = [
@@ -36,5 +38,25 @@ export const APLICATIVOS_CATALOGO: readonly AplicativoCatalogo[] = [
     icone: 'calculator',
     imagem: 'assets/images/svgs/icon-connect.svg',
     rota: '/apps/calculadoras/pisos',
+    modulo: 'CALCULADORA_MATERIAIS',
+    permissao: 'CALCULADORA_MATERIAIS_USAR',
   },
 ] as const;
+
+export function aplicativosVisiveis(
+  configuracao: ConfiguracaoAplicativos | null,
+  moduloHabilitado: (modulo: string) => boolean,
+  possuiPermissao: (permissao: string) => boolean,
+): AplicativoCatalogo[] {
+  const preferidos = new Set(
+    (configuracao?.aplicativos || [])
+      .filter((app) => app.ativo)
+      .map((app) => app.aplicativo)
+  );
+
+  return APLICATIVOS_CATALOGO.filter((app) =>
+    preferidos.has(app.aplicativo)
+    && moduloHabilitado(app.modulo)
+    && possuiPermissao(app.permissao)
+  );
+}

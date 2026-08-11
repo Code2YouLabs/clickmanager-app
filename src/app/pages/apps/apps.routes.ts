@@ -24,6 +24,7 @@ import { GerenciarPerfilComponent } from '../perfil/gerenciar-perfil/gerenciar-p
 import { AppNotificacoesComponent } from '../notificacoes/notificacoes.component';
 import { DEPOSITO_ROUTE_DATA, GRAFICA_ROUTE_DATA, SHARED_ROUTE_DATA } from '../../guards/empresa-tipo-route-data';
 import { permissionGuard } from 'src/app/guards/permission.guard';
+import { featureModuleGuard } from 'src/app/guards/feature-module.guard';
 
 export const AppsRoutes: Routes = [
   {
@@ -45,10 +46,11 @@ export const AppsRoutes: Routes = [
       {
         path: 'calculadoras',
         loadChildren: () => import('./calculadoras/calculadoras.routes').then((m) => m.CalculadorasRoutes),
-        canActivate: [permissionGuard],
+        canActivate: [featureModuleGuard, permissionGuard],
         data: {
           ...DEPOSITO_ROUTE_DATA,
-          requiredPermission: ['CALCULADORA_PISOS_USAR'],
+          featureKey: 'CALCULADORA_MATERIAIS',
+          requiredPermission: ['CALCULADORA_MATERIAIS_USAR'],
           title: 'Calculadoras',
           urls: [
             { title: 'Orçamentos', url: '/page/orcamentos' },
