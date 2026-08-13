@@ -17,6 +17,12 @@
   margin-bottom: 8px;
 }
 
+.section-counter {
+  color: #64748b;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
 .owner-alert {
   border: 1px solid #f7d794;
   border-radius: 8px;
@@ -25,6 +31,46 @@
   padding: 10px 12px;
   margin-bottom: 12px;
   font-size: 13px;
+}
+
+.permission-toolbar {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.search-field {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #d9e1ec;
+  border-radius: 8px;
+  color: #64748b;
+  display: flex;
+  flex: 1 1 360px;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 12px;
+
+  input {
+    border: 0;
+    color: #1f2937;
+    flex: 1;
+    font: inherit;
+    min-width: 0;
+    outline: none;
+  }
+}
+
+.empty-state {
+  border: 1px dashed #d9e1ec;
+  border-radius: 8px;
+  color: #64748b;
+  font-size: 13px;
+  margin-bottom: 12px;
+  padding: 14px;
+  text-align: center;
 }
 
 .permissoes-modulos {
@@ -44,7 +90,6 @@
 .recurso-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
 }
 
@@ -52,6 +97,11 @@
   padding: 12px 14px;
   background: #f3f6fb;
   border-bottom: 1px solid #e5e7eb;
+}
+
+.modulo-heading {
+  flex: 1;
+  min-width: 0;
 }
 
 .modulo-title {
@@ -62,6 +112,40 @@
 .modulo-subtitle {
   color: #64748b;
   font-size: 12px;
+}
+
+.collapse-button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: #0f3d64;
+  cursor: pointer;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  padding: 0;
+  width: 32px;
+
+  &:focus-visible {
+    outline: 2px solid #4f7cff;
+    outline-offset: 2px;
+  }
+}
+
+.counter-badge {
+  background: #e8f0ff;
+  border-radius: 999px;
+  color: #0f3d64;
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+
+  &.light {
+    background: #f1f5f9;
+    color: #475569;
+  }
 }
 
 .recursos-list {
@@ -82,10 +166,18 @@
   margin-bottom: 10px;
 }
 
+.recurso-collapse {
+  color: #475569;
+  height: 28px;
+  width: 28px;
+}
+
 .recurso-title {
   color: #1f2937;
+  flex: 1;
   font-size: 14px;
   font-weight: 600;
+  min-width: 0;
 }
 
 .acoes-list {
@@ -94,8 +186,38 @@
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
 }
 
+.permission-label,
+.permission-code {
+  display: block;
+  line-height: 1.25;
+}
+
+.permission-code {
+  color: #64748b;
+  font-size: 11px;
+  margin-top: 2px;
+}
+
 .actions-row {
   display: flex;
   gap: 12px;
   padding: 0 24px 12px;
+}
+
+@media (max-width: 720px) {
+  .permission-toolbar,
+  .modulo-header,
+  .recurso-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .collapse-button {
+    align-self: flex-start;
+  }
+
+  .search-field {
+    flex-basis: auto;
+    width: 100%;
+  }
 }

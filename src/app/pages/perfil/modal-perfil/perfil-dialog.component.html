@@ -25,10 +25,20 @@
       <div class="section-header d-flex align-items-center justify-content-between flex-wrap gap-8">
         <div class="d-flex align-items-center gap-8">
           <i-tabler name="shield" class="icon-18 text-primary"></i-tabler>
-          <h3 class="f-s-14 f-w-600 m-0">Permissões</h3>
+          <div>
+            <h3 class="f-s-14 f-w-600 m-0">Permissões</h3>
+            <div class="section-counter">
+              Selecionadas: {{ totalSelecionadas }} · {{ textoDisponiveis() }}
+            </div>
+          </div>
         </div>
-        <mat-checkbox color="primary" [checked]="todasSelecionadas" [indeterminate]="algumasSelecionadas" (change)="selecionarTodos($event.checked)">
-          Selecionar todos
+        <mat-checkbox
+          color="primary"
+          [checked]="todasSelecionadas"
+          [indeterminate]="algumasSelecionadas"
+          [disabled]="modulosFiltrados.length === 0"
+          (change)="selecionarTodos($event.checked)">
+          Selecionar visíveis
         </mat-checkbox>
       </div>
 
@@ -36,13 +46,52 @@
         O proprietário da empresa possui acesso total aos módulos ativos, independentemente das permissões deste perfil.
       </div>
 
+      <div class="permission-toolbar">
+        <label class="search-field">
+          <i-tabler name="search" class="icon-18"></i-tabler>
+          <input
+            type="search"
+            [value]="termoBusca"
+            (input)="onBuscaChange($any($event.target).value)"
+            placeholder="Buscar por permissão, módulo, recurso, ação ou código"
+            aria-label="Buscar permissão" />
+        </label>
+
+        <mat-checkbox
+          color="primary"
+          [checked]="somenteSelecionadas"
+          (change)="alternarSomenteSelecionadas($event.checked)">
+          Somente selecionadas
+        </mat-checkbox>
+      </div>
+
+      <div *ngIf="totalPermissoes === 0" class="empty-state">
+        Nenhuma permissão disponível para os módulos ativos da empresa.
+      </div>
+
+      <div *ngIf="semResultado" class="empty-state">
+        Nenhuma permissão encontrada para os filtros atuais.
+      </div>
+
       <div formGroupName="permissoes" class="permissoes-modulos">
-        <div *ngFor="let modulo of modulos" class="modulo-card">
+        <div *ngFor="let modulo of modulosFiltrados; trackBy: trackModulo" class="modulo-card">
           <div class="modulo-header">
-            <div>
+            <button
+              type="button"
+              class="collapse-button"
+              (click)="alternarModulo(modulo)"
+              [attr.aria-expanded]="moduloExpandido(modulo)"
+              [attr.aria-label]="(moduloExpandido(modulo) ? 'Recolher ' : 'Expandir ') + modulo.titulo">
+              <i-tabler [name]="moduloExpandido(modulo) ? 'chevron-down' : 'chevron-right'" class="icon-18"></i-tabler>
+            </button>
+
+            <div class="modulo-heading">
               <div class="modulo-title">{{ modulo.titulo }}</div>
               <div class="modulo-subtitle">{{ modulo.recursos.length }} recurso(s)</div>
             </div>
+
+            <span class="counter-badge">{{ contadorModulo(modulo) }}</span>
+
             <mat-checkbox
               color="primary"
               [checked]="moduloSelecionado(modulo)"
@@ -52,10 +101,20 @@
             </mat-checkbox>
           </div>
 
-          <div class="recursos-list">
-            <div *ngFor="let recurso of modulo.recursos" class="recurso-card">
+          <div *ngIf="moduloExpandido(modulo)" class="recursos-list">
+            <div *ngFor="let recurso of modulo.recursos; trackBy: trackRecurso" class="recurso-card">
               <div class="recurso-header">
+                <button
+                  type="button"
+                  class="collapse-button recurso-collapse"
+                  (click)="alternarRecurso(modulo, recurso)"
+                  [attr.aria-expanded]="recursoExpandido(modulo, recurso)"
+                  [attr.aria-label]="(recursoExpandido(modulo, recurso) ? 'Recolher ' : 'Expandir ') + recurso.titulo">
+                  <i-tabler [name]="recursoExpandido(modulo, recurso) ? 'chevron-down' : 'chevron-right'" class="icon-16"></i-tabler>
+                </button>
+
                 <div class="recurso-title">{{ recurso.titulo }}</div>
+                <span class="counter-badge light">{{ contadorRecurso(recurso) }}</span>
                 <mat-checkbox
                   color="primary"
                   [checked]="recursoSelecionado(recurso)"
@@ -65,13 +124,15 @@
                 </mat-checkbox>
               </div>
 
-              <div class="acoes-list">
+              <div *ngIf="recursoExpandido(modulo, recurso)" class="acoes-list">
                 <mat-slide-toggle
-                  *ngFor="let permissao of recurso.permissoes"
+                  *ngFor="let permissao of recurso.permissoes; trackBy: trackPermissao"
                   [formControlName]="controlName(permissao)"
                   color="primary"
-                  [title]="descricaoAcao(permissao) || ''">
-                  {{ labelAcao(permissao) }}
+                  [title]="descricaoAcao(permissao) || ''"
+                  (change)="atualizarFiltroVisual()">
+                  <span class="permission-label">{{ labelAcao(permissao) }}</span>
+                  <span class="permission-code">{{ permissao.chave }}</span>
                 </mat-slide-toggle>
               </div>
             </div>
