@@ -4,6 +4,13 @@ ERP principal do ClickManager, desenvolvido em Angular. É o painel utilizado
 pelos clientes para operar empresa, catálogo, orçamentos, site, ClickTV e os
 demais módulos contratados.
 
+## Documentação do ecossistema
+
+A documentação geral da arquitetura, infraestrutura, ambiente local e operação
+do ClickManager está em:
+
+https://github.com/Code2YouLabs/clickmanager-docs
+
 ## Requisitos
 
 - Node.js 20 ou superior;
