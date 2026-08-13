@@ -28,7 +28,7 @@ npm start
 Acesse `http://localhost:4200`. O ambiente de desenvolvimento usa:
 
 - API: `http://localhost:8080`;
-- site público multiempresa: `http://localhost:4300`.
+- site público multiempresa: `http://localhost:4500`.
 
 ## Testar e gerar o build
 
