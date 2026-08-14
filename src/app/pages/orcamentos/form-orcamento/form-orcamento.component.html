@@ -8,6 +8,40 @@
   <mat-card-content>
     <form [formGroup]="contatoForm" class="orcamento-form">
       <app-section-card titulo="Contato" [divider]="true">
+        <div class="cliente-row" *ngIf="podeConsultarClientes">
+          <mat-form-field appearance="outline" class="cliente-row__search">
+            <mat-label>Cliente</mat-label>
+            <input
+              matInput
+              [formControl]="clienteBusca"
+              [matAutocomplete]="autoCliente"
+              placeholder="Buscar por nome, telefone ou documento"
+              autocomplete="off" />
+            <mat-progress-spinner matSuffix *ngIf="carregandoCliente" mode="indeterminate" diameter="20"></mat-progress-spinner>
+            <button mat-icon-button matSuffix type="button" matTooltip="Remover vínculo" *ngIf="clienteSelecionado" (click)="limparCliente()">
+              <mat-icon>close</mat-icon>
+            </button>
+            <mat-autocomplete #autoCliente="matAutocomplete" [displayWith]="displayCliente" (optionSelected)="selecionarCliente($event)">
+              <mat-option *ngFor="let cliente of clientes$ | async" [value]="cliente">
+                <div class="cliente-option">
+                  <strong>{{ cliente.nome }}</strong>
+                  <span>{{ cliente.telefone || 'Sem telefone' }} • {{ cliente.email || 'Sem e-mail' }}<ng-container *ngIf="cliente.documento"> • {{ cliente.documento }}</ng-container></span>
+                </div>
+              </mat-option>
+            </mat-autocomplete>
+          </mat-form-field>
+
+          <button mat-stroked-button color="primary" type="button" *ngIf="podeCriarCliente" (click)="abrirNovoCliente()">
+            <mat-icon>person_add</mat-icon>
+            Novo cliente
+          </button>
+        </div>
+
+        <div class="cliente-selecionado" *ngIf="clienteSelecionado">
+          <mat-icon>person</mat-icon>
+          <span>{{ clienteSelecionado.nome }}</span>
+        </div>
+
         <div class="contato-grid">
           <mat-form-field appearance="outline">
             <mat-label>Nome</mat-label>

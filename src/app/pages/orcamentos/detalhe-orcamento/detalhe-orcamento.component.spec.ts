@@ -13,6 +13,7 @@ describe('DetalheOrcamentoComponent', () => {
         baixarImpressao: jasmine.createSpy('baixarImpressao').and.returnValue(of({ body: new Blob(), headers: { get: () => null } })),
       } as any,
       { temPermissao: (permissao: string) => permissoes.includes(permissao) } as any,
+      { carregar: jasmine.createSpy('carregar').and.returnValue(of({ CLIENTES: true })) } as any,
       { open: jasmine.createSpy('open') } as any,
       { error: jasmine.createSpy('error'), success: jasmine.createSpy('success'), warning: jasmine.createSpy('warning') } as any,
     );
@@ -31,6 +32,17 @@ describe('DetalheOrcamentoComponent', () => {
   it('condiciona impressão a ORCAMENTOS_IMPRIMIR', () => {
     expect(criarComponente(['ORCAMENTOS_IMPRIMIR']).podeImprimir).toBeTrue();
     expect(criarComponente(['ORCAMENTOS_VER']).podeImprimir).toBeFalse();
+  });
+
+  it('exibe ação de cadastrar contato como cliente somente com módulo e permissões', () => {
+    const component = criarComponente(['CLIENTE_CADASTRAR', 'ORCAMENTOS_EDITAR']);
+    component.clientesDisponivel = true;
+    component.orcamento = { id: 1, status: 'NOVO', nomeContato: 'Carlos', telefoneContato: '11999999999', clienteId: null };
+
+    expect(component.podeCadastrarContatoComoCliente).toBeTrue();
+
+    component.orcamento.clienteId = 9;
+    expect(component.podeCadastrarContatoComoCliente).toBeFalse();
   });
 
   it('não executa impressão sem ORCAMENTOS_IMPRIMIR', () => {

@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatAutocompleteSelectedEvent } from '@angular/material/autocomplete';
+import { MatDialog } from '@angular/material/dialog';
 import { Router, RouterModule } from '@angular/router';
 import { NgxMaskDirective } from 'ngx-mask';
 import { ToastrService } from 'ngx-toastr';
@@ -11,15 +12,20 @@ import { CardHeaderComponent } from 'src/app/components/card-header/card-header.
 import { InputMoedaComponent } from 'src/app/components/inputs/input-moeda/input-moeda.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { MaterialModule } from 'src/app/material.module';
+import { ClienteListagem } from 'src/app/models/cliente/cliente-listagem.model';
+import { ClienteResponse } from 'src/app/models/cliente/cliente-response.model';
 import {
   OrcamentoCriarRequest,
   OrcamentoItemRequest,
   OrcamentoUnidadeVenda,
   TipoItemOrcamento,
 } from 'src/app/models/orcamento/orcamento.model';
+import { ClienteCreateDialogComponent } from 'src/app/pages/cliente/cliente-create-dialog/cliente-create-dialog.component';
+import { ClienteService } from 'src/app/pages/cliente/cliente.service';
 import { CatalogoProduto, CatalogoProdutoListItem } from 'src/app/pages/catalogo/shared/models/catalogo.models';
 import { CatalogoProdutoService } from 'src/app/pages/catalogo/shared/services/catalogo.service';
 import { AuthService } from 'src/app/services/auth.service';
+import { FeatureFlagService } from 'src/app/services/feature-flag.service';
 import { OrcamentoService } from 'src/app/services/orcamento.service';
 
 type ItemOrcamentoView = OrcamentoItemRequest & {
@@ -62,12 +68,17 @@ export class FormOrcamentoComponent implements OnInit {
   ];
 
   readonly colunasItens = ['tipo', 'descricao', 'unidade', 'quantidade', 'valorUnitario', 'desconto', 'subtotal', 'acoes'];
+  readonly clienteBusca = new FormControl<string | ClienteListagem>('');
   readonly produtoBusca = new FormControl<string | CatalogoProdutoListItem>('');
+  clientes$!: Observable<ClienteListagem[]>;
   produtos$!: Observable<CatalogoProdutoListItem[]>;
+  clienteSelecionado: ClienteListagem | ClienteResponse | null = null;
   produtoSelecionado: CatalogoProduto | CatalogoProdutoListItem | null = null;
   itens: ItemOrcamentoView[] = [];
   editandoIndex: number | null = null;
   modoItem: TipoItemOrcamento = 'CATALOGO';
+  clientesDisponivel = false;
+  carregandoCliente = false;
   carregandoProduto = false;
   salvando = false;
 
@@ -92,9 +103,12 @@ export class FormOrcamentoComponent implements OnInit {
 
   constructor(
     private readonly fb: FormBuilder,
+    private readonly clienteService: ClienteService,
     private readonly produtoService: CatalogoProdutoService,
     private readonly orcamentoService: OrcamentoService,
     private readonly authService: AuthService,
+    private readonly featureFlagService: FeatureFlagService,
+    private readonly dialog: MatDialog,
     private readonly toastr: ToastrService,
     private readonly router: Router,
   ) {}
@@ -105,6 +119,30 @@ export class FormOrcamentoComponent implements OnInit {
       this.router.navigate(['/page/orcamentos']);
       return;
     }
+
+    this.featureFlagService.carregar().subscribe((features) => {
+      this.clientesDisponivel = features['CLIENTES'] === true;
+    });
+
+    this.clientes$ = this.clienteBusca.valueChanges.pipe(
+      debounceTime(250),
+      distinctUntilChanged(),
+      switchMap((value) => {
+        const texto = typeof value === 'string' ? value.trim() : value?.nome || '';
+        if (texto.length < 2 || !this.podeConsultarClientes) {
+          return of([]);
+        }
+        this.carregandoCliente = true;
+        return this.clienteService.buscarPorNome(texto).pipe(
+          catchError(() => {
+            this.toastr.error('Não foi possível pesquisar clientes.');
+            return of({ content: [], pageNumber: 0, pageSize: 10, totalElements: 0, totalPages: 0, last: true });
+          }),
+          switchMap((pagina) => of(pagina.content || [])),
+          finalize(() => (this.carregandoCliente = false)),
+        );
+      }),
+    );
 
     this.produtos$ = this.produtoBusca.valueChanges.pipe(
       debounceTime(250),
@@ -131,8 +169,52 @@ export class FormOrcamentoComponent implements OnInit {
     return this.authService.temPermissao('ORCAMENTOS_CRIAR');
   }
 
+  get podeConsultarClientes(): boolean {
+    return this.clientesDisponivel && this.authService.temPermissao('CLIENTE_VER');
+  }
+
+  get podeCriarCliente(): boolean {
+    return this.clientesDisponivel && this.authService.temPermissao('CLIENTE_CADASTRAR');
+  }
+
+  displayCliente(cliente?: string | ClienteListagem | ClienteResponse | null): string {
+    return typeof cliente === 'string' ? cliente : cliente ? cliente.nome : '';
+  }
+
   displayProduto(produto?: string | CatalogoProdutoListItem | null): string {
     return typeof produto === 'string' ? produto : produto ? `${produto.codigo} - ${produto.nome}` : '';
+  }
+
+  selecionarCliente(event: MatAutocompleteSelectedEvent): void {
+    const cliente = event.option.value as ClienteListagem;
+    this.aplicarCliente(cliente);
+  }
+
+  limparCliente(): void {
+    this.clienteSelecionado = null;
+    this.clienteBusca.setValue('', { emitEvent: false });
+  }
+
+  abrirNovoCliente(): void {
+    if (!this.podeCriarCliente) {
+      return;
+    }
+
+    const dialogRef = this.dialog.open(ClienteCreateDialogComponent, {
+      width: '760px',
+      maxWidth: '96vw',
+      data: {
+        nome: this.contatoForm.controls.nomeContato.value,
+        telefone: this.contatoForm.controls.telefoneContato.value,
+        email: this.contatoForm.controls.emailContato.value,
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((cliente) => {
+      if (cliente) {
+        this.aplicarCliente(cliente);
+      }
+    });
   }
 
   selecionarProduto(event: MatAutocompleteSelectedEvent): void {
@@ -221,7 +303,7 @@ export class FormOrcamentoComponent implements OnInit {
       nomeContato: this.contatoForm.controls.nomeContato.value?.trim() || '',
       telefoneContato: this.contatoForm.controls.telefoneContato.value?.replace(/\D/g, '') || '',
       emailContato: this.contatoForm.controls.emailContato.value?.trim() || null,
-      clienteId: null,
+      clienteId: this.clienteSelecionado?.id || null,
       observacaoGeral: this.contatoForm.controls.observacaoGeral.value?.trim() || null,
       origem: 'BALCAO',
       itens: this.itens.map(({ produto, imagemUrl, ...item }) => item),
@@ -278,6 +360,16 @@ export class FormOrcamentoComponent implements OnInit {
       descricao: produto.nome,
       unidade: (produto.unidadeVenda || 'UNIDADE') as OrcamentoUnidadeVenda,
       valorUnitario: Number(preco || 0),
+    });
+  }
+
+  private aplicarCliente(cliente: ClienteListagem | ClienteResponse): void {
+    this.clienteSelecionado = cliente;
+    this.clienteBusca.setValue(cliente, { emitEvent: false });
+    this.contatoForm.patchValue({
+      nomeContato: cliente.nome || '',
+      telefoneContato: cliente.telefone || '',
+      emailContato: cliente.email || '',
     });
   }
 

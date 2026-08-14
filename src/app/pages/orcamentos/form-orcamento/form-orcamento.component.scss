@@ -6,6 +6,43 @@
   align-items: start;
 }
 
+.cliente-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 14px;
+}
+
+.cliente-row button {
+  min-height: 56px;
+}
+
+.cliente-option {
+  display: grid;
+  gap: 2px;
+  line-height: 1.25;
+}
+
+.cliente-option span {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.cliente-selecionado {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  margin: -4px 0 12px;
+  color: #334155;
+  font-weight: 600;
+}
+
+.cliente-selecionado mat-icon {
+  color: #1976d2;
+}
+
 .contato-grid__wide,
 .item-form__wide {
   grid-column: 1 / -1;
@@ -137,7 +174,8 @@
 
 @media (max-width: 768px) {
   .contato-grid,
-  .item-form {
+  .item-form,
+  .cliente-row {
     grid-template-columns: 1fr;
   }
 }
