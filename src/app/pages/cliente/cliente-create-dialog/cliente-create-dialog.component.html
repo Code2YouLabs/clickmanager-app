@@ -1,0 +1,74 @@
+<h2 mat-dialog-title>Novo cliente</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="cliente-dialog-form">
+    <mat-form-field appearance="outline">
+      <mat-label>Nome</mat-label>
+      <input matInput formControlName="nome" autocomplete="name" />
+      <mat-error *ngIf="form.get('nome')?.hasError('required')">Nome obrigatório</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Telefone</mat-label>
+      <input matInput formControlName="telefone" mask="(00) 00000-0000||(00) 0000-0000" autocomplete="tel" />
+      <mat-error *ngIf="form.get('telefone')?.hasError('required')">Telefone obrigatório</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>E-mail</mat-label>
+      <input matInput formControlName="email" autocomplete="email" />
+      <mat-error *ngIf="form.get('email')?.hasError('email')">E-mail inválido</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>CPF ou CNPJ</mat-label>
+      <input matInput formControlName="documento" />
+    </mat-form-field>
+
+    <div formGroupName="endereco" class="cliente-dialog-form__address">
+      <mat-form-field appearance="outline">
+        <mat-label>CEP</mat-label>
+        <input matInput formControlName="cep" mask="00000-000" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="cliente-dialog-form__wide">
+        <mat-label>Logradouro</mat-label>
+        <input matInput formControlName="logradouro" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Número</mat-label>
+        <input matInput formControlName="numero" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Bairro</mat-label>
+        <input matInput formControlName="bairro" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Cidade</mat-label>
+        <input matInput formControlName="cidade" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>UF</mat-label>
+        <input matInput formControlName="estado" maxlength="2" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="cliente-dialog-form__wide">
+        <mat-label>Complemento</mat-label>
+        <input matInput formControlName="complemento" />
+      </mat-form-field>
+    </div>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-stroked-button type="button" (click)="cancelar()" [disabled]="salvando">Cancelar</button>
+  <button mat-flat-button color="primary" type="button" (click)="salvar()" [disabled]="salvando">
+    <mat-spinner *ngIf="salvando" diameter="18"></mat-spinner>
+    <mat-icon *ngIf="!salvando">save</mat-icon>
+    <span>{{ salvando ? 'Salvando...' : 'Salvar cliente' }}</span>
+  </button>
+</mat-dialog-actions>

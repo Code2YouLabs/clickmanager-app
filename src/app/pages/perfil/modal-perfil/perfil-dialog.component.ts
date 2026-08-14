@@ -14,6 +14,7 @@ interface RecursoPermissaoView {
   codigo: string;
   titulo: string;
   permissoes: PermissaoCatalogo[];
+  total: number;
 }
 
 interface ModuloPermissaoView {
@@ -21,6 +22,7 @@ interface ModuloPermissaoView {
   titulo: string;
   ordem: number;
   recursos: RecursoPermissaoView[];
+  total: number;
 }
 
 @Component({
@@ -42,8 +44,13 @@ interface ModuloPermissaoView {
 export class PerfilDialogComponent implements OnInit {
     form!: FormGroup;
     modulos: ModuloPermissaoView[] = [];
+    modulosFiltrados: ModuloPermissaoView[] = [];
     permissoesCatalogo: PermissaoCatalogo[] = [];
     avisoProprietario = false;
+    termoBusca = '';
+    somenteSelecionadas = false;
+    private modulosExpandidos = new Set<string>();
+    private recursosExpandidos = new Set<string>();
   
     constructor(
       private fb: NonNullableFormBuilder,
@@ -55,6 +62,7 @@ export class PerfilDialogComponent implements OnInit {
     ngOnInit(): void {
       this.permissoesCatalogo = this.normalizarCatalogo(this.data?.permissoesCatalogo || []);
       this.modulos = this.agruparPermissoes(this.permissoesCatalogo);
+      this.inicializarExpansao();
       this.avisoProprietario = !!this.data?.perfilProprietario;
       const permissoesObj = Object.fromEntries(
         this.permissoesCatalogo.map(permissao => [this.controlName(permissao), !!permissao.selecionada])
@@ -72,6 +80,7 @@ export class PerfilDialogComponent implements OnInit {
           descricao: this.data.perfil.descricao
         });
       }
+      this.atualizarFiltroVisual();
     } 
   
     salvar(): void {
@@ -107,19 +116,39 @@ export class PerfilDialogComponent implements OnInit {
     }
 
     get todasSelecionadas(): boolean {
-      return this.totalPermissoes > 0 && this.permissoesCatalogo.every(permissao => this.isSelecionada(permissao));
+      const permissoes = this.permissoesVisiveis();
+      return permissoes.length > 0 && permissoes.every(permissao => this.isSelecionada(permissao));
     }
 
     get algumasSelecionadas(): boolean {
-      return !this.todasSelecionadas && this.permissoesCatalogo.some(permissao => this.isSelecionada(permissao));
+      const permissoes = this.permissoesVisiveis();
+      return !this.todasSelecionadas && permissoes.some(permissao => this.isSelecionada(permissao));
     }
 
     get totalPermissoes(): number {
       return this.permissoesCatalogo.length;
     }
 
+    get totalSelecionadas(): number {
+      return this.permissoesCatalogo.filter(permissao => this.isSelecionada(permissao)).length;
+    }
+
+    get semResultado(): boolean {
+      return this.totalPermissoes > 0 && this.modulosFiltrados.length === 0;
+    }
+
+    onBuscaChange(valor: string): void {
+      this.termoBusca = valor;
+      this.atualizarFiltroVisual();
+    }
+
+    alternarSomenteSelecionadas(checked: boolean): void {
+      this.somenteSelecionadas = checked;
+      this.atualizarFiltroVisual();
+    }
+
     selecionarTodos(checked: boolean): void {
-      this.setPermissoes(this.permissoesCatalogo, checked);
+      this.setPermissoes(this.permissoesVisiveis(), checked);
     }
 
     controlName(permissao: PermissaoCatalogo): string {
@@ -168,6 +197,47 @@ export class PerfilDialogComponent implements OnInit {
       this.setPermissoes(recurso.permissoes, checked);
     }
 
+    alternarModulo(modulo: ModuloPermissaoView): void {
+      this.setModuloExpandido(modulo.codigo, !this.moduloExpandido(modulo));
+    }
+
+    moduloExpandido(modulo: ModuloPermissaoView): boolean {
+      return this.modulosExpandidos.has(modulo.codigo);
+    }
+
+    alternarRecurso(modulo: ModuloPermissaoView, recurso: RecursoPermissaoView): void {
+      const chave = this.chaveRecurso(modulo.codigo, recurso.codigo);
+      this.setRecursoExpandido(chave, !this.recursosExpandidos.has(chave));
+    }
+
+    recursoExpandido(modulo: ModuloPermissaoView, recurso: RecursoPermissaoView): boolean {
+      return this.recursosExpandidos.has(this.chaveRecurso(modulo.codigo, recurso.codigo));
+    }
+
+    contadorModulo(modulo: ModuloPermissaoView): string {
+      return `${this.contarSelecionadas(this.permissoesDoModulo(modulo))}/${modulo.total}`;
+    }
+
+    contadorRecurso(recurso: RecursoPermissaoView): string {
+      return `${this.contarSelecionadas(recurso.permissoes)}/${recurso.total}`;
+    }
+
+    textoDisponiveis(): string {
+      return this.totalPermissoes === 1 ? '1 disponivel' : `${this.totalPermissoes} disponiveis`;
+    }
+
+    trackModulo(_: number, modulo: ModuloPermissaoView): string {
+      return modulo.codigo;
+    }
+
+    trackRecurso(_: number, recurso: RecursoPermissaoView): string {
+      return recurso.codigo;
+    }
+
+    trackPermissao(_: number, permissao: PermissaoCatalogo): number {
+      return permissao.id;
+    }
+
     private normalizarCatalogo(permissoes: PermissaoCatalogo[]): PermissaoCatalogo[] {
       const perfilChaves = new Set<string>((this.data?.perfil?.permissoes || []).map((p: any) => p?.chave).filter(Boolean));
       const perfilIds = new Set<number>((this.data?.perfil?.permissoes || []).map((p: any) => p?.id).filter((id: any) => typeof id === 'number'));
@@ -195,14 +265,15 @@ export class PerfilDialogComponent implements OnInit {
             codigo: moduloCodigo,
             titulo: moduloTitulo,
             ordem: moduloOrdem,
-            recursos: []
+            recursos: [],
+            total: 0
           });
         }
 
         const modulo = modulos.get(moduloCodigo)!;
         let recurso = modulo.recursos.find(item => item.codigo === recursoCodigo);
         if (!recurso) {
-          recurso = { codigo: recursoCodigo, titulo: recursoTitulo, permissoes: [] };
+          recurso = { codigo: recursoCodigo, titulo: recursoTitulo, permissoes: [], total: 0 };
           modulo.recursos.push(recurso);
         }
         recurso.permissoes.push(permissao);
@@ -214,9 +285,11 @@ export class PerfilDialogComponent implements OnInit {
           recursos: modulo.recursos
             .map(recurso => ({
               ...recurso,
+              total: recurso.permissoes.length,
               permissoes: recurso.permissoes.sort((a, b) => (a.ordem ?? 9999) - (b.ordem ?? 9999) || a.titulo.localeCompare(b.titulo))
             }))
-            .sort((a, b) => a.titulo.localeCompare(b.titulo))
+            .sort((a, b) => a.titulo.localeCompare(b.titulo)),
+          total: this.permissoesDoModulo(modulo).length
         }))
         .sort((a, b) => a.ordem - b.ordem || a.titulo.localeCompare(b.titulo));
     }
@@ -262,5 +335,114 @@ export class PerfilDialogComponent implements OnInit {
       permissoes.forEach(permissao => {
         this.permissoesGroup.get(this.controlName(permissao))?.setValue(checked);
       });
+      this.atualizarFiltroVisual();
+    }
+
+    private inicializarExpansao(): void {
+      this.modulosExpandidos.clear();
+      this.recursosExpandidos.clear();
+
+      for (const modulo of this.modulos) {
+        const moduloPossuiSelecionada = this.permissoesDoModulo(modulo).some(permissao => !!permissao.selecionada);
+        if (moduloPossuiSelecionada) {
+          this.setModuloExpandido(modulo.codigo, true);
+        }
+
+        for (const recurso of modulo.recursos) {
+          const recursoPossuiSelecionada = recurso.permissoes.some(permissao => !!permissao.selecionada);
+          if (moduloPossuiSelecionada && recursoPossuiSelecionada) {
+            this.setRecursoExpandido(this.chaveRecurso(modulo.codigo, recurso.codigo), true);
+          }
+        }
+      }
+    }
+
+    atualizarFiltroVisual(): void {
+      const termo = this.normalizarTexto(this.termoBusca);
+      const filtrando = !!termo || this.somenteSelecionadas;
+
+      this.modulosFiltrados = this.modulos
+        .map(modulo => {
+          const moduloCombina = this.combinaModulo(modulo, termo);
+          const recursos = modulo.recursos
+            .map(recurso => {
+              const recursoCombina = moduloCombina || this.combinaRecurso(recurso, termo);
+              const permissoes = recurso.permissoes.filter(permissao => {
+                const combinaBusca = !termo || recursoCombina || this.combinaPermissao(permissao, termo);
+                const combinaSelecao = !this.somenteSelecionadas || this.isSelecionada(permissao);
+                return combinaBusca && combinaSelecao;
+              });
+
+              return permissoes.length ? { ...recurso, permissoes } : null;
+            })
+            .filter((recurso): recurso is RecursoPermissaoView => !!recurso);
+
+          return recursos.length ? { ...modulo, recursos } : null;
+        })
+        .filter((modulo): modulo is ModuloPermissaoView => !!modulo);
+
+      if (filtrando) {
+        this.modulosFiltrados.forEach(modulo => {
+          this.setModuloExpandido(modulo.codigo, true);
+          modulo.recursos.forEach(recurso => this.setRecursoExpandido(this.chaveRecurso(modulo.codigo, recurso.codigo), true));
+        });
+      }
+    }
+
+    private permissoesVisiveis(): PermissaoCatalogo[] {
+      return this.modulosFiltrados.flatMap(modulo => this.permissoesDoModulo(modulo));
+    }
+
+    private contarSelecionadas(permissoes: PermissaoCatalogo[]): number {
+      return permissoes.filter(permissao => this.isSelecionada(permissao)).length;
+    }
+
+    private combinaModulo(modulo: ModuloPermissaoView, termo: string): boolean {
+      return !!termo && [modulo.codigo, modulo.titulo].some(valor => this.normalizarTexto(valor).includes(termo));
+    }
+
+    private combinaRecurso(recurso: RecursoPermissaoView, termo: string): boolean {
+      return !!termo && [recurso.codigo, recurso.titulo].some(valor => this.normalizarTexto(valor).includes(termo));
+    }
+
+    private combinaPermissao(permissao: PermissaoCatalogo, termo: string): boolean {
+      return [
+        permissao.chave,
+        permissao.titulo,
+        permissao.descricao,
+        permissao.acao,
+        permissao.recurso,
+        permissao.recursoTitulo,
+        permissao.modulo?.codigo,
+        permissao.modulo?.titulo
+      ].some(valor => this.normalizarTexto(valor).includes(termo));
+    }
+
+    private normalizarTexto(valor: string | null | undefined): string {
+      return (valor || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+    }
+
+    private chaveRecurso(moduloCodigo: string, recursoCodigo: string): string {
+      return `${moduloCodigo}::${recursoCodigo}`;
+    }
+
+    private setModuloExpandido(codigo: string, expandido: boolean): void {
+      if (expandido) {
+        this.modulosExpandidos.add(codigo);
+      } else {
+        this.modulosExpandidos.delete(codigo);
+      }
+    }
+
+    private setRecursoExpandido(chave: string, expandido: boolean): void {
+      if (expandido) {
+        this.recursosExpandidos.add(chave);
+      } else {
+        this.recursosExpandidos.delete(chave);
+      }
     }
   }

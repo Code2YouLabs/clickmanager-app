@@ -35,10 +35,10 @@ import { NotificacaoEnviarDialogComponent } from 'src/app/pages/notificacoes/com
 import { resolveTipoEmpresa, TipoEmpresa } from 'src/app/models/empresa/tipo-empresa.enum';
 import { CatalogoEmpresaContextService, CatalogoVersaoAdministrativa } from 'src/app/pages/catalogo/shared/services/catalogo-empresa-context.service';
 import {
-  APLICATIVOS_CATALOGO,
   AplicativoCatalogo,
   AtalhoEmpresa,
   ConfiguracaoAplicativos,
+  aplicativosVisiveis,
 } from 'src/app/models/config/configuracao-aplicativos.model';
 import { ConfiguracaoAplicativosService } from 'src/app/services/configuracao-aplicativos.service';
 import { FeatureFlagService } from 'src/app/services/feature-flag.service';
@@ -967,13 +967,11 @@ export class FullComponent implements OnInit, OnDestroy {
   }
 
   private atualizarLinksEmpresa(configuracao: ConfiguracaoAplicativos | null): void {
-    const aplicativosAtivos = new Set(
-      (configuracao?.aplicativos || [])
-        .filter((app) => app.ativo)
-        .map((app) => app.aplicativo)
+    this.apps = aplicativosVisiveis(
+      configuracao,
+      (modulo) => this.featureFlagService.isEnabled(modulo),
+      (permissao) => this.authService.temPermissao(permissao),
     );
-
-    this.apps = APLICATIVOS_CATALOGO.filter((app) => aplicativosAtivos.has(app.aplicativo));
     this.quicklinks = (configuracao?.atalhos || [])
       .filter((atalho) => atalho.ativo)
       .slice()

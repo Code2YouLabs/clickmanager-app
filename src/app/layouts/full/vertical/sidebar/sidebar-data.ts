@@ -176,7 +176,7 @@ export const navItems: NavItem[] = [
         bgcolor: 'primary',
         route: '/page/cliente',
         requiredPermission: ['CLIENTE_VER', 'CLIENTE_CADASTRAR', 'CLIENTE_EDITAR', 'CLIENTE_EXCLUIR'],
-        allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
+        allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
     },
     {
         displayName: 'Gerenciar Produtos',

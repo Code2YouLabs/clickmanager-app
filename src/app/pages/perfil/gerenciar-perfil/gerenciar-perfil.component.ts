@@ -168,11 +168,6 @@ export class GerenciarPerfilComponent implements OnInit {
     dialogRef.afterClosed().subscribe((result) => {
       if (result?.event === 'Save') {
         const payload = this.montarPayloadPerfil(result.data);
-        const algumaSelecionada = payload.permissoes.some(p => p.selecionada);
-        if (!algumaSelecionada) {
-          this.toastrService.error('Selecione ao menos uma permissão.');
-          return;
-        }
         if (action === 'Add') {
           this.salvarPerfil(payload);
         } else if (perfil?.id) {
