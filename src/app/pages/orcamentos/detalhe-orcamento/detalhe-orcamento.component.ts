@@ -20,8 +20,10 @@ import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { StatusBadgeComponent } from 'src/app/components/status-badge/status-badge.component';
 import { FormatoImpressaoOrcamento, Orcamento, OrcamentoItem, OrcamentoStatus } from 'src/app/models/orcamento/orcamento.model';
+import { ClienteCreateDialogComponent } from 'src/app/pages/cliente/cliente-create-dialog/cliente-create-dialog.component';
 import { TelefonePipe } from 'src/app/pipe/telefone.pipe';
 import { AuthService } from 'src/app/services/auth.service';
+import { FeatureFlagService } from 'src/app/services/feature-flag.service';
 import { OrcamentoService } from 'src/app/services/orcamento.service';
 import { montarUrlWhatsAppOrcamento } from '../shared/orcamento-whatsapp.util';
 
@@ -65,6 +67,8 @@ export class DetalheOrcamentoComponent implements OnInit {
   salvandoObservacao = false;
   atualizandoStatus = false;
   cancelando = false;
+  associandoCliente = false;
+  clientesDisponivel = false;
   gerandoImpressao: AcaoImpressaoOrcamento | null = null;
   readonly colunasItens = ['tipo', 'produto', 'unidade', 'quantidade', 'precoUnitario', 'desconto', 'subtotal', 'observacao', 'acoes'];
   readonly statusOptions: StatusOption[] = [
@@ -80,6 +84,7 @@ export class DetalheOrcamentoComponent implements OnInit {
     private readonly router: Router,
     private readonly orcamentoService: OrcamentoService,
     private readonly authService: AuthService,
+    private readonly featureFlagService: FeatureFlagService,
     private readonly dialog: MatDialog,
     private readonly toastr: ToastrService,
   ) {}
@@ -92,6 +97,9 @@ export class DetalheOrcamentoComponent implements OnInit {
     }
 
     this.carregarOrcamento(id);
+    this.featureFlagService.carregar().subscribe((features) => {
+      this.clientesDisponivel = features['CLIENTES'] === true;
+    });
   }
 
   get podeEditar(): boolean {
@@ -104,6 +112,19 @@ export class DetalheOrcamentoComponent implements OnInit {
 
   get podeImprimir(): boolean {
     return this.authService.temPermissao('ORCAMENTOS_IMPRIMIR');
+  }
+
+  get podeCadastrarContatoComoCliente(): boolean {
+    return this.clientesDisponivel
+      && this.authService.temPermissao('CLIENTE_CADASTRAR')
+      && this.authService.temPermissao('ORCAMENTOS_EDITAR')
+      && !this.orcamento?.clienteId
+      && this.orcamento?.status !== 'CONVERTIDO'
+      && this.orcamento?.status !== 'PERDIDO';
+  }
+
+  get clienteVinculado(): boolean {
+    return !!this.orcamento?.clienteId;
   }
 
   get telefone(): string | null {
@@ -243,6 +264,46 @@ export class DetalheOrcamentoComponent implements OnInit {
       '_blank',
       'noopener,noreferrer'
     );
+  }
+
+  cadastrarContatoComoCliente(): void {
+    if (!this.orcamento?.id || !this.podeCadastrarContatoComoCliente || this.associandoCliente) {
+      return;
+    }
+
+    const dialogRef = this.dialog.open(ClienteCreateDialogComponent, {
+      width: '760px',
+      maxWidth: '96vw',
+      data: {
+        nome: this.nomeCliente,
+        telefone: this.telefone,
+        email: this.email,
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((cliente) => {
+      if (!cliente || !this.orcamento?.id) {
+        return;
+      }
+
+      this.associandoCliente = true;
+      this.orcamentoService.atualizarContato(this.orcamento.id, {
+        clienteId: cliente.id,
+        nomeContato: this.nomeCliente,
+        telefoneContato: this.telefone || '',
+        emailContato: this.email || null,
+      }).subscribe({
+        next: (response) => {
+          this.orcamento = response;
+          this.associandoCliente = false;
+          this.toastr.success('Cliente associado ao orçamento.');
+        },
+        error: () => {
+          this.associandoCliente = false;
+          this.toastr.error('Cliente criado, mas não foi possível associar ao orçamento.');
+        },
+      });
+    });
   }
 
   imprimirA4(): void {

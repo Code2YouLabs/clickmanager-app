@@ -5,6 +5,7 @@ export interface ClienteResponse {
     nome: string;
     email: string;
     telefone: string;
-    documento: string;
-    endereco: Endereco;
+    documento?: string | null;
+    endereco?: Endereco | null;
+    ativo?: boolean | null;
   }

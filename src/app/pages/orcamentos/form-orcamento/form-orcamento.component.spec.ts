@@ -6,6 +6,8 @@ describe('FormOrcamentoComponent', () => {
   let component: FormOrcamentoComponent;
   let orcamentoService: any;
   let authService: any;
+  let clienteService: any;
+  let featureFlagService: any;
   let router: any;
 
   beforeEach(() => {
@@ -15,18 +17,27 @@ describe('FormOrcamentoComponent', () => {
     authService = {
       temPermissao: jasmine.createSpy('temPermissao').and.returnValue(true),
     };
+    clienteService = {
+      buscarPorNome: jasmine.createSpy('buscarPorNome').and.returnValue(of({ content: [], pageNumber: 0, pageSize: 10, totalElements: 0, totalPages: 0, last: true })),
+    };
+    featureFlagService = {
+      carregar: jasmine.createSpy('carregar').and.returnValue(of({ CLIENTES: true })),
+    };
     router = {
       navigate: jasmine.createSpy('navigate'),
     };
 
     component = new FormOrcamentoComponent(
       new FormBuilder(),
+      clienteService,
       {
         listar: jasmine.createSpy('listar').and.returnValue(of({ content: [], pageNumber: 0, pageSize: 10, totalElements: 0, totalPages: 0, last: true })),
         detalhar: jasmine.createSpy('detalhar').and.returnValue(of({})),
       } as any,
       orcamentoService,
       authService,
+      featureFlagService,
+      { open: jasmine.createSpy('open') } as any,
       { warning: jasmine.createSpy('warning'), success: jasmine.createSpy('success'), error: jasmine.createSpy('error') } as any,
       router,
     );
@@ -125,6 +136,21 @@ describe('FormOrcamentoComponent', () => {
     expect(payload.clienteId).toBeNull();
     expect(payload.itens.map((item: any) => item.tipoItem)).toEqual(['LIVRE', 'CATALOGO']);
     expect(router.navigate).toHaveBeenCalledWith(['/page/orcamentos', 77]);
+  });
+
+  it('envia clienteId quando cliente foi selecionado', () => {
+    component.contatoForm.patchValue({ nomeContato: 'Maria', telefoneContato: '11999999999', emailContato: 'maria@teste.com' });
+    (component as any).aplicarCliente({ id: 25, nome: 'Maria Cliente', telefone: '11888887777', email: 'cliente@teste.com' });
+    component.usarLivre();
+    component.itemForm.patchValue({ descricao: 'Item livre', unidade: 'UNIDADE', quantidade: 1, valorUnitario: 10, desconto: 0 });
+    component.salvarItem();
+
+    component.salvarOrcamento();
+
+    const payload = orcamentoService.criar.calls.mostRecent().args[0];
+    expect(payload.clienteId).toBe(25);
+    expect(payload.nomeContato).toBe('Maria Cliente');
+    expect(payload.telefoneContato).toBe('11888887777');
   });
 
   it('bloqueia acesso local sem ORCAMENTOS_CRIAR', () => {

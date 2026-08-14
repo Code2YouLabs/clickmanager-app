@@ -148,6 +148,10 @@
             <dt>E-mail</dt>
             <dd>{{ email || 'Não informado' }}</dd>
           </div>
+          <div *ngIf="clienteVinculado">
+            <dt>Cliente</dt>
+            <dd>Cliente cadastrado</dd>
+          </div>
           <div>
             <dt>Origem da solicitação</dt>
             <dd>{{ origemLabel(orcamento.origem) }}</dd>
@@ -170,6 +174,17 @@
           <button mat-stroked-button type="button" (click)="abrirWhatsApp()" *ngIf="telefone">
             <mat-icon>chat</mat-icon>
             WhatsApp
+          </button>
+          <button
+            mat-stroked-button
+            color="primary"
+            type="button"
+            (click)="cadastrarContatoComoCliente()"
+            [disabled]="associandoCliente"
+            *ngIf="podeCadastrarContatoComoCliente">
+            <mat-spinner *ngIf="associandoCliente" diameter="18"></mat-spinner>
+            <mat-icon *ngIf="!associandoCliente">person_add</mat-icon>
+            Cadastrar como cliente
           </button>
         </div>
       </app-section-card>
