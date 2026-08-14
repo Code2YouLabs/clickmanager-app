@@ -12,6 +12,8 @@ on:
       - "Dockerfile"
       - "nginx.conf"
 
+  workflow_dispatch:
+
 permissions:
   contents: read
   packages: write
