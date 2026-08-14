@@ -37,4 +37,5 @@ export class ChatService {
   selectMessage(message: Message): void {
     this.selectedMessageSignal.set(message);
   }
+  
 }
