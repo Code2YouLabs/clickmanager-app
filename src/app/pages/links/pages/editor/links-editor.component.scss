@@ -95,6 +95,95 @@
   flex-wrap: wrap;
 }
 
+.links-analytics-header {
+  align-items: center;
+}
+
+.links-analytics-header mat-button-toggle-group {
+  flex-shrink: 0;
+}
+
+.links-analytics,
+.links-analytics-ranking {
+  display: grid;
+  gap: 12px;
+}
+
+.links-analytics__cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.links-analytics-card {
+  display: grid;
+  gap: 4px;
+  min-height: 82px;
+  padding: 12px;
+  border: 1px solid #e6e9ef;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.links-analytics-card span {
+  color: #667085;
+  font-size: 13px;
+}
+
+.links-analytics-card strong {
+  color: #101828;
+  font-size: 22px;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.links-analytics-ranking__item {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid #eef2f6;
+}
+
+.links-analytics-ranking__item mat-icon {
+  color: #344054;
+}
+
+.links-analytics-ranking__item div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.links-analytics-ranking__item strong {
+  color: #101828;
+  overflow-wrap: anywhere;
+}
+
+.links-analytics-ranking__item span {
+  color: #667085;
+  font-size: 13px;
+}
+
+.links-analytics-ranking__item em {
+  display: inline-block;
+  margin-left: 6px;
+  color: #b42318;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.links-analytics-error {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #fecdca;
+  border-radius: 8px;
+  background: #fffbfa;
+  color: #b42318;
+}
+
 .links-qr {
   display: grid;
   gap: 12px;
@@ -270,6 +359,7 @@
 
   .links-editor-top__actions button,
   .links-editor-form button[type='submit'],
+  .links-analytics-error button,
   .links-logo__actions button,
   .links-slug button,
   .links-share-actions button,
@@ -284,6 +374,19 @@
 
   .links-share-actions {
     display: grid;
+  }
+
+  .links-analytics-header {
+    align-items: stretch;
+  }
+
+  .links-analytics-header mat-button-toggle-group,
+  .links-analytics-header mat-button-toggle {
+    width: 100%;
+  }
+
+  .links-analytics__cards {
+    grid-template-columns: 1fr;
   }
 
   .links-item {

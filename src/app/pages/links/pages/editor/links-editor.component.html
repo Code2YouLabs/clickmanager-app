@@ -236,6 +236,67 @@
             </section>
 
             <section class="links-section" *ngIf="pagina">
+              <div class="links-section__header links-analytics-header">
+                <div>
+                  <h2>Analytics</h2>
+                </div>
+                <mat-button-toggle-group
+                  [value]="analyticsPeriodo"
+                  aria-label="Período das métricas"
+                  (change)="alterarPeriodoAnalytics($event.value)">
+                  <mat-button-toggle value="7d">7 dias</mat-button-toggle>
+                  <mat-button-toggle value="30d">30 dias</mat-button-toggle>
+                </mat-button-toggle-group>
+              </div>
+
+              <div class="links-state links-state--compact" *ngIf="analyticsCarregando" aria-live="polite">
+                <mat-spinner diameter="28"></mat-spinner>
+                <span>Carregando métricas...</span>
+              </div>
+
+              <div class="links-analytics-error" *ngIf="!analyticsCarregando && analyticsErro">
+                <span>Não foi possível carregar as métricas.</span>
+                <button mat-stroked-button type="button" (click)="carregarAnalytics()">
+                  <mat-icon>refresh</mat-icon>
+                  Tentar novamente
+                </button>
+              </div>
+
+              <div class="links-analytics" *ngIf="!analyticsCarregando && !analyticsErro && analytics">
+                <div class="links-analytics__cards">
+                  <div class="links-analytics-card">
+                    <span>Visualizações</span>
+                    <strong>{{ numeroFormatado(analytics.visualizacoes) }}</strong>
+                  </div>
+                  <div class="links-analytics-card">
+                    <span>Cliques</span>
+                    <strong>{{ numeroFormatado(analytics.cliques) }}</strong>
+                  </div>
+                  <div class="links-analytics-card">
+                    <span>Taxa de clique</span>
+                    <strong>{{ percentualFormatado(analytics.taxaClique) }}</strong>
+                  </div>
+                </div>
+
+                <div class="links-empty links-empty--compact" *ngIf="!analytics.visualizacoes && !analytics.cliques">
+                  <mat-icon>query_stats</mat-icon>
+                  <h2>Ainda não há dados neste período.</h2>
+                </div>
+
+                <div class="links-analytics-ranking" *ngIf="rankingAnalytics().length">
+                  <article class="links-analytics-ranking__item" *ngFor="let item of rankingAnalytics()">
+                    <mat-icon>{{ tipoIcon(item.tipo) }}</mat-icon>
+                    <div>
+                      <strong>{{ item.titulo }}</strong>
+                      <span>{{ tipoLabel(item.tipo) }} <em *ngIf="itemRankingRemovido(item)">Removido</em></span>
+                    </div>
+                    <strong>{{ numeroFormatado(item.cliques) }}</strong>
+                  </article>
+                </div>
+              </div>
+            </section>
+
+            <section class="links-section" *ngIf="pagina">
               <div class="links-section__header">
                 <div>
                   <h2>Compartilhar</h2>

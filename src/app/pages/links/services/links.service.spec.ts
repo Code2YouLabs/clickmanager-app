@@ -56,4 +56,11 @@ describe('LinksService', () => {
     expect(req.request.body).toEqual({ itens: [{ itemId: 2, ordem: 0 }, { itemId: 1, ordem: 1 }] });
     req.flush({});
   });
+
+  it('busca analytics por periodo no endpoint administrativo', () => {
+    service.buscarAnalytics(7, '30d').subscribe();
+    const req = http.expectOne(`${base}/7/analytics?periodo=30d`);
+    expect(req.request.method).toBe('GET');
+    req.flush({ periodo: '30d', visualizacoes: 0, cliques: 0, taxaClique: 0, ranking: [] });
+  });
 });

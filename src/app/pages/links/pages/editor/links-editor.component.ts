@@ -6,7 +6,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import QRCode from 'qrcode';
-import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged, finalize, takeUntil } from 'rxjs';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
 import { MaterialModule } from 'src/app/material.module';
@@ -20,11 +20,14 @@ import {
   FormatoBotaoLinks,
   LINKS_APARENCIA_PADRAO,
   LINKS_PERMISSOES,
+  LinksAnalyticsRankingItem,
+  LinksAnalyticsResumo,
   LinksIdentidadePublica,
   LinksPreviewModel,
   PaginaLinksDetalhe,
   PaginaLinksItem,
   PaginaLinksItemRequest,
+  PeriodoAnalyticsLinks,
   TIPOS_ITEM_LINKS,
   TemaPaginaLinks,
   TipoItemLinks,
@@ -58,6 +61,10 @@ export class LinksEditorComponent implements OnInit, OnDestroy {
   logoPreview: string | ArrayBuffer | null = null;
   qrDataUrl = '';
   gerandoQr = false;
+  analytics: LinksAnalyticsResumo | null = null;
+  analyticsPeriodo: PeriodoAnalyticsLinks = '30d';
+  analyticsCarregando = false;
+  analyticsErro = false;
 
   readonly isNova = this.route.snapshot.routeConfig?.path === 'nova';
   readonly paginaId = Number(this.route.snapshot.paramMap.get('id'));
@@ -377,6 +384,43 @@ export class LinksEditorComponent implements OnInit, OnDestroy {
     anchor.click();
   }
 
+  alterarPeriodoAnalytics(periodo: PeriodoAnalyticsLinks): void {
+    if (this.analyticsPeriodo === periodo) return;
+    this.analyticsPeriodo = periodo;
+    this.carregarAnalytics();
+  }
+
+  carregarAnalytics(): void {
+    if (!this.pagina) return;
+    this.analyticsCarregando = true;
+    this.analyticsErro = false;
+    this.linksService.buscarAnalytics(this.pagina.id, this.analyticsPeriodo)
+      .pipe(finalize(() => this.analyticsCarregando = false))
+      .subscribe({
+        next: (analytics) => this.analytics = analytics,
+        error: () => {
+          this.analytics = null;
+          this.analyticsErro = true;
+        },
+      });
+  }
+
+  rankingAnalytics(): LinksAnalyticsRankingItem[] {
+    return this.analytics?.ranking || [];
+  }
+
+  itemRankingRemovido(item: LinksAnalyticsRankingItem): boolean {
+    return !(this.pagina?.itens || []).some((paginaItem) => paginaItem.id === item.itemId);
+  }
+
+  percentualFormatado(valor: number | null | undefined): string {
+    return `${Number(valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+  }
+
+  numeroFormatado(valor: number | null | undefined): string {
+    return Number(valor || 0).toLocaleString('pt-BR');
+  }
+
   itensOrdenados(): PaginaLinksItem[] {
     return [...(this.pagina?.itens || [])].sort((a, b) => a.ordem - b.ordem);
   }
@@ -505,6 +549,7 @@ export class LinksEditorComponent implements OnInit, OnDestroy {
       next: (pagina) => {
         this.carregando = false;
         this.atualizarPagina(pagina);
+        this.carregarAnalytics();
       },
       error: (error) => this.tratarErro(error, 'Não foi possível carregar a página.'),
     });

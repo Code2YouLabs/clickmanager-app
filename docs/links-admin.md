@@ -1,6 +1,6 @@
 # ClickLink administrativo
 
-Status: MVP administrativo frontend
+Status: MVP administrativo frontend com analytics simples
 
 ## Rotas
 
@@ -58,7 +58,23 @@ A URL pública canônica é montada por `buildClickLinkPublicUrl` como
 Code e baixar PNG. O QR Code é gerado localmente com `qrcode`, codifica apenas a URL
 canônica e não possui persistência no backend.
 
-Analytics de ClickLink não foi implementado no MVP.
+## Analytics
+
+O editor carrega analytics separadamente da edição, sem bloquear salvamento de página ou
+itens. O endpoint consumido é:
+
+```text
+GET /api/links/paginas/{id}/analytics?periodo=7d|30d
+```
+
+O período padrão é `30d`. A interface oferece `7 dias` e `30 dias`, mostra
+visualizações, cliques, taxa de clique e ranking por item com ícone, título, tipo e
+quantidade. O frontend não calcula a métrica principal quando o backend já retorna a
+autoridade (`taxaClique`). Não há gráficos complexos, visitantes únicos, UTMs ou dados
+por dispositivo no MVP.
+
+Se não houver dados, o editor mostra estado vazio. Se a requisição falhar, mostra erro
+local com ação `Tentar novamente`, sem derrubar o restante do editor.
 
 ## Permissões
 

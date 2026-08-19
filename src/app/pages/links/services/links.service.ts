@@ -3,6 +3,8 @@ import { Observable } from 'rxjs';
 import { ApiService } from 'src/app/services/api.service';
 import {
   PaginaLinksDetalhe,
+  LinksAnalyticsResumo,
+  PeriodoAnalyticsLinks,
   PaginaLinksItemRequest,
   PaginaLinksOrdenacaoRequest,
   PaginaLinksRequest,
@@ -57,5 +59,9 @@ export class LinksService {
 
   ordenarItens(paginaId: number, payload: PaginaLinksOrdenacaoRequest): Observable<PaginaLinksDetalhe> {
     return this.api.patch<PaginaLinksDetalhe>(`${this.endpoint}/${paginaId}/itens/ordem`, payload);
+  }
+
+  buscarAnalytics(paginaId: number, periodo: PeriodoAnalyticsLinks): Observable<LinksAnalyticsResumo> {
+    return this.api.get<LinksAnalyticsResumo>(`${this.endpoint}/${paginaId}/analytics?periodo=${periodo}`);
   }
 }

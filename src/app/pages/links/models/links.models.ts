@@ -72,6 +72,24 @@ export interface PaginaLinksDetalhe {
   itens: PaginaLinksItem[];
 }
 
+export type PeriodoAnalyticsLinks = '7d' | '30d';
+
+export interface LinksAnalyticsRankingItem {
+  itemId: number;
+  tipo: TipoItemLinks;
+  titulo: string;
+  cliques: number;
+  percentual: number;
+}
+
+export interface LinksAnalyticsResumo {
+  periodo: PeriodoAnalyticsLinks;
+  visualizacoes: number;
+  cliques: number;
+  taxaClique: number;
+  ranking: LinksAnalyticsRankingItem[];
+}
+
 export interface PaginaLinksRequest {
   titulo: string;
   descricao?: string | null;
