@@ -30,7 +30,7 @@ describe('LinksPublicPreviewComponent', () => {
     expect(fixture.componentInstance.estilosPagina()['--clicklink-radius']).toBe('6px');
   });
 
-  it('diferencia tema claro e escuro sem depender apenas da cor de fundo', () => {
+  it('usa os mesmos tokens principais do renderer publico', () => {
     fixture.componentRef.setInput('model', {
       titulo: 'Links',
       descricao: null,
@@ -55,9 +55,8 @@ describe('LinksPublicPreviewComponent', () => {
     });
     const escuro = fixture.componentInstance.estilosPagina();
 
-    expect(claro['--clicklink-surface']).toBe('#FFFFFF');
-    expect(escuro['--clicklink-surface']).toBe('#111827');
-    expect(claro['--clicklink-surface-text']).not.toBe(escuro['--clicklink-surface-text']);
+    expect(claro['--clicklink-text']).toBe('#101828');
+    expect(escuro['--clicklink-text']).toBe('#F8FAFC');
     expect(escuro['--clicklink-primary']).toBe('#F8FAFC');
     expect(escuro['--clicklink-button-text']).toBe('#101828');
   });

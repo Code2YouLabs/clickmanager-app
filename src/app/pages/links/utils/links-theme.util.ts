@@ -5,31 +5,20 @@ export interface LinksThemeTokens {
   primary: string;
   text: string;
   muted: string;
-  surface: string;
-  surfaceText: string;
-  surfaceMuted: string;
-  border: string;
   buttonText: string;
-  shadow: string;
 }
 
 export function buildLinksThemeTokens(model: Pick<LinksPreviewModel, 'tema' | 'corPrincipal' | 'corFundo'> | null | undefined): LinksThemeTokens {
   const background = hexSeguro(model?.corFundo, LINKS_APARENCIA_PADRAO.corFundo);
   const primary = hexSeguro(model?.corPrincipal, LINKS_APARENCIA_PADRAO.corPrincipal);
   const escuro = model?.tema === 'ESCURO';
-  const surface = escuro ? '#111827' : '#FFFFFF';
 
   return {
     background,
     primary,
     text: escuro ? '#F8FAFC' : textoPara(background, '#101828', '#FFFFFF'),
     muted: escuro ? 'rgba(248, 250, 252, 0.78)' : '#667085',
-    surface,
-    surfaceText: escuro ? '#F8FAFC' : '#101828',
-    surfaceMuted: escuro ? 'rgba(248, 250, 252, 0.72)' : '#667085',
-    border: escuro ? 'rgba(248, 250, 252, 0.18)' : 'rgba(15, 23, 42, 0.10)',
     buttonText: textoPara(primary, '#101828', '#FFFFFF'),
-    shadow: escuro ? '0 14px 30px rgba(0, 0, 0, 0.34)' : '0 10px 24px rgba(15, 23, 42, 0.14)',
   };
 }
 

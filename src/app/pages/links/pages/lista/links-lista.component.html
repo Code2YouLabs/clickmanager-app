@@ -1,10 +1,4 @@
 <div class="links-page">
-  <app-card-header
-    titulo="Páginas ClickLink"
-    subtitulo="ClickLink • Páginas"
-    [mostrarDivisor]="true"
-  ></app-card-header>
-
   <mat-card class="cardWithShadow links-panel">
     <app-card-header
       titulo="Páginas ClickLink"
@@ -85,6 +79,9 @@
                 <button mat-icon-button type="button" (click)="abrir(pagina)" [disabled]="!pagina.publicada || !identidade?.slug" aria-label="Abrir página">
                   <mat-icon>open_in_new</mat-icon>
                 </button>
+                <button mat-icon-button type="button" (click)="compartilhar(pagina)" [disabled]="!identidade?.slug" aria-label="Compartilhar página">
+                  <mat-icon>ios_share</mat-icon>
+                </button>
                 <button mat-icon-button type="button" (click)="editar(pagina)" aria-label="Editar página" *temPermissao="permissoes.editar">
                   <mat-icon>edit</mat-icon>
                 </button>
@@ -115,6 +112,17 @@
               <span class="links-badge links-badge--info" *ngIf="pagina.principal">Principal</span>
               <span>{{ pagina.quantidadeItens }} {{ pagina.quantidadeItens === 1 ? 'link' : 'links' }}</span>
             </div>
+            <div class="links-mobile-card__actions">
+              <button mat-stroked-button type="button" (click)="abrir(pagina)" [disabled]="!pagina.publicada || !identidade?.slug">
+                Abrir
+              </button>
+              <button mat-stroked-button type="button" (click)="compartilhar(pagina)" [disabled]="!identidade?.slug">
+                Compartilhar
+              </button>
+              <button mat-stroked-button type="button" (click)="editar(pagina)" *temPermissao="permissoes.editar">
+                Editar
+              </button>
+            </div>
           </article>
         </div>
       </div>
@@ -126,18 +134,26 @@
       <mat-icon>open_in_new</mat-icon>
       <span>Abrir</span>
     </button>
+    <button mat-menu-item type="button" (click)="compartilhar(paginaMenu)" [disabled]="!paginaMenu || !identidade?.slug">
+      <mat-icon>ios_share</mat-icon>
+      <span>Compartilhar</span>
+    </button>
     <button mat-menu-item type="button" (click)="editar(paginaMenu)" [disabled]="!paginaMenu" *temPermissao="permissoes.editar">
       <mat-icon>edit</mat-icon>
       <span>Editar</span>
     </button>
-    <button mat-menu-item type="button" (click)="publicar(paginaMenu, true)" [disabled]="!paginaMenu || executandoId === paginaMenu.id || paginaMenu.publicada || !identidade?.slug" *temPermissao="permissoes.publicar">
-      <mat-icon>publish</mat-icon>
-      <span>Publicar</span>
-    </button>
-    <button mat-menu-item type="button" (click)="publicar(paginaMenu, false)" [disabled]="!paginaMenu || executandoId === paginaMenu.id || !paginaMenu.publicada" *temPermissao="permissoes.publicar">
-      <mat-icon>visibility_off</mat-icon>
-      <span>Despublicar</span>
-    </button>
+    <ng-container *ngIf="paginaMenu && !paginaMenu.publicada">
+      <button mat-menu-item type="button" (click)="publicar(paginaMenu, true)" [disabled]="executandoId === paginaMenu.id || !identidade?.slug" *temPermissao="permissoes.publicar">
+        <mat-icon>publish</mat-icon>
+        <span>Publicar</span>
+      </button>
+    </ng-container>
+    <ng-container *ngIf="paginaMenu && paginaMenu.publicada">
+      <button mat-menu-item type="button" (click)="publicar(paginaMenu, false)" [disabled]="executandoId === paginaMenu.id" *temPermissao="permissoes.publicar">
+        <mat-icon>visibility_off</mat-icon>
+        <span>Despublicar</span>
+      </button>
+    </ng-container>
     <button mat-menu-item type="button" (click)="arquivar(paginaMenu)" [disabled]="!paginaMenu || executandoId === paginaMenu.id" *temPermissao="permissoes.excluir">
       <mat-icon>archive</mat-icon>
       <span>Arquivar</span>

@@ -68,6 +68,12 @@
   flex-wrap: wrap;
 }
 
+.links-mobile-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 @media (max-width: 760px) {
   .links-table {
     display: none;
@@ -76,5 +82,10 @@
   .links-mobile-list {
     display: grid;
     gap: 12px;
+  }
+
+  .links-mobile-card__actions button {
+    flex: 1 1 120px;
+    min-height: 42px;
   }
 }

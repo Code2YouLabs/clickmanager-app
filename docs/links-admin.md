@@ -36,22 +36,32 @@ O módulo frontend fica em `src/app/pages/links` com:
 - `utils`.
 
 O service de identidade pública da Empresa fica em `src/app/pages/empresa`, porque slug
-e logo continuam pertencendo a Empresa.
+e logo continuam pertencendo a Empresa. ClickLink consome a identidade pública da
+Empresa, mas não administra diretamente essa identidade.
 
 ## UX mobile-first e padrão visual
 
-A listagem segue o padrão administrativo usado em Produtos/Clientes: `CardHeader`,
-card principal, header interno com divisor e tabela Material no desktop. Em mobile, a
-listagem vira cards estruturados para evitar rolagem horizontal. Criar página é uma ação
-da tela de Páginas, não um item de menu.
+A listagem segue o padrão administrativo usado em Produtos/Clientes: card principal,
+header interno com divisor e tabela Material no desktop. Em mobile, a listagem vira
+cards estruturados para evitar rolagem horizontal. Criar página é uma ação da tela de
+Páginas, não um item de menu. As ações frequentes ficam diretas (`Abrir`,
+`Compartilhar`, `Editar`) e ações de estado ficam no menu `⋮`.
 
-O editor usa header padrão com `Voltar`, ações de publicação e `Salvar` em local
-previsível. O conteúdo foi organizado em abas Material:
+O editor usa header padrão com `Voltar` e preview mobile. `Salvar` e `Cancelar` ficam no
+footer do formulário, seguindo o padrão visual dos cadastros. `Cancelar` restaura apenas
+o formulário da página para o snapshot persistido; operações de itens continuam sendo
+salvas individualmente. O conteúdo foi organizado em abas Material:
 
-- `Geral`: título, descrição, logo e endereço público;
+- `Geral`: título, descrição, identidade read-only, endereço público read-only,
+  publicação e ações avançadas;
 - `Links`: itens exibidos na página pública, ações e ordenação;
 - `Aparência`: tema, cor de destaque, cor de fundo, formato dos botões e preview;
 - `Compartilhar`: URL pública, copiar link, abrir página, QR Code e download.
+
+Publicar/Despublicar ficam na seção `Publicação` da aba `Geral`. Publicar exige que o
+formulário esteja salvo para evitar publicar dados antigos enquanto o preview mostra
+alterações locais. Arquivar fica separado em `Ações avançadas`, com confirmação e estilo
+destrutivo, sem competir com Salvar/Publicar.
 
 Em desktop, o preview mobile fica ao lado das configurações na aba Aparência. Em mobile,
 a ação `Visualizar` abre o mesmo view model em dialog fullscreen. A ordenação de itens
@@ -72,9 +82,23 @@ Os defaults compartilhados do MVP são `CLARO`, `#0D6EFD`, `#F6F8FB` e
 ## Compartilhamento
 
 A URL pública canônica é montada por `buildClickLinkPublicUrl` como
-`{publicSiteBaseUrl}/l/{slug}`. O editor permite copiar link, abrir página, gerar QR
-Code e baixar PNG. O QR Code é gerado localmente com `qrcode`, codifica apenas a URL
-canônica e não possui persistência no backend.
+`{publicSiteBaseUrl}/l/{slug}`. A listagem e o editor reutilizam o mesmo painel de
+compartilhamento para copiar link, abrir página, gerar QR Code e baixar PNG. O QR Code
+é gerado localmente com `qrcode`, codifica apenas a URL canônica e não possui
+persistência no backend.
+
+O endereço público é read-only no ClickLink. Se a Empresa ainda não possuir slug, a UI
+orienta configurar os dados da empresa antes de publicar ou compartilhar. Evoluções como
+geração automática, personalização controlada, redirect de slug antigo e permissão
+específica de slug ficam fora do MVP administrativo atual.
+
+## Preview público
+
+O preview do admin deve espelhar o renderer público `/l/{slug}`. O renderer público é a
+referência canônica para estrutura de identidade, fallback de logo, tipografia,
+espaçamentos, botões, texto `Abrir`, ícones textuais por tipo, tema, cor de destaque,
+cor de fundo e formato dos botões. A diferença aceitável é apenas o container externo
+do preview dentro do admin.
 
 ## Analytics
 
@@ -107,10 +131,8 @@ Links:
 
 Empresa:
 
-- `DADOS_EMPRESA`: alterar slug e logo pela experiência inline.
-
-Usuários sem `DADOS_EMPRESA` podem visualizar identidade retornada pelo detalhe de Links,
-mas não recebem ações de alteração de slug/logo.
+- `DADOS_EMPRESA`: permanece do módulo Empresa. ClickLink não expõe alteração inline de
+  slug ou logo, mesmo que o usuário possua essa permissão.
 
 ## Limites do MVP
 

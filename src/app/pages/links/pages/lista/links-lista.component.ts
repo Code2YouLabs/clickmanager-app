@@ -8,8 +8,8 @@ import { CardHeaderComponent } from 'src/app/components/card-header/card-header.
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
 import { MaterialModule } from 'src/app/material.module';
-import { AuthService } from 'src/app/services/auth.service';
 import { EmpresaIdentidadePublicaService } from '../../../empresa/empresa-identidade-publica.service';
+import { LinksShareDialogComponent } from '../../components/share-dialog/links-share-dialog.component';
 import { LINKS_PERMISSOES, LinksIdentidadePublica, PaginaLinksDetalhe, PaginaLinksResumo } from '../../models/links.models';
 import { LinksService } from '../../services/links.service';
 import { buildClickLinkPublicUrl } from '../../utils/links-url.util';
@@ -35,8 +35,7 @@ export class LinksListaComponent implements OnInit {
     private readonly identidadeService: EmpresaIdentidadePublicaService,
     private readonly toastr: ToastrService,
     private readonly dialog: MatDialog,
-    private readonly router: Router,
-    private readonly authService: AuthService
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
@@ -114,6 +113,24 @@ export class LinksListaComponent implements OnInit {
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 
+  compartilhar(pagina: PaginaLinksResumo | null): void {
+    if (!pagina) return;
+    const url = this.urlPublica(pagina);
+    if (!url) {
+      this.toastr.info('Configure os dados da empresa antes de compartilhar.');
+      return;
+    }
+    this.dialog.open(LinksShareDialogComponent, {
+      width: window.innerWidth <= 640 ? '100vw' : '520px',
+      maxWidth: window.innerWidth <= 640 ? '100vw' : '90vw',
+      data: {
+        titulo: pagina.titulo,
+        url,
+        slug: this.identidade?.slug || '',
+      },
+    });
+  }
+
   urlPublica(_pagina?: PaginaLinksResumo): string {
     return buildClickLinkPublicUrl(this.identidade?.slug);
   }
@@ -126,10 +143,6 @@ export class LinksListaComponent implements OnInit {
   statusClasse(pagina: PaginaLinksResumo): string {
     if (!pagina.ativa) return 'links-badge--neutral';
     return pagina.publicada ? 'links-badge--success' : 'links-badge--warning';
-  }
-
-  podeCriar(): boolean {
-    return this.authService.temPermissao(this.permissoes.criar);
   }
 
   private carregarIdentidade(): void {

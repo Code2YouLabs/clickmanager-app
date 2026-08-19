@@ -1,0 +1,32 @@
+<section class="links-share-panel">
+  <div class="links-share-panel__url">
+    <span>URL pública</span>
+    <p *ngIf="url; else semUrl">{{ url }}</p>
+    <ng-template #semUrl>
+      <p>A empresa ainda não possui endereço público.</p>
+    </ng-template>
+  </div>
+
+  <div class="links-share-panel__actions">
+    <button mat-stroked-button type="button" (click)="copiarUrlPublica()" [disabled]="!url">
+      <mat-icon>content_copy</mat-icon>
+      Copiar link
+    </button>
+    <button mat-stroked-button type="button" (click)="abrirPaginaPublica()" [disabled]="!url" *ngIf="showOpen">
+      <mat-icon>open_in_new</mat-icon>
+      Abrir página
+    </button>
+    <button mat-stroked-button type="button" (click)="gerarQrCode()" [disabled]="!url || gerandoQr">
+      <mat-icon>qr_code_2</mat-icon>
+      QR Code
+    </button>
+  </div>
+
+  <div class="links-share-panel__qr" *ngIf="qrDataUrl">
+    <img [src]="qrDataUrl" alt="QR Code do ClickLink" width="180" height="180" />
+    <button mat-flat-button color="primary" type="button" (click)="baixarQrCode()">
+      <mat-icon>download</mat-icon>
+      Baixar QR Code
+    </button>
+  </div>
+</section>

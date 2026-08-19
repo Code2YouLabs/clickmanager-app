@@ -15,8 +15,6 @@ export class LinksPublicPreviewComponent {
   @Input({ required: true }) model!: LinksPreviewModel;
   @Input() interactive = false;
 
-  readonly fallbackLogo = './assets/images/logos/LogoPadrao.png';
-
   estilosPagina(): Record<string, string> {
     const tokens = buildLinksThemeTokens(this.model);
     return {
@@ -24,12 +22,7 @@ export class LinksPublicPreviewComponent {
       '--clicklink-primary': tokens.primary,
       '--clicklink-text': tokens.text,
       '--clicklink-muted': tokens.muted,
-      '--clicklink-surface': tokens.surface,
-      '--clicklink-surface-text': tokens.surfaceText,
-      '--clicklink-surface-muted': tokens.surfaceMuted,
-      '--clicklink-border': tokens.border,
       '--clicklink-button-text': tokens.buttonText,
-      '--clicklink-shadow': tokens.shadow,
       '--clicklink-radius': this.raioBotao(),
     };
   }
@@ -41,20 +34,20 @@ export class LinksPublicPreviewComponent {
   }
 
   icon(tipo: TipoItemLinks): string {
-    const icons: Record<TipoItemLinks, string> = {
-      LINK: 'link',
-      WHATSAPP: 'chat',
-      INSTAGRAM: 'photo_camera',
-      FACEBOOK: 'public',
-      TIKTOK: 'music_note',
-      YOUTUBE: 'play_circle',
-      LINKEDIN: 'business_center',
-      EMAIL: 'mail',
-      TELEFONE: 'call',
-      LOCALIZACAO: 'location_on',
-      GOOGLE_AVALIACOES: 'star',
+    const labels: Record<TipoItemLinks, string> = {
+      LINK: 'LN',
+      WHATSAPP: 'WA',
+      INSTAGRAM: 'IG',
+      FACEBOOK: 'FB',
+      TIKTOK: 'TT',
+      YOUTUBE: 'YT',
+      LINKEDIN: 'IN',
+      EMAIL: '@',
+      TELEFONE: 'TEL',
+      LOCALIZACAO: 'MAP',
+      GOOGLE_AVALIACOES: '5',
     };
-    return icons[tipo] || 'link';
+    return labels[tipo] || 'LN';
   }
 
   onLinkClick(event: Event): void {

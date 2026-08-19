@@ -11,22 +11,6 @@
         <mat-icon>smartphone</mat-icon>
         Visualizar
       </button>
-      <ng-container *ngIf="pagina">
-        <button mat-stroked-button type="button" (click)="alterarPublicacao(false)" [disabled]="publicando || !pagina.publicada" *temPermissao="permissoes.publicar">
-          Despublicar
-        </button>
-        <button mat-stroked-button type="button" (click)="alterarPublicacao(true)" [disabled]="publicando || pagina.publicada || !identidade?.slug" *temPermissao="permissoes.publicar">
-          <mat-icon>publish</mat-icon>
-          Publicar
-        </button>
-      </ng-container>
-      <button mat-flat-button color="primary" type="button" (click)="salvarOuCriar()" [disabled]="salvandoPagina" *temPermissao="[permissoes.criar, permissoes.editar]">
-        <mat-icon>{{ isNova ? 'add' : 'save' }}</mat-icon>
-        Salvar
-      </button>
-      <button mat-icon-button type="button" [matMenuTriggerFor]="paginaMenu" aria-label="Mais ações" *ngIf="pagina">
-        <mat-icon>more_vert</mat-icon>
-      </button>
     </app-card-header>
 
     <mat-card-content>
@@ -74,57 +58,86 @@
                   <div class="links-section__header">
                     <div>
                       <h2>Identidade da empresa</h2>
-                      <p>Logo e endereço público pertencem aos dados da Empresa.</p>
+                      <p>A logo e o endereço pertencem à identidade da empresa e podem ser usados por outros recursos do ClickManager.</p>
                     </div>
                   </div>
 
                   <div class="links-identity">
-                    <div class="links-logo__frame links-logo__frame--compact">
-                      <img [src]="logoPreview || IMAGEM_PADRAO" alt="Logo da empresa" />
+                    <div class="links-logo__frame links-logo__frame--compact" *ngIf="identidade?.logoUrl; else logoFallback">
+                      <img [src]="identidade?.logoUrl" alt="Logo da empresa" />
                     </div>
+                    <ng-template #logoFallback>
+                      <div class="links-logo__frame links-logo__frame--compact links-logo__frame--fallback" aria-hidden="true">
+                        {{ (identidade?.nome || tituloControl.value || 'C').slice(0, 1).toUpperCase() }}
+                      </div>
+                    </ng-template>
 
                     <div class="links-identity__main">
                       <strong>{{ identidade?.nome || 'Empresa sem nome público' }}</strong>
-                      <span *ngIf="urlPublica(); else semUrlIdentidade">{{ urlPublica() }}</span>
-                      <ng-template #semUrlIdentidade>
-                        <span>Endereço público não definido</span>
+                      <span>Identidade pública global da Empresa</span>
+                    </div>
+
+                    <a mat-stroked-button routerLink="/page/empresa">
+                      Gerenciar dados da empresa
+                    </a>
+                  </div>
+                </section>
+
+                <section class="links-section">
+                  <div class="links-section__header">
+                    <div>
+                      <h2>Endereço público</h2>
+                      <p *ngIf="urlPublica(); else semEndereco">{{ urlPublica() }}</p>
+                      <ng-template #semEndereco>
+                        <p>A empresa ainda não possui endereço público. Configure os dados da empresa antes de publicar.</p>
                       </ng-template>
                     </div>
-
-                    <div class="links-identity__actions" *ngIf="podeEditarEmpresa(); else identidadeSemPermissao">
-                      <input #logoInput type="file" accept="image/png,image/jpeg,image/gif" hidden (change)="onLogoSelected($event)" />
-                      <button mat-stroked-button type="button" (click)="logoInput.click()" [disabled]="salvandoLogo">
-                        {{ identidade?.logoUrl ? 'Alterar logo' : 'Adicionar logo' }}
-                      </button>
-                      <button mat-button color="warn" type="button" (click)="removerLogo()" [disabled]="salvandoLogo || !identidade?.logoUrl">
-                        Remover
-                      </button>
-                    </div>
-                    <ng-template #identidadeSemPermissao>
-                      <p class="links-muted">A alteração da logo e do endereço usa a permissão Dados da empresa.</p>
-                    </ng-template>
-                  </div>
-
-                  <div class="links-slug">
-                    <div class="links-slug__input">
-                      <span>/l/</span>
-                      <mat-form-field appearance="outline">
-                        <mat-label>Endereço público</mat-label>
-                        <input matInput [formControl]="slugControl" autocomplete="off" />
-                      </mat-form-field>
-                    </div>
-                    <div class="links-slug__status" [ngSwitch]="slugStatus">
-                      <span *ngSwitchCase="'nao-verificado'">Informe um endereço para verificar.</span>
-                      <span *ngSwitchCase="'verificando'">Verificando disponibilidade...</span>
-                      <span class="links-slug__ok" *ngSwitchCase="'disponivel'">Disponível</span>
-                      <span class="links-slug__warn" *ngSwitchCase="'indisponivel'">Indisponível</span>
-                      <span class="links-slug__warn" *ngSwitchCase="'invalido'">Endereço inválido.</span>
-                      <span class="links-slug__warn" *ngSwitchCase="'erro'">Erro ao verificar.</span>
-                    </div>
-                    <button mat-stroked-button type="button" (click)="salvarSlug()" [disabled]="salvandoSlug || slugStatus === 'verificando' || !podeEditarEmpresa()">
-                      Alterar endereço
+                    <button mat-stroked-button type="button" (click)="visualizarMobile()" *ngIf="pagina">
+                      <mat-icon>smartphone</mat-icon>
+                      Visualizar
                     </button>
                   </div>
+                </section>
+
+                <section class="links-section" *ngIf="pagina">
+                  <div class="links-section__header">
+                    <div>
+                      <h2>Publicação</h2>
+                      <p *ngIf="pagina.publicada && urlPublica(); else publicacaoNaoDisponivel">
+                        Esta página está disponível publicamente em {{ urlPublica() }}.
+                      </p>
+                      <ng-template #publicacaoNaoDisponivel>
+                        <p>{{ pagina.publicada ? 'A página está publicada, mas a empresa não possui endereço público.' : 'A página ainda não está disponível para visitantes.' }}</p>
+                      </ng-template>
+                    </div>
+                  </div>
+
+                  <div class="links-publication-card" [class.links-publication-card--published]="pagina.publicada">
+                    <span class="links-publication-card__status">
+                      {{ pagina.publicada ? '● Publicada' : '○ Não publicada' }}
+                    </span>
+                    <button mat-flat-button color="primary" type="button" (click)="alterarPublicacao(true)" [disabled]="publicando || pagina.publicada || !identidade?.slug || temAlteracoesFormulario()" *temPermissao="permissoes.publicar">
+                      Publicar
+                    </button>
+                    <button mat-stroked-button type="button" (click)="alterarPublicacao(false)" [disabled]="publicando || !pagina.publicada" *temPermissao="permissoes.publicar">
+                      Despublicar
+                    </button>
+                  </div>
+
+                  <p class="links-muted" *ngIf="temAlteracoesFormulario()">Salve as alterações antes de publicar.</p>
+                </section>
+
+                <section class="links-section links-section--danger" *ngIf="pagina">
+                  <div class="links-section__header">
+                    <div>
+                      <h2>Ações avançadas</h2>
+                      <p>Arquivar remove a página da experiência ativa e exige confirmação.</p>
+                    </div>
+                  </div>
+                  <button mat-stroked-button color="warn" type="button" (click)="arquivarPagina()" [disabled]="arquivando" *temPermissao="permissoes.excluir">
+                    <mat-icon>archive</mat-icon>
+                    Arquivar página
+                  </button>
                 </section>
               </div>
             </mat-tab>
@@ -135,7 +148,7 @@
                   <div class="links-section__header">
                     <div>
                       <h2>Links</h2>
-                      <p>Itens exibidos na sua página pública.</p>
+                      <p>Itens exibidos na sua página pública. Essas operações são salvas individualmente.</p>
                     </div>
                     <button mat-flat-button color="primary" type="button" (click)="abrirItem()" [disabled]="salvandoItem" *temPermissao="permissoes.editar">
                       <mat-icon>add</mat-icon>
@@ -307,49 +320,28 @@
                 <section class="links-section links-share-section">
                   <div class="links-section__header">
                     <div>
-                      <h2>Endereço público</h2>
-                      <p *ngIf="urlPublica(); else semEnderecoCompartilhar">{{ urlPublica() }}</p>
-                      <ng-template #semEnderecoCompartilhar>
-                        <p>Defina o endereço público para gerar link e QR Code.</p>
-                      </ng-template>
+                      <h2>Compartilhar</h2>
+                      <p>Copie a URL pública ou baixe o QR Code da página.</p>
                     </div>
                   </div>
 
-                  <div class="links-share-actions">
-                    <button mat-stroked-button type="button" (click)="copiarUrlPublica()" [disabled]="!urlPublica()">
-                      <mat-icon>content_copy</mat-icon>
-                      Copiar link
-                    </button>
-                    <button mat-stroked-button type="button" (click)="abrirPaginaPublica()" [disabled]="!urlPublica()">
-                      <mat-icon>open_in_new</mat-icon>
-                      Abrir página
-                    </button>
-                    <button mat-stroked-button type="button" (click)="gerarQrCode()" [disabled]="!urlPublica() || gerandoQr">
-                      <mat-icon>qr_code_2</mat-icon>
-                      QR Code
-                    </button>
-                  </div>
-
-                  <div class="links-qr" *ngIf="qrDataUrl">
-                    <img [src]="qrDataUrl" alt="QR Code do ClickLink" width="180" height="180" />
-                    <button mat-flat-button color="primary" type="button" (click)="baixarQrCode()">
-                      <mat-icon>download</mat-icon>
-                      Baixar QR Code
-                    </button>
-                  </div>
+                  <app-links-share-panel [url]="urlPublica()" [slug]="identidade?.slug || ''"></app-links-share-panel>
                 </section>
               </div>
             </mat-tab>
           </mat-tab-group>
+
+          <div class="cadastro-form-actions links-editor-footer">
+            <button mat-flat-button class="bg-error text-white" type="button" (click)="cancelarAlteracoes()" [disabled]="salvandoPagina">
+              Cancelar
+            </button>
+
+            <button mat-flat-button color="primary" type="submit" [disabled]="salvandoPagina" *temPermissao="[permissoes.criar, permissoes.editar]">
+              {{ salvandoPagina ? 'Salvando...' : 'Salvar' }}
+            </button>
+          </div>
         </form>
       </div>
     </mat-card-content>
   </mat-card>
-
-  <mat-menu #paginaMenu="matMenu">
-    <button mat-menu-item color="warn" type="button" (click)="arquivarPagina()" *temPermissao="permissoes.excluir">
-      <mat-icon>archive</mat-icon>
-      <span>Arquivar página</span>
-    </button>
-  </mat-menu>
 </div>
