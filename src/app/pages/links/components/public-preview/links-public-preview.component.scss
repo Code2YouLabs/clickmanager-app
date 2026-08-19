@@ -27,16 +27,16 @@
   top: -34px;
   left: 50%;
   width: calc(100% + 32px);
-  height: 190px;
+  height: 220px;
   transform: translateX(-50%);
   background: linear-gradient(180deg, var(--clicklink-logo-gradient-start) 0%, var(--clicklink-logo-gradient-mid) 58%, transparent 100%);
   pointer-events: none;
 }
 
 .clicklink-preview__logo {
-  width: min(128px, 44vw);
-  max-width: 176px;
-  height: 108px;
+  width: min(152px, 52vw);
+  max-width: 204px;
+  height: 128px;
   object-fit: contain;
   border-radius: 0;
   filter: drop-shadow(var(--clicklink-logo-shadow));
