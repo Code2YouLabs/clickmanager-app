@@ -27,6 +27,8 @@ export class LinksPublicPreviewComponent {
       '--clicklink-surface-muted': tokens.surfaceMuted,
       '--clicklink-surface-border': tokens.surfaceBorder,
       '--clicklink-icon-bg': tokens.iconBackground,
+      '--clicklink-logo-bg': tokens.logoBackground,
+      '--clicklink-logo-border': tokens.logoBorder,
       '--clicklink-shadow': tokens.shadow,
       '--clicklink-radius': this.raioBotao(),
     };

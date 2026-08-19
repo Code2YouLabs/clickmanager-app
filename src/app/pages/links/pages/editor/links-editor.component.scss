@@ -263,6 +263,10 @@
   max-width: 720px;
 }
 
+.links-preview-section .links-section__header {
+  align-items: center;
+}
+
 .links-section--danger {
   border-color: rgba(180, 35, 24, 0.2);
   background: #fffafa;
@@ -325,6 +329,7 @@
   }
 
   .links-identity a,
+  .links-preview-section button,
   .links-publication-card button,
   .links-section--danger button,
   .links-editor-footer button {

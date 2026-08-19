@@ -10,6 +10,7 @@ import { EmpresaIdentidadePublicaService } from '../../../empresa/empresa-identi
 import { EmpresaFormService } from '../../../empresa/empresa-form.service';
 import { PaginaLinksDetalhe } from '../../models/links.models';
 import { LinksService } from '../../services/links.service';
+import { LinksPreviewDialogComponent } from '../../components/preview-dialog/links-preview-dialog.component';
 import { LinksEditorComponent } from './links-editor.component';
 
 describe('LinksEditorComponent', () => {
@@ -122,6 +123,23 @@ describe('LinksEditorComponent', () => {
     expect(text).toContain('Publicar');
     expect(text).toContain('Ações avançadas');
     expect(text).toContain('Arquivar página');
+  });
+
+  it('usa botao para abrir preview em dialog em vez de renderizar preview embutido', () => {
+    const fixture = setup();
+    const component = fixture.componentInstance;
+    const dialog = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
+    (component as unknown as { dialog: Pick<MatDialog, 'open'> }).dialog = dialog;
+
+    expect(fixture.nativeElement.querySelector('app-links-public-preview')).toBeNull();
+
+    component.visualizarMobile();
+
+    expect(dialog.open).toHaveBeenCalledWith(LinksPreviewDialogComponent, jasmine.objectContaining({
+      width: '100vw',
+      height: '100dvh',
+      panelClass: 'links-preview-dialog-panel',
+    }));
   });
 
   it('mantem identidade e endereco em modo leitura', () => {

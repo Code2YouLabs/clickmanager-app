@@ -57,7 +57,8 @@ salvas individualmente. O conteúdo foi organizado em abas Material:
   publicação e ações avançadas;
 - `Links`: itens exibidos na página pública, sugestões a partir dos dados existentes da
   Empresa, ações e ordenação;
-- `Aparência`: tema, cor de destaque, cor de fundo, formato dos botões e preview;
+- `Aparência`: tema, cor de destaque, cor de fundo, formato dos botões e acesso ao
+  preview;
 - `Compartilhar`: URL pública, copiar link, abrir página, QR Code e download.
 
 Publicar/Despublicar ficam na seção `Publicação` da aba `Geral`. Publicar exige que o
@@ -65,9 +66,10 @@ formulário esteja salvo para evitar publicar dados antigos enquanto o preview m
 alterações locais. Arquivar fica separado em `Ações avançadas`, com confirmação e estilo
 destrutivo, sem competir com Salvar/Publicar.
 
-Em desktop, o preview mobile fica ao lado das configurações na aba Aparência. Em mobile,
-a ação `Visualizar` abre o mesmo view model em dialog fullscreen. A ordenação de itens
-continua por botões subir/descer e funciona por toque.
+O preview mobile é aberto por botão e usa o mesmo view model em dialog. Em desktop, o
+dialog apresenta uma moldura visual de celular; em mobile, o preview ocupa a tela útil
+com opção de fechar. A ordenação de itens continua por botões subir/descer e funciona
+por toque.
 
 A aba `Links` pode sugerir itens a partir dos dados administrativos já cadastrados na
 Empresa, como telefone, e-mail, site, Instagram, Facebook, YouTube e endereço. Handles
@@ -104,7 +106,7 @@ específica de slug ficam fora do MVP administrativo atual.
 ## Preview público
 
 O preview do admin deve espelhar o renderer público `/l/{slug}`. O renderer público é a
-referência canônica para estrutura de identidade, fallback de logo, tipografia,
+referência canônica para estrutura de identidade, fundo de contraste da logo, tipografia,
 espaçamentos, botões, ícones por tipo, tema, cor de destaque, cor de fundo e formato
 dos botões. A composição atual omite nome da Empresa quando ele repete o título,
 remove texto auxiliar `Abrir` dos itens porque o card inteiro é clicável, limita

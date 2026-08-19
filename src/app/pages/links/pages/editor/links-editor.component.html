@@ -334,8 +334,11 @@
                       <h2>Preview mobile</h2>
                       <p>Prévia da página pública com as alterações em edição.</p>
                     </div>
+                    <button mat-flat-button color="primary" type="button" (click)="visualizarMobile()" *ngIf="pagina">
+                      <mat-icon>smartphone</mat-icon>
+                      Abrir preview
+                    </button>
                   </div>
-                  <app-links-public-preview [model]="previewModel()"></app-links-public-preview>
                 </section>
               </div>
             </mat-tab>

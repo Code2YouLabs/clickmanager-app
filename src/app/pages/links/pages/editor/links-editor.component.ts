@@ -16,7 +16,6 @@ import { EmpresaIdentidadePublicaService } from '../../../empresa/empresa-identi
 import { EmpresaFormService } from '../../../empresa/empresa-form.service';
 import { LinksItemDialogComponent } from '../../components/item-dialog/links-item-dialog.component';
 import { LinksPreviewDialogComponent } from '../../components/preview-dialog/links-preview-dialog.component';
-import { LinksPublicPreviewComponent } from '../../components/public-preview/links-public-preview.component';
 import { LinksSharePanelComponent } from '../../components/share-panel/links-share-panel.component';
 import {
   FormatoBotaoLinks,
@@ -50,7 +49,6 @@ interface LinkEmpresaSugestao extends PaginaLinksItemRequest {
     MaterialModule,
     CardHeaderComponent,
     TemPermissaoDirective,
-    LinksPublicPreviewComponent,
     LinksSharePanelComponent,
   ],
   templateUrl: './links-editor.component.html',

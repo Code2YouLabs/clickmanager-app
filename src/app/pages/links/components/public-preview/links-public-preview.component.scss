@@ -24,7 +24,10 @@
   height: 76px;
   object-fit: contain;
   border-radius: 14px;
-  padding: 4px;
+  padding: 8px;
+  background: var(--clicklink-logo-bg);
+  border: 1px solid var(--clicklink-logo-border);
+  box-shadow: var(--clicklink-shadow);
 }
 
 .clicklink-preview__empresa,
@@ -157,4 +160,17 @@
     gap: 9px;
     padding-inline: 10px;
   }
+}
+
+:host(.clicklink-preview-host--dialog) {
+  display: block;
+  height: 100%;
+}
+
+:host(.clicklink-preview-host--dialog) .clicklink-preview {
+  min-height: 100%;
+  max-width: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow-y: auto;
 }

@@ -10,7 +10,7 @@ describe('LinksPublicPreviewComponent', () => {
     fixture.componentRef.setInput('model', {
       titulo: 'Links',
       descricao: 'Descrição',
-      identidade: { nome: 'Empresa', slug: 'empresa', logoUrl: null },
+      identidade: { nome: 'Empresa', slug: 'empresa', logoUrl: 'https://cdn/logo.png' },
       tema: 'CLARO',
       corPrincipal: '#112233',
       corFundo: '#FFFFFF',
@@ -32,6 +32,8 @@ describe('LinksPublicPreviewComponent', () => {
     expect(fixture.componentInstance.estilosPagina()['--clicklink-primary']).toBe('#112233');
     expect(fixture.componentInstance.estilosPagina()['--clicklink-radius']).toBe('8px');
     expect(fixture.componentInstance.estilosPagina()['--clicklink-surface']).toBe('rgba(255, 255, 255, 0.94)');
+    expect(fixture.componentInstance.estilosPagina()['--clicklink-logo-bg']).toBe('rgba(255, 255, 255, 0.88)');
+    expect(fixture.nativeElement.querySelector('.clicklink-preview__logo')?.getAttribute('src')).toBe('https://cdn/logo.png');
   });
 
   it('usa os mesmos tokens principais do renderer publico', () => {
@@ -64,6 +66,7 @@ describe('LinksPublicPreviewComponent', () => {
     expect(escuro['--clicklink-primary']).toBe('#F8FAFC');
     expect(escuro['--clicklink-surface']).toBe('rgba(15, 23, 42, 0.84)');
     expect(escuro['--clicklink-surface-text']).toBe('#F8FAFC');
+    expect(escuro['--clicklink-logo-bg']).toBe('rgba(15, 23, 42, 0.72)');
   });
 
   it('omite nome da empresa quando repete o titulo normalizado', () => {
