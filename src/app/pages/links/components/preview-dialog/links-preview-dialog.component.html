@@ -1,0 +1,9 @@
+<div class="links-preview-dialog">
+  <div class="links-preview-dialog__bar">
+    <strong>Visualizar</strong>
+    <button mat-icon-button type="button" (click)="fechar()" aria-label="Fechar visualização">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+  <app-links-public-preview [model]="data"></app-links-public-preview>
+</div>

@@ -21,6 +21,8 @@ O módulo frontend fica em `src/app/pages/links` com:
 - `pages/lista`;
 - `pages/editor`;
 - `components/item-dialog`;
+- `components/public-preview`;
+- `components/preview-dialog`;
 - `utils`.
 
 O service de identidade pública da Empresa fica em `src/app/pages/empresa`, porque slug
@@ -32,6 +34,31 @@ A listagem usa cards como experiência principal. O editor usa fluxo vertical no
 apenas expande para layout com painel lateral em telas largas. A ordenação de itens não
 depende de drag-and-drop: os botões de mover para cima e para baixo são a operação
 principal e funcionam por toque.
+
+Em desktop, o editor exibe a área de edição e um preview mobile lateral. Em telas
+pequenas, a ação `Visualizar` abre o mesmo view model em dialog fullscreen. O preview
+usa dados locais do formulário para título, descrição e aparência antes do salvamento.
+
+## Aparência
+
+O admin envia e recebe os campos de aparência do backend:
+
+- `tema`: `CLARO` ou `ESCURO`;
+- `corPrincipal`: `#RRGGBB`;
+- `corFundo`: `#RRGGBB`;
+- `formatoBotao`: `ARREDONDADO`, `SUAVE` ou `QUADRADO`.
+
+Os defaults compartilhados do MVP são `CLARO`, `#0D6EFD`, `#F6F8FB` e
+`ARREDONDADO`. O frontend valida `#RRGGBB`, mas o backend continua sendo a autoridade.
+
+## Compartilhamento
+
+A URL pública canônica é montada por `buildClickLinkPublicUrl` como
+`{publicSiteBaseUrl}/l/{slug}`. O editor permite copiar link, abrir página, gerar QR
+Code e baixar PNG. O QR Code é gerado localmente com `qrcode`, codifica apenas a URL
+canônica e não possui persistência no backend.
+
+Analytics de ClickLink não foi implementado no MVP.
 
 ## Permissões
 

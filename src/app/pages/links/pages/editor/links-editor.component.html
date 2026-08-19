@@ -5,6 +5,10 @@
       ClickLink
     </a>
     <div class="links-editor-top__actions" *ngIf="pagina">
+      <button mat-stroked-button type="button" class="links-editor-top__preview" (click)="visualizarMobile()">
+        <mat-icon>smartphone</mat-icon>
+        Visualizar
+      </button>
       <button mat-stroked-button type="button" (click)="alterarPublicacao(false)" [disabled]="publicando || !pagina.publicada" *temPermissao="permissoes.publicar">
         Despublicar
       </button>
@@ -61,6 +65,42 @@
                   <textarea matInput rows="4" formControlName="descricao" maxlength="500"></textarea>
                   <mat-hint align="end">{{ descricaoControl.value?.length || 0 }}/500</mat-hint>
                 </mat-form-field>
+
+                <div class="links-appearance">
+                  <div class="links-section__header">
+                    <div>
+                      <h2>Aparência</h2>
+                      <p>Configuração visual básica da página pública.</p>
+                    </div>
+                  </div>
+
+                  <mat-button-toggle-group formControlName="tema" aria-label="Tema da página">
+                    <mat-button-toggle *ngFor="let tema of temas" [value]="tema.value">{{ tema.label }}</mat-button-toggle>
+                  </mat-button-toggle-group>
+
+                  <div class="links-color-grid">
+                    <mat-form-field appearance="outline">
+                      <mat-label>Cor principal</mat-label>
+                      <input matInput formControlName="corPrincipal" maxlength="7" />
+                      <input matSuffix type="color" [value]="corPrincipalControl.value || '#0D6EFD'" (input)="corPrincipalControl.setValue($any($event.target).value.toUpperCase())" aria-label="Selecionar cor principal" />
+                      <mat-error *ngIf="corPrincipalControl.invalid">Use #RRGGBB.</mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                      <mat-label>Cor de fundo</mat-label>
+                      <input matInput formControlName="corFundo" maxlength="7" />
+                      <input matSuffix type="color" [value]="corFundoControl.value || '#F6F8FB'" (input)="corFundoControl.setValue($any($event.target).value.toUpperCase())" aria-label="Selecionar cor de fundo" />
+                      <mat-error *ngIf="corFundoControl.invalid">Use #RRGGBB.</mat-error>
+                    </mat-form-field>
+                  </div>
+
+                  <mat-form-field appearance="outline">
+                    <mat-label>Formato dos botões</mat-label>
+                    <mat-select formControlName="formatoBotao">
+                      <mat-option *ngFor="let formato of formatosBotao" [value]="formato.value">{{ formato.label }}</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
 
                 <button mat-flat-button color="primary" type="submit" [disabled]="salvandoPagina" *temPermissao="[permissoes.criar, permissoes.editar]">
                   <mat-icon>{{ isNova ? 'add' : 'save' }}</mat-icon>
@@ -193,6 +233,51 @@
                 <p class="links-muted" *ngIf="!podeEditarEmpresa()">A alteração do endereço usa a permissão Dados da empresa.</p>
                 <p class="links-muted" *ngIf="pagina && !identidade?.slug">Para publicar sua página, defina primeiro um endereço público.</p>
               </div>
+            </section>
+
+            <section class="links-section" *ngIf="pagina">
+              <div class="links-section__header">
+                <div>
+                  <h2>Compartilhar</h2>
+                  <p *ngIf="urlPublica(); else semEnderecoCompartilhar">{{ urlPublica() }}</p>
+                  <ng-template #semEnderecoCompartilhar>
+                    <p>Defina o endereço público para gerar link e QR Code.</p>
+                  </ng-template>
+                </div>
+              </div>
+
+              <div class="links-share-actions">
+                <button mat-stroked-button type="button" (click)="copiarUrlPublica()" [disabled]="!urlPublica()">
+                  <mat-icon>content_copy</mat-icon>
+                  Copiar link
+                </button>
+                <button mat-stroked-button type="button" (click)="abrirPaginaPublica()" [disabled]="!urlPublica()">
+                  <mat-icon>open_in_new</mat-icon>
+                  Abrir página
+                </button>
+                <button mat-stroked-button type="button" (click)="gerarQrCode()" [disabled]="!urlPublica() || gerandoQr">
+                  <mat-icon>qr_code_2</mat-icon>
+                  QR Code
+                </button>
+              </div>
+
+              <div class="links-qr" *ngIf="qrDataUrl">
+                <img [src]="qrDataUrl" alt="QR Code do ClickLink" width="180" height="180" />
+                <button mat-flat-button color="primary" type="button" (click)="baixarQrCode()">
+                  <mat-icon>download</mat-icon>
+                  Baixar PNG
+                </button>
+              </div>
+            </section>
+
+            <section class="links-section links-preview-section" *ngIf="pagina">
+              <div class="links-section__header">
+                <div>
+                  <h2>Preview mobile</h2>
+                  <p>Prévia da página pública com as alterações em edição.</p>
+                </div>
+              </div>
+              <app-links-public-preview [model]="previewModel()"></app-links-public-preview>
             </section>
           </aside>
         </div>

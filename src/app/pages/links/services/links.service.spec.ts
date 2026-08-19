@@ -24,10 +24,20 @@ describe('LinksService', () => {
   });
 
   it('cria pagina com payload do backend', () => {
-    service.criarPagina({ titulo: 'Santa Luzia', descricao: null, principal: null }).subscribe();
+    const payload = {
+      titulo: 'Santa Luzia',
+      descricao: null,
+      principal: null,
+      tema: 'CLARO' as const,
+      corPrincipal: '#0D6EFD',
+      corFundo: '#F6F8FB',
+      formatoBotao: 'ARREDONDADO' as const,
+    };
+
+    service.criarPagina(payload).subscribe();
     const req = http.expectOne(base);
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ titulo: 'Santa Luzia', descricao: null, principal: null });
+    expect(req.request.body).toEqual(payload);
     req.flush({});
   });
 

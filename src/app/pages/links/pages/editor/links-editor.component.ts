@@ -5,6 +5,7 @@ import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angu
 import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
+import QRCode from 'qrcode';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
@@ -13,13 +14,19 @@ import { AuthService } from 'src/app/services/auth.service';
 import { ImagemUtil } from 'src/app/utils/imagem-util';
 import { EmpresaIdentidadePublicaService } from '../../../empresa/empresa-identidade-publica.service';
 import { LinksItemDialogComponent } from '../../components/item-dialog/links-item-dialog.component';
+import { LinksPreviewDialogComponent } from '../../components/preview-dialog/links-preview-dialog.component';
+import { LinksPublicPreviewComponent } from '../../components/public-preview/links-public-preview.component';
 import {
+  FormatoBotaoLinks,
+  LINKS_APARENCIA_PADRAO,
   LINKS_PERMISSOES,
   LinksIdentidadePublica,
+  LinksPreviewModel,
   PaginaLinksDetalhe,
   PaginaLinksItem,
   PaginaLinksItemRequest,
   TIPOS_ITEM_LINKS,
+  TemaPaginaLinks,
   TipoItemLinks,
 } from '../../models/links.models';
 import { LinksService } from '../../services/links.service';
@@ -30,7 +37,7 @@ type SlugStatus = 'nao-verificado' | 'verificando' | 'disponivel' | 'indisponive
 @Component({
   selector: 'app-links-editor',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, MaterialModule, TemPermissaoDirective],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, MaterialModule, TemPermissaoDirective, LinksPublicPreviewComponent],
   templateUrl: './links-editor.component.html',
   styleUrls: ['../../links.scss', './links-editor.component.scss'],
 })
@@ -49,16 +56,31 @@ export class LinksEditorComponent implements OnInit, OnDestroy {
   slugNormalizado = '';
   slugDisponivel = false;
   logoPreview: string | ArrayBuffer | null = null;
+  qrDataUrl = '';
+  gerandoQr = false;
 
   readonly isNova = this.route.snapshot.routeConfig?.path === 'nova';
   readonly paginaId = Number(this.route.snapshot.paramMap.get('id'));
   readonly permissoes = LINKS_PERMISSOES;
   readonly tipos = TIPOS_ITEM_LINKS;
+  readonly temas: Array<{ value: TemaPaginaLinks; label: string }> = [
+    { value: 'CLARO', label: 'Claro' },
+    { value: 'ESCURO', label: 'Escuro' },
+  ];
+  readonly formatosBotao: Array<{ value: FormatoBotaoLinks; label: string }> = [
+    { value: 'ARREDONDADO', label: 'Arredondado' },
+    { value: 'SUAVE', label: 'Suave' },
+    { value: 'QUADRADO', label: 'Quadrado' },
+  ];
   readonly IMAGEM_PADRAO = './assets/images/logos/LogoPadrao.png';
 
   readonly form = this.fb.group({
     titulo: ['', [Validators.required, Validators.maxLength(120)]],
     descricao: ['', [Validators.maxLength(500)]],
+    tema: [LINKS_APARENCIA_PADRAO.tema as TemaPaginaLinks, [Validators.required]],
+    corPrincipal: [LINKS_APARENCIA_PADRAO.corPrincipal as string, [Validators.required, Validators.pattern(/^#[0-9A-Fa-f]{6}$/)]],
+    corFundo: [LINKS_APARENCIA_PADRAO.corFundo as string, [Validators.required, Validators.pattern(/^#[0-9A-Fa-f]{6}$/)]],
+    formatoBotao: [LINKS_APARENCIA_PADRAO.formatoBotao as FormatoBotaoLinks, [Validators.required]],
   });
 
   readonly slugControl = new FormControl('', [Validators.maxLength(80)]);
@@ -275,6 +297,86 @@ export class LinksEditorComponent implements OnInit, OnDestroy {
     return buildClickLinkPublicUrl(this.identidade?.slug);
   }
 
+  previewModel(): LinksPreviewModel {
+    return {
+      titulo: this.tituloControl.value?.trim() || this.identidade?.nome || 'ClickLink',
+      descricao: this.descricaoControl.value?.trim() || null,
+      identidade: {
+        nome: this.identidade?.nome || null,
+        slug: this.identidade?.slug || null,
+        logoUrl: this.logoPreview ? String(this.logoPreview) : this.identidade?.logoUrl || null,
+      },
+      tema: this.temaControl.value || LINKS_APARENCIA_PADRAO.tema,
+      corPrincipal: this.corPrincipalControl.value || LINKS_APARENCIA_PADRAO.corPrincipal,
+      corFundo: this.corFundoControl.value || LINKS_APARENCIA_PADRAO.corFundo,
+      formatoBotao: this.formatoBotaoControl.value || LINKS_APARENCIA_PADRAO.formatoBotao,
+      itens: this.itensOrdenados(),
+    };
+  }
+
+  visualizarMobile(): void {
+    this.dialog.open(LinksPreviewDialogComponent, {
+      width: '100vw',
+      height: '100dvh',
+      maxWidth: '100vw',
+      maxHeight: '100dvh',
+      panelClass: 'links-preview-dialog-panel',
+      data: this.previewModel(),
+    });
+  }
+
+  copiarUrlPublica(): void {
+    const url = this.urlPublica();
+    if (!url) {
+      this.toastr.warning('Defina o endereço público antes de copiar.');
+      return;
+    }
+    navigator.clipboard?.writeText(url)
+      .then(() => this.toastr.success('Link copiado.'))
+      .catch(() => this.toastr.warning('Não foi possível copiar automaticamente.'));
+  }
+
+  abrirPaginaPublica(): void {
+    const url = this.urlPublica();
+    if (!url) {
+      this.toastr.warning('Defina o endereço público antes de abrir.');
+      return;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  async gerarQrCode(): Promise<void> {
+    const url = this.urlPublica();
+    if (!url) {
+      this.toastr.warning('Defina o endereço público antes de gerar o QR Code.');
+      return;
+    }
+    this.gerandoQr = true;
+    try {
+      this.qrDataUrl = await QRCode.toDataURL(url, {
+        width: 1024,
+        margin: 4,
+        errorCorrectionLevel: 'M',
+        color: { dark: '#111111', light: '#FFFFFF' },
+      });
+    } catch {
+      this.toastr.error('Não foi possível gerar o QR Code.');
+    } finally {
+      this.gerandoQr = false;
+    }
+  }
+
+  baixarQrCode(): void {
+    if (!this.qrDataUrl) {
+      void this.gerarQrCode();
+      return;
+    }
+    const anchor = document.createElement('a');
+    anchor.href = this.qrDataUrl;
+    anchor.download = `clicklink-${this.identidade?.slug || 'pagina'}.png`;
+    anchor.click();
+  }
+
   itensOrdenados(): PaginaLinksItem[] {
     return [...(this.pagina?.itens || [])].sort((a, b) => a.ordem - b.ordem);
   }
@@ -413,7 +515,12 @@ export class LinksEditorComponent implements OnInit, OnDestroy {
     this.form.patchValue({
       titulo: pagina.titulo,
       descricao: pagina.descricao || '',
+      tema: pagina.tema || LINKS_APARENCIA_PADRAO.tema,
+      corPrincipal: pagina.corPrincipal || LINKS_APARENCIA_PADRAO.corPrincipal,
+      corFundo: pagina.corFundo || LINKS_APARENCIA_PADRAO.corFundo,
+      formatoBotao: pagina.formatoBotao || LINKS_APARENCIA_PADRAO.formatoBotao,
     });
+    this.qrDataUrl = '';
     if (pagina.identidade) {
       this.atualizarIdentidade(pagina.identidade);
     }
@@ -426,6 +533,7 @@ export class LinksEditorComponent implements OnInit, OnDestroy {
     this.slugNormalizado = identidade.slug || '';
     this.slugStatus = identidade.slug ? 'disponivel' : 'nao-verificado';
     this.slugDisponivel = !!identidade.slug;
+    this.qrDataUrl = '';
   }
 
   private payloadPagina() {
@@ -433,6 +541,10 @@ export class LinksEditorComponent implements OnInit, OnDestroy {
       titulo: this.tituloControl.value?.trim() || '',
       descricao: this.descricaoControl.value?.trim() || null,
       principal: this.pagina?.principal ?? null,
+      tema: this.temaControl.value || LINKS_APARENCIA_PADRAO.tema,
+      corPrincipal: (this.corPrincipalControl.value || LINKS_APARENCIA_PADRAO.corPrincipal).toUpperCase(),
+      corFundo: (this.corFundoControl.value || LINKS_APARENCIA_PADRAO.corFundo).toUpperCase(),
+      formatoBotao: this.formatoBotaoControl.value || LINKS_APARENCIA_PADRAO.formatoBotao,
     };
   }
 
@@ -467,6 +579,22 @@ export class LinksEditorComponent implements OnInit, OnDestroy {
 
   get tituloControl(): FormControl<string | null> {
     return this.form.get('titulo') as FormControl<string | null>;
+  }
+
+  get temaControl(): FormControl<TemaPaginaLinks | null> {
+    return this.form.get('tema') as FormControl<TemaPaginaLinks | null>;
+  }
+
+  get corPrincipalControl(): FormControl<string | null> {
+    return this.form.get('corPrincipal') as FormControl<string | null>;
+  }
+
+  get corFundoControl(): FormControl<string | null> {
+    return this.form.get('corFundo') as FormControl<string | null>;
+  }
+
+  get formatoBotaoControl(): FormControl<FormatoBotaoLinks | null> {
+    return this.form.get('formatoBotao') as FormControl<FormatoBotaoLinks | null>;
   }
 
   get descricaoControl(): FormControl<string | null> {

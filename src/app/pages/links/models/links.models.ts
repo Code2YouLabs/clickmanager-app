@@ -11,6 +11,16 @@ export type TipoItemLinks =
   | 'LOCALIZACAO'
   | 'GOOGLE_AVALIACOES';
 
+export type TemaPaginaLinks = 'CLARO' | 'ESCURO';
+export type FormatoBotaoLinks = 'ARREDONDADO' | 'SUAVE' | 'QUADRADO';
+
+export const LINKS_APARENCIA_PADRAO = {
+  tema: 'CLARO' as TemaPaginaLinks,
+  corPrincipal: '#0D6EFD',
+  corFundo: '#F6F8FB',
+  formatoBotao: 'ARREDONDADO' as FormatoBotaoLinks,
+} as const;
+
 export interface LinksIdentidadePublica {
   nome: string | null;
   slug: string | null;
@@ -24,6 +34,10 @@ export interface PaginaLinksResumo {
   ativa: boolean;
   publicada: boolean;
   principal: boolean;
+  tema: TemaPaginaLinks;
+  corPrincipal: string;
+  corFundo: string;
+  formatoBotao: FormatoBotaoLinks;
   quantidadeItens: number;
   createdAt: string;
   updatedAt: string;
@@ -48,6 +62,10 @@ export interface PaginaLinksDetalhe {
   ativa: boolean;
   publicada: boolean;
   principal: boolean;
+  tema: TemaPaginaLinks;
+  corPrincipal: string;
+  corFundo: string;
+  formatoBotao: FormatoBotaoLinks;
   createdAt: string;
   updatedAt: string;
   identidade: LinksIdentidadePublica | null;
@@ -58,6 +76,21 @@ export interface PaginaLinksRequest {
   titulo: string;
   descricao?: string | null;
   principal?: boolean | null;
+  tema?: TemaPaginaLinks | null;
+  corPrincipal?: string | null;
+  corFundo?: string | null;
+  formatoBotao?: FormatoBotaoLinks | null;
+}
+
+export interface LinksPreviewModel {
+  titulo: string;
+  descricao: string | null;
+  identidade: LinksIdentidadePublica | null;
+  tema: TemaPaginaLinks;
+  corPrincipal: string;
+  corFundo: string;
+  formatoBotao: FormatoBotaoLinks;
+  itens: PaginaLinksItem[];
 }
 
 export interface PaginaLinksItemRequest {

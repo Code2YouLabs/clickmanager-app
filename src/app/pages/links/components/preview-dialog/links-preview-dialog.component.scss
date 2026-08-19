@@ -1,0 +1,17 @@
+.links-preview-dialog {
+  min-height: 100dvh;
+  background: #0f172a;
+}
+
+.links-preview-dialog__bar {
+  min-height: 56px;
+  padding: 6px 10px 6px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff;
+}
+
+app-links-public-preview {
+  display: block;
+}
