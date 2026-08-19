@@ -156,6 +156,31 @@
                     </button>
                   </div>
 
+                  <div class="links-company-suggestions" *ngIf="sugestoesEmpresa().length">
+                    <div class="links-company-suggestions__header">
+                      <strong>Adicionar dados da empresa</strong>
+                      <span>Use telefone, redes sociais, site ou endereço já cadastrados.</span>
+                    </div>
+
+                    <div class="links-company-suggestions__grid">
+                      <ng-container *ngFor="let sugestao of sugestoesEmpresa()">
+                        <button
+                          class="links-company-suggestion"
+                          type="button"
+                          (click)="importarSugestao(sugestao)"
+                          [disabled]="salvandoItem"
+                          *temPermissao="permissoes.editar">
+                          <mat-icon>{{ tipoIcon(sugestao.tipo) }}</mat-icon>
+                          <span>
+                            <strong>{{ sugestao.titulo }}</strong>
+                            <small>{{ sugestao.subtitulo || sugestao.origem }}</small>
+                          </span>
+                          <mat-icon aria-hidden="true">add</mat-icon>
+                        </button>
+                      </ng-container>
+                    </div>
+                  </div>
+
                   <div class="links-state links-state--compact" *ngIf="salvandoItem">
                     <mat-spinner diameter="28"></mat-spinner>
                     <span>Atualizando links...</span>

@@ -54,7 +54,8 @@ salvas individualmente. O conteúdo foi organizado em abas Material:
 
 - `Geral`: título, descrição, identidade read-only, endereço público read-only,
   publicação e ações avançadas;
-- `Links`: itens exibidos na página pública, ações e ordenação;
+- `Links`: itens exibidos na página pública, sugestões a partir dos dados existentes da
+  Empresa, ações e ordenação;
 - `Aparência`: tema, cor de destaque, cor de fundo, formato dos botões e preview;
 - `Compartilhar`: URL pública, copiar link, abrir página, QR Code e download.
 
@@ -66,6 +67,11 @@ destrutivo, sem competir com Salvar/Publicar.
 Em desktop, o preview mobile fica ao lado das configurações na aba Aparência. Em mobile,
 a ação `Visualizar` abre o mesmo view model em dialog fullscreen. A ordenação de itens
 continua por botões subir/descer e funciona por toque.
+
+A aba `Links` pode sugerir itens a partir dos dados administrativos já cadastrados na
+Empresa, como telefone, e-mail, site, Instagram, Facebook, YouTube e endereço. Essas
+sugestões apenas criam itens normais do ClickLink quando acionadas; não alteram os dados
+da Empresa e não criam contrato novo no backend.
 
 ## Aparência
 

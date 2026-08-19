@@ -7,6 +7,7 @@ import { ToastrService } from 'ngx-toastr';
 import { of } from 'rxjs';
 import { AuthService } from 'src/app/services/auth.service';
 import { EmpresaIdentidadePublicaService } from '../../../empresa/empresa-identidade-publica.service';
+import { EmpresaFormService } from '../../../empresa/empresa-form.service';
 import { PaginaLinksDetalhe } from '../../models/links.models';
 import { LinksService } from '../../services/links.service';
 import { LinksEditorComponent } from './links-editor.component';
@@ -45,9 +46,25 @@ describe('LinksEditorComponent', () => {
           },
         },
         { provide: EmpresaIdentidadePublicaService, useValue: { buscar: () => of(pagina.identidade) } },
+        {
+          provide: EmpresaFormService,
+          useValue: {
+            buscarEmpresa: () => of({
+              id: 1,
+              nome: 'Empresa',
+              telefone: '(31) 99999-9999',
+              email: 'contato@empresa.com',
+              instagramUrl: 'https://instagram.com/empresa',
+              facebookUrl: '',
+              siteUrl: 'https://empresa.com',
+              youtubeUrl: '',
+              endereco: { logradouro: 'Rua A', numero: '10', bairro: 'Centro', cidade: 'BH', estado: 'MG' },
+            }),
+          },
+        },
         { provide: ToastrService, useValue: jasmine.createSpyObj('ToastrService', ['success', 'warning', 'error', 'info']) },
         { provide: MatDialog, useValue: jasmine.createSpyObj('MatDialog', ['open']) },
-        { provide: AuthService, useValue: { temPermissao: () => true } },
+        { provide: AuthService, useValue: { usuario$: of({ empresa: { id: 1 } }), temPermissao: () => true } },
       ],
     });
     const fixture = TestBed.createComponent(LinksEditorComponent);
@@ -116,5 +133,15 @@ describe('LinksEditorComponent', () => {
     expect(text).not.toContain('Alterar logo');
     expect(text).not.toContain('Remover');
     expect(text).not.toContain('Alterar endereço');
+  });
+
+  it('sugere links a partir dos dados existentes da empresa', () => {
+    const fixture = setup();
+    const component = fixture.componentInstance;
+    const sugestoes = component.sugestoesEmpresa();
+
+    expect(sugestoes.map((sugestao) => sugestao.tipo)).toEqual(jasmine.arrayContaining(['WHATSAPP', 'TELEFONE', 'EMAIL', 'INSTAGRAM', 'LINK', 'LOCALIZACAO']));
+    expect(sugestoes.find((sugestao) => sugestao.tipo === 'WHATSAPP')?.url).toContain('wa.me');
+    expect(sugestoes.find((sugestao) => sugestao.tipo === 'LOCALIZACAO')?.url).toContain('google.com/maps');
   });
 });

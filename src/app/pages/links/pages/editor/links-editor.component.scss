@@ -104,6 +104,70 @@
   vertical-align: middle;
 }
 
+.links-company-suggestions {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e6e9ef;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.links-company-suggestions__header {
+  display: grid;
+  gap: 3px;
+}
+
+.links-company-suggestions__header strong {
+  color: #101828;
+}
+
+.links-company-suggestions__header span {
+  color: #667085;
+  font-size: 13px;
+}
+
+.links-company-suggestions__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.links-company-suggestion {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: #fff;
+  color: #101828;
+  text-align: left;
+  cursor: pointer;
+}
+
+.links-company-suggestion:disabled {
+  cursor: default;
+  opacity: 0.64;
+}
+
+.links-company-suggestion span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.links-company-suggestion strong,
+.links-company-suggestion small {
+  overflow-wrap: anywhere;
+}
+
+.links-company-suggestion small {
+  color: #667085;
+}
+
 .links-type-cell {
   display: inline-flex;
   align-items: center;

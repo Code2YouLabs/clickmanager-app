@@ -5,11 +5,15 @@ import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angu
 import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
+import { filter, take } from 'rxjs';
 import { CardHeaderComponent } from 'src/app/components/card-header/card-header.component';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
+import { Empresa } from 'src/app/models/empresa/empresa.model';
 import { MaterialModule } from 'src/app/material.module';
+import { AuthService } from 'src/app/services/auth.service';
 import { EmpresaIdentidadePublicaService } from '../../../empresa/empresa-identidade-publica.service';
+import { EmpresaFormService } from '../../../empresa/empresa-form.service';
 import { LinksItemDialogComponent } from '../../components/item-dialog/links-item-dialog.component';
 import { LinksPreviewDialogComponent } from '../../components/preview-dialog/links-preview-dialog.component';
 import { LinksPublicPreviewComponent } from '../../components/public-preview/links-public-preview.component';
@@ -29,7 +33,12 @@ import {
   TipoItemLinks,
 } from '../../models/links.models';
 import { LinksService } from '../../services/links.service';
+import { buildMailtoUrl, buildTelefoneUrl, buildWhatsappUrl, normalizarTelefoneParaUrl } from '../../utils/links-item-url.util';
 import { buildClickLinkPublicUrl } from '../../utils/links-url.util';
+
+interface LinkEmpresaSugestao extends PaginaLinksItemRequest {
+  origem: string;
+}
 
 @Component({
   selector: 'app-links-editor',
@@ -50,6 +59,7 @@ import { buildClickLinkPublicUrl } from '../../utils/links-url.util';
 export class LinksEditorComponent implements OnInit {
   pagina: PaginaLinksDetalhe | null = null;
   identidade: LinksIdentidadePublica | null = null;
+  empresa: Empresa | null = null;
   carregando = true;
   salvandoPagina = false;
   salvandoItem = false;
@@ -88,11 +98,14 @@ export class LinksEditorComponent implements OnInit {
     private readonly router: Router,
     private readonly linksService: LinksService,
     private readonly identidadeService: EmpresaIdentidadePublicaService,
+    private readonly empresaService: EmpresaFormService,
+    private readonly authService: AuthService,
     private readonly toastr: ToastrService,
     private readonly dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
+    this.carregarDadosEmpresa();
     this.carregarIdentidade(() => {
       if (this.isNova) {
         this.prepararNovaPagina();
@@ -261,6 +274,70 @@ export class LinksEditorComponent implements OnInit {
     });
   }
 
+  sugestoesEmpresa(): LinkEmpresaSugestao[] {
+    if (!this.empresa) return [];
+    const sugestoes: LinkEmpresaSugestao[] = [];
+    const nome = this.identidade?.nome || this.empresa.nome || 'empresa';
+    const telefone = normalizarTelefoneParaUrl(this.empresa.telefone);
+
+    if (telefone) {
+      sugestoes.push({
+        origem: 'Telefone da empresa',
+        tipo: 'WHATSAPP',
+        titulo: 'Fale pelo WhatsApp',
+        subtitulo: 'Atendimento comercial',
+        url: buildWhatsappUrl(telefone, `Olá, vim pelo ClickLink da ${nome}.`),
+      });
+      sugestoes.push({
+        origem: 'Telefone da empresa',
+        tipo: 'TELEFONE',
+        titulo: 'Ligar agora',
+        subtitulo: this.empresa.telefone || null,
+        url: buildTelefoneUrl(telefone),
+      });
+    }
+
+    if (this.empresa.email?.trim()) {
+      sugestoes.push({
+        origem: 'E-mail da empresa',
+        tipo: 'EMAIL',
+        titulo: 'Enviar e-mail',
+        subtitulo: this.empresa.email.trim(),
+        url: buildMailtoUrl(this.empresa.email.trim(), 'Contato pelo ClickLink'),
+      });
+    }
+
+    this.adicionarSugestaoUrl(sugestoes, 'INSTAGRAM', 'Instagram', 'Rede social', this.empresa.instagramUrl);
+    this.adicionarSugestaoUrl(sugestoes, 'FACEBOOK', 'Facebook', 'Rede social', this.empresa.facebookUrl);
+    this.adicionarSugestaoUrl(sugestoes, 'YOUTUBE', 'YouTube', 'Canal de vídeos', this.empresa.youtubeUrl);
+    this.adicionarSugestaoUrl(sugestoes, 'LINK', 'Site', 'Site oficial', this.empresa.siteUrl);
+
+    const endereco = this.enderecoCompleto();
+    if (endereco) {
+      sugestoes.push({
+        origem: 'Endereço da empresa',
+        tipo: 'LOCALIZACAO',
+        titulo: 'Como chegar',
+        subtitulo: endereco,
+        url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endereco)}`,
+      });
+    }
+
+    const urlsAtuais = new Set(this.itensOrdenados().map((item) => item.url));
+    return sugestoes.filter((sugestao) => !urlsAtuais.has(sugestao.url));
+  }
+
+  importarSugestao(sugestao: LinkEmpresaSugestao): void {
+    if (!this.pagina) return;
+    this.adicionarItem({
+      tipo: sugestao.tipo,
+      titulo: sugestao.titulo,
+      subtitulo: sugestao.subtitulo,
+      url: sugestao.url,
+      ordem: this.itensOrdenados().length,
+    });
+  }
+
   urlPublica(): string {
     return buildClickLinkPublicUrl(this.identidade?.slug);
   }
@@ -321,6 +398,49 @@ export class LinksEditorComponent implements OnInit {
       },
       error: (error) => this.tratarErro(error, 'Não foi possível adicionar o link.'),
     });
+  }
+
+  private carregarDadosEmpresa(): void {
+    this.authService.usuario$
+      .pipe(filter((usuario) => !!usuario?.empresa?.id), take(1))
+      .subscribe((usuario) => {
+        const empresaId = usuario?.empresa?.id;
+        if (!empresaId) return;
+        this.empresaService.buscarEmpresa(empresaId).subscribe({
+          next: (empresa) => {
+            this.empresa = empresa;
+          },
+          error: () => {
+            this.empresa = null;
+          },
+        });
+      });
+  }
+
+  private adicionarSugestaoUrl(
+    sugestoes: LinkEmpresaSugestao[],
+    tipo: LinkEmpresaSugestao['tipo'],
+    titulo: string,
+    subtitulo: string,
+    url: string | null | undefined
+  ): void {
+    const value = String(url || '').trim();
+    if (!value) return;
+    sugestoes.push({ origem: 'Dados da empresa', tipo, titulo, subtitulo, url: value });
+  }
+
+  private enderecoCompleto(): string {
+    const endereco = this.empresa?.endereco;
+    if (!endereco) return '';
+    return [
+      endereco.logradouro,
+      endereco.numero,
+      endereco.complemento,
+      endereco.bairro,
+      endereco.cidade,
+      endereco.estado,
+      endereco.cep,
+    ].filter(Boolean).join(', ');
   }
 
   private editarItem(item: PaginaLinksItem, payload: PaginaLinksItemRequest): void {
