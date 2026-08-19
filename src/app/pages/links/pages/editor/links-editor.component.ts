@@ -163,7 +163,12 @@ export class LinksEditorComponent implements OnInit {
       return;
     }
     if (publicada && this.temAlteracoesFormulario()) {
-      this.toastr.warning('Salve as alterações antes de publicar.');
+      if (this.form.invalid) {
+        this.form.markAllAsTouched();
+        this.toastr.warning('Informe um título válido para publicar.');
+        return;
+      }
+      this.salvarEAlterarPublicacao(publicada);
       return;
     }
     this.publicando = true;
@@ -257,9 +262,9 @@ export class LinksEditorComponent implements OnInit {
     this.dialog.open(ConfirmDialogComponent, {
       width: '420px',
       data: {
-        title: 'Arquivar página',
-        message: `Arquivar "${this.pagina.titulo}"? Ela deixará de aparecer no ClickLink público.`,
-        confirmText: 'Arquivar',
+        title: 'Excluir página',
+        message: `Excluir "${this.pagina.titulo}"? Ela deixará de aparecer na listagem e no ClickLink público.`,
+        confirmText: 'Excluir',
         confirmColor: 'warn',
       },
     }).afterClosed().subscribe((ok) => {
@@ -268,10 +273,10 @@ export class LinksEditorComponent implements OnInit {
       this.linksService.arquivarPagina(this.pagina.id).subscribe({
         next: () => {
           this.arquivando = false;
-          this.toastr.success('Página arquivada.');
+          this.toastr.success('Página excluída.');
           this.router.navigate(['/page/links/paginas']);
         },
-        error: (error) => this.tratarErro(error, 'Não foi possível arquivar a página.'),
+        error: (error) => this.tratarErro(error, 'Não foi possível excluir a página.'),
       });
     });
   }
@@ -393,7 +398,7 @@ export class LinksEditorComponent implements OnInit {
 
   temAlteracoesFormulario(): boolean {
     if (!this.estadoPersistido) return false;
-    return JSON.stringify(this.payloadPagina()) !== JSON.stringify(this.estadoPersistido);
+    return JSON.stringify(this.normalizarPayload(this.payloadPagina())) !== JSON.stringify(this.normalizarPayload(this.estadoPersistido));
   }
 
   private adicionarItem(payload: PaginaLinksItemRequest): void {
@@ -406,6 +411,27 @@ export class LinksEditorComponent implements OnInit {
         this.toastr.success('Link adicionado.');
       },
       error: (error) => this.tratarErro(error, 'Não foi possível adicionar o link.'),
+    });
+  }
+
+  private salvarEAlterarPublicacao(publicada: boolean): void {
+    if (!this.pagina) return;
+    this.publicando = true;
+    this.salvandoPagina = true;
+    this.linksService.editarPagina(this.pagina.id, this.payloadPagina()).subscribe({
+      next: (pagina) => {
+        this.salvandoPagina = false;
+        this.atualizarPagina(pagina, true);
+        this.linksService.alterarPublicacao(pagina.id, publicada).subscribe({
+          next: (paginaPublicada) => {
+            this.publicando = false;
+            this.atualizarPagina(paginaPublicada, true);
+            this.toastr.success(publicada ? 'Alterações salvas e página publicada.' : 'Alterações salvas e página despublicada.');
+          },
+          error: (error) => this.tratarErro(error, 'Não foi possível alterar a publicação.'),
+        });
+      },
+      error: (error) => this.tratarErro(error, 'Não foi possível salvar a página antes de publicar.'),
     });
   }
 
@@ -579,6 +605,16 @@ export class LinksEditorComponent implements OnInit {
       corPrincipal: (this.corPrincipalControl.value || LINKS_APARENCIA_PADRAO.corPrincipal).toUpperCase(),
       corFundo: (this.corFundoControl.value || LINKS_APARENCIA_PADRAO.corFundo).toUpperCase(),
       formatoBotao: this.formatoBotaoControl.value || LINKS_APARENCIA_PADRAO.formatoBotao,
+    };
+  }
+
+  private normalizarPayload(payload: PaginaLinksRequest): PaginaLinksRequest {
+    return {
+      ...payload,
+      titulo: String(payload.titulo || '').trim(),
+      descricao: payload.descricao ? String(payload.descricao).trim() : null,
+      corPrincipal: (payload.corPrincipal || LINKS_APARENCIA_PADRAO.corPrincipal).toUpperCase(),
+      corFundo: (payload.corFundo || LINKS_APARENCIA_PADRAO.corFundo).toUpperCase(),
     };
   }
 

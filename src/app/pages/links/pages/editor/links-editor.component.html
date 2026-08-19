@@ -83,7 +83,7 @@
                   </div>
                 </section>
 
-                <section class="links-section">
+                <section class="links-section" *ngIf="pagina">
                   <div class="links-section__header">
                     <div>
                       <h2>Endereço público</h2>
@@ -116,35 +116,46 @@
                     <span class="links-publication-card__status">
                       {{ pagina.publicada ? '● Publicada' : '○ Não publicada' }}
                     </span>
-                    <button mat-flat-button color="primary" type="button" (click)="alterarPublicacao(true)" [disabled]="publicando || pagina.publicada || !identidade?.slug || temAlteracoesFormulario()" *temPermissao="permissoes.publicar">
-                      Publicar
+                    <button mat-flat-button color="primary" type="button" (click)="alterarPublicacao(true)" [disabled]="publicando || salvandoPagina || pagina.publicada || !identidade?.slug" *temPermissao="permissoes.publicar">
+                      {{ publicando ? 'Publicando...' : 'Publicar' }}
                     </button>
                     <button mat-stroked-button type="button" (click)="alterarPublicacao(false)" [disabled]="publicando || !pagina.publicada" *temPermissao="permissoes.publicar">
                       Despublicar
                     </button>
                   </div>
 
-                  <p class="links-muted" *ngIf="temAlteracoesFormulario()">Salve as alterações antes de publicar.</p>
+                  <p class="links-muted" *ngIf="temAlteracoesFormulario()">Ao publicar, as alterações do formulário serão salvas antes.</p>
                 </section>
 
                 <section class="links-section links-section--danger" *ngIf="pagina">
                   <div class="links-section__header">
                     <div>
                       <h2>Ações avançadas</h2>
-                      <p>Arquivar remove a página da experiência ativa e exige confirmação.</p>
+                      <p>Excluir remove a página da listagem e do ClickLink público. Esta ação exige confirmação.</p>
                     </div>
                   </div>
                   <button mat-stroked-button color="warn" type="button" (click)="arquivarPagina()" [disabled]="arquivando" *temPermissao="permissoes.excluir">
-                    <mat-icon>archive</mat-icon>
-                    Arquivar página
+                    <mat-icon>delete</mat-icon>
+                    Excluir página
                   </button>
                 </section>
               </div>
             </mat-tab>
 
-            <mat-tab label="Links" [disabled]="!pagina">
+            <mat-tab label="Links">
               <div class="links-tab-body">
-                <section class="links-section">
+                <section class="links-section" *ngIf="!pagina">
+                  <div class="links-empty links-empty--compact">
+                    <mat-icon>save</mat-icon>
+                    <h2>Salve a página para adicionar links</h2>
+                    <p>Depois do primeiro salvamento, você poderá adicionar WhatsApp, redes sociais, telefone, endereço e outros canais.</p>
+                    <button mat-flat-button color="primary" type="submit" [disabled]="salvandoPagina" *temPermissao="[permissoes.criar, permissoes.editar]">
+                      {{ salvandoPagina ? 'Salvando...' : 'Salvar página' }}
+                    </button>
+                  </div>
+                </section>
+
+                <section class="links-section" *ngIf="pagina">
                   <div class="links-section__header">
                     <div>
                       <h2>Links</h2>
@@ -343,9 +354,20 @@
               </div>
             </mat-tab>
 
-            <mat-tab label="Compartilhar" [disabled]="!pagina">
+            <mat-tab label="Compartilhar">
               <div class="links-tab-body">
-                <section class="links-section links-share-section">
+                <section class="links-section links-share-section" *ngIf="!pagina">
+                  <div class="links-empty links-empty--compact">
+                    <mat-icon>save</mat-icon>
+                    <h2>Salve a página para compartilhar</h2>
+                    <p>Depois do primeiro salvamento, você poderá copiar a URL pública e baixar o QR Code.</p>
+                    <button mat-flat-button color="primary" type="submit" [disabled]="salvandoPagina" *temPermissao="[permissoes.criar, permissoes.editar]">
+                      {{ salvandoPagina ? 'Salvando...' : 'Salvar página' }}
+                    </button>
+                  </div>
+                </section>
+
+                <section class="links-section links-share-section" *ngIf="pagina">
                   <div class="links-section__header">
                     <div>
                       <h2>Compartilhar</h2>

@@ -140,9 +140,5 @@
         <span>Despublicar</span>
       </button>
     </ng-container>
-    <button mat-menu-item type="button" (click)="arquivar(paginaMenu)" [disabled]="!paginaMenu || executandoId === paginaMenu.id" *temPermissao="permissoes.excluir">
-      <mat-icon>archive</mat-icon>
-      <span>Arquivar</span>
-    </button>
   </mat-menu>
 </div>

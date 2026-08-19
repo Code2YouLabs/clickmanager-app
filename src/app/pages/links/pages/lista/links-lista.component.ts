@@ -5,7 +5,6 @@ import { MatDialog } from '@angular/material/dialog';
 import { Router, RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { CardHeaderComponent } from 'src/app/components/card-header/card-header.component';
-import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
 import { MaterialModule } from 'src/app/material.module';
 import { EmpresaIdentidadePublicaService } from '../../../empresa/empresa-identidade-publica.service';
@@ -46,7 +45,7 @@ export class LinksListaComponent implements OnInit {
     this.carregando = true;
     this.linksService.listarPaginas().subscribe({
       next: (paginas) => {
-        this.paginas = paginas || [];
+        this.paginas = (paginas || []).filter((pagina) => pagina.ativa);
         this.carregarIdentidade();
       },
       error: (error) => this.tratarErro(error, 'Não foi possível carregar suas páginas ClickLink.'),
@@ -76,30 +75,6 @@ export class LinksListaComponent implements OnInit {
         this.atualizarResumo(detalhe);
       },
       error: (error) => this.tratarErro(error, 'Não foi possível alterar a publicação.'),
-    });
-  }
-
-  arquivar(pagina: PaginaLinksResumo | null): void {
-    if (!pagina) return;
-    this.dialog.open(ConfirmDialogComponent, {
-      width: '420px',
-      data: {
-        title: 'Arquivar página',
-        message: `Arquivar "${pagina.titulo}"? Ela deixará de aparecer no ClickLink público.`,
-        confirmText: 'Arquivar',
-        confirmColor: 'warn',
-      },
-    }).afterClosed().subscribe((ok) => {
-      if (!ok) return;
-      this.executandoId = pagina.id;
-      this.linksService.arquivarPagina(pagina.id).subscribe({
-        next: () => {
-          this.executandoId = null;
-          this.toastr.success('Página arquivada.');
-          this.paginas = this.paginas.filter((item) => item.id !== pagina.id);
-        },
-        error: (error) => this.tratarErro(error, 'Não foi possível arquivar a página.'),
-      });
     });
   }
 
@@ -136,12 +111,10 @@ export class LinksListaComponent implements OnInit {
   }
 
   statusLabel(pagina: PaginaLinksResumo): string {
-    if (!pagina.ativa) return 'Arquivada';
     return pagina.publicada ? 'Publicada' : 'Não publicada';
   }
 
   statusClasse(pagina: PaginaLinksResumo): string {
-    if (!pagina.ativa) return 'links-badge--neutral';
     return pagina.publicada ? 'links-badge--success' : 'links-badge--warning';
   }
 

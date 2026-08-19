@@ -32,6 +32,21 @@ describe('LinksListaComponent', () => {
       createdAt: '',
       updatedAt: '',
     },
+    {
+      id: 2,
+      titulo: 'Página inativa',
+      descricao: null,
+      ativa: false,
+      publicada: false,
+      principal: false,
+      tema: 'CLARO',
+      corPrincipal: '#0D6EFD',
+      corFundo: '#F6F8FB',
+      formatoBotao: 'ARREDONDADO',
+      quantidadeItens: 0,
+      createdAt: '',
+      updatedAt: '',
+    },
   ];
 
   beforeEach(async () => {
@@ -56,6 +71,7 @@ describe('LinksListaComponent', () => {
   it('renderiza a listagem sem titulo duplicado no componente', () => {
     const text = fixture.nativeElement.textContent;
     expect((text.match(/Páginas ClickLink/g) || []).length).toBe(1);
+    expect(text).not.toContain('Página inativa');
   });
 
   it('exibe Compartilhar como acao direta e abre o dialog reutilizavel', () => {
@@ -72,13 +88,14 @@ describe('LinksListaComponent', () => {
     }));
   });
 
-  it('mantem acoes de estado no menu conforme publicacao', () => {
+  it('mantem acoes de estado no menu sem exclusao na listagem', () => {
     fixture.componentInstance.paginaMenu = paginas[0];
     fixture.detectChanges();
     fixture.nativeElement.querySelector('button[aria-label="Mais ações"]')?.click();
     fixture.detectChanges();
 
     expect(document.body.textContent).toContain('Despublicar');
-    expect(document.body.textContent).toContain('Arquivar');
+    expect(document.body.textContent).not.toContain('Arquivar');
+    expect(document.body.textContent).not.toContain('Excluir');
   });
 });

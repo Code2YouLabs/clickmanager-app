@@ -45,8 +45,9 @@ A listagem segue o padrão administrativo usado em Produtos/Clientes: card princ
 header interno com divisor e tabela Material no desktop. Em mobile, a listagem vira
 cards estruturados para evitar rolagem horizontal. Criar página é uma ação da tela de
 Páginas, não um item de menu. As ações frequentes ficam diretas como `Editar` e
-`Compartilhar`; `Abrir` e ações de estado ficam no menu `⋮`. Ícones de ação usam
-tooltip para manter legenda acessível sem poluir a tabela.
+`Compartilhar`; `Abrir` e ações de publicação ficam no menu `⋮`. A listagem exibe
+apenas páginas ativas e não expõe ação destrutiva. Ícones de ação usam tooltip para
+manter legenda acessível sem poluir a tabela.
 
 O editor usa header padrão com `Voltar` e preview mobile. `Salvar` e `Cancelar` ficam no
 footer do formulário, seguindo o padrão visual dos cadastros. `Cancelar` restaura apenas
@@ -56,15 +57,18 @@ salvas individualmente. O conteúdo foi organizado em abas Material:
 - `Geral`: título, descrição, identidade read-only, endereço público read-only,
   publicação e ações avançadas;
 - `Links`: itens exibidos na página pública, sugestões a partir dos dados existentes da
-  Empresa, ações e ordenação;
+  Empresa, ações e ordenação. Na criação, a aba fica acessível e orienta salvar a página
+  antes de adicionar itens;
 - `Aparência`: tema, cor de destaque, cor de fundo, formato dos botões e acesso ao
   preview;
-- `Compartilhar`: URL pública, copiar link, abrir página, QR Code e download.
+- `Compartilhar`: URL pública, copiar link, abrir página, QR Code e download. Na criação,
+  a aba fica acessível e orienta salvar a página antes de compartilhar.
 
 Publicar/Despublicar ficam na seção `Publicação` da aba `Geral`. Publicar exige que o
-formulário esteja salvo para evitar publicar dados antigos enquanto o preview mostra
-alterações locais. Arquivar fica separado em `Ações avançadas`, com confirmação e estilo
-destrutivo, sem competir com Salvar/Publicar.
+formulário esteja salvo; se houver alterações locais válidas, o editor salva antes de
+publicar para evitar publicar dados antigos enquanto o preview mostra alterações novas.
+Excluir fica separado em `Ações avançadas`, apenas dentro do editor, com confirmação e
+estilo destrutivo, sem competir com Salvar/Publicar.
 
 O preview mobile é aberto por botão e usa o mesmo view model em dialog. Em desktop, o
 dialog apresenta uma moldura visual de celular; em mobile, o preview ocupa a tela útil
@@ -141,7 +145,7 @@ Links:
 - `LINKS_CRIAR`: criar página;
 - `LINKS_EDITAR`: editar página e itens;
 - `LINKS_PUBLICAR`: publicar/despublicar;
-- `LINKS_EXCLUIR`: arquivar página.
+- `LINKS_EXCLUIR`: excluir página pelo editor.
 
 Empresa:
 

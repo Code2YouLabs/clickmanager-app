@@ -32,6 +32,7 @@ describe('LinksEditorComponent', () => {
   };
 
   function setup(path = ':id', pagina = detalhe): ComponentFixture<LinksEditorComponent> {
+    let paginaAtual = { ...pagina };
     TestBed.configureTestingModule({
       imports: [LinksEditorComponent, NoopAnimationsModule, RouterTestingModule.withRoutes([])],
       providers: [
@@ -39,10 +40,19 @@ describe('LinksEditorComponent', () => {
         {
           provide: LinksService,
           useValue: {
-            buscarPagina: () => of(pagina),
-            editarPagina: (_id: number, payload: Partial<PaginaLinksDetalhe>) => of({ ...pagina, ...payload }),
-            criarPagina: (payload: Partial<PaginaLinksDetalhe>) => of({ ...pagina, ...payload }),
-            alterarPublicacao: (_id: number, publicada: boolean) => of({ ...pagina, publicada }),
+            buscarPagina: () => of(paginaAtual),
+            editarPagina: (_id: number, payload: Partial<PaginaLinksDetalhe>) => {
+              paginaAtual = { ...paginaAtual, ...payload };
+              return of(paginaAtual);
+            },
+            criarPagina: (payload: Partial<PaginaLinksDetalhe>) => {
+              paginaAtual = { ...paginaAtual, ...payload };
+              return of(paginaAtual);
+            },
+            alterarPublicacao: (_id: number, publicada: boolean) => {
+              paginaAtual = { ...paginaAtual, publicada };
+              return of(paginaAtual);
+            },
             arquivarPagina: () => of(void 0),
             removerItem: () => of(void 0),
           },
@@ -115,14 +125,37 @@ describe('LinksEditorComponent', () => {
     expect(component.tituloControl.value).toBe('Novo salvo');
   });
 
-  it('posiciona publicacao em Geral e arquivamento em acoes avancadas', () => {
+  it('posiciona publicacao em Geral e exclusao em acoes avancadas', () => {
     const fixture = setup();
     const text = fixture.nativeElement.textContent;
 
     expect(text).toContain('Publicação');
     expect(text).toContain('Publicar');
     expect(text).toContain('Ações avançadas');
-    expect(text).toContain('Arquivar página');
+    expect(text).toContain('Excluir página');
+  });
+
+  it('mantem abas Links e Compartilhar acessiveis na criacao', () => {
+    const fixture = setup('nova');
+    const tabs = Array.from(fixture.nativeElement.querySelectorAll('.mat-mdc-tab')) as HTMLElement[];
+    const linksTab = tabs.find((tab) => tab.textContent?.includes('Links'));
+    const compartilharTab = tabs.find((tab) => tab.textContent?.includes('Compartilhar'));
+
+    expect(linksTab).toBeTruthy();
+    expect(compartilharTab).toBeTruthy();
+    expect(linksTab?.getAttribute('aria-disabled')).not.toBe('true');
+    expect(compartilharTab?.getAttribute('aria-disabled')).not.toBe('true');
+  });
+
+  it('salva alteracoes antes de publicar quando formulario foi alterado', () => {
+    const fixture = setup();
+    const component = fixture.componentInstance;
+
+    component.tituloControl.setValue('Título para publicar');
+    component.alterarPublicacao(true);
+
+    expect(component.pagina?.titulo).toBe('Título para publicar');
+    expect(component.pagina?.publicada).toBeTrue();
   });
 
   it('usa botao para abrir preview em dialog em vez de renderizar preview embutido', () => {
