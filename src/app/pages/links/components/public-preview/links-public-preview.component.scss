@@ -27,19 +27,21 @@
   top: -34px;
   left: 50%;
   width: calc(100% + 32px);
-  height: 220px;
+  height: 252px;
   transform: translateX(-50%);
   background: linear-gradient(180deg, var(--clicklink-logo-gradient-start) 0%, var(--clicklink-logo-gradient-mid) 58%, transparent 100%);
   pointer-events: none;
 }
 
 .clicklink-preview__logo {
-  width: min(152px, 52vw);
-  max-width: 204px;
-  height: 128px;
+  width: min(214px, 72vw);
+  max-width: 268px;
+  height: 142px;
   object-fit: contain;
   border-radius: 0;
   filter: drop-shadow(var(--clicklink-logo-shadow));
+  transform: scale(1.35);
+  transform-origin: center;
 }
 
 .clicklink-preview__empresa,
