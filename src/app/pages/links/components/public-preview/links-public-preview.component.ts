@@ -22,7 +22,12 @@ export class LinksPublicPreviewComponent {
       '--clicklink-primary': tokens.primary,
       '--clicklink-text': tokens.text,
       '--clicklink-muted': tokens.muted,
-      '--clicklink-button-text': tokens.buttonText,
+      '--clicklink-surface': tokens.surface,
+      '--clicklink-surface-text': tokens.surfaceText,
+      '--clicklink-surface-muted': tokens.surfaceMuted,
+      '--clicklink-surface-border': tokens.surfaceBorder,
+      '--clicklink-icon-bg': tokens.iconBackground,
+      '--clicklink-shadow': tokens.shadow,
       '--clicklink-radius': this.raioBotao(),
     };
   }
@@ -33,21 +38,31 @@ export class LinksPublicPreviewComponent {
       .sort((a, b) => a.ordem - b.ordem);
   }
 
+  tituloPrincipal(): string {
+    return this.model?.titulo || this.model?.identidade?.nome || 'ClickLink';
+  }
+
+  deveExibirEmpresa(): boolean {
+    const empresa = this.normalizarTexto(this.model?.identidade?.nome);
+    const titulo = this.normalizarTexto(this.tituloPrincipal());
+    return Boolean(empresa && empresa !== titulo);
+  }
+
   icon(tipo: TipoItemLinks): string {
     const labels: Record<TipoItemLinks, string> = {
-      LINK: 'LN',
-      WHATSAPP: 'WA',
-      INSTAGRAM: 'IG',
-      FACEBOOK: 'FB',
-      TIKTOK: 'TT',
-      YOUTUBE: 'YT',
-      LINKEDIN: 'IN',
-      EMAIL: '@',
-      TELEFONE: 'TEL',
-      LOCALIZACAO: 'MAP',
-      GOOGLE_AVALIACOES: '5',
+      LINK: 'link',
+      WHATSAPP: 'chat',
+      INSTAGRAM: 'photo_camera',
+      FACEBOOK: 'public',
+      TIKTOK: 'music_note',
+      YOUTUBE: 'play_circle',
+      LINKEDIN: 'business_center',
+      EMAIL: 'mail',
+      TELEFONE: 'call',
+      LOCALIZACAO: 'location_on',
+      GOOGLE_AVALIACOES: 'star',
     };
-    return labels[tipo] || 'LN';
+    return labels[tipo] || 'link';
   }
 
   onLinkClick(event: Event): void {
@@ -59,12 +74,16 @@ export class LinksPublicPreviewComponent {
   private raioBotao(): string {
     switch (this.model?.formatoBotao) {
       case 'QUADRADO':
-        return '6px';
+        return '8px';
       case 'SUAVE':
-        return '14px';
+        return '16px';
       default:
-        return '999px';
+        return '28px';
     }
+  }
+
+  private normalizarTexto(value: string | null | undefined): string {
+    return String(value || '').trim().toLocaleLowerCase();
   }
 
 }

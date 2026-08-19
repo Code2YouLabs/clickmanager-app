@@ -25,9 +25,13 @@ describe('LinksPublicPreviewComponent', () => {
 
   it('renderiza somente links ativos e aplica aparencia segura', () => {
     expect(fixture.nativeElement.textContent).toContain('WhatsApp');
+    expect(fixture.nativeElement.textContent).toContain('Atendimento');
+    expect(fixture.nativeElement.textContent).not.toContain('Abrir');
     expect(fixture.nativeElement.textContent).not.toContain('Inativo');
+    expect(fixture.nativeElement.querySelector('.clicklink-preview__link-icon mat-icon')?.textContent.trim()).toBe('chat');
     expect(fixture.componentInstance.estilosPagina()['--clicklink-primary']).toBe('#112233');
-    expect(fixture.componentInstance.estilosPagina()['--clicklink-radius']).toBe('6px');
+    expect(fixture.componentInstance.estilosPagina()['--clicklink-radius']).toBe('8px');
+    expect(fixture.componentInstance.estilosPagina()['--clicklink-surface']).toBe('rgba(255, 255, 255, 0.94)');
   });
 
   it('usa os mesmos tokens principais do renderer publico', () => {
@@ -58,6 +62,26 @@ describe('LinksPublicPreviewComponent', () => {
     expect(claro['--clicklink-text']).toBe('#101828');
     expect(escuro['--clicklink-text']).toBe('#F8FAFC');
     expect(escuro['--clicklink-primary']).toBe('#F8FAFC');
-    expect(escuro['--clicklink-button-text']).toBe('#101828');
+    expect(escuro['--clicklink-surface']).toBe('rgba(15, 23, 42, 0.84)');
+    expect(escuro['--clicklink-surface-text']).toBe('#F8FAFC');
+  });
+
+  it('omite nome da empresa quando repete o titulo normalizado', () => {
+    fixture.componentRef.setInput('model', {
+      titulo: ' Empresa ',
+      descricao: null,
+      identidade: { nome: 'empresa', slug: 'empresa', logoUrl: null },
+      tema: 'CLARO',
+      corPrincipal: '#FF0000',
+      corFundo: '#0057B8',
+      formatoBotao: 'ARREDONDADO',
+      itens: [],
+    });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.deveExibirEmpresa()).toBeFalse();
+    expect((fixture.nativeElement.textContent.match(/Empresa/gi) || []).length).toBe(1);
+    expect(fixture.componentInstance.estilosPagina()['--clicklink-text']).toBe('#FFFFFF');
+    expect(fixture.componentInstance.estilosPagina()['--clicklink-radius']).toBe('28px');
   });
 });

@@ -105,9 +105,11 @@ específica de slug ficam fora do MVP administrativo atual.
 
 O preview do admin deve espelhar o renderer público `/l/{slug}`. O renderer público é a
 referência canônica para estrutura de identidade, fallback de logo, tipografia,
-espaçamentos, botões, texto `Abrir`, ícones textuais por tipo, tema, cor de destaque,
-cor de fundo e formato dos botões. A diferença aceitável é apenas o container externo
-do preview dentro do admin.
+espaçamentos, botões, ícones por tipo, tema, cor de destaque, cor de fundo e formato
+dos botões. A composição atual omite nome da Empresa quando ele repete o título,
+remove texto auxiliar `Abrir` dos itens porque o card inteiro é clicável, limita
+subtítulos longos e usa a cor de destaque como acento visual. A diferença aceitável é
+apenas o container externo do preview dentro do admin.
 
 ## Analytics
 

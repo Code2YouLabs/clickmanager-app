@@ -1,11 +1,8 @@
 <div class="clicklink-preview" [ngStyle]="estilosPagina()">
   <header class="clicklink-preview__header">
     <img class="clicklink-preview__logo" *ngIf="model.identidade?.logoUrl" [src]="model.identidade?.logoUrl" alt="Logo da empresa" />
-    <div class="clicklink-preview__logo clicklink-preview__logo--fallback" *ngIf="!model.identidade?.logoUrl" aria-hidden="true">
-      {{ (model.identidade?.nome || model.titulo || 'C').slice(0, 1).toUpperCase() }}
-    </div>
-    <p class="clicklink-preview__empresa" *ngIf="model.identidade?.nome">{{ model.identidade?.nome }}</p>
-    <h1>{{ model.titulo || 'ClickLink' }}</h1>
+    <p class="clicklink-preview__empresa" *ngIf="deveExibirEmpresa()">{{ model.identidade?.nome }}</p>
+    <h1>{{ tituloPrincipal() }}</h1>
     <p class="clicklink-preview__descricao" *ngIf="model.descricao">{{ model.descricao }}</p>
   </header>
 
@@ -16,13 +13,16 @@
       [href]="item.url"
       [attr.target]="interactive ? '_blank' : null"
       [attr.rel]="interactive ? 'noopener noreferrer' : null"
+      [attr.aria-label]="item.subtitulo ? item.titulo + ': ' + item.subtitulo : item.titulo"
       (click)="onLinkClick($event)">
-      <span class="clicklink-preview__link-icon" aria-hidden="true">{{ icon(item.tipo) }}</span>
+      <span class="clicklink-preview__link-icon" aria-hidden="true">
+        <mat-icon>{{ icon(item.tipo) }}</mat-icon>
+      </span>
       <span class="clicklink-preview__link-text">
         <strong>{{ item.titulo }}</strong>
         <small *ngIf="item.subtitulo">{{ item.subtitulo }}</small>
       </span>
-      <span class="clicklink-preview__link-arrow" aria-hidden="true">Abrir</span>
+      <span class="clicklink-preview__link-arrow" aria-hidden="true">›</span>
     </a>
   </nav>
 
