@@ -106,7 +106,7 @@ específica de slug ficam fora do MVP administrativo atual.
 ## Preview público
 
 O preview do admin deve espelhar o renderer público `/l/{slug}`. O renderer público é a
-referência canônica para estrutura de identidade, fundo de contraste da logo, tipografia,
+referência canônica para estrutura de identidade, degradê de topo atrás da logo, tipografia,
 espaçamentos, botões, ícones por tipo, tema, cor de destaque, cor de fundo e formato
 dos botões. A composição atual omite nome da Empresa quando ele repete o título,
 remove texto auxiliar `Abrir` dos itens porque o card inteiro é clicável, limita

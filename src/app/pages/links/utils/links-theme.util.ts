@@ -10,8 +10,9 @@ export interface LinksThemeTokens {
   surfaceMuted: string;
   surfaceBorder: string;
   iconBackground: string;
-  logoBackground: string;
-  logoBorder: string;
+  logoGradientStart: string;
+  logoGradientMid: string;
+  logoShadow: string;
   shadow: string;
 }
 
@@ -32,8 +33,9 @@ export function buildLinksThemeTokens(model: Pick<LinksPreviewModel, 'tema' | 'c
     surfaceMuted: escuro ? 'rgba(248, 250, 252, 0.68)' : 'rgba(16, 24, 40, 0.62)',
     surfaceBorder: escuro ? 'rgba(248, 250, 252, 0.14)' : 'rgba(16, 24, 40, 0.10)',
     iconBackground: escuro ? 'rgba(255, 255, 255, 0.08)' : 'rgba(13, 110, 253, 0.08)',
-    logoBackground: escuro ? 'rgba(15, 23, 42, 0.72)' : 'rgba(255, 255, 255, 0.88)',
-    logoBorder: escuro ? 'rgba(248, 250, 252, 0.16)' : 'rgba(16, 24, 40, 0.10)',
+    logoGradientStart: escuro ? 'rgba(15, 23, 42, 0.88)' : 'rgba(255, 255, 255, 0.82)',
+    logoGradientMid: escuro ? 'rgba(15, 23, 42, 0.42)' : 'rgba(255, 255, 255, 0.42)',
+    logoShadow: escuro ? '0 14px 28px rgba(0, 0, 0, 0.32)' : '0 14px 26px rgba(15, 23, 42, 0.14)',
     shadow: escuro ? '0 12px 28px rgba(0, 0, 0, 0.28)' : '0 10px 24px rgba(15, 23, 42, 0.10)',
   };
 }

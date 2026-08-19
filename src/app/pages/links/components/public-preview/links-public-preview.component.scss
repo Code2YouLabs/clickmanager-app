@@ -3,7 +3,7 @@
   width: 100%;
   max-width: 430px;
   margin: 0 auto;
-  padding: 28px 16px 40px;
+  padding: 34px 16px 40px;
   background: var(--clicklink-bg);
   color: var(--clicklink-text);
   border-radius: 28px;
@@ -12,22 +12,34 @@
 }
 
 .clicklink-preview__header {
+  position: relative;
+  z-index: 0;
   display: grid;
   justify-items: center;
   text-align: center;
   gap: 7px;
 }
 
+.clicklink-preview__header::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: -34px;
+  left: 50%;
+  width: calc(100% + 32px);
+  height: 190px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, var(--clicklink-logo-gradient-start) 0%, var(--clicklink-logo-gradient-mid) 58%, transparent 100%);
+  pointer-events: none;
+}
+
 .clicklink-preview__logo {
-  width: min(88px, 32vw);
-  max-width: 144px;
-  height: 76px;
+  width: min(128px, 44vw);
+  max-width: 176px;
+  height: 108px;
   object-fit: contain;
-  border-radius: 14px;
-  padding: 8px;
-  background: var(--clicklink-logo-bg);
-  border: 1px solid var(--clicklink-logo-border);
-  box-shadow: var(--clicklink-shadow);
+  border-radius: 0;
+  filter: drop-shadow(var(--clicklink-logo-shadow));
 }
 
 .clicklink-preview__empresa,
