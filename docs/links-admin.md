@@ -4,12 +4,22 @@ Status: MVP administrativo frontend com analytics simples
 
 ## Rotas
 
-- `/page/links`: listagem de páginas ClickLink.
-- `/page/links/nova`: criação rápida da primeira ou nova página.
+- `/page/links`: redireciona para Páginas.
+- `/page/links/paginas`: listagem de páginas ClickLink.
+- `/page/links/nova`: criação de página.
 - `/page/links/:id`: editor administrativo da página e dos itens.
+- `/page/links/analytics`: dashboard simples de analytics.
 
 As rotas usam o mecanismo existente de módulo ativo com `featureKey: 'LINKS'` e o
 `permissionGuard` com as permissões de Links.
+
+O menu lateral usa o padrão expansível do sistema:
+
+```text
+ClickLink
+├── Páginas
+└── Analytics
+```
 
 ## Estrutura
 
@@ -28,16 +38,24 @@ O módulo frontend fica em `src/app/pages/links` com:
 O service de identidade pública da Empresa fica em `src/app/pages/empresa`, porque slug
 e logo continuam pertencendo a Empresa.
 
-## UX mobile-first
+## UX mobile-first e padrão visual
 
-A listagem usa cards como experiência principal. O editor usa fluxo vertical no mobile e
-apenas expande para layout com painel lateral em telas largas. A ordenação de itens não
-depende de drag-and-drop: os botões de mover para cima e para baixo são a operação
-principal e funcionam por toque.
+A listagem segue o padrão administrativo usado em Produtos/Clientes: `CardHeader`,
+card principal, header interno com divisor e tabela Material no desktop. Em mobile, a
+listagem vira cards estruturados para evitar rolagem horizontal. Criar página é uma ação
+da tela de Páginas, não um item de menu.
 
-Em desktop, o editor exibe a área de edição e um preview mobile lateral. Em telas
-pequenas, a ação `Visualizar` abre o mesmo view model em dialog fullscreen. O preview
-usa dados locais do formulário para título, descrição e aparência antes do salvamento.
+O editor usa header padrão com `Voltar`, ações de publicação e `Salvar` em local
+previsível. O conteúdo foi organizado em abas Material:
+
+- `Geral`: título, descrição, logo e endereço público;
+- `Links`: itens exibidos na página pública, ações e ordenação;
+- `Aparência`: tema, cor de destaque, cor de fundo, formato dos botões e preview;
+- `Compartilhar`: URL pública, copiar link, abrir página, QR Code e download.
+
+Em desktop, o preview mobile fica ao lado das configurações na aba Aparência. Em mobile,
+a ação `Visualizar` abre o mesmo view model em dialog fullscreen. A ordenação de itens
+continua por botões subir/descer e funciona por toque.
 
 ## Aparência
 
@@ -60,8 +78,9 @@ canônica e não possui persistência no backend.
 
 ## Analytics
 
-O editor carrega analytics separadamente da edição, sem bloquear salvamento de página ou
-itens. O endpoint consumido é:
+Analytics saiu do editor e possui página dedicada em `/page/links/analytics`. A tela
+permite selecionar a página, alternar entre `7 dias` e `30 dias`, exibir métricas
+principais em cards e mostrar ranking simples por link. O endpoint consumido é:
 
 ```text
 GET /api/links/paginas/{id}/analytics?periodo=7d|30d

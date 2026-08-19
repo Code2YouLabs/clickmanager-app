@@ -29,4 +29,36 @@ describe('LinksPublicPreviewComponent', () => {
     expect(fixture.componentInstance.estilosPagina()['--clicklink-primary']).toBe('#112233');
     expect(fixture.componentInstance.estilosPagina()['--clicklink-radius']).toBe('6px');
   });
+
+  it('diferencia tema claro e escuro sem depender apenas da cor de fundo', () => {
+    fixture.componentRef.setInput('model', {
+      titulo: 'Links',
+      descricao: null,
+      identidade: null,
+      tema: 'CLARO',
+      corPrincipal: '#F8FAFC',
+      corFundo: '#FFFFFF',
+      formatoBotao: 'ARREDONDADO',
+      itens: [],
+    });
+    const claro = fixture.componentInstance.estilosPagina();
+
+    fixture.componentRef.setInput('model', {
+      titulo: 'Links',
+      descricao: null,
+      identidade: null,
+      tema: 'ESCURO',
+      corPrincipal: '#F8FAFC',
+      corFundo: '#FFFFFF',
+      formatoBotao: 'ARREDONDADO',
+      itens: [],
+    });
+    const escuro = fixture.componentInstance.estilosPagina();
+
+    expect(claro['--clicklink-surface']).toBe('#FFFFFF');
+    expect(escuro['--clicklink-surface']).toBe('#111827');
+    expect(claro['--clicklink-surface-text']).not.toBe(escuro['--clicklink-surface-text']);
+    expect(escuro['--clicklink-primary']).toBe('#F8FAFC');
+    expect(escuro['--clicklink-button-text']).toBe('#101828');
+  });
 });

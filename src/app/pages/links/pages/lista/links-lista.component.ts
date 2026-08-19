@@ -23,10 +23,12 @@ import { buildClickLinkPublicUrl } from '../../utils/links-url.util';
 })
 export class LinksListaComponent implements OnInit {
   paginas: PaginaLinksResumo[] = [];
+  paginaMenu: PaginaLinksResumo | null = null;
   identidade: LinksIdentidadePublica | null = null;
   carregando = true;
   executandoId: number | null = null;
   readonly permissoes = LINKS_PERMISSOES;
+  readonly colunasExibidas = ['titulo', 'endereco', 'status', 'principal', 'links', 'acoes'];
 
   constructor(
     private readonly linksService: LinksService,
@@ -56,11 +58,13 @@ export class LinksListaComponent implements OnInit {
     this.router.navigate(['/page/links/nova']);
   }
 
-  editar(pagina: PaginaLinksResumo): void {
+  editar(pagina: PaginaLinksResumo | null): void {
+    if (!pagina) return;
     this.router.navigate(['/page/links', pagina.id]);
   }
 
-  publicar(pagina: PaginaLinksResumo, publicada: boolean): void {
+  publicar(pagina: PaginaLinksResumo | null, publicada: boolean): void {
+    if (!pagina) return;
     if (publicada && !this.identidade?.slug) {
       this.toastr.warning('Defina primeiro um endereço público para publicar sua página.');
       return;
@@ -76,7 +80,8 @@ export class LinksListaComponent implements OnInit {
     });
   }
 
-  arquivar(pagina: PaginaLinksResumo): void {
+  arquivar(pagina: PaginaLinksResumo | null): void {
+    if (!pagina) return;
     this.dialog.open(ConfirmDialogComponent, {
       width: '420px',
       data: {
@@ -99,7 +104,8 @@ export class LinksListaComponent implements OnInit {
     });
   }
 
-  abrir(pagina: PaginaLinksResumo): void {
+  abrir(pagina: PaginaLinksResumo | null): void {
+    if (!pagina) return;
     const url = this.urlPublica(pagina);
     if (!url || !pagina.publicada) {
       this.toastr.info('Publique a página e defina um endereço público antes de abrir.');
@@ -110,6 +116,16 @@ export class LinksListaComponent implements OnInit {
 
   urlPublica(_pagina?: PaginaLinksResumo): string {
     return buildClickLinkPublicUrl(this.identidade?.slug);
+  }
+
+  statusLabel(pagina: PaginaLinksResumo): string {
+    if (!pagina.ativa) return 'Arquivada';
+    return pagina.publicada ? 'Publicada' : 'Não publicada';
+  }
+
+  statusClasse(pagina: PaginaLinksResumo): string {
+    if (!pagina.ativa) return 'links-badge--neutral';
+    return pagina.publicada ? 'links-badge--success' : 'links-badge--warning';
   }
 
   podeCriar(): boolean {

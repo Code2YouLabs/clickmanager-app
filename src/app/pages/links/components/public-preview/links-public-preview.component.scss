@@ -16,6 +16,11 @@
   justify-items: center;
   text-align: center;
   gap: 8px;
+  padding: 18px 14px;
+  border: 1px solid var(--clicklink-border);
+  border-radius: 22px;
+  background: var(--clicklink-surface);
+  color: var(--clicklink-surface-text);
 }
 
 .clicklink-preview__logo {
@@ -23,12 +28,16 @@
   height: 96px;
   object-fit: contain;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.86);
+  background: var(--clicklink-surface);
+  border: 1px solid var(--clicklink-border);
   padding: 10px;
 }
 
 .clicklink-preview__empresa,
-.clicklink-preview__descricao,
+.clicklink-preview__descricao {
+  color: var(--clicklink-surface-muted);
+}
+
 .clicklink-preview__empty {
   color: var(--clicklink-muted);
 }
@@ -67,7 +76,7 @@
   background: var(--clicklink-primary);
   color: var(--clicklink-button-text);
   text-decoration: none;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.14);
+  box-shadow: var(--clicklink-shadow);
 }
 
 .clicklink-preview__link span {

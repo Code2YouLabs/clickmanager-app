@@ -6,7 +6,8 @@ import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import QRCode from 'qrcode';
-import { Subject, debounceTime, distinctUntilChanged, finalize, takeUntil } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+import { CardHeaderComponent } from 'src/app/components/card-header/card-header.component';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
 import { MaterialModule } from 'src/app/material.module';
@@ -20,14 +21,11 @@ import {
   FormatoBotaoLinks,
   LINKS_APARENCIA_PADRAO,
   LINKS_PERMISSOES,
-  LinksAnalyticsRankingItem,
-  LinksAnalyticsResumo,
   LinksIdentidadePublica,
   LinksPreviewModel,
   PaginaLinksDetalhe,
   PaginaLinksItem,
   PaginaLinksItemRequest,
-  PeriodoAnalyticsLinks,
   TIPOS_ITEM_LINKS,
   TemaPaginaLinks,
   TipoItemLinks,
@@ -40,7 +38,7 @@ type SlugStatus = 'nao-verificado' | 'verificando' | 'disponivel' | 'indisponive
 @Component({
   selector: 'app-links-editor',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, MaterialModule, TemPermissaoDirective, LinksPublicPreviewComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, MaterialModule, CardHeaderComponent, TemPermissaoDirective, LinksPublicPreviewComponent],
   templateUrl: './links-editor.component.html',
   styleUrls: ['../../links.scss', './links-editor.component.scss'],
 })
@@ -61,10 +59,6 @@ export class LinksEditorComponent implements OnInit, OnDestroy {
   logoPreview: string | ArrayBuffer | null = null;
   qrDataUrl = '';
   gerandoQr = false;
-  analytics: LinksAnalyticsResumo | null = null;
-  analyticsPeriodo: PeriodoAnalyticsLinks = '30d';
-  analyticsCarregando = false;
-  analyticsErro = false;
 
   readonly isNova = this.route.snapshot.routeConfig?.path === 'nova';
   readonly paginaId = Number(this.route.snapshot.paramMap.get('id'));
@@ -79,6 +73,7 @@ export class LinksEditorComponent implements OnInit, OnDestroy {
     { value: 'SUAVE', label: 'Suave' },
     { value: 'QUADRADO', label: 'Quadrado' },
   ];
+  readonly colunasItens = ['tipo', 'titulo', 'subtitulo', 'status', 'ordem', 'acoes'];
   readonly IMAGEM_PADRAO = './assets/images/logos/LogoPadrao.png';
 
   readonly form = this.fb.group({
@@ -287,6 +282,28 @@ export class LinksEditorComponent implements OnInit, OnDestroy {
     });
   }
 
+  arquivarPagina(): void {
+    if (!this.pagina) return;
+    this.dialog.open(ConfirmDialogComponent, {
+      width: '420px',
+      data: {
+        title: 'Arquivar página',
+        message: `Arquivar "${this.pagina.titulo}"? Ela deixará de aparecer no ClickLink público.`,
+        confirmText: 'Arquivar',
+        confirmColor: 'warn',
+      },
+    }).afterClosed().subscribe((ok) => {
+      if (!ok || !this.pagina) return;
+      this.linksService.arquivarPagina(this.pagina.id).subscribe({
+        next: () => {
+          this.toastr.success('Página arquivada.');
+          this.router.navigate(['/page/links/paginas']);
+        },
+        error: (error) => this.tratarErro(error, 'Não foi possível arquivar a página.'),
+      });
+    });
+  }
+
   salvarSlug(): void {
     const slug = normalizeSlugInput(this.slugControl.value);
     if (!slug) {
@@ -382,43 +399,6 @@ export class LinksEditorComponent implements OnInit, OnDestroy {
     anchor.href = this.qrDataUrl;
     anchor.download = `clicklink-${this.identidade?.slug || 'pagina'}.png`;
     anchor.click();
-  }
-
-  alterarPeriodoAnalytics(periodo: PeriodoAnalyticsLinks): void {
-    if (this.analyticsPeriodo === periodo) return;
-    this.analyticsPeriodo = periodo;
-    this.carregarAnalytics();
-  }
-
-  carregarAnalytics(): void {
-    if (!this.pagina) return;
-    this.analyticsCarregando = true;
-    this.analyticsErro = false;
-    this.linksService.buscarAnalytics(this.pagina.id, this.analyticsPeriodo)
-      .pipe(finalize(() => this.analyticsCarregando = false))
-      .subscribe({
-        next: (analytics) => this.analytics = analytics,
-        error: () => {
-          this.analytics = null;
-          this.analyticsErro = true;
-        },
-      });
-  }
-
-  rankingAnalytics(): LinksAnalyticsRankingItem[] {
-    return this.analytics?.ranking || [];
-  }
-
-  itemRankingRemovido(item: LinksAnalyticsRankingItem): boolean {
-    return !(this.pagina?.itens || []).some((paginaItem) => paginaItem.id === item.itemId);
-  }
-
-  percentualFormatado(valor: number | null | undefined): string {
-    return `${Number(valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
-  }
-
-  numeroFormatado(valor: number | null | undefined): string {
-    return Number(valor || 0).toLocaleString('pt-BR');
   }
 
   itensOrdenados(): PaginaLinksItem[] {
@@ -549,7 +529,6 @@ export class LinksEditorComponent implements OnInit, OnDestroy {
       next: (pagina) => {
         this.carregando = false;
         this.atualizarPagina(pagina);
-        this.carregarAnalytics();
       },
       error: (error) => this.tratarErro(error, 'Não foi possível carregar a página.'),
     });

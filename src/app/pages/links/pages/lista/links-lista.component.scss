@@ -1,74 +1,80 @@
-.links-list-grid {
-  display: grid;
-  gap: 14px;
+.links-table td {
+  vertical-align: middle;
 }
 
-.links-card {
+.links-table a,
+.links-mobile-card span {
+  overflow-wrap: anywhere;
+}
+
+.links-table__title {
   display: grid;
-  gap: 14px;
-  padding: 16px;
+  gap: 2px;
+  min-width: 0;
+}
+
+.links-table__title strong {
+  color: #101828;
+  overflow-wrap: anywhere;
+}
+
+.links-table__title span,
+.links-muted {
+  color: #667085;
+}
+
+.links-mobile-list {
+  display: none;
+}
+
+.links-mobile-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
   border: 1px solid #e6e9ef;
   border-radius: 8px;
   background: #fff;
 }
 
-.links-card__head,
-.links-card__footer {
+.links-mobile-card__head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
 
-.links-card__head h2 {
-  margin: 0 0 6px;
-  font-size: 18px;
-  line-height: 1.25;
+.links-mobile-card__head > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.links-mobile-card__head strong {
+  color: #101828;
+  font-size: 16px;
   overflow-wrap: anywhere;
 }
 
-.links-card__url {
-  color: #2563eb;
-  font-size: 13px;
-  overflow-wrap: anywhere;
-}
-
-.links-card__url--empty,
-.links-card__desc,
-.links-card__footer {
+.links-mobile-card__head span,
+.links-mobile-card__meta {
   color: #667085;
+  font-size: 13px;
 }
 
-.links-card__desc {
-  margin: 0;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-}
-
-.links-card__badges {
+.links-mobile-card__meta {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
-@media (min-width: 900px) {
-  .links-list-grid {
-    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-  }
-}
-
-@media (max-width: 640px) {
-  .links-card__head,
-  .links-card__footer {
-    align-items: stretch;
+@media (max-width: 760px) {
+  .links-table {
+    display: none;
   }
 
-  .links-card__footer {
-    flex-direction: column;
-  }
-
-  .links-card__footer button {
-    min-height: 44px;
-    width: 100%;
+  .links-mobile-list {
+    display: grid;
+    gap: 12px;
   }
 }

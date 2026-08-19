@@ -1,15 +1,21 @@
 <div class="links-page">
   <app-card-header
-    titulo="ClickLink"
-    subtitulo="Reúna suas redes, contatos e canais em um único endereço."
-    botaoTexto="Criar página"
-    botaoIcone="add"
-    [botaoRota]="['/page/links/nova']"
-    [permissao]="permissoes.criar"
+    titulo="Páginas ClickLink"
+    subtitulo="ClickLink • Páginas"
     [mostrarDivisor]="true"
   ></app-card-header>
 
   <mat-card class="cardWithShadow links-panel">
+    <app-card-header
+      titulo="Páginas ClickLink"
+      subtitulo="Gerencie suas páginas públicas"
+      botaoTexto="Nova página"
+      botaoIcone="add"
+      [botaoRota]="['/page/links/nova']"
+      [permissao]="permissoes.criar"
+      [mostrarDivisor]="true">
+    </app-card-header>
+
     <mat-card-content>
       <div class="links-state" *ngIf="carregando">
         <mat-spinner diameter="34"></mat-spinner>
@@ -26,63 +32,115 @@
         </button>
       </div>
 
-      <div class="links-list-grid" *ngIf="!carregando && paginas.length">
-        <article class="links-card" *ngFor="let pagina of paginas">
-          <div class="links-card__head">
-            <div>
-              <h2>{{ pagina.titulo }}</h2>
-              <a class="links-card__url" *ngIf="urlPublica(pagina); else semSlug" [href]="urlPublica(pagina)" target="_blank" rel="noopener noreferrer">
-                {{ urlPublica(pagina) }}
-              </a>
-              <ng-template #semSlug>
-                <span class="links-card__url links-card__url--empty">Endereço público não definido</span>
-              </ng-template>
+      <div *ngIf="!carregando && paginas.length">
+        <div class="table-responsive links-table">
+          <table mat-table [dataSource]="paginas" class="mat-elevation-z1 no-wrap v-middle w-100">
+            <ng-container matColumnDef="titulo">
+              <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Título</th>
+              <td mat-cell *matCellDef="let pagina" class="f-s-14">
+                <div class="links-table__title">
+                  <strong>{{ pagina.titulo }}</strong>
+                  <span *ngIf="pagina.descricao">{{ pagina.descricao }}</span>
+                </div>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="endereco">
+              <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Endereço</th>
+              <td mat-cell *matCellDef="let pagina" class="f-s-14">
+                <a *ngIf="urlPublica(pagina); else semSlugTabela" [href]="urlPublica(pagina)" target="_blank" rel="noopener noreferrer">
+                  {{ urlPublica(pagina) }}
+                </a>
+                <ng-template #semSlugTabela>
+                  <span class="links-muted">Não definido</span>
+                </ng-template>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Status</th>
+              <td mat-cell *matCellDef="let pagina">
+                <span class="links-badge" [ngClass]="statusClasse(pagina)">{{ statusLabel(pagina) }}</span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="principal">
+              <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Principal</th>
+              <td mat-cell *matCellDef="let pagina">
+                <span class="links-badge links-badge--info" *ngIf="pagina.principal; else naoPrincipal">Principal</span>
+                <ng-template #naoPrincipal>
+                  <span class="links-muted">-</span>
+                </ng-template>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="links">
+              <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Links</th>
+              <td mat-cell *matCellDef="let pagina" class="f-s-14">{{ pagina.quantidadeItens }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="acoes">
+              <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Ações</th>
+              <td mat-cell *matCellDef="let pagina" class="action-link">
+                <button mat-icon-button type="button" (click)="abrir(pagina)" [disabled]="!pagina.publicada || !identidade?.slug" aria-label="Abrir página">
+                  <mat-icon>open_in_new</mat-icon>
+                </button>
+                <button mat-icon-button type="button" (click)="editar(pagina)" aria-label="Editar página" *temPermissao="permissoes.editar">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button type="button" [matMenuTriggerFor]="acoesPagina" aria-label="Mais ações" (click)="paginaMenu = pagina">
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="colunasExibidas"></tr>
+            <tr mat-row *matRowDef="let row; columns: colunasExibidas"></tr>
+          </table>
+        </div>
+
+        <div class="links-mobile-list">
+          <article class="links-mobile-card" *ngFor="let pagina of paginas">
+            <div class="links-mobile-card__head">
+              <div>
+                <strong>{{ pagina.titulo }}</strong>
+                <span>{{ urlPublica(pagina) || 'Endereço público não definido' }}</span>
+              </div>
+              <button mat-icon-button type="button" [matMenuTriggerFor]="acoesPagina" aria-label="Ações da página" (click)="paginaMenu = pagina">
+                <mat-icon>more_vert</mat-icon>
+              </button>
             </div>
-            <button mat-icon-button [matMenuTriggerFor]="acoes" aria-label="Ações da página">
-              <mat-icon>more_vert</mat-icon>
-            </button>
-            <mat-menu #acoes="matMenu">
-              <button mat-menu-item type="button" (click)="editar(pagina)" *temPermissao="permissoes.editar">
-                <mat-icon>edit</mat-icon>
-                <span>Editar</span>
-              </button>
-              <button mat-menu-item type="button" (click)="abrir(pagina)" [disabled]="!pagina.publicada || !identidade?.slug">
-                <mat-icon>open_in_new</mat-icon>
-                <span>Abrir</span>
-              </button>
-              <button mat-menu-item type="button" (click)="publicar(pagina, true)" [disabled]="executandoId === pagina.id || pagina.publicada || !identidade?.slug" *temPermissao="permissoes.publicar">
-                <mat-icon>publish</mat-icon>
-                <span>Publicar</span>
-              </button>
-              <button mat-menu-item type="button" (click)="publicar(pagina, false)" [disabled]="executandoId === pagina.id || !pagina.publicada" *temPermissao="permissoes.publicar">
-                <mat-icon>visibility_off</mat-icon>
-                <span>Despublicar</span>
-              </button>
-              <button mat-menu-item type="button" (click)="arquivar(pagina)" [disabled]="executandoId === pagina.id" *temPermissao="permissoes.excluir">
-                <mat-icon>archive</mat-icon>
-                <span>Arquivar</span>
-              </button>
-            </mat-menu>
-          </div>
-
-          <p class="links-card__desc" *ngIf="pagina.descricao">{{ pagina.descricao }}</p>
-
-          <div class="links-card__badges">
-            <span class="links-badge" [class.links-badge--success]="pagina.publicada" [class.links-badge--neutral]="!pagina.publicada">
-              {{ pagina.publicada ? 'Publicada' : 'Não publicada' }}
-            </span>
-            <span class="links-badge links-badge--info" *ngIf="pagina.principal">Principal</span>
-            <span class="links-badge links-badge--neutral" *ngIf="!pagina.ativa">Arquivada</span>
-          </div>
-
-          <div class="links-card__footer">
-            <span>{{ pagina.quantidadeItens }} {{ pagina.quantidadeItens === 1 ? 'link' : 'links' }}</span>
-            <button mat-stroked-button type="button" (click)="editar(pagina)" *temPermissao="permissoes.editar">
-              Editar
-            </button>
-          </div>
-        </article>
+            <div class="links-mobile-card__meta">
+              <span class="links-badge" [ngClass]="statusClasse(pagina)">{{ statusLabel(pagina) }}</span>
+              <span class="links-badge links-badge--info" *ngIf="pagina.principal">Principal</span>
+              <span>{{ pagina.quantidadeItens }} {{ pagina.quantidadeItens === 1 ? 'link' : 'links' }}</span>
+            </div>
+          </article>
+        </div>
       </div>
     </mat-card-content>
   </mat-card>
+
+  <mat-menu #acoesPagina="matMenu">
+    <button mat-menu-item type="button" (click)="abrir(paginaMenu)" [disabled]="!paginaMenu || !paginaMenu.publicada || !identidade?.slug">
+      <mat-icon>open_in_new</mat-icon>
+      <span>Abrir</span>
+    </button>
+    <button mat-menu-item type="button" (click)="editar(paginaMenu)" [disabled]="!paginaMenu" *temPermissao="permissoes.editar">
+      <mat-icon>edit</mat-icon>
+      <span>Editar</span>
+    </button>
+    <button mat-menu-item type="button" (click)="publicar(paginaMenu, true)" [disabled]="!paginaMenu || executandoId === paginaMenu.id || paginaMenu.publicada || !identidade?.slug" *temPermissao="permissoes.publicar">
+      <mat-icon>publish</mat-icon>
+      <span>Publicar</span>
+    </button>
+    <button mat-menu-item type="button" (click)="publicar(paginaMenu, false)" [disabled]="!paginaMenu || executandoId === paginaMenu.id || !paginaMenu.publicada" *temPermissao="permissoes.publicar">
+      <mat-icon>visibility_off</mat-icon>
+      <span>Despublicar</span>
+    </button>
+    <button mat-menu-item type="button" (click)="arquivar(paginaMenu)" [disabled]="!paginaMenu || executandoId === paginaMenu.id" *temPermissao="permissoes.excluir">
+      <mat-icon>archive</mat-icon>
+      <span>Arquivar</span>
+    </button>
+  </mat-menu>
 </div>
