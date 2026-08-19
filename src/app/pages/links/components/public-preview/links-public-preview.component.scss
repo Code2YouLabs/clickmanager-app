@@ -162,6 +162,34 @@
   text-align: center;
 }
 
+.clicklink-preview__brand {
+  display: flex;
+  justify-content: center;
+  margin-top: 26px;
+  color: var(--clicklink-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.clicklink-preview__brand a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  color: inherit;
+  text-decoration: none;
+  opacity: 0.78;
+  transition: opacity 140ms ease, background 140ms ease;
+}
+
+.clicklink-preview__brand a:hover,
+.clicklink-preview__brand a:focus-visible {
+  background: color-mix(in srgb, var(--clicklink-surface) 42%, transparent);
+  opacity: 1;
+}
+
 @media (max-width: 360px) {
   .clicklink-preview {
     min-height: 100%;

@@ -110,8 +110,9 @@ referência canônica para estrutura de identidade, degradê de topo atrás da l
 espaçamentos, botões, ícones por tipo, tema, cor de destaque, cor de fundo e formato
 dos botões. A composição atual omite nome da Empresa quando ele repete o título,
 remove texto auxiliar `Abrir` dos itens porque o card inteiro é clicável, limita
-subtítulos longos e usa a cor de destaque como acento visual. A diferença aceitável é
-apenas o container externo do preview dentro do admin.
+subtítulos longos, usa a cor de destaque como acento visual e exibe uma assinatura
+discreta `Produto ClickManager` no fim. A diferença aceitável é apenas o container
+externo do preview dentro do admin.
 
 ## Analytics
 

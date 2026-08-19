@@ -29,6 +29,7 @@ describe('LinksPublicPreviewComponent', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Abrir');
     expect(fixture.nativeElement.textContent).not.toContain('Inativo');
     expect(fixture.nativeElement.querySelector('.clicklink-preview__link-icon mat-icon')?.textContent.trim()).toBe('chat');
+    expect(fixture.nativeElement.querySelector('.clicklink-preview__brand a')?.getAttribute('href')).toBe('https://clickmanager.com.br');
     expect(fixture.componentInstance.estilosPagina()['--clicklink-primary']).toBe('#112233');
     expect(fixture.componentInstance.estilosPagina()['--clicklink-radius']).toBe('8px');
     expect(fixture.componentInstance.estilosPagina()['--clicklink-surface']).toBe('rgba(255, 255, 255, 0.94)');
