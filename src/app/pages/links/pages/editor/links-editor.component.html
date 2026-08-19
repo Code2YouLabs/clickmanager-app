@@ -1,0 +1,202 @@
+<div class="links-page">
+  <div class="links-editor-top">
+    <a mat-button routerLink="/page/links">
+      <mat-icon>arrow_back</mat-icon>
+      ClickLink
+    </a>
+    <div class="links-editor-top__actions" *ngIf="pagina">
+      <button mat-stroked-button type="button" (click)="alterarPublicacao(false)" [disabled]="publicando || !pagina.publicada" *temPermissao="permissoes.publicar">
+        Despublicar
+      </button>
+      <button mat-flat-button color="primary" type="button" (click)="alterarPublicacao(true)" [disabled]="publicando || pagina.publicada || !identidade?.slug" *temPermissao="permissoes.publicar">
+        <mat-icon>publish</mat-icon>
+        Publicar
+      </button>
+    </div>
+  </div>
+
+  <mat-card class="cardWithShadow links-panel">
+    <mat-card-content>
+      <div class="links-state" *ngIf="carregando">
+        <mat-spinner diameter="34"></mat-spinner>
+        <span>Carregando ClickLink...</span>
+      </div>
+
+      <div class="links-editor" *ngIf="!carregando">
+        <section class="links-section links-editor__hero">
+          <div>
+            <h1>{{ isNova ? 'Nova página ClickLink' : (pagina?.titulo || 'ClickLink') }}</h1>
+            <p *ngIf="pagina?.principal">Esta é a página principal servida em /l/{{ identidade?.slug || 'seu-endereco' }}.</p>
+            <p *ngIf="!pagina?.principal && pagina">Página adicional do ClickLink.</p>
+          </div>
+          <div class="links-card__badges" *ngIf="pagina">
+            <span class="links-badge" [class.links-badge--success]="pagina.publicada" [class.links-badge--neutral]="!pagina.publicada">
+              {{ pagina.publicada ? 'Publicada' : 'Não publicada' }}
+            </span>
+            <span class="links-badge links-badge--info" *ngIf="pagina.principal">Principal</span>
+            <span class="links-badge links-badge--neutral" *ngIf="!pagina.ativa">Arquivada</span>
+          </div>
+        </section>
+
+        <div class="links-editor__grid">
+          <div class="links-editor__main">
+            <section class="links-section">
+              <div class="links-section__header">
+                <div>
+                  <h2>Página</h2>
+                  <p>Título e descrição exibidos no ClickLink público.</p>
+                </div>
+              </div>
+
+              <form [formGroup]="form" class="links-editor-form" (ngSubmit)="salvarOuCriar()">
+                <mat-form-field appearance="outline">
+                  <mat-label>Título</mat-label>
+                  <input matInput formControlName="titulo" maxlength="120" />
+                  <mat-hint align="end">{{ tituloControl.value?.length || 0 }}/120</mat-hint>
+                  <mat-error *ngIf="tituloControl.hasError('required')">Informe o título.</mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Descrição</mat-label>
+                  <textarea matInput rows="4" formControlName="descricao" maxlength="500"></textarea>
+                  <mat-hint align="end">{{ descricaoControl.value?.length || 0 }}/500</mat-hint>
+                </mat-form-field>
+
+                <button mat-flat-button color="primary" type="submit" [disabled]="salvandoPagina" *temPermissao="[permissoes.criar, permissoes.editar]">
+                  <mat-icon>{{ isNova ? 'add' : 'save' }}</mat-icon>
+                  {{ isNova ? 'Criar página' : 'Salvar página' }}
+                </button>
+              </form>
+            </section>
+
+            <section class="links-section" *ngIf="pagina">
+              <div class="links-section__header">
+                <div>
+                  <h2>Links</h2>
+                  <p>Itens publicados aparecem na ordem abaixo.</p>
+                </div>
+                <button mat-flat-button color="primary" type="button" (click)="abrirItem()" [disabled]="salvandoItem" *temPermissao="permissoes.editar">
+                  <mat-icon>add</mat-icon>
+                  Adicionar link
+                </button>
+              </div>
+
+              <div class="links-state links-state--compact" *ngIf="salvandoItem">
+                <mat-spinner diameter="28"></mat-spinner>
+                <span>Atualizando links...</span>
+              </div>
+
+              <div class="links-empty links-empty--compact" *ngIf="!salvandoItem && !itensOrdenados().length">
+                <mat-icon>add_link</mat-icon>
+                <h2>Adicione o primeiro link</h2>
+                <p>Comece por WhatsApp, Instagram, telefone ou outro canal.</p>
+                <button mat-flat-button color="primary" type="button" (click)="abrirItem()" *temPermissao="permissoes.editar">
+                  <mat-icon>add</mat-icon>
+                  Adicionar link
+                </button>
+              </div>
+
+              <div class="links-items" *ngIf="!salvandoItem && itensOrdenados().length">
+                <article class="links-item" *ngFor="let item of itensOrdenados(); let i = index" [class.links-item--inactive]="!item.ativo">
+                  <div class="links-item__icon">
+                    <mat-icon>{{ tipoIcon(item.tipo) }}</mat-icon>
+                  </div>
+                  <button class="links-item__body" type="button" (click)="abrirItem(item)" *temPermissao="permissoes.editar">
+                    <strong>{{ item.titulo }}</strong>
+                    <span>{{ tipoLabel(item.tipo) }} · {{ item.ativo ? 'Ativo' : 'Inativo' }}</span>
+                  </button>
+                  <div class="links-item__readonly" *ngIf="!authService.temPermissao(permissoes.editar)">
+                    <strong>{{ item.titulo }}</strong>
+                    <span>{{ tipoLabel(item.tipo) }} · {{ item.ativo ? 'Ativo' : 'Inativo' }}</span>
+                  </div>
+                  <div class="links-item__actions">
+                    <button mat-icon-button type="button" (click)="moverItem(item, -1)" [disabled]="i === 0" aria-label="Mover link para cima" *temPermissao="permissoes.editar">
+                      <mat-icon>arrow_upward</mat-icon>
+                    </button>
+                    <button mat-icon-button type="button" (click)="moverItem(item, 1)" [disabled]="i === itensOrdenados().length - 1" aria-label="Mover link para baixo" *temPermissao="permissoes.editar">
+                      <mat-icon>arrow_downward</mat-icon>
+                    </button>
+                    <button mat-icon-button type="button" (click)="alterarStatusItem(item)" [attr.aria-label]="item.ativo ? 'Desativar link' : 'Ativar link'" *temPermissao="permissoes.editar">
+                      <mat-icon>{{ item.ativo ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+                    </button>
+                    <button mat-icon-button color="warn" type="button" (click)="removerItem(item)" aria-label="Remover link" *temPermissao="permissoes.editar">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </article>
+              </div>
+            </section>
+          </div>
+
+          <aside class="links-editor__side">
+            <section class="links-section">
+              <div class="links-section__header">
+                <div>
+                  <h2>Identidade</h2>
+                  <p>Dados públicos compartilhados com a Empresa.</p>
+                </div>
+              </div>
+
+              <div class="links-logo">
+                <div class="links-logo__frame">
+                  <img [src]="logoPreview || IMAGEM_PADRAO" alt="Logo da empresa" />
+                </div>
+                <div>
+                  <strong>Logo da empresa</strong>
+                  <p *ngIf="identidade?.logoUrl">Esta logo será usada no ClickLink público.</p>
+                  <p *ngIf="!identidade?.logoUrl">Sua empresa ainda não possui logo.</p>
+                </div>
+                <div class="links-logo__actions" *ngIf="podeEditarEmpresa(); else logoSemPermissao">
+                  <input #logoInput type="file" accept="image/png,image/jpeg,image/gif" hidden (change)="onLogoSelected($event)" />
+                  <button mat-stroked-button type="button" (click)="logoInput.click()" [disabled]="salvandoLogo">
+                    {{ identidade?.logoUrl ? 'Alterar' : 'Adicionar logo' }}
+                  </button>
+                  <button mat-button color="warn" type="button" (click)="removerLogo()" [disabled]="salvandoLogo || !identidade?.logoUrl">
+                    Remover
+                  </button>
+                </div>
+                <ng-template #logoSemPermissao>
+                  <p class="links-muted">A alteração da logo usa a permissão Dados da empresa.</p>
+                </ng-template>
+                <span class="links-logo__hint">Dimensões ideais: <strong>340x216px</strong>. Formatos permitidos: JPG, GIF ou PNG.</span>
+              </div>
+            </section>
+
+            <section class="links-section">
+              <div class="links-section__header">
+                <div>
+                  <h2>Endereço público</h2>
+                  <p *ngIf="identidade?.slug">{{ urlPublica() }}</p>
+                  <p *ngIf="!identidade?.slug">Escolha o endereço antes de publicar.</p>
+                </div>
+              </div>
+
+              <div class="links-slug">
+                <div class="links-slug__input">
+                  <span>/l/</span>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Endereço</mat-label>
+                    <input matInput [formControl]="slugControl" autocomplete="off" />
+                  </mat-form-field>
+                </div>
+                <div class="links-slug__status" [ngSwitch]="slugStatus">
+                  <span *ngSwitchCase="'nao-verificado'">Informe um endereço para verificar.</span>
+                  <span *ngSwitchCase="'verificando'">Verificando disponibilidade...</span>
+                  <span class="links-slug__ok" *ngSwitchCase="'disponivel'">Disponível</span>
+                  <span class="links-slug__warn" *ngSwitchCase="'indisponivel'">Indisponível</span>
+                  <span class="links-slug__warn" *ngSwitchCase="'invalido'">Endereço inválido.</span>
+                  <span class="links-slug__warn" *ngSwitchCase="'erro'">Erro ao verificar.</span>
+                </div>
+                <button mat-flat-button color="primary" type="button" (click)="salvarSlug()" [disabled]="salvandoSlug || slugStatus === 'verificando' || !podeEditarEmpresa()">
+                  Salvar endereço
+                </button>
+                <p class="links-muted" *ngIf="!podeEditarEmpresa()">A alteração do endereço usa a permissão Dados da empresa.</p>
+                <p class="links-muted" *ngIf="pagina && !identidade?.slug">Para publicar sua página, defina primeiro um endereço público.</p>
+              </div>
+            </section>
+          </aside>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

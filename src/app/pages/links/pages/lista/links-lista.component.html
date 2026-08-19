@@ -1,0 +1,88 @@
+<div class="links-page">
+  <app-card-header
+    titulo="ClickLink"
+    subtitulo="Reúna suas redes, contatos e canais em um único endereço."
+    botaoTexto="Criar página"
+    botaoIcone="add"
+    [botaoRota]="['/page/links/nova']"
+    [permissao]="permissoes.criar"
+    [mostrarDivisor]="true"
+  ></app-card-header>
+
+  <mat-card class="cardWithShadow links-panel">
+    <mat-card-content>
+      <div class="links-state" *ngIf="carregando">
+        <mat-spinner diameter="34"></mat-spinner>
+        <span>Carregando páginas...</span>
+      </div>
+
+      <div class="links-empty" *ngIf="!carregando && paginas.length === 0">
+        <mat-icon>link</mat-icon>
+        <h2>Crie sua página de links</h2>
+        <p>Reúna suas redes, contatos e canais em um único endereço.</p>
+        <button mat-flat-button color="primary" type="button" (click)="criar()" *temPermissao="permissoes.criar">
+          <mat-icon>add</mat-icon>
+          Criar minha página
+        </button>
+      </div>
+
+      <div class="links-list-grid" *ngIf="!carregando && paginas.length">
+        <article class="links-card" *ngFor="let pagina of paginas">
+          <div class="links-card__head">
+            <div>
+              <h2>{{ pagina.titulo }}</h2>
+              <a class="links-card__url" *ngIf="urlPublica(pagina); else semSlug" [href]="urlPublica(pagina)" target="_blank" rel="noopener noreferrer">
+                {{ urlPublica(pagina) }}
+              </a>
+              <ng-template #semSlug>
+                <span class="links-card__url links-card__url--empty">Endereço público não definido</span>
+              </ng-template>
+            </div>
+            <button mat-icon-button [matMenuTriggerFor]="acoes" aria-label="Ações da página">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #acoes="matMenu">
+              <button mat-menu-item type="button" (click)="editar(pagina)" *temPermissao="permissoes.editar">
+                <mat-icon>edit</mat-icon>
+                <span>Editar</span>
+              </button>
+              <button mat-menu-item type="button" (click)="abrir(pagina)" [disabled]="!pagina.publicada || !identidade?.slug">
+                <mat-icon>open_in_new</mat-icon>
+                <span>Abrir</span>
+              </button>
+              <button mat-menu-item type="button" (click)="publicar(pagina, true)" [disabled]="executandoId === pagina.id || pagina.publicada || !identidade?.slug" *temPermissao="permissoes.publicar">
+                <mat-icon>publish</mat-icon>
+                <span>Publicar</span>
+              </button>
+              <button mat-menu-item type="button" (click)="publicar(pagina, false)" [disabled]="executandoId === pagina.id || !pagina.publicada" *temPermissao="permissoes.publicar">
+                <mat-icon>visibility_off</mat-icon>
+                <span>Despublicar</span>
+              </button>
+              <button mat-menu-item type="button" (click)="arquivar(pagina)" [disabled]="executandoId === pagina.id" *temPermissao="permissoes.excluir">
+                <mat-icon>archive</mat-icon>
+                <span>Arquivar</span>
+              </button>
+            </mat-menu>
+          </div>
+
+          <p class="links-card__desc" *ngIf="pagina.descricao">{{ pagina.descricao }}</p>
+
+          <div class="links-card__badges">
+            <span class="links-badge" [class.links-badge--success]="pagina.publicada" [class.links-badge--neutral]="!pagina.publicada">
+              {{ pagina.publicada ? 'Publicada' : 'Não publicada' }}
+            </span>
+            <span class="links-badge links-badge--info" *ngIf="pagina.principal">Principal</span>
+            <span class="links-badge links-badge--neutral" *ngIf="!pagina.ativa">Arquivada</span>
+          </div>
+
+          <div class="links-card__footer">
+            <span>{{ pagina.quantidadeItens }} {{ pagina.quantidadeItens === 1 ? 'link' : 'links' }}</span>
+            <button mat-stroked-button type="button" (click)="editar(pagina)" *temPermissao="permissoes.editar">
+              Editar
+            </button>
+          </div>
+        </article>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

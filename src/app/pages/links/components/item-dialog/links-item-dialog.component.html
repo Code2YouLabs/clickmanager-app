@@ -1,0 +1,89 @@
+<div class="links-item-dialog">
+  <div class="links-item-dialog__header">
+    <div>
+      <h2>{{ data.item ? 'Editar link' : 'Adicionar link' }}</h2>
+      <p>Escolha o tipo e informe o destino final.</p>
+    </div>
+    <button mat-icon-button type="button" (click)="fechar()" aria-label="Fechar">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="salvar()" class="links-item-dialog__form">
+    <mat-form-field appearance="outline">
+      <mat-label>Tipo</mat-label>
+      <mat-select formControlName="tipo">
+        <mat-option *ngFor="let tipo of tipos" [value]="tipo.tipo">
+          <mat-icon>{{ tipo.icon }}</mat-icon>
+          {{ tipo.label }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Título</mat-label>
+      <input matInput formControlName="titulo" maxlength="120" />
+      <mat-hint align="end">{{ tituloControl.value?.length || 0 }}/120</mat-hint>
+      <mat-error *ngIf="tituloControl.hasError('required')">Informe o título.</mat-error>
+    </mat-form-field>
+
+    <ng-container [ngSwitch]="tipoControl.value">
+      <ng-container *ngSwitchCase="'WHATSAPP'">
+        <mat-form-field appearance="outline">
+          <mat-label>Número</mat-label>
+          <input matInput type="tel" inputmode="tel" formControlName="numero" placeholder="+55 31 99999-9999" />
+          <mat-error>Informe um número válido.</mat-error>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Mensagem inicial</mat-label>
+          <textarea matInput rows="3" formControlName="mensagem" placeholder="Olá, vim pelo ClickLink."></textarea>
+        </mat-form-field>
+        <p class="links-item-dialog__hint" *ngIf="destinoPreservado">
+          A URL atual não pôde ser interpretada com segurança. Salve sem número para preservar o destino existente.
+        </p>
+      </ng-container>
+
+      <ng-container *ngSwitchCase="'EMAIL'">
+        <mat-form-field appearance="outline">
+          <mat-label>E-mail</mat-label>
+          <input matInput type="email" inputmode="email" formControlName="email" placeholder="contato@suaempresa.com" />
+          <mat-error>Informe um e-mail válido.</mat-error>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Assunto opcional</mat-label>
+          <input matInput formControlName="assunto" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Mensagem opcional</mat-label>
+          <textarea matInput rows="3" formControlName="mensagem"></textarea>
+        </mat-form-field>
+      </ng-container>
+
+      <ng-container *ngSwitchCase="'TELEFONE'">
+        <mat-form-field appearance="outline">
+          <mat-label>Número</mat-label>
+          <input matInput type="tel" inputmode="tel" formControlName="numero" placeholder="+55 31 99999-9999" />
+        </mat-form-field>
+      </ng-container>
+
+      <ng-container *ngSwitchDefault>
+        <mat-form-field appearance="outline">
+          <mat-label>{{ tipoControl.value === 'LOCALIZACAO' ? 'Link do Google Maps' : tipoControl.value === 'GOOGLE_AVALIACOES' ? 'Link de avaliação do Google' : 'URL' }}</mat-label>
+          <input matInput type="url" inputmode="url" formControlName="url" placeholder="https://..." />
+          <mat-error *ngIf="urlControl.hasError('protocolo')">Use http, https, mailto ou tel.</mat-error>
+        </mat-form-field>
+      </ng-container>
+    </ng-container>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Subtítulo opcional</mat-label>
+      <input matInput formControlName="subtitulo" maxlength="180" />
+      <mat-hint align="end">{{ subtituloControl.value?.length || 0 }}/180</mat-hint>
+    </mat-form-field>
+
+    <div class="links-item-dialog__actions">
+      <button mat-stroked-button type="button" (click)="fechar()">Cancelar</button>
+      <button mat-flat-button color="primary" type="submit">Salvar link</button>
+    </div>
+  </form>
+</div>
