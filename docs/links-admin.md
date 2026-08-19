@@ -92,3 +92,13 @@ Empresa:
 
 Usuários sem `DADOS_EMPRESA` podem visualizar identidade retornada pelo detalhe de Links,
 mas não recebem ações de alteração de slug/logo.
+
+## Limites do MVP
+
+O admin não implementa page builder, HTML customizado, CSS livre, UTMs, visitantes
+únicos, exportação de analytics, domínio customizado de ClickLink ou múltiplas páginas
+públicas por sub-slug. O QR Code é apenas uma representação local da URL pública
+canônica e não cria entidade no backend.
+
+Validações de URL e tenant no frontend existem para ergonomia, mas a autoridade final é
+sempre o backend.
