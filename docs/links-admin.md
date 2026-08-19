@@ -44,8 +44,9 @@ Empresa, mas não administra diretamente essa identidade.
 A listagem segue o padrão administrativo usado em Produtos/Clientes: card principal,
 header interno com divisor e tabela Material no desktop. Em mobile, a listagem vira
 cards estruturados para evitar rolagem horizontal. Criar página é uma ação da tela de
-Páginas, não um item de menu. As ações frequentes ficam diretas (`Abrir`,
-`Compartilhar`, `Editar`) e ações de estado ficam no menu `⋮`.
+Páginas, não um item de menu. As ações frequentes ficam diretas como `Editar` e
+`Compartilhar`; `Abrir` e ações de estado ficam no menu `⋮`. Ícones de ação usam
+tooltip para manter legenda acessível sem poluir a tabela.
 
 O editor usa header padrão com `Voltar` e preview mobile. `Salvar` e `Cancelar` ficam no
 footer do formulário, seguindo o padrão visual dos cadastros. `Cancelar` restaura apenas
@@ -69,9 +70,11 @@ a ação `Visualizar` abre o mesmo view model em dialog fullscreen. A ordenaçã
 continua por botões subir/descer e funciona por toque.
 
 A aba `Links` pode sugerir itens a partir dos dados administrativos já cadastrados na
-Empresa, como telefone, e-mail, site, Instagram, Facebook, YouTube e endereço. Essas
-sugestões apenas criam itens normais do ClickLink quando acionadas; não alteram os dados
-da Empresa e não criam contrato novo no backend.
+Empresa, como telefone, e-mail, site, Instagram, Facebook, YouTube e endereço. Handles
+de Instagram (`@empresa`) e sites sem protocolo (`www.exemplo.com`) são normalizados para
+URLs clicáveis. Endereços geram opções separadas para Google Maps e Waze. Essas sugestões
+apenas criam itens normais do ClickLink quando acionadas; não alteram os dados da Empresa
+e não criam contrato novo no backend.
 
 ## Aparência
 

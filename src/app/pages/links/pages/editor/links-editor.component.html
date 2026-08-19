@@ -29,7 +29,7 @@
         </div>
 
         <form [formGroup]="form" class="links-editor-form" (ngSubmit)="salvarOuCriar()">
-          <mat-tab-group mat-stretch-tabs="false" animationDuration="0ms" dynamicHeight>
+          <mat-tab-group mat-stretch-tabs="false" animationDuration="0ms" dynamicHeight [(selectedIndex)]="abaSelecionada">
             <mat-tab label="Geral">
               <div class="links-tab-body links-tab-body--geral">
                 <section class="links-section">
@@ -244,13 +244,13 @@
                       <ng-container matColumnDef="acoes">
                         <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Ações</th>
                         <td mat-cell *matCellDef="let item" class="action-link">
-                          <button mat-icon-button type="button" (click)="abrirItem(item)" aria-label="Editar link" *temPermissao="permissoes.editar">
+                          <button mat-icon-button type="button" (click)="abrirItem(item)" aria-label="Editar link" matTooltip="Editar link" *temPermissao="permissoes.editar">
                             <mat-icon>edit</mat-icon>
                           </button>
-                          <button mat-icon-button type="button" (click)="alterarStatusItem(item)" [attr.aria-label]="item.ativo ? 'Desativar link' : 'Ativar link'" *temPermissao="permissoes.editar">
+                          <button mat-icon-button type="button" (click)="alterarStatusItem(item)" [attr.aria-label]="item.ativo ? 'Desativar link' : 'Ativar link'" [matTooltip]="item.ativo ? 'Desativar link' : 'Ativar link'" *temPermissao="permissoes.editar">
                             <mat-icon>{{ item.ativo ? 'toggle_on' : 'toggle_off' }}</mat-icon>
                           </button>
-                          <button mat-icon-button color="warn" type="button" (click)="removerItem(item)" aria-label="Remover link" *temPermissao="permissoes.editar">
+                          <button mat-icon-button color="warn" type="button" (click)="removerItem(item)" aria-label="Remover link" matTooltip="Remover link" *temPermissao="permissoes.editar">
                             <mat-icon>delete</mat-icon>
                           </button>
                         </td>
@@ -277,10 +277,10 @@
                         <button mat-icon-button type="button" (click)="moverItem(item, 1)" [disabled]="i === itensOrdenados().length - 1" aria-label="Mover link para baixo" *temPermissao="permissoes.editar">
                           <mat-icon>arrow_downward</mat-icon>
                         </button>
-                        <button mat-icon-button type="button" (click)="alterarStatusItem(item)" [attr.aria-label]="item.ativo ? 'Desativar link' : 'Ativar link'" *temPermissao="permissoes.editar">
+                        <button mat-icon-button type="button" (click)="alterarStatusItem(item)" [attr.aria-label]="item.ativo ? 'Desativar link' : 'Ativar link'" [matTooltip]="item.ativo ? 'Desativar link' : 'Ativar link'" *temPermissao="permissoes.editar">
                           <mat-icon>{{ item.ativo ? 'toggle_on' : 'toggle_off' }}</mat-icon>
                         </button>
-                        <button mat-icon-button color="warn" type="button" (click)="removerItem(item)" aria-label="Remover link" *temPermissao="permissoes.editar">
+                        <button mat-icon-button color="warn" type="button" (click)="removerItem(item)" aria-label="Remover link" matTooltip="Remover link" *temPermissao="permissoes.editar">
                           <mat-icon>delete</mat-icon>
                         </button>
                       </div>

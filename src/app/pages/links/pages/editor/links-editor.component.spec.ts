@@ -43,6 +43,7 @@ describe('LinksEditorComponent', () => {
             criarPagina: (payload: Partial<PaginaLinksDetalhe>) => of({ ...pagina, ...payload }),
             alterarPublicacao: (_id: number, publicada: boolean) => of({ ...pagina, publicada }),
             arquivarPagina: () => of(void 0),
+            removerItem: () => of(void 0),
           },
         },
         { provide: EmpresaIdentidadePublicaService, useValue: { buscar: () => of(pagina.identidade) } },
@@ -54,9 +55,9 @@ describe('LinksEditorComponent', () => {
               nome: 'Empresa',
               telefone: '(31) 99999-9999',
               email: 'contato@empresa.com',
-              instagramUrl: 'https://instagram.com/empresa',
+              instagramUrl: '@empresa',
               facebookUrl: '',
-              siteUrl: 'https://empresa.com',
+              siteUrl: 'www.empresa.com',
               youtubeUrl: '',
               endereco: { logradouro: 'Rua A', numero: '10', bairro: 'Centro', cidade: 'BH', estado: 'MG' },
             }),
@@ -142,6 +143,37 @@ describe('LinksEditorComponent', () => {
 
     expect(sugestoes.map((sugestao) => sugestao.tipo)).toEqual(jasmine.arrayContaining(['WHATSAPP', 'TELEFONE', 'EMAIL', 'INSTAGRAM', 'LINK', 'LOCALIZACAO']));
     expect(sugestoes.find((sugestao) => sugestao.tipo === 'WHATSAPP')?.url).toContain('wa.me');
-    expect(sugestoes.find((sugestao) => sugestao.tipo === 'LOCALIZACAO')?.url).toContain('google.com/maps');
+    expect(sugestoes.find((sugestao) => sugestao.tipo === 'INSTAGRAM')?.url).toBe('https://instagram.com/empresa');
+    expect(sugestoes.find((sugestao) => sugestao.tipo === 'LINK')?.url).toBe('https://www.empresa.com');
+    const urlsLocalizacao = sugestoes.filter((sugestao) => sugestao.tipo === 'LOCALIZACAO').map((sugestao) => sugestao.url);
+    expect(urlsLocalizacao.some((url) => url.includes('google.com/maps'))).toBeTrue();
+    expect(urlsLocalizacao.some((url) => url.includes('waze.com/ul'))).toBeTrue();
+  });
+
+  it('remove link sem voltar para a aba Geral', () => {
+    const fixture = setup(':id', {
+      ...detalhe,
+      itens: [{
+        id: 3,
+        tipo: 'LINK',
+        titulo: 'Site',
+        subtitulo: null,
+        url: 'https://empresa.com',
+        ativo: true,
+        ordem: 0,
+        createdAt: '',
+        updatedAt: '',
+      }],
+    });
+    const component = fixture.componentInstance;
+    (component as unknown as { dialog: Pick<MatDialog, 'open'> }).dialog = {
+      open: () => ({ afterClosed: () => of(true) }) as never,
+    };
+
+    component.abaSelecionada = 1;
+    component.removerItem(component.itensOrdenados()[0]);
+
+    expect(component.abaSelecionada).toBe(1);
+    expect(component.itensOrdenados()).toEqual([]);
   });
 });

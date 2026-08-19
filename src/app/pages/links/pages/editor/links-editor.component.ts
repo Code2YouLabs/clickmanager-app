@@ -65,6 +65,7 @@ export class LinksEditorComponent implements OnInit {
   salvandoItem = false;
   publicando = false;
   arquivando = false;
+  abaSelecionada = 0;
 
   readonly isNova = this.route.snapshot.routeConfig?.path === 'nova';
   readonly paginaId = Number(this.route.snapshot.paramMap.get('id'));
@@ -223,7 +224,10 @@ export class LinksEditorComponent implements OnInit {
         next: () => {
           this.salvandoItem = false;
           this.toastr.success('Link removido.');
-          this.carregarPagina(false);
+          this.pagina = this.pagina
+            ? { ...this.pagina, itens: this.pagina.itens.filter((paginaItem) => paginaItem.id !== item.id) }
+            : null;
+          this.abaSelecionada = 1;
         },
         error: (error) => this.tratarErro(error, 'Não foi possível remover o link.'),
       });
@@ -307,19 +311,26 @@ export class LinksEditorComponent implements OnInit {
       });
     }
 
-    this.adicionarSugestaoUrl(sugestoes, 'INSTAGRAM', 'Instagram', 'Rede social', this.empresa.instagramUrl);
-    this.adicionarSugestaoUrl(sugestoes, 'FACEBOOK', 'Facebook', 'Rede social', this.empresa.facebookUrl);
-    this.adicionarSugestaoUrl(sugestoes, 'YOUTUBE', 'YouTube', 'Canal de vídeos', this.empresa.youtubeUrl);
-    this.adicionarSugestaoUrl(sugestoes, 'LINK', 'Site', 'Site oficial', this.empresa.siteUrl);
+    this.adicionarSugestaoUrl(sugestoes, 'INSTAGRAM', 'Instagram', 'Rede social', this.normalizarInstagramUrl(this.empresa.instagramUrl));
+    this.adicionarSugestaoUrl(sugestoes, 'FACEBOOK', 'Facebook', 'Rede social', this.normalizarUrlPublica(this.empresa.facebookUrl));
+    this.adicionarSugestaoUrl(sugestoes, 'YOUTUBE', 'YouTube', 'Canal de vídeos', this.normalizarUrlPublica(this.empresa.youtubeUrl));
+    this.adicionarSugestaoUrl(sugestoes, 'LINK', 'Site', 'Site oficial', this.normalizarUrlPublica(this.empresa.siteUrl));
 
     const endereco = this.enderecoCompleto();
     if (endereco) {
       sugestoes.push({
         origem: 'Endereço da empresa',
         tipo: 'LOCALIZACAO',
-        titulo: 'Como chegar',
+        titulo: 'Abrir no Google Maps',
         subtitulo: endereco,
         url: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endereco)}`,
+      });
+      sugestoes.push({
+        origem: 'Endereço da empresa',
+        tipo: 'LOCALIZACAO',
+        titulo: 'Abrir no Waze',
+        subtitulo: endereco,
+        url: `https://waze.com/ul?q=${encodeURIComponent(endereco)}&navigate=yes`,
       });
     }
 
@@ -427,6 +438,30 @@ export class LinksEditorComponent implements OnInit {
     const value = String(url || '').trim();
     if (!value) return;
     sugestoes.push({ origem: 'Dados da empresa', tipo, titulo, subtitulo, url: value });
+  }
+
+  private normalizarUrlPublica(url: string | null | undefined): string {
+    const value = String(url || '').trim();
+    if (!value) return '';
+    if (/^https?:\/\//i.test(value)) return value;
+    if (/^\/\//.test(value)) return `https:${value}`;
+    if (/^[^\s]+\.[^\s]+$/.test(value)) return `https://${value}`;
+    return value;
+  }
+
+  private normalizarInstagramUrl(url: string | null | undefined): string {
+    const value = String(url || '').trim();
+    if (!value) return '';
+    if (/^https?:\/\//i.test(value)) return value;
+
+    const perfil = value
+      .replace(/^@+/, '')
+      .replace(/^instagram\.com\//i, '')
+      .replace(/^www\.instagram\.com\//i, '')
+      .replace(/^\/+/, '')
+      .split(/[/?#]/)[0];
+
+    return perfil ? `https://instagram.com/${perfil}` : '';
   }
 
   private enderecoCompleto(): string {

@@ -60,6 +60,10 @@ describe('LinksListaComponent', () => {
 
   it('exibe Compartilhar como acao direta e abre o dialog reutilizavel', () => {
     expect(fixture.nativeElement.textContent).toContain('Compartilhar');
+    expect(fixture.nativeElement.querySelector('td.action-link button[aria-label="Editar página"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('td.action-link button[aria-label="Compartilhar página"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('td.action-link button[aria-label="Abrir página"]')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('td.action-link button[aria-label="Mais ações"]')?.getAttribute('ng-reflect-message')).toBe('Mais ações');
 
     fixture.componentInstance.compartilhar(paginas[0]);
 
