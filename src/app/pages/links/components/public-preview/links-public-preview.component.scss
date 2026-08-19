@@ -26,7 +26,7 @@
   z-index: -1;
   top: -34px;
   left: 50%;
-  width: calc(100% + 32px);
+  width: 100vw;
   height: 252px;
   transform: translateX(-50%);
   background: linear-gradient(180deg, var(--clicklink-logo-gradient-start) 0%, var(--clicklink-logo-gradient-mid) 58%, transparent 100%);
