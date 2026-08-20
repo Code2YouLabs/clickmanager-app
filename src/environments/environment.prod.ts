@@ -1,6 +1,7 @@
 export const environment = {
   production: true,
   apiUrl: '',
-  publicSiteBaseUrl: ''
+  publicSiteBaseUrl: '',
+  publicBaseDomain: 'clickmanager.com.br'
 };
   

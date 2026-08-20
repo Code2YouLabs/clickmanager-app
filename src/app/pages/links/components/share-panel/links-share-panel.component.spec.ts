@@ -22,14 +22,14 @@ describe('LinksSharePanelComponent', () => {
 
   it('gera e exibe QR Code automaticamente quando existe URL publica', fakeAsync(() => {
     const toDataUrlSpy = spyOn(QRCode, 'toDataURL' as never).and.returnValue(Promise.resolve('data:image/png;base64,qr') as never);
-    fixture.componentRef.setInput('url', 'https://clickmanager.com.br/l/empresa');
+    fixture.componentRef.setInput('url', 'https://empresa-de-teste.clickmanager.com.br/l/empresa-de-teste');
 
     fixture.detectChanges();
     tick();
     fixture.detectChanges();
 
     expect(toDataUrlSpy).toHaveBeenCalled();
-    expect((toDataUrlSpy.calls.mostRecent().args as unknown[])[0]).toBe('https://clickmanager.com.br/l/empresa');
+    expect((toDataUrlSpy.calls.mostRecent().args as unknown[])[0]).toBe('https://empresa-de-teste.clickmanager.com.br/l/empresa-de-teste');
     expect(fixture.nativeElement.querySelector('.links-share-panel__qr')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('img')?.getAttribute('src')).toBe('data:image/png;base64,qr');
     expect(fixture.nativeElement.textContent).toContain('Baixar QR Code');

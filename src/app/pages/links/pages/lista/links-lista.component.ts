@@ -5,6 +5,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { Router, RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { CardHeaderComponent } from 'src/app/components/card-header/card-header.component';
+import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
 import { MaterialModule } from 'src/app/material.module';
 import { EmpresaIdentidadePublicaService } from '../../../empresa/empresa-identidade-publica.service';
@@ -103,6 +104,30 @@ export class LinksListaComponent implements OnInit {
         url,
         slug: this.identidade?.slug || '',
       },
+    });
+  }
+
+  excluir(pagina: PaginaLinksResumo | null): void {
+    if (!pagina) return;
+    this.dialog.open(ConfirmDialogComponent, {
+      width: '420px',
+      data: {
+        title: 'Excluir página?',
+        message: 'A página, seus links e seus dados de analytics serão removidos definitivamente.',
+        confirmText: 'Excluir página',
+        confirmColor: 'warn',
+      },
+    }).afterClosed().subscribe((ok) => {
+      if (!ok) return;
+      this.executandoId = pagina.id;
+      this.linksService.excluirPagina(pagina.id).subscribe({
+        next: () => {
+          this.executandoId = null;
+          this.paginas = this.paginas.filter((item) => item.id !== pagina.id);
+          this.toastr.success('Página excluída.');
+        },
+        error: (error) => this.tratarErro(error, 'Não foi possível excluir a página.'),
+      });
     });
   }
 

@@ -140,5 +140,9 @@
         <span>Despublicar</span>
       </button>
     </ng-container>
+    <button mat-menu-item type="button" (click)="excluir(paginaMenu)" [disabled]="!paginaMenu || executandoId === paginaMenu.id" *temPermissao="permissoes.excluir">
+      <mat-icon color="warn">delete</mat-icon>
+      <span>Excluir</span>
+    </button>
   </mat-menu>
 </div>
