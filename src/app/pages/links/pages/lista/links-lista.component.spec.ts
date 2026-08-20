@@ -6,6 +6,7 @@ import { ActivatedRoute } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
 import { ToastrService } from 'ngx-toastr';
 import { AuthService } from 'src/app/services/auth.service';
+import { environment } from 'src/environments/environment';
 import { EmpresaIdentidadePublicaService } from '../../../empresa/empresa-identidade-publica.service';
 import { LinksShareDialogComponent } from '../../components/share-dialog/links-share-dialog.component';
 import { PaginaLinksResumo } from '../../models/links.models';
@@ -15,6 +16,8 @@ import { LinksListaComponent } from './links-lista.component';
 describe('LinksListaComponent', () => {
   let fixture: ComponentFixture<LinksListaComponent>;
   let dialog: jasmine.SpyObj<MatDialog>;
+  const originalPublicSiteBaseUrl = environment.publicSiteBaseUrl;
+  const originalPublicBaseDomain = environment.publicBaseDomain;
 
   const paginas: PaginaLinksResumo[] = [
     {
@@ -50,12 +53,14 @@ describe('LinksListaComponent', () => {
   ];
 
   beforeEach(async () => {
+    environment.publicSiteBaseUrl = '';
+    environment.publicBaseDomain = 'clickmanager.com.br';
     dialog = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
     await TestBed.configureTestingModule({
       imports: [LinksListaComponent, NoopAnimationsModule, RouterTestingModule.withRoutes([])],
       providers: [
-        { provide: LinksService, useValue: { listarPaginas: () => of(paginas), alterarPublicacao: () => of({ ...paginas[0], itens: [], identidade: null }), arquivarPagina: () => of(void 0) } },
-        { provide: EmpresaIdentidadePublicaService, useValue: { buscar: () => of({ nome: 'Empresa', slug: 'empresa', logoUrl: null }) } },
+        { provide: LinksService, useValue: { listarPaginas: () => of(paginas), alterarPublicacao: () => of({ ...paginas[0], itens: [], identidade: null }), excluirPagina: () => of(void 0) } },
+        { provide: EmpresaIdentidadePublicaService, useValue: { buscar: () => of({ nome: 'Empresa', slug: 'empresa-de-teste', logoUrl: null }) } },
         { provide: ToastrService, useValue: jasmine.createSpyObj('ToastrService', ['success', 'warning', 'error', 'info']) },
         { provide: MatDialog, useValue: dialog },
         { provide: ActivatedRoute, useValue: {} },
@@ -66,6 +71,11 @@ describe('LinksListaComponent', () => {
     fixture = TestBed.createComponent(LinksListaComponent);
     (fixture.componentInstance as unknown as { dialog: MatDialog }).dialog = dialog;
     fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    environment.publicSiteBaseUrl = originalPublicSiteBaseUrl;
+    environment.publicBaseDomain = originalPublicBaseDomain;
   });
 
   it('renderiza a listagem sem titulo duplicado no componente', () => {
@@ -84,11 +94,11 @@ describe('LinksListaComponent', () => {
     fixture.componentInstance.compartilhar(paginas[0]);
 
     expect(dialog.open).toHaveBeenCalledWith(LinksShareDialogComponent, jasmine.objectContaining({
-      data: jasmine.objectContaining({ url: jasmine.stringMatching('/l/empresa') }),
+      data: jasmine.objectContaining({ url: 'https://empresa-de-teste.clickmanager.com.br/l/empresa-de-teste' }),
     }));
   });
 
-  it('mantem acoes de estado no menu sem exclusao na listagem', () => {
+  it('mantem acoes de estado e exclusao no menu da listagem', () => {
     fixture.componentInstance.paginaMenu = paginas[0];
     fixture.detectChanges();
     fixture.nativeElement.querySelector('button[aria-label="Mais ações"]')?.click();
@@ -96,6 +106,28 @@ describe('LinksListaComponent', () => {
 
     expect(document.body.textContent).toContain('Despublicar');
     expect(document.body.textContent).not.toContain('Arquivar');
-    expect(document.body.textContent).not.toContain('Excluir');
+    expect(document.body.textContent).toContain('Excluir');
+  });
+
+  it('exige confirmacao antes de excluir pela listagem', () => {
+    dialog.open.and.returnValue({ afterClosed: () => of(false) } as never);
+
+    fixture.componentInstance.excluir(paginas[0]);
+
+    expect(dialog.open).toHaveBeenCalledWith(jasmine.any(Function), jasmine.objectContaining({
+      data: jasmine.objectContaining({
+        title: 'Excluir página?',
+        confirmText: 'Excluir página',
+      }),
+    }));
+    expect(fixture.componentInstance.paginas.length).toBe(1);
+  });
+
+  it('remove pagina da listagem apos confirmar exclusao', () => {
+    dialog.open.and.returnValue({ afterClosed: () => of(true) } as never);
+
+    fixture.componentInstance.excluir(paginas[0]);
+
+    expect(fixture.componentInstance.paginas).toEqual([]);
   });
 });
