@@ -1,0 +1,372 @@
+.links-editor,
+.links-editor-form,
+.links-tab-body {
+  display: grid;
+  gap: 16px;
+}
+
+.links-editor__status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.links-editor__mobile-preview {
+  display: none;
+}
+
+.links-tab-body {
+  padding-top: 18px;
+}
+
+.links-editor-form mat-form-field {
+  width: 100%;
+}
+
+.links-identity {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.links-identity__main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.links-identity__main strong,
+.links-identity__main span {
+  overflow-wrap: anywhere;
+}
+
+.links-identity__main span,
+.links-muted {
+  color: #667085;
+  line-height: 1.45;
+}
+
+.links-logo__frame {
+  width: 100%;
+  max-width: 340px;
+  height: 216px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border: 1px solid rgba(14, 23, 38, 0.1);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.links-logo__frame--compact {
+  width: 76px;
+  height: 76px;
+}
+
+.links-logo__frame--fallback {
+  color: #0d6efd;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.links-logo__frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.links-publication-card {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #e6e9ef;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.links-publication-card--published {
+  background: #ecfdf3;
+  border-color: #abefc6;
+}
+
+.links-publication-card__status {
+  margin-right: auto;
+  color: #344054;
+  font-weight: 700;
+}
+
+.links-items-table td {
+  vertical-align: middle;
+}
+
+.links-company-suggestions {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e6e9ef;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.links-company-suggestions__header {
+  display: grid;
+  gap: 3px;
+}
+
+.links-company-suggestions__header strong {
+  color: #101828;
+}
+
+.links-company-suggestions__header span {
+  color: #667085;
+  font-size: 13px;
+}
+
+.links-company-suggestions__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.links-company-suggestion {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 24px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #d0d5dd;
+  border-radius: 8px;
+  background: #fff;
+  color: #101828;
+  text-align: left;
+  cursor: pointer;
+}
+
+.links-company-suggestion:disabled {
+  cursor: default;
+  opacity: 0.64;
+}
+
+.links-company-suggestion span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.links-company-suggestion strong,
+.links-company-suggestion small {
+  overflow-wrap: anywhere;
+}
+
+.links-company-suggestion small {
+  color: #667085;
+}
+
+.links-type-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.links-type-cell mat-icon {
+  color: #344054;
+}
+
+.links-items-mobile {
+  display: none;
+}
+
+.links-item {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e6e9ef;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.links-item--inactive {
+  opacity: 0.68;
+}
+
+.links-item__icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  background: #eef2f6;
+  color: #344054;
+}
+
+.links-item__body {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  display: grid;
+  gap: 3px;
+  cursor: pointer;
+}
+
+.links-item__body strong,
+.links-item__body span {
+  overflow-wrap: anywhere;
+}
+
+.links-item__body span {
+  color: #667085;
+  font-size: 13px;
+}
+
+.links-item__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.links-appearance-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+  align-items: start;
+}
+
+.links-appearance-layout mat-button-toggle-group {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.links-color-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.links-color-grid input[type='color'] {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.links-share-section {
+  max-width: 940px;
+}
+
+.links-preview-section .links-section__header {
+  align-items: center;
+}
+
+.links-preview-section__open {
+  display: none;
+}
+
+.links-preview-inline {
+  display: flex;
+  justify-content: center;
+}
+
+.links-preview-inline app-links-public-preview {
+  width: 100%;
+}
+
+.links-section--danger {
+  border-color: rgba(180, 35, 24, 0.2);
+  background: #fffafa;
+}
+
+.links-state--compact {
+  min-height: 120px;
+}
+
+.links-empty--compact {
+  min-height: 120px;
+}
+
+.links-editor-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+@media (max-width: 900px) {
+  .links-appearance-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .links-preview-section__open {
+    display: inline-flex;
+  }
+
+  .links-preview-inline {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .links-editor__mobile-preview {
+    display: inline-flex;
+  }
+
+  .links-items-table {
+    display: none;
+  }
+
+  .links-items-mobile {
+    display: grid;
+    gap: 12px;
+  }
+
+  .links-item {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .links-item__actions {
+    grid-column: 1 / -1;
+    justify-content: space-between;
+  }
+
+  .links-item__actions button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .links-identity {
+    grid-template-columns: 1fr;
+  }
+
+  .links-identity a,
+  .links-publication-card,
+  .links-editor-footer {
+    display: grid;
+  }
+
+  .links-identity a,
+  .links-preview-section button,
+  .links-publication-card button,
+  .links-section--danger button,
+  .links-editor-footer button {
+    min-height: 46px;
+    width: 100%;
+  }
+
+  .links-color-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .links-appearance-layout mat-button-toggle-group,
+  .links-appearance-layout mat-button-toggle {
+    width: 100%;
+  }
+}

@@ -1,0 +1,7 @@
+<h2 mat-dialog-title>Compartilhar {{ data.titulo }}</h2>
+<mat-dialog-content>
+  <app-links-share-panel [url]="data.url" [slug]="data.slug"></app-links-share-panel>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-stroked-button type="button" (click)="fechar()">Fechar</button>
+</mat-dialog-actions>

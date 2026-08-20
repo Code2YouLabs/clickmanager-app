@@ -1,0 +1,119 @@
+<div class="links-page">
+  <app-card-header
+    titulo="Analytics ClickLink"
+    subtitulo="ClickLink • Analytics"
+    [mostrarDivisor]="true">
+  </app-card-header>
+
+  <mat-card class="cardWithShadow links-panel">
+    <app-card-header
+      titulo="Desempenho"
+      subtitulo="Acompanhe acessos e cliques das suas páginas"
+      [mostrarDivisor]="true">
+    </app-card-header>
+
+    <mat-card-content>
+      <div class="links-state" *ngIf="carregandoPaginas">
+        <mat-spinner diameter="34"></mat-spinner>
+        <span>Carregando páginas...</span>
+      </div>
+
+      <div class="links-empty" *ngIf="!carregandoPaginas && !paginas.length">
+        <mat-icon>query_stats</mat-icon>
+        <h2>Nenhuma página para analisar</h2>
+        <p>Crie uma página ClickLink para acompanhar visualizações e cliques.</p>
+      </div>
+
+      <div class="links-analytics-page" *ngIf="!carregandoPaginas && paginas.length">
+        <div class="links-analytics-toolbar">
+          <mat-form-field appearance="outline">
+            <mat-label>Página</mat-label>
+            <mat-select [value]="paginaSelecionadaId" (selectionChange)="selecionarPagina($event.value)">
+              <mat-option *ngFor="let pagina of paginas" [value]="pagina.id">{{ pagina.titulo }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-button-toggle-group [value]="periodo" aria-label="Período" (change)="alterarPeriodo($event.value)">
+            <mat-button-toggle value="7d">7 dias</mat-button-toggle>
+            <mat-button-toggle value="30d">30 dias</mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
+
+        <div class="links-state links-state--compact" *ngIf="carregandoAnalytics">
+          <mat-spinner diameter="28"></mat-spinner>
+          <span>Carregando métricas...</span>
+        </div>
+
+        <div class="links-analytics-error" *ngIf="!carregandoAnalytics && erro">
+          <span>Não foi possível carregar as métricas.</span>
+          <button mat-stroked-button type="button" (click)="carregarAnalytics()">
+            <mat-icon>refresh</mat-icon>
+            Tentar novamente
+          </button>
+        </div>
+
+        <ng-container *ngIf="!carregandoAnalytics && !erro && analytics">
+          <div class="links-metric-grid">
+            <app-metric-card
+              label="Visualizações"
+              [value]="numeroFormatado(analytics.visualizacoes)"
+              detail="Página pública aberta"
+              icon="eye"
+              accent="primary">
+            </app-metric-card>
+            <app-metric-card
+              label="Cliques"
+              [value]="numeroFormatado(analytics.cliques)"
+              detail="Acessos aos links"
+              icon="hand-click"
+              accent="warning">
+            </app-metric-card>
+            <app-metric-card
+              label="Taxa de clique"
+              [value]="percentualFormatado(analytics.taxaClique)"
+              detail="Cliques por visualização"
+              icon="percentage"
+              accent="success">
+            </app-metric-card>
+          </div>
+
+          <section class="links-section">
+            <div class="links-section__header">
+              <div>
+                <h2>Desempenho dos links</h2>
+                <p>Ranking por cliques no período selecionado.</p>
+              </div>
+            </div>
+
+            <div class="links-empty links-empty--compact" *ngIf="!ranking().length">
+              <mat-icon>query_stats</mat-icon>
+              <h2>Ainda não há cliques neste período.</h2>
+            </div>
+
+            <div class="table-responsive links-ranking-table" *ngIf="ranking().length">
+              <table mat-table [dataSource]="ranking()" class="mat-elevation-z1 no-wrap v-middle w-100">
+                <ng-container matColumnDef="link">
+                  <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Link</th>
+                  <td mat-cell *matCellDef="let item" class="f-s-14">{{ item.titulo }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="tipo">
+                  <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Tipo</th>
+                  <td mat-cell *matCellDef="let item" class="f-s-14">{{ tipoLabel(item.tipo) }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="cliques">
+                  <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Cliques</th>
+                  <td mat-cell *matCellDef="let item" class="f-s-14 f-w-600">{{ numeroFormatado(item.cliques) }}</td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="colunasRanking"></tr>
+                <tr mat-row *matRowDef="let row; columns: colunasRanking"></tr>
+              </table>
+            </div>
+          </section>
+        </ng-container>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>
