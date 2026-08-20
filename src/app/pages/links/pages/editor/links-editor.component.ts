@@ -64,7 +64,7 @@ export class LinksEditorComponent implements OnInit {
   salvandoPagina = false;
   salvandoItem = false;
   publicando = false;
-  arquivando = false;
+  excluindo = false;
   abaSelecionada = 0;
 
   readonly isNova = this.route.snapshot.routeConfig?.path === 'nova';
@@ -259,26 +259,26 @@ export class LinksEditorComponent implements OnInit {
     });
   }
 
-  arquivarPagina(): void {
+  excluirPagina(): void {
     if (!this.pagina) return;
     this.dialog.open(ConfirmDialogComponent, {
       width: '420px',
       data: {
-        title: 'Arquivar página',
-        message: `Arquivar "${this.pagina.titulo}"? Ela deixará de ficar disponível e será removida da listagem de páginas ativas.`,
-        confirmText: 'Arquivar',
+        title: 'Excluir página?',
+        message: 'A página, seus links e seus dados de analytics serão removidos definitivamente.',
+        confirmText: 'Excluir página',
         confirmColor: 'warn',
       },
     }).afterClosed().subscribe((ok) => {
       if (!ok || !this.pagina) return;
-      this.arquivando = true;
-      this.linksService.arquivarPagina(this.pagina.id).subscribe({
+      this.excluindo = true;
+      this.linksService.excluirPagina(this.pagina.id).subscribe({
         next: () => {
-          this.arquivando = false;
-          this.toastr.success('Página arquivada.');
+          this.excluindo = false;
+          this.toastr.success('Página excluída.');
           this.router.navigate(['/page/links/paginas']);
         },
-        error: (error) => this.tratarErro(error, 'Não foi possível arquivar a página.'),
+        error: (error) => this.tratarErro(error, 'Não foi possível excluir a página.'),
       });
     });
   }
@@ -625,7 +625,7 @@ export class LinksEditorComponent implements OnInit {
     this.salvandoPagina = false;
     this.salvandoItem = false;
     this.publicando = false;
-    this.arquivando = false;
+    this.excluindo = false;
 
     if (error.status === 403) {
       this.toastr.warning('Você não possui permissão para esta ação.');

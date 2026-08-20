@@ -25,7 +25,6 @@
             {{ pagina.publicada ? 'Publicada' : 'Não publicada' }}
           </span>
           <span class="links-badge links-badge--info" *ngIf="pagina.principal">Principal</span>
-          <span class="links-badge links-badge--neutral" *ngIf="!pagina.ativa">Arquivada</span>
         </div>
 
         <form [formGroup]="form" class="links-editor-form" (ngSubmit)="salvarOuCriar()">
@@ -135,12 +134,12 @@
                   <div class="links-section__header">
                     <div>
                       <h2>Ações avançadas</h2>
-                      <p>A página deixará de ficar disponível e será removida da listagem de páginas ativas.</p>
+                      <p>Esta ação remove definitivamente a página, seus links e seus dados de analytics. Ela não poderá ser desfeita.</p>
                     </div>
                   </div>
-                  <button mat-stroked-button color="warn" type="button" (click)="arquivarPagina()" [disabled]="arquivando" *temPermissao="permissoes.excluir">
-                    <mat-icon>archive</mat-icon>
-                    Arquivar página
+                  <button mat-stroked-button color="warn" type="button" (click)="excluirPagina()" [disabled]="excluindo" *temPermissao="permissoes.excluir">
+                    <mat-icon>delete</mat-icon>
+                    Excluir página
                   </button>
                 </section>
               </div>

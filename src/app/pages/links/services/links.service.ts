@@ -37,7 +37,7 @@ export class LinksService {
     return this.api.patch<PaginaLinksDetalhe>(`${this.endpoint}/${id}/publicacao`, { publicada });
   }
 
-  arquivarPagina(id: number): Observable<void> {
+  excluirPagina(id: number): Observable<void> {
     return this.api.delete<void>(`${this.endpoint}/${id}`);
   }
 

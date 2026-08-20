@@ -6,6 +6,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
 import { of } from 'rxjs';
 import { AuthService } from 'src/app/services/auth.service';
+import { environment } from 'src/environments/environment';
 import { EmpresaIdentidadePublicaService } from '../../../empresa/empresa-identidade-publica.service';
 import { EmpresaFormService } from '../../../empresa/empresa-form.service';
 import { PaginaLinksDetalhe } from '../../models/links.models';
@@ -14,6 +15,9 @@ import { LinksPreviewDialogComponent } from '../../components/preview-dialog/lin
 import { LinksEditorComponent } from './links-editor.component';
 
 describe('LinksEditorComponent', () => {
+  const originalPublicSiteBaseUrl = environment.publicSiteBaseUrl;
+  const originalPublicBaseDomain = environment.publicBaseDomain;
+
   const detalhe: PaginaLinksDetalhe = {
     id: 7,
     titulo: 'Página salva',
@@ -32,6 +36,8 @@ describe('LinksEditorComponent', () => {
   };
 
   function setup(path = ':id', pagina = detalhe, abaSelecionada = 0): ComponentFixture<LinksEditorComponent> {
+    environment.publicSiteBaseUrl = '';
+    environment.publicBaseDomain = 'clickmanager.com.br';
     let paginaAtual = { ...pagina };
     TestBed.configureTestingModule({
       imports: [LinksEditorComponent, NoopAnimationsModule, RouterTestingModule.withRoutes([])],
@@ -53,7 +59,7 @@ describe('LinksEditorComponent', () => {
               paginaAtual = { ...paginaAtual, publicada };
               return of(paginaAtual);
             },
-            arquivarPagina: () => of(void 0),
+            excluirPagina: () => of(void 0),
             removerItem: () => of(void 0),
           },
         },
@@ -85,7 +91,11 @@ describe('LinksEditorComponent', () => {
     return fixture;
   }
 
-  afterEach(() => TestBed.resetTestingModule());
+  afterEach(() => {
+    environment.publicSiteBaseUrl = originalPublicSiteBaseUrl;
+    environment.publicBaseDomain = originalPublicBaseDomain;
+    TestBed.resetTestingModule();
+  });
 
   it('mantem Salvar no footer com Cancelar secundario e fora do header', () => {
     const fixture = setup();
@@ -129,15 +139,16 @@ describe('LinksEditorComponent', () => {
     expect(component.tituloControl.value).toBe('Novo salvo');
   });
 
-  it('posiciona publicacao em Geral e arquivamento em acoes avancadas', () => {
+  it('posiciona publicacao em Geral e exclusao em acoes avancadas', () => {
     const fixture = setup();
     const text = fixture.nativeElement.textContent;
 
     expect(text).toContain('Publicação');
     expect(text).toContain('Publicar');
     expect(text).toContain('Ações avançadas');
-    expect(text).toContain('Arquivar página');
-    expect(text).not.toContain('Excluir página');
+    expect(text).toContain('Excluir página');
+    expect(text).toContain('Esta ação remove definitivamente a página, seus links e seus dados de analytics.');
+    expect(text).not.toContain('Arquivar');
   });
 
   it('mostra somente Despublicar quando a pagina esta publicada', () => {
@@ -211,7 +222,7 @@ describe('LinksEditorComponent', () => {
 
     expect(text).toContain('Identidade da empresa');
     expect(text).toContain('A logo e o endereço pertencem à identidade da empresa');
-    expect(text).toContain('/l/empresa');
+    expect(text).toContain('https://empresa.clickmanager.com.br/l/empresa');
     expect(text).not.toContain('Alterar logo');
     expect(text).not.toContain('Remover');
     expect(text).not.toContain('Alterar endereço');
