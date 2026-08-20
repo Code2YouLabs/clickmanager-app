@@ -27,6 +27,9 @@ import { InputEmailComponent } from 'src/app/components/inputs/input-email/input
 import { InputTelefoneComponent } from 'src/app/components/inputs/input-telefone/input-telefone.component';
 import { InputDocumentoComponent } from 'src/app/components/inputs/input-documento/input-documento.component';
 import { InputCepComponent } from 'src/app/components/inputs/input-cep/input-cep.component';
+import { EmpresaIdentidadePublicaService } from './empresa-identidade-publica.service';
+import { LinksIdentidadePublica } from '../links/models/links.models';
+import { getClickManagerPublicHost } from '../links/utils/links-url.util';
 
 type EmpresaOnboardingSection = 'all' | 'empresa' | 'logo' | 'endereco';
 
@@ -72,6 +75,15 @@ export class EmpresaFormComponent implements OnInit {
   imagemOriginal: string | null = './assets/images/logos/LogoPadrao.png';
   imagemBlob: File | null = null;
   removerLogo = false;
+  identidadePublica: LinksIdentidadePublica | null = null;
+  carregandoIdentidade = false;
+  salvandoFavicon = false;
+  faviconPreviewUrl = '';
+  faviconArquivoNome = '';
+  faviconArquivoTamanho = '';
+  faviconErro = '';
+  private faviconSelecionado: File | null = null;
+  private readonly faviconFallbackUrl = 'favicon.ico';
 
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
@@ -80,6 +92,7 @@ export class EmpresaFormComponent implements OnInit {
     private toastr: ToastrService,
     private cepUtilService: CepUtilService,
     private empresaService: EmpresaFormService,
+    private identidadeService: EmpresaIdentidadePublicaService,
     private authService: AuthService) { }
 
   ngOnInit(): void {
@@ -94,6 +107,7 @@ export class EmpresaFormComponent implements OnInit {
             next: empresa => this.preencherFormulario(empresa),
             error: () => this.toastr.warning('Erro ao buscar empresa')
           });
+          this.carregarIdentidadePublica();
         }
       });
   }
@@ -191,6 +205,40 @@ export class EmpresaFormComponent implements OnInit {
     this.removerLogo = false;
   }
 
+  get nomePublico(): string {
+    return this.identidadePublica?.nome || this.nomeControl.value || 'Nome público não definido';
+  }
+
+  get enderecoClickManager(): string {
+    return getClickManagerPublicHost(this.identidadePublica?.slug) || 'Endereço ainda não gerado';
+  }
+
+  get faviconPreview(): string {
+    return this.faviconPreviewUrl || this.identidadePublica?.faviconUrl || this.faviconFallbackUrl;
+  }
+
+  get podeSalvarFavicon(): boolean {
+    return !this.salvandoFavicon && !!this.faviconSelecionado;
+  }
+
+  carregarIdentidadePublica(): void {
+    this.carregandoIdentidade = true;
+    this.identidadeService.buscar().subscribe({
+      next: (identidade) => {
+        this.carregandoIdentidade = false;
+        this.identidadePublica = identidade;
+        if (identidade.logoUrl) {
+          this.imagemOriginal = identidade.logoUrl;
+          this.imagemPreview = identidade.logoUrl;
+        }
+      },
+      error: () => {
+        this.carregandoIdentidade = false;
+        this.toastr.warning('Não foi possível carregar a identidade pública.');
+      },
+    });
+  }
+
 
   onFileSelected(event: Event): void {
     const file = (event.target as HTMLInputElement).files?.[0];
@@ -216,6 +264,79 @@ export class EmpresaFormComponent implements OnInit {
     this.removerLogo = true;
 
     if (input) input.value = '';
+  }
+
+  onFaviconSelecionado(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0];
+    if (!file) return;
+
+    if (!this.validarFavicon(file)) {
+      this.limparInputArquivo(input);
+      return;
+    }
+
+    this.faviconSelecionado = file;
+    this.faviconArquivoNome = file.name;
+    this.faviconArquivoTamanho = this.formatarTamanho(file.size);
+    this.faviconErro = '';
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.faviconPreviewUrl = String(reader.result || '');
+    };
+    reader.readAsDataURL(file);
+    this.limparInputArquivo(input);
+  }
+
+  salvarFavicon(): void {
+    if (!this.faviconSelecionado || this.salvandoFavicon) return;
+    this.salvandoFavicon = true;
+    this.identidadeService.alterarFavicon(this.faviconSelecionado).subscribe({
+      next: (identidade) => {
+        this.salvandoFavicon = false;
+        this.identidadePublica = identidade;
+        this.limparFaviconSelecionado();
+        this.toastr.success('Favicon da identidade pública atualizado.');
+      },
+      error: (err) => {
+        this.salvandoFavicon = false;
+        this.toastr.error(err?.userMessage || 'Erro ao atualizar o favicon.');
+      },
+    });
+  }
+
+  removerFavicon(): void {
+    if (this.salvandoFavicon || !this.identidadePublica?.faviconUrl) return;
+    this.salvandoFavicon = true;
+    this.identidadeService.removerFavicon().subscribe({
+      next: (identidade) => {
+        this.salvandoFavicon = false;
+        this.identidadePublica = identidade;
+        this.limparFaviconSelecionado();
+        this.toastr.success('Favicon removido. O padrão do ClickManager será usado.');
+      },
+      error: (err) => {
+        this.salvandoFavicon = false;
+        this.toastr.error(err?.userMessage || 'Erro ao remover o favicon.');
+      },
+    });
+  }
+
+  cancelarFaviconSelecionado(): void {
+    this.limparFaviconSelecionado();
+  }
+
+  copiarEnderecoClickManager(): void {
+    const host = getClickManagerPublicHost(this.identidadePublica?.slug);
+    if (!host) {
+      this.toastr.warning('Endereço ClickManager ainda não disponível.');
+      return;
+    }
+
+    navigator.clipboard?.writeText(host)
+      .then(() => this.toastr.success('Endereço ClickManager copiado.'))
+      .catch(() => this.toastr.warning('Não foi possível copiar o endereço.'));
   }
 
   onSubmit(): void {
@@ -316,6 +437,57 @@ export class EmpresaFormComponent implements OnInit {
         estado: dados.uf || ''
       }
     });
+  }
+
+  private validarFavicon(file: File): boolean {
+    const tiposPermitidos = ['image/png', 'image/svg+xml', 'image/webp', 'image/x-icon', 'image/vnd.microsoft.icon'];
+    const nomeValido = /\.(png|svg|webp|ico)$/i.test(file.name);
+
+    if (!tiposPermitidos.includes(file.type) && !nomeValido) {
+      this.faviconErro = 'Formato inválido. Use PNG, SVG, WEBP ou ICO.';
+      this.limparFaviconSelecionado(false);
+      return false;
+    }
+
+    if (file.size > 1024 * 1024) {
+      this.faviconErro = 'O favicon deve ter até 1 MB.';
+      this.limparFaviconSelecionado(false);
+      return false;
+    }
+
+    return true;
+  }
+
+  private limparFaviconSelecionado(limparErro = true): void {
+    this.faviconSelecionado = null;
+    this.faviconPreviewUrl = '';
+    this.faviconArquivoNome = '';
+    this.faviconArquivoTamanho = '';
+    if (limparErro) {
+      this.faviconErro = '';
+    }
+  }
+
+  private limparInputArquivo(input?: HTMLInputElement | null): void {
+    if (input) {
+      input.value = '';
+    }
+  }
+
+  private formatarTamanho(bytes: number): string {
+    if (!Number.isFinite(bytes) || bytes <= 0) {
+      return '';
+    }
+
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    }
+
+    if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(1)} KB`;
+    }
+
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   // Getters para inputs reutilizáveis

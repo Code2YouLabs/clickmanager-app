@@ -26,4 +26,14 @@ describe('links-url.util', () => {
 
     expect(buildClickLinkPublicUrl('empresa-de-teste')).toBe('http://localhost:4500/links');
   });
+
+  it('prefere dominio proprio ativo quando informado', () => {
+    environment.publicSiteBaseUrl = 'http://localhost:4500';
+    environment.publicBaseDomain = 'clickmanager.com.br';
+
+    expect(buildClickLinkPublicUrl('empresa-de-teste', null, true, 'www.empresa.com.br', true))
+      .toBe('https://www.empresa.com.br/links');
+    expect(buildClickLinkPublicUrl('empresa-de-teste', 'vendas', false, 'https://empresa.com.br/site', true))
+      .toBe('https://empresa.com.br/links/vendas');
+  });
 });

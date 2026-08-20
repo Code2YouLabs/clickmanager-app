@@ -7,6 +7,7 @@ import { ToastrService } from 'ngx-toastr';
 import { of } from 'rxjs';
 import { AuthService } from 'src/app/services/auth.service';
 import { environment } from 'src/environments/environment';
+import { PresencaPublicaService } from 'src/app/pages/config/presenca-publica/presenca-publica.service';
 import { EmpresaIdentidadePublicaService } from '../../../empresa/empresa-identidade-publica.service';
 import { EmpresaFormService } from '../../../empresa/empresa-form.service';
 import { PaginaLinksDetalhe } from '../../models/links.models';
@@ -32,7 +33,7 @@ describe('LinksEditorComponent', () => {
     formatoBotao: 'ARREDONDADO',
     createdAt: '',
     updatedAt: '',
-    identidade: { nome: 'Empresa', slug: 'empresa', logoUrl: 'https://cdn/logo.png' },
+    identidade: { nome: 'Empresa', slug: 'empresa', logoUrl: 'https://cdn/logo.png', faviconUrl: 'https://cdn/favicon.png' },
     itens: [],
   };
 
@@ -69,6 +70,7 @@ describe('LinksEditorComponent', () => {
           },
         },
         { provide: EmpresaIdentidadePublicaService, useValue: { buscar: () => of(pagina.identidade) } },
+        { provide: PresencaPublicaService, useValue: { buscar: () => of({ slugPublico: 'empresa', dominioProprio: null, dominioProprioAtivo: false }) } },
         {
           provide: EmpresaFormService,
           useValue: {

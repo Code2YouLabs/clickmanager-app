@@ -50,6 +50,7 @@ import { FormPaginaComponent } from './site/paginas/form-pagina/form-pagina.comp
 import { SiteConfiguracoesComponent } from './site/configuracoes/site-configuracoes.component';
 import { StorageAdminPageComponent } from './storage/components/storage-admin-page/storage-admin-page.component';
 import { depositoLegadoGuard } from './catalogo/shared/guards/catalogo-versao.guard';
+import { PresencaPublicaComponent } from './config/presenca-publica/presenca-publica.component';
 
 export const PagesRoutes: Routes = [
   {
@@ -388,6 +389,20 @@ export const PagesRoutes: Routes = [
       urls: [
         { title: 'Folha de Pagamento', url: '/page/folha-pagamento' },
         { title: 'Detalhe da Folha' }
+      ]
+    }
+  },
+  {
+    path: 'config/presenca-publica',
+    component: PresencaPublicaComponent,
+    canActivate: [permissionGuard],
+    data: {
+      ...SHARED_ROUTE_DATA,
+      requiredPermission: ['DADOS_EMPRESA'],
+      title: 'Presença Pública',
+      urls: [
+        { title: 'Configurações', url: '/page/config/presenca-publica' },
+        { title: 'Presença Pública' }
       ]
     }
   },

@@ -349,6 +349,97 @@
           </form>
         </mat-tab>
 
+        <mat-tab label="Identidade Pública">
+          <div class="m-t-24">
+            <mat-card class="cardWithShadow">
+              <mat-card-content class="p-y-24">
+                <mat-card-title>Identidade Pública</mat-card-title>
+                <mat-card-subtitle class="f-s-14">
+                  Defina como sua empresa é apresentada nos recursos públicos do ClickManager.
+                </mat-card-subtitle>
+
+                <div class="empresa-public-identity m-t-24">
+                  <section class="empresa-public-identity__section">
+                    <span class="empresa-public-identity__label">Nome público</span>
+                    <strong>{{ nomePublico }}</strong>
+                  </section>
+
+                  <section class="empresa-public-identity__section">
+                    <span class="empresa-public-identity__label">Endereço ClickManager</span>
+                    <div class="empresa-public-identity__host">
+                      <strong>{{ enderecoClickManager }}</strong>
+                      <button mat-stroked-button color="primary" type="button" (click)="copiarEnderecoClickManager()">
+                        <mat-icon>content_copy</mat-icon>
+                        Copiar
+                      </button>
+                    </div>
+                    <small>Este é o endereço público padrão da empresa no ClickManager. Ele é gerado automaticamente pelo sistema.</small>
+                  </section>
+                </div>
+
+                <div class="empresa-public-media m-t-24">
+                  <section class="empresa-public-media__item">
+                    <div>
+                      <h3>Logo</h3>
+                      <p>A logo pertence à Empresa e pode ser usada nos recursos públicos.</p>
+                    </div>
+
+                    <div class="empresa-logo-frame empresa-logo-frame--identity">
+                      <img [src]="imagemPreview || IMAGEM_PADRAO" class="empresa-logo-img" alt="Logo da empresa" />
+                    </div>
+
+                    <div class="empresa-public-media__actions">
+                      <input #identityLogoInput type="file" accept="image/png,image/jpeg,image/gif" hidden (change)="onFileSelected($event)" />
+                      <button type="button" mat-stroked-button color="primary" (click)="identityLogoInput.click()">
+                        <mat-icon>upload</mat-icon>
+                        Selecionar logo
+                      </button>
+                      <button type="button" mat-button color="warn" (click)="resetarImagem(identityLogoInput)">
+                        Remover
+                      </button>
+                    </div>
+                  </section>
+
+                  <section class="empresa-public-media__item">
+                    <div>
+                      <h3>Favicon</h3>
+                      <p>O favicon pode ser usado em Site Público, ClickLink e outros recursos públicos.</p>
+                    </div>
+
+                    <div class="empresa-favicon-frame">
+                      <img [src]="faviconPreview" alt="Prévia do favicon" />
+                    </div>
+
+                    <div class="empresa-public-media__hint">
+                      <span>Use PNG, SVG, WEBP ou ICO. Recomendado: imagem quadrada com pelo menos 96x96 px.</span>
+                      <small *ngIf="faviconArquivoNome">{{ faviconArquivoNome }} {{ faviconArquivoTamanho ? '• ' + faviconArquivoTamanho : '' }}</small>
+                      <small class="empresa-public-media__error" *ngIf="faviconErro">{{ faviconErro }}</small>
+                    </div>
+
+                    <div class="empresa-public-media__actions">
+                      <input #faviconInput type="file" accept=".png,.svg,.webp,.ico,image/png,image/svg+xml,image/webp,image/x-icon,image/vnd.microsoft.icon" hidden (change)="onFaviconSelecionado($event)" />
+                      <button mat-stroked-button color="primary" type="button" [disabled]="salvandoFavicon" (click)="faviconInput.click()">
+                        <mat-icon>upload</mat-icon>
+                        Escolher favicon
+                      </button>
+                      <button mat-flat-button color="primary" type="button" [disabled]="!podeSalvarFavicon" (click)="salvarFavicon()">
+                        <mat-icon>save</mat-icon>
+                        {{ salvandoFavicon ? 'Salvando...' : 'Salvar favicon' }}
+                      </button>
+                      <button mat-button type="button" [disabled]="salvandoFavicon" (click)="cancelarFaviconSelecionado()" *ngIf="faviconArquivoNome">
+                        Cancelar troca
+                      </button>
+                      <button mat-button color="warn" type="button" [disabled]="salvandoFavicon || !identidadePublica?.faviconUrl" (click)="removerFavicon()">
+                        Remover
+                      </button>
+                    </div>
+                  </section>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </mat-tab>
+
         <mat-tab label="Redes Sociais">
           <div class="m-t-24">
             <mat-card class="cardWithShadow">

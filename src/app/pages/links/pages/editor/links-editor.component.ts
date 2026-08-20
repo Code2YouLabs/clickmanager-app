@@ -12,6 +12,8 @@ import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive
 import { Empresa } from 'src/app/models/empresa/empresa.model';
 import { MaterialModule } from 'src/app/material.module';
 import { AuthService } from 'src/app/services/auth.service';
+import { PresencaPublicaResponse } from 'src/app/pages/config/presenca-publica/presenca-publica.models';
+import { PresencaPublicaService } from 'src/app/pages/config/presenca-publica/presenca-publica.service';
 import { EmpresaIdentidadePublicaService } from '../../../empresa/empresa-identidade-publica.service';
 import { EmpresaFormService } from '../../../empresa/empresa-form.service';
 import { LinksItemDialogComponent } from '../../components/item-dialog/links-item-dialog.component';
@@ -59,6 +61,7 @@ interface LinkEmpresaSugestao extends PaginaLinksItemRequest {
 export class LinksEditorComponent implements OnInit {
   pagina: PaginaLinksDetalhe | null = null;
   identidade: LinksIdentidadePublica | null = null;
+  presenca: PresencaPublicaResponse | null = null;
   empresa: Empresa | null = null;
   carregando = true;
   salvandoPagina = false;
@@ -99,6 +102,7 @@ export class LinksEditorComponent implements OnInit {
     private readonly router: Router,
     private readonly linksService: LinksService,
     private readonly identidadeService: EmpresaIdentidadePublicaService,
+    private readonly presencaService: PresencaPublicaService,
     private readonly empresaService: EmpresaFormService,
     private readonly authService: AuthService,
     private readonly toastr: ToastrService,
@@ -107,6 +111,7 @@ export class LinksEditorComponent implements OnInit {
 
   ngOnInit(): void {
     this.carregarDadosEmpresa();
+    this.carregarPresenca();
     this.carregarIdentidade(() => {
       if (this.isNova) {
         this.prepararNovaPagina();
@@ -373,7 +378,13 @@ export class LinksEditorComponent implements OnInit {
   }
 
   urlPublica(): string {
-    return buildClickLinkPublicUrl(this.identidade?.slug, this.pagina?.slug, this.pagina?.principal ?? true);
+    return buildClickLinkPublicUrl(
+      this.identidade?.slug,
+      this.pagina?.slug,
+      this.pagina?.principal ?? true,
+      this.presenca?.dominioProprio,
+      this.presenca?.dominioProprioAtivo === true
+    );
   }
 
   previewModel(): LinksPreviewModel {
@@ -384,6 +395,7 @@ export class LinksEditorComponent implements OnInit {
         nome: this.identidade?.nome || null,
         slug: this.identidade?.slug || null,
         logoUrl: this.identidade?.logoUrl || null,
+        faviconUrl: this.identidade?.faviconUrl || null,
       },
       tema: this.temaControl.value || LINKS_APARENCIA_PADRAO.tema,
       corPrincipal: this.corPrincipalControl.value || LINKS_APARENCIA_PADRAO.corPrincipal,
@@ -544,6 +556,17 @@ export class LinksEditorComponent implements OnInit {
       error: () => {
         this.identidade = null;
         done?.();
+      },
+    });
+  }
+
+  private carregarPresenca(): void {
+    this.presencaService.buscar().subscribe({
+      next: (presenca) => {
+        this.presenca = presenca;
+      },
+      error: () => {
+        this.presenca = null;
       },
     });
   }

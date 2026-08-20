@@ -8,6 +8,8 @@ import { CardHeaderComponent } from 'src/app/components/card-header/card-header.
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
 import { MaterialModule } from 'src/app/material.module';
+import { PresencaPublicaResponse } from 'src/app/pages/config/presenca-publica/presenca-publica.models';
+import { PresencaPublicaService } from 'src/app/pages/config/presenca-publica/presenca-publica.service';
 import { EmpresaIdentidadePublicaService } from '../../../empresa/empresa-identidade-publica.service';
 import { LinksShareDialogComponent } from '../../components/share-dialog/links-share-dialog.component';
 import { LINKS_PERMISSOES, LinksIdentidadePublica, PaginaLinksDetalhe, PaginaLinksResumo } from '../../models/links.models';
@@ -25,6 +27,7 @@ export class LinksListaComponent implements OnInit {
   paginas: PaginaLinksResumo[] = [];
   paginaMenu: PaginaLinksResumo | null = null;
   identidade: LinksIdentidadePublica | null = null;
+  presenca: PresencaPublicaResponse | null = null;
   carregando = true;
   executandoId: number | null = null;
   readonly permissoes = LINKS_PERMISSOES;
@@ -33,6 +36,7 @@ export class LinksListaComponent implements OnInit {
   constructor(
     private readonly linksService: LinksService,
     private readonly identidadeService: EmpresaIdentidadePublicaService,
+    private readonly presencaService: PresencaPublicaService,
     private readonly toastr: ToastrService,
     private readonly dialog: MatDialog,
     private readonly router: Router
@@ -153,7 +157,13 @@ export class LinksListaComponent implements OnInit {
   }
 
   urlPublica(pagina?: PaginaLinksResumo): string {
-    return buildClickLinkPublicUrl(this.identidade?.slug, pagina?.slug, pagina?.principal ?? true);
+    return buildClickLinkPublicUrl(
+      this.identidade?.slug,
+      pagina?.slug,
+      pagina?.principal ?? true,
+      this.presenca?.dominioProprio,
+      this.presenca?.dominioProprioAtivo === true
+    );
   }
 
   statusLabel(pagina: PaginaLinksResumo): string {
@@ -168,10 +178,23 @@ export class LinksListaComponent implements OnInit {
     this.identidadeService.buscar().subscribe({
       next: (identidade) => {
         this.identidade = identidade;
-        this.carregando = false;
+        this.carregarPresenca();
       },
       error: () => {
         this.carregarIdentidadePorDetalhe();
+      },
+    });
+  }
+
+  private carregarPresenca(): void {
+    this.presencaService.buscar().subscribe({
+      next: (presenca) => {
+        this.presenca = presenca;
+        this.carregando = false;
+      },
+      error: () => {
+        this.presenca = null;
+        this.carregando = false;
       },
     });
   }
@@ -186,7 +209,7 @@ export class LinksListaComponent implements OnInit {
     this.linksService.buscarPagina(primeiraPagina.id).subscribe({
       next: (pagina) => {
         this.identidade = pagina.identidade;
-        this.carregando = false;
+        this.carregarPresenca();
       },
       error: () => {
         this.identidade = null;

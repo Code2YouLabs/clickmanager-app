@@ -25,6 +25,7 @@ export interface LinksIdentidadePublica {
   nome: string | null;
   slug: string | null;
   logoUrl: string | null;
+  faviconUrl?: string | null;
 }
 
 export interface PaginaLinksResumo {

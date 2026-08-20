@@ -1,0 +1,78 @@
+<mat-card class="cardWithShadow presenca-card">
+  <app-card-header
+    titulo="Presença Pública"
+    subtitulo="Gerencie os endereços usados para acessar os recursos públicos da empresa."
+    [mostrarDivisor]="true">
+  </app-card-header>
+
+  <mat-card-content>
+    @if (carregando) {
+      <div class="presenca-state">
+        <mat-spinner diameter="32"></mat-spinner>
+        <span>Carregando presença pública...</span>
+      </div>
+    } @else {
+      <div class="presenca-layout">
+        <section class="presenca-section">
+          <div class="presenca-section__header">
+            <mat-icon>public</mat-icon>
+            <div>
+              <h2>Endereço ClickManager</h2>
+              <p>Gerado automaticamente pelo sistema.</p>
+            </div>
+            <span class="presenca-badge presenca-badge--success">Ativo</span>
+          </div>
+
+          <div class="presenca-host">
+            <strong>{{ enderecoClickManager }}</strong>
+            <button mat-stroked-button color="primary" type="button" (click)="copiarHost(enderecoClickManager)">
+              <mat-icon>content_copy</mat-icon>
+              Copiar
+            </button>
+          </div>
+        </section>
+
+        <section class="presenca-section">
+          <div class="presenca-section__header">
+            <mat-icon>language</mat-icon>
+            <div>
+              <h2>Domínio próprio</h2>
+              <p>Use seu próprio domínio para acessar os recursos públicos da empresa.</p>
+            </div>
+            <span class="presenca-badge" [class.presenca-badge--success]="presenca?.dominioProprioAtivo" [class.presenca-badge--muted]="!presenca?.dominioProprioAtivo">
+              {{ statusDominio }}
+            </span>
+          </div>
+
+          <form [formGroup]="form" class="presenca-form" (ngSubmit)="salvarDominio()">
+            <mat-form-field appearance="outline">
+              <mat-label>Domínio próprio</mat-label>
+              <input matInput formControlName="dominio" placeholder="www.santaluzia.com.br" maxlength="255" />
+              <mat-hint>Um domínio próprio por empresa. Não há verificação DNS/SSL nesta tela.</mat-hint>
+            </mat-form-field>
+
+            <mat-slide-toggle color="primary" [formControl]="ativoControl">
+              Domínio ativo
+            </mat-slide-toggle>
+
+            <div class="presenca-actions">
+              <button mat-flat-button color="primary" type="submit" [disabled]="salvando">
+                <mat-icon>save</mat-icon>
+                {{ dominioConfigurado ? 'Alterar' : 'Configurar' }}
+              </button>
+
+              <button mat-stroked-button color="primary" type="button" (click)="alterarAtivo(!presenca?.dominioProprioAtivo)" [disabled]="!dominioConfigurado || salvando">
+                <mat-icon>{{ presenca?.dominioProprioAtivo ? 'toggle_off' : 'toggle_on' }}</mat-icon>
+                {{ presenca?.dominioProprioAtivo ? 'Desativar' : 'Ativar' }}
+              </button>
+
+              <button mat-button color="warn" type="button" (click)="removerDominio()" [disabled]="!dominioConfigurado || salvando">
+                Remover
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

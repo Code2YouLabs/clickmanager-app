@@ -83,6 +83,96 @@
   margin-top: 8px;
 }
 
+.empresa-public-identity,
+.empresa-public-media {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.empresa-public-identity__section,
+.empresa-public-media__item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid rgba(14, 23, 38, 0.1);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.empresa-public-identity__label {
+  color: #64748b;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.empresa-public-identity__section strong,
+.empresa-public-identity__host strong {
+  overflow-wrap: anywhere;
+}
+
+.empresa-public-identity__section small,
+.empresa-public-media__hint {
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.empresa-public-identity__host,
+.empresa-public-media__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.empresa-public-media__item h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.empresa-public-media__item p {
+  margin: 0;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.empresa-logo-frame--identity {
+  width: min(100%, 260px);
+  height: 164px;
+}
+
+.empresa-favicon-frame {
+  width: 72px;
+  height: 72px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  border: 1px solid rgba(14, 23, 38, 0.1);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.empresa-favicon-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.empresa-public-media__hint {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.empresa-public-media__error {
+  color: #d32f2f;
+}
+
 @media (max-width: 768px) {
   .empresa-onboarding-form {
     gap: 18px;
@@ -127,6 +217,22 @@
   }
 
   .empresa-site-publico__actions button {
+    width: 100%;
+  }
+
+  .empresa-public-identity,
+  .empresa-public-media {
+    grid-template-columns: 1fr;
+  }
+
+  .empresa-public-identity__host,
+  .empresa-public-media__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .empresa-public-identity__host button,
+  .empresa-public-media__actions button {
     width: 100%;
   }
 }

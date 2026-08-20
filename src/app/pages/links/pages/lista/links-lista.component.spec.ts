@@ -7,6 +7,7 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { ToastrService } from 'ngx-toastr';
 import { AuthService } from 'src/app/services/auth.service';
 import { environment } from 'src/environments/environment';
+import { PresencaPublicaService } from 'src/app/pages/config/presenca-publica/presenca-publica.service';
 import { EmpresaIdentidadePublicaService } from '../../../empresa/empresa-identidade-publica.service';
 import { LinksShareDialogComponent } from '../../components/share-dialog/links-share-dialog.component';
 import { PaginaLinksResumo } from '../../models/links.models';
@@ -63,6 +64,7 @@ describe('LinksListaComponent', () => {
       providers: [
         { provide: LinksService, useValue: { listarPaginas: () => of(paginas), alterarPublicacao: () => of({ ...paginas[0], itens: [], identidade: null }), tornarPrincipal: () => of({ ...paginas[0], itens: [], identidade: null }), excluirPagina: () => of(void 0) } },
         { provide: EmpresaIdentidadePublicaService, useValue: { buscar: () => of({ nome: 'Empresa', slug: 'empresa-de-teste', logoUrl: null }) } },
+        { provide: PresencaPublicaService, useValue: { buscar: () => of({ slugPublico: 'empresa-de-teste', dominioProprio: null, dominioProprioAtivo: false }) } },
         { provide: ToastrService, useValue: jasmine.createSpyObj('ToastrService', ['success', 'warning', 'error', 'info']) },
         { provide: MatDialog, useValue: dialog },
         { provide: ActivatedRoute, useValue: {} },
