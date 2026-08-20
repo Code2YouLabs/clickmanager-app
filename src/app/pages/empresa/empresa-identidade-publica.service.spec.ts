@@ -20,7 +20,7 @@ describe('EmpresaIdentidadePublicaService', () => {
     service.buscar().subscribe();
     const req = http.expectOne(base);
     expect(req.request.method).toBe('GET');
-    req.flush({ nome: 'Santa Luzia', slug: 'santa-luzia', logoUrl: null });
+    req.flush({ nome: 'Santa Luzia', slug: 'santa-luzia', logoUrl: null, faviconUrl: null });
   });
 
   it('consulta disponibilidade de slug com query param', () => {
@@ -38,5 +38,22 @@ describe('EmpresaIdentidadePublicaService', () => {
     expect(req.request.body instanceof FormData).toBeTrue();
     expect(req.request.body.has('logo')).toBeTrue();
     req.flush({ nome: 'Santa Luzia', slug: 'santa-luzia', logoUrl: '/logo.png' });
+  });
+
+  it('envia favicon como multipart no campo favicon', () => {
+    const file = new File(['x'], 'favicon.png', { type: 'image/png' });
+    service.alterarFavicon(file).subscribe();
+    const req = http.expectOne(`${base}/favicon`);
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body instanceof FormData).toBeTrue();
+    expect(req.request.body.has('favicon')).toBeTrue();
+    req.flush({ nome: 'Santa Luzia', slug: 'santa-luzia', logoUrl: '/logo.png', faviconUrl: '/favicon.png' });
+  });
+
+  it('remove favicon da identidade publica', () => {
+    service.removerFavicon().subscribe();
+    const req = http.expectOne(`${base}/favicon`);
+    expect(req.request.method).toBe('DELETE');
+    req.flush({ nome: 'Santa Luzia', slug: 'santa-luzia', logoUrl: '/logo.png', faviconUrl: null });
   });
 });

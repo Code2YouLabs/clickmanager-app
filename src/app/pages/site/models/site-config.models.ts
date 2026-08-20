@@ -22,7 +22,7 @@ export interface SiteConfigResponse {
 
 export interface SiteConfigUpdateRequest {
   siteAtivo: boolean;
-  slugPublico: string;
+  slugPublico?: string | null;
   dominioCustom?: string | null;
 
   orcamentoAtivo: boolean;

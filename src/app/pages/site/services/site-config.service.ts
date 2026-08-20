@@ -16,14 +16,4 @@ export class SiteConfigService {
   atualizar(payload: SiteConfigUpdateRequest): Observable<SiteConfigResponse> {
     return this.api.put<SiteConfigResponse>(this.endpoint, payload);
   }
-
-  atualizarFavicon(file: File): Observable<SiteConfigResponse> {
-    const formData = new FormData();
-    formData.append('favicon', file);
-    return this.api.put<SiteConfigResponse>(`${this.endpoint}/favicon`, formData);
-  }
-
-  removerFavicon(): Observable<SiteConfigResponse> {
-    return this.api.delete<SiteConfigResponse>(`${this.endpoint}/favicon`);
-  }
 }

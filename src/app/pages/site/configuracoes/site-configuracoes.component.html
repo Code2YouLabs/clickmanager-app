@@ -37,7 +37,7 @@
           <mat-icon>public</mat-icon>
           <div>
             <h3>Publicação</h3>
-            <p>Controle a disponibilidade do site e o endereço ClickManager usado pelos clientes.</p>
+            <p>Controle a disponibilidade do conteúdo do site público.</p>
           </div>
 
           <mat-slide-toggle color="primary" [formControl]="siteAtivoControl">
@@ -45,101 +45,26 @@
           </mat-slide-toggle>
         </div>
 
-        <div class="site-config-grid site-config-grid--two">
+        <div class="site-config-grid">
           <div class="site-config-readonly-field">
             <span>Endereço ClickManager</span>
             <strong>{{ enderecoClickManager }}</strong>
+            <small>O endereço e o domínio próprio são administrados em Presença Pública.</small>
           </div>
-
-          <app-input-texto-restrito
-            [control]="slugPublicoControl"
-            label="Slug público"
-            placeholder="nome-da-empresa"
-            [maxlength]="120">
-          </app-input-texto-restrito>
         </div>
 
         <div class="site-config-actions">
-          <button mat-stroked-button color="primary" type="button" (click)="abrirEnderecoClickManager()" [disabled]="siteInativo" [matTooltip]="mensagemSiteInativo">
+          <a mat-stroked-button color="primary" routerLink="/page/config/presenca-publica">
+            <mat-icon>language</mat-icon>
+            Gerenciar Presença Pública
+          </a>
+          <a mat-stroked-button color="primary" routerLink="/page/empresa">
+            <mat-icon>badge</mat-icon>
+            Gerenciar Identidade Pública
+          </a>
+          <button mat-stroked-button color="primary" type="button" (click)="abrirSite()" [disabled]="siteInativo" [matTooltip]="mensagemSiteInativo">
             <mat-icon>open_in_new</mat-icon>
-            Abrir endereço ClickManager
-          </button>
-        </div>
-      </section>
-
-      <section class="site-config-section">
-        <div class="site-config-section__header">
-          <mat-icon>image</mat-icon>
-          <div>
-            <h3>Favicon</h3>
-            <p>Defina o ícone exibido na aba do navegador. Sem favicon próprio, o padrão do ClickManager será usado.</p>
-          </div>
-        </div>
-
-        <div class="site-config-favicon">
-          <div class="site-config-favicon__preview">
-            <img [src]="faviconPreview" alt="Prévia do favicon" />
-          </div>
-
-          <div class="site-config-favicon__content">
-            <strong>{{ faviconUrl ? 'Favicon da empresa' : 'Favicon padrão ClickManager' }}</strong>
-            <span>Use PNG, SVG, WEBP ou ICO. Recomendado: imagem quadrada com pelo menos 96x96 px.</span>
-
-            @if (faviconArquivoNome) {
-              <small>{{ faviconArquivoNome }} {{ faviconArquivoTamanho ? '• ' + faviconArquivoTamanho : '' }}</small>
-            }
-
-            @if (faviconErro) {
-              <small class="site-config-favicon__error">{{ faviconErro }}</small>
-            }
-
-            <div class="site-config-favicon__actions">
-              <button mat-stroked-button color="primary" type="button" [disabled]="!podeEditar || salvandoFavicon" (click)="faviconInput.click()">
-                <mat-icon>upload</mat-icon>
-                Escolher favicon
-              </button>
-
-              <button mat-flat-button color="primary" type="button" [disabled]="!podeSalvarFavicon" (click)="salvarFavicon()">
-                <mat-icon>save</mat-icon>
-                {{ salvandoFavicon ? 'Salvando...' : 'Salvar favicon' }}
-              </button>
-
-              @if (faviconArquivoNome) {
-                <button mat-button type="button" [disabled]="salvandoFavicon" (click)="cancelarFaviconSelecionado()">
-                  Cancelar troca
-                </button>
-              }
-
-              <button mat-button color="warn" type="button" [disabled]="!podeEditar || salvandoFavicon || !faviconUrl" (click)="removerFavicon()">
-                Remover
-              </button>
-            </div>
-
-            <input #faviconInput type="file" accept=".png,.svg,.webp,.ico,image/png,image/svg+xml,image/webp,image/x-icon,image/vnd.microsoft.icon" hidden (change)="onFaviconSelecionado($event)" />
-          </div>
-        </div>
-      </section>
-
-      <section class="site-config-section">
-        <div class="site-config-section__header">
-          <mat-icon>language</mat-icon>
-          <div>
-            <h3>Domínio próprio</h3>
-            <p>Informe o domínio que será usado para acessar o site publicado pela empresa.</p>
-          </div>
-        </div>
-
-        <app-input-texto-restrito
-          [control]="dominioCustomControl"
-          label="Domínio próprio"
-          placeholder="seudominio.com.br"
-          [maxlength]="255">
-        </app-input-texto-restrito>
-
-        <div class="site-config-actions">
-          <button mat-stroked-button color="primary" type="button" (click)="testarDominioCustom()">
-            <mat-icon>travel_explore</mat-icon>
-            Testar domínio próprio
+            Abrir site
           </button>
         </div>
       </section>

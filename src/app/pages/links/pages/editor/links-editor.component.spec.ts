@@ -7,6 +7,7 @@ import { ToastrService } from 'ngx-toastr';
 import { of } from 'rxjs';
 import { AuthService } from 'src/app/services/auth.service';
 import { environment } from 'src/environments/environment';
+import { PresencaPublicaService } from 'src/app/pages/config/presenca-publica/presenca-publica.service';
 import { EmpresaIdentidadePublicaService } from '../../../empresa/empresa-identidade-publica.service';
 import { EmpresaFormService } from '../../../empresa/empresa-form.service';
 import { PaginaLinksDetalhe } from '../../models/links.models';
@@ -20,6 +21,7 @@ describe('LinksEditorComponent', () => {
 
   const detalhe: PaginaLinksDetalhe = {
     id: 7,
+    slug: 'pagina-salva',
     titulo: 'Página salva',
     descricao: 'Descrição salva',
     ativa: true,
@@ -31,7 +33,7 @@ describe('LinksEditorComponent', () => {
     formatoBotao: 'ARREDONDADO',
     createdAt: '',
     updatedAt: '',
-    identidade: { nome: 'Empresa', slug: 'empresa', logoUrl: 'https://cdn/logo.png' },
+    identidade: { nome: 'Empresa', slug: 'empresa', logoUrl: 'https://cdn/logo.png', faviconUrl: 'https://cdn/favicon.png' },
     itens: [],
   };
 
@@ -59,11 +61,16 @@ describe('LinksEditorComponent', () => {
               paginaAtual = { ...paginaAtual, publicada };
               return of(paginaAtual);
             },
+            tornarPrincipal: (_id: number) => {
+              paginaAtual = { ...paginaAtual, principal: true };
+              return of(paginaAtual);
+            },
             excluirPagina: () => of(void 0),
             removerItem: () => of(void 0),
           },
         },
         { provide: EmpresaIdentidadePublicaService, useValue: { buscar: () => of(pagina.identidade) } },
+        { provide: PresencaPublicaService, useValue: { buscar: () => of({ slugPublico: 'empresa', dominioProprio: null, dominioProprioAtivo: false }) } },
         {
           provide: EmpresaFormService,
           useValue: {
@@ -222,7 +229,7 @@ describe('LinksEditorComponent', () => {
 
     expect(text).toContain('Identidade da empresa');
     expect(text).toContain('A logo e o endereço pertencem à identidade da empresa');
-    expect(text).toContain('https://empresa.clickmanager.com.br/l/empresa');
+    expect(text).toContain('https://empresa.clickmanager.com.br/links');
     expect(text).not.toContain('Alterar logo');
     expect(text).not.toContain('Remover');
     expect(text).not.toContain('Alterar endereço');

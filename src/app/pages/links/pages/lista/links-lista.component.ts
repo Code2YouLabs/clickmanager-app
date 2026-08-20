@@ -4,10 +4,14 @@ import { Component, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { Router, RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
+import { take } from 'rxjs';
 import { CardHeaderComponent } from 'src/app/components/card-header/card-header.component';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
 import { MaterialModule } from 'src/app/material.module';
+import { PresencaPublicaResponse } from 'src/app/pages/config/presenca-publica/presenca-publica.models';
+import { PresencaPublicaService } from 'src/app/pages/config/presenca-publica/presenca-publica.service';
+import { AuthService } from 'src/app/services/auth.service';
 import { EmpresaIdentidadePublicaService } from '../../../empresa/empresa-identidade-publica.service';
 import { LinksShareDialogComponent } from '../../components/share-dialog/links-share-dialog.component';
 import { LINKS_PERMISSOES, LinksIdentidadePublica, PaginaLinksDetalhe, PaginaLinksResumo } from '../../models/links.models';
@@ -25,6 +29,8 @@ export class LinksListaComponent implements OnInit {
   paginas: PaginaLinksResumo[] = [];
   paginaMenu: PaginaLinksResumo | null = null;
   identidade: LinksIdentidadePublica | null = null;
+  presenca: PresencaPublicaResponse | null = null;
+  empresaId: number | null = null;
   carregando = true;
   executandoId: number | null = null;
   readonly permissoes = LINKS_PERMISSOES;
@@ -33,12 +39,19 @@ export class LinksListaComponent implements OnInit {
   constructor(
     private readonly linksService: LinksService,
     private readonly identidadeService: EmpresaIdentidadePublicaService,
+    private readonly presencaService: PresencaPublicaService,
+    private readonly authService: AuthService,
     private readonly toastr: ToastrService,
     private readonly dialog: MatDialog,
     private readonly router: Router
   ) {}
 
   ngOnInit(): void {
+    this.authService.usuario$
+      .pipe(take(1))
+      .subscribe((usuario) => {
+        this.empresaId = usuario?.empresa?.id || null;
+      });
     this.carregar();
   }
 
@@ -76,6 +89,27 @@ export class LinksListaComponent implements OnInit {
         this.atualizarResumo(detalhe);
       },
       error: (error) => this.tratarErro(error, 'Não foi possível alterar a publicação.'),
+    });
+  }
+
+  tornarPrincipal(pagina: PaginaLinksResumo | null): void {
+    if (!pagina) return;
+    if (!pagina.publicada) {
+      this.toastr.info('Publique a página antes de torná-la principal.');
+      return;
+    }
+    this.executandoId = pagina.id;
+    this.linksService.tornarPrincipal(pagina.id).subscribe({
+      next: (detalhe) => {
+        this.executandoId = null;
+        this.toastr.success('Página definida como principal.');
+        this.paginas = this.paginas.map((item) => ({
+          ...item,
+          principal: item.id === detalhe.id,
+        }));
+        this.atualizarResumo(detalhe);
+      },
+      error: (error) => this.tratarErro(error, 'Não foi possível tornar a página principal.'),
     });
   }
 
@@ -131,8 +165,15 @@ export class LinksListaComponent implements OnInit {
     });
   }
 
-  urlPublica(_pagina?: PaginaLinksResumo): string {
-    return buildClickLinkPublicUrl(this.identidade?.slug);
+  urlPublica(pagina?: PaginaLinksResumo): string {
+    return buildClickLinkPublicUrl(
+      this.identidade?.slug,
+      pagina?.slug,
+      pagina?.principal ?? true,
+      this.presenca?.dominioProprio,
+      this.presenca?.dominioProprioAtivo === true,
+      this.empresaId
+    );
   }
 
   statusLabel(pagina: PaginaLinksResumo): string {
@@ -147,10 +188,23 @@ export class LinksListaComponent implements OnInit {
     this.identidadeService.buscar().subscribe({
       next: (identidade) => {
         this.identidade = identidade;
-        this.carregando = false;
+        this.carregarPresenca();
       },
       error: () => {
         this.carregarIdentidadePorDetalhe();
+      },
+    });
+  }
+
+  private carregarPresenca(): void {
+    this.presencaService.buscar().subscribe({
+      next: (presenca) => {
+        this.presenca = presenca;
+        this.carregando = false;
+      },
+      error: () => {
+        this.presenca = null;
+        this.carregando = false;
       },
     });
   }
@@ -165,7 +219,7 @@ export class LinksListaComponent implements OnInit {
     this.linksService.buscarPagina(primeiraPagina.id).subscribe({
       next: (pagina) => {
         this.identidade = pagina.identidade;
-        this.carregando = false;
+        this.carregarPresenca();
       },
       error: () => {
         this.identidade = null;
