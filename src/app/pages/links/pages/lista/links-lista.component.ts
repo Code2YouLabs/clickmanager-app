@@ -4,12 +4,14 @@ import { Component, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { Router, RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
+import { take } from 'rxjs';
 import { CardHeaderComponent } from 'src/app/components/card-header/card-header.component';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
 import { MaterialModule } from 'src/app/material.module';
 import { PresencaPublicaResponse } from 'src/app/pages/config/presenca-publica/presenca-publica.models';
 import { PresencaPublicaService } from 'src/app/pages/config/presenca-publica/presenca-publica.service';
+import { AuthService } from 'src/app/services/auth.service';
 import { EmpresaIdentidadePublicaService } from '../../../empresa/empresa-identidade-publica.service';
 import { LinksShareDialogComponent } from '../../components/share-dialog/links-share-dialog.component';
 import { LINKS_PERMISSOES, LinksIdentidadePublica, PaginaLinksDetalhe, PaginaLinksResumo } from '../../models/links.models';
@@ -28,6 +30,7 @@ export class LinksListaComponent implements OnInit {
   paginaMenu: PaginaLinksResumo | null = null;
   identidade: LinksIdentidadePublica | null = null;
   presenca: PresencaPublicaResponse | null = null;
+  empresaId: number | null = null;
   carregando = true;
   executandoId: number | null = null;
   readonly permissoes = LINKS_PERMISSOES;
@@ -37,12 +40,18 @@ export class LinksListaComponent implements OnInit {
     private readonly linksService: LinksService,
     private readonly identidadeService: EmpresaIdentidadePublicaService,
     private readonly presencaService: PresencaPublicaService,
+    private readonly authService: AuthService,
     private readonly toastr: ToastrService,
     private readonly dialog: MatDialog,
     private readonly router: Router
   ) {}
 
   ngOnInit(): void {
+    this.authService.usuario$
+      .pipe(take(1))
+      .subscribe((usuario) => {
+        this.empresaId = usuario?.empresa?.id || null;
+      });
     this.carregar();
   }
 
@@ -162,7 +171,8 @@ export class LinksListaComponent implements OnInit {
       pagina?.slug,
       pagina?.principal ?? true,
       this.presenca?.dominioProprio,
-      this.presenca?.dominioProprioAtivo === true
+      this.presenca?.dominioProprioAtivo === true,
+      this.empresaId
     );
   }
 

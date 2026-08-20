@@ -62,6 +62,7 @@ export class LinksEditorComponent implements OnInit {
   pagina: PaginaLinksDetalhe | null = null;
   identidade: LinksIdentidadePublica | null = null;
   presenca: PresencaPublicaResponse | null = null;
+  empresaId: number | null = null;
   empresa: Empresa | null = null;
   carregando = true;
   salvandoPagina = false;
@@ -383,7 +384,8 @@ export class LinksEditorComponent implements OnInit {
       this.pagina?.slug,
       this.pagina?.principal ?? true,
       this.presenca?.dominioProprio,
-      this.presenca?.dominioProprioAtivo === true
+      this.presenca?.dominioProprioAtivo === true,
+      this.empresaId
     );
   }
 
@@ -473,6 +475,7 @@ export class LinksEditorComponent implements OnInit {
       .subscribe((usuario) => {
         const empresaId = usuario?.empresa?.id;
         if (!empresaId) return;
+        this.empresaId = empresaId;
         this.empresaService.buscarEmpresa(empresaId).subscribe({
           next: (empresa) => {
             this.empresa = empresa;

@@ -42,6 +42,7 @@ export function buildClickLinkPublicUrl(
   principal = true,
   dominioProprio?: string | null,
   dominioProprioAtivo = false,
+  empresaId?: number | null,
 ): string {
   const normalized = normalizeSlugInput(slug).replace(/^\/+/, '');
   const dominio = normalizeHostInput(dominioProprio);
@@ -50,7 +51,12 @@ export function buildClickLinkPublicUrl(
   }
   const normalizedPaginaSlug = normalizeSlugInput(paginaSlug).replace(/^\/+/, '');
   const path = principal || !normalizedPaginaSlug ? '/links' : `/links/${normalizedPaginaSlug}`;
-  return `${getClickLinkPublicBaseUrl(normalized, dominio, dominioProprioAtivo)}${path}`;
+  const baseUrl = getClickLinkPublicBaseUrl(normalized, dominio, dominioProprioAtivo);
+  const localEmpresaParam = shouldAppendLocalEmpresaId(baseUrl, empresaId)
+    ? `?empresaId=${encodeURIComponent(String(empresaId))}`
+    : '';
+
+  return `${baseUrl}${path}${localEmpresaParam}`;
 }
 
 export function normalizeSlugInput(value: string | null | undefined): string {
@@ -80,4 +86,8 @@ function isLocalPublicHost(baseUrl: string): boolean {
   } catch {
     return false;
   }
+}
+
+function shouldAppendLocalEmpresaId(baseUrl: string, empresaId?: number | null): boolean {
+  return !!empresaId && isLocalPublicHost(baseUrl);
 }

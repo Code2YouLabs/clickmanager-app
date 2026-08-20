@@ -68,7 +68,7 @@ describe('LinksListaComponent', () => {
         { provide: ToastrService, useValue: jasmine.createSpyObj('ToastrService', ['success', 'warning', 'error', 'info']) },
         { provide: MatDialog, useValue: dialog },
         { provide: ActivatedRoute, useValue: {} },
-        { provide: AuthService, useValue: { temPermissao: () => true } },
+        { provide: AuthService, useValue: { usuario$: of({ empresa: { id: 1 } }), temPermissao: () => true } },
       ],
     }).compileComponents();
 
