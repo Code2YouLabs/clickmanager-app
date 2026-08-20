@@ -1,6 +1,6 @@
 # ClickLink administrativo
 
-Status: MVP administrativo frontend com analytics simples
+Status: frontend administrativo com identidade pública centralizada, presença pública e analytics simples
 
 ## Rotas
 
@@ -36,8 +36,12 @@ O módulo frontend fica em `src/app/pages/links` com:
 - `utils`.
 
 O service de identidade pública da Empresa fica em `src/app/pages/empresa`, porque slug
-e logo continuam pertencendo a Empresa. ClickLink consome a identidade pública da
-Empresa, mas não administra diretamente essa identidade.
+logo e favicon continuam pertencendo a Empresa. ClickLink consome a identidade pública
+da Empresa, mas não administra diretamente essa identidade.
+
+A configuração de presença pública fica em `src/app/pages/config/presenca-publica`. Essa
+tela concentra o endereço público do ClickManager e o domínio próprio. Site Público e
+ClickLink apenas consomem essa presença para montar URLs.
 
 ## UX mobile-first e padrão visual
 
@@ -85,6 +89,30 @@ URLs clicáveis. Endereços geram opções separadas para Google Maps e Waze. Es
 apenas criam itens normais do ClickLink quando acionadas; não alteram os dados da Empresa
 e não criam contrato novo no backend.
 
+## Identidade pública
+
+Os dados públicos da Empresa ficam em `Dados da Empresa > Identidade Pública`:
+
+- nome público read-only, derivado da Empresa;
+- endereço ClickManager read-only, derivado do slug público gerado pelo sistema;
+- logo pública;
+- favicon público.
+
+O slug é gerado pelo sistema e não é editável pelo usuário no frontend. O ClickLink e o
+Site Público não oferecem edição inline desses dados.
+
+## Presença pública
+
+As regras de endereço ficam em `Configurações > Presença Pública`:
+
+- host ClickManager read-only em `https://{slugEmpresa}.clickmanager.com.br`;
+- domínio próprio único;
+- estado real de domínio próprio ativo/inativo;
+- configuração, ativação/desativação e remoção do domínio próprio.
+
+A tela não simula verificação de DNS, emissão de SSL ou múltiplos domínios. Esses estados
+só devem aparecer quando existirem contratos reais para eles.
+
 ## Aparência
 
 O admin envia e recebe os campos de aparência do backend:
@@ -100,32 +128,34 @@ Os defaults compartilhados do MVP são `CLARO`, `#0D6EFD`, `#F6F8FB` e
 ## Compartilhamento
 
 A URL pública canônica do MVP é montada por `buildClickLinkPublicUrl` como
-`https://{slugEmpresa}.clickmanager.com.br/l/{slugEmpresa}` em ambiente público. Em
-desenvolvimento local, `publicSiteBaseUrl` pode apontar para `http://localhost:4500`
-para preservar um fluxo local funcional; em produção, `publicBaseDomain` define o
-domínio base usado para subdomínios dinâmicos. A listagem e o editor reutilizam o mesmo
-painel de compartilhamento para copiar link, abrir página, gerar QR Code e baixar PNG.
-O QR Code é gerado localmente com `qrcode`, codifica apenas a URL canônica e não possui
-persistência no backend.
+`https://{slugEmpresa}.clickmanager.com.br/links` para a página principal e
+`https://{slugEmpresa}.clickmanager.com.br/links/{slugPagina}` para páginas secundárias
+em ambiente público. Quando houver domínio próprio ativo em Presença Pública, a URL usa
+esse domínio como host e preserva os mesmos caminhos. Em desenvolvimento local,
+`publicSiteBaseUrl` pode apontar para `http://localhost:4500` para preservar um fluxo
+local funcional; em produção, `publicBaseDomain` define o domínio base usado para
+subdomínios dinâmicos.
+
+A listagem e o editor reutilizam o mesmo painel de compartilhamento para copiar link,
+abrir página, gerar QR Code e baixar PNG. O QR Code é gerado localmente com `qrcode`,
+codifica apenas a URL canônica e não possui persistência no backend.
 
 O padrão de subdomínio é compartilhado com a presença pública do ClickManager, mas
 ClickLink não depende funcionalmente do módulo Site Público.
 
 O endereço público é read-only no ClickLink. Se a Empresa ainda não possuir slug, a UI
-orienta configurar os dados da empresa antes de publicar ou compartilhar. Evoluções como
-geração automática, personalização controlada, redirect de slug antigo e permissão
-específica de slug ficam fora do MVP administrativo atual.
+orienta configurar os dados da empresa antes de publicar ou compartilhar.
 
 ## Preview público
 
-O preview do admin deve espelhar o renderer público `/l/{slug}`. O renderer público é a
-referência canônica para estrutura de identidade, degradê de topo atrás da logo, tipografia,
-espaçamentos, botões, ícones por tipo, tema, cor de destaque, cor de fundo e formato
-dos botões. A composição atual omite nome da Empresa quando ele repete o título,
-remove texto auxiliar `Abrir` dos itens porque o card inteiro é clicável, limita
-subtítulos longos, usa a cor de destaque como acento visual e exibe uma assinatura
-discreta `Produto ClickManager` no fim. A diferença aceitável é apenas o container
-externo do preview dentro do admin.
+O preview do admin deve espelhar o renderer público `/links` e `/links/{slugPagina}`.
+O renderer público é a referência canônica para estrutura de identidade, degradê de topo
+atrás da logo, tipografia, espaçamentos, botões, ícones por tipo, tema, cor de destaque,
+cor de fundo e formato dos botões. A composição atual omite nome da Empresa quando ele
+repete o título, remove texto auxiliar `Abrir` dos itens porque o card inteiro é clicável,
+limita subtítulos longos, usa a cor de destaque como acento visual e exibe uma assinatura
+discreta `Produto ClickManager` no fim. A diferença aceitável é apenas o container externo
+do preview dentro do admin.
 
 ## Analytics
 
@@ -159,14 +189,14 @@ Links:
 Empresa:
 
 - `DADOS_EMPRESA`: permanece do módulo Empresa. ClickLink não expõe alteração inline de
-  slug ou logo, mesmo que o usuário possua essa permissão.
+  identidade pública, mesmo que o usuário possua essa permissão.
 
 ## Limites do MVP
 
 O admin não implementa page builder, HTML customizado, CSS livre, UTMs, visitantes
-únicos, exportação de analytics, domínio customizado de ClickLink ou múltiplas páginas
-públicas por sub-slug. O QR Code é apenas uma representação local da URL pública
-canônica e não cria entidade no backend.
+únicos, exportação de analytics, domínio customizado exclusivo de ClickLink ou múltiplos
+domínios próprios. O QR Code é apenas uma representação local da URL pública canônica e
+não cria entidade no backend.
 
 Validações de URL e tenant no frontend existem para ergonomia, mas a autoridade final é
 sempre o backend.

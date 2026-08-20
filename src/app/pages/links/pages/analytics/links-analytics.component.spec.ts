@@ -14,6 +14,7 @@ describe('LinksAnalyticsComponent', () => {
   const paginas: PaginaLinksResumo[] = [
     {
       id: 7,
+      slug: 'santa-luzia',
       titulo: 'Santa Luzia',
       descricao: null,
       ativa: true,
@@ -29,6 +30,7 @@ describe('LinksAnalyticsComponent', () => {
     },
     {
       id: 8,
+      slug: 'campanha',
       titulo: 'Campanha',
       descricao: null,
       ativa: true,

@@ -25,10 +25,12 @@ export interface LinksIdentidadePublica {
   nome: string | null;
   slug: string | null;
   logoUrl: string | null;
+  faviconUrl?: string | null;
 }
 
 export interface PaginaLinksResumo {
   id: number;
+  slug: string;
   titulo: string;
   descricao: string | null;
   ativa: boolean;
@@ -57,6 +59,7 @@ export interface PaginaLinksItem {
 
 export interface PaginaLinksDetalhe {
   id: number;
+  slug: string;
   titulo: string;
   descricao: string | null;
   ativa: boolean;
@@ -93,7 +96,6 @@ export interface LinksAnalyticsResumo {
 export interface PaginaLinksRequest {
   titulo: string;
   descricao?: string | null;
-  principal?: boolean | null;
   tema?: TemaPaginaLinks | null;
   corPrincipal?: string | null;
   corFundo?: string | null;

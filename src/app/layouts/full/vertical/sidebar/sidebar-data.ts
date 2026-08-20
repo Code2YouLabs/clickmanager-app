@@ -347,6 +347,14 @@ export const navItems: NavItem[] = [
                 proprietarioOnly: true,
             },
             {
+                displayName: 'Presença Pública',
+                iconName: 'point',
+                bgcolor: 'transparent',
+                route: '/page/config/presenca-publica',
+                requiredPermission: ['DADOS_EMPRESA'],
+                allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
+            },
+            {
                 displayName: 'Aplicativos e atalhos',
                 iconName: 'point',
                 bgcolor: 'transparent',

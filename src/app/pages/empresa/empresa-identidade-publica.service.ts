@@ -37,4 +37,14 @@ export class EmpresaIdentidadePublicaService {
   removerLogo(): Observable<LinksIdentidadePublica> {
     return this.api.delete<LinksIdentidadePublica>(`${this.endpoint}/logo`);
   }
+
+  alterarFavicon(favicon: File): Observable<LinksIdentidadePublica> {
+    const body = new FormData();
+    body.append('favicon', favicon, favicon.name);
+    return this.api.put<LinksIdentidadePublica>(`${this.endpoint}/favicon`, body);
+  }
+
+  removerFavicon(): Observable<LinksIdentidadePublica> {
+    return this.api.delete<LinksIdentidadePublica>(`${this.endpoint}/favicon`);
+  }
 }

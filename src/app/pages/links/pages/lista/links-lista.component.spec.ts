@@ -7,6 +7,7 @@ import { RouterTestingModule } from '@angular/router/testing';
 import { ToastrService } from 'ngx-toastr';
 import { AuthService } from 'src/app/services/auth.service';
 import { environment } from 'src/environments/environment';
+import { PresencaPublicaService } from 'src/app/pages/config/presenca-publica/presenca-publica.service';
 import { EmpresaIdentidadePublicaService } from '../../../empresa/empresa-identidade-publica.service';
 import { LinksShareDialogComponent } from '../../components/share-dialog/links-share-dialog.component';
 import { PaginaLinksResumo } from '../../models/links.models';
@@ -22,6 +23,7 @@ describe('LinksListaComponent', () => {
   const paginas: PaginaLinksResumo[] = [
     {
       id: 1,
+      slug: 'pagina-publicada',
       titulo: 'Página publicada',
       descricao: 'Descrição',
       ativa: true,
@@ -37,6 +39,7 @@ describe('LinksListaComponent', () => {
     },
     {
       id: 2,
+      slug: 'pagina-inativa',
       titulo: 'Página inativa',
       descricao: null,
       ativa: false,
@@ -59,12 +62,13 @@ describe('LinksListaComponent', () => {
     await TestBed.configureTestingModule({
       imports: [LinksListaComponent, NoopAnimationsModule, RouterTestingModule.withRoutes([])],
       providers: [
-        { provide: LinksService, useValue: { listarPaginas: () => of(paginas), alterarPublicacao: () => of({ ...paginas[0], itens: [], identidade: null }), excluirPagina: () => of(void 0) } },
+        { provide: LinksService, useValue: { listarPaginas: () => of(paginas), alterarPublicacao: () => of({ ...paginas[0], itens: [], identidade: null }), tornarPrincipal: () => of({ ...paginas[0], itens: [], identidade: null }), excluirPagina: () => of(void 0) } },
         { provide: EmpresaIdentidadePublicaService, useValue: { buscar: () => of({ nome: 'Empresa', slug: 'empresa-de-teste', logoUrl: null }) } },
+        { provide: PresencaPublicaService, useValue: { buscar: () => of({ slugPublico: 'empresa-de-teste', dominioProprio: null, dominioProprioAtivo: false }) } },
         { provide: ToastrService, useValue: jasmine.createSpyObj('ToastrService', ['success', 'warning', 'error', 'info']) },
         { provide: MatDialog, useValue: dialog },
         { provide: ActivatedRoute, useValue: {} },
-        { provide: AuthService, useValue: { temPermissao: () => true } },
+        { provide: AuthService, useValue: { usuario$: of({ empresa: { id: 1 } }), temPermissao: () => true } },
       ],
     }).compileComponents();
 
@@ -94,7 +98,7 @@ describe('LinksListaComponent', () => {
     fixture.componentInstance.compartilhar(paginas[0]);
 
     expect(dialog.open).toHaveBeenCalledWith(LinksShareDialogComponent, jasmine.objectContaining({
-      data: jasmine.objectContaining({ url: 'https://empresa-de-teste.clickmanager.com.br/l/empresa-de-teste' }),
+      data: jasmine.objectContaining({ url: 'https://empresa-de-teste.clickmanager.com.br/links' }),
     }));
   });
 

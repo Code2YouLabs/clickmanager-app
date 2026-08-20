@@ -55,6 +55,23 @@
   display: block;
 }
 
+.empresa-config-state {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.empresa-tab-content {
+  display: block;
+}
+
+.empresa-form-actions {
+  display: flex;
+}
+
 .empresa-onboarding-logo__actions {
   display: flex;
   flex-wrap: wrap;
@@ -81,6 +98,81 @@
   gap: 12px;
   flex-wrap: wrap;
   margin-top: 8px;
+}
+
+.empresa-readonly-box,
+.empresa-media-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 100%;
+  padding: 16px;
+  border: 1px solid #e5eaef;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.empresa-readonly-box span {
+  color: #64748b;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.empresa-readonly-box strong {
+  overflow-wrap: anywhere;
+}
+
+.empresa-readonly-box small,
+.empresa-media-box small,
+.empresa-public-media__file {
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.empresa-readonly-box button {
+  align-self: flex-start;
+}
+
+.empresa-media-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.empresa-logo-frame--identity {
+  width: min(100%, 260px);
+  height: 164px;
+}
+
+.empresa-favicon-frame {
+  width: 72px;
+  height: 72px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  border: 1px solid rgba(14, 23, 38, 0.1);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.empresa-favicon-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.empresa-public-media__hint {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.empresa-public-media__error {
+  color: #d32f2f;
 }
 
 @media (max-width: 768px) {
@@ -127,6 +219,18 @@
   }
 
   .empresa-site-publico__actions button {
+    width: 100%;
+  }
+
+  .empresa-public-identity,
+  .empresa-media-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .empresa-readonly-box button,
+  .empresa-media-actions button,
+  .empresa-form-actions button {
     width: 100%;
   }
 }

@@ -1,5 +1,5 @@
 import { Component, OnInit, ViewChild, ElementRef, Input, Output, EventEmitter } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors, FormControl } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -10,8 +10,9 @@ import { MatCardModule } from '@angular/material/card';
 import { MatSelectModule } from '@angular/material/select';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { TablerIconsModule } from 'angular-tabler-icons';
-import { NgxMaskDirective, provideNgxMask } from 'ngx-mask';
+import { provideNgxMask } from 'ngx-mask';
 import { ImagemUtil } from 'src/app/utils/imagem-util';
 import { ToastrService } from 'ngx-toastr';
 import { ValidadorUtil } from 'src/app/utils/validador-util';
@@ -19,16 +20,20 @@ import { EnderecoViaCep } from 'src/app/models/endereco/endereco.viacep.model';
 import { CepUtilService } from 'src/app/utils/cep-util.service';
 import { EmpresaFormService } from './empresa-form.service';
 import { AuthService } from 'src/app/services/auth.service';
-import { filter, take } from 'rxjs';
-import { CardHeaderComponent } from "src/app/components/card-header/card-header.component";
+import { filter, forkJoin, Observable } from 'rxjs';
 import { Empresa } from 'src/app/models/empresa/empresa.model';
 import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
 import { InputEmailComponent } from 'src/app/components/inputs/input-email/input-custom.component';
 import { InputTelefoneComponent } from 'src/app/components/inputs/input-telefone/input-telefone.component';
 import { InputDocumentoComponent } from 'src/app/components/inputs/input-documento/input-documento.component';
 import { InputCepComponent } from 'src/app/components/inputs/input-cep/input-cep.component';
+import { EmpresaIdentidadePublicaService } from './empresa-identidade-publica.service';
+import { LinksIdentidadePublica } from '../links/models/links.models';
+import { getClickManagerPublicHost } from '../links/utils/links-url.util';
+import { CardHeaderComponent } from 'src/app/components/card-header/card-header.component';
 
 type EmpresaOnboardingSection = 'all' | 'empresa' | 'logo' | 'endereco';
+type FormSnapshot = Record<string, unknown>;
 
 @Component({
   selector: 'app-empresa-form',
@@ -47,8 +52,8 @@ type EmpresaOnboardingSection = 'all' | 'empresa' | 'logo' | 'endereco';
     MatSelectModule,
     MatRadioModule,
     MatSlideToggleModule,
+    MatProgressSpinnerModule,
     TablerIconsModule,
-    NgxMaskDirective,
     CardHeaderComponent,
     InputTextoRestritoComponent,
     InputEmailComponent,
@@ -66,12 +71,33 @@ export class EmpresaFormComponent implements OnInit {
   @Output() empresaSalva = new EventEmitter<void>();
 
   form!: FormGroup;
+  abaSelecionada = 0;
 
   readonly IMAGEM_PADRAO = './assets/images/logos/LogoPadrao.png';
   imagemPreview: string | ArrayBuffer | null = null;
   imagemOriginal: string | null = './assets/images/logos/LogoPadrao.png';
   imagemBlob: File | null = null;
   removerLogo = false;
+  identidadePublica: LinksIdentidadePublica | null = null;
+  carregandoEmpresa = false;
+  carregandoIdentidade = false;
+  salvandoEmpresa = false;
+  salvandoRedes = false;
+  salvandoIdentidade = false;
+  logoIdentidadeArquivoNome = '';
+  logoIdentidadeArquivoTamanho = '';
+  logoIdentidadeErro = '';
+  removerLogoIdentidade = false;
+  faviconPreviewUrl = '';
+  faviconArquivoNome = '';
+  faviconArquivoTamanho = '';
+  faviconErro = '';
+  removerFaviconIdentidade = false;
+  private empresaSnapshot: FormSnapshot | null = null;
+  private redesSnapshot: FormSnapshot | null = null;
+  private logoIdentidadeSelecionada: File | null = null;
+  private faviconSelecionado: File | null = null;
+  private readonly faviconFallbackUrl = 'favicon.ico';
 
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
@@ -80,6 +106,7 @@ export class EmpresaFormComponent implements OnInit {
     private toastr: ToastrService,
     private cepUtilService: CepUtilService,
     private empresaService: EmpresaFormService,
+    private identidadeService: EmpresaIdentidadePublicaService,
     private authService: AuthService) { }
 
   ngOnInit(): void {
@@ -90,10 +117,18 @@ export class EmpresaFormComponent implements OnInit {
         filter(usuario => !!usuario),
       ).subscribe(usuario => {
         if (usuario?.empresa?.id) {
+          this.carregandoEmpresa = true;
           this.empresaService.buscarEmpresa(usuario.empresa.id).subscribe({
-            next: empresa => this.preencherFormulario(empresa),
-            error: () => this.toastr.warning('Erro ao buscar empresa')
+            next: empresa => {
+              this.carregandoEmpresa = false;
+              this.preencherFormulario(empresa);
+            },
+            error: () => {
+              this.carregandoEmpresa = false;
+              this.toastr.warning('Erro ao buscar empresa');
+            }
           });
+          this.carregarIdentidadePublica();
         }
       });
   }
@@ -189,6 +224,65 @@ export class EmpresaFormComponent implements OnInit {
 
     this.imagemPreview = this.imagemOriginal;
     this.removerLogo = false;
+    this.atualizarSnapshotsFormulario();
+  }
+
+  get nomePublico(): string {
+    return this.identidadePublica?.nome || this.nomeControl.value || 'Nome público não definido';
+  }
+
+  get enderecoClickManager(): string {
+    return getClickManagerPublicHost(this.identidadePublica?.slug) || 'Endereço ainda não gerado';
+  }
+
+  get faviconPreview(): string {
+    if (this.removerFaviconIdentidade) {
+      return this.faviconFallbackUrl;
+    }
+
+    return this.faviconPreviewUrl || this.identidadePublica?.faviconUrl || this.faviconFallbackUrl;
+  }
+
+  get identidadeDirty(): boolean {
+    return !!this.logoIdentidadeSelecionada
+      || this.removerLogoIdentidade
+      || !!this.faviconSelecionado
+      || this.removerFaviconIdentidade;
+  }
+
+  get empresaDirty(): boolean {
+    return this.snapshotDiferente(this.empresaSnapshot, this.empresaValues());
+  }
+
+  get redesDirty(): boolean {
+    return this.snapshotDiferente(this.redesSnapshot, this.redesValues());
+  }
+
+  get podeSalvarEmpresa(): boolean {
+    return !this.carregandoEmpresa && !this.salvandoEmpresa && this.empresaDirty;
+  }
+
+  get podeSalvarIdentidade(): boolean {
+    return !this.carregandoIdentidade && !this.salvandoIdentidade && this.identidadeDirty;
+  }
+
+  get podeSalvarRedes(): boolean {
+    return !this.carregandoEmpresa && !this.salvandoRedes && this.redesDirty;
+  }
+
+  carregarIdentidadePublica(): void {
+    this.carregandoIdentidade = true;
+    this.identidadeService.buscar().subscribe({
+      next: (identidade) => {
+        this.carregandoIdentidade = false;
+        this.identidadePublica = identidade;
+        this.restaurarMidiasIdentidade();
+      },
+      error: () => {
+        this.carregandoIdentidade = false;
+        this.toastr.warning('Não foi possível carregar a identidade pública.');
+      },
+    });
   }
 
 
@@ -218,6 +312,76 @@ export class EmpresaFormComponent implements OnInit {
     if (input) input.value = '';
   }
 
+  onLogoIdentidadeSelecionada(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0];
+    if (!file) return;
+
+    this.logoIdentidadeErro = '';
+    ImagemUtil.processarImagemSelecionada(file, 216, 340, 0.8, 'contain')
+      .then(({ preview, blob }) => {
+        this.imagemPreview = preview;
+        this.logoIdentidadeSelecionada = new File([blob], file.name, { type: blob.type });
+        this.logoIdentidadeArquivoNome = file.name;
+        this.logoIdentidadeArquivoTamanho = this.formatarTamanho(file.size);
+        this.removerLogoIdentidade = false;
+      })
+      .catch(err => {
+        this.logoIdentidadeErro = String(err);
+        this.toastr.warning(err);
+      })
+      .finally(() => this.limparInputArquivo(input));
+  }
+
+  onFaviconSelecionado(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0];
+    if (!file) return;
+
+    if (!this.validarFavicon(file)) {
+      this.limparInputArquivo(input);
+      return;
+    }
+
+    this.faviconSelecionado = file;
+    this.faviconArquivoNome = file.name;
+    this.faviconArquivoTamanho = this.formatarTamanho(file.size);
+    this.faviconErro = '';
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.faviconPreviewUrl = String(reader.result || '');
+    };
+    reader.readAsDataURL(file);
+    this.limparInputArquivo(input);
+  }
+
+  removerLogoIdentidadeAtual(): void {
+    this.imagemPreview = this.IMAGEM_PADRAO;
+    this.logoIdentidadeSelecionada = null;
+    this.logoIdentidadeArquivoNome = '';
+    this.logoIdentidadeArquivoTamanho = '';
+    this.logoIdentidadeErro = '';
+    this.removerLogoIdentidade = !!this.identidadePublica?.logoUrl;
+  }
+
+  removerFavicon(): void {
+    this.limparFaviconSelecionado();
+    this.removerFaviconIdentidade = !!this.identidadePublica?.faviconUrl;
+  }
+
+  copiarEnderecoClickManager(): void {
+    const host = getClickManagerPublicHost(this.identidadePublica?.slug);
+    if (!host) {
+      this.toastr.warning('Endereço ClickManager ainda não disponível.');
+      return;
+    }
+
+    navigator.clipboard?.writeText(host)
+      .then(() => this.toastr.success('Endereço ClickManager copiado.'))
+      .catch(() => this.toastr.warning('Não foi possível copiar o endereço.'));
+  }
+
   onSubmit(): void {
   if (this.form.invalid) {
     this.toastr.warning('Preencha todos os campos obrigatórios corretamente.', 'Formulário inválido');
@@ -239,8 +403,103 @@ export class EmpresaFormComponent implements OnInit {
   });
 }
 
+  salvarEmpresa(): void {
+    if (this.form.invalid) {
+      this.toastr.warning('Preencha todos os campos obrigatórios corretamente.', 'Formulário inválido');
+      this.form.markAllAsTouched();
+      return;
+    }
 
-  private montarFormData(): FormData {
+    if (!this.empresaDirty) return;
+
+    this.salvandoEmpresa = true;
+    this.empresaService.cadastrarEmpresaFormData(this.montarFormData(false)).subscribe({
+      next: (empresa: Empresa | void) => {
+        this.salvandoEmpresa = false;
+        if (empresa) {
+          this.preencherFormulario(empresa);
+        } else {
+          this.atualizarSnapshotsFormulario();
+        }
+        this.toastr.success('Dados da empresa salvos.');
+      },
+      error: () => {
+        this.salvandoEmpresa = false;
+        this.toastr.error('Erro ao salvar dados da empresa.');
+      }
+    });
+  }
+
+  cancelarEmpresa(): void {
+    if (!this.empresaSnapshot) return;
+    this.aplicarEmpresaValues(this.empresaSnapshot);
+  }
+
+  salvarRedes(): void {
+    if (!this.redesDirty) return;
+
+    this.salvandoRedes = true;
+    this.empresaService.cadastrarEmpresaFormData(this.montarFormData(false)).subscribe({
+      next: (empresa: Empresa | void) => {
+        this.salvandoRedes = false;
+        if (empresa) {
+          this.preencherFormulario(empresa);
+        } else {
+          this.atualizarSnapshotsFormulario();
+        }
+        this.toastr.success('Redes sociais salvas.');
+      },
+      error: () => {
+        this.salvandoRedes = false;
+        this.toastr.error('Erro ao salvar redes sociais.');
+      }
+    });
+  }
+
+  cancelarRedes(): void {
+    if (!this.redesSnapshot) return;
+    this.aplicarRedesValues(this.redesSnapshot);
+  }
+
+  salvarIdentidadePublica(): void {
+    if (!this.identidadeDirty || this.salvandoIdentidade) return;
+
+    const operacoes: Observable<LinksIdentidadePublica>[] = [];
+    if (this.logoIdentidadeSelecionada) {
+      operacoes.push(this.identidadeService.alterarLogo(this.logoIdentidadeSelecionada));
+    } else if (this.removerLogoIdentidade) {
+      operacoes.push(this.identidadeService.removerLogo());
+    }
+
+    if (this.faviconSelecionado) {
+      operacoes.push(this.identidadeService.alterarFavicon(this.faviconSelecionado));
+    } else if (this.removerFaviconIdentidade) {
+      operacoes.push(this.identidadeService.removerFavicon());
+    }
+
+    if (!operacoes.length) return;
+
+    this.salvandoIdentidade = true;
+    forkJoin(operacoes).subscribe({
+      next: (identidades) => {
+        this.salvandoIdentidade = false;
+        this.identidadePublica = identidades[identidades.length - 1] || this.identidadePublica;
+        this.restaurarMidiasIdentidade();
+        this.toastr.success('Identidade pública salva.');
+      },
+      error: (err) => {
+        this.salvandoIdentidade = false;
+        this.toastr.error(err?.userMessage || 'Erro ao salvar identidade pública.');
+      }
+    });
+  }
+
+  cancelarIdentidadePublica(): void {
+    this.restaurarMidiasIdentidade();
+  }
+
+
+  private montarFormData(incluirLogo = true): FormData {
     const formData = new FormData();
     const rawValues = this.form.getRawValue();
 
@@ -267,11 +526,11 @@ export class EmpresaFormComponent implements OnInit {
     }
 
     // Adiciona a imagem do logo da empresa, se houver
-    if (this.imagemBlob) {
+    if (incluirLogo && this.imagemBlob) {
       formData.append('logo', this.imagemBlob, this.imagemBlob.name);
     }
 
-    if (this.removerLogo) {
+    if (incluirLogo && this.removerLogo) {
       formData.append('removerLogo', 'true');
     }
 
@@ -316,6 +575,121 @@ export class EmpresaFormComponent implements OnInit {
         estado: dados.uf || ''
       }
     });
+  }
+
+  private atualizarSnapshotsFormulario(): void {
+    this.empresaSnapshot = this.empresaValues();
+    this.redesSnapshot = this.redesValues();
+    this.form.markAsPristine();
+  }
+
+  private empresaValues(): FormSnapshot {
+    const raw = this.form.getRawValue();
+    return {
+      nome: raw.nome || '',
+      cnpj: raw.cnpj || '',
+      inscricaoEstadual: raw.inscricaoEstadual || '',
+      telefone: raw.telefone || '',
+      email: raw.email || '',
+      horario: raw.horario || '',
+      ativa: raw.ativa ?? true,
+      enderecoRequest: {
+        cep: raw.enderecoRequest?.cep || '',
+        logradouro: raw.enderecoRequest?.logradouro || '',
+        numero: raw.enderecoRequest?.numero || '',
+        complemento: raw.enderecoRequest?.complemento || '',
+        bairro: raw.enderecoRequest?.bairro || '',
+        cidade: raw.enderecoRequest?.cidade || '',
+        estado: raw.enderecoRequest?.estado || '',
+      },
+    };
+  }
+
+  private redesValues(): FormSnapshot {
+    const raw = this.form.getRawValue();
+    return {
+      instagramUrl: raw.instagramUrl || '',
+      facebookUrl: raw.facebookUrl || '',
+      youtubeUrl: raw.youtubeUrl || '',
+      siteUrl: raw.siteUrl || '',
+    };
+  }
+
+  private aplicarEmpresaValues(values: FormSnapshot): void {
+    this.form.patchValue(values);
+    this.empresaSnapshot = this.empresaValues();
+  }
+
+  private aplicarRedesValues(values: FormSnapshot): void {
+    this.form.patchValue(values);
+    this.redesSnapshot = this.redesValues();
+  }
+
+  private snapshotDiferente(snapshot: FormSnapshot | null, values: FormSnapshot): boolean {
+    return !!snapshot && JSON.stringify(snapshot) !== JSON.stringify(values);
+  }
+
+  private restaurarMidiasIdentidade(): void {
+    this.imagemOriginal = this.identidadePublica?.logoUrl || this.IMAGEM_PADRAO;
+    this.imagemPreview = this.imagemOriginal;
+    this.logoIdentidadeSelecionada = null;
+    this.logoIdentidadeArquivoNome = '';
+    this.logoIdentidadeArquivoTamanho = '';
+    this.logoIdentidadeErro = '';
+    this.removerLogoIdentidade = false;
+    this.removerFaviconIdentidade = false;
+    this.limparFaviconSelecionado();
+  }
+
+  private validarFavicon(file: File): boolean {
+    const tiposPermitidos = ['image/png', 'image/svg+xml', 'image/webp', 'image/x-icon', 'image/vnd.microsoft.icon'];
+    const nomeValido = /\.(png|svg|webp|ico)$/i.test(file.name);
+
+    if (!tiposPermitidos.includes(file.type) && !nomeValido) {
+      this.faviconErro = 'Formato inválido. Use PNG, SVG, WEBP ou ICO.';
+      this.limparFaviconSelecionado(false);
+      return false;
+    }
+
+    if (file.size > 1024 * 1024) {
+      this.faviconErro = 'O favicon deve ter até 1 MB.';
+      this.limparFaviconSelecionado(false);
+      return false;
+    }
+
+    return true;
+  }
+
+  private limparFaviconSelecionado(limparErro = true): void {
+    this.faviconSelecionado = null;
+    this.faviconPreviewUrl = '';
+    this.faviconArquivoNome = '';
+    this.faviconArquivoTamanho = '';
+    if (limparErro) {
+      this.faviconErro = '';
+    }
+  }
+
+  private limparInputArquivo(input?: HTMLInputElement | null): void {
+    if (input) {
+      input.value = '';
+    }
+  }
+
+  private formatarTamanho(bytes: number): string {
+    if (!Number.isFinite(bytes) || bytes <= 0) {
+      return '';
+    }
+
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    }
+
+    if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(1)} KB`;
+    }
+
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
   // Getters para inputs reutilizáveis

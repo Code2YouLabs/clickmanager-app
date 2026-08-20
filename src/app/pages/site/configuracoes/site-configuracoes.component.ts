@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { CardHeaderComponent } from 'src/app/components/card-header/card-header.component';
 import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
@@ -12,13 +13,7 @@ import { MaterialModule } from 'src/app/material.module';
 import { AuthService } from 'src/app/services/auth.service';
 import { SiteConfigResponse, SiteConfigUpdateRequest, SiteWhatsappExibicao } from '../models/site-config.models';
 import { SiteConfigService } from '../services/site-config.service';
-import {
-  getUrlClickManager,
-  getUrlDominioProprio,
-  getUrlPublicaPrincipal,
-  normalizarDominioProprio,
-  normalizarSlugPublico,
-} from '../utils/site-public-url.util';
+import { getUrlClickManager, getUrlPublicaPrincipal } from '../utils/site-public-url.util';
 
 @Component({
   selector: 'app-site-configuracoes',
@@ -26,6 +21,7 @@ import {
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    RouterModule,
     MaterialModule,
     CardHeaderComponent,
     InputOptionsComponent,
@@ -46,14 +42,6 @@ export class SiteConfiguracoesComponent implements OnInit {
   form!: FormGroup;
   carregando = false;
   salvando = false;
-  salvandoFavicon = false;
-  faviconUrl = '';
-  faviconPreviewUrl = '';
-  faviconArquivoNome = '';
-  faviconArquivoTamanho = '';
-  faviconErro = '';
-  private faviconSelecionado: File | null = null;
-  private readonly faviconFallbackUrl = 'favicon.ico';
   private configAtual: SiteConfigResponse | null = null;
 
   constructor(
@@ -66,8 +54,6 @@ export class SiteConfiguracoesComponent implements OnInit {
   ngOnInit(): void {
     this.form = this.fb.group({
       siteAtivo: [true],
-      slugPublico: ['', [Validators.required, Validators.maxLength(120)]],
-      dominioCustom: ['', Validators.maxLength(255)],
       orcamentoAtivo: [true],
       whatsappAtivo: [true],
       whatsappTelefone: ['', [Validators.pattern(/^\d{10,13}$/)]],
@@ -95,14 +81,6 @@ export class SiteConfiguracoesComponent implements OnInit {
     return this.form.get('siteAtivo') as FormControl;
   }
 
-  get slugPublicoControl(): FormControl {
-    return this.form.get('slugPublico') as FormControl;
-  }
-
-  get dominioCustomControl(): FormControl {
-    return this.form.get('dominioCustom') as FormControl;
-  }
-
   get orcamentoAtivoControl(): FormControl {
     return this.form.get('orcamentoAtivo') as FormControl;
   }
@@ -128,7 +106,7 @@ export class SiteConfiguracoesComponent implements OnInit {
   }
 
   get enderecoClickManager(): string {
-    return getUrlClickManager(this.slugPublicoControl.value);
+    return getUrlClickManager(this.configAtual?.slugPublico);
   }
 
   get enderecoPublicoPrincipal(): string {
@@ -141,14 +119,6 @@ export class SiteConfiguracoesComponent implements OnInit {
 
   get mensagemSiteInativo(): string {
     return this.siteInativo ? 'Site desativado. Ative o site para abrir este endereço.' : '';
-  }
-
-  get faviconPreview(): string {
-    return this.faviconPreviewUrl || this.faviconUrl || this.faviconFallbackUrl;
-  }
-
-  get podeSalvarFavicon(): boolean {
-    return this.podeEditar && !this.carregando && !this.salvandoFavicon && !!this.faviconSelecionado;
   }
 
   carregarConfiguracao(): void {
@@ -200,109 +170,10 @@ export class SiteConfiguracoesComponent implements OnInit {
     window.open(this.enderecoPublicoPrincipal, '_blank', 'noopener,noreferrer');
   }
 
-  abrirEnderecoClickManager(): void {
-    const slug = normalizarSlugPublico(this.slugPublicoControl.value);
-    if (!slug) {
-      this.toastr.warning('Informe o slug público para abrir o endereço ClickManager.');
-      return;
-    }
-
-    if (this.siteInativo) {
-      this.toastr.warning('O site está desativado. Ative o site para abrir o endereço ClickManager.');
-      return;
-    }
-
-    window.open(this.enderecoClickManager, '_blank', 'noopener,noreferrer');
-  }
-
-  testarDominioCustom(): void {
-    const dominio = normalizarDominioProprio(this.dominioCustomControl.value);
-    if (!dominio) {
-      this.toastr.warning('Informe o domínio próprio para testar.');
-      return;
-    }
-
-    window.open(getUrlDominioProprio(dominio), '_blank', 'noopener,noreferrer');
-  }
-
-  onFaviconSelecionado(event: Event): void {
-    const input = event.target as HTMLInputElement | null;
-    const file = input?.files?.[0];
-
-    if (!file) {
-      return;
-    }
-
-    if (!this.validarFavicon(file)) {
-      this.limparInputArquivo(input);
-      return;
-    }
-
-    this.faviconSelecionado = file;
-    this.faviconArquivoNome = file.name;
-    this.faviconArquivoTamanho = this.formatarTamanho(file.size);
-    this.faviconErro = '';
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      this.faviconPreviewUrl = String(reader.result || '');
-    };
-    reader.readAsDataURL(file);
-    this.limparInputArquivo(input);
-  }
-
-  salvarFavicon(): void {
-    if (!this.podeSalvarFavicon || !this.faviconSelecionado) {
-      return;
-    }
-
-    this.salvandoFavicon = true;
-    this.siteConfigService.atualizarFavicon(this.faviconSelecionado).subscribe({
-      next: (config) => {
-        this.salvandoFavicon = false;
-        this.preencherFormulario(config);
-        this.limparFaviconSelecionado();
-        this.toastr.success('Favicon atualizado com sucesso!');
-      },
-      error: (err) => {
-        this.salvandoFavicon = false;
-        this.toastr.error(err?.userMessage || 'Erro ao atualizar o favicon.');
-      },
-    });
-  }
-
-  removerFavicon(): void {
-    if (!this.podeEditar || this.salvandoFavicon) {
-      return;
-    }
-
-    this.salvandoFavicon = true;
-    this.siteConfigService.removerFavicon().subscribe({
-      next: (config) => {
-        this.salvandoFavicon = false;
-        this.preencherFormulario(config);
-        this.limparFaviconSelecionado();
-        this.toastr.success('Favicon removido. O padrão do ClickManager será usado.');
-      },
-      error: (err) => {
-        this.salvandoFavicon = false;
-        this.toastr.error(err?.userMessage || 'Erro ao remover o favicon.');
-      },
-    });
-  }
-
-  cancelarFaviconSelecionado(): void {
-    this.limparFaviconSelecionado();
-  }
-
   private preencherFormulario(config: SiteConfigResponse): void {
     this.configAtual = config;
-    this.faviconUrl = config.faviconUrl || '';
-    this.faviconPreviewUrl = '';
     this.form.patchValue({
       siteAtivo: config.siteAtivo ?? true,
-      slugPublico: config.slugPublico || '',
-      dominioCustom: config.dominioCustom || '',
       orcamentoAtivo: config.orcamentoAtivo ?? true,
       whatsappAtivo: config.whatsappAtivo ?? true,
       whatsappTelefone: this.normalizarTelefoneParaFormulario(config.whatsappTelefone),
@@ -317,8 +188,6 @@ export class SiteConfiguracoesComponent implements OnInit {
 
     return {
       siteAtivo: !!raw.siteAtivo,
-      slugPublico: this.normalizarTexto(raw.slugPublico),
-      dominioCustom: this.normalizarNulo(raw.dominioCustom),
       orcamentoAtivo: !!raw.orcamentoAtivo,
       whatsappAtivo: !!raw.whatsappAtivo,
       whatsappTelefone: this.normalizarNulo(raw.whatsappTelefone)?.replace(/\D/g, '') || null,
@@ -338,31 +207,14 @@ export class SiteConfiguracoesComponent implements OnInit {
   }
 
   private configParaUrlAtual(): SiteConfigResponse {
-    const dominioAtual = this.normalizarNulo(this.dominioCustomControl.value);
-    const dominioOriginal = normalizarDominioProprio(this.configAtual?.dominioCustom);
-    const dominioMesmoDoBackend = normalizarDominioProprio(dominioAtual) === dominioOriginal;
-    const statusDominio = dominioMesmoDoBackend
-      ? {
-        dominioCustomAtivo: this.configAtual?.dominioCustomAtivo,
-        dominioVerificado: this.configAtual?.dominioVerificado,
-        statusDominio: this.configAtual?.statusDominio,
-      }
-      : {
-        dominioCustomAtivo: false,
-        dominioVerificado: false,
-        statusDominio: null,
-      };
-
     return {
       ...(this.configAtual || {
+        slugPublico: '',
         orcamentoAtivo: true,
         whatsappAtivo: true,
         whatsappExibicao: 'ICONE_TEXTO' as SiteWhatsappExibicao,
       }),
-      ...statusDominio,
       siteAtivo: this.siteAtivoControl.value === true,
-      slugPublico: normalizarSlugPublico(this.slugPublicoControl.value),
-      dominioCustom: dominioAtual,
     };
   }
 
@@ -374,54 +226,4 @@ export class SiteConfiguracoesComponent implements OnInit {
     return telefone;
   }
 
-  private validarFavicon(file: File): boolean {
-    const tiposPermitidos = ['image/png', 'image/svg+xml', 'image/webp', 'image/x-icon', 'image/vnd.microsoft.icon'];
-    const nomeValido = /\.(png|svg|webp|ico)$/i.test(file.name);
-
-    if (!tiposPermitidos.includes(file.type) && !nomeValido) {
-      this.faviconErro = 'Formato inválido. Use PNG, SVG, WEBP ou ICO.';
-      this.limparFaviconSelecionado(false);
-      return false;
-    }
-
-    if (file.size > 1024 * 1024) {
-      this.faviconErro = 'O favicon deve ter até 1 MB.';
-      this.limparFaviconSelecionado(false);
-      return false;
-    }
-
-    return true;
-  }
-
-  private limparFaviconSelecionado(limparErro = true): void {
-    this.faviconSelecionado = null;
-    this.faviconPreviewUrl = '';
-    this.faviconArquivoNome = '';
-    this.faviconArquivoTamanho = '';
-    if (limparErro) {
-      this.faviconErro = '';
-    }
-  }
-
-  private limparInputArquivo(input?: HTMLInputElement | null): void {
-    if (input) {
-      input.value = '';
-    }
-  }
-
-  private formatarTamanho(bytes: number): string {
-    if (!Number.isFinite(bytes) || bytes <= 0) {
-      return '';
-    }
-
-    if (bytes < 1024) {
-      return `${bytes} B`;
-    }
-
-    if (bytes < 1024 * 1024) {
-      return `${(bytes / 1024).toFixed(1)} KB`;
-    }
-
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  }
 }
