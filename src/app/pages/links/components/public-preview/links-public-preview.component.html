@@ -1,4 +1,4 @@
-<div class="clicklink-preview" [ngStyle]="estilosPagina()">
+<div class="clicklink-preview" [class.clicklink-preview--compact]="compact" [ngStyle]="estilosPagina()">
   <header class="clicklink-preview__header">
     <img class="clicklink-preview__logo" *ngIf="model.identidade?.logoUrl" [src]="model.identidade?.logoUrl" alt="Logo da empresa" />
     <p class="clicklink-preview__empresa" *ngIf="deveExibirEmpresa()">{{ model.identidade?.nome }}</p>

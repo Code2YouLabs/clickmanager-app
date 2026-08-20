@@ -14,6 +14,7 @@ import { buildLinksThemeTokens } from '../../utils/links-theme.util';
 export class LinksPublicPreviewComponent {
   @Input({ required: true }) model!: LinksPreviewModel;
   @Input() interactive = false;
+  @Input() compact = false;
 
   estilosPagina(): Record<string, string> {
     const tokens = buildLinksThemeTokens(this.model);

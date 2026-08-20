@@ -16,6 +16,7 @@ import { EmpresaIdentidadePublicaService } from '../../../empresa/empresa-identi
 import { EmpresaFormService } from '../../../empresa/empresa-form.service';
 import { LinksItemDialogComponent } from '../../components/item-dialog/links-item-dialog.component';
 import { LinksPreviewDialogComponent } from '../../components/preview-dialog/links-preview-dialog.component';
+import { LinksPublicPreviewComponent } from '../../components/public-preview/links-public-preview.component';
 import { LinksSharePanelComponent } from '../../components/share-panel/links-share-panel.component';
 import {
   FormatoBotaoLinks,
@@ -49,6 +50,7 @@ interface LinkEmpresaSugestao extends PaginaLinksItemRequest {
     MaterialModule,
     CardHeaderComponent,
     TemPermissaoDirective,
+    LinksPublicPreviewComponent,
     LinksSharePanelComponent,
   ],
   templateUrl: './links-editor.component.html',
@@ -262,9 +264,9 @@ export class LinksEditorComponent implements OnInit {
     this.dialog.open(ConfirmDialogComponent, {
       width: '420px',
       data: {
-        title: 'Excluir página',
-        message: `Excluir "${this.pagina.titulo}"? Ela deixará de aparecer na listagem e no ClickLink público.`,
-        confirmText: 'Excluir',
+        title: 'Arquivar página',
+        message: `Arquivar "${this.pagina.titulo}"? Ela deixará de ficar disponível e será removida da listagem de páginas ativas.`,
+        confirmText: 'Arquivar',
         confirmColor: 'warn',
       },
     }).afterClosed().subscribe((ok) => {
@@ -273,10 +275,10 @@ export class LinksEditorComponent implements OnInit {
       this.linksService.arquivarPagina(this.pagina.id).subscribe({
         next: () => {
           this.arquivando = false;
-          this.toastr.success('Página excluída.');
+          this.toastr.success('Página arquivada.');
           this.router.navigate(['/page/links/paginas']);
         },
-        error: (error) => this.tratarErro(error, 'Não foi possível excluir a página.'),
+        error: (error) => this.tratarErro(error, 'Não foi possível arquivar a página.'),
       });
     });
   }

@@ -59,21 +59,22 @@ salvas individualmente. O conteúdo foi organizado em abas Material:
 - `Links`: itens exibidos na página pública, sugestões a partir dos dados existentes da
   Empresa, ações e ordenação. Na criação, a aba fica acessível e orienta salvar a página
   antes de adicionar itens;
-- `Aparência`: tema, cor de destaque, cor de fundo, formato dos botões e acesso ao
-  preview;
-- `Compartilhar`: URL pública, copiar link, abrir página, QR Code e download. Na criação,
-  a aba fica acessível e orienta salvar a página antes de compartilhar.
+- `Aparência`: tema, cor de destaque, cor de fundo, formato dos botões e preview inline
+  no desktop, com dialog/fullscreen em telas menores;
+- `Compartilhar`: URL pública, copiar link, abrir página, QR Code inline e download. Na
+  criação, a aba fica acessível e orienta salvar a página antes de compartilhar.
 
 Publicar/Despublicar ficam na seção `Publicação` da aba `Geral`. Publicar exige que o
 formulário esteja salvo; se houver alterações locais válidas, o editor salva antes de
 publicar para evitar publicar dados antigos enquanto o preview mostra alterações novas.
-Excluir fica separado em `Ações avançadas`, apenas dentro do editor, com confirmação e
-estilo destrutivo, sem competir com Salvar/Publicar.
+Arquivar fica separado em `Ações avançadas`, apenas dentro do editor, com confirmação e
+estilo destrutivo, sem competir com Salvar/Publicar. O arquivamento é lógico: a página
+fica inativa, deixa de estar disponível publicamente e sai da listagem de páginas ativas.
 
-O preview mobile é aberto por botão e usa o mesmo view model em dialog. Em desktop, o
-dialog apresenta uma moldura visual de celular; em mobile, o preview ocupa a tela útil
-com opção de fechar. A ordenação de itens continua por botões subir/descer e funciona
-por toque.
+O preview mobile usa o mesmo view model no inline desktop e no dialog. Em desktop, a aba
+`Aparência` renderiza a prévia em largura controlada; em telas menores, o preview abre em
+dialog/fullscreen. A ordenação de itens continua por botões subir/descer e funciona por
+toque.
 
 A aba `Links` pode sugerir itens a partir dos dados administrativos já cadastrados na
 Empresa, como telefone, e-mail, site, Instagram, Facebook, YouTube e endereço. Handles
@@ -145,7 +146,7 @@ Links:
 - `LINKS_CRIAR`: criar página;
 - `LINKS_EDITAR`: editar página e itens;
 - `LINKS_PUBLICAR`: publicar/despublicar;
-- `LINKS_EXCLUIR`: excluir página pelo editor.
+- `LINKS_EXCLUIR`: arquivar página pelo editor.
 
 Empresa:
 

@@ -31,7 +31,7 @@ describe('LinksEditorComponent', () => {
     itens: [],
   };
 
-  function setup(path = ':id', pagina = detalhe): ComponentFixture<LinksEditorComponent> {
+  function setup(path = ':id', pagina = detalhe, abaSelecionada = 0): ComponentFixture<LinksEditorComponent> {
     let paginaAtual = { ...pagina };
     TestBed.configureTestingModule({
       imports: [LinksEditorComponent, NoopAnimationsModule, RouterTestingModule.withRoutes([])],
@@ -80,18 +80,22 @@ describe('LinksEditorComponent', () => {
       ],
     });
     const fixture = TestBed.createComponent(LinksEditorComponent);
+    fixture.componentInstance.abaSelecionada = abaSelecionada;
     fixture.detectChanges();
     return fixture;
   }
 
   afterEach(() => TestBed.resetTestingModule());
 
-  it('mantem Salvar no footer com Cancelar e fora do header', () => {
+  it('mantem Salvar no footer com Cancelar secundario e fora do header', () => {
     const fixture = setup();
     const footer = fixture.nativeElement.querySelector('.links-editor-footer');
+    const cancelar = footer?.querySelector('button');
 
     expect(footer?.textContent).toContain('Cancelar');
     expect(footer?.textContent).toContain('Salvar');
+    expect(cancelar?.hasAttribute('mat-stroked-button')).toBeTrue();
+    expect(cancelar?.getAttribute('color')).toBe('primary');
     expect(fixture.nativeElement.querySelector('app-card-header')?.textContent).not.toContain('Salvar');
   });
 
@@ -125,14 +129,31 @@ describe('LinksEditorComponent', () => {
     expect(component.tituloControl.value).toBe('Novo salvo');
   });
 
-  it('posiciona publicacao em Geral e exclusao em acoes avancadas', () => {
+  it('posiciona publicacao em Geral e arquivamento em acoes avancadas', () => {
     const fixture = setup();
     const text = fixture.nativeElement.textContent;
 
     expect(text).toContain('Publicação');
     expect(text).toContain('Publicar');
     expect(text).toContain('Ações avançadas');
-    expect(text).toContain('Excluir página');
+    expect(text).toContain('Arquivar página');
+    expect(text).not.toContain('Excluir página');
+  });
+
+  it('mostra somente Despublicar quando a pagina esta publicada', () => {
+    const fixture = setup(':id', { ...detalhe, publicada: true });
+    const text = fixture.nativeElement.textContent;
+
+    expect(text).toContain('Despublicar');
+    expect(text).not.toContain('Publicar');
+  });
+
+  it('mostra somente Publicar quando a pagina nao esta publicada', () => {
+    const fixture = setup();
+    const text = fixture.nativeElement.textContent;
+
+    expect(text).toContain('Publicar');
+    expect(text).not.toContain('Despublicar');
   });
 
   it('mantem abas Links e Compartilhar acessiveis na criacao', () => {
@@ -175,6 +196,15 @@ describe('LinksEditorComponent', () => {
     }));
   });
 
+  it('renderiza preview inline compacto na aba Aparencia', () => {
+    const fixture = setup(':id', detalhe, 2);
+    fixture.detectChanges();
+
+    const preview = fixture.nativeElement.querySelector('app-links-public-preview');
+    expect(preview).toBeTruthy();
+    expect(preview.textContent).toContain('Página salva');
+  });
+
   it('mantem identidade e endereco em modo leitura', () => {
     const fixture = setup();
     const text = fixture.nativeElement.textContent;
@@ -188,10 +218,13 @@ describe('LinksEditorComponent', () => {
   });
 
   it('sugere links a partir dos dados existentes da empresa', () => {
-    const fixture = setup();
+    const fixture = setup(':id', detalhe, 1);
+    const text = fixture.nativeElement.textContent;
     const component = fixture.componentInstance;
     const sugestoes = component.sugestoesEmpresa();
 
+    expect(text).toContain('Sugestões da empresa');
+    expect(text).toContain('Crie links rapidamente usando dados já cadastrados na empresa.');
     expect(sugestoes.map((sugestao) => sugestao.tipo)).toEqual(jasmine.arrayContaining(['WHATSAPP', 'TELEFONE', 'EMAIL', 'INSTAGRAM', 'LINK', 'LOCALIZACAO']));
     expect(sugestoes.find((sugestao) => sugestao.tipo === 'WHATSAPP')?.url).toContain('wa.me');
     expect(sugestoes.find((sugestao) => sugestao.tipo === 'INSTAGRAM')?.url).toBe('https://instagram.com/empresa');
@@ -199,6 +232,50 @@ describe('LinksEditorComponent', () => {
     const urlsLocalizacao = sugestoes.filter((sugestao) => sugestao.tipo === 'LOCALIZACAO').map((sugestao) => sugestao.url);
     expect(urlsLocalizacao.some((url) => url.includes('google.com/maps'))).toBeTrue();
     expect(urlsLocalizacao.some((url) => url.includes('waze.com/ul'))).toBeTrue();
+  });
+
+  it('adiciona tooltips nas acoes da tabela de links', () => {
+    const fixture = setup(':id', {
+      ...detalhe,
+      itens: [
+        {
+          id: 3,
+          tipo: 'LINK',
+          titulo: 'Site',
+          subtitulo: null,
+          url: 'https://empresa.com',
+          ativo: true,
+          ordem: 0,
+          createdAt: '',
+          updatedAt: '',
+        },
+        {
+          id: 4,
+          tipo: 'TELEFONE',
+          titulo: 'Telefone',
+          subtitulo: null,
+          url: 'tel:+5531999999999',
+          ativo: false,
+          ordem: 1,
+          createdAt: '',
+          updatedAt: '',
+        },
+      ],
+    }, 1);
+
+    const tooltips = Array.from(fixture.nativeElement.querySelectorAll('[ng-reflect-message]') as NodeListOf<Element>)
+      .map((element: Element) => element.getAttribute('ng-reflect-message'));
+
+    expect(tooltips).toEqual(jasmine.arrayContaining(['Editar', 'Desativar', 'Ativar', 'Remover', 'Mover para cima', 'Mover para baixo']));
+  });
+
+  it('renderiza painel de compartilhamento com QR inline', () => {
+    const fixture = setup(':id', detalhe, 3);
+
+    const sharePanel = fixture.nativeElement.querySelector('app-links-share-panel');
+    expect(sharePanel).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('QR Code');
+    expect(fixture.nativeElement.textContent).toContain('Baixar QR Code');
   });
 
   it('remove link sem voltar para a aba Geral', () => {
