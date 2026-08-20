@@ -22,6 +22,7 @@ describe('LinksListaComponent', () => {
   const paginas: PaginaLinksResumo[] = [
     {
       id: 1,
+      slug: 'pagina-publicada',
       titulo: 'Página publicada',
       descricao: 'Descrição',
       ativa: true,
@@ -37,6 +38,7 @@ describe('LinksListaComponent', () => {
     },
     {
       id: 2,
+      slug: 'pagina-inativa',
       titulo: 'Página inativa',
       descricao: null,
       ativa: false,
@@ -59,7 +61,7 @@ describe('LinksListaComponent', () => {
     await TestBed.configureTestingModule({
       imports: [LinksListaComponent, NoopAnimationsModule, RouterTestingModule.withRoutes([])],
       providers: [
-        { provide: LinksService, useValue: { listarPaginas: () => of(paginas), alterarPublicacao: () => of({ ...paginas[0], itens: [], identidade: null }), excluirPagina: () => of(void 0) } },
+        { provide: LinksService, useValue: { listarPaginas: () => of(paginas), alterarPublicacao: () => of({ ...paginas[0], itens: [], identidade: null }), tornarPrincipal: () => of({ ...paginas[0], itens: [], identidade: null }), excluirPagina: () => of(void 0) } },
         { provide: EmpresaIdentidadePublicaService, useValue: { buscar: () => of({ nome: 'Empresa', slug: 'empresa-de-teste', logoUrl: null }) } },
         { provide: ToastrService, useValue: jasmine.createSpyObj('ToastrService', ['success', 'warning', 'error', 'info']) },
         { provide: MatDialog, useValue: dialog },
@@ -94,7 +96,7 @@ describe('LinksListaComponent', () => {
     fixture.componentInstance.compartilhar(paginas[0]);
 
     expect(dialog.open).toHaveBeenCalledWith(LinksShareDialogComponent, jasmine.objectContaining({
-      data: jasmine.objectContaining({ url: 'https://empresa-de-teste.clickmanager.com.br/l/empresa-de-teste' }),
+      data: jasmine.objectContaining({ url: 'https://empresa-de-teste.clickmanager.com.br/links' }),
     }));
   });
 

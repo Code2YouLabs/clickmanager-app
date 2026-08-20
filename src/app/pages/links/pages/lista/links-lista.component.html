@@ -63,7 +63,7 @@
               <td mat-cell *matCellDef="let pagina">
                 <span class="links-badge links-badge--info" *ngIf="pagina.principal; else naoPrincipal">Principal</span>
                 <ng-template #naoPrincipal>
-                  <span class="links-muted">-</span>
+                  <span class="links-muted">Secundária</span>
                 </ng-template>
               </td>
             </ng-container>
@@ -135,6 +135,10 @@
       </button>
     </ng-container>
     <ng-container *ngIf="paginaMenu && paginaMenu.publicada">
+      <button mat-menu-item type="button" (click)="tornarPrincipal(paginaMenu)" [disabled]="executandoId === paginaMenu.id || paginaMenu.principal" *temPermissao="permissoes.publicar">
+        <mat-icon>star</mat-icon>
+        <span>Tornar principal</span>
+      </button>
       <button mat-menu-item type="button" (click)="publicar(paginaMenu, false)" [disabled]="executandoId === paginaMenu.id" *temPermissao="permissoes.publicar">
         <mat-icon>visibility_off</mat-icon>
         <span>Despublicar</span>

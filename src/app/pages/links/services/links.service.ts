@@ -37,6 +37,10 @@ export class LinksService {
     return this.api.patch<PaginaLinksDetalhe>(`${this.endpoint}/${id}/publicacao`, { publicada });
   }
 
+  tornarPrincipal(id: number): Observable<PaginaLinksDetalhe> {
+    return this.api.patch<PaginaLinksDetalhe>(`${this.endpoint}/${id}/principal`, {});
+  }
+
   excluirPagina(id: number): Observable<void> {
     return this.api.delete<void>(`${this.endpoint}/${id}`);
   }

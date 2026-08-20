@@ -184,6 +184,24 @@ export class LinksEditorComponent implements OnInit {
     });
   }
 
+  tornarPrincipal(): void {
+    if (!this.pagina) return;
+    if (!this.pagina.publicada) {
+      this.toastr.info('Publique a página antes de torná-la principal.');
+      return;
+    }
+    this.publicando = true;
+    this.linksService.tornarPrincipal(this.pagina.id).subscribe({
+      next: (pagina) => {
+        this.publicando = false;
+        this.atualizarPagina(pagina, true);
+        this.toastr.success('Página definida como principal.');
+      },
+      error: (error) => this.tratarErro(error, 'Não foi possível tornar a página principal.'),
+    });
+  }
+
+
   abrirItem(item?: PaginaLinksItem): void {
     if (!this.pagina) return;
     const dialogRef = this.dialog.open(LinksItemDialogComponent, {
@@ -355,7 +373,7 @@ export class LinksEditorComponent implements OnInit {
   }
 
   urlPublica(): string {
-    return buildClickLinkPublicUrl(this.identidade?.slug);
+    return buildClickLinkPublicUrl(this.identidade?.slug, this.pagina?.slug, this.pagina?.principal ?? true);
   }
 
   previewModel(): LinksPreviewModel {
@@ -535,7 +553,6 @@ export class LinksEditorComponent implements OnInit {
     this.aplicarEstadoFormulario({
       titulo: this.identidade?.nome || '',
       descricao: '',
-      principal: null,
       tema: LINKS_APARENCIA_PADRAO.tema,
       corPrincipal: LINKS_APARENCIA_PADRAO.corPrincipal,
       corFundo: LINKS_APARENCIA_PADRAO.corFundo,
@@ -575,7 +592,6 @@ export class LinksEditorComponent implements OnInit {
     return {
       titulo: pagina.titulo,
       descricao: pagina.descricao || '',
-      principal: pagina.principal ?? null,
       tema: pagina.tema || LINKS_APARENCIA_PADRAO.tema,
       corPrincipal: pagina.corPrincipal || LINKS_APARENCIA_PADRAO.corPrincipal,
       corFundo: pagina.corFundo || LINKS_APARENCIA_PADRAO.corFundo,
@@ -602,7 +618,6 @@ export class LinksEditorComponent implements OnInit {
     return {
       titulo: this.tituloControl.value?.trim() || '',
       descricao: this.descricaoControl.value?.trim() || null,
-      principal: this.pagina?.principal ?? null,
       tema: this.temaControl.value || LINKS_APARENCIA_PADRAO.tema,
       corPrincipal: (this.corPrincipalControl.value || LINKS_APARENCIA_PADRAO.corPrincipal).toUpperCase(),
       corFundo: (this.corFundoControl.value || LINKS_APARENCIA_PADRAO.corFundo).toUpperCase(),

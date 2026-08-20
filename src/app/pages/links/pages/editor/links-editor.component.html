@@ -121,6 +121,11 @@
                       </button>
                     </ng-container>
                     <ng-container *ngIf="pagina.publicada">
+                      <ng-container *ngIf="!pagina.principal">
+                        <button mat-flat-button color="primary" type="button" (click)="tornarPrincipal()" [disabled]="publicando" *temPermissao="permissoes.publicar">
+                          Tornar principal
+                        </button>
+                      </ng-container>
                       <button mat-stroked-button type="button" (click)="alterarPublicacao(false)" [disabled]="publicando" *temPermissao="permissoes.publicar">
                         Despublicar
                       </button>

@@ -15,13 +15,15 @@ describe('links-url.util', () => {
     environment.publicBaseDomain = 'clickmanager.com.br';
 
     expect(buildClickLinkPublicUrl('empresa-de-teste'))
-      .toBe('https://empresa-de-teste.clickmanager.com.br/l/empresa-de-teste');
+      .toBe('https://empresa-de-teste.clickmanager.com.br/links');
+    expect(buildClickLinkPublicUrl('empresa-de-teste', 'cardapio', false))
+      .toBe('https://empresa-de-teste.clickmanager.com.br/links/cardapio');
   });
 
   it('mantem URL local funcional quando publicSiteBaseUrl aponta para localhost', () => {
     environment.publicSiteBaseUrl = 'http://localhost:4500';
     environment.publicBaseDomain = 'clickmanager.com.br';
 
-    expect(buildClickLinkPublicUrl('empresa-de-teste')).toBe('http://localhost:4500/l/empresa-de-teste');
+    expect(buildClickLinkPublicUrl('empresa-de-teste')).toBe('http://localhost:4500/links');
   });
 });

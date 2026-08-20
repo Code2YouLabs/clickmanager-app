@@ -20,6 +20,7 @@ describe('LinksEditorComponent', () => {
 
   const detalhe: PaginaLinksDetalhe = {
     id: 7,
+    slug: 'pagina-salva',
     titulo: 'Página salva',
     descricao: 'Descrição salva',
     ativa: true,
@@ -57,6 +58,10 @@ describe('LinksEditorComponent', () => {
             },
             alterarPublicacao: (_id: number, publicada: boolean) => {
               paginaAtual = { ...paginaAtual, publicada };
+              return of(paginaAtual);
+            },
+            tornarPrincipal: (_id: number) => {
+              paginaAtual = { ...paginaAtual, principal: true };
               return of(paginaAtual);
             },
             excluirPagina: () => of(void 0),
@@ -222,7 +227,7 @@ describe('LinksEditorComponent', () => {
 
     expect(text).toContain('Identidade da empresa');
     expect(text).toContain('A logo e o endereço pertencem à identidade da empresa');
-    expect(text).toContain('https://empresa.clickmanager.com.br/l/empresa');
+    expect(text).toContain('https://empresa.clickmanager.com.br/links');
     expect(text).not.toContain('Alterar logo');
     expect(text).not.toContain('Remover');
     expect(text).not.toContain('Alterar endereço');

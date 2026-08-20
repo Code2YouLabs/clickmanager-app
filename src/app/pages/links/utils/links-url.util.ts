@@ -19,9 +19,18 @@ export function getClickLinkPublicBaseUrl(slug: string | null | undefined): stri
   return configuredBase || window.location.origin;
 }
 
-export function buildClickLinkPublicUrl(slug: string | null | undefined): string {
+export function buildClickLinkPublicUrl(
+  slug: string | null | undefined,
+  paginaSlug?: string | null,
+  principal = true,
+): string {
   const normalized = normalizeSlugInput(slug).replace(/^\/+/, '');
-  return normalized ? `${getClickLinkPublicBaseUrl(normalized)}/l/${normalized}` : '';
+  if (!normalized) {
+    return '';
+  }
+  const normalizedPaginaSlug = normalizeSlugInput(paginaSlug).replace(/^\/+/, '');
+  const path = principal || !normalizedPaginaSlug ? '/links' : `/links/${normalizedPaginaSlug}`;
+  return `${getClickLinkPublicBaseUrl(normalized)}${path}`;
 }
 
 export function normalizeSlugInput(value: string | null | undefined): string {

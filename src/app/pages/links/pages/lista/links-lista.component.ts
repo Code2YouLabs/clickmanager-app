@@ -79,6 +79,27 @@ export class LinksListaComponent implements OnInit {
     });
   }
 
+  tornarPrincipal(pagina: PaginaLinksResumo | null): void {
+    if (!pagina) return;
+    if (!pagina.publicada) {
+      this.toastr.info('Publique a página antes de torná-la principal.');
+      return;
+    }
+    this.executandoId = pagina.id;
+    this.linksService.tornarPrincipal(pagina.id).subscribe({
+      next: (detalhe) => {
+        this.executandoId = null;
+        this.toastr.success('Página definida como principal.');
+        this.paginas = this.paginas.map((item) => ({
+          ...item,
+          principal: item.id === detalhe.id,
+        }));
+        this.atualizarResumo(detalhe);
+      },
+      error: (error) => this.tratarErro(error, 'Não foi possível tornar a página principal.'),
+    });
+  }
+
   abrir(pagina: PaginaLinksResumo | null): void {
     if (!pagina) return;
     const url = this.urlPublica(pagina);
@@ -131,8 +152,8 @@ export class LinksListaComponent implements OnInit {
     });
   }
 
-  urlPublica(_pagina?: PaginaLinksResumo): string {
-    return buildClickLinkPublicUrl(this.identidade?.slug);
+  urlPublica(pagina?: PaginaLinksResumo): string {
+    return buildClickLinkPublicUrl(this.identidade?.slug, pagina?.slug, pagina?.principal ?? true);
   }
 
   statusLabel(pagina: PaginaLinksResumo): string {

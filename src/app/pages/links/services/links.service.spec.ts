@@ -27,7 +27,6 @@ describe('LinksService', () => {
     const payload = {
       titulo: 'Santa Luzia',
       descricao: null,
-      principal: null,
       tema: 'CLARO' as const,
       corPrincipal: '#0D6EFD',
       corFundo: '#F6F8FB',
@@ -46,6 +45,14 @@ describe('LinksService', () => {
     const req = http.expectOne(`${base}/7/publicacao`);
     expect(req.request.method).toBe('PATCH');
     expect(req.request.body).toEqual({ publicada: true });
+    req.flush({});
+  });
+
+  it('torna pagina principal com PATCH dedicado', () => {
+    service.tornarPrincipal(7).subscribe();
+    const req = http.expectOne(`${base}/7/principal`);
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({});
     req.flush({});
   });
 
