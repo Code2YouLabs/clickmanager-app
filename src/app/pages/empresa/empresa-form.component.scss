@@ -55,6 +55,23 @@
   display: block;
 }
 
+.empresa-config-state {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.empresa-tab-content {
+  display: block;
+}
+
+.empresa-form-actions {
+  display: flex;
+}
+
 .empresa-onboarding-logo__actions {
   display: flex;
   flex-wrap: wrap;
@@ -83,61 +100,46 @@
   margin-top: 8px;
 }
 
-.empresa-public-identity,
-.empresa-public-media {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.empresa-public-identity__section,
-.empresa-public-media__item {
+.empresa-readonly-box,
+.empresa-media-box {
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-width: 0;
-  padding: 18px;
-  border: 1px solid rgba(14, 23, 38, 0.1);
+  min-height: 100%;
+  padding: 16px;
+  border: 1px solid #e5eaef;
   border-radius: 8px;
-  background: #fff;
+  background: #f8fafc;
 }
 
-.empresa-public-identity__label {
+.empresa-readonly-box span {
   color: #64748b;
   font-size: 0.86rem;
   font-weight: 600;
 }
 
-.empresa-public-identity__section strong,
-.empresa-public-identity__host strong {
+.empresa-readonly-box strong {
   overflow-wrap: anywhere;
 }
 
-.empresa-public-identity__section small,
-.empresa-public-media__hint {
+.empresa-readonly-box small,
+.empresa-media-box small,
+.empresa-public-media__file {
   color: #64748b;
   line-height: 1.45;
 }
 
-.empresa-public-identity__host,
-.empresa-public-media__actions {
+.empresa-readonly-box button {
+  align-self: flex-start;
+}
+
+.empresa-media-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  min-width: 0;
-}
-
-.empresa-public-media__item h3 {
-  margin: 0 0 4px;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.empresa-public-media__item p {
-  margin: 0;
-  color: #64748b;
-  line-height: 1.45;
+  margin-top: auto;
 }
 
 .empresa-logo-frame--identity {
@@ -221,18 +223,14 @@
   }
 
   .empresa-public-identity,
-  .empresa-public-media {
-    grid-template-columns: 1fr;
-  }
-
-  .empresa-public-identity__host,
-  .empresa-public-media__actions {
+  .empresa-media-actions {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .empresa-public-identity__host button,
-  .empresa-public-media__actions button {
+  .empresa-readonly-box button,
+  .empresa-media-actions button,
+  .empresa-form-actions button {
     width: 100%;
   }
 }

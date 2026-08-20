@@ -201,278 +201,323 @@
 </ng-container>
 
 <ng-template #modoPadrao>
-  <mat-card class="cardWithShadow empresa-config-card">
-    <app-card-header titulo="Configurações da Empresa" [mostrarDivisor]="true">
+  <mat-card class="cardWithShadow">
+    <app-card-header titulo="Dados da Empresa" [mostrarDivisor]="true">
     </app-card-header>
 
     <mat-card-content>
-      <mat-tab-group mat-stretch-tabs="false" animationDuration="0ms" dynamicHeight>
+      <mat-tab-group mat-stretch-tabs="false" animationDuration="0ms" dynamicHeight [preserveContent]="true" [(selectedIndex)]="abaSelecionada">
         <mat-tab label="Empresa">
-          <form [formGroup]="form" (ngSubmit)="onSubmit()">
-            <div class="row m-t-24">
-              <div class="col-sm-12">
-                <mat-card class="cardWithShadow">
-                  <mat-card-content>
-                    <mat-card-title>Dados da Empresa</mat-card-title>
-                    <mat-card-subtitle class="f-s-14">
-                      Preencha as informações gerais da sua empresa.
-                    </mat-card-subtitle>
+          <form [formGroup]="form" (ngSubmit)="salvarEmpresa()">
+            <div class="empresa-config-state" *ngIf="carregandoEmpresa">
+              <mat-spinner diameter="32"></mat-spinner>
+              <span>Carregando dados da empresa...</span>
+            </div>
 
-                    <div class="row m-t-16">
-                      <div class="col-lg-6">
-                        <app-input-texto-restrito [control]="nomeControl" label="Nome da Empresa"
-                          placeholder="Digite o nome" [maxlength]="120"></app-input-texto-restrito>
+            <ng-container *ngIf="!carregandoEmpresa">
+              <mat-card class="cardWithShadow m-t-24 m-b-16">
+                <mat-card-content>
+                  <mat-card-title class="f-s-16 f-w-600 m-b-16">
+                    Dados básicos
+                  </mat-card-title>
 
-                        <app-input-telefone [control]="telefoneControl" label="Telefone"
-                          placeholder="(00) 00000-0000"></app-input-telefone>
-
-                        <app-input-email [control]="emailControl" label="E-mail"
-                          placeholder="contato@suaempresa.com"></app-input-email>
-
-                        <app-input-documento [control]="cnpjControl" label="CNPJ/CPF"
-                          placeholder="00.000.000/0000-00"></app-input-documento>
-
-                        <app-input-texto-restrito [control]="inscricaoEstadualControl"
-                          label="Inscrição Estadual" placeholder="Informe a inscrição estadual"
-                          [maxlength]="60"></app-input-texto-restrito>
-
-                        <app-input-texto-restrito [control]="horarioControl"
-                          label="Horário de Funcionamento" placeholder="Ex.: Seg a Sex, 08h às 18h"
-                          [maxlength]="120"></app-input-texto-restrito>
-                      </div>
-
-                      <div class="col-lg-6">
-                        <mat-card-title class="m-t-16">
-                          Logo da Empresa
-                        </mat-card-title>
-                        <mat-card-subtitle class="f-s-14">
-                          Envie a logomarca da empresa para personalizar o sistema.
-                        </mat-card-subtitle>
-
-                        <div class="text-center m-t-24">
-                          <div class="empresa-logo-frame">
-
-                            <img [src]="imagemPreview || IMAGEM_PADRAO" class="empresa-logo-img" alt="Logo da empresa" />
-                          </div>
-
-                          <div class="m-t-16">
-                            <input #fileInput type="file" accept="image/png,image/jpeg,image/gif" hidden
-                              (change)="onFileSelected($event)" />
-
-                            <button type="button" mat-flat-button color="primary" class="m-r-8"
-                              (click)="fileInput.click()">
-                              Selecionar
-                            </button>
-
-                            <button type="button" mat-stroked-button color="warn" (click)="resetarImagem(fileInput)">
-                              Redefinir
-                            </button>
-                          </div>
-
-                          <span class="f-s-14 m-t-16 d-block">
-                            Dimensões ideais:
-                            <strong>340x216px</strong>.
-                            Formatos permitidos: JPG, GIF ou PNG.
-                          </span>
-                        </div>
-                      </div>
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <app-input-texto-restrito class="m-b-16" [control]="nomeControl" label="Nome da Empresa"
+                        placeholder="Digite o nome" [maxlength]="120"></app-input-texto-restrito>
                     </div>
-                  </mat-card-content>
-                </mat-card>
-              </div>
-            </div>
 
-            <div class="row m-t-24">
-              <div class="col-sm-12">
-                <mat-card class="cardWithShadow">
-                  <mat-card-content>
-                    <mat-card-title>Endereço</mat-card-title>
-                    <mat-card-subtitle class="f-s-14">
-                      Informe o endereço completo da empresa.
-                    </mat-card-subtitle>
-
-                    <div formGroupName="enderecoRequest">
-                      <div class="row m-t-16">
-                        <div class="col-lg-6">
-                          <app-input-cep [control]="cepControl" label="CEP"
-                            (enderecoEncontrado)="preencherEnderecoViaCep($event)">
-                          </app-input-cep>
-
-                          <app-input-texto-restrito [control]="complementoControl"
-                            label="Complemento" placeholder="Sala, bloco..." [maxlength]="120">
-                          </app-input-texto-restrito>
-
-                          <app-input-texto-restrito [control]="cidadeControl" label="Cidade"
-                            placeholder="Informe a cidade" [maxlength]="120">
-                          </app-input-texto-restrito>
-                        </div>
-
-                        <div class="col-lg-6">
-                          <div class="row">
-                            <div class="col-sm-8">
-                              <app-input-texto-restrito [control]="logradouroControl" label="Logradouro"
-                                placeholder="Rua, avenida..." [maxlength]="200">
-                              </app-input-texto-restrito>
-                            </div>
-
-                            <div class="col-sm-4">
-                              <app-input-texto-restrito [control]="numeroControl" label="Número"
-                                placeholder="Informe o número" [maxlength]="10">
-                              </app-input-texto-restrito>
-                            </div>
-                          </div>
-
-                          <app-input-texto-restrito [control]="bairroControl" label="Bairro"
-                            placeholder="Informe o bairro" [maxlength]="120">
-                          </app-input-texto-restrito>
-
-                          <app-input-texto-restrito [control]="estadoControl" label="Estado"
-                            placeholder="UF" [maxlength]="2">
-                          </app-input-texto-restrito>
-                        </div>
-                      </div>
+                    <div class="col-md-6">
+                      <app-input-documento class="m-b-16" [control]="cnpjControl" label="CNPJ/CPF"
+                        placeholder="00.000.000/0000-00"></app-input-documento>
                     </div>
-                  </mat-card-content>
-                </mat-card>
+
+                    <div class="col-md-6">
+                      <app-input-texto-restrito class="m-b-16" [control]="inscricaoEstadualControl"
+                        label="Inscrição Estadual" placeholder="Informe a inscrição estadual"
+                        [maxlength]="60"></app-input-texto-restrito>
+                    </div>
+                  </div>
+                </mat-card-content>
+              </mat-card>
+
+              <mat-card class="cardWithShadow m-b-16">
+                <mat-card-content>
+                  <mat-card-title class="f-s-16 f-w-600 m-b-16">
+                    Contato
+                  </mat-card-title>
+
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <app-input-telefone class="m-b-16" [control]="telefoneControl" label="Telefone"
+                        placeholder="(00) 00000-0000"></app-input-telefone>
+                    </div>
+
+                    <div class="col-md-6">
+                      <app-input-email class="m-b-16" [control]="emailControl" label="E-mail"
+                        placeholder="contato@suaempresa.com"></app-input-email>
+                    </div>
+                  </div>
+                </mat-card-content>
+              </mat-card>
+
+              <mat-card class="cardWithShadow m-b-16">
+                <mat-card-content>
+                  <mat-card-title class="f-s-16 f-w-600 m-b-16">
+                    Atendimento
+                  </mat-card-title>
+
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <app-input-texto-restrito class="m-b-16" [control]="horarioControl"
+                        label="Horário de Funcionamento" placeholder="Ex.: Seg a Sex, 08h às 18h"
+                        [maxlength]="120"></app-input-texto-restrito>
+                    </div>
+                  </div>
+                </mat-card-content>
+              </mat-card>
+
+              <mat-card class="cardWithShadow m-b-16">
+                <mat-card-content>
+                  <mat-card-title class="f-s-16 f-w-600 m-b-16">
+                    Endereço
+                  </mat-card-title>
+
+                  <div formGroupName="enderecoRequest" class="row g-3">
+                    <div class="col-md-4">
+                      <app-input-cep class="m-b-16" [control]="cepControl" label="CEP"
+                        (enderecoEncontrado)="preencherEnderecoViaCep($event)">
+                      </app-input-cep>
+                    </div>
+
+                    <div class="col-md-6">
+                      <app-input-texto-restrito class="m-b-16" [control]="logradouroControl" label="Logradouro"
+                        placeholder="Rua, avenida..." [maxlength]="200">
+                      </app-input-texto-restrito>
+                    </div>
+
+                    <div class="col-md-2">
+                      <app-input-texto-restrito class="m-b-16" [control]="numeroControl" label="Número"
+                        placeholder="Nº" [maxlength]="10">
+                      </app-input-texto-restrito>
+                    </div>
+
+                    <div class="col-md-6">
+                      <app-input-texto-restrito class="m-b-16" [control]="complementoControl"
+                        label="Complemento" placeholder="Sala, bloco..." [maxlength]="120">
+                      </app-input-texto-restrito>
+                    </div>
+
+                    <div class="col-md-6">
+                      <app-input-texto-restrito class="m-b-16" [control]="bairroControl" label="Bairro"
+                        placeholder="Informe o bairro" [maxlength]="120">
+                      </app-input-texto-restrito>
+                    </div>
+
+                    <div class="col-md-6">
+                      <app-input-texto-restrito class="m-b-16" [control]="cidadeControl" label="Cidade"
+                        placeholder="Informe a cidade" [maxlength]="120">
+                      </app-input-texto-restrito>
+                    </div>
+
+                    <div class="col-md-2">
+                      <app-input-texto-restrito class="m-b-16" [control]="estadoControl" label="Estado"
+                        placeholder="UF" [maxlength]="2">
+                      </app-input-texto-restrito>
+                    </div>
+                  </div>
+                </mat-card-content>
+              </mat-card>
+
+              <div class="m-t-24 d-flex gap-2 flex-wrap empresa-form-actions">
+                <button mat-flat-button class="bg-error text-white" type="button" (click)="cancelarEmpresa()" [disabled]="salvandoEmpresa || !empresaDirty">
+                  Cancelar
+                </button>
+
+                <button mat-flat-button color="primary" type="submit" [disabled]="!podeSalvarEmpresa">
+                  {{ salvandoEmpresa ? 'Salvando...' : 'Salvar' }}
+                </button>
               </div>
-            </div>
-
-            <div class="m-t-24 d-flex gap-2 flex-wrap">
-              <button mat-flat-button class="bg-error text-white" type="button">
-                Cancelar
-              </button>
-
-              <button mat-flat-button color="primary" type="submit">
-                Salvar
-              </button>
-            </div>
+            </ng-container>
           </form>
         </mat-tab>
 
         <mat-tab label="Identidade Pública">
-          <div class="m-t-24">
-            <mat-card class="cardWithShadow">
-              <mat-card-content class="p-y-24">
-                <mat-card-title>Identidade Pública</mat-card-title>
-                <mat-card-subtitle class="f-s-14">
-                  Defina como sua empresa é apresentada nos recursos públicos do ClickManager.
-                </mat-card-subtitle>
+          <div class="empresa-tab-content">
+            <div class="empresa-config-state" *ngIf="carregandoIdentidade">
+              <mat-spinner diameter="32"></mat-spinner>
+              <span>Carregando identidade pública...</span>
+            </div>
 
-                <div class="empresa-public-identity m-t-24">
-                  <section class="empresa-public-identity__section">
-                    <span class="empresa-public-identity__label">Nome público</span>
-                    <strong>{{ nomePublico }}</strong>
-                  </section>
+            <ng-container *ngIf="!carregandoIdentidade">
+              <mat-card class="cardWithShadow m-t-24 m-b-16">
+                <mat-card-content>
+                  <mat-card-title class="f-s-16 f-w-600 m-b-16">
+                    Identidade Pública
+                  </mat-card-title>
+                  <mat-card-subtitle class="f-s-14 m-b-16">
+                    Defina como sua empresa é apresentada nos recursos públicos do ClickManager.
+                  </mat-card-subtitle>
 
-                  <section class="empresa-public-identity__section">
-                    <span class="empresa-public-identity__label">Endereço ClickManager</span>
-                    <div class="empresa-public-identity__host">
-                      <strong>{{ enderecoClickManager }}</strong>
-                      <button mat-stroked-button color="primary" type="button" (click)="copiarEnderecoClickManager()">
-                        <mat-icon>content_copy</mat-icon>
-                        Copiar
-                      </button>
-                    </div>
-                    <small>Este é o endereço público padrão da empresa no ClickManager. Ele é gerado automaticamente pelo sistema.</small>
-                  </section>
-                </div>
-
-                <div class="empresa-public-media m-t-24">
-                  <section class="empresa-public-media__item">
-                    <div>
-                      <h3>Logo</h3>
-                      <p>A logo pertence à Empresa e pode ser usada nos recursos públicos.</p>
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <div class="empresa-readonly-box m-b-16">
+                        <span>Nome público</span>
+                        <strong>{{ nomePublico }}</strong>
+                        <small>Nome exibido nos recursos públicos do ClickManager.</small>
+                      </div>
                     </div>
 
-                    <div class="empresa-logo-frame empresa-logo-frame--identity">
-                      <img [src]="imagemPreview || IMAGEM_PADRAO" class="empresa-logo-img" alt="Logo da empresa" />
+                    <div class="col-md-6">
+                      <div class="empresa-readonly-box m-b-16">
+                        <span>Endereço ClickManager</span>
+                        <strong>{{ enderecoClickManager }}</strong>
+                        <small>Gerado automaticamente pelo sistema.</small>
+                        <button mat-stroked-button color="primary" type="button" (click)="copiarEnderecoClickManager()">
+                          <mat-icon>content_copy</mat-icon>
+                          Copiar
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </mat-card-content>
+              </mat-card>
+
+              <mat-card class="cardWithShadow m-b-16">
+                <mat-card-content>
+                  <mat-card-title class="f-s-16 f-w-600 m-b-16">
+                    Mídia pública
+                  </mat-card-title>
+
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <div class="empresa-media-box m-b-16">
+                        <div>
+                          <strong>Logo</strong>
+                          <small>JPG, GIF ou PNG. Dimensões ideais: 340x216 px.</small>
+                        </div>
+
+                        <div class="empresa-logo-frame empresa-logo-frame--identity">
+                          <img [src]="imagemPreview || IMAGEM_PADRAO" class="empresa-logo-img" alt="Logo da empresa" />
+                        </div>
+
+                        <small class="empresa-public-media__file" *ngIf="logoIdentidadeArquivoNome">
+                          {{ logoIdentidadeArquivoNome }} {{ logoIdentidadeArquivoTamanho ? '• ' + logoIdentidadeArquivoTamanho : '' }}
+                        </small>
+                        <small class="empresa-public-media__error" *ngIf="logoIdentidadeErro">{{ logoIdentidadeErro }}</small>
+
+                        <div class="empresa-media-actions">
+                          <input #identityLogoInput type="file" accept="image/png,image/jpeg,image/gif" hidden (change)="onLogoIdentidadeSelecionada($event)" />
+                          <button type="button" mat-stroked-button color="primary" [disabled]="salvandoIdentidade" (click)="identityLogoInput.click()">
+                            <mat-icon>upload</mat-icon>
+                            Selecionar imagem
+                          </button>
+                          <button type="button" mat-button color="warn" [disabled]="salvandoIdentidade || (!identidadePublica?.logoUrl && !logoIdentidadeArquivoNome)" (click)="removerLogoIdentidadeAtual()">
+                            Remover
+                          </button>
+                        </div>
+                      </div>
                     </div>
 
-                    <div class="empresa-public-media__actions">
-                      <input #identityLogoInput type="file" accept="image/png,image/jpeg,image/gif" hidden (change)="onFileSelected($event)" />
-                      <button type="button" mat-stroked-button color="primary" (click)="identityLogoInput.click()">
-                        <mat-icon>upload</mat-icon>
-                        Selecionar logo
-                      </button>
-                      <button type="button" mat-button color="warn" (click)="resetarImagem(identityLogoInput)">
-                        Remover
-                      </button>
-                    </div>
-                  </section>
+                    <div class="col-md-6">
+                      <div class="empresa-media-box m-b-16">
+                        <div>
+                          <strong>Favicon</strong>
+                          <small>PNG, SVG, WEBP ou ICO. Recomendado: pelo menos 96x96 px.</small>
+                        </div>
 
-                  <section class="empresa-public-media__item">
-                    <div>
-                      <h3>Favicon</h3>
-                      <p>O favicon pode ser usado em Site Público, ClickLink e outros recursos públicos.</p>
-                    </div>
+                        <div class="empresa-favicon-frame">
+                          <img [src]="faviconPreview" alt="Prévia do favicon" />
+                        </div>
 
-                    <div class="empresa-favicon-frame">
-                      <img [src]="faviconPreview" alt="Prévia do favicon" />
-                    </div>
+                        <small class="empresa-public-media__file" *ngIf="faviconArquivoNome">{{ faviconArquivoNome }} {{ faviconArquivoTamanho ? '• ' + faviconArquivoTamanho : '' }}</small>
+                        <small class="empresa-public-media__error" *ngIf="faviconErro">{{ faviconErro }}</small>
 
-                    <div class="empresa-public-media__hint">
-                      <span>Use PNG, SVG, WEBP ou ICO. Recomendado: imagem quadrada com pelo menos 96x96 px.</span>
-                      <small *ngIf="faviconArquivoNome">{{ faviconArquivoNome }} {{ faviconArquivoTamanho ? '• ' + faviconArquivoTamanho : '' }}</small>
-                      <small class="empresa-public-media__error" *ngIf="faviconErro">{{ faviconErro }}</small>
+                        <div class="empresa-media-actions">
+                          <input #faviconInput type="file" accept=".png,.svg,.webp,.ico,image/png,image/svg+xml,image/webp,image/x-icon,image/vnd.microsoft.icon" hidden (change)="onFaviconSelecionado($event)" />
+                          <button mat-stroked-button color="primary" type="button" [disabled]="salvandoIdentidade" (click)="faviconInput.click()">
+                            <mat-icon>upload</mat-icon>
+                            Selecionar imagem
+                          </button>
+                          <button mat-button color="warn" type="button" [disabled]="salvandoIdentidade || (!identidadePublica?.faviconUrl && !faviconArquivoNome)" (click)="removerFavicon()">
+                            Remover
+                          </button>
+                        </div>
+                      </div>
                     </div>
+                  </div>
+                </mat-card-content>
+              </mat-card>
 
-                    <div class="empresa-public-media__actions">
-                      <input #faviconInput type="file" accept=".png,.svg,.webp,.ico,image/png,image/svg+xml,image/webp,image/x-icon,image/vnd.microsoft.icon" hidden (change)="onFaviconSelecionado($event)" />
-                      <button mat-stroked-button color="primary" type="button" [disabled]="salvandoFavicon" (click)="faviconInput.click()">
-                        <mat-icon>upload</mat-icon>
-                        Escolher favicon
-                      </button>
-                      <button mat-flat-button color="primary" type="button" [disabled]="!podeSalvarFavicon" (click)="salvarFavicon()">
-                        <mat-icon>save</mat-icon>
-                        {{ salvandoFavicon ? 'Salvando...' : 'Salvar favicon' }}
-                      </button>
-                      <button mat-button type="button" [disabled]="salvandoFavicon" (click)="cancelarFaviconSelecionado()" *ngIf="faviconArquivoNome">
-                        Cancelar troca
-                      </button>
-                      <button mat-button color="warn" type="button" [disabled]="salvandoFavicon || !identidadePublica?.faviconUrl" (click)="removerFavicon()">
-                        Remover
-                      </button>
-                    </div>
-                  </section>
-                </div>
-              </mat-card-content>
-            </mat-card>
+              <div class="m-t-24 d-flex gap-2 flex-wrap empresa-form-actions">
+                <button mat-flat-button class="bg-error text-white" type="button" (click)="cancelarIdentidadePublica()" [disabled]="salvandoIdentidade || !identidadeDirty">
+                  Cancelar
+                </button>
+
+                <button mat-flat-button color="primary" type="button" (click)="salvarIdentidadePublica()" [disabled]="!podeSalvarIdentidade">
+                  {{ salvandoIdentidade ? 'Salvando...' : 'Salvar' }}
+                </button>
+              </div>
+            </ng-container>
           </div>
         </mat-tab>
 
         <mat-tab label="Redes Sociais">
-          <div class="m-t-24">
-            <mat-card class="cardWithShadow">
-              <mat-card-content class="p-y-24">
-                <mat-card-title>Redes Sociais</mat-card-title>
-                <mat-card-subtitle class="f-s-14">
-                  Ajuste os links públicos usados no site e nos materiais da empresa.
-                </mat-card-subtitle>
+          <form [formGroup]="form" (ngSubmit)="salvarRedes()">
+            <div class="empresa-config-state" *ngIf="carregandoEmpresa">
+              <mat-spinner diameter="32"></mat-spinner>
+              <span>Carregando redes sociais...</span>
+            </div>
 
-                <div class="row m-t-16">
-                  <div class="col-lg-6">
-                    <app-input-texto-restrito [control]="instagramUrlControl"
-                      label="Instagram" placeholder="https://instagram.com/suaempresa"
-                      [maxlength]="255"></app-input-texto-restrito>
+            <ng-container *ngIf="!carregandoEmpresa">
+              <mat-card class="cardWithShadow m-t-24 m-b-16">
+                <mat-card-content>
+                  <mat-card-title class="f-s-16 f-w-600 m-b-16">
+                    Redes Sociais
+                  </mat-card-title>
+                  <mat-card-subtitle class="f-s-14 m-b-16">
+                    Ajuste os links públicos usados no site, no ClickLink e nos materiais da empresa.
+                  </mat-card-subtitle>
 
-                    <app-input-texto-restrito [control]="facebookUrlControl"
-                      label="Facebook" placeholder="https://facebook.com/suaempresa"
-                      [maxlength]="255"></app-input-texto-restrito>
+                  <div class="row g-3">
+                    <div class="col-md-6">
+                      <app-input-texto-restrito class="m-b-16" [control]="instagramUrlControl"
+                        label="Instagram" placeholder="@suaempresa ou https://instagram.com/suaempresa"
+                        [maxlength]="255"></app-input-texto-restrito>
+                    </div>
+
+                    <div class="col-md-6">
+                      <app-input-texto-restrito class="m-b-16" [control]="facebookUrlControl"
+                        label="Facebook" placeholder="https://facebook.com/suaempresa"
+                        [maxlength]="255"></app-input-texto-restrito>
+                    </div>
+
+                    <div class="col-md-6">
+                      <app-input-texto-restrito class="m-b-16" [control]="youtubeUrlControl"
+                        label="YouTube" placeholder="https://youtube.com/@suaempresa"
+                        [maxlength]="255"></app-input-texto-restrito>
+                    </div>
+
+                    <div class="col-md-6">
+                      <app-input-texto-restrito class="m-b-16" [control]="siteUrlControl"
+                        label="Website" placeholder="https://suaempresa.com.br"
+                        [maxlength]="255"></app-input-texto-restrito>
+                    </div>
                   </div>
+                </mat-card-content>
+              </mat-card>
 
-                  <div class="col-lg-6">
-                    <app-input-texto-restrito [control]="siteUrlControl"
-                      label="Site" placeholder="https://suaempresa.com.br"
-                      [maxlength]="255"></app-input-texto-restrito>
+              <div class="m-t-24 d-flex gap-2 flex-wrap empresa-form-actions">
+                <button mat-flat-button class="bg-error text-white" type="button" (click)="cancelarRedes()" [disabled]="salvandoRedes || !redesDirty">
+                  Cancelar
+                </button>
 
-                    <app-input-texto-restrito [control]="youtubeUrlControl"
-                      label="YouTube" placeholder="https://youtube.com/@suaempresa"
-                      [maxlength]="255"></app-input-texto-restrito>
-                  </div>
-                </div>
-              </mat-card-content>
-            </mat-card>
-          </div>
+                <button mat-flat-button color="primary" type="submit" [disabled]="!podeSalvarRedes">
+                  {{ salvandoRedes ? 'Salvando...' : 'Salvar' }}
+                </button>
+              </div>
+            </ng-container>
+          </form>
         </mat-tab>
       </mat-tab-group>
     </mat-card-content>
