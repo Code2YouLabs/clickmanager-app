@@ -1,0 +1,36 @@
+<div class="clicklink-preview" [class.clicklink-preview--compact]="compact" [ngStyle]="estilosPagina()">
+  <header class="clicklink-preview__header">
+    <img class="clicklink-preview__logo" *ngIf="model.identidade?.logoUrl" [src]="model.identidade?.logoUrl" alt="Logo da empresa" />
+    <p class="clicklink-preview__empresa" *ngIf="deveExibirEmpresa()">{{ model.identidade?.nome }}</p>
+    <h1>{{ tituloPrincipal() }}</h1>
+    <p class="clicklink-preview__descricao" *ngIf="model.descricao">{{ model.descricao }}</p>
+  </header>
+
+  <nav class="clicklink-preview__links" aria-label="Links públicos">
+    <a
+      class="clicklink-preview__link"
+      *ngFor="let item of itensAtivos()"
+      [href]="item.url"
+      [attr.target]="interactive ? '_blank' : null"
+      [attr.rel]="interactive ? 'noopener noreferrer' : null"
+      [attr.aria-label]="item.subtitulo ? item.titulo + ': ' + item.subtitulo : item.titulo"
+      (click)="onLinkClick($event)">
+      <span class="clicklink-preview__link-icon" aria-hidden="true">
+        <mat-icon>{{ icon(item.tipo) }}</mat-icon>
+      </span>
+      <span class="clicklink-preview__link-text">
+        <strong>{{ item.titulo }}</strong>
+        <small *ngIf="item.subtitulo">{{ item.subtitulo }}</small>
+      </span>
+      <span class="clicklink-preview__link-arrow" aria-hidden="true">›</span>
+    </a>
+  </nav>
+
+  <p class="clicklink-preview__empty" *ngIf="!itensAtivos().length">Nenhum link ativo para exibir.</p>
+
+  <footer class="clicklink-preview__brand">
+    <a href="https://clickmanager.com.br" [attr.target]="interactive ? '_blank' : null" [attr.rel]="interactive ? 'noopener noreferrer' : null" aria-label="Conhecer ClickManager" (click)="onLinkClick($event)">
+      Produto ClickManager
+    </a>
+  </footer>
+</div>

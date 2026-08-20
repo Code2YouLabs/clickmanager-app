@@ -296,6 +296,34 @@ export const navItems: NavItem[] = [
 	        ]
 	    },
     {
+        displayName: 'ClickLink',
+        iconName: 'link',
+        bgcolor: 'primary',
+        featureKey: 'LINKS',
+        requiredPermission: ['LINKS_VER'],
+        allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
+        children: [
+            {
+                displayName: 'Páginas',
+                iconName: 'point',
+                bgcolor: 'transparent',
+                route: '/page/links/paginas',
+                featureKey: 'LINKS',
+                requiredPermission: ['LINKS_VER'],
+                allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
+            },
+            {
+                displayName: 'Analytics',
+                iconName: 'point',
+                bgcolor: 'transparent',
+                route: '/page/links/analytics',
+                featureKey: 'LINKS',
+                requiredPermission: ['LINKS_VER'],
+                allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
+            },
+        ],
+    },
+    {
         displayName: 'Dados da empresa',
         iconName: 'building',
         bgcolor: 'primary',
