@@ -201,6 +201,38 @@ export const PagesRoutes: Routes = [
     }
   },
   {
+    path: 'grafica/produtos/novo',
+    loadComponent: () => import('./grafica/produtos/grafica-produto-form.component').then((m) => m.GraficaProdutoFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Novo produto grafico',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Produtos graficos', url: '/page/grafica/produtos' },
+        { title: 'Novo produto grafico' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/produtos/:id/editar',
+    loadComponent: () => import('./grafica/produtos/grafica-produto-form.component').then((m) => m.GraficaProdutoFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Configurar produto grafico',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Produtos graficos', url: '/page/grafica/produtos' },
+        { title: 'Configurar produto grafico' }
+      ]
+    }
+  },
+  {
     path: 'site',
     redirectTo: 'site/banners',
     pathMatch: 'full',

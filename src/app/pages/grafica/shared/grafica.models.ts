@@ -10,6 +10,7 @@ export interface GraficaProduto {
   catalogoProdutoAtivo?: boolean | null;
   ativo: boolean;
   parametros: GraficaParametro[];
+  dependencias?: GraficaDependencia[];
   createdAt?: string | null;
   updatedAt?: string | null;
 }
@@ -60,6 +61,39 @@ export interface GraficaOpcaoRequest {
 
 export interface GraficaOrdenacaoRequest {
   itens: Array<{ id: number; ordem: number }>;
+}
+
+export interface GraficaOpcoesLoteRequest {
+  valores: string[];
+}
+
+export interface GraficaDependencia {
+  id: number;
+  parametroOrigemId: number;
+  parametroOrigemNome: string;
+  opcaoOrigemId: number;
+  opcaoOrigemNome: string;
+  parametroDestinoId: number;
+  parametroDestinoNome: string;
+  opcaoDestinoId: number;
+  opcaoDestinoNome: string;
+  ativo: boolean;
+}
+
+export interface GraficaDependenciaRequest {
+  opcaoOrigemId: number;
+  parametroDestinoId: number;
+  opcoesDestinoIds: number[];
+}
+
+export interface GraficaOpcoesProgressivasRequest {
+  selecoes: Record<string, string>;
+  proximoParametro?: string | null;
+}
+
+export interface GraficaOpcoesProgressivasResponse {
+  proximoParametro?: GraficaParametro | null;
+  opcoes: GraficaOpcao[];
 }
 
 export type GraficaProdutoPage = CatalogoPaginaResponse<GraficaProduto>;
