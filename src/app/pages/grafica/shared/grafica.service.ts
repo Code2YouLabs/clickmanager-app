@@ -9,6 +9,10 @@ import {
   GraficaOpcoesLoteRequest,
   GraficaOpcoesProgressivasRequest,
   GraficaOpcoesProgressivasResponse,
+  GraficaPrecoPolitica,
+  GraficaPrecoPoliticaRequest,
+  GraficaPrecificacaoRequest,
+  GraficaPrecificacaoResultado,
   GraficaOrdenacaoRequest,
   GraficaParametroRequest,
   GraficaProduto,
@@ -100,5 +104,17 @@ export class GraficaProdutoService {
 
   resolverOpcoes(produtoGraficoId: number, body: GraficaOpcoesProgressivasRequest): Observable<GraficaOpcoesProgressivasResponse> {
     return this.api.post<GraficaOpcoesProgressivasResponse>(`${this.endpoint}/${produtoGraficoId}/configurador/opcoes`, body);
+  }
+
+  listarPrecos(produtoGraficoId: number): Observable<GraficaPrecoPolitica[]> {
+    return this.api.get<GraficaPrecoPolitica[]>(`${this.endpoint}/${produtoGraficoId}/precos`);
+  }
+
+  salvarPrecos(produtoGraficoId: number, politicas: GraficaPrecoPoliticaRequest[]): Observable<GraficaPrecoPolitica[]> {
+    return this.api.put<GraficaPrecoPolitica[]>(`${this.endpoint}/${produtoGraficoId}/precos`, { politicas });
+  }
+
+  precificar(produtoGraficoId: number, body: GraficaPrecificacaoRequest): Observable<GraficaPrecificacaoResultado> {
+    return this.api.post<GraficaPrecificacaoResultado>(`${this.endpoint}/${produtoGraficoId}/precificar`, body);
   }
 }

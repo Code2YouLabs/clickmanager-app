@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { forkJoin, of, switchMap } from 'rxjs';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
@@ -15,7 +15,11 @@ import {
   GraficaOpcao,
   GraficaParametro,
   GraficaParametroRequest,
+  GraficaPrecoPolitica,
+  GraficaPrecoPoliticaRequest,
+  GraficaPrecificacaoResultado,
   GraficaProduto,
+  GraficaTipoPrecificacao,
   GraficaTipoParametro,
 } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
@@ -28,6 +32,11 @@ interface TemplateUi {
   nome: string;
   descricao: string;
   modo: ModoVenda;
+}
+
+interface TipoPrecoUi {
+  value: GraficaTipoPrecificacao;
+  label: string;
 }
 
 @Component({
@@ -201,6 +210,135 @@ interface TemplateUi {
           </app-section-card>
         </mat-tab>
 
+        <mat-tab label="Preços">
+          <app-section-card titulo="Preços" subtitulo="Configure como este produto é cobrado">
+            <form class="price-form" [formGroup]="precoForm" (ngSubmit)="adicionarPolitica()">
+              <mat-form-field appearance="outline">
+                <mat-label>Como você cobra este produto?</mat-label>
+                <mat-select formControlName="tipo">
+                  <mat-option *ngFor="let tipo of tiposPreco" [value]="tipo.value">{{ tipo.label }}</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Nome da regra</mat-label>
+                <input matInput formControlName="nome" />
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Esta regra vale quando</mat-label>
+                <mat-select multiple formControlName="selecaoOpcaoIds">
+                  <mat-optgroup *ngFor="let parametro of parametrosSelecao()" [label]="parametro.nome">
+                    <mat-option *ngFor="let opcao of parametro.opcoes" [value]="opcao.id">{{ opcao.nome }}</mat-option>
+                  </mat-optgroup>
+                </mat-select>
+              </mat-form-field>
+              <mat-checkbox formControlName="ativo">Ativa</mat-checkbox>
+
+              <mat-form-field appearance="outline" *ngIf="precoForm.value.tipo === 'FIXO'">
+                <mat-label>Preço</mat-label>
+                <input matInput type="number" formControlName="valorFixo" />
+              </mat-form-field>
+              <mat-checkbox *ngIf="precoForm.value.tipo === 'FIXO'" formControlName="multiplicaQuantidade">Multiplica pela quantidade</mat-checkbox>
+
+              <mat-form-field appearance="outline" *ngIf="precoForm.value.tipo === 'POR_METRO_QUADRADO'">
+                <mat-label>Preço/m²</mat-label>
+                <input matInput type="number" formControlName="precoMetroQuadrado" />
+              </mat-form-field>
+              <mat-form-field appearance="outline" *ngIf="precoForm.value.tipo === 'POR_METRO_QUADRADO'">
+                <mat-label>Mínimo faturável m²</mat-label>
+                <input matInput type="number" formControlName="minimoMetroQuadrado" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="wide" *ngIf="precoForm.value.tipo === 'POR_FAIXA_QUANTIDADE'">
+                <mat-label>Faixas: de;até;valor por unidade</mat-label>
+                <textarea matInput rows="5" formControlName="faixasTexto" placeholder="1;9;0.25&#10;10;19;0.20&#10;50;;0.15"></textarea>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="wide" *ngIf="precoForm.value.tipo === 'POR_LOTE'">
+                <mat-label>Preços fechados: quantidade;valor</mat-label>
+                <textarea matInput rows="5" formControlName="lotesTexto" placeholder="2500;274.17&#10;5000;418.00&#10;10000;752.40"></textarea>
+              </mat-form-field>
+
+              <div class="form-actions wide">
+                <button mat-stroked-button type="button" (click)="limparPrecoForm()">Cancelar</button>
+                <button mat-flat-button color="primary" type="submit"><mat-icon>add</mat-icon>Adicionar regra</button>
+                <button mat-flat-button color="primary" type="button" [disabled]="!graficaProduto || salvando" (click)="salvarPoliticas()"><mat-icon>save</mat-icon>Salvar preços</button>
+              </div>
+            </form>
+
+            <div class="bulk-actions" *ngIf="politicas.length">
+              <mat-form-field appearance="outline">
+                <mat-label>Reajuste percentual</mat-label>
+                <input matInput type="number" [formControl]="reajustePercentualControl" />
+              </mat-form-field>
+              <button mat-stroked-button type="button" (click)="aplicarReajustePercentual()"><mat-icon>percent</mat-icon>Aplicar nos preços visíveis</button>
+              <button mat-stroked-button color="warn" type="button" (click)="limparPoliticasLocais()"><mat-icon>delete_sweep</mat-icon>Limpar alterações locais</button>
+            </div>
+
+            <div class="price-list">
+              <div class="price-row" *ngFor="let politica of politicas; let pi = index">
+                <div>
+                  <strong>{{ politica.nome }}</strong>
+                  <small>{{ tipoPrecoLabel(politica.tipo) }} · {{ politica.ativo ? 'Ativa' : 'Inativa' }} · {{ selecoesPrecoLabel(politica) }}</small>
+                </div>
+                <button mat-icon-button matTooltip="Remover regra" color="warn" (click)="removerPoliticaLocal(pi)"><mat-icon>delete</mat-icon></button>
+                <div class="price-lines" *ngIf="politica.tipo === 'POR_FAIXA_QUANTIDADE'">
+                  <span *ngFor="let faixa of politica.faixas">{{ faixa.inicio }}–{{ faixa.fim || '∞' }}: {{ faixa.valorUnitario | currency:'BRL':'symbol':'1.2-4' }}</span>
+                </div>
+                <div class="price-lines" *ngIf="politica.tipo === 'POR_LOTE'">
+                  <span *ngFor="let lote of politica.lotes">{{ lote.quantidade }}: {{ lote.valorLote | currency:'BRL' }}</span>
+                </div>
+                <div class="price-lines" *ngIf="politica.tipo === 'FIXO'">
+                  <span>{{ politica.valorFixo | currency:'BRL' }} {{ politica.multiplicaQuantidade ? 'por unidade' : 'total' }}</span>
+                </div>
+                <div class="price-lines" *ngIf="politica.tipo === 'POR_METRO_QUADRADO'">
+                  <span>{{ politica.precoMetroQuadrado | currency:'BRL' }}/m² · mínimo {{ politica.minimoMetroQuadrado || 0 }} m²</span>
+                </div>
+              </div>
+              <div class="empty compact" *ngIf="!politicas.length">Nenhuma regra de preço cadastrada.</div>
+            </div>
+          </app-section-card>
+
+          <app-section-card titulo="Preview com preço" subtitulo="Teste uma configuração usando o cálculo oficial do backend">
+            <form class="preview-price-form" [formGroup]="previewPrecoForm" (ngSubmit)="calcularPreview()">
+              <mat-form-field appearance="outline" *ngFor="let parametro of parametrosSelecao()">
+                <mat-label>{{ parametro.nome }}</mat-label>
+                <mat-select [value]="previewSelecoes[parametro.codigo]" (selectionChange)="previewSelecoes[parametro.codigo] = $event.value">
+                  <mat-option *ngFor="let opcao of parametro.opcoes" [value]="opcao.codigo">{{ opcao.nome }}</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Quantidade</mat-label>
+                <input matInput type="number" formControlName="quantidade" />
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Largura</mat-label>
+                <input matInput type="number" formControlName="largura" />
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Altura</mat-label>
+                <input matInput type="number" formControlName="altura" />
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Unidade</mat-label>
+                <mat-select formControlName="unidadeDimensao">
+                  <mat-option value="METRO">Metro</mat-option>
+                  <mat-option value="CENTIMETRO">Centímetro</mat-option>
+                  <mat-option value="MILIMETRO">Milímetro</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <button mat-flat-button color="primary" type="submit"><mat-icon>calculate</mat-icon>Calcular</button>
+            </form>
+
+            <div class="price-result" *ngIf="resultadoPreco">
+              <strong>{{ resultadoPreco.status === 'PRECO_CALCULADO' ? (resultadoPreco.valorTotal | currency:'BRL') : resultadoPreco.mensagem }}</strong>
+              <small *ngIf="resultadoPreco.regraAplicadaNome">{{ resultadoPreco.regraAplicadaNome }}</small>
+              <div class="price-lines">
+                <span *ngFor="let detalhe of resultadoPreco.detalhes">{{ detalhe }}</span>
+              </div>
+            </div>
+          </app-section-card>
+        </mat-tab>
+
         <mat-tab label="Revisão">
           <app-section-card titulo="Revisão" subtitulo="Confira como o operador verá a configuração no admin">
             <div class="review">
@@ -226,7 +364,7 @@ interface TemplateUi {
       <div class="actions">
         <button mat-stroked-button type="button" (click)="voltar()"><mat-icon>arrow_back</mat-icon>Voltar</button>
         <button mat-button type="button" [disabled]="aba === 0" (click)="aba = aba - 1">Anterior</button>
-        <button mat-button type="button" [disabled]="aba === 3" (click)="avancar()">Próximo</button>
+        <button mat-button type="button" [disabled]="aba === 4" (click)="avancar()">Próximo</button>
         <button mat-flat-button color="primary" type="button" *ngIf="!isEdit" [disabled]="salvando" (click)="finalizarNovo()">
           <mat-icon>save</mat-icon>{{ salvando ? 'Salvando...' : 'Salvar' }}
         </button>
@@ -234,7 +372,7 @@ interface TemplateUi {
     </app-page-card>
   `,
   styles: [`
-    mat-tab-group{margin-top:8px}.stack{display:grid;gap:16px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.choice-list{display:grid;gap:10px}.template-list,.quick-actions{display:flex;flex-wrap:wrap;gap:10px}.template-list button{height:auto;min-height:58px;text-align:left}.template-list span{display:grid}.template-list small{color:#6b7280}.selected-template{border-color:#5d87ff}.param-form,.dependency-form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:center;margin-bottom:16px}.form-actions,.row-actions,.actions{display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.batch-form{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start;margin:12px 0}.option-list,.rule-list,.preview-list{display:grid;gap:8px}.option-row,.rule-row,.preview-field{display:flex;align-items:center;gap:8px;border:1px solid #e5eaef;border-radius:8px;padding:8px 10px}.option-row span{font-weight:600}.option-row small{color:#6b7280;margin-right:auto}.rule-row span{line-height:1.35}.review{display:grid;gap:16px}.review strong{display:block;font-size:18px}.review small{display:block;color:#6b7280;margin-top:2px}.preview-field{display:block}.preview-field label{display:block;font-weight:600;margin-bottom:8px}.chips{display:flex;flex-wrap:wrap;gap:8px}.chips span{border:1px solid #d7dde5;border-radius:16px;padding:4px 10px;background:#fff}.preview-field input{width:100%;border:1px solid #d7dde5;border-radius:6px;padding:10px;background:#f8fafc}.empty{color:#6b7280;text-align:center;padding:20px}.empty.compact{padding:8px}.actions{margin-top:16px}@media(max-width:960px){.grid,.param-form,.dependency-form{grid-template-columns:1fr}.batch-form{grid-template-columns:1fr}.actions{justify-content:stretch}.actions button{flex:1}.option-row{flex-wrap:wrap}.option-row small{width:100%}}`],
+    mat-tab-group{margin-top:8px}.stack{display:grid;gap:16px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.choice-list{display:grid;gap:10px}.template-list,.quick-actions,.bulk-actions{display:flex;flex-wrap:wrap;gap:10px}.template-list button{height:auto;min-height:58px;text-align:left}.template-list span{display:grid}.template-list small{color:#6b7280}.selected-template{border-color:#5d87ff}.param-form,.dependency-form,.price-form,.preview-price-form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:center;margin-bottom:16px}.wide{grid-column:1/-1}.form-actions,.row-actions,.actions{display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.batch-form{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start;margin:12px 0}.option-list,.rule-list,.preview-list,.price-list{display:grid;gap:8px}.option-row,.rule-row,.preview-field,.price-row,.price-result{display:flex;align-items:center;gap:8px;border:1px solid #e5eaef;border-radius:8px;padding:8px 10px}.price-row,.price-result{display:grid}.option-row span{font-weight:600}.option-row small,.price-row small,.price-result small{color:#6b7280;margin-right:auto}.rule-row span{line-height:1.35}.price-lines{display:flex;flex-wrap:wrap;gap:8px}.price-lines span{border:1px solid #d7dde5;border-radius:16px;padding:4px 10px;background:#fff}.review{display:grid;gap:16px}.review strong{display:block;font-size:18px}.review small{display:block;color:#6b7280;margin-top:2px}.preview-field{display:block}.preview-field label{display:block;font-weight:600;margin-bottom:8px}.chips{display:flex;flex-wrap:wrap;gap:8px}.chips span{border:1px solid #d7dde5;border-radius:16px;padding:4px 10px;background:#fff}.preview-field input{width:100%;border:1px solid #d7dde5;border-radius:6px;padding:10px;background:#f8fafc}.empty{color:#6b7280;text-align:center;padding:20px}.empty.compact{padding:8px}.actions{margin-top:16px}@media(max-width:960px){.grid,.param-form,.dependency-form,.price-form,.preview-price-form{grid-template-columns:1fr}.batch-form{grid-template-columns:1fr}.actions{justify-content:stretch}.actions button{flex:1}.option-row{flex-wrap:wrap}.option-row small{width:100%}}`],
 })
 export class GraficaProdutoFormComponent implements OnInit {
   produtosCatalogo: CatalogoProdutoOption[] = [];
@@ -242,6 +380,9 @@ export class GraficaProdutoFormComponent implements OnInit {
   unidades = CATALOGO_UNIDADES_VENDA;
   graficaProduto: GraficaProduto | null = null;
   dependencias: GraficaDependencia[] = [];
+  politicas: GraficaPrecoPolitica[] = [];
+  previewSelecoes: Record<string, string> = {};
+  resultadoPreco: GraficaPrecificacaoResultado | null = null;
   isEdit = false;
   aba = 0;
   salvando = false;
@@ -252,6 +393,12 @@ export class GraficaProdutoFormComponent implements OnInit {
     { value: 'NUMERO_INTEIRO', label: 'Digita um número' },
     { value: 'NUMERO_DECIMAL', label: 'Digita um valor' },
     { value: 'TEXTO', label: 'Digita um texto' },
+  ];
+  readonly tiposPreco: TipoPrecoUi[] = [
+    { value: 'FIXO', label: 'Um preço único' },
+    { value: 'POR_FAIXA_QUANTIDADE', label: 'O preço muda conforme a quantidade' },
+    { value: 'POR_LOTE', label: 'Tenho preços fechados por quantidade' },
+    { value: 'POR_METRO_QUADRADO', label: 'Cobro por metro quadrado' },
   ];
   readonly sugestoes: Array<{ nome: string; tipo: GraficaTipoParametro }> = [
     { nome: 'Formato', tipo: 'SELECAO' },
@@ -301,6 +448,25 @@ export class GraficaProdutoFormComponent implements OnInit {
     parametroDestinoId: [null as number | null, Validators.required],
     opcoesDestinoIds: [[] as number[], Validators.required],
   });
+  precoForm = this.fb.group({
+    tipo: ['POR_LOTE' as GraficaTipoPrecificacao, Validators.required],
+    nome: [''],
+    selecaoOpcaoIds: [[] as number[]],
+    ativo: [true],
+    multiplicaQuantidade: [false],
+    valorFixo: [null as number | null],
+    precoMetroQuadrado: [null as number | null],
+    minimoMetroQuadrado: [null as number | null],
+    faixasTexto: [''],
+    lotesTexto: [''],
+  });
+  previewPrecoForm = this.fb.group({
+    quantidade: [null as number | null],
+    largura: [null as number | null],
+    altura: [null as number | null],
+    unidadeDimensao: ['METRO'],
+  });
+  reajustePercentualControl = new FormControl<number | null>(null);
 
   constructor(
     private readonly fb: FormBuilder,
@@ -356,7 +522,7 @@ export class GraficaProdutoFormComponent implements OnInit {
       this.finalizarNovo();
       return;
     }
-    this.aba = Math.min(3, this.aba + 1);
+    this.aba = Math.min(4, this.aba + 1);
   }
 
   finalizarNovo(): void {
@@ -510,6 +676,102 @@ export class GraficaProdutoFormComponent implements OnInit {
     });
   }
 
+  adicionarPolitica(): void {
+    const raw = this.precoForm.getRawValue();
+    const politica: GraficaPrecoPolitica = {
+      nome: raw.nome || this.tipoPrecoLabel(raw.tipo || 'POR_LOTE'),
+      tipo: raw.tipo || 'POR_LOTE',
+      ativo: raw.ativo ?? true,
+      multiplicaQuantidade: raw.multiplicaQuantidade,
+      valorFixo: raw.valorFixo,
+      precoMetroQuadrado: raw.precoMetroQuadrado,
+      minimoMetroQuadrado: raw.minimoMetroQuadrado,
+      selecoes: this.selecoesPorIds(raw.selecaoOpcaoIds || []),
+      faixas: this.parseFaixas(raw.faixasTexto || ''),
+      lotes: this.parseLotes(raw.lotesTexto || ''),
+    };
+    this.politicas = [...this.politicas, politica];
+    this.limparPrecoForm();
+  }
+
+  salvarPoliticas(): void {
+    if (!this.graficaProduto) return;
+    this.salvando = true;
+    const payload: GraficaPrecoPoliticaRequest[] = this.politicas.map((politica) => ({
+      id: politica.id,
+      nome: politica.nome,
+      tipo: politica.tipo,
+      ativo: politica.ativo,
+      multiplicaQuantidade: politica.multiplicaQuantidade,
+      valorFixo: politica.valorFixo,
+      precoMetroQuadrado: politica.precoMetroQuadrado,
+      minimoMetroQuadrado: politica.minimoMetroQuadrado,
+      selecaoOpcaoIds: politica.selecoes.map((selecao) => selecao.opcaoId),
+      faixas: politica.faixas,
+      lotes: politica.lotes,
+    }));
+    this.graficaService.salvarPrecos(this.graficaProduto.id, payload).subscribe({
+      next: (politicas) => {
+        this.salvando = false;
+        this.politicas = politicas || [];
+        this.toastr.success('Preços salvos.');
+      },
+      error: (error) => {
+        this.salvando = false;
+        this.toastr.error(this.graficaErrorMessage(error, 'Não foi possível salvar os preços.'));
+      },
+    });
+  }
+
+  removerPoliticaLocal(index: number): void {
+    this.politicas = this.politicas.filter((_, i) => i !== index);
+  }
+
+  limparPoliticasLocais(): void {
+    this.carregarPrecos();
+  }
+
+  limparPrecoForm(): void {
+    this.precoForm.reset({ tipo: 'POR_LOTE', ativo: true, multiplicaQuantidade: false, selecaoOpcaoIds: [] });
+  }
+
+  aplicarReajustePercentual(): void {
+    const percentual = Number(this.reajustePercentualControl.value || 0);
+    if (!percentual) return;
+    const fator = 1 + percentual / 100;
+    this.politicas = this.politicas.map((politica) => ({
+      ...politica,
+      valorFixo: politica.valorFixo != null ? this.arredondar(politica.valorFixo * fator) : politica.valorFixo,
+      precoMetroQuadrado: politica.precoMetroQuadrado != null ? this.arredondar(politica.precoMetroQuadrado * fator) : politica.precoMetroQuadrado,
+      faixas: politica.faixas.map((faixa) => ({ ...faixa, valorUnitario: this.arredondar(faixa.valorUnitario * fator) })),
+      lotes: politica.lotes.map((lote) => ({ ...lote, valorLote: this.arredondar(lote.valorLote * fator) })),
+    }));
+  }
+
+  calcularPreview(): void {
+    if (!this.graficaProduto) return;
+    const raw = this.previewPrecoForm.getRawValue();
+    this.graficaService.precificar(this.graficaProduto.id, {
+      selecoes: this.previewSelecoes,
+      quantidade: raw.quantidade,
+      largura: raw.largura,
+      altura: raw.altura,
+      unidadeDimensao: raw.unidadeDimensao as any,
+    }).subscribe({
+      next: (resultado) => this.resultadoPreco = resultado,
+      error: (error) => this.toastr.error(this.graficaErrorMessage(error, 'Não foi possível calcular o preço.')),
+    });
+  }
+
+  tipoPrecoLabel(tipo: GraficaTipoPrecificacao): string {
+    return this.tiposPreco.find((item) => item.value === tipo)?.label || tipo;
+  }
+
+  selecoesPrecoLabel(politica: GraficaPrecoPolitica): string {
+    if (!politica.selecoes?.length) return 'vale para qualquer configuração';
+    return politica.selecoes.map((selecao) => `${selecao.parametroNome}: ${selecao.opcaoNome}`).join(', ');
+  }
+
   parametrosSelecao(): GraficaParametro[] {
     return this.graficaProduto?.parametros.filter((parametro) => parametro.tipoDado === 'SELECAO' && parametro.ativo) || [];
   }
@@ -529,6 +791,15 @@ export class GraficaProdutoFormComponent implements OnInit {
   private aplicarGraficaProduto(produto: GraficaProduto): void {
     this.graficaProduto = produto;
     this.dependencias = produto.dependencias || [];
+    this.carregarPrecos();
+  }
+
+  private carregarPrecos(): void {
+    if (!this.graficaProduto) return;
+    this.graficaService.listarPrecos(this.graficaProduto.id).subscribe({
+      next: (politicas) => this.politicas = politicas || [],
+      error: (error) => this.toastr.error(this.graficaErrorMessage(error, 'Não foi possível carregar preços.')),
+    });
   }
 
   private validarProduto(): boolean {
@@ -573,6 +844,64 @@ export class GraficaProdutoFormComponent implements OnInit {
 
   private parseOpcoes(texto: string): string[] {
     return Array.from(new Set(texto.split(/[\n,;]+/).map((item) => item.trim()).filter(Boolean)));
+  }
+
+  private parseFaixas(texto: string) {
+    return texto.split(/\n+/)
+      .map((linha) => linha.trim())
+      .filter(Boolean)
+      .map((linha) => {
+        const [inicio, fim, valorUnitario] = linha.split(/[;\t,]+/).map((item) => item.trim());
+        return { inicio: Number(inicio), fim: fim ? Number(fim) : null, valorUnitario: Number(valorUnitario) };
+      });
+  }
+
+  private parseLotes(texto: string) {
+    return texto.split(/\n+/)
+      .map((linha) => linha.trim())
+      .filter(Boolean)
+      .map((linha) => {
+        const [quantidade, valorLote] = linha.split(/[;\t,]+/).map((item) => item.trim());
+        return { quantidade: Number(quantidade), valorLote: Number(valorLote) };
+      });
+  }
+
+  private selecoesPorIds(ids: number[]) {
+    const opcoes = new Map<number, { parametro: GraficaParametro; opcao: GraficaOpcao }>();
+    this.parametrosSelecao().forEach((parametro) => {
+      parametro.opcoes.forEach((opcao) => opcoes.set(opcao.id, { parametro, opcao }));
+    });
+    return ids.map((id) => opcoes.get(id)).filter(Boolean).map((item) => ({
+      parametroId: item!.parametro.id,
+      parametroCodigo: item!.parametro.codigo,
+      parametroNome: item!.parametro.nome,
+      opcaoId: item!.opcao.id,
+      opcaoCodigo: item!.opcao.codigo,
+      opcaoNome: item!.opcao.nome,
+    }));
+  }
+
+  private arredondar(valor: number): number {
+    return Math.round(valor * 100) / 100;
+  }
+
+  private graficaErrorMessage(error: any, fallback: string): string {
+    const codigo = catalogoErrorMessage(error, fallback);
+    const mensagens: Record<string, string> = {
+      GRAFICA_PRECO_REGRA_AMBIGUA: 'Existe mais de uma regra de preço para esta configuração.',
+      GRAFICA_PRECO_FAIXA_NAO_ENCONTRADA: 'A quantidade informada não possui uma faixa de preço.',
+      GRAFICA_PRECO_LOTE_NAO_ENCONTRADO: 'A quantidade informada não possui um preço fechado.',
+      FAIXA_PRECO_COM_GAP: 'As faixas de quantidade possuem intervalo sem preço.',
+      FAIXA_PRECO_SOBREPOSTA: 'As faixas de quantidade possuem sobreposição.',
+      FAIXA_PRECO_INVERTIDA: 'Há uma faixa com final menor que o início.',
+      VALOR_FIXO_INVALIDO: 'Informe um preço único válido.',
+      PRECO_M2_INVALIDO: 'Informe um preço por metro quadrado válido.',
+      MINIMO_M2_INVALIDO: 'Informe um mínimo faturável válido.',
+      QUANTIDADE_INVALIDA: 'Informe uma quantidade válida.',
+      LARGURA_INVALIDA: 'Informe uma largura válida.',
+      ALTURA_INVALIDA: 'Informe uma altura válida.',
+    };
+    return mensagens[codigo] || codigo;
   }
 
   private codigo(valor: string): string {

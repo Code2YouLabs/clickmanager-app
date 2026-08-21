@@ -1,6 +1,8 @@
 import { CatalogoPaginaResponse } from '../../catalogo/shared/models/catalogo.models';
 
 export type GraficaTipoParametro = 'SELECAO' | 'NUMERO_INTEIRO' | 'NUMERO_DECIMAL' | 'TEXTO';
+export type GraficaTipoPrecificacao = 'FIXO' | 'POR_FAIXA_QUANTIDADE' | 'POR_LOTE' | 'POR_METRO_QUADRADO';
+export type GraficaPrecificacaoStatus = 'CONFIGURACAO_INCOMPLETA' | 'CONFIGURACAO_INVALIDA' | 'SEM_PRECO_CONFIGURADO' | 'PRECO_CALCULADO';
 
 export interface GraficaProduto {
   id: number;
@@ -94,6 +96,86 @@ export interface GraficaOpcoesProgressivasRequest {
 export interface GraficaOpcoesProgressivasResponse {
   proximoParametro?: GraficaParametro | null;
   opcoes: GraficaOpcao[];
+}
+
+export interface GraficaPrecoSelecao {
+  parametroId: number;
+  parametroCodigo: string;
+  parametroNome: string;
+  opcaoId: number;
+  opcaoCodigo: string;
+  opcaoNome: string;
+}
+
+export interface GraficaPrecoFaixa {
+  id?: number | null;
+  inicio: number;
+  fim?: number | null;
+  valorUnitario: number;
+}
+
+export interface GraficaPrecoLote {
+  id?: number | null;
+  quantidade: number;
+  valorLote: number;
+}
+
+export interface GraficaPrecoPolitica {
+  id?: number | null;
+  nome: string;
+  tipo: GraficaTipoPrecificacao;
+  ativo: boolean;
+  multiplicaQuantidade?: boolean | null;
+  valorFixo?: number | null;
+  precoMetroQuadrado?: number | null;
+  minimoMetroQuadrado?: number | null;
+  especificidade?: number | null;
+  selecoes: GraficaPrecoSelecao[];
+  faixas: GraficaPrecoFaixa[];
+  lotes: GraficaPrecoLote[];
+}
+
+export interface GraficaPrecoPoliticaRequest {
+  id?: number | null;
+  nome: string;
+  tipo: GraficaTipoPrecificacao;
+  ativo?: boolean | null;
+  multiplicaQuantidade?: boolean | null;
+  valorFixo?: number | null;
+  precoMetroQuadrado?: number | null;
+  minimoMetroQuadrado?: number | null;
+  selecaoOpcaoIds?: number[];
+  faixas?: GraficaPrecoFaixa[];
+  lotes?: GraficaPrecoLote[];
+}
+
+export interface GraficaPrecificacaoRequest {
+  selecoes?: Record<string, string>;
+  opcaoIds?: number[];
+  quantidade?: number | null;
+  largura?: number | null;
+  altura?: number | null;
+  unidadeDimensao?: 'METRO' | 'CENTIMETRO' | 'MILIMETRO';
+}
+
+export interface GraficaPrecificacaoResultado {
+  status: GraficaPrecificacaoStatus;
+  mensagem: string;
+  produtoGraficoId: number;
+  catalogoProdutoId: number;
+  selecoesResolvidas: GraficaPrecoSelecao[];
+  tipoPrecificacao?: GraficaTipoPrecificacao | null;
+  quantidadeSolicitada?: number | null;
+  valorUnitario?: number | null;
+  valorTotal?: number | null;
+  largura?: number | null;
+  altura?: number | null;
+  unidadeDimensao?: string | null;
+  areaReal?: number | null;
+  areaFaturada?: number | null;
+  regraAplicadaId?: number | null;
+  regraAplicadaNome?: string | null;
+  detalhes: string[];
 }
 
 export type GraficaProdutoPage = CatalogoPaginaResponse<GraficaProduto>;
