@@ -20,6 +20,14 @@ export const navItems: NavItem[] = [
         allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
     },
     {
+        displayName: 'Produtos Gráficos',
+        iconName: 'printer',
+        bgcolor: 'primary',
+        route: '/page/grafica/produtos',
+        requiredPermission: ['GRAFICA_PRODUTOS_VER', 'GRAFICA_PRODUTOS_EDITAR'],
+        allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
+    },
+    {
         displayName: 'Gerenciar Pedidos',
         iconName: 'file-text',
         bgcolor: 'primary',

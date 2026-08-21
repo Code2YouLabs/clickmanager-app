@@ -186,6 +186,21 @@ export const PagesRoutes: Routes = [
     }
   },
   {
+    path: 'grafica/produtos',
+    loadComponent: () => import('./grafica/produtos/grafica-produtos.component').then((m) => m.GraficaProdutosComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_VER'],
+      title: 'Produtos graficos',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Produtos graficos' }
+      ]
+    }
+  },
+  {
     path: 'site',
     redirectTo: 'site/banners',
     pathMatch: 'full',
