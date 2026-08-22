@@ -4,6 +4,8 @@ import { Observable } from 'rxjs';
 import { ApiService } from 'src/app/services/api.service';
 import {
   GraficaOpcaoRequest,
+  GraficaOrcamentoItemRequest,
+  GraficaOrcamentoItemResponse,
   GraficaDependencia,
   GraficaDependenciaRequest,
   GraficaOpcoesLoteRequest,
@@ -36,6 +38,10 @@ export class GraficaProdutoService {
 
   detalhar(id: number): Observable<GraficaProduto> {
     return this.api.get<GraficaProduto>(`${this.endpoint}/${id}`);
+  }
+
+  buscarPorCatalogo(catalogoProdutoId: number): Observable<GraficaProduto> {
+    return this.api.get<GraficaProduto>(`${this.endpoint}/catalogo/${catalogoProdutoId}`);
   }
 
   habilitar(body: GraficaProdutoRequest): Observable<GraficaProduto> {
@@ -116,5 +122,9 @@ export class GraficaProdutoService {
 
   precificar(produtoGraficoId: number, body: GraficaPrecificacaoRequest): Observable<GraficaPrecificacaoResultado> {
     return this.api.post<GraficaPrecificacaoResultado>(`${this.endpoint}/${produtoGraficoId}/precificar`, body);
+  }
+
+  adicionarAoOrcamento(produtoGraficoId: number, orcamentoId: number, body: GraficaOrcamentoItemRequest): Observable<GraficaOrcamentoItemResponse> {
+    return this.api.post<GraficaOrcamentoItemResponse>(`${this.endpoint}/${produtoGraficoId}/orcamentos/${orcamentoId}/itens`, body);
   }
 }

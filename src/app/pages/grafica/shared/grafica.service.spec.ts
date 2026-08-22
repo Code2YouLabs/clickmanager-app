@@ -6,6 +6,7 @@ describe('GraficaProdutoService', () => {
     const service = new GraficaProdutoService(api);
 
     service.listar();
+    service.buscarPorCatalogo(10);
     service.habilitar({ catalogoProdutoId: 10 });
     service.aplicarTemplate(1, 'PANFLETO');
     service.cadastrarParametro(1, { codigo: 'FORMATO', nome: 'Formato', tipoDado: 'SELECAO' });
@@ -17,9 +18,11 @@ describe('GraficaProdutoService', () => {
     service.listarPrecos(1);
     service.salvarPrecos(1, [{ nome: 'Xerox', tipo: 'POR_FAIXA_QUANTIDADE', ativo: true, selecaoOpcaoIds: [], faixas: [{ inicio: 1, fim: null, valorUnitario: 0.25 }], lotes: [] }]);
     service.precificar(1, { quantidade: 10 });
+    service.adicionarAoOrcamento(1, 99, { precificacao: { quantidade: 10 }, desconto: 5 });
     service.ordenarParametros(1, { itens: [{ id: 2, ordem: 1 }] });
 
     expect(api.get.calls.argsFor(0)[0]).toBe('api/grafica/produtos');
+    expect(api.get.calls.argsFor(1)[0]).toBe('api/grafica/produtos/catalogo/10');
     expect(api.get.calls.mostRecent().args[0]).toBe('api/grafica/produtos/1/precos');
     expect(api.post.calls.argsFor(0)).toEqual(['api/grafica/produtos', { catalogoProdutoId: 10 }]);
     expect(api.post.calls.argsFor(1)[0]).toBe('api/grafica/produtos/1/templates');
@@ -31,6 +34,7 @@ describe('GraficaProdutoService', () => {
     expect(api.post.calls.argsFor(5)[0]).toBe('api/grafica/produtos/1/configurador/opcoes');
     expect(api.put.calls.argsFor(1)[0]).toBe('api/grafica/produtos/1/precos');
     expect(api.post.calls.argsFor(6)[0]).toBe('api/grafica/produtos/1/precificar');
+    expect(api.post.calls.argsFor(7)[0]).toBe('api/grafica/produtos/1/orcamentos/99/itens');
     expect(api.patch.calls.mostRecent().args[0]).toBe('api/grafica/produtos/1/parametros/ordem');
   });
 });

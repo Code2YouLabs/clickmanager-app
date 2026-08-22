@@ -178,4 +178,21 @@ export interface GraficaPrecificacaoResultado {
   detalhes: string[];
 }
 
+export interface GraficaOrcamentoItemRequest {
+  precificacao: GraficaPrecificacaoRequest;
+  desconto?: number | null;
+  observacao?: string | null;
+  idempotencyKey?: string | null;
+}
+
+export interface GraficaOrcamentoItemResponse {
+  orcamentoId: number;
+  produtoGraficoId: number;
+  catalogoProdutoId: number;
+  valorGrafico: number;
+  desconto: number;
+  subtotal: number;
+  snapshotGrafica: string;
+}
+
 export type GraficaProdutoPage = CatalogoPaginaResponse<GraficaProduto>;

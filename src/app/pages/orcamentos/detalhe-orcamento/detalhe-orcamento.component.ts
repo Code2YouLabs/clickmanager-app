@@ -1,7 +1,7 @@
 import { CommonModule, DatePipe } from '@angular/common';
 import { HttpResponse } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
@@ -15,12 +15,19 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { TablerIconsModule } from 'angular-tabler-icons';
 import { ToastrService } from 'ngx-toastr';
+import { Observable, of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, finalize, switchMap } from 'rxjs/operators';
 import { CardHeaderComponent } from 'src/app/components/card-header/card-header.component';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { StatusBadgeComponent } from 'src/app/components/status-badge/status-badge.component';
+import { MaterialModule } from 'src/app/material.module';
 import { FormatoImpressaoOrcamento, Orcamento, OrcamentoItem, OrcamentoStatus } from 'src/app/models/orcamento/orcamento.model';
+import { CatalogoProdutoListItem } from 'src/app/pages/catalogo/shared/models/catalogo.models';
+import { CatalogoProdutoService } from 'src/app/pages/catalogo/shared/services/catalogo.service';
 import { ClienteCreateDialogComponent } from 'src/app/pages/cliente/cliente-create-dialog/cliente-create-dialog.component';
+import { GraficaParametro, GraficaPrecificacaoResultado, GraficaProduto } from 'src/app/pages/grafica/shared/grafica.models';
+import { GraficaProdutoService } from 'src/app/pages/grafica/shared/grafica.service';
 import { TelefonePipe } from 'src/app/pipe/telefone.pipe';
 import { AuthService } from 'src/app/services/auth.service';
 import { FeatureFlagService } from 'src/app/services/feature-flag.service';
@@ -40,7 +47,9 @@ type AcaoImpressaoOrcamento = 'A4' | 'TERMICA_80MM' | 'DOWNLOAD_A4';
   imports: [
     CommonModule,
     FormsModule,
+    ReactiveFormsModule,
     RouterModule,
+    MaterialModule,
     MatButtonModule,
     MatCardModule,
     MatFormFieldModule,
@@ -68,8 +77,24 @@ export class DetalheOrcamentoComponent implements OnInit {
   atualizandoStatus = false;
   cancelando = false;
   associandoCliente = false;
+  carregandoProdutoGrafico = false;
+  buscandoProdutoGrafico = false;
+  calculandoGrafica = false;
+  adicionandoGrafica = false;
   clientesDisponivel = false;
   gerandoImpressao: AcaoImpressaoOrcamento | null = null;
+  readonly produtoGraficoBusca = new FormControl<string | CatalogoProdutoListItem>('');
+  readonly quantidadeGraficaControl = new FormControl<number | null>(1);
+  readonly larguraGraficaControl = new FormControl<number | null>(null);
+  readonly alturaGraficaControl = new FormControl<number | null>(null);
+  readonly unidadeGraficaControl = new FormControl<'METRO' | 'CENTIMETRO' | 'MILIMETRO'>('METRO');
+  readonly descontoGraficaControl = new FormControl<number | null>(0);
+  readonly observacaoGraficaControl = new FormControl<string | null>('');
+  produtosGrafica$!: Observable<CatalogoProdutoListItem[]>;
+  produtoGraficoSelecionado: CatalogoProdutoListItem | null = null;
+  graficaProdutoVenda: GraficaProduto | null = null;
+  selecoesGrafica: Record<string, string> = {};
+  resultadoGrafica: GraficaPrecificacaoResultado | null = null;
   readonly colunasItens = ['tipo', 'produto', 'unidade', 'quantidade', 'precoUnitario', 'desconto', 'subtotal', 'observacao', 'acoes'];
   readonly statusOptions: StatusOption[] = [
     { value: 'NOVO', label: 'Novo' },
@@ -83,6 +108,8 @@ export class DetalheOrcamentoComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly orcamentoService: OrcamentoService,
+    private readonly produtoService: CatalogoProdutoService,
+    private readonly graficaService: GraficaProdutoService,
     private readonly authService: AuthService,
     private readonly featureFlagService: FeatureFlagService,
     private readonly dialog: MatDialog,
@@ -100,6 +127,24 @@ export class DetalheOrcamentoComponent implements OnInit {
     this.featureFlagService.carregar().subscribe((features) => {
       this.clientesDisponivel = features['CLIENTES'] === true;
     });
+
+    this.produtosGrafica$ = this.produtoGraficoBusca.valueChanges.pipe(
+      debounceTime(250),
+      distinctUntilChanged(),
+      switchMap((value) => {
+        const texto = typeof value === 'string' ? value.trim() : value?.nome || '';
+        if (texto.length < 2) return of([]);
+        this.carregandoProdutoGrafico = true;
+        return this.produtoService.listar({ page: 0, size: 10, texto, ativo: true }).pipe(
+          catchError(() => {
+            this.toastr.error('Não foi possível pesquisar produtos.');
+            return of({ content: [], pageNumber: 0, pageSize: 10, totalElements: 0, totalPages: 0, last: true });
+          }),
+          switchMap((pagina) => of(pagina.content || [])),
+          finalize(() => (this.carregandoProdutoGrafico = false)),
+        );
+      }),
+    );
   }
 
   get podeEditar(): boolean {
@@ -121,6 +166,10 @@ export class DetalheOrcamentoComponent implements OnInit {
       && !this.orcamento?.clienteId
       && this.orcamento?.status !== 'CONVERTIDO'
       && this.orcamento?.status !== 'PERDIDO';
+  }
+
+  get podeAdicionarItemGrafico(): boolean {
+    return this.podeEditar && this.orcamento?.status !== 'CONVERTIDO' && this.orcamento?.status !== 'PERDIDO';
   }
 
   get clienteVinculado(): boolean {
@@ -266,6 +315,81 @@ export class DetalheOrcamentoComponent implements OnInit {
     );
   }
 
+  displayProdutoGrafico(produto?: string | CatalogoProdutoListItem | null): string {
+    return typeof produto === 'string' ? produto : produto ? `${produto.codigo} - ${produto.nome}` : '';
+  }
+
+  selecionarProdutoGrafico(produto: CatalogoProdutoListItem): void {
+    this.produtoGraficoSelecionado = produto;
+    this.graficaProdutoVenda = null;
+    this.resultadoGrafica = null;
+    this.selecoesGrafica = {};
+    this.buscandoProdutoGrafico = true;
+    this.graficaService.buscarPorCatalogo(produto.id).pipe(
+      finalize(() => (this.buscandoProdutoGrafico = false)),
+    ).subscribe({
+      next: (grafica) => {
+        if (!grafica.ativo) {
+          this.toastr.warning('Este produto gráfico está inativo.');
+          return;
+        }
+        this.graficaProdutoVenda = grafica;
+      },
+      error: () => this.toastr.info('Este produto não possui configuração gráfica ativa.'),
+    });
+  }
+
+  parametrosSelecaoGrafica(): GraficaParametro[] {
+    return this.graficaProdutoVenda?.parametros.filter((parametro) => parametro.ativo && parametro.tipoDado === 'SELECAO') || [];
+  }
+
+  calcularGrafica(): void {
+    if (!this.graficaProdutoVenda) return;
+    this.calculandoGrafica = true;
+    this.graficaService.precificar(this.graficaProdutoVenda.id, this.precificacaoGraficaPayload()).pipe(
+      finalize(() => (this.calculandoGrafica = false)),
+    ).subscribe({
+      next: (resultado) => this.resultadoGrafica = resultado,
+      error: (error) => this.toastr.error(this.graficaErrorMessage(error, 'Não foi possível calcular o preço.')),
+    });
+  }
+
+  adicionarGraficaAoOrcamento(): void {
+    if (!this.orcamento?.id || !this.graficaProdutoVenda || this.adicionandoGrafica) return;
+    if (!this.resultadoGrafica || this.resultadoGrafica.status !== 'PRECO_CALCULADO') {
+      this.toastr.warning('Calcule o preço antes de adicionar.');
+      return;
+    }
+    this.adicionandoGrafica = true;
+    this.graficaService.adicionarAoOrcamento(this.graficaProdutoVenda.id, this.orcamento.id, {
+      precificacao: this.precificacaoGraficaPayload(),
+      desconto: this.descontoGraficaControl.value || 0,
+      observacao: this.observacaoGraficaControl.value || null,
+      idempotencyKey: `grafica-${this.graficaProdutoVenda.id}-${Date.now()}`,
+    }).pipe(
+      switchMap(() => this.orcamentoService.detalhar(this.orcamento!.id)),
+      finalize(() => (this.adicionandoGrafica = false)),
+    ).subscribe({
+      next: (orcamento) => {
+        this.orcamento = orcamento;
+        this.resultadoGrafica = null;
+        this.toastr.success('Item gráfico adicionado ao orçamento.');
+      },
+      error: (error) => this.toastr.error(this.graficaErrorMessage(error, 'Não foi possível adicionar o item gráfico.')),
+    });
+  }
+
+  resultadoGraficaLabel(): string {
+    if (!this.resultadoGrafica) return 'Selecione as opções para calcular o preço';
+    if (this.resultadoGrafica.status === 'PRECO_CALCULADO') return '';
+    const mensagens: Record<string, string> = {
+      CONFIGURACAO_INCOMPLETA: 'Selecione as opções para calcular o preço',
+      CONFIGURACAO_INVALIDA: 'Esta combinação não está disponível',
+      SEM_PRECO_CONFIGURADO: 'Esta configuração ainda não possui preço cadastrado',
+    };
+    return mensagens[this.resultadoGrafica.status] || this.resultadoGrafica.mensagem;
+  }
+
   cadastrarContatoComoCliente(): void {
     if (!this.orcamento?.id || !this.podeCadastrarContatoComoCliente || this.associandoCliente) {
       return;
@@ -354,6 +478,29 @@ export class DetalheOrcamentoComponent implements OnInit {
     return item.descricao || item.produtoNome || 'Item não informado';
   }
 
+  itemResumoGrafico(item: OrcamentoItem): string | null {
+    if (!item.snapshotGrafica) return null;
+    try {
+      const snapshot = JSON.parse(item.snapshotGrafica) as {
+        configuracao?: Array<{ ordemSnapshot?: number; opcaoNomeSnapshot?: string; valorInformado?: string }>;
+        entrada?: { quantidade?: number | null; largura?: number | null; altura?: number | null; unidadeDimensao?: string | null };
+      };
+      const selecoes = (snapshot.configuracao || [])
+        .slice()
+        .sort((a, b) => (a.ordemSnapshot || 0) - (b.ordemSnapshot || 0))
+        .map((selecao) => selecao.opcaoNomeSnapshot || selecao.valorInformado)
+        .filter((valor): valor is string => !!valor);
+      const entrada = snapshot.entrada;
+      const medidas = entrada?.largura && entrada?.altura
+        ? `${entrada.largura} x ${entrada.altura}${this.unidadeDimensaoLabel(entrada.unidadeDimensao)}`
+        : null;
+      const quantidade = entrada?.quantidade ? `${entrada.quantidade} un` : null;
+      return [...selecoes, medidas, quantidade].filter(Boolean).join(' · ') || null;
+    } catch {
+      return null;
+    }
+  }
+
   itemTipoLabel(item: OrcamentoItem): string {
     return item.tipoItem === 'LIVRE' ? 'Item livre' : 'Catálogo';
   }
@@ -427,6 +574,40 @@ export class DetalheOrcamentoComponent implements OnInit {
 
     const dias = Math.floor(horas / 24);
     return `${prefixo} há ${dias} ${dias === 1 ? 'dia' : 'dias'}`;
+  }
+
+  private precificacaoGraficaPayload() {
+    return {
+      selecoes: this.selecoesGrafica,
+      quantidade: this.quantidadeGraficaControl.value || null,
+      largura: this.larguraGraficaControl.value || null,
+      altura: this.alturaGraficaControl.value || null,
+      unidadeDimensao: this.unidadeGraficaControl.value || 'METRO',
+    };
+  }
+
+  private graficaErrorMessage(error: any, fallback: string): string {
+    const codigo = error?.error?.message || error?.error?.mensagem || error?.message || fallback;
+    const mensagens: Record<string, string> = {
+      CONFIGURACAO_INCOMPLETA: 'Selecione as opções para calcular o preço',
+      CONFIGURACAO_INVALIDA: 'Esta combinação não está disponível',
+      SEM_PRECO_CONFIGURADO: 'Esta configuração ainda não possui preço cadastrado',
+      GRAFICA_PRECO_REGRA_AMBIGUA: 'Existe mais de uma regra de preço para esta configuração.',
+      GRAFICA_PRECO_FAIXA_NAO_ENCONTRADA: 'A quantidade informada não possui uma faixa de preço.',
+      GRAFICA_PRECO_LOTE_NAO_ENCONTRADO: 'A quantidade informada não possui um preço fechado.',
+      ORCAMENTO_OBRIGATORIO: 'Orçamento obrigatório para adicionar o item.',
+      DESCONTO_GRAFICO_INVALIDO: 'O desconto não pode ser maior que o preço gráfico.',
+    };
+    return mensagens[codigo] || codigo;
+  }
+
+  private unidadeDimensaoLabel(unidade: string | null | undefined): string {
+    const labels: Record<string, string> = {
+      METRO: 'm',
+      CENTIMETRO: 'cm',
+      MILIMETRO: 'mm',
+    };
+    return unidade ? ` ${labels[unidade] || unidade.toLowerCase()}` : '';
   }
 
   private confirmarAlteracaoStatus(status: OrcamentoStatus): void {

@@ -107,6 +107,7 @@ export type OrcamentoItem = {
   subtotalEstimado?: number | null;
   ordem?: number | null;
   snapshot?: OrcamentoSnapshot | null;
+  snapshotGrafica?: string | null;
 };
 
 export type Orcamento = {
