@@ -71,14 +71,10 @@ interface TipoPrecoUi {
                 <mat-form-field appearance="outline">
                   <mat-label>Categoria</mat-label>
                   <mat-select formControlName="categoriaId">
-                    <mat-option *ngIf="!categorias.length" disabled>Nenhuma categoria ativa encontrada</mat-option>
+                    <mat-option [value]="null">Sem categoria</mat-option>
                     <mat-option *ngFor="let item of categorias" [value]="item.id">{{ item.nome }}</mat-option>
                   </mat-select>
                 </mat-form-field>
-                <div class="field-help wide" *ngIf="!categorias.length">
-                  Cadastre uma categoria ativa no Catálogo para criar produtos novos.
-                  <a routerLink="/page/catalogo/categorias/nova">Nova categoria</a>
-                </div>
                 <mat-form-field appearance="outline">
                   <mat-label>Unidade</mat-label>
                   <mat-select formControlName="unidadeVenda">
@@ -377,7 +373,7 @@ interface TipoPrecoUi {
     </app-page-card>
   `,
   styles: [`
-    mat-tab-group{margin-top:8px}.stack{display:grid;gap:16px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.choice-list{display:grid;gap:10px}.template-list,.quick-actions,.bulk-actions{display:flex;flex-wrap:wrap;gap:10px}.template-list button{height:auto;min-height:58px;text-align:left}.template-list span{display:grid}.template-list small{color:#6b7280}.selected-template{border-color:#5d87ff}.param-form,.dependency-form,.price-form,.preview-price-form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:center;margin-bottom:16px}.wide{grid-column:1/-1}.field-help{color:#64748b;font-size:13px;margin-top:-8px}.field-help a{color:#1e88e5;font-weight:600;margin-left:6px;text-decoration:none}.form-actions,.row-actions,.actions{display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.batch-form{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start;margin:12px 0}.option-list,.rule-list,.preview-list,.price-list{display:grid;gap:8px}.option-row,.rule-row,.preview-field,.price-row,.price-result{display:flex;align-items:center;gap:8px;border:1px solid #e5eaef;border-radius:8px;padding:8px 10px}.price-row,.price-result{display:grid}.option-row span{font-weight:600}.option-row small,.price-row small,.price-result small{color:#6b7280;margin-right:auto}.rule-row span{line-height:1.35}.price-lines{display:flex;flex-wrap:wrap;gap:8px}.price-lines span{border:1px solid #d7dde5;border-radius:16px;padding:4px 10px;background:#fff}.review{display:grid;gap:16px}.review strong{display:block;font-size:18px}.review small{display:block;color:#6b7280;margin-top:2px}.preview-field{display:block}.preview-field label{display:block;font-weight:600;margin-bottom:8px}.chips{display:flex;flex-wrap:wrap;gap:8px}.chips span{border:1px solid #d7dde5;border-radius:16px;padding:4px 10px;background:#fff}.preview-field input{width:100%;border:1px solid #d7dde5;border-radius:6px;padding:10px;background:#f8fafc}.empty{color:#6b7280;text-align:center;padding:20px}.empty.compact{padding:8px}.actions{margin-top:16px}@media(max-width:960px){.grid,.param-form,.dependency-form,.price-form,.preview-price-form{grid-template-columns:1fr}.batch-form{grid-template-columns:1fr}.actions{justify-content:stretch}.actions button{flex:1}.option-row{flex-wrap:wrap}.option-row small{width:100%}}`],
+    mat-tab-group{margin-top:8px}.stack{display:grid;gap:16px}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.choice-list{display:grid;gap:10px}.template-list,.quick-actions,.bulk-actions{display:flex;flex-wrap:wrap;gap:10px}.template-list button{height:auto;min-height:58px;text-align:left}.template-list span{display:grid}.template-list small{color:#6b7280}.selected-template{border-color:#5d87ff}.param-form,.dependency-form,.price-form,.preview-price-form{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:center;margin-bottom:16px}.wide{grid-column:1/-1}.form-actions,.row-actions,.actions{display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.batch-form{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start;margin:12px 0}.option-list,.rule-list,.preview-list,.price-list{display:grid;gap:8px}.option-row,.rule-row,.preview-field,.price-row,.price-result{display:flex;align-items:center;gap:8px;border:1px solid #e5eaef;border-radius:8px;padding:8px 10px}.price-row,.price-result{display:grid}.option-row span{font-weight:600}.option-row small,.price-row small,.price-result small{color:#6b7280;margin-right:auto}.rule-row span{line-height:1.35}.price-lines{display:flex;flex-wrap:wrap;gap:8px}.price-lines span{border:1px solid #d7dde5;border-radius:16px;padding:4px 10px;background:#fff}.review{display:grid;gap:16px}.review strong{display:block;font-size:18px}.review small{display:block;color:#6b7280;margin-top:2px}.preview-field{display:block}.preview-field label{display:block;font-weight:600;margin-bottom:8px}.chips{display:flex;flex-wrap:wrap;gap:8px}.chips span{border:1px solid #d7dde5;border-radius:16px;padding:4px 10px;background:#fff}.preview-field input{width:100%;border:1px solid #d7dde5;border-radius:6px;padding:10px;background:#f8fafc}.empty{color:#6b7280;text-align:center;padding:20px}.empty.compact{padding:8px}.actions{margin-top:16px}@media(max-width:960px){.grid,.param-form,.dependency-form,.price-form,.preview-price-form{grid-template-columns:1fr}.batch-form{grid-template-columns:1fr}.actions{justify-content:stretch}.actions button{flex:1}.option-row{flex-wrap:wrap}.option-row small{width:100%}}`],
 })
 export class GraficaProdutoFormComponent implements OnInit {
   produtosCatalogo: CatalogoProdutoOption[] = [];
@@ -827,8 +823,8 @@ export class GraficaProdutoFormComponent implements OnInit {
       this.toastr.warning('Selecione um produto do Catálogo.');
       return false;
     }
-    if (this.produtoForm.value.origem === 'NOVO' && (!this.produtoForm.value.nome || !this.produtoForm.value.categoriaId)) {
-      this.toastr.warning('Informe nome e categoria do produto.');
+    if (this.produtoForm.value.origem === 'NOVO' && !this.produtoForm.value.nome) {
+      this.toastr.warning('Informe o nome do produto.');
       return false;
     }
     return true;
