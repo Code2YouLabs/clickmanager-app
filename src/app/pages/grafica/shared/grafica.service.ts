@@ -3,6 +3,8 @@ import { HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiService } from 'src/app/services/api.service';
 import {
+  GraficaCatalogoProdutoMinimoRequest,
+  GraficaCatalogoProdutoMinimoResponse,
   GraficaOpcaoRequest,
   GraficaOrcamentoItemRequest,
   GraficaOrcamentoItemResponse,
@@ -46,6 +48,10 @@ export class GraficaProdutoService {
 
   habilitar(body: GraficaProdutoRequest): Observable<GraficaProduto> {
     return this.api.post<GraficaProduto>(this.endpoint, body);
+  }
+
+  criarProdutoCatalogo(body: GraficaCatalogoProdutoMinimoRequest): Observable<GraficaCatalogoProdutoMinimoResponse> {
+    return this.api.post<GraficaCatalogoProdutoMinimoResponse>(`${this.endpoint}/catalogo`, body);
   }
 
   alterarStatus(id: number, ativo: boolean): Observable<GraficaProduto> {

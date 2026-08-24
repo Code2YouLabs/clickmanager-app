@@ -41,8 +41,27 @@ export interface GraficaOpcao {
 }
 
 export interface GraficaProdutoRequest {
-  catalogoProdutoId: number;
+  catalogoProdutoId?: number | null;
   ativo?: boolean;
+  produto?: GraficaCatalogoProdutoMinimoRequest | null;
+}
+
+export interface GraficaCatalogoProdutoMinimoRequest {
+  codigo?: string | null;
+  nome: string;
+  categoriaId?: number | null;
+  unidadeVenda?: string | null;
+}
+
+export interface GraficaCatalogoProdutoMinimoResponse {
+  produtoId: number;
+  codigo: string;
+  nome: string;
+  slug: string;
+  categoriaId?: number | null;
+  categoriaNome?: string | null;
+  unidadeVenda?: string | null;
+  ativo: boolean;
 }
 
 export interface GraficaParametroRequest {

@@ -2,12 +2,12 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { catchError, of, switchMap } from 'rxjs';
+import { catchError, map, of, switchMap } from 'rxjs';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { MaterialModule } from 'src/app/material.module';
 import { ToastrService } from 'ngx-toastr';
-import { CatalogoCategoriaOption, CatalogoProduto, CatalogoProdutoOption, CatalogoProdutoRequest } from '../../catalogo/shared/models/catalogo.models';
+import { CatalogoCategoriaOption, CatalogoProduto, CatalogoProdutoOption } from '../../catalogo/shared/models/catalogo.models';
 import { CatalogoCategoriaService, CatalogoProdutoService } from '../../catalogo/shared/services/catalogo.service';
 import { catalogoErrorMessage, catalogoSlugify, CATALOGO_UNIDADES_VENDA } from '../../catalogo/shared/utils/catalogo-utils';
 import {
@@ -837,20 +837,15 @@ export class GraficaProdutoFormComponent implements OnInit {
       return of({ id, nome: option?.nome || '' } as CatalogoProduto);
     }
     const nome = String(this.produtoForm.value.nome || '').trim();
-    const payload: CatalogoProdutoRequest = {
+    const payload = {
       codigo: this.codigo(nome).slice(0, 50),
       nome,
-      slug: catalogoSlugify(nome),
       categoriaId: this.produtoForm.value.categoriaId,
-      unidadeVenda: this.produtoForm.value.unidadeVenda as any,
-      ordemExibicao: 0,
-      destaque: false,
-      ativo: true,
-      comercial: { exibirPreco: false, sobConsulta: true, permiteOrcamento: true },
-      imagens: [],
-      caracteristicas: [],
+      unidadeVenda: this.produtoForm.value.unidadeVenda,
     };
-    return this.catalogoProdutoService.criar(payload);
+    return this.graficaService.criarProdutoCatalogo(payload).pipe(
+      map((produto) => ({ id: produto.produtoId, nome: produto.nome } as CatalogoProduto))
+    );
   }
 
   private nomeProdutoSelecionado(): string {
