@@ -96,6 +96,7 @@ type ProdutoFormSnapshot = {
               <app-deposito-imagem-galeria
                 context="catalogo-produtos"
                 uploadEndpoint="api/grafica/produtos/imagens/upload"
+                [maxImages]="5"
                 [gerenciarPrincipal]="true"
                 [imagemPrincipal]="imagemPrincipal"
                 [imagens]="galeria"
@@ -175,7 +176,7 @@ type ProdutoFormSnapshot = {
       display: none;
     }
     :host ::ng-deep .product-images .deposito-galeria__label::after {
-      content: 'JPG, PNG ou WEBP. Até 10 MB.';
+      content: 'JPG, PNG ou WEBP. Até 10 MB. Máximo 5 imagens.';
       display: block;
       margin-top: 2px;
       color: #64748b;
@@ -201,7 +202,7 @@ type ProdutoFormSnapshot = {
       font-size: 24px;
     }
     :host ::ng-deep .product-images .deposito-galeria__grid {
-      grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
       gap: 8px;
     }
     :host ::ng-deep .product-images .deposito-galeria__card {

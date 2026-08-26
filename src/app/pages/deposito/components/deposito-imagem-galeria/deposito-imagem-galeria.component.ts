@@ -31,6 +31,7 @@ interface UploadGaleriaResultado {
 export class DepositoImagemGaleriaComponent implements OnChanges {
   @Input() context = 'produtos';
   @Input() uploadEndpoint?: string;
+  @Input() maxImages?: number | null;
   @Input() imagemPrincipal?: DepositoImagem | null;
   @Input() imagens: DepositoImagem[] = [];
   @Input() gerenciarPrincipal = false;
@@ -105,8 +106,19 @@ export class DepositoImagemGaleriaComponent implements OnChanges {
   }
 
   private async processarArquivos(files: File[]): Promise<void> {
+    const limite = this.maxImagesNormalizado;
+    const vagasDisponiveis = Number.isFinite(limite) ? Math.max(limite - this.imagensParaExibicao.length, 0) : files.length;
+    if (vagasDisponiveis <= 0) {
+      this.erro = `Limite de ${limite} imagens por produto atingido.`;
+      return;
+    }
+
+    const arquivosSelecionados = files.slice(0, vagasDisponiveis);
+    const mensagensLimite = files.length > vagasDisponiveis
+      ? [`Limite de ${limite} imagens por produto. ${files.length - vagasDisponiveis} arquivo(s) não foram enviados.`]
+      : [];
     const validacoes = await Promise.all(
-      files.map(async (file) => ({
+      arquivosSelecionados.map(async (file) => ({
         file,
         validacao: await validateDepositoImageFile(file),
       }))
@@ -117,7 +129,7 @@ export class DepositoImagemGaleriaComponent implements OnChanges {
       .map((item) => `${item.file.name}: ${item.validacao.message || 'imagem inválida'}`);
 
     if (!arquivosValidos.length) {
-      this.erro = mensagensInvalidas.join('\n\n') || 'Nenhuma imagem válida foi selecionada.';
+      this.erro = [...mensagensLimite, ...mensagensInvalidas].join('\n\n') || 'Nenhuma imagem válida foi selecionada.';
       return;
     }
 
@@ -164,7 +176,7 @@ export class DepositoImagemGaleriaComponent implements OnChanges {
         this.carregando = false;
         this.uploadingChange.emit(false);
 
-        this.erro = [...mensagensInvalidas, ...mensagensUpload].join('\n\n');
+        this.erro = [...mensagensLimite, ...mensagensInvalidas, ...mensagensUpload].join('\n\n');
       },
       error: () => {
         this.carregando = false;
@@ -235,6 +247,11 @@ export class DepositoImagemGaleriaComponent implements OnChanges {
     return this.imagensParaExibicao.length > 0;
   }
 
+  get limiteAtingido(): boolean {
+    const limite = this.maxImagesNormalizado;
+    return Number.isFinite(limite) && this.imagensParaExibicao.length >= limite;
+  }
+
   isImagemPrincipal(imagem: DepositoImagem): boolean {
     return this.gerenciarPrincipal && !!this.imagemPrincipalInterna?.id && this.imagemPrincipalInterna.id === imagem.id;
   }
@@ -285,7 +302,12 @@ export class DepositoImagemGaleriaComponent implements OnChanges {
       this.imagemPrincipalChange.emit(this.imagemPrincipalInterna);
     }
 
-    this.imagensInternas = this.removerDuplicadas([...this.imagensInternas, ...imagensParaGaleria], this.imagemPrincipalInterna?.id);
+    const limite = this.maxImagesNormalizado;
+    const vagasGaleria = Number.isFinite(limite)
+      ? Math.max(limite - (this.imagemPrincipalInterna ? 1 : 0), 0)
+      : Number.POSITIVE_INFINITY;
+    this.imagensInternas = this.removerDuplicadas([...this.imagensInternas, ...imagensParaGaleria], this.imagemPrincipalInterna?.id)
+      .slice(0, vagasGaleria);
   }
 
   private removerDuplicadas(imagens: DepositoImagem[], ignorarId?: number | null): DepositoImagem[] {
@@ -310,5 +332,11 @@ export class DepositoImagemGaleriaComponent implements OnChanges {
     }
 
     return this.depositoImagemService.upload(file, this.context, metadata);
+  }
+
+  private get maxImagesNormalizado(): number {
+    return Number.isFinite(this.maxImages) && Number(this.maxImages) > 0
+      ? Math.floor(Number(this.maxImages))
+      : Number.POSITIVE_INFINITY;
   }
 }

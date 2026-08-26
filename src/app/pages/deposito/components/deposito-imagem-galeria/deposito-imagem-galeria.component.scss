@@ -38,6 +38,7 @@
 .deposito-galeria__panel {
   display: grid;
   gap: 14px;
+  min-width: 0;
   padding: 16px;
   border-radius: 22px;
   border: 1px dashed rgba(148, 163, 184, 0.5);
@@ -65,6 +66,11 @@
   cursor: pointer;
 }
 
+.deposito-galeria__trigger--disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
 .deposito-galeria__trigger input {
   display: none;
 }
@@ -88,14 +94,15 @@
 
 .deposito-galeria__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, 180px);
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   justify-content: flex-start;
   gap: 14px;
+  min-width: 0;
 }
 
 .deposito-galeria__card {
   display: grid;
-  width: 180px;
+  min-width: 0;
   gap: 10px;
   padding: 12px;
   border-radius: 18px;
@@ -110,8 +117,8 @@
 
 .deposito-galeria__preview {
   position: relative;
-  width: 154px;
-  height: 154px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   overflow: hidden;
   border-radius: 14px;
   border: 1px solid rgba(226, 232, 240, 0.9);
@@ -164,8 +171,23 @@
 
 .deposito-galeria__actions {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
   gap: 4px;
+}
+
+.deposito-galeria__actions button {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+.deposito-galeria__actions mat-icon {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
 }
 
 .deposito-galeria__error {
@@ -186,16 +208,6 @@
   }
 
   .deposito-galeria__grid {
-    grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
-  }
-
-  .deposito-galeria__card {
-    width: 100%;
-  }
-
-  .deposito-galeria__preview {
-    width: 100%;
-    height: auto;
-    aspect-ratio: 1 / 1;
+    grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
   }
 }

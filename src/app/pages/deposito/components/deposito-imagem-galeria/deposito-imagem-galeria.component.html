@@ -20,8 +20,8 @@
     (dragover)="onDragOver($event)"
     (dragleave)="onDragLeave($event)"
     (drop)="onDrop($event)">
-    <label class="deposito-galeria__trigger">
-      <input type="file" multiple [disabled]="carregando" (change)="onFilesSelected($event)" />
+    <label class="deposito-galeria__trigger" [class.deposito-galeria__trigger--disabled]="carregando || limiteAtingido">
+      <input type="file" multiple [disabled]="carregando || limiteAtingido" (change)="onFilesSelected($event)" />
       <mat-icon>add_photo_alternate</mat-icon>
       <span>{{ gerenciarPrincipal ? 'Selecionar imagens' : 'Adicionar imagens' }}</span>
     </label>
