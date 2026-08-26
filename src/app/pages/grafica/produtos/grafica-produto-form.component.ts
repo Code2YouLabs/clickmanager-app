@@ -83,7 +83,8 @@ type ProdutoFormSnapshot = {
                 label="Categoria"
                 placeholder="Categoria"
                 [options]="categorias"
-                [showNull]="false">
+                [showNull]="true"
+                nullLabel="Sem categoria">
               </app-input-options>
               <mat-checkbox formControlName="exibirNoSite">Exibir este produto no site</mat-checkbox>
             </div>
@@ -264,7 +265,7 @@ export class GraficaProdutoFormComponent implements OnInit {
   form = this.fb.group({
     nome: this.fb.control<string>('', { nonNullable: true, validators: [Validators.required] }),
     descricao: this.fb.control<string>('', { nonNullable: true }),
-    categoriaId: this.fb.control<number | null>(null, { validators: [Validators.required] }),
+    categoriaId: this.fb.control<number | null>(null),
     exibirNoSite: this.fb.control<boolean>(false, { nonNullable: true }),
     materialId: this.fb.control<number | null>(null),
     formatoId: this.fb.control<number | null>(null),
