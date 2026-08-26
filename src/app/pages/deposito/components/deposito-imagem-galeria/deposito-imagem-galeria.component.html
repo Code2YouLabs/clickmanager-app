@@ -37,6 +37,9 @@
       <article class="deposito-galeria__card" [class.deposito-galeria__card--primary]="isImagemPrincipal(imagem)">
         <div class="deposito-galeria__preview">
           <img [src]="getImagemSrc(imagem)" [alt]="imagem.altText || imagem.titulo || 'Imagem da galeria'" loading="lazy" decoding="async" />
+          @if (isImagemPrincipal(imagem)) {
+          <span class="deposito-galeria__primary-badge">Principal</span>
+          }
         </div>
 
         <div class="deposito-galeria__actions">
