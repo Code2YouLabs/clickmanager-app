@@ -65,8 +65,8 @@ import { GraficaProdutoService } from '../shared/grafica.service';
             </ng-container>
 
             <ng-container matColumnDef="parametros">
-              <th mat-header-cell *matHeaderCellDef>Campos</th>
-              <td mat-cell *matCellDef="let item">{{ item.parametros?.length || 0 }}</td>
+              <th mat-header-cell *matHeaderCellDef>Acab./Serv.</th>
+              <td mat-cell *matCellDef="let item">{{ (item.acabamentos?.length || 0) + (item.servicos?.length || 0) }}</td>
             </ng-container>
 
             <ng-container matColumnDef="resumo">
@@ -166,10 +166,9 @@ export class GraficaProdutosComponent implements OnInit {
   }
 
   resumo(item: GraficaProduto): string {
-    const nomes = (item.parametros || []).slice(0, 3).map((parametro) => parametro.nome);
-    if (!nomes.length) return 'Sem campos configurados';
-    const sufixo = (item.parametros || []).length > 3 ? ` +${(item.parametros || []).length - 3}` : '';
-    return `${nomes.join(', ')}${sufixo}`;
+    const nomes = [item.material?.nome, item.formato?.nome, item.cor?.nome].filter(Boolean);
+    if (!nomes.length) return 'Sem material/formato/cor';
+    return nomes.join(' / ');
   }
 
   paginar(event: PageEvent): void {

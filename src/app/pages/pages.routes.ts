@@ -233,6 +233,21 @@ export const PagesRoutes: Routes = [
     }
   },
   {
+    path: 'grafica/:tipo',
+    loadComponent: () => import('./grafica/cadastros/grafica-cadastro-list.component').then((m) => m.GraficaCadastroListComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_VER'],
+      title: 'Cadastro grafico',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Cadastro grafico' }
+      ]
+    }
+  },
+  {
     path: 'site',
     redirectTo: 'site/banners',
     pathMatch: 'full',

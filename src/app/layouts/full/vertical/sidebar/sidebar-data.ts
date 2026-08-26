@@ -20,12 +20,20 @@ export const navItems: NavItem[] = [
         allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
     },
     {
-        displayName: 'Produtos Gráficos',
+        displayName: 'Gráfica',
         iconName: 'printer',
         bgcolor: 'primary',
         route: '/page/grafica/produtos',
         requiredPermission: ['GRAFICA_PRODUTOS_VER', 'GRAFICA_PRODUTOS_EDITAR'],
         allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
+        children: [
+            { displayName: 'Produtos', iconName: 'point', bgcolor: 'transparent', route: '/page/grafica/produtos', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: [TipoEmpresa.GRAFICA] },
+            { displayName: 'Materiais', iconName: 'point', bgcolor: 'transparent', route: '/page/grafica/materiais', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: [TipoEmpresa.GRAFICA] },
+            { displayName: 'Formatos', iconName: 'point', bgcolor: 'transparent', route: '/page/grafica/formatos', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: [TipoEmpresa.GRAFICA] },
+            { displayName: 'Cores', iconName: 'point', bgcolor: 'transparent', route: '/page/grafica/cores', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: [TipoEmpresa.GRAFICA] },
+            { displayName: 'Acabamentos', iconName: 'point', bgcolor: 'transparent', route: '/page/grafica/acabamentos', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: [TipoEmpresa.GRAFICA] },
+            { displayName: 'Serviços', iconName: 'point', bgcolor: 'transparent', route: '/page/grafica/servicos', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: [TipoEmpresa.GRAFICA] },
+        ],
     },
     {
         displayName: 'Gerenciar Pedidos',

@@ -26,10 +26,6 @@ import {
   GraficaProduto,
   GraficaProdutoPage,
   GraficaProdutoRequest,
-  GraficaVariacao,
-  GraficaVariacaoGeracaoRequest,
-  GraficaVariacaoGeracaoResponse,
-  GraficaVariacaoRequest,
 } from './grafica.models';
 
 @Injectable({ providedIn: 'root' })
@@ -57,6 +53,10 @@ export class GraficaProdutoService {
 
   habilitar(body: GraficaProdutoRequest): Observable<GraficaProduto> {
     return this.api.post<GraficaProduto>(this.endpoint, body);
+  }
+
+  atualizar(id: number, body: GraficaProdutoRequest): Observable<GraficaProduto> {
+    return this.api.put<GraficaProduto>(`${this.endpoint}/${id}`, body);
   }
 
   criarProdutoCatalogo(body: GraficaCatalogoProdutoMinimoRequest): Observable<GraficaCatalogoProdutoMinimoResponse> {
@@ -183,15 +183,4 @@ export class GraficaProdutoService {
     return id ? this.api.put<GraficaCadastro>(`${this.graficaEndpoint}/servicos/${id}`, body) : this.api.post<GraficaCadastro>(`${this.graficaEndpoint}/servicos`, body);
   }
 
-  listarVariacoes(produtoGraficoId: number): Observable<GraficaVariacao[]> {
-    return this.api.get<GraficaVariacao[]>(`${this.endpoint}/${produtoGraficoId}/variacoes`);
-  }
-
-  salvarVariacao(body: GraficaVariacaoRequest, id?: number | null): Observable<GraficaVariacao> {
-    return id ? this.api.put<GraficaVariacao>(`${this.graficaEndpoint}/variacoes/${id}`, body) : this.api.post<GraficaVariacao>(`${this.graficaEndpoint}/variacoes`, body);
-  }
-
-  gerarVariacoes(body: GraficaVariacaoGeracaoRequest): Observable<GraficaVariacaoGeracaoResponse> {
-    return this.api.post<GraficaVariacaoGeracaoResponse>(`${this.graficaEndpoint}/variacoes/gerar`, body);
-  }
 }

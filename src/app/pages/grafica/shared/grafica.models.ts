@@ -11,6 +11,11 @@ export interface GraficaProduto {
   catalogoProdutoNome?: string | null;
   catalogoProdutoAtivo?: boolean | null;
   ativo: boolean;
+  material?: GraficaCadastro | null;
+  formato?: GraficaFormato | null;
+  cor?: GraficaCadastro | null;
+  acabamentos: GraficaCadastro[];
+  servicos: GraficaCadastro[];
   parametros: GraficaParametro[];
   dependencias?: GraficaDependencia[];
   createdAt?: string | null;
@@ -44,6 +49,11 @@ export interface GraficaProdutoRequest {
   catalogoProdutoId?: number | null;
   ativo?: boolean;
   produto?: GraficaCatalogoProdutoMinimoRequest | null;
+  materialId?: number | null;
+  formatoId?: number | null;
+  corId?: number | null;
+  acabamentoIds?: number[];
+  servicoIds?: number[];
 }
 
 export interface GraficaCatalogoProdutoMinimoRequest {
@@ -145,7 +155,6 @@ export interface GraficaPrecoPolitica {
   tipo: GraficaTipoPrecificacao;
   ativo: boolean;
   multiplicaQuantidade?: boolean | null;
-  variacaoGraficaId?: number | null;
   valorFixo?: number | null;
   precoMetroQuadrado?: number | null;
   minimoMetroQuadrado?: number | null;
@@ -161,7 +170,6 @@ export interface GraficaPrecoPoliticaRequest {
   tipo: GraficaTipoPrecificacao;
   ativo?: boolean | null;
   multiplicaQuantidade?: boolean | null;
-  variacaoGraficaId?: number | null;
   valorFixo?: number | null;
   precoMetroQuadrado?: number | null;
   minimoMetroQuadrado?: number | null;
@@ -177,7 +185,6 @@ export interface GraficaPrecificacaoRequest {
   largura?: number | null;
   altura?: number | null;
   unidadeDimensao?: 'METRO' | 'CENTIMETRO' | 'MILIMETRO';
-  variacaoGraficaId?: number | null;
 }
 
 export interface GraficaCadastro {
@@ -214,48 +221,6 @@ export interface GraficaFormatoRequest {
   ativo?: boolean | null;
 }
 
-export interface GraficaVariacao {
-  id: number;
-  produtoGraficoId: number;
-  materialId?: number | null;
-  materialNome?: string | null;
-  formatoId?: number | null;
-  formatoNome?: string | null;
-  corId?: number | null;
-  corNome?: string | null;
-  codigo?: string | null;
-  descricao?: string | null;
-  ativo: boolean;
-  resumo: string;
-  acabamentos: GraficaCadastro[];
-  servicos: GraficaCadastro[];
-}
-
-export interface GraficaVariacaoRequest {
-  produtoGraficoId: number;
-  materialId?: number | null;
-  formatoId?: number | null;
-  corId?: number | null;
-  codigo?: string | null;
-  descricao?: string | null;
-  acabamentoIds?: number[];
-  servicoIds?: number[];
-  ativo?: boolean | null;
-}
-
-export interface GraficaVariacaoGeracaoRequest {
-  produtoGraficoId: number;
-  materialIds?: number[];
-  formatoIds?: number[];
-  corIds?: number[];
-}
-
-export interface GraficaVariacaoGeracaoResponse {
-  solicitadas: number;
-  criadas: number;
-  ignoradas: number;
-  variacoes: GraficaVariacao[];
-}
 
 export interface GraficaPrecificacaoResultado {
   status: GraficaPrecificacaoStatus;
