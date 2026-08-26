@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { PrecoSelectorComponent } from 'src/app/components/preco/preco-selector.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { MaterialModule } from 'src/app/material.module';
 import { ToastrService } from 'ngx-toastr';
@@ -19,16 +20,16 @@ import {
   GraficaPrecoPoliticaRequest,
   GraficaProduto,
   GraficaProdutoRequest,
-  GraficaTipoPrecificacao,
 } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
 
 type OrigemProduto = 'EXISTENTE' | 'NOVO';
+type TipoPrecoLegado = 'FIXO' | 'QUANTIDADE' | 'DEMANDA' | 'METRO';
 
 @Component({
   selector: 'app-grafica-produto-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, MaterialModule, PageCardComponent, SectionCardComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule, MaterialModule, PageCardComponent, SectionCardComponent, PrecoSelectorComponent],
   template: `
     <app-page-card [titulo]="titulo" subtitulo="Cadastro direto de produto gráfico" botaoTexto="Voltar" [botaoRota]="['/page/grafica/produtos']" botaoIcone="arrow_back">
       <form [formGroup]="form" class="produto-form" (ngSubmit)="salvar()">
@@ -112,51 +113,13 @@ type OrigemProduto = 'EXISTENTE' | 'NOVO';
           </div>
         </app-section-card>
 
-        <app-section-card titulo="Precificação" subtitulo="Fluxo equivalente ao legado: fixo, quantidade, demanda/lote ou metro quadrado.">
-          <div class="form-grid">
-            <mat-form-field appearance="outline">
-              <mat-label>Tipo</mat-label>
-              <mat-select formControlName="tipoPreco">
-                <mat-option value="FIXO">Preço fixo</mat-option>
-                <mat-option value="POR_FAIXA_QUANTIDADE">Preço por quantidade</mat-option>
-                <mat-option value="POR_LOTE">Preço por demanda / lote</mat-option>
-                <mat-option value="POR_METRO_QUADRADO">Preço por m²</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Nome da regra</mat-label>
-              <input matInput formControlName="nomePreco" />
-            </mat-form-field>
-          </div>
-
-          <div class="form-grid" *ngIf="form.value.tipoPreco === 'FIXO'">
-            <mat-form-field appearance="outline">
-              <mat-label>Valor fixo</mat-label>
-              <input matInput type="number" formControlName="valorFixo" />
-            </mat-form-field>
-            <mat-checkbox formControlName="multiplicaQuantidade">Multiplica pela quantidade</mat-checkbox>
-          </div>
-
-          <div class="form-grid" *ngIf="form.value.tipoPreco === 'POR_METRO_QUADRADO'">
-            <mat-form-field appearance="outline">
-              <mat-label>Preço por m²</mat-label>
-              <input matInput type="number" formControlName="precoMetroQuadrado" />
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Mínimo faturável m²</mat-label>
-              <input matInput type="number" formControlName="minimoMetroQuadrado" />
-            </mat-form-field>
-          </div>
-
-          <mat-form-field appearance="outline" class="full" *ngIf="form.value.tipoPreco === 'POR_FAIXA_QUANTIDADE'">
-            <mat-label>Faixas: De;Até;Valor</mat-label>
-            <textarea matInput rows="5" formControlName="faixasTexto" placeholder="1;9;0.25&#10;10;19;0.20&#10;20;;0.18"></textarea>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="full" *ngIf="form.value.tipoPreco === 'POR_LOTE'">
-            <mat-label>Lotes: Quantidade;Preço</mat-label>
-            <textarea matInput rows="5" formControlName="lotesTexto" placeholder="500;30.00&#10;1000;55.00&#10;5000;190.00"></textarea>
-          </mat-form-field>
+        <app-section-card titulo="Preço base" subtitulo="Aplicar a mesma regra para este produto gráfico.">
+          <mat-card class="wizard-price-card">
+            <app-preco-selector
+              [formGroup]="precoForm"
+              [tiposDisponiveis]="['FIXO', 'QUANTIDADE', 'DEMANDA', 'METRO']">
+            </app-preco-selector>
+          </mat-card>
         </app-section-card>
 
         <div class="actions">
@@ -173,6 +136,7 @@ type OrigemProduto = 'EXISTENTE' | 'NOVO';
     .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: center; }
     .full { width: 100%; }
     .actions { display: flex; justify-content: flex-end; gap: 12px; padding: 8px 0; }
+    .wizard-price-card { box-shadow: none; border: 1px solid #e5e7eb; border-radius: 18px; padding: 22px; }
     mat-button-toggle-group { width: fit-content; margin-bottom: 16px; }
     mat-button-toggle { min-width: 140px; }
     mat-button-toggle mat-icon { margin-right: 6px; }
@@ -209,15 +173,8 @@ export class GraficaProdutoFormComponent implements OnInit {
     corId: this.fb.control<number | null>(null),
     acabamentoIds: this.fb.control<number[]>([], { nonNullable: true }),
     servicoIds: this.fb.control<number[]>([], { nonNullable: true }),
-    tipoPreco: this.fb.control<GraficaTipoPrecificacao>('POR_LOTE', { nonNullable: true }),
-    nomePreco: this.fb.control<string>('Preço principal', { nonNullable: true, validators: [Validators.required] }),
-    valorFixo: this.fb.control<number | null>(null),
-    multiplicaQuantidade: this.fb.control<boolean>(false, { nonNullable: true }),
-    precoMetroQuadrado: this.fb.control<number | null>(null),
-    minimoMetroQuadrado: this.fb.control<number | null>(null),
-    faixasTexto: this.fb.control<string>('', { nonNullable: true }),
-    lotesTexto: this.fb.control<string>('', { nonNullable: true }),
   });
+  precoForm: FormGroup = this.fb.group({ tipo: ['FIXO'] });
 
   get titulo(): string {
     return this.isEdit ? 'Editar produto gráfico' : 'Novo produto gráfico';
@@ -241,6 +198,14 @@ export class GraficaProdutoFormComponent implements OnInit {
 
   salvar(): void {
     if (this.form.invalid || !this.validarProduto()) return;
+    this.precoForm.markAllAsTouched();
+    this.precoForm.updateValueAndValidity();
+    if (this.precoForm.invalid) {
+      const msgPreco = (this.precoForm.errors as any)?.precoInvalido?.msg;
+      this.toastr.error(msgPreco || 'Defina um preço válido antes de salvar.', 'Preço incompleto');
+      return;
+    }
+
     this.salvando = true;
     const produto$ = this.isEdit && this.graficaProduto
       ? this.graficaService.atualizar(this.graficaProduto.id, this.produtoPayload())
@@ -314,16 +279,44 @@ export class GraficaProdutoFormComponent implements OnInit {
 
   private aplicarPreco(politica?: GraficaPrecoPolitica): void {
     if (!politica) return;
-    this.form.patchValue({
-      tipoPreco: politica.tipo,
-      nomePreco: politica.nome,
-      valorFixo: politica.valorFixo ?? null,
-      multiplicaQuantidade: !!politica.multiplicaQuantidade,
-      precoMetroQuadrado: politica.precoMetroQuadrado ?? null,
-      minimoMetroQuadrado: politica.minimoMetroQuadrado ?? null,
-      faixasTexto: (politica.faixas || []).map((faixa) => `${faixa.inicio};${faixa.fim ?? ''};${faixa.valorUnitario}`).join('\n'),
-      lotesTexto: (politica.lotes || []).map((lote) => `${lote.quantidade};${lote.valorLote}`).join('\n'),
-    });
+    switch (politica.tipo) {
+      case 'FIXO':
+        this.precoForm = this.fb.group({
+          tipo: ['FIXO'],
+          valor: [politica.valorFixo ?? null],
+        });
+        break;
+      case 'POR_LOTE':
+        this.precoForm = this.fb.group({
+          tipo: ['QUANTIDADE'],
+          faixas: this.fb.array((politica.lotes?.length ? politica.lotes : [{ quantidade: null, valorLote: null }]).map((lote) => this.fb.group({
+            quantidade: [lote.quantidade ?? null],
+            valor: [lote.valorLote ?? null],
+          }))),
+        });
+        break;
+      case 'POR_FAIXA_QUANTIDADE':
+        this.precoForm = this.fb.group({
+          tipo: ['DEMANDA'],
+          faixas: this.fb.array((politica.faixas?.length ? politica.faixas : [{ inicio: 1, fim: null, valorUnitario: null }]).map((faixa) => this.fb.group({
+            de: [faixa.inicio ?? null],
+            ate: [faixa.fim ?? null],
+            valorUnitario: [faixa.valorUnitario ?? null],
+          }))),
+        });
+        break;
+      case 'POR_METRO_QUADRADO':
+        this.precoForm = this.fb.group({
+          tipo: ['METRO'],
+          precoMetro: [politica.precoMetroQuadrado ?? null],
+          precoMinimo: [null],
+          alturaMaxima: [null],
+          larguraMaxima: [null],
+          modoCobranca: ['QUADRADO'],
+          largurasLinearesPermitidas: [''],
+        });
+        break;
+    }
   }
 
   private produtoPayload(): GraficaProdutoRequest {
@@ -346,18 +339,19 @@ export class GraficaProdutoFormComponent implements OnInit {
   }
 
   private precoPayload(): GraficaPrecoPoliticaRequest {
-    const raw = this.form.getRawValue();
+    const preco = this.precoForm.getRawValue() as any;
+    const tipo = preco.tipo as TipoPrecoLegado;
     return {
-      nome: raw.nomePreco || 'Preço principal',
-      tipo: raw.tipoPreco,
+      nome: 'Preço principal',
+      tipo: this.toTipoGrafica(tipo),
       ativo: true,
-      multiplicaQuantidade: raw.tipoPreco === 'FIXO' ? raw.multiplicaQuantidade : false,
-      valorFixo: raw.tipoPreco === 'FIXO' ? raw.valorFixo : null,
-      precoMetroQuadrado: raw.tipoPreco === 'POR_METRO_QUADRADO' ? raw.precoMetroQuadrado : null,
-      minimoMetroQuadrado: raw.tipoPreco === 'POR_METRO_QUADRADO' ? raw.minimoMetroQuadrado : null,
+      multiplicaQuantidade: tipo === 'FIXO',
+      valorFixo: tipo === 'FIXO' ? this.num(preco.valor) : null,
+      precoMetroQuadrado: tipo === 'METRO' ? this.num(preco.precoMetro) : null,
+      minimoMetroQuadrado: null,
       selecaoOpcaoIds: [],
-      faixas: raw.tipoPreco === 'POR_FAIXA_QUANTIDADE' ? this.parseFaixas(raw.faixasTexto) : [],
-      lotes: raw.tipoPreco === 'POR_LOTE' ? this.parseLotes(raw.lotesTexto) : [],
+      faixas: tipo === 'DEMANDA' ? this.toFaixasGrafica(preco.faixas || []) : [],
+      lotes: tipo === 'QUANTIDADE' ? this.toLotesGrafica(preco.faixas || []) : [],
     };
   }
 
@@ -374,22 +368,42 @@ export class GraficaProdutoFormComponent implements OnInit {
     return true;
   }
 
-  private parseFaixas(texto: string): GraficaPrecoFaixa[] {
-    return texto.split(/\n+/).map((linha) => linha.trim()).filter(Boolean).map((linha) => {
-      const [inicio, fim, valorUnitario] = linha.split(/[;\t,]+/).map((item) => item.trim());
-      return { inicio: Number(inicio), fim: fim ? Number(fim) : null, valorUnitario: Number(valorUnitario) };
-    });
+  private toTipoGrafica(tipo: TipoPrecoLegado): GraficaPrecoPoliticaRequest['tipo'] {
+    switch (tipo) {
+      case 'FIXO': return 'FIXO';
+      case 'QUANTIDADE': return 'POR_LOTE';
+      case 'DEMANDA': return 'POR_FAIXA_QUANTIDADE';
+      case 'METRO': return 'POR_METRO_QUADRADO';
+    }
   }
 
-  private parseLotes(texto: string): GraficaPrecoLote[] {
-    return texto.split(/\n+/).map((linha) => linha.trim()).filter(Boolean).map((linha) => {
-      const [quantidade, valorLote] = linha.split(/[;\t,]+/).map((item) => item.trim());
-      return { quantidade: Number(quantidade), valorLote: Number(valorLote) };
-    });
+  private toFaixasGrafica(faixas: any[]): GraficaPrecoFaixa[] {
+    return faixas.map((faixa) => ({
+      inicio: this.num(faixa.de),
+      fim: faixa.ate == null || faixa.ate === '' ? null : this.num(faixa.ate),
+      valorUnitario: this.num(faixa.valorUnitario),
+    }));
+  }
+
+  private toLotesGrafica(faixas: any[]): GraficaPrecoLote[] {
+    return faixas.map((faixa) => ({
+      quantidade: this.num(faixa.quantidade),
+      valorLote: this.num(faixa.valor),
+    }));
   }
 
   private codigo(valor: string): string {
     return catalogoSlugify(valor).toUpperCase().replace(/-/g, '_').slice(0, 80) || 'PRODUTO';
+  }
+
+  private num(valor: unknown): number {
+    if (valor == null || valor === '') return 0;
+    if (typeof valor === 'number') return valor;
+    const apenasNumero = String(valor).replace(/[^\d,.-]/g, '');
+    const normalizado = apenasNumero.includes(',')
+      ? apenasNumero.replace(/\./g, '').replace(',', '.')
+      : apenasNumero;
+    return Number(normalizado);
   }
 
   private graficaErrorMessage(error: unknown, fallback: string): string {
