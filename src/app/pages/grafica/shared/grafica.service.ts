@@ -5,6 +5,10 @@ import { ApiService } from 'src/app/services/api.service';
 import {
   GraficaCatalogoProdutoMinimoRequest,
   GraficaCatalogoProdutoMinimoResponse,
+  GraficaCadastro,
+  GraficaCadastroRequest,
+  GraficaFormato,
+  GraficaFormatoRequest,
   GraficaOpcaoRequest,
   GraficaOrcamentoItemRequest,
   GraficaOrcamentoItemResponse,
@@ -22,11 +26,16 @@ import {
   GraficaProduto,
   GraficaProdutoPage,
   GraficaProdutoRequest,
+  GraficaVariacao,
+  GraficaVariacaoGeracaoRequest,
+  GraficaVariacaoGeracaoResponse,
+  GraficaVariacaoRequest,
 } from './grafica.models';
 
 @Injectable({ providedIn: 'root' })
 export class GraficaProdutoService {
   private readonly endpoint = 'api/grafica/produtos';
+  private readonly graficaEndpoint = 'api/grafica';
 
   constructor(private readonly api: ApiService) {}
 
@@ -132,5 +141,57 @@ export class GraficaProdutoService {
 
   adicionarAoOrcamento(produtoGraficoId: number, orcamentoId: number, body: GraficaOrcamentoItemRequest): Observable<GraficaOrcamentoItemResponse> {
     return this.api.post<GraficaOrcamentoItemResponse>(`${this.endpoint}/${produtoGraficoId}/orcamentos/${orcamentoId}/itens`, body);
+  }
+
+  listarMateriais(): Observable<GraficaCadastro[]> {
+    return this.api.get<GraficaCadastro[]>(`${this.graficaEndpoint}/materiais`);
+  }
+
+  salvarMaterial(body: GraficaCadastroRequest, id?: number | null): Observable<GraficaCadastro> {
+    return id ? this.api.put<GraficaCadastro>(`${this.graficaEndpoint}/materiais/${id}`, body) : this.api.post<GraficaCadastro>(`${this.graficaEndpoint}/materiais`, body);
+  }
+
+  listarFormatos(): Observable<GraficaFormato[]> {
+    return this.api.get<GraficaFormato[]>(`${this.graficaEndpoint}/formatos`);
+  }
+
+  salvarFormato(body: GraficaFormatoRequest, id?: number | null): Observable<GraficaFormato> {
+    return id ? this.api.put<GraficaFormato>(`${this.graficaEndpoint}/formatos/${id}`, body) : this.api.post<GraficaFormato>(`${this.graficaEndpoint}/formatos`, body);
+  }
+
+  listarCores(): Observable<GraficaCadastro[]> {
+    return this.api.get<GraficaCadastro[]>(`${this.graficaEndpoint}/cores`);
+  }
+
+  salvarCor(body: GraficaCadastroRequest, id?: number | null): Observable<GraficaCadastro> {
+    return id ? this.api.put<GraficaCadastro>(`${this.graficaEndpoint}/cores/${id}`, body) : this.api.post<GraficaCadastro>(`${this.graficaEndpoint}/cores`, body);
+  }
+
+  listarAcabamentos(): Observable<GraficaCadastro[]> {
+    return this.api.get<GraficaCadastro[]>(`${this.graficaEndpoint}/acabamentos`);
+  }
+
+  salvarAcabamento(body: GraficaCadastroRequest, id?: number | null): Observable<GraficaCadastro> {
+    return id ? this.api.put<GraficaCadastro>(`${this.graficaEndpoint}/acabamentos/${id}`, body) : this.api.post<GraficaCadastro>(`${this.graficaEndpoint}/acabamentos`, body);
+  }
+
+  listarServicos(): Observable<GraficaCadastro[]> {
+    return this.api.get<GraficaCadastro[]>(`${this.graficaEndpoint}/servicos`);
+  }
+
+  salvarServico(body: GraficaCadastroRequest, id?: number | null): Observable<GraficaCadastro> {
+    return id ? this.api.put<GraficaCadastro>(`${this.graficaEndpoint}/servicos/${id}`, body) : this.api.post<GraficaCadastro>(`${this.graficaEndpoint}/servicos`, body);
+  }
+
+  listarVariacoes(produtoGraficoId: number): Observable<GraficaVariacao[]> {
+    return this.api.get<GraficaVariacao[]>(`${this.endpoint}/${produtoGraficoId}/variacoes`);
+  }
+
+  salvarVariacao(body: GraficaVariacaoRequest, id?: number | null): Observable<GraficaVariacao> {
+    return id ? this.api.put<GraficaVariacao>(`${this.graficaEndpoint}/variacoes/${id}`, body) : this.api.post<GraficaVariacao>(`${this.graficaEndpoint}/variacoes`, body);
+  }
+
+  gerarVariacoes(body: GraficaVariacaoGeracaoRequest): Observable<GraficaVariacaoGeracaoResponse> {
+    return this.api.post<GraficaVariacaoGeracaoResponse>(`${this.graficaEndpoint}/variacoes/gerar`, body);
   }
 }

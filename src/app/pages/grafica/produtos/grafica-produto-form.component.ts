@@ -700,6 +700,7 @@ export class GraficaProdutoFormComponent implements OnInit {
       tipo: politica.tipo,
       ativo: politica.ativo,
       multiplicaQuantidade: politica.multiplicaQuantidade,
+      variacaoGraficaId: politica.variacaoGraficaId,
       valorFixo: politica.valorFixo,
       precoMetroQuadrado: politica.precoMetroQuadrado,
       minimoMetroQuadrado: politica.minimoMetroQuadrado,

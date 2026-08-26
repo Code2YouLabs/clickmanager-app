@@ -145,6 +145,7 @@ export interface GraficaPrecoPolitica {
   tipo: GraficaTipoPrecificacao;
   ativo: boolean;
   multiplicaQuantidade?: boolean | null;
+  variacaoGraficaId?: number | null;
   valorFixo?: number | null;
   precoMetroQuadrado?: number | null;
   minimoMetroQuadrado?: number | null;
@@ -160,6 +161,7 @@ export interface GraficaPrecoPoliticaRequest {
   tipo: GraficaTipoPrecificacao;
   ativo?: boolean | null;
   multiplicaQuantidade?: boolean | null;
+  variacaoGraficaId?: number | null;
   valorFixo?: number | null;
   precoMetroQuadrado?: number | null;
   minimoMetroQuadrado?: number | null;
@@ -175,6 +177,84 @@ export interface GraficaPrecificacaoRequest {
   largura?: number | null;
   altura?: number | null;
   unidadeDimensao?: 'METRO' | 'CENTIMETRO' | 'MILIMETRO';
+  variacaoGraficaId?: number | null;
+}
+
+export interface GraficaCadastro {
+  id: number;
+  codigo: string;
+  nome: string;
+  descricao?: string | null;
+  ativo: boolean;
+}
+
+export interface GraficaCadastroRequest {
+  codigo: string;
+  nome: string;
+  descricao?: string | null;
+  ativo?: boolean | null;
+}
+
+export interface GraficaFormato {
+  id: number;
+  codigo: string;
+  nome: string;
+  largura?: number | null;
+  altura?: number | null;
+  unidadeDimensao?: 'METRO' | 'CENTIMETRO' | 'MILIMETRO' | null;
+  ativo: boolean;
+}
+
+export interface GraficaFormatoRequest {
+  codigo: string;
+  nome: string;
+  largura?: number | null;
+  altura?: number | null;
+  unidadeDimensao?: 'METRO' | 'CENTIMETRO' | 'MILIMETRO' | null;
+  ativo?: boolean | null;
+}
+
+export interface GraficaVariacao {
+  id: number;
+  produtoGraficoId: number;
+  materialId?: number | null;
+  materialNome?: string | null;
+  formatoId?: number | null;
+  formatoNome?: string | null;
+  corId?: number | null;
+  corNome?: string | null;
+  codigo?: string | null;
+  descricao?: string | null;
+  ativo: boolean;
+  resumo: string;
+  acabamentos: GraficaCadastro[];
+  servicos: GraficaCadastro[];
+}
+
+export interface GraficaVariacaoRequest {
+  produtoGraficoId: number;
+  materialId?: number | null;
+  formatoId?: number | null;
+  corId?: number | null;
+  codigo?: string | null;
+  descricao?: string | null;
+  acabamentoIds?: number[];
+  servicoIds?: number[];
+  ativo?: boolean | null;
+}
+
+export interface GraficaVariacaoGeracaoRequest {
+  produtoGraficoId: number;
+  materialIds?: number[];
+  formatoIds?: number[];
+  corIds?: number[];
+}
+
+export interface GraficaVariacaoGeracaoResponse {
+  solicitadas: number;
+  criadas: number;
+  ignoradas: number;
+  variacoes: GraficaVariacao[];
 }
 
 export interface GraficaPrecificacaoResultado {
