@@ -10,12 +10,12 @@ import { MatDividerModule } from '@angular/material/divider';
  * - Usa projeção de conteúdo para corpo e ações.
  *
  * Uso:
- * <app-section-card titulo="Itens" subtitulo="Adicione produtos">
+ * <app-section-card title="Itens" subtitle="Adicione produtos">
  *   <!-- conteúdo -->
  * </app-section-card>
  *
- * <app-section-card titulo="Pagamentos">
- *   <div actions> <!-- conteúdo alinhado à direita no header --> </div>
+ * <app-section-card title="Pagamentos">
+ *   <div section-card-actions> <!-- conteúdo alinhado à direita no header --> </div>
  *   <!-- corpo -->
  * </app-section-card>
  */
@@ -27,11 +27,21 @@ import { MatDividerModule } from '@angular/material/divider';
   styleUrls: ['./section-card.component.scss'],
 })
 export class SectionCardComponent {
-  @Input() titulo: string = '';
+  @Input() title?: string;
+  @Input() titulo?: string;
+  @Input() subtitle?: string;
   @Input() subtitulo?: string;
   @Input() divider: boolean = false;
 
+  get displayTitle(): string {
+    return (this.title ?? this.titulo ?? '').trim();
+  }
+
+  get displaySubtitle(): string {
+    return (this.subtitle ?? this.subtitulo ?? '').trim();
+  }
+
   get showDivider(): boolean {
-    return !!this.titulo?.trim() && this.divider;
+    return !!(this.displayTitle || this.displaySubtitle) && this.divider;
   }
 }

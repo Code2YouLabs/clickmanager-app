@@ -1,10 +1,11 @@
 <mat-card class="section-card cardWithShadow">
   <div class="section-card__header">
     <div class="section-card__title">
-      <div class="title" *ngIf="titulo">{{ titulo }}</div>
-      <div class="subtitle" *ngIf="subtitulo">{{ subtitulo }}</div>
+      <div class="title" *ngIf="displayTitle">{{ displayTitle }}</div>
+      <div class="subtitle" *ngIf="displaySubtitle">{{ displaySubtitle }}</div>
     </div>
     <div class="section-card__actions">
+      <ng-content select="[section-card-actions]"></ng-content>
       <ng-content select="[actions]"></ng-content>
     </div>
   </div>

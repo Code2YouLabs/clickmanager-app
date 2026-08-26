@@ -11,6 +11,10 @@
   }
 
   &__title {
+    &:empty {
+      display: none;
+    }
+
     .title {
       font-size: 16px;
       font-weight: 700;
@@ -30,6 +34,14 @@
     gap: 8px;
     align-items: center;
     flex-wrap: wrap;
+
+    &:empty {
+      display: none;
+    }
+  }
+
+  .section-card__header:has(.section-card__title:empty):has(.section-card__actions:empty) {
+    display: none;
   }
 
   &__body {

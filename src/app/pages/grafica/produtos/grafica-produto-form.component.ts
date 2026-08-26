@@ -1,8 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
+import { InputMultiSelectComponent } from 'src/app/components/inputs/input-multi-select/input-multi-select-component';
+import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
+import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
+import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { PrecoSelectorComponent } from 'src/app/components/preco/preco-selector.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
@@ -49,6 +53,10 @@ type ProdutoFormSnapshot = {
     SectionCardComponent,
     PrecoSelectorComponent,
     DepositoImagemGaleriaComponent,
+    InputTextoRestritoComponent,
+    InputTextareaComponent,
+    InputOptionsComponent,
+    InputMultiSelectComponent,
   ],
   template: `
     <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [showFooter]="true">
@@ -60,27 +68,31 @@ type ProdutoFormSnapshot = {
       </div>
 
       <form id="grafica-produto-form" [formGroup]="form" class="produto-form" (ngSubmit)="salvar()">
-        <app-section-card titulo="Dados do produto">
+        <app-section-card title="Dados do produto">
           <div class="form-grid product-grid">
-            <mat-form-field appearance="outline">
-              <mat-label>Nome</mat-label>
-              <input matInput formControlName="nome" placeholder="Panfleto 10x15 Couchê 150g 4x4" />
-              <mat-error *ngIf="form.get('nome')?.hasError('required')">Informe o nome do produto.</mat-error>
-            </mat-form-field>
+            <app-input-texto-restrito
+              [control]="nomeControl"
+              label="Nome"
+              placeholder="Panfleto 10x15 Couchê 150g 4x4"
+              [maxlength]="160"
+              requiredError="Informe o nome do produto.">
+            </app-input-texto-restrito>
             <div class="product-category">
-              <mat-form-field appearance="outline">
-                <mat-label>Categoria</mat-label>
-                <mat-select formControlName="categoriaId" required>
-                  <mat-option *ngFor="let item of categorias" [value]="item.id">{{ item.nome }}</mat-option>
-                </mat-select>
-                <mat-error *ngIf="form.get('categoriaId')?.hasError('required')">Selecione a categoria.</mat-error>
-              </mat-form-field>
+              <app-input-options
+                [control]="categoriaControl"
+                label="Categoria"
+                placeholder="Categoria"
+                [options]="categorias"
+                [showNull]="false">
+              </app-input-options>
               <mat-checkbox formControlName="exibirNoSite">Exibir este produto no site</mat-checkbox>
             </div>
-            <mat-form-field appearance="outline">
-              <mat-label>Descrição</mat-label>
-              <textarea matInput formControlName="descricao" rows="7"></textarea>
-            </mat-form-field>
+            <app-input-textarea
+              [control]="descricaoControl"
+              label="Descrição"
+              [rows]="7"
+              [maxlength]="500">
+            </app-input-textarea>
             <div class="product-images">
               <app-deposito-imagem-galeria
                 context="catalogo-produtos"
@@ -95,45 +107,34 @@ type ProdutoFormSnapshot = {
           </div>
         </app-section-card>
 
-        <app-section-card titulo="Configuração gráfica">
+        <app-section-card title="Configuração gráfica">
           <div class="form-grid grafica-grid">
-            <mat-form-field appearance="outline">
-              <mat-label>Material</mat-label>
-              <mat-select formControlName="materialId">
-                <mat-option [value]="null">Sem material</mat-option>
-                <mat-option *ngFor="let item of materiais" [value]="item.id">{{ item.nome }}</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Formato</mat-label>
-              <mat-select formControlName="formatoId">
-                <mat-option [value]="null">Sem formato</mat-option>
-                <mat-option *ngFor="let item of formatos" [value]="item.id">{{ item.nome }}</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Cor</mat-label>
-              <mat-select formControlName="corId">
-                <mat-option [value]="null">Sem cor</mat-option>
-                <mat-option *ngFor="let item of cores" [value]="item.id">{{ item.nome }}</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Acabamentos</mat-label>
-              <mat-select multiple formControlName="acabamentoIds">
-                <mat-option *ngFor="let item of acabamentos" [value]="item.id">{{ item.nome }}</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Serviços</mat-label>
-              <mat-select multiple formControlName="servicoIds">
-                <mat-option *ngFor="let item of servicos" [value]="item.id">{{ item.nome }}</mat-option>
-              </mat-select>
-            </mat-form-field>
+            <app-input-options [control]="materialControl" label="Material" [options]="materiais" nullLabel="Sem material"></app-input-options>
+            <app-input-options [control]="formatoControl" label="Formato" [options]="formatos" nullLabel="Sem formato"></app-input-options>
+            <app-input-options [control]="corControl" label="Cor" [options]="cores" nullLabel="Sem cor"></app-input-options>
+            <app-input-multi-select
+              [control]="acabamentosControl"
+              label="Acabamentos"
+              [options]="acabamentos"
+              visualStyle="subtle"
+              [cardMinHeight]="180"
+              [listHeight]="104">
+            </app-input-multi-select>
+            <app-input-multi-select
+              [control]="servicosControl"
+              label="Serviços"
+              [options]="servicos"
+              visualStyle="subtle"
+              [cardMinHeight]="180"
+              [listHeight]="104">
+            </app-input-multi-select>
           </div>
         </app-section-card>
 
-        <app-section-card titulo="Precificação">
+        <app-section-card title="Precificação">
+          <button section-card-actions mat-icon-button type="button" matTooltip="Complete os campos obrigatórios para habilitar o salvamento.">
+            <mat-icon>help_outline</mat-icon>
+          </button>
           <app-preco-selector
             [formGroup]="precoForm"
             [tiposDisponiveis]="['FIXO', 'QUANTIDADE', 'DEMANDA', 'METRO']">
@@ -163,7 +164,6 @@ type ProdutoFormSnapshot = {
       min-width: 0;
     }
     .grafica-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .grafica-grid mat-form-field:nth-last-child(-n + 2) { grid-column: span 1; }
     .full { width: 100%; }
     app-deposito-imagem-galeria { display: block; }
     .validation-hint {
@@ -240,7 +240,6 @@ type ProdutoFormSnapshot = {
     @media (max-width: 768px) {
       .form-grid,
       .grafica-grid { grid-template-columns: 1fr; }
-      .grafica-grid mat-form-field:nth-last-child(-n + 2) { grid-column: auto; }
     }
   `],
 })
@@ -274,6 +273,38 @@ export class GraficaProdutoFormComponent implements OnInit {
     servicoIds: this.fb.control<number[]>([], { nonNullable: true }),
   });
   precoForm: FormGroup = this.fb.group({ tipo: ['FIXO'] });
+
+  get nomeControl(): FormControl<string> {
+    return this.form.controls.nome;
+  }
+
+  get descricaoControl(): FormControl<string> {
+    return this.form.controls.descricao;
+  }
+
+  get categoriaControl(): FormControl<number | null> {
+    return this.form.controls.categoriaId;
+  }
+
+  get materialControl(): FormControl<number | null> {
+    return this.form.controls.materialId;
+  }
+
+  get formatoControl(): FormControl<number | null> {
+    return this.form.controls.formatoId;
+  }
+
+  get corControl(): FormControl<number | null> {
+    return this.form.controls.corId;
+  }
+
+  get acabamentosControl(): FormControl<number[]> {
+    return this.form.controls.acabamentoIds;
+  }
+
+  get servicosControl(): FormControl<number[]> {
+    return this.form.controls.servicoIds;
+  }
 
   get titulo(): string {
     return this.isEdit ? 'Editar Produto' : 'Novo Produto';
