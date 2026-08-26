@@ -1,31 +1,35 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { MatDialog } from '@angular/material/dialog';
 import { PageEvent } from '@angular/material/paginator';
 import { Sort } from '@angular/material/sort';
 import { Router, RouterModule } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, of } from 'rxjs';
+import { catchError, finalize } from 'rxjs/operators';
+import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { DataTableCellDirective } from 'src/app/components/data-table/data-table-cell.directive';
 import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
 import {
-  DataTableAction,
-  DataTableActionEvent,
   DataTableColumn,
   DataTableFilter,
   DataTableFilterState,
   DataTablePagination,
 } from 'src/app/components/data-table/data-table.models';
-import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { MaterialModule } from 'src/app/material.module';
-import { MatDialog } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
-import { CatalogoStatusChipComponent } from '../../catalogo/shared/components/catalogo-status-chip.component';
 import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils';
-import { GraficaCadastro, GraficaFormato, GraficaProduto, GraficaProdutoListParams } from '../shared/grafica.models';
+import { resolveStorageImageUrl, STORAGE_IMAGE_PLACEHOLDER } from '../../storage/utils/storage-media-url.util';
+import {
+  GraficaCadastro,
+  GraficaFormato,
+  GraficaPrecoPolitica,
+  GraficaProduto,
+  GraficaProdutoListParams,
+} from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
 
 type GraficaProdutosFilters = {
-  ativo?: boolean | null;
   materialId?: number | null;
   formatoId?: number | null;
   corId?: number | null;
@@ -41,7 +45,6 @@ type GraficaProdutosFilters = {
     RouterModule,
     MaterialModule,
     PageCardComponent,
-    CatalogoStatusChipComponent,
     DataTableComponent,
     DataTableCellDirective,
   ],
@@ -65,7 +68,6 @@ type GraficaProdutosFilters = {
         [search]="searchConfig"
         [pagination]="pagination"
         [loading]="carregando"
-        [actions]="actions"
         [sort]="sort"
         [emptyState]="{
           title: 'Nenhum produto gráfico encontrado',
@@ -78,35 +80,139 @@ type GraficaProdutosFilters = {
         (filterChange)="onFilterChange($event)"
         (clearFilters)="onClearFilters()"
         (pageChange)="onPageChange($event)"
-        (sortChange)="onSortChange($event)"
-        (action)="onAction($event)">
+        (sortChange)="onSortChange($event)">
+
+        <ng-template appDataTableCell="imagem" let-row>
+          <img class="produto-thumb" [src]="imagemProduto(row)" [alt]="row.catalogoProdutoNome || 'Produto'" loading="lazy" decoding="async" />
+        </ng-template>
 
         <ng-template appDataTableCell="produto" let-row>
-          <strong>{{ row.catalogoProdutoNome || '-' }}</strong>
-          <small>{{ row.catalogoProdutoCodigo || '-' }}</small>
+          <strong class="produto-nome">{{ row.catalogoProdutoNome || '-' }}</strong>
+          @if (configuracaoLinha(row)) {
+            <small>{{ configuracaoLinha(row) }}</small>
+          }
         </ng-template>
 
-        <ng-template appDataTableCell="configuracao" let-row>
-          {{ resumo(row) }}
+        <ng-template appDataTableCell="descricao" let-row>
+          <span class="descricao-cell">{{ row.catalogoProdutoDescricao || '-' }}</span>
         </ng-template>
 
-        <ng-template appDataTableCell="parametros" let-row>
-          <span class="bg-light-primary text-primary rounded f-w-600 p-6 p-y-4 f-s-12">
-            {{ (row.acabamentos?.length || 0) + (row.servicos?.length || 0) }}
+        <ng-template appDataTableCell="preco" let-row>
+          <div class="preco-cell">
+            @for (linha of precoResumo(row); track linha) {
+              <span>{{ linha }}</span>
+            }
+          </div>
+        </ng-template>
+
+        <ng-template appDataTableCell="publicacao" let-row>
+          <span class="publicacao-chip" [class.publicacao-chip--publicado]="row.catalogoProdutoExibirNoSite">
+            <mat-icon>{{ row.catalogoProdutoExibirNoSite ? 'public' : 'lock' }}</mat-icon>
+            {{ row.catalogoProdutoExibirNoSite ? 'Publicado' : 'Interno' }}
           </span>
         </ng-template>
 
-        <ng-template appDataTableCell="status" let-row>
-          <app-catalogo-status-chip [ativo]="row.ativo"></app-catalogo-status-chip>
+        <ng-template appDataTableCell="acoes" let-row>
+          <div class="acoes-cell">
+            <button mat-icon-button type="button" matTooltip="Editar" [attr.aria-label]="'Editar ' + (row.catalogoProdutoNome || 'produto')" (click)="configurar(row)">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <span class="acao-disabled" matTooltip="Clonar - em breve">
+              <button mat-icon-button type="button" aria-label="Clonar produto" disabled>
+                <mat-icon>content_copy</mat-icon>
+              </button>
+            </span>
+            <button mat-icon-button type="button" color="warn" matTooltip="Excluir" [attr.aria-label]="'Excluir ' + (row.catalogoProdutoNome || 'produto')" (click)="excluir(row)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
         </ng-template>
       </app-data-table>
     </app-page-card>
   `,
   styles: [`
+    .produto-thumb {
+      display: block;
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      background: #f8fafc;
+      object-fit: cover;
+    }
+
+    .produto-nome {
+      display: block;
+      color: #111827;
+      line-height: 1.25;
+    }
+
     small {
       display: block;
       color: #6b7280;
       margin-top: 2px;
+      line-height: 1.25;
+    }
+
+    .descricao-cell {
+      display: -webkit-box;
+      max-width: 340px;
+      overflow: hidden;
+      color: #374151;
+      line-height: 1.35;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .preco-cell {
+      display: grid;
+      gap: 2px;
+      color: #111827;
+      font-size: 0.86rem;
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+
+    .preco-cell span:first-child {
+      font-weight: 700;
+    }
+
+    .publicacao-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: #f3f4f6;
+      color: #4b5563;
+      font-size: 0.82rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .publicacao-chip--publicado {
+      background: #ecfdf5;
+      color: #047857;
+    }
+
+    .publicacao-chip mat-icon {
+      width: 16px;
+      height: 16px;
+      font-size: 16px;
+    }
+
+    .acoes-cell {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+      min-width: 132px;
+      white-space: nowrap;
+    }
+
+    .acao-disabled {
+      display: inline-flex;
     }
   `],
 })
@@ -117,9 +223,11 @@ export class GraficaProdutosComponent implements OnInit {
   tamanho = 10;
   termo = '';
   carregando = false;
+  carregandoPrecos = false;
   carregandoFiltros = false;
   sort: Sort = { active: 'nome', direction: 'asc' };
   filterState: DataTableFilterState = {};
+  precosPorProduto: Record<number, GraficaPrecoPolitica[]> = {};
   readonly searchConfig = {
     enabled: true,
     placeholder: 'Buscar por nome, descrição ou código',
@@ -133,19 +241,12 @@ export class GraficaProdutosComponent implements OnInit {
   servicos: GraficaCadastro[] = [];
 
   readonly columns: DataTableColumn<GraficaProduto>[] = [
+    { key: 'imagem', label: 'Imagem', width: '72px' },
     { key: 'produto', label: 'Produto', sortable: true, sortKey: 'nome', width: '260px' },
-    { key: 'configuracao', label: 'Configuração' },
-    { key: 'parametros', label: 'Acab./Serv.', align: 'center', width: '120px' },
-    { key: 'status', label: 'Status', sortable: true, sortKey: 'ativo', width: '120px' },
-  ];
-
-  readonly actions: DataTableAction<GraficaProduto>[] = [
-    { id: 'configurar', label: 'Configurar', icon: 'tune' },
-    {
-      id: 'alterarStatus',
-      label: 'Alterar status',
-      icon: 'swap_horiz',
-    },
+    { key: 'descricao', label: 'Descrição' },
+    { key: 'preco', label: 'Preço', width: '180px' },
+    { key: 'publicacao', label: 'Publicação', width: '140px' },
+    { key: 'acoes', label: 'Ações', align: 'end', width: '152px' },
   ];
 
   get pagination(): DataTablePagination {
@@ -159,15 +260,6 @@ export class GraficaProdutosComponent implements OnInit {
 
   get tableFilters(): DataTableFilter[] {
     return [
-      {
-        key: 'ativo',
-        label: 'Status',
-        type: 'select',
-        options: [
-          { value: true, label: 'Ativos' },
-          { value: false, label: 'Inativos' },
-        ],
-      },
       { key: 'materialId', label: 'Material', type: 'select', options: this.toOptions(this.materiais) },
       { key: 'formatoId', label: 'Formato', type: 'select', options: this.toOptions(this.formatos) },
       { key: 'corId', label: 'Cor', type: 'select', options: this.toOptions(this.cores) },
@@ -195,6 +287,7 @@ export class GraficaProdutosComponent implements OnInit {
         this.produtos = page.content || [];
         this.total = page.totalElements || 0;
         this.carregando = false;
+        this.carregarPrecos();
       },
       error: (error) => {
         this.carregando = false;
@@ -218,6 +311,7 @@ export class GraficaProdutosComponent implements OnInit {
   onClearFilters(): void {
     this.filterState = {};
     this.pagina = 0;
+    this.carregar();
   }
 
   onPageChange(event: PageEvent): void {
@@ -232,20 +326,44 @@ export class GraficaProdutosComponent implements OnInit {
     this.carregar();
   }
 
-  onAction(event: DataTableActionEvent<GraficaProduto>): void {
-    if (event.action === 'configurar') {
-      this.configurar(event.row);
-      return;
-    }
-    if (event.action === 'alterarStatus') {
-      this.alterarStatus(event.row);
-    }
+  configuracaoLinha(item: GraficaProduto): string {
+    const nomes = [item.material?.nome, item.formato?.nome, item.cor?.nome].filter(Boolean);
+    return nomes.join(' · ');
   }
 
-  resumo(item: GraficaProduto): string {
-    const nomes = [item.material?.nome, item.formato?.nome, item.cor?.nome].filter(Boolean);
-    if (!nomes.length) return 'Sem material/formato/cor';
-    return nomes.join(' / ');
+  imagemProduto(item: GraficaProduto): string {
+    const imagem = (item.imagens || [])
+      .filter((img) => img.ativo !== false)
+      .sort((a, b) => Number(b.principal === true) - Number(a.principal === true) || (a.ordem ?? 0) - (b.ordem ?? 0))[0];
+    return resolveStorageImageUrl(imagem?.arquivo, 'THUMBNAIL', STORAGE_IMAGE_PLACEHOLDER);
+  }
+
+  precoResumo(item: GraficaProduto): string[] {
+    if (this.carregandoPrecos && !this.precosPorProduto[item.id]) {
+      return ['Carregando...'];
+    }
+    const politica = (this.precosPorProduto[item.id] || []).find((preco) => preco.ativo !== false);
+    if (!politica) {
+      return ['Sem preço'];
+    }
+
+    if (politica.tipo === 'FIXO') {
+      return [this.moeda(politica.valorFixo)];
+    }
+    if (politica.tipo === 'POR_FAIXA_QUANTIDADE') {
+      return this.linhasFaixa(politica);
+    }
+    if (politica.tipo === 'POR_LOTE') {
+      return this.linhasLote(politica);
+    }
+    if (politica.tipo === 'POR_METRO_QUADRADO') {
+      const linhas = [`${this.moeda(politica.precoMetroQuadrado)} / m²`];
+      if (politica.minimoMetroQuadrado !== null && politica.minimoMetroQuadrado !== undefined) {
+        linhas.push(`Mín. ${this.moeda(politica.minimoMetroQuadrado)}`);
+      }
+      return linhas;
+    }
+    return ['Sem preço'];
   }
 
   novo(): void {
@@ -260,24 +378,28 @@ export class GraficaProdutosComponent implements OnInit {
     this.router.navigate(['/page/grafica/produtos', item.id, 'editar']);
   }
 
-  alterarStatus(item: GraficaProduto): void {
+  excluir(item: GraficaProduto): void {
     const ref = this.dialog.open(ConfirmDialogComponent, {
       width: '420px',
       data: {
-        title: item.ativo ? 'Desativar produto' : 'Ativar produto',
-        message: `Deseja ${item.ativo ? 'desativar' : 'ativar'} "${item.catalogoProdutoNome}"?`,
-        confirmText: item.ativo ? 'Desativar' : 'Ativar',
-        confirmColor: item.ativo ? 'warn' : 'primary',
+        title: 'Excluir produto gráfico',
+        message: `Deseja excluir "${item.catalogoProdutoNome || 'este produto'}"?`,
+        confirmText: 'Excluir',
+        confirmColor: 'warn',
       },
     });
-    ref.afterClosed().subscribe((ok) => {
-      if (!ok) return;
-      this.graficaService.alterarStatus(item.id, !item.ativo).subscribe({
+
+    ref.afterClosed().subscribe((confirmado) => {
+      if (!confirmado) {
+        return;
+      }
+      this.carregando = true;
+      this.graficaService.excluir(item.id).pipe(finalize(() => this.carregando = false)).subscribe({
         next: () => {
-          this.toastr.success('Status atualizado.');
+          this.toastr.success('Produto gráfico excluído.');
           this.carregar();
         },
-        error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível alterar o status.')),
+        error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível excluir o produto gráfico.')),
       });
     });
   }
@@ -312,7 +434,6 @@ export class GraficaProdutosComponent implements OnInit {
       page: this.pagina,
       size: this.tamanho,
       search: this.termo,
-      ativo: filters.ativo,
       materialId: this.toNumber(filters.materialId),
       formatoId: this.toNumber(filters.formatoId),
       corId: this.toNumber(filters.corId),
@@ -349,5 +470,59 @@ export class GraficaProdutosComponent implements OnInit {
       return [];
     }
     return value.map((item) => this.toNumber(item)).filter((item): item is number => item !== null);
+  }
+
+  private carregarPrecos(): void {
+    if (!this.produtos.length) {
+      this.precosPorProduto = {};
+      return;
+    }
+
+    this.carregandoPrecos = true;
+    const requests = this.produtos.reduce<Record<number, ReturnType<GraficaProdutoService['listarPrecos']>>>((acc, produto) => {
+      acc[produto.id] = this.graficaService.listarPrecos(produto.id).pipe(catchError(() => of([])));
+      return acc;
+    }, {});
+
+    forkJoin(requests).pipe(finalize(() => this.carregandoPrecos = false)).subscribe((precos) => {
+      this.precosPorProduto = precos;
+    });
+  }
+
+  private linhasFaixa(politica: GraficaPrecoPolitica): string[] {
+    const faixas = (politica.faixas || [])
+      .slice()
+      .sort((a, b) => a.inicio - b.inicio);
+    const linhas = faixas
+      .slice(0, 5)
+      .map((faixa) => `${this.numero(faixa.inicio)}–${faixa.fim ? this.numero(faixa.fim) : '+'} ${this.moeda(faixa.valorUnitario)}`);
+    if (faixas.length > 5) {
+      linhas.push(`+${faixas.length - 5}`);
+    }
+    return linhas.length ? linhas : ['Sem faixas'];
+  }
+
+  private linhasLote(politica: GraficaPrecoPolitica): string[] {
+    const lotes = (politica.lotes || [])
+      .slice()
+      .sort((a, b) => a.quantidade - b.quantidade);
+    const linhas = lotes
+      .slice(0, 5)
+      .map((lote) => `${this.numero(lote.quantidade)} ${this.moeda(lote.valorLote)}`);
+    if (lotes.length > 5) {
+      linhas.push(`+${lotes.length - 5}`);
+    }
+    return linhas.length ? linhas : ['Sem lotes'];
+  }
+
+  private moeda(valor?: number | null): string {
+    if (valor === null || valor === undefined || !Number.isFinite(Number(valor))) {
+      return 'Sem preço';
+    }
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(valor));
+  }
+
+  private numero(valor: number): string {
+    return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(valor);
   }
 }

@@ -67,6 +67,10 @@ export class GraficaProdutoService {
     return this.api.put<GraficaProduto>(`${this.endpoint}/${id}`, body);
   }
 
+  excluir(id: number): Observable<void> {
+    return this.api.delete<void>(`${this.endpoint}/${id}`);
+  }
+
   criarProdutoCatalogo(body: GraficaCatalogoProdutoMinimoRequest): Observable<GraficaCatalogoProdutoMinimoResponse> {
     return this.api.post<GraficaCatalogoProdutoMinimoResponse>(`${this.endpoint}/catalogo`, body);
   }
