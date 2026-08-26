@@ -3,7 +3,6 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
-import { InputMultiSelectComponent } from 'src/app/components/inputs/input-multi-select/input-multi-select-component';
 import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
 import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
 import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
@@ -56,7 +55,6 @@ type ProdutoFormSnapshot = {
     InputTextoRestritoComponent,
     InputTextareaComponent,
     InputOptionsComponent,
-    InputMultiSelectComponent,
   ],
   template: `
     <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [showFooter]="true">
@@ -113,22 +111,18 @@ type ProdutoFormSnapshot = {
             <app-input-options [control]="materialControl" label="Material" [options]="materiais" nullLabel="Sem material"></app-input-options>
             <app-input-options [control]="formatoControl" label="Formato" [options]="formatos" nullLabel="Sem formato"></app-input-options>
             <app-input-options [control]="corControl" label="Cor" [options]="cores" nullLabel="Sem cor"></app-input-options>
-            <app-input-multi-select
-              [control]="acabamentosControl"
-              label="Acabamentos"
-              [options]="acabamentos"
-              visualStyle="subtle"
-              [cardMinHeight]="180"
-              [listHeight]="104">
-            </app-input-multi-select>
-            <app-input-multi-select
-              [control]="servicosControl"
-              label="Serviços"
-              [options]="servicos"
-              visualStyle="subtle"
-              [cardMinHeight]="180"
-              [listHeight]="104">
-            </app-input-multi-select>
+            <mat-form-field appearance="outline">
+              <mat-label>Acabamentos</mat-label>
+              <mat-select multiple formControlName="acabamentoIds">
+                <mat-option *ngFor="let item of acabamentos" [value]="item.id">{{ item.nome }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Serviços</mat-label>
+              <mat-select multiple formControlName="servicoIds">
+                <mat-option *ngFor="let item of servicos" [value]="item.id">{{ item.nome }}</mat-option>
+              </mat-select>
+            </mat-form-field>
           </div>
         </app-section-card>
 
@@ -297,14 +291,6 @@ export class GraficaProdutoFormComponent implements OnInit {
 
   get corControl(): FormControl<number | null> {
     return this.form.controls.corId;
-  }
-
-  get acabamentosControl(): FormControl<number[]> {
-    return this.form.controls.acabamentoIds;
-  }
-
-  get servicosControl(): FormControl<number[]> {
-    return this.form.controls.servicoIds;
   }
 
   get titulo(): string {
