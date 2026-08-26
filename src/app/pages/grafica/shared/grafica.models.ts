@@ -1,4 +1,4 @@
-import { CatalogoPaginaResponse } from '../../catalogo/shared/models/catalogo.models';
+import { CatalogoPaginaResponse, CatalogoProdutoImagem, CatalogoProdutoImagemRequest } from '../../catalogo/shared/models/catalogo.models';
 
 export type GraficaTipoParametro = 'SELECAO' | 'NUMERO_INTEIRO' | 'NUMERO_DECIMAL' | 'TEXTO';
 export type GraficaTipoPrecificacao = 'FIXO' | 'POR_FAIXA_QUANTIDADE' | 'POR_LOTE' | 'POR_METRO_QUADRADO';
@@ -9,6 +9,11 @@ export interface GraficaProduto {
   catalogoProdutoId: number;
   catalogoProdutoCodigo?: string | null;
   catalogoProdutoNome?: string | null;
+  catalogoProdutoDescricao?: string | null;
+  catalogoCategoriaId?: number | null;
+  catalogoCategoriaNome?: string | null;
+  catalogoProdutoExibirNoSite?: boolean | null;
+  imagens?: CatalogoProdutoImagem[] | null;
   catalogoProdutoAtivo?: boolean | null;
   ativo: boolean;
   material?: GraficaCadastro | null;
@@ -56,11 +61,27 @@ export interface GraficaProdutoRequest {
   servicoIds?: number[];
 }
 
+export interface GraficaProdutoListParams {
+  page?: number;
+  size?: number;
+  search?: string | null;
+  ativo?: boolean | null;
+  materialId?: number | null;
+  formatoId?: number | null;
+  corId?: number | null;
+  acabamentoIds?: number[];
+  servicoIds?: number[];
+  sort?: string | null;
+}
+
 export interface GraficaCatalogoProdutoMinimoRequest {
   codigo?: string | null;
   nome: string;
   categoriaId?: number | null;
   unidadeVenda?: string | null;
+  descricao?: string | null;
+  exibirNoSite?: boolean | null;
+  imagens?: CatalogoProdutoImagemRequest[];
 }
 
 export interface GraficaCatalogoProdutoMinimoResponse {

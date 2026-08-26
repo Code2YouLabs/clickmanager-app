@@ -1,0 +1,143 @@
+@if (search.enabled || filters.length) {
+  <div class="data-table-toolbar">
+    @if (search.enabled) {
+      <mat-form-field appearance="outline" class="data-table-toolbar__search">
+        <mat-label>{{ search.placeholder || 'Pesquisar' }}</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput type="search" [formControl]="searchControl" />
+      </mat-form-field>
+    }
+
+    @if (filters.length) {
+      <div class="data-table-toolbar__filters" [attr.aria-label]="'Filtros'">
+        @for (filter of filters; track filter.key) {
+          <mat-form-field appearance="outline" class="data-table-toolbar__filter">
+            <mat-label>{{ filter.label }}</mat-label>
+            <mat-select
+              [multiple]="filter.type === 'multi-select'"
+              [value]="internalFilters[filter.key] ?? (filter.type === 'multi-select' ? [] : null)"
+              (selectionChange)="onFilterValueChange(filter.key, $event.value)">
+              @if (filter.type === 'select') {
+                <mat-option [value]="null">Todos</mat-option>
+              }
+              @for (option of filter.options; track option.value) {
+                <mat-option [value]="option.value" [disabled]="option.disabled">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
+
+        @if (hasActiveFilters) {
+          <button mat-stroked-button type="button" color="primary" (click)="onClearFilters()">
+            <mat-icon>filter_alt_off</mat-icon>
+            Limpar filtros
+          </button>
+          <span class="data-table-toolbar__count">Filtros ({{ activeFilterCount }})</span>
+        }
+      </div>
+    }
+  </div>
+}
+
+<div class="data-table-container">
+  @if (loading) {
+    <div class="data-table-loading" aria-live="polite">
+      <mat-spinner diameter="36"></mat-spinner>
+    </div>
+  }
+
+  <div class="table-responsive">
+    <table
+      mat-table
+      [dataSource]="data"
+      [trackBy]="trackByRow"
+      matSort
+      [matSortActive]="sort.active"
+      [matSortDirection]="sort.direction"
+      (matSortChange)="onSortChange($event)"
+      class="w-100">
+
+      @for (column of columns; track column.key) {
+        <ng-container [matColumnDef]="column.key">
+          <th
+            mat-header-cell
+            *matHeaderCellDef
+            [mat-sort-header]="column.sortKey || column.key"
+            [disabled]="!column.sortable"
+            class="f-w-600 f-s-14"
+            [ngClass]="columnAlignClass(column)"
+            [style.width]="column.width || null">
+            {{ column.label }}
+          </th>
+          <td mat-cell *matCellDef="let row" class="f-s-14" [ngClass]="columnAlignClass(column)">
+            @if (cellTemplate(column.key); as customTemplate) {
+              <ng-container
+                [ngTemplateOutlet]="customTemplate.template"
+                [ngTemplateOutletContext]="{ $implicit: row, row: row }">
+              </ng-container>
+            } @else {
+              {{ cellValue(row, column) || '-' }}
+            }
+          </td>
+        </ng-container>
+      }
+
+      @if (actions.length) {
+        <ng-container matColumnDef="__actions">
+          <th mat-header-cell *matHeaderCellDef class="f-w-600 f-s-14 text-right">Ações</th>
+          <td mat-cell *matCellDef="let row" class="text-right">
+            <button
+              mat-icon-button
+              type="button"
+              [matMenuTriggerFor]="actionsMenu"
+              [matMenuTriggerData]="{ row: row }"
+              [disabled]="!visibleActions(row).length"
+              aria-label="Ações da linha">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+      }
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell data-table-empty" [attr.colspan]="displayedColumns.length || 1">
+          @if (!loading) {
+            <strong>{{ isFilteredEmpty ? (emptyState.filteredTitle || emptyState.title || 'Nenhum resultado encontrado') : (emptyState.title || 'Nenhum registro encontrado') }}</strong>
+            <span>{{ isFilteredEmpty ? (emptyState.filteredDescription || emptyState.description || 'Altere a busca ou os filtros.') : (emptyState.description || '') }}</span>
+          }
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  @if (pagination) {
+    <mat-paginator
+      [length]="pagination.totalItems"
+      [pageIndex]="pagination.pageIndex"
+      [pageSize]="pagination.pageSize"
+      [pageSizeOptions]="pagination.pageSizeOptions || [10, 20, 50]"
+      showFirstLastButtons
+      (page)="onPageChange($event)">
+    </mat-paginator>
+  }
+</div>
+
+<mat-menu #actionsMenu="matMenu">
+  <ng-template matMenuContent let-row="row">
+    @for (tableAction of visibleActions(row); track tableAction.id) {
+      <button
+        mat-menu-item
+        type="button"
+        [disabled]="isActionDisabled(row, tableAction)"
+        (click)="emitAction(row, tableAction)">
+        @if (tableAction.icon) {
+          <mat-icon [color]="tableAction.color || null">{{ tableAction.icon }}</mat-icon>
+        }
+        <span>{{ tableAction.label }}</span>
+      </button>
+    }
+  </ng-template>
+</mat-menu>

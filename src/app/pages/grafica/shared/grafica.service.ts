@@ -24,6 +24,7 @@ import {
   GraficaOrdenacaoRequest,
   GraficaParametroRequest,
   GraficaProduto,
+  GraficaProdutoListParams,
   GraficaProdutoPage,
   GraficaProdutoRequest,
 } from './grafica.models';
@@ -35,12 +36,19 @@ export class GraficaProdutoService {
 
   constructor(private readonly api: ApiService) {}
 
-  listar(page = 0, size = 20): Observable<GraficaProdutoPage> {
-    const params = new HttpParams()
-      .set('page', String(page))
-      .set('size', String(size))
-      .set('sort', 'id,asc');
-    return this.api.get<GraficaProdutoPage>(this.endpoint, params);
+  listar(params: GraficaProdutoListParams = {}): Observable<GraficaProdutoPage> {
+    let httpParams = new HttpParams()
+      .set('page', String(params.page ?? 0))
+      .set('size', String(params.size ?? 20))
+      .set('sort', params.sort || 'id,asc');
+    httpParams = this.appendOptional(httpParams, 'search', params.search);
+    httpParams = this.appendOptional(httpParams, 'ativo', params.ativo);
+    httpParams = this.appendOptional(httpParams, 'materialId', params.materialId);
+    httpParams = this.appendOptional(httpParams, 'formatoId', params.formatoId);
+    httpParams = this.appendOptional(httpParams, 'corId', params.corId);
+    httpParams = this.appendArray(httpParams, 'acabamentoIds', params.acabamentoIds);
+    httpParams = this.appendArray(httpParams, 'servicoIds', params.servicoIds);
+    return this.api.get<GraficaProdutoPage>(this.endpoint, httpParams);
   }
 
   detalhar(id: number): Observable<GraficaProduto> {
@@ -181,6 +189,20 @@ export class GraficaProdutoService {
 
   salvarServico(body: GraficaCadastroRequest, id?: number | null): Observable<GraficaCadastro> {
     return id ? this.api.put<GraficaCadastro>(`${this.graficaEndpoint}/servicos/${id}`, body) : this.api.post<GraficaCadastro>(`${this.graficaEndpoint}/servicos`, body);
+  }
+
+  private appendOptional(params: HttpParams, key: string, value: string | number | boolean | null | undefined): HttpParams {
+    if (value === null || value === undefined || value === '') {
+      return params;
+    }
+    return params.set(key, String(value));
+  }
+
+  private appendArray(params: HttpParams, key: string, values: number[] | null | undefined): HttpParams {
+    if (!values?.length) {
+      return params;
+    }
+    return values.reduce((acc, value) => acc.append(key, String(value)), params);
   }
 
 }

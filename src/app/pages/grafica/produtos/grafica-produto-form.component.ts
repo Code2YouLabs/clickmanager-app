@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
@@ -8,9 +8,10 @@ import { PrecoSelectorComponent } from 'src/app/components/preco/preco-selector.
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { MaterialModule } from 'src/app/material.module';
 import { ToastrService } from 'ngx-toastr';
-import { CatalogoCategoriaOption, CatalogoProdutoOption } from '../../catalogo/shared/models/catalogo.models';
-import { CatalogoCategoriaService, CatalogoProdutoService } from '../../catalogo/shared/services/catalogo.service';
-import { catalogoErrorMessage, catalogoSlugify, CATALOGO_UNIDADES_VENDA } from '../../catalogo/shared/utils/catalogo-utils';
+import { DepositoImagemGaleriaComponent } from '../../deposito/components/deposito-imagem-galeria/deposito-imagem-galeria.component';
+import { CatalogoCategoriaOption, CatalogoProdutoImagemRequest } from '../../catalogo/shared/models/catalogo.models';
+import { CatalogoCategoriaService } from '../../catalogo/shared/services/catalogo.service';
+import { catalogoErrorMessage, catalogoSlugify } from '../../catalogo/shared/utils/catalogo-utils';
 import {
   GraficaCadastro,
   GraficaFormato,
@@ -23,59 +24,73 @@ import {
 } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
 
-type OrigemProduto = 'EXISTENTE' | 'NOVO';
 type TipoPrecoLegado = 'FIXO' | 'QUANTIDADE' | 'DEMANDA' | 'METRO';
+type ProdutoFormSnapshot = {
+  nome: string;
+  descricao: string;
+  categoriaId: number | null;
+  exibirNoSite: boolean;
+  materialId: number | null;
+  formatoId: number | null;
+  corId: number | null;
+  acabamentoIds: number[];
+  servicoIds: number[];
+};
 
 @Component({
   selector: 'app-grafica-produto-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, MaterialModule, PageCardComponent, SectionCardComponent, PrecoSelectorComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    RouterModule,
+    MaterialModule,
+    PageCardComponent,
+    SectionCardComponent,
+    PrecoSelectorComponent,
+    DepositoImagemGaleriaComponent,
+  ],
   template: `
-    <app-page-card [titulo]="titulo" subtitulo="Cadastro direto de produto gráfico" botaoTexto="Voltar" [botaoRota]="['/page/grafica/produtos']" botaoIcone="arrow_back">
-      <form [formGroup]="form" class="produto-form" (ngSubmit)="salvar()">
-        <app-section-card titulo="Dados gerais" subtitulo="Cada produto do Catálogo representa um produto comercial concreto.">
-          <mat-button-toggle-group formControlName="origem" *ngIf="!isEdit">
-            <mat-button-toggle value="EXISTENTE"><mat-icon>inventory_2</mat-icon>Existente</mat-button-toggle>
-            <mat-button-toggle value="NOVO"><mat-icon>add_box</mat-icon>Novo</mat-button-toggle>
-          </mat-button-toggle-group>
+    <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [showFooter]="true">
+      <div page-header-actions>
+        <button mat-stroked-button type="button" (click)="voltar()">
+          <mat-icon>arrow_back</mat-icon>
+          Voltar
+        </button>
+      </div>
 
-          <div class="form-grid" *ngIf="!isEdit && form.value.origem === 'EXISTENTE'">
-            <mat-form-field appearance="outline">
-              <mat-label>Produto do Catálogo</mat-label>
-              <mat-select formControlName="catalogoProdutoId">
-                <mat-option *ngFor="let item of produtosCatalogo" [value]="item.id">{{ item.codigo }} - {{ item.nome }}</mat-option>
-              </mat-select>
-            </mat-form-field>
-          </div>
-
-          <div class="form-grid" *ngIf="!isEdit && form.value.origem === 'NOVO'">
+      <form id="grafica-produto-form" [formGroup]="form" class="produto-form" (ngSubmit)="salvar()">
+        <app-section-card titulo="Dados do produto">
+          <div class="form-grid product-grid">
             <mat-form-field appearance="outline">
               <mat-label>Nome</mat-label>
               <input matInput formControlName="nome" placeholder="Panfleto 10x15 Couchê 150g 4x4" />
             </mat-form-field>
+            <mat-form-field appearance="outline" class="full">
+              <mat-label>Descrição</mat-label>
+              <textarea matInput formControlName="descricao" rows="3"></textarea>
+            </mat-form-field>
             <mat-form-field appearance="outline">
               <mat-label>Categoria</mat-label>
-              <mat-select formControlName="categoriaId">
-                <mat-option [value]="null">Sem categoria</mat-option>
+              <mat-select formControlName="categoriaId" required>
                 <mat-option *ngFor="let item of categorias" [value]="item.id">{{ item.nome }}</mat-option>
               </mat-select>
             </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Unidade</mat-label>
-              <mat-select formControlName="unidadeVenda">
-                <mat-option *ngFor="let item of unidades" [value]="item.value">{{ item.label }}</mat-option>
-              </mat-select>
-            </mat-form-field>
           </div>
-
-          <div class="readonly-product" *ngIf="isEdit && graficaProduto">
-            <mat-icon>inventory_2</mat-icon>
-            <span>{{ graficaProduto.catalogoProdutoCodigo }} - {{ graficaProduto.catalogoProdutoNome }}</span>
-          </div>
+          <app-deposito-imagem-galeria
+            context="catalogo-produtos"
+            [gerenciarPrincipal]="true"
+            [imagemPrincipal]="imagemPrincipal"
+            [imagens]="galeria"
+            (imagemPrincipalChange)="onImagemPrincipalChange($event)"
+            (imagensChange)="onGaleriaChange($event)"
+            (uploadingChange)="uploading = $event">
+          </app-deposito-imagem-galeria>
+          <mat-checkbox formControlName="exibirNoSite">Exibir este produto no site</mat-checkbox>
         </app-section-card>
 
-        <app-section-card titulo="Dados da Gráfica" subtitulo="Associe cadastros reutilizáveis ao produto. Todos são opcionais.">
-          <div class="form-grid">
+        <app-section-card titulo="Configuração gráfica">
+          <div class="form-grid grafica-grid">
             <mat-form-field appearance="outline">
               <mat-label>Material</mat-label>
               <mat-select formControlName="materialId">
@@ -109,65 +124,70 @@ type TipoPrecoLegado = 'FIXO' | 'QUANTIDADE' | 'DEMANDA' | 'METRO';
                 <mat-option *ngFor="let item of servicos" [value]="item.id">{{ item.nome }}</mat-option>
               </mat-select>
             </mat-form-field>
-            <mat-checkbox formControlName="ativo">Ativo</mat-checkbox>
           </div>
         </app-section-card>
 
-        <app-section-card titulo="Preço base" subtitulo="Aplicar a mesma regra para este produto gráfico.">
-          <mat-card class="wizard-price-card">
-            <app-preco-selector
-              [formGroup]="precoForm"
-              [tiposDisponiveis]="['FIXO', 'QUANTIDADE', 'DEMANDA', 'METRO']">
-            </app-preco-selector>
-          </mat-card>
+        <app-section-card titulo="Precificação">
+          <app-preco-selector
+            [formGroup]="precoForm"
+            [tiposDisponiveis]="['FIXO', 'QUANTIDADE', 'DEMANDA', 'METRO']">
+          </app-preco-selector>
         </app-section-card>
-
-        <div class="actions">
-          <button mat-stroked-button type="button" (click)="voltar()">Cancelar</button>
-          <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || salvando">
-            <mat-icon>save</mat-icon>Salvar
-          </button>
-        </div>
       </form>
+
+      <button page-footer-right mat-stroked-button class="cancel-button" type="button" (click)="cancelar()">Cancelar</button>
+      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-produto-form" [disabled]="form.invalid || salvando || uploading">
+        <mat-icon>save</mat-icon>Salvar
+      </button>
     </app-page-card>
   `,
   styles: [`
     .produto-form { display: flex; flex-direction: column; gap: 16px; }
     .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: center; }
+    .product-grid { align-items: start; }
+    .grafica-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grafica-grid mat-form-field:nth-last-child(-n + 2) { grid-column: span 1; }
     .full { width: 100%; }
-    .actions { display: flex; justify-content: flex-end; gap: 12px; padding: 8px 0; }
-    .wizard-price-card { box-shadow: none; border: 1px solid #e5e7eb; border-radius: 18px; padding: 22px; }
-    mat-button-toggle-group { width: fit-content; margin-bottom: 16px; }
-    mat-button-toggle { min-width: 140px; }
-    mat-button-toggle mat-icon { margin-right: 6px; }
-    .readonly-product { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #1f2937; }
+    .product-grid .full { grid-column: 1 / -1; }
+    app-deposito-imagem-galeria { display: block; margin-top: 4px; }
+    .cancel-button {
+      border-color: #fecaca;
+      color: #b91c1c;
+      background: #fef2f2;
+    }
+    .cancel-button:hover {
+      background: #fee2e2;
+    }
     @media (max-width: 768px) {
-      .form-grid { grid-template-columns: 1fr; }
-      .actions { flex-direction: column-reverse; }
-      .actions button { width: 100%; }
+      .form-grid,
+      .grafica-grid { grid-template-columns: 1fr; }
+      .grafica-grid mat-form-field:nth-last-child(-n + 2) { grid-column: auto; }
     }
   `],
 })
 export class GraficaProdutoFormComponent implements OnInit {
   isEdit = false;
   salvando = false;
+  uploading = false;
   graficaProduto?: GraficaProduto;
-  produtosCatalogo: CatalogoProdutoOption[] = [];
   categorias: CatalogoCategoriaOption[] = [];
   materiais: GraficaCadastro[] = [];
   formatos: GraficaFormato[] = [];
   cores: GraficaCadastro[] = [];
   acabamentos: GraficaCadastro[] = [];
   servicos: GraficaCadastro[] = [];
-  unidades = CATALOGO_UNIDADES_VENDA;
+  imagemPrincipal: any = null;
+  galeria: any[] = [];
+  private produtoSnapshot?: ProdutoFormSnapshot;
+  private precoSnapshot?: any;
+  private imagemPrincipalSnapshot: any = null;
+  private galeriaSnapshot: any[] = [];
 
   form = this.fb.group({
-    origem: this.fb.control<OrigemProduto>('NOVO', { nonNullable: true }),
-    catalogoProdutoId: this.fb.control<number | null>(null),
-    nome: this.fb.control<string>('', { nonNullable: true }),
-    categoriaId: this.fb.control<number | null>(null),
-    unidadeVenda: this.fb.control<string>('UNIDADE', { nonNullable: true }),
-    ativo: this.fb.control<boolean>(true, { nonNullable: true }),
+    nome: this.fb.control<string>('', { nonNullable: true, validators: [Validators.required] }),
+    descricao: this.fb.control<string>('', { nonNullable: true }),
+    categoriaId: this.fb.control<number | null>(null, { validators: [Validators.required] }),
+    exibirNoSite: this.fb.control<boolean>(false, { nonNullable: true }),
     materialId: this.fb.control<number | null>(null),
     formatoId: this.fb.control<number | null>(null),
     corId: this.fb.control<number | null>(null),
@@ -177,7 +197,11 @@ export class GraficaProdutoFormComponent implements OnInit {
   precoForm: FormGroup = this.fb.group({ tipo: ['FIXO'] });
 
   get titulo(): string {
-    return this.isEdit ? 'Editar produto gráfico' : 'Novo produto gráfico';
+    return this.isEdit ? 'Editar Produto' : 'Novo Produto';
+  }
+
+  get subtitulo(): string {
+    return this.isEdit ? 'Atualize os dados do produto' : 'Cadastro de produto gráfico';
   }
 
   constructor(
@@ -186,7 +210,6 @@ export class GraficaProdutoFormComponent implements OnInit {
     private readonly router: Router,
     private readonly toastr: ToastrService,
     private readonly graficaService: GraficaProdutoService,
-    private readonly catalogoProdutoService: CatalogoProdutoService,
     private readonly categoriaService: CatalogoCategoriaService,
   ) {}
 
@@ -197,7 +220,7 @@ export class GraficaProdutoFormComponent implements OnInit {
   }
 
   salvar(): void {
-    if (this.form.invalid || !this.validarProduto()) return;
+    if (this.form.invalid || this.uploading || !this.validarProduto()) return;
     this.precoForm.markAllAsTouched();
     this.precoForm.updateValueAndValidity();
     if (this.precoForm.invalid) {
@@ -233,9 +256,23 @@ export class GraficaProdutoFormComponent implements OnInit {
     this.router.navigate(['/page/grafica/produtos']);
   }
 
+  cancelar(): void {
+    if (this.produtoSnapshot) {
+      this.form.reset(this.clone(this.produtoSnapshot));
+    }
+    if (this.precoSnapshot) {
+      this.precoForm = this.criarPrecoForm(this.clone(this.precoSnapshot));
+    }
+    this.imagemPrincipal = this.clone(this.imagemPrincipalSnapshot);
+    this.galeria = this.clone(this.galeriaSnapshot);
+    this.form.markAsPristine();
+    this.form.markAsUntouched();
+    this.precoForm.markAsPristine();
+    this.precoForm.markAsUntouched();
+  }
+
   private carregarBase(id: number | null): void {
     forkJoin({
-      produtos: this.catalogoProdutoService.options(true).pipe(catchError(() => of([]))),
       categorias: this.categoriaService.options(true).pipe(catchError(() => of([]))),
       materiais: this.graficaService.listarMateriais().pipe(catchError(() => of([]))),
       formatos: this.graficaService.listarFormatos().pipe(catchError(() => of([]))),
@@ -244,7 +281,6 @@ export class GraficaProdutoFormComponent implements OnInit {
       servicos: this.graficaService.listarServicos().pipe(catchError(() => of([]))),
     }).pipe(
       switchMap((base) => {
-        this.produtosCatalogo = base.produtos || [];
         this.categorias = base.categorias || [];
         this.materiais = base.materiais || [];
         this.formatos = base.formatos || [];
@@ -255,7 +291,11 @@ export class GraficaProdutoFormComponent implements OnInit {
       })
     ).subscribe({
       next: (produto) => {
-        if (produto) this.aplicarProduto(produto);
+        if (produto) {
+          this.aplicarProduto(produto);
+          return;
+        }
+        this.registrarSnapshot();
       },
       error: (error) => this.toastr.error(this.graficaErrorMessage(error, 'Não foi possível carregar o cadastro.')),
     });
@@ -264,16 +304,28 @@ export class GraficaProdutoFormComponent implements OnInit {
   private aplicarProduto(produto: GraficaProduto): void {
     this.graficaProduto = produto;
     this.form.patchValue({
-      ativo: produto.ativo,
+      nome: produto.catalogoProdutoNome || '',
+      descricao: produto.catalogoProdutoDescricao || '',
+      categoriaId: produto.catalogoCategoriaId || null,
+      exibirNoSite: !!produto.catalogoProdutoExibirNoSite,
       materialId: produto.material?.id || null,
       formatoId: produto.formato?.id || null,
       corId: produto.cor?.id || null,
       acabamentoIds: produto.acabamentos?.map((item) => item.id) || [],
       servicoIds: produto.servicos?.map((item) => item.id) || [],
     });
+    const imagens = produto.imagens || [];
+    this.imagemPrincipal = imagens.find((img) => img.principal && img.ativo !== false)?.arquivo || null;
+    this.galeria = imagens.filter((img) => !img.principal && img.ativo !== false).map((img) => img.arquivo).filter(Boolean);
     this.graficaService.listarPrecos(produto.id).subscribe({
-      next: (politicas) => this.aplicarPreco((politicas || [])[0]),
-      error: (error) => this.toastr.error(this.graficaErrorMessage(error, 'Não foi possível carregar preços.')),
+      next: (politicas) => {
+        this.aplicarPreco((politicas || [])[0]);
+        this.registrarSnapshot();
+      },
+      error: (error) => {
+        this.registrarSnapshot();
+        this.toastr.error(this.graficaErrorMessage(error, 'Não foi possível carregar preços.'));
+      },
     });
   }
 
@@ -322,14 +374,17 @@ export class GraficaProdutoFormComponent implements OnInit {
   private produtoPayload(): GraficaProdutoRequest {
     const raw = this.form.getRawValue();
     return {
-      catalogoProdutoId: raw.origem === 'EXISTENTE' ? raw.catalogoProdutoId : null,
-      ativo: raw.ativo,
-      produto: raw.origem === 'NOVO' && !this.isEdit ? {
+      catalogoProdutoId: null,
+      ativo: true,
+      produto: {
         codigo: this.codigo(raw.nome).slice(0, 50),
         nome: raw.nome.trim(),
+        descricao: raw.descricao?.trim() || null,
         categoriaId: raw.categoriaId,
-        unidadeVenda: raw.unidadeVenda,
-      } : null,
+        unidadeVenda: 'UNIDADE',
+        exibirNoSite: raw.exibirNoSite,
+        imagens: this.buildImagensPayload(),
+      },
       materialId: raw.materialId,
       formatoId: raw.formatoId,
       corId: raw.corId,
@@ -357,15 +412,21 @@ export class GraficaProdutoFormComponent implements OnInit {
 
   private validarProduto(): boolean {
     const raw = this.form.getRawValue();
-    if (!this.isEdit && raw.origem === 'EXISTENTE' && !raw.catalogoProdutoId) {
-      this.toastr.warning('Selecione um produto do Catálogo.');
-      return false;
-    }
-    if (!this.isEdit && raw.origem === 'NOVO' && !raw.nome.trim()) {
+    if (!raw.nome.trim()) {
       this.toastr.warning('Informe o nome do produto.');
       return false;
     }
     return true;
+  }
+
+  onImagemPrincipalChange(imagem: any): void {
+    this.imagemPrincipal = imagem;
+    this.form.markAsDirty();
+  }
+
+  onGaleriaChange(imagens: any[]): void {
+    this.galeria = imagens || [];
+    this.form.markAsDirty();
   }
 
   private toTipoGrafica(tipo: TipoPrecoLegado): GraficaPrecoPoliticaRequest['tipo'] {
@@ -404,6 +465,71 @@ export class GraficaProdutoFormComponent implements OnInit {
       ? apenasNumero.replace(/\./g, '').replace(',', '.')
       : apenasNumero;
     return Number(normalizado);
+  }
+
+  private registrarSnapshot(): void {
+    this.produtoSnapshot = this.clone(this.form.getRawValue());
+    this.precoSnapshot = this.clone(this.precoForm.getRawValue());
+    this.imagemPrincipalSnapshot = this.clone(this.imagemPrincipal);
+    this.galeriaSnapshot = this.clone(this.galeria);
+  }
+
+  private buildImagensPayload(): CatalogoProdutoImagemRequest[] {
+    const principalId = this.imagemPrincipal ? (this.imagemPrincipal.arquivoId ?? this.imagemPrincipal.id) : null;
+    const imagens = [
+      ...(principalId ? [{ arquivoId: principalId, principal: true, ordem: 0, ativo: true }] : []),
+      ...this.galeria
+        .map((imagem, index) => ({ arquivoId: imagem.arquivoId ?? imagem.id, principal: false, ordem: index + 1, ativo: true }))
+        .filter((imagem) => !!imagem.arquivoId),
+    ];
+    const seen = new Set<number>();
+    return imagens.filter((imagem) => {
+      if (seen.has(imagem.arquivoId)) return false;
+      seen.add(imagem.arquivoId);
+      return true;
+    });
+  }
+
+  private criarPrecoForm(preco: any): FormGroup {
+    const tipo = (preco?.tipo || 'FIXO') as TipoPrecoLegado;
+    switch (tipo) {
+      case 'FIXO':
+        return this.fb.group({
+          tipo: ['FIXO'],
+          valor: [preco?.valor ?? null],
+        });
+      case 'QUANTIDADE':
+        return this.fb.group({
+          tipo: ['QUANTIDADE'],
+          faixas: this.fb.array((preco?.faixas?.length ? preco.faixas : [{ quantidade: null, valor: null }]).map((faixa: any) => this.fb.group({
+            quantidade: [faixa.quantidade ?? null],
+            valor: [faixa.valor ?? null],
+          }))),
+        });
+      case 'DEMANDA':
+        return this.fb.group({
+          tipo: ['DEMANDA'],
+          faixas: this.fb.array((preco?.faixas?.length ? preco.faixas : [{ de: 1, ate: null, valorUnitario: null }]).map((faixa: any) => this.fb.group({
+            de: [faixa.de ?? null],
+            ate: [faixa.ate ?? null],
+            valorUnitario: [faixa.valorUnitario ?? null],
+          }))),
+        });
+      case 'METRO':
+        return this.fb.group({
+          tipo: ['METRO'],
+          precoMetro: [preco?.precoMetro ?? null],
+          precoMinimo: [preco?.precoMinimo ?? null],
+          alturaMaxima: [preco?.alturaMaxima ?? null],
+          larguraMaxima: [preco?.larguraMaxima ?? null],
+          modoCobranca: [preco?.modoCobranca ?? 'QUADRADO'],
+          largurasLinearesPermitidas: [preco?.largurasLinearesPermitidas ?? ''],
+        });
+    }
+  }
+
+  private clone<T>(value: T): T {
+    return JSON.parse(JSON.stringify(value));
   }
 
   private graficaErrorMessage(error: unknown, fallback: string): string {

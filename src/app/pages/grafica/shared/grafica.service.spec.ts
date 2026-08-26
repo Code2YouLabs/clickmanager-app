@@ -5,7 +5,18 @@ describe('GraficaProdutoService', () => {
     const api = jasmine.createSpyObj('ApiService', ['get', 'post', 'put', 'patch', 'delete']);
     const service = new GraficaProdutoService(api);
 
-    service.listar();
+    service.listar({
+      page: 2,
+      size: 50,
+      search: 'panfleto',
+      ativo: true,
+      materialId: 1,
+      formatoId: 2,
+      corId: 3,
+      acabamentoIds: [4],
+      servicoIds: [5],
+      sort: 'nome,desc'
+    });
     service.buscarPorCatalogo(10);
     service.habilitar({ catalogoProdutoId: 10 });
     service.criarProdutoCatalogo({ nome: 'Panfleto', unidadeVenda: 'UNIDADE' });
@@ -23,6 +34,13 @@ describe('GraficaProdutoService', () => {
     service.ordenarParametros(1, { itens: [{ id: 2, ordem: 1 }] });
 
     expect(api.get.calls.argsFor(0)[0]).toBe('api/grafica/produtos');
+    expect(api.get.calls.argsFor(0)[1].get('search')).toBe('panfleto');
+    expect(api.get.calls.argsFor(0)[1].get('materialId')).toBe('1');
+    expect(api.get.calls.argsFor(0)[1].get('formatoId')).toBe('2');
+    expect(api.get.calls.argsFor(0)[1].get('corId')).toBe('3');
+    expect(api.get.calls.argsFor(0)[1].getAll('acabamentoIds')).toEqual(['4']);
+    expect(api.get.calls.argsFor(0)[1].getAll('servicoIds')).toEqual(['5']);
+    expect(api.get.calls.argsFor(0)[1].get('sort')).toBe('nome,desc');
     expect(api.get.calls.argsFor(1)[0]).toBe('api/grafica/produtos/catalogo/10');
     expect(api.get.calls.mostRecent().args[0]).toBe('api/grafica/produtos/1/precos');
     expect(api.post.calls.argsFor(0)).toEqual(['api/grafica/produtos', { catalogoProdutoId: 10 }]);

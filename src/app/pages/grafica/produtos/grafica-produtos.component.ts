@@ -1,133 +1,182 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
-import { MatDialog } from '@angular/material/dialog';
 import { PageEvent } from '@angular/material/paginator';
+import { Sort } from '@angular/material/sort';
 import { Router, RouterModule } from '@angular/router';
-import { debounceTime, distinctUntilChanged } from 'rxjs';
-import { CardHeaderComponent } from 'src/app/components/card-header/card-header.component';
+import { forkJoin } from 'rxjs';
+import { DataTableCellDirective } from 'src/app/components/data-table/data-table-cell.directive';
+import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
+import {
+  DataTableAction,
+  DataTableActionEvent,
+  DataTableColumn,
+  DataTableFilter,
+  DataTableFilterState,
+  DataTablePagination,
+} from 'src/app/components/data-table/data-table.models';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
+import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { MaterialModule } from 'src/app/material.module';
+import { MatDialog } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
 import { CatalogoStatusChipComponent } from '../../catalogo/shared/components/catalogo-status-chip.component';
 import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils';
-import { GraficaProduto } from '../shared/grafica.models';
+import { GraficaCadastro, GraficaFormato, GraficaProduto, GraficaProdutoListParams } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
+
+type GraficaProdutosFilters = {
+  ativo?: boolean | null;
+  materialId?: number | null;
+  formatoId?: number | null;
+  corId?: number | null;
+  acabamentoIds?: number[];
+  servicoIds?: number[];
+};
 
 @Component({
   selector: 'app-grafica-produtos',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule, MaterialModule, CardHeaderComponent, CatalogoStatusChipComponent],
+  imports: [
+    CommonModule,
+    RouterModule,
+    MaterialModule,
+    PageCardComponent,
+    CatalogoStatusChipComponent,
+    DataTableComponent,
+    DataTableCellDirective,
+  ],
   template: `
-    <mat-card class="cardWithShadow">
-      <mat-card-content>
-        <app-card-header titulo="Produtos gráficos" subtitulo="Configuração de venda para produtos do Catálogo">
-          <button mat-flat-button color="primary" (click)="novo()">
-            <mat-icon>add</mat-icon>
-            Novo produto
-          </button>
-        </app-card-header>
+    <app-page-card titulo="Produtos gráficos" subtitulo="Configuração de venda para produtos do Catálogo">
+      <div page-header-actions>
+        <button mat-icon-button type="button" matTooltip="Ajuda" aria-label="Ajuda" (click)="abrirAjuda()">
+          <mat-icon>help_outline</mat-icon>
+        </button>
+        <button mat-flat-button color="primary" (click)="novo()">
+          <mat-icon>add</mat-icon>
+          Novo produto
+        </button>
+      </div>
 
-        <form class="filters" [formGroup]="filters">
-          <mat-form-field appearance="outline">
-            <mat-label>Pesquisar</mat-label>
-            <input matInput formControlName="texto" />
-          </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Status</mat-label>
-            <mat-select formControlName="ativo">
-              <mat-option [value]="null">Todos</mat-option>
-              <mat-option [value]="true">Ativos</mat-option>
-              <mat-option [value]="false">Inativos</mat-option>
-            </mat-select>
-          </mat-form-field>
-        </form>
+      <app-data-table
+        [columns]="columns"
+        [data]="produtos"
+        [filters]="tableFilters"
+        [filterState]="filterState"
+        [search]="searchConfig"
+        [pagination]="pagination"
+        [loading]="carregando"
+        [actions]="actions"
+        [sort]="sort"
+        [emptyState]="{
+          title: 'Nenhum produto gráfico encontrado',
+          description: 'Cadastre um produto gráfico para configurar vendas.',
+          filteredTitle: 'Nenhum produto gráfico encontrado',
+          filteredDescription: 'Altere a busca ou limpe os filtros.'
+        }"
+        rowKey="id"
+        (searchChange)="onSearch($event)"
+        (filterChange)="onFilterChange($event)"
+        (clearFilters)="onClearFilters()"
+        (pageChange)="onPageChange($event)"
+        (sortChange)="onSortChange($event)"
+        (action)="onAction($event)">
 
-        <div class="table-wrap">
-          <div class="loading" *ngIf="carregando"><mat-spinner diameter="36"></mat-spinner></div>
-          <table mat-table [dataSource]="filtrados" *ngIf="filtrados.length">
-            <ng-container matColumnDef="produto">
-              <th mat-header-cell *matHeaderCellDef>Produto</th>
-              <td mat-cell *matCellDef="let item">
-                <strong>{{ item.catalogoProdutoNome }}</strong>
-                <small>{{ item.catalogoProdutoCodigo || '-' }}</small>
-              </td>
-            </ng-container>
+        <ng-template appDataTableCell="produto" let-row>
+          <strong>{{ row.catalogoProdutoNome || '-' }}</strong>
+          <small>{{ row.catalogoProdutoCodigo || '-' }}</small>
+        </ng-template>
 
-            <ng-container matColumnDef="categoria">
-              <th mat-header-cell *matHeaderCellDef>Categoria</th>
-              <td mat-cell *matCellDef="let item">-</td>
-            </ng-container>
+        <ng-template appDataTableCell="configuracao" let-row>
+          {{ resumo(row) }}
+        </ng-template>
 
-            <ng-container matColumnDef="status">
-              <th mat-header-cell *matHeaderCellDef>Status</th>
-              <td mat-cell *matCellDef="let item"><app-catalogo-status-chip [ativo]="item.ativo"></app-catalogo-status-chip></td>
-            </ng-container>
+        <ng-template appDataTableCell="parametros" let-row>
+          <span class="bg-light-primary text-primary rounded f-w-600 p-6 p-y-4 f-s-12">
+            {{ (row.acabamentos?.length || 0) + (row.servicos?.length || 0) }}
+          </span>
+        </ng-template>
 
-            <ng-container matColumnDef="parametros">
-              <th mat-header-cell *matHeaderCellDef>Acab./Serv.</th>
-              <td mat-cell *matCellDef="let item">{{ (item.acabamentos?.length || 0) + (item.servicos?.length || 0) }}</td>
-            </ng-container>
-
-            <ng-container matColumnDef="resumo">
-              <th mat-header-cell *matHeaderCellDef>Configuração</th>
-              <td mat-cell *matCellDef="let item">{{ resumo(item) }}</td>
-            </ng-container>
-
-            <ng-container matColumnDef="acoes">
-              <th mat-header-cell *matHeaderCellDef>Ações</th>
-              <td mat-cell *matCellDef="let item">
-                <button mat-icon-button [matMenuTriggerFor]="menu" [matMenuTriggerData]="{ item: item }" aria-label="Ações">
-                  <mat-icon>more_vert</mat-icon>
-                </button>
-              </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="colunas"></tr>
-            <tr mat-row *matRowDef="let row; columns: colunas"></tr>
-          </table>
-          <div class="empty" *ngIf="!carregando && !filtrados.length">Nenhum produto gráfico encontrado.</div>
-        </div>
-
-        <mat-menu #menu="matMenu">
-          <ng-template matMenuContent let-item="item">
-            <button mat-menu-item (click)="configurar(item)">
-              <mat-icon>tune</mat-icon>
-              <span>Configurar</span>
-            </button>
-            <button mat-menu-item (click)="alterarStatus(item)">
-              <mat-icon>{{ item.ativo ? 'block' : 'check_circle' }}</mat-icon>
-              <span>{{ item.ativo ? 'Desativar' : 'Ativar' }}</span>
-            </button>
-          </ng-template>
-        </mat-menu>
-
-        <mat-paginator [length]="total" [pageIndex]="pagina" [pageSize]="tamanho" [pageSizeOptions]="[10,20,50]" (page)="paginar($event)"></mat-paginator>
-      </mat-card-content>
-    </mat-card>
+        <ng-template appDataTableCell="status" let-row>
+          <app-catalogo-status-chip [ativo]="row.ativo"></app-catalogo-status-chip>
+        </ng-template>
+      </app-data-table>
+    </app-page-card>
   `,
   styles: [`
-    .filters{display:grid;grid-template-columns:1fr 180px;gap:12px;margin:16px 0}
-    .table-wrap{position:relative;min-height:180px;overflow:auto}
-    .loading{position:absolute;inset:0;display:grid;place-items:center;background:rgba(255,255,255,.65);z-index:1}
-    .empty{text-align:center;color:#6b7280;padding:24px}
-    table{width:100%}
-    td small{display:block;color:#6b7280;margin-top:2px}
-    @media(max-width:760px){.filters{grid-template-columns:1fr}.table-wrap{overflow-x:auto}}
+    small {
+      display: block;
+      color: #6b7280;
+      margin-top: 2px;
+    }
   `],
 })
 export class GraficaProdutosComponent implements OnInit {
   produtos: GraficaProduto[] = [];
-  filtrados: GraficaProduto[] = [];
   total = 0;
   pagina = 0;
   tamanho = 10;
+  termo = '';
   carregando = false;
-  colunas = ['produto', 'categoria', 'status', 'parametros', 'resumo', 'acoes'];
-  filters = this.fb.group({ texto: [''], ativo: [null as boolean | null] });
+  carregandoFiltros = false;
+  sort: Sort = { active: 'nome', direction: 'asc' };
+  filterState: DataTableFilterState = {};
+  readonly searchConfig = {
+    enabled: true,
+    placeholder: 'Buscar por nome, descrição ou código',
+    debounceMs: 300,
+  };
+
+  materiais: GraficaCadastro[] = [];
+  formatos: GraficaFormato[] = [];
+  cores: GraficaCadastro[] = [];
+  acabamentos: GraficaCadastro[] = [];
+  servicos: GraficaCadastro[] = [];
+
+  readonly columns: DataTableColumn<GraficaProduto>[] = [
+    { key: 'produto', label: 'Produto', sortable: true, sortKey: 'nome', width: '260px' },
+    { key: 'configuracao', label: 'Configuração' },
+    { key: 'parametros', label: 'Acab./Serv.', align: 'center', width: '120px' },
+    { key: 'status', label: 'Status', sortable: true, sortKey: 'ativo', width: '120px' },
+  ];
+
+  readonly actions: DataTableAction<GraficaProduto>[] = [
+    { id: 'configurar', label: 'Configurar', icon: 'tune' },
+    {
+      id: 'alterarStatus',
+      label: 'Alterar status',
+      icon: 'swap_horiz',
+    },
+  ];
+
+  get pagination(): DataTablePagination {
+    return {
+      pageIndex: this.pagina,
+      pageSize: this.tamanho,
+      totalItems: this.total,
+      pageSizeOptions: [10, 20, 50],
+    };
+  }
+
+  get tableFilters(): DataTableFilter[] {
+    return [
+      {
+        key: 'ativo',
+        label: 'Status',
+        type: 'select',
+        options: [
+          { value: true, label: 'Ativos' },
+          { value: false, label: 'Inativos' },
+        ],
+      },
+      { key: 'materialId', label: 'Material', type: 'select', options: this.toOptions(this.materiais) },
+      { key: 'formatoId', label: 'Formato', type: 'select', options: this.toOptions(this.formatos) },
+      { key: 'corId', label: 'Cor', type: 'select', options: this.toOptions(this.cores) },
+      { key: 'acabamentoIds', label: 'Acabamentos', type: 'multi-select', options: this.toOptions(this.acabamentos) },
+      { key: 'servicoIds', label: 'Serviços', type: 'multi-select', options: this.toOptions(this.servicos) },
+    ];
+  }
 
   constructor(
-    private readonly fb: FormBuilder,
     private readonly router: Router,
     private readonly graficaService: GraficaProdutoService,
     private readonly toastr: ToastrService,
@@ -135,18 +184,17 @@ export class GraficaProdutosComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.filters.valueChanges.pipe(debounceTime(250), distinctUntilChanged()).subscribe(() => this.aplicarFiltros());
+    this.carregarFiltros();
     this.carregar();
   }
 
   carregar(): void {
     this.carregando = true;
-    this.graficaService.listar(this.pagina, this.tamanho).subscribe({
+    this.graficaService.listar(this.listParams()).subscribe({
       next: (page) => {
         this.produtos = page.content || [];
         this.total = page.totalElements || 0;
         this.carregando = false;
-        this.aplicarFiltros();
       },
       error: (error) => {
         this.carregando = false;
@@ -155,14 +203,43 @@ export class GraficaProdutosComponent implements OnInit {
     });
   }
 
-  aplicarFiltros(): void {
-    const texto = (this.filters.value.texto || '').toLowerCase().trim();
-    const ativo = this.filters.value.ativo;
-    this.filtrados = this.produtos.filter((item) => {
-      const matchTexto = !texto || `${item.catalogoProdutoNome || ''} ${item.catalogoProdutoCodigo || ''}`.toLowerCase().includes(texto);
-      const matchStatus = ativo === null || ativo === undefined || item.ativo === ativo;
-      return matchTexto && matchStatus;
-    });
+  onSearch(value: string): void {
+    this.termo = value;
+    this.pagina = 0;
+    this.carregar();
+  }
+
+  onFilterChange(filters: DataTableFilterState): void {
+    this.filterState = { ...filters };
+    this.pagina = 0;
+    this.carregar();
+  }
+
+  onClearFilters(): void {
+    this.filterState = {};
+    this.pagina = 0;
+  }
+
+  onPageChange(event: PageEvent): void {
+    this.pagina = event.pageIndex;
+    this.tamanho = event.pageSize;
+    this.carregar();
+  }
+
+  onSortChange(event: Sort): void {
+    this.sort = event;
+    this.pagina = 0;
+    this.carregar();
+  }
+
+  onAction(event: DataTableActionEvent<GraficaProduto>): void {
+    if (event.action === 'configurar') {
+      this.configurar(event.row);
+      return;
+    }
+    if (event.action === 'alterarStatus') {
+      this.alterarStatus(event.row);
+    }
   }
 
   resumo(item: GraficaProduto): string {
@@ -171,14 +248,12 @@ export class GraficaProdutosComponent implements OnInit {
     return nomes.join(' / ');
   }
 
-  paginar(event: PageEvent): void {
-    this.pagina = event.pageIndex;
-    this.tamanho = event.pageSize;
-    this.carregar();
-  }
-
   novo(): void {
     this.router.navigate(['/page/grafica/produtos/novo']);
+  }
+
+  abrirAjuda(): void {
+    this.router.navigate(['/page/ajuda'], { fragment: 'produtos-graficos' });
   }
 
   configurar(item: GraficaProduto): void {
@@ -205,5 +280,74 @@ export class GraficaProdutosComponent implements OnInit {
         error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível alterar o status.')),
       });
     });
+  }
+
+  private carregarFiltros(): void {
+    this.carregandoFiltros = true;
+    forkJoin({
+      materiais: this.graficaService.listarMateriais(),
+      formatos: this.graficaService.listarFormatos(),
+      cores: this.graficaService.listarCores(),
+      acabamentos: this.graficaService.listarAcabamentos(),
+      servicos: this.graficaService.listarServicos(),
+    }).subscribe({
+      next: ({ materiais, formatos, cores, acabamentos, servicos }) => {
+        this.materiais = materiais || [];
+        this.formatos = formatos || [];
+        this.cores = cores || [];
+        this.acabamentos = acabamentos || [];
+        this.servicos = servicos || [];
+        this.carregandoFiltros = false;
+      },
+      error: (error) => {
+        this.carregandoFiltros = false;
+        this.toastr.error(catalogoErrorMessage(error, 'Não foi possível carregar filtros da gráfica.'));
+      },
+    });
+  }
+
+  private listParams(): GraficaProdutoListParams {
+    const filters = this.filterState as GraficaProdutosFilters;
+    return {
+      page: this.pagina,
+      size: this.tamanho,
+      search: this.termo,
+      ativo: filters.ativo,
+      materialId: this.toNumber(filters.materialId),
+      formatoId: this.toNumber(filters.formatoId),
+      corId: this.toNumber(filters.corId),
+      // Multi-selects usam semântica OR no backend: qualquer acabamento/serviço selecionado é suficiente.
+      acabamentoIds: this.toNumberArray(filters.acabamentoIds),
+      servicoIds: this.toNumberArray(filters.servicoIds),
+      sort: this.toSortParam(),
+    };
+  }
+
+  private toSortParam(): string {
+    if (!this.sort.active || !this.sort.direction) {
+      return 'nome,asc';
+    }
+    return `${this.sort.active},${this.sort.direction}`;
+  }
+
+  private toOptions(items: Array<GraficaCadastro | GraficaFormato>) {
+    return items
+      .filter((item) => item.ativo !== false)
+      .map((item) => ({ value: item.id, label: item.nome }));
+  }
+
+  private toNumber(value: unknown): number | null {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  private toNumberArray(value: unknown): number[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+    return value.map((item) => this.toNumber(item)).filter((item): item is number => item !== null);
   }
 }
