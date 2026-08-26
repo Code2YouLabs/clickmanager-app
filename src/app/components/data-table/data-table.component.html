@@ -1,17 +1,34 @@
 @if (search.enabled || filters.length) {
   <div class="data-table-toolbar">
     @if (search.enabled) {
+    <div class="data-table-toolbar__section">
+      <div class="data-table-toolbar__label">{{ search.label || 'Buscar' }}</div>
       <mat-form-field appearance="outline" class="data-table-toolbar__search">
         <mat-label>{{ search.placeholder || 'Pesquisar' }}</mat-label>
         <mat-icon matPrefix>search</mat-icon>
         <input matInput type="search" [formControl]="searchControl" />
       </mat-form-field>
+    </div>
     }
 
     @if (filters.length) {
-      <div class="data-table-toolbar__filters" [attr.aria-label]="'Filtros'">
+    <div class="data-table-toolbar__section">
+      <div class="data-table-toolbar__filters-header">
+        <div class="data-table-toolbar__label">
+          {{ filtersLabel }}{{ activeFilterCount ? ' (' + activeFilterCount + ')' : '' }}
+        </div>
+
+        @if (hasActiveFilters) {
+          <button mat-button type="button" color="primary" class="data-table-toolbar__clear" (click)="onClearFilters()">
+            <mat-icon>filter_alt_off</mat-icon>
+            {{ clearFiltersLabel }}
+          </button>
+        }
+      </div>
+
+      <div class="data-table-toolbar__filters" [attr.aria-label]="filtersLabel">
         @for (filter of filters; track filter.key) {
-          <mat-form-field appearance="outline" class="data-table-toolbar__filter">
+          <mat-form-field appearance="outline" class="data-table-toolbar__filter" [style.flex-basis]="filterWidth(filter)">
             <mat-label>{{ filter.label }}</mat-label>
             <mat-select
               [multiple]="filter.type === 'multi-select'"
@@ -26,15 +43,8 @@
             </mat-select>
           </mat-form-field>
         }
-
-        @if (hasActiveFilters) {
-          <button mat-stroked-button type="button" color="primary" (click)="onClearFilters()">
-            <mat-icon>filter_alt_off</mat-icon>
-            Limpar filtros
-          </button>
-          <span class="data-table-toolbar__count">Filtros ({{ activeFilterCount }})</span>
-        }
       </div>
+    </div>
     }
   </div>
 }

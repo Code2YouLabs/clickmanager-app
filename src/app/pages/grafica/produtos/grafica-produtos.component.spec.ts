@@ -21,7 +21,8 @@ describe('GraficaProdutosComponent', () => {
       'listarCores',
       'listarAcabamentos',
       'listarServicos',
-      'alterarStatus',
+      'listarPrecos',
+      'excluir',
     ]);
     router = jasmine.createSpyObj('Router', ['navigate']);
     service.listar.and.returnValue(of({ content: [], pageNumber: 0, pageSize: 10, totalElements: 0, totalPages: 0, last: true }));
@@ -30,7 +31,8 @@ describe('GraficaProdutosComponent', () => {
     service.listarCores.and.returnValue(of([{ id: 3, codigo: '4X4', nome: '4x4', ativo: true }]));
     service.listarAcabamentos.and.returnValue(of([{ id: 4, codigo: 'LAMINACAO', nome: 'Laminação', ativo: true }]));
     service.listarServicos.and.returnValue(of([{ id: 5, codigo: 'CRIACAO', nome: 'Criação', ativo: true }]));
-    service.alterarStatus.and.returnValue(of({ id: 1, catalogoProdutoId: 10, ativo: false, acabamentos: [], servicos: [], parametros: [] }));
+    service.listarPrecos.and.returnValue(of([]));
+    service.excluir.and.returnValue(of(void 0));
 
     TestBed.configureTestingModule({
       imports: [GraficaProdutosComponent, NoopAnimationsModule],
@@ -54,6 +56,7 @@ describe('GraficaProdutosComponent', () => {
     expect(service.listar).toHaveBeenCalledWith(jasmine.objectContaining({ page: 0, size: 10, sort: 'nome,asc' }));
     expect(service.listarMateriais).toHaveBeenCalled();
     expect(component.tableFilters.find((filter) => filter.key === 'materialId')?.options[0].label).toBe('Couchê 150g');
+    expect(component.tableFilters.find((filter) => filter.key === 'corId')?.width).toBe('140px');
   });
 
   it('envia busca, filtros, paginacao e ordenacao para o backend', () => {
@@ -69,7 +72,6 @@ describe('GraficaProdutosComponent', () => {
       corId: 3,
       acabamentoIds: [4],
       servicoIds: [5],
-      ativo: true,
     });
     expect(service.listar.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({
       materialId: 1,
@@ -77,7 +79,6 @@ describe('GraficaProdutosComponent', () => {
       corId: 3,
       acabamentoIds: [4],
       servicoIds: [5],
-      ativo: true,
     }));
 
     component.onPageChange({ pageIndex: 2, pageSize: 20, length: 100 });
@@ -87,22 +88,22 @@ describe('GraficaProdutosComponent', () => {
     expect(service.listar.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({ page: 0, sort: 'nome,desc' }));
   });
 
-  it('executa acoes de configurar e alterar status fora da tabela generica', () => {
+  it('executa acoes de configurar e excluir fora da tabela generica', () => {
     const row = { id: 1, catalogoProdutoId: 10, catalogoProdutoNome: 'Panfleto', ativo: true, acabamentos: [], servicos: [], parametros: [] };
     spyOn((component as unknown as { dialog: MatDialog }).dialog, 'open').and.returnValue({ afterClosed: () => of(true) } as never);
 
-    component.onAction({ action: 'configurar', row });
+    component.configurar(row);
     expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/produtos', 1, 'editar']);
 
-    component.onAction({ action: 'alterarStatus', row });
-    expect(service.alterarStatus).toHaveBeenCalledWith(1, false);
+    component.excluir(row);
+    expect(service.excluir).toHaveBeenCalledWith(1);
   });
 
   it('limpa filtros sem acoplar regra de dominio na tabela', () => {
     component.filterState = { materialId: 1, acabamentoIds: [4] };
     component.pagina = 2;
 
-    component.onClearFilters();
+    component.onFilterChange({});
 
     expect(component.filterState).toEqual({});
     expect(component.pagina).toBe(0);

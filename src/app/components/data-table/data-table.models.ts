@@ -24,11 +24,13 @@ export interface DataTableFilter {
   label: string;
   type: DataTableFilterType;
   placeholder?: string;
+  width?: string;
   options: DataTableFilterOption[];
 }
 
 export interface DataTableSearchConfig {
   enabled: boolean;
+  label?: string;
   placeholder?: string;
   debounceMs?: number;
   value?: string;

@@ -28,6 +28,8 @@ interface TestRow extends Record<string, unknown> {
       [actions]="actions"
       [sort]="sort"
       [emptyState]="emptyState"
+      filtersLabel="Filtros"
+      clearFiltersLabel="Limpar filtros"
       (searchChange)="searchValue = $event"
       (filterChange)="lastFilters = $event"
       (clearFilters)="clearCalled = true"
@@ -61,7 +63,7 @@ class HostComponent {
     },
   ];
   filterState: DataTableFilterState = {};
-  search = { enabled: true, placeholder: 'Buscar produtos', debounceMs: 300 };
+  search = { enabled: true, label: 'Buscar produtos', placeholder: 'Buscar por nome', debounceMs: 300 };
   pagination = { pageIndex: 0, pageSize: 10, totalItems: 1, pageSizeOptions: [10, 20] };
   loading = false;
   sort: Sort = { active: '', direction: '' };
@@ -109,6 +111,16 @@ describe('DataTableComponent', () => {
     expect(fixture.nativeElement.querySelector('.custom-name')?.textContent).toContain('Produto: Panfleto');
   });
 
+  it('renderiza busca e filtros em secoes com labels discretos', () => {
+    const labels = Array.from(fixture.nativeElement.querySelectorAll('.data-table-toolbar__label') as NodeListOf<Element>)
+      .map((item: Element) => item.textContent?.trim());
+
+    expect(labels).toContain('Buscar produtos');
+    expect(labels).toContain('Filtros');
+    expect(fixture.nativeElement.querySelector('.data-table-toolbar__search')).toBeTruthy();
+    expect(fixture.nativeElement.querySelectorAll('.data-table-toolbar__filter')).toHaveSize(2);
+  });
+
   it('emite busca com debounce', fakeAsync(() => {
     table.searchControl.setValue('panfleto');
     tick(299);
@@ -122,13 +134,19 @@ describe('DataTableComponent', () => {
   it('emite filtros e remove valores vazios ao limpar', () => {
     table.onFilterValueChange('materialId', 10);
     table.onFilterValueChange('acabamentoIds', [20]);
+    fixture.detectChanges();
 
     expect(host.lastFilters).toEqual({ materialId: 10, acabamentoIds: [20] });
+    expect(fixture.nativeElement.textContent).toContain('Filtros (2)');
+    expect(fixture.nativeElement.textContent).toContain('Limpar filtros');
 
     table.onClearFilters();
+    fixture.detectChanges();
 
     expect(host.clearCalled).toBeTrue();
     expect(host.lastFilters).toEqual({});
+    expect(fixture.nativeElement.textContent).not.toContain('Filtros (2)');
+    expect(fixture.nativeElement.textContent).not.toContain('Limpar filtros');
   });
 
   it('emite sort e paginacao para o container', () => {

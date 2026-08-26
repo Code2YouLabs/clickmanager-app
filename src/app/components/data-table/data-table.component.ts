@@ -51,6 +51,8 @@ export class DataTableComponent<T = unknown>
   @Input() sort: DataTableSort = { active: '', direction: '' };
   @Input() emptyState: DataTableEmptyState = {};
   @Input() rowKey: keyof T | string | ((row: T) => unknown) = 'id';
+  @Input() filtersLabel = 'Filtros';
+  @Input() clearFiltersLabel = 'Limpar filtros';
 
   @Output() searchChange = new EventEmitter<string>();
   @Output() filterChange = new EventEmitter<DataTableFilterState>();
@@ -145,6 +147,10 @@ export class DataTableComponent<T = unknown>
 
   columnAlignClass(column: DataTableColumn<T>): string {
     return column.align ? `data-table__cell--${column.align}` : '';
+  }
+
+  filterWidth(filter: DataTableFilter): string | null {
+    return filter.width || null;
   }
 
   trackByRow = (_index: number, row: T): unknown => {

@@ -69,6 +69,8 @@ type GraficaProdutosFilters = {
         [pagination]="pagination"
         [loading]="carregando"
         [sort]="sort"
+        filtersLabel="Filtros"
+        clearFiltersLabel="Limpar filtros"
         [emptyState]="{
           title: 'Nenhum produto gráfico encontrado',
           description: 'Cadastre um produto gráfico para configurar vendas.',
@@ -78,7 +80,6 @@ type GraficaProdutosFilters = {
         rowKey="id"
         (searchChange)="onSearch($event)"
         (filterChange)="onFilterChange($event)"
-        (clearFilters)="onClearFilters()"
         (pageChange)="onPageChange($event)"
         (sortChange)="onSortChange($event)">
 
@@ -230,6 +231,7 @@ export class GraficaProdutosComponent implements OnInit {
   precosPorProduto: Record<number, GraficaPrecoPolitica[]> = {};
   readonly searchConfig = {
     enabled: true,
+    label: 'Buscar produtos',
     placeholder: 'Buscar por nome, descrição ou código',
     debounceMs: 300,
   };
@@ -260,11 +262,11 @@ export class GraficaProdutosComponent implements OnInit {
 
   get tableFilters(): DataTableFilter[] {
     return [
-      { key: 'materialId', label: 'Material', type: 'select', options: this.toOptions(this.materiais) },
-      { key: 'formatoId', label: 'Formato', type: 'select', options: this.toOptions(this.formatos) },
-      { key: 'corId', label: 'Cor', type: 'select', options: this.toOptions(this.cores) },
-      { key: 'acabamentoIds', label: 'Acabamentos', type: 'multi-select', options: this.toOptions(this.acabamentos) },
-      { key: 'servicoIds', label: 'Serviços', type: 'multi-select', options: this.toOptions(this.servicos) },
+      { key: 'materialId', label: 'Material', type: 'select', width: '220px', options: this.toOptions(this.materiais) },
+      { key: 'formatoId', label: 'Formato', type: 'select', width: '180px', options: this.toOptions(this.formatos) },
+      { key: 'corId', label: 'Cor', type: 'select', width: '140px', options: this.toOptions(this.cores) },
+      { key: 'acabamentoIds', label: 'Acabamentos', type: 'multi-select', width: '220px', options: this.toOptions(this.acabamentos) },
+      { key: 'servicoIds', label: 'Serviços', type: 'multi-select', width: '220px', options: this.toOptions(this.servicos) },
     ];
   }
 
@@ -304,12 +306,6 @@ export class GraficaProdutosComponent implements OnInit {
 
   onFilterChange(filters: DataTableFilterState): void {
     this.filterState = { ...filters };
-    this.pagina = 0;
-    this.carregar();
-  }
-
-  onClearFilters(): void {
-    this.filterState = {};
     this.pagina = 0;
     this.carregar();
   }
