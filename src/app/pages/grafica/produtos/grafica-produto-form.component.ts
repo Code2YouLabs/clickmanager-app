@@ -65,28 +65,34 @@ type ProdutoFormSnapshot = {
             <mat-form-field appearance="outline">
               <mat-label>Nome</mat-label>
               <input matInput formControlName="nome" placeholder="Panfleto 10x15 Couchê 150g 4x4" />
+              <mat-error *ngIf="form.get('nome')?.hasError('required')">Informe o nome do produto.</mat-error>
             </mat-form-field>
-            <mat-form-field appearance="outline" class="full">
-              <mat-label>Descrição</mat-label>
-              <textarea matInput formControlName="descricao" rows="3"></textarea>
-            </mat-form-field>
+            <div class="product-category">
+              <mat-form-field appearance="outline">
+                <mat-label>Categoria</mat-label>
+                <mat-select formControlName="categoriaId" required>
+                  <mat-option *ngFor="let item of categorias" [value]="item.id">{{ item.nome }}</mat-option>
+                </mat-select>
+                <mat-error *ngIf="form.get('categoriaId')?.hasError('required')">Selecione a categoria.</mat-error>
+              </mat-form-field>
+              <mat-checkbox formControlName="exibirNoSite">Exibir este produto no site</mat-checkbox>
+            </div>
             <mat-form-field appearance="outline">
-              <mat-label>Categoria</mat-label>
-              <mat-select formControlName="categoriaId" required>
-                <mat-option *ngFor="let item of categorias" [value]="item.id">{{ item.nome }}</mat-option>
-              </mat-select>
+              <mat-label>Descrição</mat-label>
+              <textarea matInput formControlName="descricao" rows="7"></textarea>
             </mat-form-field>
+            <div class="product-images">
+              <app-deposito-imagem-galeria
+                context="catalogo-produtos"
+                [gerenciarPrincipal]="true"
+                [imagemPrincipal]="imagemPrincipal"
+                [imagens]="galeria"
+                (imagemPrincipalChange)="onImagemPrincipalChange($event)"
+                (imagensChange)="onGaleriaChange($event)"
+                (uploadingChange)="uploading = $event">
+              </app-deposito-imagem-galeria>
+            </div>
           </div>
-          <app-deposito-imagem-galeria
-            context="catalogo-produtos"
-            [gerenciarPrincipal]="true"
-            [imagemPrincipal]="imagemPrincipal"
-            [imagens]="galeria"
-            (imagemPrincipalChange)="onImagemPrincipalChange($event)"
-            (imagensChange)="onGaleriaChange($event)"
-            (uploadingChange)="uploading = $event">
-          </app-deposito-imagem-galeria>
-          <mat-checkbox formControlName="exibirNoSite">Exibir este produto no site</mat-checkbox>
         </app-section-card>
 
         <app-section-card titulo="Configuração gráfica">
@@ -113,13 +119,13 @@ type ProdutoFormSnapshot = {
               </mat-select>
             </mat-form-field>
             <mat-form-field appearance="outline">
-              <mat-label>Acabamentos permitidos</mat-label>
+              <mat-label>Acabamentos</mat-label>
               <mat-select multiple formControlName="acabamentoIds">
                 <mat-option *ngFor="let item of acabamentos" [value]="item.id">{{ item.nome }}</mat-option>
               </mat-select>
             </mat-form-field>
             <mat-form-field appearance="outline">
-              <mat-label>Serviços disponíveis</mat-label>
+              <mat-label>Serviços</mat-label>
               <mat-select multiple formControlName="servicoIds">
                 <mat-option *ngFor="let item of servicos" [value]="item.id">{{ item.nome }}</mat-option>
               </mat-select>
@@ -132,6 +138,7 @@ type ProdutoFormSnapshot = {
             [formGroup]="precoForm"
             [tiposDisponiveis]="['FIXO', 'QUANTIDADE', 'DEMANDA', 'METRO']">
           </app-preco-selector>
+          <div class="validation-hint" *ngIf="precoForm.invalid">Complete os campos obrigatórios da política de preço.</div>
         </app-section-card>
       </form>
 
@@ -145,11 +152,83 @@ type ProdutoFormSnapshot = {
     .produto-form { display: flex; flex-direction: column; gap: 16px; }
     .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: center; }
     .product-grid { align-items: start; }
+    .product-category {
+      display: grid;
+      gap: 2px;
+    }
+    .product-category mat-form-field {
+      width: 100%;
+    }
+    .product-images {
+      min-width: 0;
+    }
     .grafica-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .grafica-grid mat-form-field:nth-last-child(-n + 2) { grid-column: span 1; }
     .full { width: 100%; }
-    .product-grid .full { grid-column: 1 / -1; }
-    app-deposito-imagem-galeria { display: block; margin-top: 4px; }
+    app-deposito-imagem-galeria { display: block; }
+    .validation-hint {
+      margin-top: 8px;
+      color: #b45309;
+      font-size: 0.84rem;
+      font-weight: 600;
+    }
+    :host ::ng-deep .product-images .deposito-galeria {
+      gap: 8px;
+    }
+    :host ::ng-deep .product-images .deposito-galeria__header small {
+      display: none;
+    }
+    :host ::ng-deep .product-images .deposito-galeria__label::after {
+      content: 'JPG, PNG ou WEBP. Até 10 MB.';
+      display: block;
+      margin-top: 2px;
+      color: #64748b;
+      font-size: 0.82rem;
+      font-weight: 400;
+    }
+    :host ::ng-deep .product-images .deposito-galeria__panel {
+      gap: 8px;
+      padding: 10px;
+      border-radius: 12px;
+    }
+    :host ::ng-deep .product-images .deposito-galeria__trigger {
+      min-height: 36px;
+      padding: 0 14px;
+    }
+    :host ::ng-deep .product-images .deposito-galeria__empty {
+      min-height: 64px;
+      border-radius: 10px;
+    }
+    :host ::ng-deep .product-images .deposito-galeria__empty mat-icon {
+      width: 24px;
+      height: 24px;
+      font-size: 24px;
+    }
+    :host ::ng-deep .product-images .deposito-galeria__grid {
+      grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+      gap: 8px;
+    }
+    :host ::ng-deep .product-images .deposito-galeria__card {
+      width: 100%;
+      gap: 6px;
+      padding: 8px;
+      border-radius: 12px;
+    }
+    :host ::ng-deep .product-images .deposito-galeria__preview {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1 / 1;
+      border-radius: 10px;
+    }
+    :host ::ng-deep app-preco-selector .price-selector-shell {
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      padding: 0;
+    }
+    :host ::ng-deep app-preco-selector .price-selector-mode {
+      border-top: 0;
+    }
     .cancel-button {
       border-color: #fecaca;
       color: #b91c1c;
