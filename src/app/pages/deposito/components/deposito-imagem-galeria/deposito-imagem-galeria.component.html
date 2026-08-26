@@ -49,22 +49,23 @@
 
         <div class="deposito-galeria__actions">
           @if (gerenciarPrincipal && !isImagemPrincipal(imagem)) {
-          <button mat-icon-button type="button" matTooltip="Definir como principal" (click)="definirPrincipal(imagem)" [disabled]="carregando">
+          <button class="deposito-galeria__action" mat-icon-button type="button" matTooltip="Definir como principal" (click)="definirPrincipal(imagem)" [disabled]="carregando">
             <mat-icon>star</mat-icon>
           </button>
           }
-          <button mat-icon-button type="button" (click)="moverParaCima($index)" [disabled]="!podeMoverParaCima($index, imagem) || carregando">
+          <button class="deposito-galeria__action" mat-icon-button type="button" color="warn" (click)="remover($index)" [disabled]="carregando">
+            <mat-icon>delete</mat-icon>
+          </button>
+          <button class="deposito-galeria__action" mat-icon-button type="button" (click)="moverParaCima($index)" [disabled]="!podeMoverParaCima($index, imagem) || carregando">
             <mat-icon>arrow_back</mat-icon>
           </button>
           <button
+            class="deposito-galeria__action"
             mat-icon-button
             type="button"
             (click)="moverParaBaixo($index)"
             [disabled]="!podeMoverParaBaixo($index, imagem) || carregando">
             <mat-icon>arrow_forward</mat-icon>
-          </button>
-          <button mat-icon-button type="button" color="warn" (click)="remover($index)" [disabled]="carregando">
-            <mat-icon>delete</mat-icon>
           </button>
         </div>
       </article>

@@ -170,15 +170,14 @@
 }
 
 .deposito-galeria__actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, 32px);
   align-items: center;
   justify-content: flex-start;
-  flex-wrap: wrap;
   gap: 4px;
 }
 
 .deposito-galeria__actions button {
-  flex: 0 0 32px;
   width: 32px;
   height: 32px;
   padding: 0;

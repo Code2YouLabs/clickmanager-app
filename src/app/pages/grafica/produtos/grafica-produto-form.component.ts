@@ -239,11 +239,13 @@ type ProdutoFormSnapshot = {
       font-size: 0.7rem;
     }
     :host ::ng-deep .product-images .deposito-galeria__actions {
+      display: grid;
+      grid-template-columns: repeat(2, 26px);
+      justify-content: flex-start;
       gap: 2px;
       min-height: 26px;
     }
     :host ::ng-deep .product-images .deposito-galeria__actions button {
-      flex-basis: 26px;
       width: 26px;
       height: 26px;
     }
