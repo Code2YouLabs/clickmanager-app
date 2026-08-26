@@ -794,7 +794,7 @@ export const PagesRoutes: Routes = [
     loadChildren: () =>
       import('./catalogo/catalogo.routes').then((m) => m.CatalogoRoutes),
     data: {
-      ...DEPOSITO_ROUTE_DATA,
+      ...SHARED_ROUTE_DATA,
       title: 'Catálogo',
     }
   },

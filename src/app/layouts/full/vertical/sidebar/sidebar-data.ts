@@ -28,6 +28,7 @@ export const navItems: NavItem[] = [
         allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
         children: [
             { displayName: 'Produtos', iconName: 'point', bgcolor: 'transparent', route: '/page/grafica/produtos', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: [TipoEmpresa.GRAFICA] },
+            { displayName: 'Categorias', iconName: 'point', bgcolor: 'transparent', route: '/page/catalogo/categorias', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: [TipoEmpresa.GRAFICA] },
             { displayName: 'Materiais', iconName: 'point', bgcolor: 'transparent', route: '/page/grafica/materiais', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: [TipoEmpresa.GRAFICA] },
             { displayName: 'Formatos', iconName: 'point', bgcolor: 'transparent', route: '/page/grafica/formatos', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: [TipoEmpresa.GRAFICA] },
             { displayName: 'Cores', iconName: 'point', bgcolor: 'transparent', route: '/page/grafica/cores', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: [TipoEmpresa.GRAFICA] },

@@ -12,6 +12,10 @@ export const catalogoNovoGuard: CanActivateFn = () => {
 
   return contextService.resolveOnce().pipe(
     map((context) => {
+      if (context.tipoEmpresa === TipoEmpresa.GRAFICA) {
+        return true;
+      }
+
       if (context.tipoEmpresa === TipoEmpresa.DEPOSITO && context.versaoCatalogo === 'CATALOGO_NOVO') {
         return true;
       }
