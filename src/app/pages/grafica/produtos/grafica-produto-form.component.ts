@@ -187,6 +187,7 @@ type ProdutoFormSnapshot = {
       gap: 8px;
       padding: 10px;
       border-radius: 12px;
+      overflow: hidden;
     }
     :host ::ng-deep .product-images .deposito-galeria__trigger {
       min-height: 36px;
@@ -202,20 +203,54 @@ type ProdutoFormSnapshot = {
       font-size: 24px;
     }
     :host ::ng-deep .product-images .deposito-galeria__grid {
-      grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 8px;
+      align-items: start;
     }
     :host ::ng-deep .product-images .deposito-galeria__card {
       width: 100%;
-      gap: 6px;
-      padding: 8px;
-      border-radius: 12px;
+      min-width: 0;
+      gap: 4px;
+      padding: 6px;
+      border-radius: 10px;
     }
     :host ::ng-deep .product-images .deposito-galeria__preview {
       width: 100%;
       height: auto;
-      aspect-ratio: 1 / 1;
-      border-radius: 10px;
+      min-width: 0;
+      aspect-ratio: 4 / 3;
+      border-radius: 8px;
+    }
+    :host ::ng-deep .product-images .deposito-galeria__primary-badge {
+      left: 6px;
+      top: 6px;
+      min-height: 20px;
+      padding: 0 7px;
+      font-size: 0.66rem;
+    }
+    :host ::ng-deep .product-images .deposito-galeria__meta {
+      gap: 1px;
+    }
+    :host ::ng-deep .product-images .deposito-galeria__meta strong {
+      font-size: 0.78rem;
+      line-height: 1.18;
+    }
+    :host ::ng-deep .product-images .deposito-galeria__meta small {
+      font-size: 0.7rem;
+    }
+    :host ::ng-deep .product-images .deposito-galeria__actions {
+      gap: 2px;
+      min-height: 26px;
+    }
+    :host ::ng-deep .product-images .deposito-galeria__actions button {
+      flex-basis: 26px;
+      width: 26px;
+      height: 26px;
+    }
+    :host ::ng-deep .product-images .deposito-galeria__actions mat-icon {
+      width: 17px;
+      height: 17px;
+      font-size: 17px;
     }
     :host ::ng-deep app-preco-selector .price-selector-shell {
       border: 0;
@@ -237,6 +272,9 @@ type ProdutoFormSnapshot = {
     @media (max-width: 768px) {
       .form-grid,
       .grafica-grid { grid-template-columns: 1fr; }
+      :host ::ng-deep .product-images .deposito-galeria__grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
   `],
 })
@@ -586,7 +624,7 @@ export class GraficaProdutoFormComponent implements OnInit {
       if (seen.has(imagem.arquivoId)) return false;
       seen.add(imagem.arquivoId);
       return true;
-    });
+    }).slice(0, 5);
   }
 
   private criarPrecoForm(preco: any): FormGroup {
