@@ -221,29 +221,13 @@ type ProdutoFormSnapshot = {
       aspect-ratio: 4 / 3;
       border-radius: 8px;
     }
-    :host ::ng-deep .product-images .deposito-galeria__primary-badge {
-      left: 6px;
-      top: 6px;
-      min-height: 20px;
-      padding: 0 7px;
-      font-size: 0.66rem;
-    }
-    :host ::ng-deep .product-images .deposito-galeria__meta {
-      gap: 1px;
-    }
-    :host ::ng-deep .product-images .deposito-galeria__meta strong {
-      font-size: 0.78rem;
-      line-height: 1.18;
-    }
-    :host ::ng-deep .product-images .deposito-galeria__meta small {
-      font-size: 0.7rem;
-    }
     :host ::ng-deep .product-images .deposito-galeria__actions {
       display: grid;
-      grid-template-columns: repeat(2, 26px);
-      justify-content: flex-start;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      justify-items: center;
       gap: 2px;
       min-height: 26px;
+      width: 100%;
     }
     :host ::ng-deep .product-images .deposito-galeria__actions button {
       width: 26px;

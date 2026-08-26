@@ -171,16 +171,21 @@
 
 .deposito-galeria__actions {
   display: grid;
-  grid-template-columns: repeat(2, 32px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
-  justify-content: flex-start;
+  justify-items: center;
   gap: 4px;
+  width: 100%;
 }
 
 .deposito-galeria__actions button {
   width: 32px;
   height: 32px;
   padding: 0;
+}
+
+.deposito-galeria__action--primary-star mat-icon {
+  color: #f59e0b;
 }
 
 .deposito-galeria__actions mat-icon {

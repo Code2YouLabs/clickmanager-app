@@ -37,19 +37,18 @@
       <article class="deposito-galeria__card" [class.deposito-galeria__card--primary]="isImagemPrincipal(imagem)">
         <div class="deposito-galeria__preview">
           <img [src]="getImagemSrc(imagem)" [alt]="imagem.altText || imagem.titulo || 'Imagem da galeria'" loading="lazy" decoding="async" />
-          @if (isImagemPrincipal(imagem)) {
-          <span class="deposito-galeria__primary-badge">Principal</span>
-          }
-        </div>
-
-        <div class="deposito-galeria__meta">
-          <strong>{{ imagem.titulo || ('Imagem ' + ($index + 1)) }}</strong>
-          <small>{{ imagem.contentType || 'image/*' }}</small>
         </div>
 
         <div class="deposito-galeria__actions">
-          @if (gerenciarPrincipal && !isImagemPrincipal(imagem)) {
-          <button class="deposito-galeria__action" mat-icon-button type="button" matTooltip="Definir como principal" (click)="definirPrincipal(imagem)" [disabled]="carregando">
+          @if (gerenciarPrincipal) {
+          <button
+            class="deposito-galeria__action"
+            [class.deposito-galeria__action--primary-star]="isImagemPrincipal(imagem)"
+            mat-icon-button
+            type="button"
+            matTooltip="Definir como principal"
+            (click)="definirPrincipal(imagem)"
+            [disabled]="carregando">
             <mat-icon>star</mat-icon>
           </button>
           }
