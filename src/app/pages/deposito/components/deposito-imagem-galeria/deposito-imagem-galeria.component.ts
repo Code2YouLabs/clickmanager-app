@@ -30,6 +30,7 @@ interface UploadGaleriaResultado {
 })
 export class DepositoImagemGaleriaComponent implements OnChanges {
   @Input() context = 'produtos';
+  @Input() uploadEndpoint?: string;
   @Input() imagemPrincipal?: DepositoImagem | null;
   @Input() imagens: DepositoImagem[] = [];
   @Input() gerenciarPrincipal = false;
@@ -126,7 +127,7 @@ export class DepositoImagemGaleriaComponent implements OnChanges {
 
     forkJoin(
       arquivosValidos.map((file) =>
-        this.depositoImagemService.upload(file, this.context, {
+        this.upload(file, {
           titulo: file.name,
           principal: false,
         }).pipe(
@@ -301,5 +302,13 @@ export class DepositoImagemGaleriaComponent implements OnChanges {
 
   private getGaleriaIndex(displayIndex: number): number {
     return this.gerenciarPrincipal && this.imagemPrincipalInterna ? displayIndex - 1 : displayIndex;
+  }
+
+  private upload(file: File, metadata: { titulo: string; principal: boolean }) {
+    if (this.uploadEndpoint?.trim()) {
+      return this.depositoImagemService.uploadToEndpoint(this.uploadEndpoint.trim(), file, this.context, metadata);
+    }
+
+    return this.depositoImagemService.upload(file, this.context, metadata);
   }
 }

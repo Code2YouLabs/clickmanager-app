@@ -95,6 +95,7 @@ type ProdutoFormSnapshot = {
             <div class="product-images">
               <app-deposito-imagem-galeria
                 context="catalogo-produtos"
+                uploadEndpoint="api/grafica/produtos/imagens/upload"
                 [gerenciarPrincipal]="true"
                 [imagemPrincipal]="imagemPrincipal"
                 [imagens]="galeria"

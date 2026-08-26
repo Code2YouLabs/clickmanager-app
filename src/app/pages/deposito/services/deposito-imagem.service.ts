@@ -20,6 +20,15 @@ export class DepositoImagemService {
     context: string,
     metadata: DepositoImagemUploadMetadata = {}
   ): Observable<DepositoImagem> {
+    return this.uploadToEndpoint(`${this.endpoint}/upload`, file, context, metadata);
+  }
+
+  uploadToEndpoint(
+    endpoint: string,
+    file: File,
+    context: string,
+    metadata: DepositoImagemUploadMetadata = {}
+  ): Observable<DepositoImagem> {
     const formData = new FormData();
     formData.append('file', file, file.name);
     formData.append('context', context);
@@ -40,7 +49,7 @@ export class DepositoImagemService {
       formData.append('principal', String(!!metadata.principal));
     }
 
-    return this.api.post<DepositoImagem>(`${this.endpoint}/upload`, formData);
+    return this.api.post<DepositoImagem>(endpoint, formData);
   }
 
   list(params: DepositoListParams = {}): Observable<DepositoPaginaResponse<DepositoImagem>> {
