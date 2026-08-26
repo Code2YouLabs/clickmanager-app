@@ -6,12 +6,20 @@
       <small>JPG, PNG, WEBP, SVG ou ICO até 10 MB. Resolução máxima: 10000 x 10000 px e até 40 MP.</small>
     </div>
 
-    @if (carregando) {
-    <span class="deposito-galeria__status">
-      <mat-spinner diameter="16"></mat-spinner>
-      Enviando...
-    </span>
-    }
+    <div class="deposito-galeria__header-actions">
+      @if (carregando) {
+      <span class="deposito-galeria__status">
+        <mat-spinner diameter="16"></mat-spinner>
+        Enviando...
+      </span>
+      }
+
+      <label class="deposito-galeria__trigger" [class.deposito-galeria__trigger--disabled]="carregando || limiteAtingido">
+        <input type="file" multiple [disabled]="carregando || limiteAtingido" (change)="onFilesSelected($event)" />
+        <mat-icon>add_photo_alternate</mat-icon>
+        <span>{{ gerenciarPrincipal ? 'Selecionar imagens' : 'Adicionar imagens' }}</span>
+      </label>
+    </div>
   </div>
 
   <div
@@ -20,12 +28,6 @@
     (dragover)="onDragOver($event)"
     (dragleave)="onDragLeave($event)"
     (drop)="onDrop($event)">
-    <label class="deposito-galeria__trigger" [class.deposito-galeria__trigger--disabled]="carregando || limiteAtingido">
-      <input type="file" multiple [disabled]="carregando || limiteAtingido" (change)="onFilesSelected($event)" />
-      <mat-icon>add_photo_alternate</mat-icon>
-      <span>{{ gerenciarPrincipal ? 'Selecionar imagens' : 'Adicionar imagens' }}</span>
-    </label>
-
     @if (!possuiImagens) {
     <div class="deposito-galeria__empty">
       <mat-icon>photo_library</mat-icon>

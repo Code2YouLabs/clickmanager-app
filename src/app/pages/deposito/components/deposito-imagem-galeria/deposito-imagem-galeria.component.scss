@@ -10,9 +10,16 @@
   gap: 12px;
 }
 
-.deposito-galeria__header > div {
+.deposito-galeria__header > div:first-child {
   display: grid;
   gap: 3px;
+}
+
+.deposito-galeria__header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 .deposito-galeria__label {
@@ -38,6 +45,7 @@
 .deposito-galeria__panel {
   display: grid;
   gap: 14px;
+  align-content: start;
   min-width: 0;
   padding: 16px;
   border-radius: 22px;
@@ -76,7 +84,7 @@
 }
 
 .deposito-galeria__empty {
-  min-height: 120px;
+  min-height: 150px;
   display: grid;
   place-items: center;
   gap: 8px;
@@ -204,6 +212,10 @@
 @media (max-width: 768px) {
   .deposito-galeria__header {
     display: grid;
+  }
+
+  .deposito-galeria__header-actions {
+    justify-content: stretch;
   }
 
   .deposito-galeria__trigger {

@@ -185,6 +185,7 @@ type ProdutoFormSnapshot = {
     }
     :host ::ng-deep .product-images .deposito-galeria__panel {
       gap: 8px;
+      min-height: 180px;
       padding: 10px;
       border-radius: 12px;
       overflow: hidden;
@@ -194,7 +195,7 @@ type ProdutoFormSnapshot = {
       padding: 0 14px;
     }
     :host ::ng-deep .product-images .deposito-galeria__empty {
-      min-height: 64px;
+      min-height: 158px;
       border-radius: 10px;
     }
     :host ::ng-deep .product-images .deposito-galeria__empty mat-icon {
