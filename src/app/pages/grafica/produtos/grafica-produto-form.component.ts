@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
+import { catchError, forkJoin, map, Observable, of, switchMap } from 'rxjs';
 import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
 import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
 import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
@@ -26,6 +27,7 @@ import {
   GraficaProdutoRequest,
 } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
+import { GraficaCadastroRapidoDialogComponent } from './grafica-cadastro-rapido-dialog.component';
 
 type TipoPrecoLegado = 'FIXO' | 'QUANTIDADE' | 'DEMANDA' | 'METRO';
 type ProdutoFormSnapshot = {
@@ -110,9 +112,33 @@ type ProdutoFormSnapshot = {
 
         <app-section-card title="Configuração gráfica">
           <div class="form-grid grafica-grid">
-            <app-input-options [control]="materialControl" label="Material" [options]="materiais" nullLabel="Sem material"></app-input-options>
-            <app-input-options [control]="formatoControl" label="Formato" [options]="formatos" nullLabel="Sem formato"></app-input-options>
-            <app-input-options [control]="corControl" label="Cor" [options]="cores" nullLabel="Sem cor"></app-input-options>
+            <app-input-options
+              [control]="materialControl"
+              label="Material"
+              [options]="materiais"
+              nullLabel="Sem material"
+              createLabel="Novo material"
+              [createDisabled]="salvando"
+              (createClick)="abrirCadastroRapido('material')">
+            </app-input-options>
+            <app-input-options
+              [control]="formatoControl"
+              label="Formato"
+              [options]="formatos"
+              nullLabel="Sem formato"
+              createLabel="Novo formato"
+              [createDisabled]="salvando"
+              (createClick)="abrirCadastroRapido('formato')">
+            </app-input-options>
+            <app-input-options
+              [control]="corControl"
+              label="Cor"
+              [options]="cores"
+              nullLabel="Sem cor"
+              createLabel="Nova cor"
+              [createDisabled]="salvando"
+              (createClick)="abrirCadastroRapido('cor')">
+            </app-input-options>
             <mat-form-field appearance="outline">
               <mat-label>Acabamentos</mat-label>
               <mat-select multiple formControlName="acabamentoIds">
@@ -335,6 +361,7 @@ export class GraficaProdutoFormComponent implements OnInit {
     private readonly toastr: ToastrService,
     private readonly graficaService: GraficaProdutoService,
     private readonly categoriaService: CatalogoCategoriaService,
+    private readonly dialog: MatDialog,
   ) {}
 
   ngOnInit(): void {
@@ -395,6 +422,19 @@ export class GraficaProdutoFormComponent implements OnInit {
     this.precoForm.markAsUntouched();
   }
 
+  abrirCadastroRapido(tipo: 'material' | 'formato' | 'cor'): void {
+    this.dialog.open(GraficaCadastroRapidoDialogComponent, {
+      width: '720px',
+      maxWidth: '92vw',
+      data: { tipo },
+      autoFocus: false,
+    }).afterClosed().subscribe((item) => {
+      if (item) {
+        this.recarregarOpcaoCriada(tipo, item);
+      }
+    });
+  }
+
   private carregarBase(id: number | null): void {
     forkJoin({
       categorias: this.categoriaService.options(true).pipe(catchError(() => of([]))),
@@ -423,6 +463,62 @@ export class GraficaProdutoFormComponent implements OnInit {
       },
       error: (error) => this.toastr.error(this.graficaErrorMessage(error, 'Não foi possível carregar o cadastro.')),
     });
+  }
+
+  private recarregarOpcaoCriada(tipo: 'material' | 'formato' | 'cor', item: GraficaCadastro | GraficaFormato): void {
+    this.listarCadastroRapido(tipo).subscribe({
+      next: (itens) => {
+        this.aplicarListaCadastro(tipo, itens);
+        this.selecionarCadastroCriado(tipo, item.id);
+      },
+      error: (error: unknown) => {
+        this.toastr.error(catalogoErrorMessage(error, 'Registro salvo, mas não foi possível atualizar a lista.'));
+        this.aplicarListaCadastro(tipo, this.comItemCriado(tipo, item));
+        this.selecionarCadastroCriado(tipo, item.id);
+      },
+    });
+  }
+
+  private listarCadastroRapido(tipo: 'material' | 'formato' | 'cor'): Observable<Array<GraficaCadastro | GraficaFormato>> {
+    switch (tipo) {
+      case 'material': return this.graficaService.listarMateriais();
+      case 'formato': return this.graficaService.listarFormatos();
+      case 'cor': return this.graficaService.listarCores();
+    }
+  }
+
+  private aplicarListaCadastro(tipo: 'material' | 'formato' | 'cor', itens: Array<GraficaCadastro | GraficaFormato>): void {
+    switch (tipo) {
+      case 'material':
+        this.materiais = itens as GraficaCadastro[];
+        break;
+      case 'formato':
+        this.formatos = itens as GraficaFormato[];
+        break;
+      case 'cor':
+        this.cores = itens as GraficaCadastro[];
+        break;
+    }
+  }
+
+  private selecionarCadastroCriado(tipo: 'material' | 'formato' | 'cor', id: number): void {
+    const control = {
+      material: this.form.controls.materialId,
+      formato: this.form.controls.formatoId,
+      cor: this.form.controls.corId,
+    }[tipo];
+    control.setValue(id);
+    control.markAsDirty();
+    this.form.markAsDirty();
+  }
+
+  private comItemCriado(tipo: 'material' | 'formato' | 'cor', item: GraficaCadastro | GraficaFormato): Array<GraficaCadastro | GraficaFormato> {
+    const atual = {
+      material: this.materiais,
+      formato: this.formatos,
+      cor: this.cores,
+    }[tipo];
+    return atual.some((opcao) => opcao.id === item.id) ? atual : [...atual, item];
   }
 
   private aplicarProduto(produto: GraficaProduto): void {

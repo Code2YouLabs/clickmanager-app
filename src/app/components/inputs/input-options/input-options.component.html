@@ -11,6 +11,19 @@
       </mat-option>
     </mat-select>
 
+    <button
+      *ngIf="createLabel"
+      mat-icon-button
+      matSuffix
+      type="button"
+      class="input-options__create"
+      [attr.aria-label]="createLabel"
+      [matTooltip]="createLabel"
+      [disabled]="createDisabled"
+      (click)="onCreateClick($event)">
+      <mat-icon>add</mat-icon>
+    </button>
+
     <mat-error *ngIf="control.invalid && control.touched">
       {{ errorMessage() }}
     </mat-error>
