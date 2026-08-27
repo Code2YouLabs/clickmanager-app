@@ -840,7 +840,9 @@ export class FullComponent implements OnInit, OnDestroy {
   private aplicarConfiguracaoPorTipoEmpresa(tipoEmpresa: TipoEmpresa): void {
     const catalogoNovoAtivo = tipoEmpresa === TipoEmpresa.DEPOSITO && this.versaoCatalogoAtual === 'CATALOGO_NOVO';
     const catalogoRoute = this.catalogoPrincipalRoute();
-    const catalogoStartsWith = catalogoNovoAtivo
+    const catalogoStartsWith = tipoEmpresa === TipoEmpresa.GRAFICA
+      ? ['/page/grafica']
+      : catalogoNovoAtivo
       ? ['/page/catalogo']
       : ['/page/deposito/itens', '/page/deposito/categorias', '/page/deposito/marcas'];
 
@@ -963,7 +965,11 @@ export class FullComponent implements OnInit, OnDestroy {
   }
 
   private catalogoPrincipalRoute(): string {
-    if (this.tipoEmpresaAtual !== TipoEmpresa.DEPOSITO || this.versaoCatalogoAtual === 'LEGADO_DEPOSITO') {
+    if (this.tipoEmpresaAtual === TipoEmpresa.GRAFICA) {
+      return '/page/grafica/produtos';
+    }
+
+    if (this.versaoCatalogoAtual === 'LEGADO_DEPOSITO') {
       return this.authService.temPermissao('DEPOSITO_ITENS_VER')
         ? '/page/deposito/itens'
         : this.authService.temPermissao('DEPOSITO_CATEGORIAS_VER')

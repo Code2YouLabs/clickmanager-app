@@ -72,6 +72,21 @@ function filhos(item: NavItem | undefined): string[] {
   return item?.children?.map((child) => child.displayName || '') || [];
 }
 
+function encontrarItem(items: NavItem[], displayName: string): NavItem | undefined {
+  for (const item of items) {
+    if (item.displayName === displayName) {
+      return item;
+    }
+
+    const child = item.children ? encontrarItem(item.children, displayName) : undefined;
+    if (child) {
+      return child;
+    }
+  }
+
+  return undefined;
+}
+
 function labels(items: NavItem[]): string[] {
   return items.map((item) => item.navCap || item.displayName || '');
 }
@@ -92,9 +107,17 @@ describe('menu principal do ClickManager', () => {
     expect(labels(menu)).not.toContain('Gerenciar Produtos');
     expect(labels(menu)).not.toContain('Gerenciar Pedidos');
     expect(labels(menu)).not.toContain('Gerenciar Clientes');
-    expect(filhos(catalogo)).toEqual(['Produtos', 'Categorias', 'Materiais', 'Formatos', 'Cores', 'Acabamentos', 'Serviços']);
+    expect(filhos(catalogo)).toEqual(['Comercial Beta', 'Produtos', 'Categorias', 'Materiais', 'Formatos', 'Cores', 'Acabamentos', 'Serviços']);
+    expect(filhos(encontrarItem(menu, 'Comercial Beta'))).toEqual(['Rascunhos', 'Orçamentos', 'Pedidos']);
     expect(itemPorNome(menu, 'Gestão de Pessoas')).toBeTruthy();
     expect(itemPorNome(menu, 'Meu Site')).toBeTruthy();
+  });
+
+  it('mostra Comercial Beta para proprietário de gráfica mesmo sem permissões no perfil', () => {
+    const menu = filtrar(TipoEmpresa.GRAFICA, [], 'CATALOGO_NOVO', ['LINKS', 'CALCULADORA_MATERIAIS'], true);
+
+    expect(encontrarItem(menu, 'Comercial Beta')).toBeTruthy();
+    expect(filhos(encontrarItem(menu, 'Comercial Beta'))).toEqual(['Rascunhos', 'Orçamentos', 'Pedidos']);
   });
 
   it('mostra Catálogo do depósito novo com produtos, categorias e marcas', () => {
@@ -124,12 +147,16 @@ describe('menu principal do ClickManager', () => {
     ]);
   });
 
-  it('remove itens sem permissão e grupos que ficariam vazios', () => {
+  it('mantém apenas destinos permitidos no Comercial Beta para usuário comum', () => {
     const menu = filtrar(TipoEmpresa.GRAFICA, ['PEDIDOS_VER'], 'CATALOGO_NOVO', [], false);
+    const catalogo = itemPorNome(menu, 'Catálogo');
+    const comercialBeta = encontrarItem(menu, 'Comercial Beta');
 
     expect(itemPorNome(menu, 'Pedidos')).toBeTruthy();
-    expect(itemPorNome(menu, 'Catálogo')).toBeFalsy();
-    expect(labels(menu)).not.toContain('Catálogo');
+    expect(catalogo).toBeTruthy();
+    expect(filhos(catalogo)).toEqual(['Comercial Beta']);
+    expect(filhos(comercialBeta)).toEqual(['Pedidos']);
+    expect(encontrarItem(menu, 'Produtos')).toBeFalsy();
     expect(itemPorNome(menu, 'Usuários')).toBeFalsy();
   });
 
