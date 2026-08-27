@@ -327,6 +327,53 @@ export const PagesRoutes: Routes = [
     }
   },
   {
+    path: 'grafica/formatos',
+    loadComponent: () => import('./grafica/formatos/grafica-formatos.component').then((m) => m.GraficaFormatosComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_VER'],
+      title: 'Formatos graficos',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Formatos graficos' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/formatos/novo',
+    loadComponent: () => import('./grafica/formatos/grafica-formato-form.component').then((m) => m.GraficaFormatoFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Novo formato grafico',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Formatos graficos', url: '/page/grafica/formatos' },
+        { title: 'Novo formato grafico' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/formatos/:id/editar',
+    loadComponent: () => import('./grafica/formatos/grafica-formato-form.component').then((m) => m.GraficaFormatoFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Editar formato grafico',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Formatos graficos', url: '/page/grafica/formatos' },
+        { title: 'Editar formato grafico' }
+      ]
+    }
+  },
+  {
     path: 'grafica/:tipo',
     loadComponent: () => import('./grafica/cadastros/grafica-cadastro-list.component').then((m) => m.GraficaCadastroListComponent),
     canActivate: [featureModuleGuard, permissionGuard],
