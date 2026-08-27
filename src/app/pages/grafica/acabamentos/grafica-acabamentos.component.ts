@@ -59,6 +59,10 @@ import { GraficaProdutoService } from '../shared/grafica.service';
           <span class="descricao-cell">{{ row.descricao || '-' }}</span>
         </ng-template>
 
+        <ng-template appDataTableCell="preco" let-row>
+          <span class="preco-resumo">{{ precoResumo(row) }}</span>
+        </ng-template>
+
         <ng-template appDataTableCell="acoes" let-row>
           <div class="acoes-cell">
             <button mat-icon-button type="button" matTooltip="Editar" [attr.aria-label]="'Editar ' + row.nome" (click)="editar(row)">
@@ -94,6 +98,12 @@ import { GraficaProdutoService } from '../shared/grafica.service';
       -webkit-line-clamp: 2;
     }
 
+    .preco-resumo {
+      color: #111827;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
     .acoes-cell {
       display: inline-flex;
       align-items: center;
@@ -119,8 +129,9 @@ export class GraficaAcabamentosComponent implements OnInit {
   };
 
   readonly columns: DataTableColumn<GraficaCadastro>[] = [
-    { key: 'nome', label: 'Nome', width: '280px' },
+    { key: 'nome', label: 'Nome', width: '260px' },
     { key: 'descricao', label: 'Descrição' },
+    { key: 'preco', label: 'Preço', width: '180px' },
     { key: 'acoes', label: 'Ações', align: 'end', width: '152px' },
   ];
 
@@ -182,6 +193,10 @@ export class GraficaAcabamentosComponent implements OnInit {
 
   editar(item: GraficaCadastro): void {
     this.router.navigate(['/page/grafica/acabamentos', item.id, 'editar']);
+  }
+
+  precoResumo(_item: GraficaCadastro): string {
+    return 'A configurar';
   }
 
   excluir(item: GraficaCadastro): void {

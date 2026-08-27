@@ -1,21 +1,31 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { finalize, map, of, switchMap } from 'rxjs';
+import { catchError, finalize, map, of, switchMap } from 'rxjs';
+import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
 import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
 import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { PrecoSelectorComponent } from 'src/app/components/preco/preco-selector.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { MaterialModule } from 'src/app/material.module';
 import { ToastrService } from 'ngx-toastr';
 import { catalogoErrorMessage, catalogoSlugify } from '../../catalogo/shared/utils/catalogo-utils';
-import { GraficaCadastro, GraficaCadastroRequest } from '../shared/grafica.models';
+import { GraficaCadastro, GraficaCadastroRequest, GraficaFormato } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
 
+type AplicacaoAcabamento = 'PECA' | 'FOLHA' | 'METRO_QUADRADO' | 'METRO_LINEAR' | 'SERVICO';
+
 type AcabamentoFormSnapshot = {
-  nome: string;
-  descricao: string;
+  form: {
+    nome: string;
+    descricao: string;
+    materialId: number | null;
+    formatoId: number | null;
+    aplicacao: AplicacaoAcabamento;
+  };
+  preco: any;
 };
 
 @Component({
@@ -30,6 +40,8 @@ type AcabamentoFormSnapshot = {
     SectionCardComponent,
     InputTextoRestritoComponent,
     InputTextareaComponent,
+    InputOptionsComponent,
+    PrecoSelectorComponent,
   ],
   template: `
     <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [showFooter]="true">
@@ -51,6 +63,30 @@ type AcabamentoFormSnapshot = {
               requiredError="Informe o nome do acabamento.">
             </app-input-texto-restrito>
 
+            <app-input-options
+              [control]="materialControl"
+              label="Material"
+              [options]="materiais"
+              nullLabel="Sem material">
+            </app-input-options>
+
+            <app-input-options
+              [control]="formatoControl"
+              label="Formato"
+              [options]="formatos"
+              nullLabel="Sem formato">
+            </app-input-options>
+
+            <app-input-options
+              [control]="aplicacaoControl"
+              label="Aplicação"
+              placeholder="Aplicação"
+              [options]="aplicacoes"
+              labelKey="label"
+              valueKey="value"
+              [showNull]="false">
+            </app-input-options>
+
             <app-input-textarea
               class="form-grid__wide"
               [control]="descricaoControl"
@@ -59,6 +95,14 @@ type AcabamentoFormSnapshot = {
               [maxlength]="500">
             </app-input-textarea>
           </div>
+        </app-section-card>
+
+        <app-section-card title="Precificação">
+          <app-preco-selector
+            [formGroup]="precoForm"
+            [tiposDisponiveis]="['FIXO', 'QUANTIDADE', 'DEMANDA', 'METRO', 'HORA']">
+          </app-preco-selector>
+          <div class="validation-hint" *ngIf="precoForm.invalid">Complete os campos obrigatórios da política de preço.</div>
         </app-section-card>
       </form>
 
@@ -87,6 +131,24 @@ type AcabamentoFormSnapshot = {
       grid-column: 1 / -1;
     }
 
+    .validation-hint {
+      margin-top: 8px;
+      color: #b45309;
+      font-size: 0.84rem;
+      font-weight: 600;
+    }
+
+    :host ::ng-deep app-preco-selector .price-selector-shell {
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      padding: 0;
+    }
+
+    :host ::ng-deep app-preco-selector .price-selector-mode {
+      border-top: 0;
+    }
+
     .cancel-button {
       border-color: #fecaca;
       color: #b91c1c;
@@ -109,11 +171,25 @@ export class GraficaAcabamentoFormComponent implements OnInit {
   salvando = false;
   carregando = false;
   snapshot?: AcabamentoFormSnapshot;
+  materiais: GraficaCadastro[] = [];
+  formatos: GraficaFormato[] = [];
+
+  readonly aplicacoes = [
+    { value: 'PECA', label: 'Por peça' },
+    { value: 'FOLHA', label: 'Por folha' },
+    { value: 'METRO_QUADRADO', label: 'Por metro quadrado' },
+    { value: 'METRO_LINEAR', label: 'Por metro linear' },
+    { value: 'SERVICO', label: 'Por serviço' },
+  ];
 
   form = this.fb.group({
     nome: this.fb.control('', { nonNullable: true, validators: [Validators.required] }),
     descricao: this.fb.control('', { nonNullable: true }),
+    materialId: this.fb.control<number | null>(null),
+    formatoId: this.fb.control<number | null>(null),
+    aplicacao: this.fb.control<AplicacaoAcabamento>('PECA', { nonNullable: true }),
   });
+  precoForm: FormGroup = this.fb.group({ tipo: ['FIXO'], valor: [null] });
 
   get titulo(): string {
     return this.acabamentoId ? 'Editar acabamento' : 'Novo acabamento';
@@ -125,6 +201,9 @@ export class GraficaAcabamentoFormComponent implements OnInit {
 
   get nomeControl(): FormControl<string> { return this.form.controls.nome; }
   get descricaoControl(): FormControl<string> { return this.form.controls.descricao; }
+  get materialControl(): FormControl<number | null> { return this.form.controls.materialId; }
+  get formatoControl(): FormControl<number | null> { return this.form.controls.formatoId; }
+  get aplicacaoControl(): FormControl<AplicacaoAcabamento> { return this.form.controls.aplicacao; }
 
   constructor(
     private readonly fb: FormBuilder,
@@ -135,6 +214,7 @@ export class GraficaAcabamentoFormComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.carregarApoio();
     this.carregando = true;
     this.route.paramMap.pipe(
       switchMap((params) => {
@@ -184,9 +264,12 @@ export class GraficaAcabamentoFormComponent implements OnInit {
       this.voltar();
       return;
     }
-    this.form.reset(this.snapshot);
+    this.form.reset(this.snapshot.form);
+    this.precoForm = this.fb.group(this.snapshot.preco);
     this.form.markAsPristine();
     this.form.markAsUntouched();
+    this.precoForm.markAsPristine();
+    this.precoForm.markAsUntouched();
   }
 
   voltar(): void {
@@ -197,12 +280,23 @@ export class GraficaAcabamentoFormComponent implements OnInit {
     this.form.reset({
       nome: acabamento.nome || '',
       descricao: acabamento.descricao || '',
+      materialId: null,
+      formatoId: null,
+      aplicacao: 'PECA',
     });
     this.registrarSnapshot();
   }
 
   private registrarSnapshot(): void {
-    this.snapshot = this.form.getRawValue();
+    this.snapshot = {
+      form: this.form.getRawValue(),
+      preco: this.precoForm.getRawValue(),
+    };
+  }
+
+  private carregarApoio(): void {
+    this.service.listarMateriais().pipe(catchError(() => of([]))).subscribe((items) => this.materiais = items || []);
+    this.service.listarFormatos().pipe(catchError(() => of([]))).subscribe((items) => this.formatos = items || []);
   }
 
   private toRequest(): GraficaCadastroRequest {
