@@ -122,7 +122,7 @@ describe('DataTableComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Filtros');
     expect(fixture.nativeElement.querySelector('.data-table-toolbar__search')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.data-table-toolbar__filter-toggle')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('.data-table-toolbar')?.classList).toContain('bg-light-primary');
+    expect(fixture.nativeElement.querySelector('.data-table-toolbar')?.classList).toContain('bg-light');
     expect(fixture.nativeElement.querySelector('.data-table-toolbar')?.classList).toContain('b-1');
     expect(fixture.nativeElement.querySelector('.data-table-toolbar')?.classList).toContain('rounded');
     expect(fixture.nativeElement.querySelector('.data-table__header-row')).toBeTruthy();

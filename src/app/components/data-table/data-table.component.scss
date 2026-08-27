@@ -2,7 +2,6 @@
   display: grid;
   gap: 16px;
   margin: 16px 0;
-  background-color: color-mix(in srgb, var(--mat-sys-primary-fixed-dim) 28%, var(--mat-sys-surface) 72%) !important;
 }
 
 .data-table-toolbar__section {
@@ -19,6 +18,10 @@
 
 .data-table-toolbar__search {
   width: 100%;
+}
+
+.data-table-toolbar ::ng-deep .mat-mdc-text-field-wrapper {
+  background-color: var(--mat-sys-surface);
 }
 
 .data-table-toolbar__filters-header {
