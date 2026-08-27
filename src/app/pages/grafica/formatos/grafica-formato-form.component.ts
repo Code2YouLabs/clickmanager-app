@@ -98,7 +98,7 @@ type FormatoFormSnapshot = {
               [unit]="unidadeSuffix"
               [min]="0.01"
               [decimals]="2"
-              [required]="true"
+              [required]="false"
               [requiredError]="alturaUtilControl.invalid && alturaUtilControl.touched">
             </app-unit-input>
 
@@ -108,7 +108,7 @@ type FormatoFormSnapshot = {
               [unit]="unidadeSuffix"
               [min]="0.01"
               [decimals]="2"
-              [required]="true"
+              [required]="false"
               [requiredError]="larguraUtilControl.invalid && larguraUtilControl.touched">
             </app-unit-input>
 
@@ -182,8 +182,8 @@ export class GraficaFormatoFormComponent implements OnInit {
     descricao: this.fb.control('', { nonNullable: true }),
     largura: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.01)]),
     altura: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.01)]),
-    larguraUtil: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.01)]),
-    alturaUtil: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.01)]),
+    larguraUtil: this.fb.control<number | null>(null, [Validators.min(0.01)]),
+    alturaUtil: this.fb.control<number | null>(null, [Validators.min(0.01)]),
     unidadeDimensao: this.fb.control<UnidadeGrafica>('CENTIMETRO', { nonNullable: true, validators: [Validators.required] }),
   });
 
