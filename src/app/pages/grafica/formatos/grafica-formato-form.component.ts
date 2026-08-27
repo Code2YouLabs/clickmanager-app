@@ -73,16 +73,6 @@ type FormatoFormSnapshot = {
             </app-input-options>
 
             <app-unit-input
-              formControlName="largura"
-              label="Largura"
-              [unit]="unidadeSuffix"
-              [min]="0.01"
-              [decimals]="2"
-              [required]="true"
-              [requiredError]="larguraControl.invalid && larguraControl.touched">
-            </app-unit-input>
-
-            <app-unit-input
               formControlName="altura"
               label="Altura"
               [unit]="unidadeSuffix"
@@ -93,13 +83,13 @@ type FormatoFormSnapshot = {
             </app-unit-input>
 
             <app-unit-input
-              formControlName="larguraUtil"
-              label="Largura útil"
+              formControlName="largura"
+              label="Largura"
               [unit]="unidadeSuffix"
               [min]="0.01"
               [decimals]="2"
               [required]="true"
-              [requiredError]="larguraUtilControl.invalid && larguraUtilControl.touched">
+              [requiredError]="larguraControl.invalid && larguraControl.touched">
             </app-unit-input>
 
             <app-unit-input
@@ -110,6 +100,16 @@ type FormatoFormSnapshot = {
               [decimals]="2"
               [required]="true"
               [requiredError]="alturaUtilControl.invalid && alturaUtilControl.touched">
+            </app-unit-input>
+
+            <app-unit-input
+              formControlName="larguraUtil"
+              label="Largura útil"
+              [unit]="unidadeSuffix"
+              [min]="0.01"
+              [decimals]="2"
+              [required]="true"
+              [requiredError]="larguraUtilControl.invalid && larguraUtilControl.touched">
             </app-unit-input>
 
             <app-input-textarea
@@ -139,7 +139,7 @@ type FormatoFormSnapshot = {
 
     .form-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 16px;
       align-items: start;
     }
@@ -156,12 +156,6 @@ type FormatoFormSnapshot = {
 
     .cancel-button:hover {
       background: #fee2e2;
-    }
-
-    @media (max-width: 1100px) {
-      .form-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
     }
 
     @media (max-width: 700px) {
