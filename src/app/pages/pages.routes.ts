@@ -280,6 +280,53 @@ export const PagesRoutes: Routes = [
     }
   },
   {
+    path: 'grafica/materiais',
+    loadComponent: () => import('./grafica/materiais/grafica-materiais.component').then((m) => m.GraficaMateriaisComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_VER'],
+      title: 'Materiais graficos',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Materiais graficos' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/materiais/novo',
+    loadComponent: () => import('./grafica/materiais/grafica-material-form.component').then((m) => m.GraficaMaterialFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Novo material grafico',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Materiais graficos', url: '/page/grafica/materiais' },
+        { title: 'Novo material grafico' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/materiais/:id/editar',
+    loadComponent: () => import('./grafica/materiais/grafica-material-form.component').then((m) => m.GraficaMaterialFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Editar material grafico',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Materiais graficos', url: '/page/grafica/materiais' },
+        { title: 'Editar material grafico' }
+      ]
+    }
+  },
+  {
     path: 'grafica/:tipo',
     loadComponent: () => import('./grafica/cadastros/grafica-cadastro-list.component').then((m) => m.GraficaCadastroListComponent),
     canActivate: [featureModuleGuard, permissionGuard],
