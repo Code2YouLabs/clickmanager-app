@@ -166,12 +166,20 @@ export class GraficaProdutoService {
     return id ? this.api.put<GraficaCadastro>(`${this.graficaEndpoint}/materiais/${id}`, body) : this.api.post<GraficaCadastro>(`${this.graficaEndpoint}/materiais`, body);
   }
 
+  excluirMaterial(id: number): Observable<void> {
+    return this.api.delete<void>(`${this.graficaEndpoint}/materiais/${id}`);
+  }
+
   listarFormatos(): Observable<GraficaFormato[]> {
     return this.api.get<GraficaFormato[]>(`${this.graficaEndpoint}/formatos`);
   }
 
   salvarFormato(body: GraficaFormatoRequest, id?: number | null): Observable<GraficaFormato> {
     return id ? this.api.put<GraficaFormato>(`${this.graficaEndpoint}/formatos/${id}`, body) : this.api.post<GraficaFormato>(`${this.graficaEndpoint}/formatos`, body);
+  }
+
+  excluirFormato(id: number): Observable<void> {
+    return this.api.delete<void>(`${this.graficaEndpoint}/formatos/${id}`);
   }
 
   listarCores(): Observable<GraficaCadastro[]> {
@@ -182,6 +190,10 @@ export class GraficaProdutoService {
     return id ? this.api.put<GraficaCadastro>(`${this.graficaEndpoint}/cores/${id}`, body) : this.api.post<GraficaCadastro>(`${this.graficaEndpoint}/cores`, body);
   }
 
+  excluirCor(id: number): Observable<void> {
+    return this.api.delete<void>(`${this.graficaEndpoint}/cores/${id}`);
+  }
+
   listarAcabamentos(): Observable<GraficaCadastro[]> {
     return this.api.get<GraficaCadastro[]>(`${this.graficaEndpoint}/acabamentos`);
   }
@@ -190,12 +202,20 @@ export class GraficaProdutoService {
     return id ? this.api.put<GraficaCadastro>(`${this.graficaEndpoint}/acabamentos/${id}`, body) : this.api.post<GraficaCadastro>(`${this.graficaEndpoint}/acabamentos`, body);
   }
 
+  excluirAcabamento(id: number): Observable<void> {
+    return this.api.delete<void>(`${this.graficaEndpoint}/acabamentos/${id}`);
+  }
+
   listarServicos(): Observable<GraficaCadastro[]> {
     return this.api.get<GraficaCadastro[]>(`${this.graficaEndpoint}/servicos`);
   }
 
   salvarServico(body: GraficaCadastroRequest, id?: number | null): Observable<GraficaCadastro> {
     return id ? this.api.put<GraficaCadastro>(`${this.graficaEndpoint}/servicos/${id}`, body) : this.api.post<GraficaCadastro>(`${this.graficaEndpoint}/servicos`, body);
+  }
+
+  excluirServico(id: number): Observable<void> {
+    return this.api.delete<void>(`${this.graficaEndpoint}/servicos/${id}`);
   }
 
   private appendOptional(params: HttpParams, key: string, value: string | number | boolean | null | undefined): HttpParams {

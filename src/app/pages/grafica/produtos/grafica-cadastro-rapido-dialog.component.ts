@@ -178,8 +178,11 @@ export class GraficaCadastroRapidoDialogComponent {
     return {
       codigo: raw.codigo.trim(),
       nome: raw.nome.trim(),
+      descricao: null,
       largura: raw.largura,
       altura: raw.altura,
+      larguraUtil: raw.largura,
+      alturaUtil: raw.altura,
       unidadeDimensao: raw.unidadeDimensao,
       ativo: true,
     };

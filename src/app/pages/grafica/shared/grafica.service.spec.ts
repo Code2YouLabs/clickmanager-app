@@ -32,6 +32,11 @@ describe('GraficaProdutoService', () => {
     service.precificar(1, { quantidade: 10 });
     service.adicionarAoOrcamento(1, 99, { precificacao: { quantidade: 10 }, desconto: 5 });
     service.ordenarParametros(1, { itens: [{ id: 2, ordem: 1 }] });
+    service.excluirMaterial(11);
+    service.excluirFormato(12);
+    service.excluirCor(13);
+    service.excluirAcabamento(14);
+    service.excluirServico(15);
 
     expect(api.get.calls.argsFor(0)[0]).toBe('api/grafica/produtos');
     expect(api.get.calls.argsFor(0)[1].get('search')).toBe('panfleto');
@@ -56,5 +61,10 @@ describe('GraficaProdutoService', () => {
     expect(api.post.calls.argsFor(7)[0]).toBe('api/grafica/produtos/1/precificar');
     expect(api.post.calls.argsFor(8)[0]).toBe('api/grafica/produtos/1/orcamentos/99/itens');
     expect(api.patch.calls.mostRecent().args[0]).toBe('api/grafica/produtos/1/parametros/ordem');
+    expect(api.delete.calls.argsFor(1)[0]).toBe('api/grafica/materiais/11');
+    expect(api.delete.calls.argsFor(2)[0]).toBe('api/grafica/formatos/12');
+    expect(api.delete.calls.argsFor(3)[0]).toBe('api/grafica/cores/13');
+    expect(api.delete.calls.argsFor(4)[0]).toBe('api/grafica/acabamentos/14');
+    expect(api.delete.calls.argsFor(5)[0]).toBe('api/grafica/servicos/15');
   });
 });

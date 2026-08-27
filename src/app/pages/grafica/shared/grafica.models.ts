@@ -220,7 +220,7 @@ export interface GraficaCadastro {
 }
 
 export interface GraficaCadastroRequest {
-  codigo: string;
+  codigo?: string | null;
   nome: string;
   descricao?: string | null;
   ativo?: boolean | null;
@@ -230,17 +230,23 @@ export interface GraficaFormato {
   id: number;
   codigo: string;
   nome: string;
+  descricao?: string | null;
   largura?: number | null;
   altura?: number | null;
+  larguraUtil?: number | null;
+  alturaUtil?: number | null;
   unidadeDimensao?: 'METRO' | 'CENTIMETRO' | 'MILIMETRO' | null;
   ativo: boolean;
 }
 
 export interface GraficaFormatoRequest {
-  codigo: string;
+  codigo?: string | null;
   nome: string;
+  descricao?: string | null;
   largura?: number | null;
   altura?: number | null;
+  larguraUtil?: number | null;
+  alturaUtil?: number | null;
   unidadeDimensao?: 'METRO' | 'CENTIMETRO' | 'MILIMETRO' | null;
   ativo?: boolean | null;
 }
