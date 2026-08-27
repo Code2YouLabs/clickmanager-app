@@ -8,6 +8,7 @@ import { InputOptionsComponent } from 'src/app/components/inputs/input-options/i
 import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
 import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { RichTextPreviewFieldComponent } from 'src/app/components/rich-text-preview-field/rich-text-preview-field.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { MaterialModule } from 'src/app/material.module';
 import { ToastrService } from 'ngx-toastr';
@@ -18,7 +19,6 @@ import { catalogoErrorMessage, catalogoSlugify } from '../../catalogo/shared/uti
 type CategoriaFormSnapshot = {
   nome: string;
   categoriaPaiId: number | null;
-  descricao: string;
   descricaoCurta: string;
   descricaoCompleta: string;
 };
@@ -33,6 +33,7 @@ type CategoriaFormSnapshot = {
     MaterialModule,
     PageCardComponent,
     SectionCardComponent,
+    RichTextPreviewFieldComponent,
     InputTextoRestritoComponent,
     InputTextareaComponent,
     InputOptionsComponent,
@@ -68,27 +69,21 @@ type CategoriaFormSnapshot = {
 
             <app-input-textarea
               class="form-grid__wide"
-              [control]="descricaoControl"
-              label="Descrição"
-              [rows]="3"
-              [maxlength]="500">
-            </app-input-textarea>
-
-            <app-input-textarea
-              class="form-grid__wide"
               [control]="descricaoCurtaControl"
               label="Descrição curta"
               [rows]="2"
               [maxlength]="255">
             </app-input-textarea>
 
-            <app-input-textarea
+            <app-rich-text-preview-field
               class="form-grid__wide"
               [control]="descricaoCompletaControl"
               label="Descrição completa"
-              [rows]="5"
-              [maxlength]="2000">
-            </app-input-textarea>
+              hint="Use esta área para textos comerciais, instruções e informações detalhadas."
+              placeholder="Digite a descrição completa da categoria"
+              [minHeight]="180"
+              [maxLength]="2000">
+            </app-rich-text-preview-field>
           </div>
         </app-section-card>
       </form>
@@ -145,7 +140,6 @@ export class GraficaCategoriaFormComponent implements OnInit {
   form = this.fb.group({
     nome: this.fb.control('', { nonNullable: true, validators: [Validators.required] }),
     categoriaPaiId: this.fb.control<number | null>(null),
-    descricao: this.fb.control('', { nonNullable: true }),
     descricaoCurta: this.fb.control('', { nonNullable: true }),
     descricaoCompleta: this.fb.control('', { nonNullable: true }),
   });
@@ -164,7 +158,6 @@ export class GraficaCategoriaFormComponent implements OnInit {
 
   get nomeControl(): FormControl<string> { return this.form.controls.nome; }
   get categoriaPaiControl(): FormControl<number | null> { return this.form.controls.categoriaPaiId; }
-  get descricaoControl(): FormControl<string> { return this.form.controls.descricao; }
   get descricaoCurtaControl(): FormControl<string> { return this.form.controls.descricaoCurta; }
   get descricaoCompletaControl(): FormControl<string> { return this.form.controls.descricaoCompleta; }
 
@@ -240,7 +233,6 @@ export class GraficaCategoriaFormComponent implements OnInit {
     this.form.reset({
       nome: categoria.nome || '',
       categoriaPaiId: categoria.categoriaPaiId || null,
-      descricao: categoria.descricaoCurta || '',
       descricaoCurta: categoria.descricaoCurta || '',
       descricaoCompleta: categoria.descricaoCompleta || '',
     });
@@ -258,7 +250,7 @@ export class GraficaCategoriaFormComponent implements OnInit {
       codigo: this.codigo(nome),
       nome,
       slug: catalogoSlugify(nome),
-      descricaoCurta: raw.descricaoCurta?.trim() || raw.descricao?.trim() || null,
+      descricaoCurta: raw.descricaoCurta?.trim() || null,
       descricaoCompleta: raw.descricaoCompleta?.trim() || null,
       categoriaPaiId: raw.categoriaPaiId,
       ordemExibicao: null,
