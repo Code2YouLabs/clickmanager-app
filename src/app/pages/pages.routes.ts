@@ -374,6 +374,53 @@ export const PagesRoutes: Routes = [
     }
   },
   {
+    path: 'grafica/cores',
+    loadComponent: () => import('./grafica/cores/grafica-cores.component').then((m) => m.GraficaCoresComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_VER'],
+      title: 'Cores graficas',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Cores graficas' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/cores/novo',
+    loadComponent: () => import('./grafica/cores/grafica-cor-form.component').then((m) => m.GraficaCorFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Nova cor grafica',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Cores graficas', url: '/page/grafica/cores' },
+        { title: 'Nova cor grafica' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/cores/:id/editar',
+    loadComponent: () => import('./grafica/cores/grafica-cor-form.component').then((m) => m.GraficaCorFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Editar cor grafica',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Cores graficas', url: '/page/grafica/cores' },
+        { title: 'Editar cor grafica' }
+      ]
+    }
+  },
+  {
     path: 'grafica/:tipo',
     loadComponent: () => import('./grafica/cadastros/grafica-cadastro-list.component').then((m) => m.GraficaCadastroListComponent),
     canActivate: [featureModuleGuard, permissionGuard],
