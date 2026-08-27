@@ -59,7 +59,10 @@ class HostComponent {
       key: 'acabamentoIds',
       label: 'Acabamentos',
       type: 'multi-select' as const,
-      options: [{ value: 20, label: 'Laminação' }],
+      options: [
+        { value: 20, label: 'Laminação' },
+        { value: 30, label: 'Verniz' },
+      ],
     },
   ];
   filterState: DataTableFilterState = {};
@@ -133,20 +136,22 @@ describe('DataTableComponent', () => {
 
   it('emite filtros e remove valores vazios ao limpar', () => {
     table.onFilterValueChange('materialId', 10);
-    table.onFilterValueChange('acabamentoIds', [20]);
+    table.onFilterValueChange('acabamentoIds', [20, 30]);
     fixture.detectChanges();
 
-    expect(host.lastFilters).toEqual({ materialId: 10, acabamentoIds: [20] });
-    expect(fixture.nativeElement.textContent).toContain('Filtros (2)');
+    expect(host.lastFilters).toEqual({ materialId: 10, acabamentoIds: [20, 30] });
+    expect(fixture.nativeElement.textContent).toContain('Filtros (3)');
     expect(fixture.nativeElement.textContent).toContain('Limpar filtros');
     expect(fixture.nativeElement.textContent).toContain('Material: Couchê 150g');
     expect(fixture.nativeElement.textContent).toContain('Acabamentos: Laminação');
+    expect(fixture.nativeElement.textContent).toContain('Acabamentos: Verniz');
 
     table.onRemoveFilterChip(table.activeFilterChips[1]);
     fixture.detectChanges();
 
-    expect(host.lastFilters).toEqual({ materialId: 10 });
+    expect(host.lastFilters).toEqual({ materialId: 10, acabamentoIds: [30] });
     expect(fixture.nativeElement.textContent).not.toContain('Acabamentos: Laminação');
+    expect(fixture.nativeElement.textContent).toContain('Acabamentos: Verniz');
 
     table.onClearFilters();
     fixture.detectChanges();
@@ -155,6 +160,14 @@ describe('DataTableComponent', () => {
     expect(host.lastFilters).toEqual({});
     expect(fixture.nativeElement.textContent).not.toContain('Filtros (2)');
     expect(fixture.nativeElement.textContent).not.toContain('Limpar filtros');
+  });
+
+  it('mantem multi-select com valor em array mesmo se estado externo vier escalar', () => {
+    host.filterState = { acabamentoIds: 20 };
+    fixture.detectChanges();
+
+    expect(table.selectedFilterValue(host.filters[1])).toEqual([20]);
+    expect(table.activeFilterChips.map((chip) => chip.optionLabel)).toEqual(['Laminação']);
   });
 
   it('exibe filtros dentro do accordion quando expandido', () => {

@@ -56,8 +56,8 @@
               <mat-form-field appearance="outline" class="data-table-toolbar__filter" [style.flex-basis]="filterWidth(filter)">
                 <mat-label>{{ filter.label }}</mat-label>
                 <mat-select
-                  [multiple]="filter.type === 'multi-select'"
-                  [value]="internalFilters[filter.key] ?? (filter.type === 'multi-select' ? [] : null)"
+                  [multiple]="isMultiSelectFilter(filter)"
+                  [value]="selectedFilterValue(filter)"
                   (selectionChange)="onFilterValueChange(filter.key, $event.value)">
                   @if (filter.type === 'select') {
                     <mat-option [value]="null">Todos</mat-option>

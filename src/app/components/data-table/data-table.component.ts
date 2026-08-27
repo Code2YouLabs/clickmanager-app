@@ -184,6 +184,21 @@ export class DataTableComponent<T = unknown>
     return filter.width || null;
   }
 
+  isMultiSelectFilter(filter: DataTableFilter): boolean {
+    return filter.type === 'multi-select';
+  }
+
+  selectedFilterValue(filter: DataTableFilter): DataTableFilterValue {
+    const value = this.internalFilters[filter.key];
+    if (this.isMultiSelectFilter(filter)) {
+      if (Array.isArray(value)) {
+        return value;
+      }
+      return value === null || value === undefined || value === '' ? [] : [value];
+    }
+    return value ?? null;
+  }
+
   trackByRow = (_index: number, row: T): unknown => {
     return typeof this.rowKey === 'function' ? this.rowKey(row) : (row as Record<string, unknown>)[this.rowKey as string];
   };
