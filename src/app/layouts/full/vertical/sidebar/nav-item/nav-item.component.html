@@ -7,7 +7,7 @@
       'mat-toolbar mat-primary activeMenu': isItemActive(item),
       expanded: expanded,
       disabled: item.disabled
-    }" class="menu-list-item {{ item.bgcolor }}">
+    }" class="menu-list-item {{ item.bgcolor }} nav-depth-{{ depth }}">
   <i-tabler class="routeIcon" name="{{ item.iconName }}" matListItemIcon></i-tabler>
   <span class="hide-menu">{{ item.displayName | translate }}</span>
   @if(item.children && item.children.length) {

@@ -152,29 +152,33 @@ body {
       margin-top: -24px;
 
       .mdc-list-group__subheader {
-        margin-top: 24px;
-        margin-bottom: 8px;
+        margin-top: 22px;
+        margin-bottom: 6px;
         text-transform: uppercase;
         font-size: 0.75rem;
         opacity: 0.5;
         font-weight: 700;
-        margin-top: 24px;
         color: var(--mat-sys-on-background);
         padding: 3px 16px !important;
       }
 
       .menu-list-item {
         border-radius: 0;
-        height: 50px;
-        padding: 8px 26px;
-        margin: 5px 0;
-        margin-bottom: 2px;
+        height: 44px;
+        padding: 6px 26px;
+        margin: 3px 0;
+        margin-bottom: 1px;
 
         .hide-menu {
-          font-size: 15px;
+          font-size: 14px;
         }
 
+        &.transparent,
         &.tranparent {
+          height: 36px;
+          padding-top: 4px;
+          padding-bottom: 4px;
+
           &:hover:before,
           &:before {
             content: "";
@@ -188,10 +192,14 @@ body {
             justify-content: center;
 
             svg {
-              width: 13px !important;
-              height: 13px !important;
+              width: 10px !important;
+              height: 10px !important;
               fill: var(--mat-sys-on-background);
             }
+          }
+
+          .hide-menu {
+            font-size: 13px;
           }
 
           &.activeMenu,
@@ -329,10 +337,21 @@ body {
           font-size: 12px;
         }
 
-        &.expanded:before,
         &.activeMenu:before {
           content: "";
           width: 100%;
+        }
+
+        &.expanded:not(.activeMenu):before {
+          content: "";
+          width: 4px;
+        }
+
+        &.expanded:not(.activeMenu) {
+          .mdc-list-item__primary-text,
+          .mat-mdc-list-item-icon {
+            color: var(--mat-sys-primary) !important;
+          }
         }
 
         &.activeMenu {
