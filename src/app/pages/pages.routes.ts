@@ -421,6 +421,53 @@ export const PagesRoutes: Routes = [
     }
   },
   {
+    path: 'grafica/acabamentos',
+    loadComponent: () => import('./grafica/acabamentos/grafica-acabamentos.component').then((m) => m.GraficaAcabamentosComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_VER'],
+      title: 'Acabamentos graficos',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Acabamentos graficos' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/acabamentos/novo',
+    loadComponent: () => import('./grafica/acabamentos/grafica-acabamento-form.component').then((m) => m.GraficaAcabamentoFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Novo acabamento grafico',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Acabamentos graficos', url: '/page/grafica/acabamentos' },
+        { title: 'Novo acabamento grafico' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/acabamentos/:id/editar',
+    loadComponent: () => import('./grafica/acabamentos/grafica-acabamento-form.component').then((m) => m.GraficaAcabamentoFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Editar acabamento grafico',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Acabamentos graficos', url: '/page/grafica/acabamentos' },
+        { title: 'Editar acabamento grafico' }
+      ]
+    }
+  },
+  {
     path: 'grafica/:tipo',
     loadComponent: () => import('./grafica/cadastros/grafica-cadastro-list.component').then((m) => m.GraficaCadastroListComponent),
     canActivate: [featureModuleGuard, permissionGuard],
