@@ -1,7 +1,11 @@
+.data-table-toolbar-card {
+  display: block;
+  margin: 8px 0 16px;
+}
+
 .data-table-toolbar {
   display: grid;
   gap: 16px;
-  margin: 8px 0 16px;
 }
 
 .data-table-toolbar__section {

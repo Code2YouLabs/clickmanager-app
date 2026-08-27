@@ -114,17 +114,13 @@ describe('DataTableComponent', () => {
     expect(fixture.nativeElement.querySelector('.custom-name')?.textContent).toContain('Produto: Panfleto');
   });
 
-  it('renderiza busca e filtros em secoes com labels discretos', () => {
-    const labels = Array.from(fixture.nativeElement.querySelectorAll('.data-table-toolbar__label') as NodeListOf<Element>)
-      .map((item: Element) => item.textContent?.trim());
-
-    expect(labels).toContain('Buscar produtos');
+  it('renderiza busca e filtros dentro do section card padrao', () => {
+    expect(fixture.nativeElement.querySelector('app-section-card.data-table-toolbar-card')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.section-card__title')?.textContent).toContain('Buscar produtos');
+    expect(fixture.nativeElement.querySelector('mat-divider')).toBeTruthy();
     expect(fixture.nativeElement.textContent).toContain('Filtros');
     expect(fixture.nativeElement.querySelector('.data-table-toolbar__search')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.data-table-toolbar__filter-toggle')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('.data-table-toolbar')?.classList).toContain('bg-white');
-    expect(fixture.nativeElement.querySelector('.data-table-toolbar')?.classList).toContain('b-1');
-    expect(fixture.nativeElement.querySelector('.data-table-toolbar')?.classList).toContain('rounded');
     expect(fixture.nativeElement.querySelector('.data-table__header-row')).toBeTruthy();
   });
 

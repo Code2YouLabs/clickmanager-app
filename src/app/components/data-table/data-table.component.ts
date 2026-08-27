@@ -16,6 +16,7 @@ import { PageEvent } from '@angular/material/paginator';
 import { Sort } from '@angular/material/sort';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { MaterialModule } from 'src/app/material.module';
+import { SectionCardComponent } from '../section-card/section-card.component';
 import { DataTableCellDirective } from './data-table-cell.directive';
 import {
   DataTableAction,
@@ -40,7 +41,7 @@ interface DataTableFilterChip {
 @Component({
   selector: 'app-data-table',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MaterialModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, MaterialModule, SectionCardComponent],
   templateUrl: './data-table.component.html',
   styleUrl: './data-table.component.scss',
 })
@@ -233,6 +234,10 @@ export class DataTableComponent<T = unknown>
 
   get isFilteredEmpty(): boolean {
     return this.hasSearchValue || this.hasActiveFilters;
+  }
+
+  get toolbarTitle(): string {
+    return this.search.enabled ? (this.search.label || 'Buscar') : this.filtersLabel;
   }
 
   private setupSearchDebounce(debounceMs: number): void {
