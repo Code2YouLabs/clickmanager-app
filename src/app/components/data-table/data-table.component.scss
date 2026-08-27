@@ -1,16 +1,17 @@
 .data-table-toolbar {
   display: grid;
-  gap: 14px;
+  gap: 16px;
   margin: 16px 0;
+  background-color: color-mix(in srgb, var(--mat-sys-primary-fixed-dim) 28%, var(--mat-sys-surface) 72%) !important;
 }
 
 .data-table-toolbar__section {
   display: grid;
-  gap: 6px;
+  gap: 8px;
 }
 
 .data-table-toolbar__label {
-  color: #374151;
+  color: var(--mat-sys-on-surface);
   font-size: 12px;
   font-weight: 700;
   line-height: 1.25;
@@ -30,9 +31,8 @@
 .data-table-toolbar__filter-toggle {
   min-height: 32px;
   padding: 0 8px 0 0;
-  color: #374151;
-  font-size: 12px;
-  font-weight: 700;
+  color: var(--mat-sys-on-surface);
+  font-size: 13px;
 }
 
 .data-table-toolbar__filter-toggle mat-icon {
@@ -44,17 +44,17 @@
 }
 
 .data-table-toolbar__chips ::ng-deep .mdc-evolution-chip-set__chips {
-  gap: 6px;
+  row-gap: 8px;
+  column-gap: 8px;
 }
 
 .data-table-toolbar__chips ::ng-deep .mat-mdc-chip {
   min-height: 28px;
   border-radius: 999px;
-  background: #f3f4f6;
 }
 
 .data-table-toolbar__chip-label {
-  color: #374151;
+  color: var(--mat-sys-on-surface);
   font-weight: 700;
 }
 
@@ -69,7 +69,7 @@
 }
 
 .data-table-toolbar__panel ::ng-deep .mat-expansion-panel-body {
-  padding: 2px 0 0;
+  padding: 4px 0 0;
 }
 
 .data-table-toolbar__panel:not(.mat-expanded) {
@@ -101,6 +101,11 @@
   min-height: 180px;
 }
 
+.data-table__header-row,
+.data-table__header-row .mat-mdc-header-cell {
+  background-color: var(--mat-sys-surface-container-low);
+}
+
 .data-table-loading {
   position: absolute;
   inset: 0;
@@ -121,7 +126,7 @@
 .data-table-empty {
   padding: 28px 16px;
   text-align: center;
-  color: #6b7280;
+  color: var(--mat-sys-on-surface-variant);
 }
 
 .data-table-empty strong,
@@ -130,7 +135,7 @@
 }
 
 .data-table-empty strong {
-  color: #111827;
+  color: var(--mat-sys-on-surface);
   margin-bottom: 4px;
 }
 

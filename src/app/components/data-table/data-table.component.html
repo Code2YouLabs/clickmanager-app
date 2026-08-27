@@ -1,5 +1,5 @@
 @if (search.enabled || filters.length) {
-  <div class="data-table-toolbar">
+  <div class="data-table-toolbar bg-light-primary b-1 rounded p-16">
     @if (search.enabled) {
     <div class="data-table-toolbar__section">
       <div class="data-table-toolbar__label">{{ search.label || 'Buscar' }}</div>
@@ -17,7 +17,7 @@
         <button
           mat-button
           type="button"
-          class="data-table-toolbar__filter-toggle"
+          class="data-table-toolbar__filter-toggle f-w-700"
           [attr.aria-expanded]="filtersExpanded"
           (click)="toggleFilters()">
           <mat-icon>{{ filtersExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
@@ -35,7 +35,7 @@
       @if (activeFilterChips.length) {
       <mat-chip-set class="data-table-toolbar__chips" aria-label="Filtros aplicados">
         @for (chip of activeFilterChips; track chip.filterKey + '-' + chip.value) {
-        <mat-chip-row (removed)="onRemoveFilterChip(chip)">
+        <mat-chip-row class="bg-light" (removed)="onRemoveFilterChip(chip)">
           <span class="data-table-toolbar__chip-label">{{ chip.filterLabel }}:</span>
           {{ chip.optionLabel }}
           <button matChipRemove type="button" [attr.aria-label]="'Remover filtro ' + chip.filterLabel + ': ' + chip.optionLabel">
@@ -136,7 +136,7 @@
         </ng-container>
       }
 
-      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-header-row *matHeaderRowDef="displayedColumns" class="data-table__header-row"></tr>
       <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
 
       <tr class="mat-row" *matNoDataRow>
