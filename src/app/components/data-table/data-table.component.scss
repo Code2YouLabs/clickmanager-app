@@ -1,7 +1,7 @@
 .data-table-toolbar {
   display: grid;
   gap: 16px;
-  margin: 16px 0;
+  margin: 8px 0 16px;
 }
 
 .data-table-toolbar__section {
@@ -106,7 +106,7 @@
 
 .data-table__header-row,
 .data-table__header-row .mat-mdc-header-cell {
-  background-color: var(--mat-sys-surface-container-low);
+  background-color: var(--mat-sys-surface-bright);
 }
 
 .data-table-loading {
