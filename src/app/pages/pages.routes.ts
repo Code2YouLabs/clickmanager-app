@@ -233,6 +233,53 @@ export const PagesRoutes: Routes = [
     }
   },
   {
+    path: 'grafica/categorias',
+    loadComponent: () => import('./grafica/categorias/grafica-categorias.component').then((m) => m.GraficaCategoriasComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_VER'],
+      title: 'Categorias graficas',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Categorias graficas' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/categorias/novo',
+    loadComponent: () => import('./grafica/categorias/grafica-categoria-form.component').then((m) => m.GraficaCategoriaFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Nova categoria grafica',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Categorias graficas', url: '/page/grafica/categorias' },
+        { title: 'Nova categoria grafica' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/categorias/:id/editar',
+    loadComponent: () => import('./grafica/categorias/grafica-categoria-form.component').then((m) => m.GraficaCategoriaFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Editar categoria grafica',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Categorias graficas', url: '/page/grafica/categorias' },
+        { title: 'Editar categoria grafica' }
+      ]
+    }
+  },
+  {
     path: 'grafica/:tipo',
     loadComponent: () => import('./grafica/cadastros/grafica-cadastro-list.component').then((m) => m.GraficaCadastroListComponent),
     canActivate: [featureModuleGuard, permissionGuard],
