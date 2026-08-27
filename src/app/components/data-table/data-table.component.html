@@ -1,5 +1,10 @@
 @if (search.enabled || filters.length) {
-<app-section-card class="data-table-toolbar-card" [title]="toolbarTitle">
+<app-section-card
+  class="data-table-toolbar-card"
+  [class.data-table-toolbar-card--compact]="!hasActiveFilters && !filtersExpanded"
+  [class.data-table-toolbar-card--collapsed]="!filtersExpanded"
+  [class.data-table-toolbar-card--has-active]="hasActiveFilters"
+  [title]="toolbarTitle">
   <div class="data-table-toolbar">
     @if (search.enabled) {
     <div class="data-table-toolbar__section">

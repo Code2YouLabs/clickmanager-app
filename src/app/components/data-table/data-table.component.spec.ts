@@ -116,6 +116,7 @@ describe('DataTableComponent', () => {
 
   it('renderiza busca e filtros dentro do section card padrao', () => {
     expect(fixture.nativeElement.querySelector('app-section-card.data-table-toolbar-card')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('app-section-card.data-table-toolbar-card--compact')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.section-card__title')?.textContent).toContain('Buscar produtos');
     expect(fixture.nativeElement.querySelector('mat-divider')).toBeTruthy();
     expect(fixture.nativeElement.textContent).toContain('Filtros');
@@ -145,6 +146,8 @@ describe('DataTableComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Material: Couchê 150g');
     expect(fixture.nativeElement.textContent).toContain('Acabamentos: Laminação');
     expect(fixture.nativeElement.textContent).toContain('Acabamentos: Verniz');
+    expect(fixture.nativeElement.querySelector('app-section-card.data-table-toolbar-card--has-active')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('app-section-card.data-table-toolbar-card--compact')).toBeFalsy();
 
     table.onRemoveFilterChip(table.activeFilterChips[1]);
     fixture.detectChanges();

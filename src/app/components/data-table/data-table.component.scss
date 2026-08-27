@@ -3,14 +3,35 @@
   margin: 8px 0 16px;
 }
 
+.data-table-toolbar-card--compact ::ng-deep .section-card {
+  padding-top: 10px;
+  padding-bottom: 8px;
+}
+
+.data-table-toolbar-card--compact ::ng-deep .section-card__header {
+  margin-bottom: 6px;
+}
+
+.data-table-toolbar-card--compact ::ng-deep mat-divider {
+  margin-bottom: 8px !important;
+}
+
 .data-table-toolbar {
   display: grid;
-  gap: 16px;
+  gap: 12px;
+}
+
+.data-table-toolbar-card--compact .data-table-toolbar {
+  gap: 8px;
 }
 
 .data-table-toolbar__section {
   display: grid;
   gap: 8px;
+}
+
+.data-table-toolbar-card--collapsed.data-table-toolbar-card--has-active .data-table-toolbar__section {
+  gap: 6px;
 }
 
 .data-table-toolbar__label {
