@@ -10,9 +10,9 @@ describe('GraficaProdutoService', () => {
       size: 50,
       search: 'panfleto',
       ativo: true,
-      materialId: 1,
-      formatoId: 2,
-      corId: 3,
+      materialIds: [1],
+      formatoIds: [2],
+      corIds: [3, 6],
       acabamentoIds: [4],
       servicoIds: [5],
       sort: 'nome,desc'
@@ -35,9 +35,9 @@ describe('GraficaProdutoService', () => {
 
     expect(api.get.calls.argsFor(0)[0]).toBe('api/grafica/produtos');
     expect(api.get.calls.argsFor(0)[1].get('search')).toBe('panfleto');
-    expect(api.get.calls.argsFor(0)[1].get('materialId')).toBe('1');
-    expect(api.get.calls.argsFor(0)[1].get('formatoId')).toBe('2');
-    expect(api.get.calls.argsFor(0)[1].get('corId')).toBe('3');
+    expect(api.get.calls.argsFor(0)[1].getAll('materialIds')).toEqual(['1']);
+    expect(api.get.calls.argsFor(0)[1].getAll('formatoIds')).toEqual(['2']);
+    expect(api.get.calls.argsFor(0)[1].getAll('corIds')).toEqual(['3', '6']);
     expect(api.get.calls.argsFor(0)[1].getAll('acabamentoIds')).toEqual(['4']);
     expect(api.get.calls.argsFor(0)[1].getAll('servicoIds')).toEqual(['5']);
     expect(api.get.calls.argsFor(0)[1].get('sort')).toBe('nome,desc');

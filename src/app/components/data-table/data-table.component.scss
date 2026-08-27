@@ -27,6 +27,55 @@
   gap: 12px;
 }
 
+.data-table-toolbar__filter-toggle {
+  min-height: 32px;
+  padding: 0 8px 0 0;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.data-table-toolbar__filter-toggle mat-icon {
+  margin: 0 4px 0 0;
+}
+
+.data-table-toolbar__chips {
+  min-height: 0;
+}
+
+.data-table-toolbar__chips ::ng-deep .mdc-evolution-chip-set__chips {
+  gap: 6px;
+}
+
+.data-table-toolbar__chips ::ng-deep .mat-mdc-chip {
+  min-height: 28px;
+  border-radius: 999px;
+  background: #f3f4f6;
+}
+
+.data-table-toolbar__chip-label {
+  color: #374151;
+  font-weight: 700;
+}
+
+.data-table-toolbar__accordion {
+  display: block;
+}
+
+.data-table-toolbar__panel {
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.data-table-toolbar__panel ::ng-deep .mat-expansion-panel-body {
+  padding: 2px 0 0;
+}
+
+.data-table-toolbar__panel:not(.mat-expanded) {
+  display: none;
+}
+
 .data-table-toolbar__filters {
   display: flex;
   align-items: center;
@@ -88,6 +137,8 @@
 @media (max-width: 760px) {
   .data-table-toolbar__filters-header {
     align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
   }
 
   .data-table-toolbar__filters {

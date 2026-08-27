@@ -30,9 +30,9 @@ import {
 import { GraficaProdutoService } from '../shared/grafica.service';
 
 type GraficaProdutosFilters = {
-  materialId?: number | null;
-  formatoId?: number | null;
-  corId?: number | null;
+  materialIds?: number[];
+  formatoIds?: number[];
+  corIds?: number[];
   acabamentoIds?: number[];
   servicoIds?: number[];
 };
@@ -262,9 +262,9 @@ export class GraficaProdutosComponent implements OnInit {
 
   get tableFilters(): DataTableFilter[] {
     return [
-      { key: 'materialId', label: 'Material', type: 'select', width: '220px', options: this.toOptions(this.materiais) },
-      { key: 'formatoId', label: 'Formato', type: 'select', width: '180px', options: this.toOptions(this.formatos) },
-      { key: 'corId', label: 'Cor', type: 'select', width: '140px', options: this.toOptions(this.cores) },
+      { key: 'materialIds', label: 'Material', type: 'multi-select', width: '220px', options: this.toOptions(this.materiais) },
+      { key: 'formatoIds', label: 'Formato', type: 'multi-select', width: '180px', options: this.toOptions(this.formatos) },
+      { key: 'corIds', label: 'Cor', type: 'multi-select', width: '140px', options: this.toOptions(this.cores) },
       { key: 'acabamentoIds', label: 'Acabamentos', type: 'multi-select', width: '220px', options: this.toOptions(this.acabamentos) },
       { key: 'servicoIds', label: 'Serviços', type: 'multi-select', width: '220px', options: this.toOptions(this.servicos) },
     ];
@@ -430,9 +430,9 @@ export class GraficaProdutosComponent implements OnInit {
       page: this.pagina,
       size: this.tamanho,
       search: this.termo,
-      materialId: this.toNumber(filters.materialId),
-      formatoId: this.toNumber(filters.formatoId),
-      corId: this.toNumber(filters.corId),
+      materialIds: this.toNumberArray(filters.materialIds),
+      formatoIds: this.toNumberArray(filters.formatoIds),
+      corIds: this.toNumberArray(filters.corIds),
       // Multi-selects usam semântica OR no backend: qualquer acabamento/serviço selecionado é suficiente.
       acabamentoIds: this.toNumberArray(filters.acabamentoIds),
       servicoIds: this.toNumberArray(filters.servicoIds),

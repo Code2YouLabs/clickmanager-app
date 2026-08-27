@@ -30,6 +30,13 @@ import {
   DataTableSort,
 } from './data-table.models';
 
+interface DataTableFilterChip {
+  filterKey: string;
+  filterLabel: string;
+  value: string | number | boolean;
+  optionLabel: string;
+}
+
 @Component({
   selector: 'app-data-table',
   standalone: true,
@@ -67,6 +74,7 @@ export class DataTableComponent<T = unknown>
   displayedColumns: string[] = [];
   templateMap = new Map<string, DataTableCellDirective<T>>();
   internalFilters: DataTableFilterState = {};
+  filtersExpanded = false;
 
   private readonly destroy$ = new Subject<void>();
   private searchChanges$ = new Subject<string>();
@@ -109,6 +117,29 @@ export class DataTableComponent<T = unknown>
     this.internalFilters = {};
     this.clearFilters.emit();
     this.filterChange.emit({});
+  }
+
+  onRemoveFilterChip(chip: DataTableFilterChip): void {
+    const value = this.internalFilters[chip.filterKey];
+    const nextFilters = { ...this.internalFilters };
+
+    if (Array.isArray(value)) {
+      const values = value.filter((item) => item !== chip.value);
+      if (values.length) {
+        nextFilters[chip.filterKey] = values;
+      } else {
+        delete nextFilters[chip.filterKey];
+      }
+    } else {
+      delete nextFilters[chip.filterKey];
+    }
+
+    this.internalFilters = nextFilters;
+    this.filterChange.emit(this.withoutEmptyFilters(this.internalFilters));
+  }
+
+  toggleFilters(): void {
+    this.filtersExpanded = !this.filtersExpanded;
   }
 
   onPageChange(event: PageEvent): void {
@@ -167,6 +198,20 @@ export class DataTableComponent<T = unknown>
     }, 0);
   }
 
+  get activeFilterChips(): DataTableFilterChip[] {
+    const normalized = this.withoutEmptyFilters(this.internalFilters);
+    return this.filters.flatMap((filter) => {
+      const value = normalized[filter.key];
+      if (Array.isArray(value)) {
+        return value.map((item) => this.toFilterChip(filter, item));
+      }
+      if (value === null || value === undefined || value === '') {
+        return [];
+      }
+      return [this.toFilterChip(filter, value)];
+    });
+  }
+
   get hasSearchValue(): boolean {
     return this.searchControl.value.trim().length > 0;
   }
@@ -213,5 +258,14 @@ export class DataTableComponent<T = unknown>
       acc[key] = value;
       return acc;
     }, {});
+  }
+
+  private toFilterChip(filter: DataTableFilter, value: string | number | boolean): DataTableFilterChip {
+    return {
+      filterKey: filter.key,
+      filterLabel: filter.label,
+      value,
+      optionLabel: filter.options.find((option) => option.value === value)?.label || String(value),
+    };
   }
 }

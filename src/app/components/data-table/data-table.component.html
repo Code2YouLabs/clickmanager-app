@@ -14,9 +14,15 @@
     @if (filters.length) {
     <div class="data-table-toolbar__section">
       <div class="data-table-toolbar__filters-header">
-        <div class="data-table-toolbar__label">
+        <button
+          mat-button
+          type="button"
+          class="data-table-toolbar__filter-toggle"
+          [attr.aria-expanded]="filtersExpanded"
+          (click)="toggleFilters()">
+          <mat-icon>{{ filtersExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
           {{ filtersLabel }}{{ activeFilterCount ? ' (' + activeFilterCount + ')' : '' }}
-        </div>
+        </button>
 
         @if (hasActiveFilters) {
           <button mat-button type="button" color="primary" class="data-table-toolbar__clear" (click)="onClearFilters()">
@@ -26,24 +32,45 @@
         }
       </div>
 
-      <div class="data-table-toolbar__filters" [attr.aria-label]="filtersLabel">
-        @for (filter of filters; track filter.key) {
-          <mat-form-field appearance="outline" class="data-table-toolbar__filter" [style.flex-basis]="filterWidth(filter)">
-            <mat-label>{{ filter.label }}</mat-label>
-            <mat-select
-              [multiple]="filter.type === 'multi-select'"
-              [value]="internalFilters[filter.key] ?? (filter.type === 'multi-select' ? [] : null)"
-              (selectionChange)="onFilterValueChange(filter.key, $event.value)">
-              @if (filter.type === 'select') {
-                <mat-option [value]="null">Todos</mat-option>
-              }
-              @for (option of filter.options; track option.value) {
-                <mat-option [value]="option.value" [disabled]="option.disabled">{{ option.label }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
+      @if (activeFilterChips.length) {
+      <mat-chip-set class="data-table-toolbar__chips" aria-label="Filtros aplicados">
+        @for (chip of activeFilterChips; track chip.filterKey + '-' + chip.value) {
+        <mat-chip-row (removed)="onRemoveFilterChip(chip)">
+          <span class="data-table-toolbar__chip-label">{{ chip.filterLabel }}:</span>
+          {{ chip.optionLabel }}
+          <button matChipRemove type="button" [attr.aria-label]="'Remover filtro ' + chip.filterLabel + ': ' + chip.optionLabel">
+            <mat-icon>cancel</mat-icon>
+          </button>
+        </mat-chip-row>
         }
-      </div>
+      </mat-chip-set>
+      }
+
+      <mat-accordion class="data-table-toolbar__accordion">
+        <mat-expansion-panel
+          class="data-table-toolbar__panel"
+          hideToggle
+          [expanded]="filtersExpanded">
+          <div class="data-table-toolbar__filters" [attr.aria-label]="filtersLabel">
+            @for (filter of filters; track filter.key) {
+              <mat-form-field appearance="outline" class="data-table-toolbar__filter" [style.flex-basis]="filterWidth(filter)">
+                <mat-label>{{ filter.label }}</mat-label>
+                <mat-select
+                  [multiple]="filter.type === 'multi-select'"
+                  [value]="internalFilters[filter.key] ?? (filter.type === 'multi-select' ? [] : null)"
+                  (selectionChange)="onFilterValueChange(filter.key, $event.value)">
+                  @if (filter.type === 'select') {
+                    <mat-option [value]="null">Todos</mat-option>
+                  }
+                  @for (option of filter.options; track option.value) {
+                    <mat-option [value]="option.value" [disabled]="option.disabled">{{ option.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            }
+          </div>
+        </mat-expansion-panel>
+      </mat-accordion>
     </div>
     }
   </div>

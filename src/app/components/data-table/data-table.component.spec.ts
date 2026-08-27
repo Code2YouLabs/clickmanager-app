@@ -116,9 +116,9 @@ describe('DataTableComponent', () => {
       .map((item: Element) => item.textContent?.trim());
 
     expect(labels).toContain('Buscar produtos');
-    expect(labels).toContain('Filtros');
+    expect(fixture.nativeElement.textContent).toContain('Filtros');
     expect(fixture.nativeElement.querySelector('.data-table-toolbar__search')).toBeTruthy();
-    expect(fixture.nativeElement.querySelectorAll('.data-table-toolbar__filter')).toHaveSize(2);
+    expect(fixture.nativeElement.querySelector('.data-table-toolbar__filter-toggle')).toBeTruthy();
   });
 
   it('emite busca com debounce', fakeAsync(() => {
@@ -139,6 +139,14 @@ describe('DataTableComponent', () => {
     expect(host.lastFilters).toEqual({ materialId: 10, acabamentoIds: [20] });
     expect(fixture.nativeElement.textContent).toContain('Filtros (2)');
     expect(fixture.nativeElement.textContent).toContain('Limpar filtros');
+    expect(fixture.nativeElement.textContent).toContain('Material: Couchê 150g');
+    expect(fixture.nativeElement.textContent).toContain('Acabamentos: Laminação');
+
+    table.onRemoveFilterChip(table.activeFilterChips[1]);
+    fixture.detectChanges();
+
+    expect(host.lastFilters).toEqual({ materialId: 10 });
+    expect(fixture.nativeElement.textContent).not.toContain('Acabamentos: Laminação');
 
     table.onClearFilters();
     fixture.detectChanges();
@@ -147,6 +155,17 @@ describe('DataTableComponent', () => {
     expect(host.lastFilters).toEqual({});
     expect(fixture.nativeElement.textContent).not.toContain('Filtros (2)');
     expect(fixture.nativeElement.textContent).not.toContain('Limpar filtros');
+  });
+
+  it('exibe filtros dentro do accordion quando expandido', () => {
+    const toggle = fixture.nativeElement.querySelector('.data-table-toolbar__filter-toggle') as HTMLElement;
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+
+    table.toggleFilters();
+    fixture.detectChanges();
+
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(fixture.nativeElement.querySelectorAll('.data-table-toolbar__filter')).toHaveSize(2);
   });
 
   it('emite sort e paginacao para o container', () => {

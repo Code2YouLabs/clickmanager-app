@@ -67,8 +67,11 @@ export interface GraficaProdutoListParams {
   search?: string | null;
   ativo?: boolean | null;
   materialId?: number | null;
+  materialIds?: number[];
   formatoId?: number | null;
+  formatoIds?: number[];
   corId?: number | null;
+  corIds?: number[];
   acabamentoIds?: number[];
   servicoIds?: number[];
   sort?: string | null;

@@ -55,8 +55,9 @@ describe('GraficaProdutosComponent', () => {
 
     expect(service.listar).toHaveBeenCalledWith(jasmine.objectContaining({ page: 0, size: 10, sort: 'nome,asc' }));
     expect(service.listarMateriais).toHaveBeenCalled();
-    expect(component.tableFilters.find((filter) => filter.key === 'materialId')?.options[0].label).toBe('Couchê 150g');
-    expect(component.tableFilters.find((filter) => filter.key === 'corId')?.width).toBe('140px');
+    expect(component.tableFilters.find((filter) => filter.key === 'materialIds')?.options[0].label).toBe('Couchê 150g');
+    expect(component.tableFilters.find((filter) => filter.key === 'materialIds')?.type).toBe('multi-select');
+    expect(component.tableFilters.find((filter) => filter.key === 'corIds')?.width).toBe('140px');
   });
 
   it('envia busca, filtros, paginacao e ordenacao para o backend', () => {
@@ -67,16 +68,16 @@ describe('GraficaProdutosComponent', () => {
     expect(service.listar.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({ search: 'panfleto' }));
 
     component.onFilterChange({
-      materialId: 1,
-      formatoId: 2,
-      corId: 3,
+      materialIds: [1],
+      formatoIds: [2],
+      corIds: [3, 6],
       acabamentoIds: [4],
       servicoIds: [5],
     });
     expect(service.listar.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({
-      materialId: 1,
-      formatoId: 2,
-      corId: 3,
+      materialIds: [1],
+      formatoIds: [2],
+      corIds: [3, 6],
       acabamentoIds: [4],
       servicoIds: [5],
     }));

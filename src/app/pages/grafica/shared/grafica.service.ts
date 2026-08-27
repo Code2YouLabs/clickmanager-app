@@ -44,8 +44,11 @@ export class GraficaProdutoService {
     httpParams = this.appendOptional(httpParams, 'search', params.search);
     httpParams = this.appendOptional(httpParams, 'ativo', params.ativo);
     httpParams = this.appendOptional(httpParams, 'materialId', params.materialId);
+    httpParams = this.appendArray(httpParams, 'materialIds', params.materialIds);
     httpParams = this.appendOptional(httpParams, 'formatoId', params.formatoId);
+    httpParams = this.appendArray(httpParams, 'formatoIds', params.formatoIds);
     httpParams = this.appendOptional(httpParams, 'corId', params.corId);
+    httpParams = this.appendArray(httpParams, 'corIds', params.corIds);
     httpParams = this.appendArray(httpParams, 'acabamentoIds', params.acabamentoIds);
     httpParams = this.appendArray(httpParams, 'servicoIds', params.servicoIds);
     return this.api.get<GraficaProdutoPage>(this.endpoint, httpParams);
