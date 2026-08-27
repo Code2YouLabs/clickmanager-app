@@ -5,6 +5,8 @@ import { ApiService } from 'src/app/services/api.service';
 import {
   GraficaCatalogoProdutoMinimoRequest,
   GraficaCatalogoProdutoMinimoResponse,
+  GraficaAcabamento,
+  GraficaAcabamentoRequest,
   GraficaCadastro,
   GraficaCadastroRequest,
   GraficaFormato,
@@ -194,12 +196,12 @@ export class GraficaProdutoService {
     return this.api.delete<void>(`${this.graficaEndpoint}/cores/${id}`);
   }
 
-  listarAcabamentos(): Observable<GraficaCadastro[]> {
-    return this.api.get<GraficaCadastro[]>(`${this.graficaEndpoint}/acabamentos`);
+  listarAcabamentos(): Observable<GraficaAcabamento[]> {
+    return this.api.get<GraficaAcabamento[]>(`${this.graficaEndpoint}/acabamentos`);
   }
 
-  salvarAcabamento(body: GraficaCadastroRequest, id?: number | null): Observable<GraficaCadastro> {
-    return id ? this.api.put<GraficaCadastro>(`${this.graficaEndpoint}/acabamentos/${id}`, body) : this.api.post<GraficaCadastro>(`${this.graficaEndpoint}/acabamentos`, body);
+  salvarAcabamento(body: GraficaAcabamentoRequest, id?: number | null): Observable<GraficaAcabamento> {
+    return id ? this.api.put<GraficaAcabamento>(`${this.graficaEndpoint}/acabamentos/${id}`, body) : this.api.post<GraficaAcabamento>(`${this.graficaEndpoint}/acabamentos`, body);
   }
 
   excluirAcabamento(id: number): Observable<void> {

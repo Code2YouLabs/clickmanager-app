@@ -226,6 +226,22 @@ export interface GraficaCadastroRequest {
   ativo?: boolean | null;
 }
 
+export interface GraficaAcabamento extends GraficaCadastro {
+  materialId?: number | null;
+  materialNome?: string | null;
+  formatoId?: number | null;
+  formatoNome?: string | null;
+  aplicacao?: 'PECA' | 'FOLHA' | 'METRO_QUADRADO' | 'METRO_LINEAR' | 'SERVICO' | null;
+  precoConfiguracao?: Record<string, any> | null;
+}
+
+export interface GraficaAcabamentoRequest extends GraficaCadastroRequest {
+  materialId?: number | null;
+  formatoId?: number | null;
+  aplicacao?: 'PECA' | 'FOLHA' | 'METRO_QUADRADO' | 'METRO_LINEAR' | 'SERVICO' | null;
+  precoConfiguracao?: Record<string, any> | null;
+}
+
 export interface GraficaFormato {
   id: number;
   codigo: string;

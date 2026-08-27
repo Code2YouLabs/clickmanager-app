@@ -12,7 +12,7 @@ import { PageCardComponent } from 'src/app/components/page-card/page-card.compon
 import { MaterialModule } from 'src/app/material.module';
 import { ToastrService } from 'ngx-toastr';
 import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils';
-import { GraficaCadastro } from '../shared/grafica.models';
+import { GraficaAcabamento } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
 
 @Component({
@@ -115,7 +115,7 @@ import { GraficaProdutoService } from '../shared/grafica.service';
   `],
 })
 export class GraficaAcabamentosComponent implements OnInit {
-  acabamentos: GraficaCadastro[] = [];
+  acabamentos: GraficaAcabamento[] = [];
   pagina = 0;
   tamanho = 10;
   termo = '';
@@ -128,20 +128,20 @@ export class GraficaAcabamentosComponent implements OnInit {
     debounceMs: 300,
   };
 
-  readonly columns: DataTableColumn<GraficaCadastro>[] = [
+  readonly columns: DataTableColumn<GraficaAcabamento>[] = [
     { key: 'nome', label: 'Nome', width: '260px' },
     { key: 'descricao', label: 'Descrição' },
     { key: 'preco', label: 'Preço', width: '180px' },
     { key: 'acoes', label: 'Ações', align: 'end', width: '152px' },
   ];
 
-  get acabamentosFiltrados(): GraficaCadastro[] {
+  get acabamentosFiltrados(): GraficaAcabamento[] {
     const termo = this.termo.trim().toLowerCase();
     if (!termo) return this.acabamentos;
     return this.acabamentos.filter((item) => `${item.nome || ''} ${item.descricao || ''}`.toLowerCase().includes(termo));
   }
 
-  get acabamentosPaginados(): GraficaCadastro[] {
+  get acabamentosPaginados(): GraficaAcabamento[] {
     const inicio = this.pagina * this.tamanho;
     return this.acabamentosFiltrados.slice(inicio, inicio + this.tamanho);
   }
@@ -191,15 +191,28 @@ export class GraficaAcabamentosComponent implements OnInit {
     this.router.navigate(['/page/grafica/acabamentos/novo']);
   }
 
-  editar(item: GraficaCadastro): void {
+  editar(item: GraficaAcabamento): void {
     this.router.navigate(['/page/grafica/acabamentos', item.id, 'editar']);
   }
 
-  precoResumo(_item: GraficaCadastro): string {
-    return 'A configurar';
+  precoResumo(item: GraficaAcabamento): string {
+    const preco = item.precoConfiguracao || {};
+    switch (preco['tipo']) {
+      case 'FIXO':
+        return this.moeda(preco['valor']);
+      case 'QUANTIDADE':
+      case 'DEMANDA':
+        return 'Por faixas';
+      case 'METRO':
+        return 'Por metro';
+      case 'HORA':
+        return 'Por hora';
+      default:
+        return 'A configurar';
+    }
   }
 
-  excluir(item: GraficaCadastro): void {
+  excluir(item: GraficaAcabamento): void {
     const ref = this.dialog.open(ConfirmDialogComponent, {
       width: '420px',
       data: {
@@ -221,5 +234,11 @@ export class GraficaAcabamentosComponent implements OnInit {
         error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível excluir o acabamento.')),
       });
     });
+  }
+
+  private moeda(valor: unknown): string {
+    const numero = Number(valor);
+    if (!Number.isFinite(numero)) return 'A configurar';
+    return numero.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 }

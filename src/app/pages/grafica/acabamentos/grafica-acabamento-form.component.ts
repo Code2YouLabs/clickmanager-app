@@ -12,7 +12,7 @@ import { SectionCardComponent } from 'src/app/components/section-card/section-ca
 import { MaterialModule } from 'src/app/material.module';
 import { ToastrService } from 'ngx-toastr';
 import { catalogoErrorMessage, catalogoSlugify } from '../../catalogo/shared/utils/catalogo-utils';
-import { GraficaCadastro, GraficaCadastroRequest, GraficaFormato } from '../shared/grafica.models';
+import { GraficaAcabamento, GraficaAcabamentoRequest, GraficaCadastro, GraficaFormato } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
 
 type AplicacaoAcabamento = 'PECA' | 'FOLHA' | 'METRO_QUADRADO' | 'METRO_LINEAR' | 'SERVICO';
@@ -107,7 +107,7 @@ type AcabamentoFormSnapshot = {
       </form>
 
       <button page-footer-right mat-stroked-button class="cancel-button" type="button" (click)="cancelar()">Cancelar</button>
-      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-acabamento-form" [disabled]="form.invalid || salvando">
+      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-acabamento-form" [disabled]="form.invalid || precoForm.invalid || salvando">
         <mat-icon>save</mat-icon>
         Salvar
       </button>
@@ -248,6 +248,13 @@ export class GraficaAcabamentoFormComponent implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
+    this.precoForm.markAllAsTouched();
+    this.precoForm.updateValueAndValidity();
+    if (this.precoForm.invalid) {
+      const msgPreco = (this.precoForm.errors as any)?.precoInvalido?.msg;
+      this.toastr.error(msgPreco || 'Defina um preço válido antes de salvar.', 'Preço incompleto');
+      return;
+    }
 
     this.salvando = true;
     this.service.salvarAcabamento(this.toRequest(), this.acabamentoId).pipe(finalize(() => this.salvando = false)).subscribe({
@@ -265,7 +272,7 @@ export class GraficaAcabamentoFormComponent implements OnInit {
       return;
     }
     this.form.reset(this.snapshot.form);
-    this.precoForm = this.fb.group(this.snapshot.preco);
+    this.precoForm = this.criarPrecoForm(this.snapshot.preco);
     this.form.markAsPristine();
     this.form.markAsUntouched();
     this.precoForm.markAsPristine();
@@ -276,14 +283,15 @@ export class GraficaAcabamentoFormComponent implements OnInit {
     this.router.navigate(['/page/grafica/acabamentos']);
   }
 
-  private aplicarAcabamento(acabamento: GraficaCadastro): void {
+  private aplicarAcabamento(acabamento: GraficaAcabamento): void {
     this.form.reset({
       nome: acabamento.nome || '',
       descricao: acabamento.descricao || '',
-      materialId: null,
-      formatoId: null,
-      aplicacao: 'PECA',
+      materialId: acabamento.materialId || null,
+      formatoId: acabamento.formatoId || null,
+      aplicacao: acabamento.aplicacao || 'PECA',
     });
+    this.precoForm = this.criarPrecoForm(acabamento.precoConfiguracao);
     this.registrarSnapshot();
   }
 
@@ -299,15 +307,63 @@ export class GraficaAcabamentoFormComponent implements OnInit {
     this.service.listarFormatos().pipe(catchError(() => of([]))).subscribe((items) => this.formatos = items || []);
   }
 
-  private toRequest(): GraficaCadastroRequest {
+  private toRequest(): GraficaAcabamentoRequest {
     const raw = this.form.getRawValue();
     const nome = raw.nome.trim();
     return {
       codigo: this.codigo(nome),
       nome,
       descricao: raw.descricao?.trim() || null,
+      materialId: raw.materialId,
+      formatoId: raw.formatoId,
+      aplicacao: raw.aplicacao,
+      precoConfiguracao: this.precoForm.getRawValue(),
       ativo: true,
     };
+  }
+
+  private criarPrecoForm(preco: any): FormGroup {
+    const tipo = (preco?.tipo || 'FIXO') as string;
+    switch (tipo) {
+      case 'QUANTIDADE':
+        return this.fb.group({
+          tipo: ['QUANTIDADE'],
+          faixas: this.fb.array((preco?.faixas?.length ? preco.faixas : [{ quantidade: null, valor: null }]).map((faixa: any) => this.fb.group({
+            quantidade: [faixa.quantidade ?? null],
+            valor: [faixa.valor ?? null],
+          }))),
+        });
+      case 'DEMANDA':
+        return this.fb.group({
+          tipo: ['DEMANDA'],
+          faixas: this.fb.array((preco?.faixas?.length ? preco.faixas : [{ de: 1, ate: null, valorUnitario: null }]).map((faixa: any) => this.fb.group({
+            de: [faixa.de ?? null],
+            ate: [faixa.ate ?? null],
+            valorUnitario: [faixa.valorUnitario ?? null],
+          }))),
+        });
+      case 'METRO':
+        return this.fb.group({
+          tipo: ['METRO'],
+          precoMetro: [preco?.precoMetro ?? null],
+          precoMinimo: [preco?.precoMinimo ?? null],
+          alturaMaxima: [preco?.alturaMaxima ?? null],
+          larguraMaxima: [preco?.larguraMaxima ?? null],
+          modoCobranca: [preco?.modoCobranca ?? 'QUADRADO'],
+          largurasLinearesPermitidas: [preco?.largurasLinearesPermitidas ?? ''],
+        });
+      case 'HORA':
+        return this.fb.group({
+          tipo: ['HORA'],
+          valorHora: [preco?.valorHora ?? null],
+          tempoEstimado: [preco?.tempoEstimado ?? null],
+        });
+      default:
+        return this.fb.group({
+          tipo: ['FIXO'],
+          valor: [preco?.valor ?? null],
+        });
+    }
   }
 
   private codigo(valor: string): string {
