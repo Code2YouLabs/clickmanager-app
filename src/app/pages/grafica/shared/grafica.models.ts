@@ -242,6 +242,14 @@ export interface GraficaAcabamentoRequest extends GraficaCadastroRequest {
   precoConfiguracao?: Record<string, any> | null;
 }
 
+export interface GraficaServico extends GraficaCadastro {
+  precoConfiguracao?: Record<string, any> | null;
+}
+
+export interface GraficaServicoRequest extends GraficaCadastroRequest {
+  precoConfiguracao?: Record<string, any> | null;
+}
+
 export interface GraficaFormato {
   id: number;
   codigo: string;
@@ -306,3 +314,140 @@ export interface GraficaOrcamentoItemResponse {
 }
 
 export type GraficaProdutoPage = CatalogoPaginaResponse<GraficaProduto>;
+
+export interface GraficaPagina<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+}
+
+export interface ItemComercialResolvido {
+  origem: 'CATALOGO' | 'GRAFICA' | 'SMARTCALC';
+  catalogoProdutoId: number;
+  codigoProduto?: string | null;
+  nomeProduto?: string | null;
+  unidadeVenda?: string | null;
+  caracteristicasResumo?: string | null;
+  quantidade: number;
+  valorUnitario: number;
+  desconto?: number | null;
+  acrescimo?: number | null;
+  valorTotal: number;
+  observacao?: string | null;
+  snapshotComercial?: string | null;
+  ordem?: number | null;
+}
+
+export interface ComposicaoComercialResolvida {
+  empresaId?: number | null;
+  clienteId?: number | null;
+  clienteNome?: string | null;
+  clienteDocumento?: string | null;
+  clienteTelefone?: string | null;
+  clienteEmail?: string | null;
+  origem?: string | null;
+  referenciaOrigem?: string | null;
+  observacaoInterna?: string | null;
+  observacaoCliente?: string | null;
+  desconto?: number | null;
+  acrescimo?: number | null;
+  frete?: number | null;
+  itens: ItemComercialResolvido[];
+}
+
+export interface GraficaComercialComposicaoRequest {
+  empresaId?: number | null;
+  clienteId?: number | null;
+  clienteNome?: string | null;
+  clienteDocumento?: string | null;
+  clienteTelefone?: string | null;
+  clienteEmail?: string | null;
+  precificacao: GraficaPrecificacaoRequest;
+  desconto?: number | null;
+  acrescimo?: number | null;
+  frete?: number | null;
+  observacaoInterna?: string | null;
+  observacaoCliente?: string | null;
+  observacaoItem?: string | null;
+  adicionais?: Array<{
+    linhaComercial?: boolean | null;
+    catalogoProdutoId?: number | null;
+    codigoProduto?: string | null;
+    nomeProduto?: string | null;
+    descricaoProduto?: string | null;
+    unidadeVenda?: string | null;
+    quantidade?: number | null;
+    valorUnitario?: number | null;
+    desconto?: number | null;
+    acrescimo?: number | null;
+    valorTotal?: number | null;
+    observacao?: string | null;
+    snapshot?: Record<string, any> | null;
+  }>;
+}
+
+export interface GraficaComercialDestinoResponse {
+  tipo: 'RASCUNHO' | 'ORCAMENTO' | 'PEDIDO';
+  id: number;
+  referencia?: string | null;
+  status?: string | null;
+  total?: number | null;
+}
+
+export interface ComercialItemResponse {
+  id: number;
+  origem: string;
+  catalogoProdutoId: number;
+  codigoProduto?: string | null;
+  nomeProduto: string;
+  unidadeVenda?: string | null;
+  quantidade: number;
+  valorUnitario: number;
+  desconto?: number | null;
+  acrescimo?: number | null;
+  valorTotal: number;
+  ordem?: number | null;
+}
+
+export interface RascunhoComercialResponse {
+  id: number;
+  empresaId: number;
+  clienteId?: number | null;
+  clienteNome?: string | null;
+  status: string;
+  subtotal: number;
+  desconto: number;
+  acrescimo: number;
+  frete: number;
+  total: number;
+  convertidoParaTipo?: string | null;
+  convertidoParaId?: number | null;
+  convertidoEm?: string | null;
+  itens: ComercialItemResponse[];
+}
+
+export interface PedidoComercialResumo {
+  pedidoId?: number;
+  id?: number;
+  numero: string;
+  status: string;
+  clienteNome?: string | null;
+  total: number;
+  createdAt?: string | null;
+}
+
+export interface PedidoComercialDetalhe extends PedidoComercialResumo {
+  empresaId?: number | null;
+  itens: ComercialItemResponse[];
+}
+
+export interface OrcamentoComercialResumo {
+  id: number;
+  protocolo: string;
+  nomeCliente?: string | null;
+  status: string;
+  totalEstimado?: number | null;
+  createdAt?: string | null;
+}

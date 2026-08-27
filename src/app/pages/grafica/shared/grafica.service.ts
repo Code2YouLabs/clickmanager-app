@@ -11,6 +11,8 @@ import {
   GraficaCadastroRequest,
   GraficaFormato,
   GraficaFormatoRequest,
+  GraficaServico,
+  GraficaServicoRequest,
   GraficaOpcaoRequest,
   GraficaOrcamentoItemRequest,
   GraficaOrcamentoItemResponse,
@@ -23,6 +25,13 @@ import {
   GraficaPrecoPoliticaRequest,
   GraficaPrecificacaoRequest,
   GraficaPrecificacaoResultado,
+  ComposicaoComercialResolvida,
+  GraficaComercialComposicaoRequest,
+  GraficaComercialDestinoResponse,
+  GraficaPagina,
+  OrcamentoComercialResumo,
+  PedidoComercialResumo,
+  RascunhoComercialResponse,
   GraficaOrdenacaoRequest,
   GraficaParametroRequest,
   GraficaProduto,
@@ -160,6 +169,50 @@ export class GraficaProdutoService {
     return this.api.post<GraficaOrcamentoItemResponse>(`${this.endpoint}/${produtoGraficoId}/orcamentos/${orcamentoId}/itens`, body);
   }
 
+  resolverComposicaoComercial(produtoGraficoId: number, body: GraficaComercialComposicaoRequest): Observable<ComposicaoComercialResolvida> {
+    return this.api.post<ComposicaoComercialResolvida>(`${this.graficaEndpoint}/comercial-beta/produtos/${produtoGraficoId}/composicoes`, body);
+  }
+
+  criarRascunhoGrafico(produtoGraficoId: number, body: GraficaComercialComposicaoRequest): Observable<GraficaComercialDestinoResponse> {
+    return this.api.post<GraficaComercialDestinoResponse>(`${this.graficaEndpoint}/comercial-beta/produtos/${produtoGraficoId}/rascunhos`, body);
+  }
+
+  criarPedidoGrafico(produtoGraficoId: number, body: GraficaComercialComposicaoRequest): Observable<GraficaComercialDestinoResponse> {
+    return this.api.post<GraficaComercialDestinoResponse>(`${this.graficaEndpoint}/comercial-beta/produtos/${produtoGraficoId}/pedidos`, body);
+  }
+
+  criarOrcamentoGrafico(produtoGraficoId: number, body: GraficaComercialComposicaoRequest): Observable<GraficaComercialDestinoResponse> {
+    return this.api.post<GraficaComercialDestinoResponse>(`${this.graficaEndpoint}/comercial-beta/produtos/${produtoGraficoId}/orcamentos`, body);
+  }
+
+  listarRascunhosComerciais(page = 0, size = 20): Observable<GraficaPagina<RascunhoComercialResponse>> {
+    return this.api.get<GraficaPagina<RascunhoComercialResponse>>('api/comercial/rascunhos', new HttpParams().set('page', page).set('size', size));
+  }
+
+  buscarRascunhoComercial(id: number): Observable<RascunhoComercialResponse> {
+    return this.api.get<RascunhoComercialResponse>(`api/comercial/rascunhos/${id}`);
+  }
+
+  descartarRascunhoComercial(id: number): Observable<RascunhoComercialResponse> {
+    return this.api.post<RascunhoComercialResponse>(`api/comercial/rascunhos/${id}/descartar`, {});
+  }
+
+  converterRascunhoParaPedido(id: number): Observable<GraficaComercialDestinoResponse> {
+    return this.api.post<GraficaComercialDestinoResponse>(`api/comercial/rascunhos/${id}/converter/pedido`, {});
+  }
+
+  converterRascunhoParaOrcamento(id: number): Observable<GraficaComercialDestinoResponse> {
+    return this.api.post<GraficaComercialDestinoResponse>(`api/comercial/rascunhos/${id}/converter/orcamento`, {});
+  }
+
+  listarPedidosComerciais(page = 0, size = 20): Observable<GraficaPagina<PedidoComercialResumo>> {
+    return this.api.get<GraficaPagina<PedidoComercialResumo>>('api/comercial/pedidos', new HttpParams().set('page', page).set('size', size));
+  }
+
+  listarOrcamentosComerciais(page = 0, size = 20): Observable<GraficaPagina<OrcamentoComercialResumo>> {
+    return this.api.get<GraficaPagina<OrcamentoComercialResumo>>('api/orcamentos', new HttpParams().set('page', page).set('size', size));
+  }
+
   listarMateriais(): Observable<GraficaCadastro[]> {
     return this.api.get<GraficaCadastro[]>(`${this.graficaEndpoint}/materiais`);
   }
@@ -208,12 +261,12 @@ export class GraficaProdutoService {
     return this.api.delete<void>(`${this.graficaEndpoint}/acabamentos/${id}`);
   }
 
-  listarServicos(): Observable<GraficaCadastro[]> {
-    return this.api.get<GraficaCadastro[]>(`${this.graficaEndpoint}/servicos`);
+  listarServicos(): Observable<GraficaServico[]> {
+    return this.api.get<GraficaServico[]>(`${this.graficaEndpoint}/servicos`);
   }
 
-  salvarServico(body: GraficaCadastroRequest, id?: number | null): Observable<GraficaCadastro> {
-    return id ? this.api.put<GraficaCadastro>(`${this.graficaEndpoint}/servicos/${id}`, body) : this.api.post<GraficaCadastro>(`${this.graficaEndpoint}/servicos`, body);
+  salvarServico(body: GraficaServicoRequest, id?: number | null): Observable<GraficaServico> {
+    return id ? this.api.put<GraficaServico>(`${this.graficaEndpoint}/servicos/${id}`, body) : this.api.post<GraficaServico>(`${this.graficaEndpoint}/servicos`, body);
   }
 
   excluirServico(id: number): Observable<void> {

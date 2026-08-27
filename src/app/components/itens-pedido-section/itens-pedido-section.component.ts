@@ -32,6 +32,9 @@ export class ItensPedidoSectionComponent {
   @Input() subtotal: number = 0;
   @Input() permitirAlterarQuantidade: boolean = true;
   @Input() mostrarAcoes: boolean = true;
+  @Input() mostrarDescreverItens: boolean = true;
+  @Input() buscarProdutosLabel = 'Buscar produtos';
+  @Input() descreverItensLabel = 'Descrever itens';
   @Input() inativo = false;
 
   @Output() buscarProdutos = new EventEmitter<void>();
