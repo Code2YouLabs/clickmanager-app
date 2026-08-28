@@ -752,8 +752,8 @@ export class ComercialBetaEditorComponent implements OnInit {
     .resolved-product mat-icon { color: #0f766e; }
     .resolved-product p { margin: 4px 0; color: #475569; overflow-wrap: anywhere; }
     .resolved-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
-    .funnel-grid { flex: 1; width: 100%; min-height: 468px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; align-items: stretch; }
-    .funnel-column { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto auto; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
+    .funnel-grid { flex: 1; width: 100%; min-height: 468px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+    .funnel-column { width: 100%; height: 100%; min-width: 0; min-height: 0; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto auto; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
     .funnel-header { min-width: 0; padding: 12px 14px 10px; }
     .funnel-search { width: 100%; max-width: 100%; margin-top: 10px; font-size: 13px; }
     .funnel-search ::ng-deep .mat-mdc-form-field-infix { min-height: 36px; padding-top: 7px; padding-bottom: 7px; }
