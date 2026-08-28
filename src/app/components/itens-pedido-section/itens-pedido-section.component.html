@@ -2,9 +2,15 @@
   <div class="itens-wrapper" [class.inativo]="inativo">
     <div class="d-flex gap-8 flex-wrap m-b-8" actions *ngIf="mostrarAcoes">
       <button mat-flat-button color="primary" type="button" (click)="buscarProdutos.emit()" [disabled]="inativo">
+        <mat-icon>add</mat-icon>
         {{ buscarProdutosLabel }}
       </button>
+      <button mat-stroked-button color="primary" type="button" (click)="buscaRapida.emit()" [disabled]="inativo" *ngIf="mostrarBuscaRapida">
+        <mat-icon>search</mat-icon>
+        {{ buscaRapidaLabel }}
+      </button>
       <button mat-stroked-button color="accent" type="button" (click)="descreverItens.emit()" [disabled]="inativo" *ngIf="mostrarDescreverItens">
+        <mat-icon>edit_note</mat-icon>
         {{ descreverItensLabel }}
       </button>
     </div>
@@ -62,7 +68,7 @@
     <ng-template #emptyItens>
       <div class="empty-itens">
         <div class="title">Nenhum item adicionado.</div>
-        <div class="desc">{{ mostrarDescreverItens ? 'Use “Buscar produtos” ou “Descrever itens” para incluir itens no pedido.' : 'Use “Adicionar produto” para incluir itens no pedido.' }}</div>
+        <div class="desc">{{ emptyDescription }}</div>
       </div>
     </ng-template>
   </div>

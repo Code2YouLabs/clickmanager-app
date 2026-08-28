@@ -14,6 +14,7 @@ import { MaterialModule } from 'src/app/material.module';
 import { ClienteService } from '../../cliente/cliente.service';
 import { ComposicaoComercialResolvida, GraficaComercialComposicaoRequest, GraficaOpcao, GraficaParametro, GraficaPrecificacaoResultado, GraficaProduto } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
+import { GraficaProdutoBuscaRapidaDialogComponent } from './grafica-produto-busca-rapida-dialog.component';
 
 type ComercialBetaTipo = 'rascunhos' | 'orcamentos' | 'pedidos';
 
@@ -63,8 +64,11 @@ type ComercialBetaTipo = 'rascunhos' | 'orcamentos' | 'pedidos';
               [subtotal]="total"
               [permitirAlterarQuantidade]="false"
               [mostrarDescreverItens]="false"
+              [mostrarBuscaRapida]="true"
               buscarProdutosLabel="Adicionar produto"
+              buscaRapidaLabel="Busca rápida"
               (buscarProdutos)="abrirWizard()"
+              (buscaRapida)="abrirBuscaRapida()"
               (removerItem)="remover($event)">
             </app-itens-pedido-section>
 
@@ -210,13 +214,30 @@ export class ComercialBetaEditorComponent implements OnInit {
   }
 
   abrirWizard(): void {
+    this.abrirWizardProduto();
+  }
+
+  abrirBuscaRapida(): void {
+    this.dialog.open(GraficaProdutoBuscaRapidaDialogComponent, {
+      width: '860px',
+      maxWidth: '96vw',
+      autoFocus: true,
+      restoreFocus: false,
+    }).afterClosed().subscribe((produto?: GraficaProduto | null) => {
+      if (produto) {
+        this.abrirWizardProduto(produto);
+      }
+    });
+  }
+
+  private abrirWizardProduto(produtoPreSelecionado?: GraficaProduto): void {
     this.dialog.open(GraficaProdutoWizardDialogComponent, {
       width: 'calc(100vw - 24px)',
       height: 'calc(100vh - 24px)',
       maxWidth: '96vw',
       maxHeight: '98vh',
       panelClass: 'dialog-grande',
-      data: { cliente: this.clientePayload() },
+      data: { cliente: this.clientePayload(), produtoPreSelecionado },
     }).afterClosed().subscribe((composicao?: ComposicaoComercialResolvida) => {
       if (composicao?.itens?.length) {
         this.itens = [...this.itens, ...composicao.itens];
@@ -806,7 +827,11 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
       next: (page) => this.produtos = page.content || [],
       error: () => this.produtos = [],
     });
-    this.buscarProdutosDireto('');
+    if (this.data?.produtoPreSelecionado) {
+      this.selecionarProduto(this.data.produtoPreSelecionado, true, true);
+    } else {
+      this.buscarProdutosDireto('');
+    }
   }
 
   get breadcrumb(): Array<{ label: string }> {
@@ -854,7 +879,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
     this.buscaProdutos$.next((termo || '').trim());
   }
 
-  selecionarProduto(produto: GraficaProduto, direto = false): void {
+  selecionarProduto(produto: GraficaProduto, direto = false, iniciarEmPreco = false): void {
     this.produtoSelecionado = produto;
     this.produtoForm.patchValue({ produtoGraficoId: produto.id });
     this.graficaService.detalhar(produto.id).subscribe({
@@ -869,9 +894,18 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
         this.servicosSelecionados.clear();
         this.preco = null;
         this.composicao = null;
-        this.carregarProximaOpcao();
+        if (!direto) {
+          this.carregarProximaOpcao();
+        }
         if (direto) {
           this.produtoBusca = this.produtoNome(produto);
+        }
+        if (iniciarEmPreco) {
+          setTimeout(() => {
+            if (this.stepper) {
+              this.stepper.selectedIndex = 1;
+            }
+          });
         }
       },
     });
