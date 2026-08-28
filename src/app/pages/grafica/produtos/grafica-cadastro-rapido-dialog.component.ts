@@ -1,15 +1,20 @@
 import { CommonModule } from '@angular/common';
 import { Component, Inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
 import { Observable } from 'rxjs';
+import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
+import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
+import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
+import { UnitInputComponent } from 'src/app/components/inputs/unit-input/unit-input.component';
 import { MaterialModule } from 'src/app/material.module';
 import { catalogoErrorMessage, catalogoSlugify } from '../../catalogo/shared/utils/catalogo-utils';
 import { GraficaCadastro, GraficaCadastroRequest, GraficaFormato, GraficaFormatoRequest } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
 
 type CadastroRapidoTipo = 'material' | 'formato' | 'cor';
+type UnidadeGrafica = 'METRO' | 'CENTIMETRO' | 'MILIMETRO';
 type CadastroRapidoResult = GraficaCadastro | GraficaFormato;
 
 interface CadastroRapidoDialogData {
@@ -19,50 +24,87 @@ interface CadastroRapidoDialogData {
 @Component({
   selector: 'app-grafica-cadastro-rapido-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MaterialModule],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MaterialModule,
+    InputTextoRestritoComponent,
+    InputTextareaComponent,
+    InputOptionsComponent,
+    UnitInputComponent,
+  ],
   template: `
     <h2 mat-dialog-title class="m-0 f-w-600">{{ titulo }}</h2>
 
     <mat-dialog-content class="p-t-12">
       <form [formGroup]="form" class="quick-create-form">
-        <mat-form-field appearance="outline">
-          <mat-label>Nome</mat-label>
-          <input matInput formControlName="nome" autocomplete="off" />
-          <mat-error *ngIf="form.controls.nome.hasError('required')">Informe o nome.</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Código</mat-label>
-          <input matInput formControlName="codigo" autocomplete="off" />
-          <mat-error *ngIf="form.controls.codigo.hasError('required')">Informe o código.</mat-error>
-        </mat-form-field>
+        <app-input-texto-restrito
+          [control]="nomeControl"
+          label="Nome"
+          [placeholder]="nomePlaceholder"
+          [maxlength]="140"
+          [requiredError]="nomeRequiredError">
+        </app-input-texto-restrito>
 
         <ng-container *ngIf="data.tipo === 'formato'">
-          <mat-form-field appearance="outline">
-            <mat-label>Largura</mat-label>
-            <input matInput type="number" formControlName="largura" />
-          </mat-form-field>
+          <app-input-options
+            [control]="unidadeControl"
+            label="Unidade"
+            placeholder="Unidade"
+            [options]="unidades"
+            labelKey="label"
+            valueKey="value"
+            [showNull]="false">
+          </app-input-options>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Altura</mat-label>
-            <input matInput type="number" formControlName="altura" />
-          </mat-form-field>
+          <app-unit-input
+            formControlName="altura"
+            label="Altura"
+            [unit]="unidadeSuffix"
+            [min]="0.01"
+            [decimals]="2"
+            [required]="true"
+            [requiredError]="alturaControl.invalid && alturaControl.touched">
+          </app-unit-input>
 
-          <mat-form-field appearance="outline" class="quick-create-form__wide">
-            <mat-label>Unidade</mat-label>
-            <mat-select formControlName="unidadeDimensao">
-              <mat-option [value]="null">Sem unidade</mat-option>
-              <mat-option value="CENTIMETRO">Centímetro</mat-option>
-              <mat-option value="MILIMETRO">Milímetro</mat-option>
-              <mat-option value="METRO">Metro</mat-option>
-            </mat-select>
-          </mat-form-field>
+          <app-unit-input
+            formControlName="largura"
+            label="Largura"
+            [unit]="unidadeSuffix"
+            [min]="0.01"
+            [decimals]="2"
+            [required]="true"
+            [requiredError]="larguraControl.invalid && larguraControl.touched">
+          </app-unit-input>
+
+          <app-unit-input
+            formControlName="alturaUtil"
+            label="Altura útil"
+            [unit]="unidadeSuffix"
+            [min]="0.01"
+            [decimals]="2"
+            [required]="false"
+            [requiredError]="alturaUtilControl.invalid && alturaUtilControl.touched">
+          </app-unit-input>
+
+          <app-unit-input
+            formControlName="larguraUtil"
+            label="Largura útil"
+            [unit]="unidadeSuffix"
+            [min]="0.01"
+            [decimals]="2"
+            [required]="false"
+            [requiredError]="larguraUtilControl.invalid && larguraUtilControl.touched">
+          </app-unit-input>
         </ng-container>
 
-        <mat-form-field appearance="outline" class="quick-create-form__wide" *ngIf="data.tipo === 'material'">
-          <mat-label>Descrição</mat-label>
-          <textarea matInput rows="3" formControlName="descricao"></textarea>
-        </mat-form-field>
+        <app-input-textarea
+          class="quick-create-form__wide"
+          [control]="descricaoControl"
+          label="Descrição"
+          [rows]="4"
+          [maxlength]="500">
+        </app-input-textarea>
       </form>
     </mat-dialog-content>
 
@@ -101,14 +143,20 @@ interface CadastroRapidoDialogData {
 })
 export class GraficaCadastroRapidoDialogComponent {
   salvando = false;
+  readonly unidades = [
+    { value: 'CENTIMETRO', label: 'cm' },
+    { value: 'MILIMETRO', label: 'mm' },
+    { value: 'METRO', label: 'm' },
+  ];
 
   form = this.fb.group({
     nome: this.fb.control('', { nonNullable: true, validators: [Validators.required] }),
-    codigo: this.fb.control('', { nonNullable: true, validators: [Validators.required] }),
-    descricao: this.fb.control<string | null>(null),
+    descricao: this.fb.control('', { nonNullable: true }),
     largura: this.fb.control<number | null>(null),
     altura: this.fb.control<number | null>(null),
-    unidadeDimensao: this.fb.control<'METRO' | 'CENTIMETRO' | 'MILIMETRO' | null>(null),
+    larguraUtil: this.fb.control<number | null>(null),
+    alturaUtil: this.fb.control<number | null>(null),
+    unidadeDimensao: this.fb.control<UnidadeGrafica>('CENTIMETRO', { nonNullable: true }),
   });
 
   get titulo(): string {
@@ -119,6 +167,38 @@ export class GraficaCadastroRapidoDialogComponent {
     }[this.data.tipo];
   }
 
+  get nomePlaceholder(): string {
+    return {
+      material: 'Ex.: Couchê 150g',
+      formato: 'Ex.: 10x15',
+      cor: 'Ex.: 4x4',
+    }[this.data.tipo];
+  }
+
+  get nomeRequiredError(): string {
+    return {
+      material: 'Informe o nome do material.',
+      formato: 'Informe o nome do formato.',
+      cor: 'Informe o nome da cor.',
+    }[this.data.tipo];
+  }
+
+  get unidadeSuffix(): string {
+    switch (this.unidadeControl.value) {
+      case 'METRO': return 'm';
+      case 'MILIMETRO': return 'mm';
+      default: return 'cm';
+    }
+  }
+
+  get nomeControl(): FormControl<string> { return this.form.controls.nome; }
+  get descricaoControl(): FormControl<string> { return this.form.controls.descricao; }
+  get larguraControl(): FormControl<number | null> { return this.form.controls.largura; }
+  get alturaControl(): FormControl<number | null> { return this.form.controls.altura; }
+  get larguraUtilControl(): FormControl<number | null> { return this.form.controls.larguraUtil; }
+  get alturaUtilControl(): FormControl<number | null> { return this.form.controls.alturaUtil; }
+  get unidadeControl(): FormControl<UnidadeGrafica> { return this.form.controls.unidadeDimensao; }
+
   constructor(
     private readonly fb: FormBuilder,
     private readonly service: GraficaProdutoService,
@@ -126,11 +206,7 @@ export class GraficaCadastroRapidoDialogComponent {
     private readonly dialogRef: MatDialogRef<GraficaCadastroRapidoDialogComponent, CadastroRapidoResult | null>,
     @Inject(MAT_DIALOG_DATA) public readonly data: CadastroRapidoDialogData,
   ) {
-    this.form.controls.nome.valueChanges.subscribe((nome) => {
-      if (nome && !this.form.controls.codigo.dirty) {
-        this.form.controls.codigo.setValue(this.codigo(nome));
-      }
-    });
+    this.configurarValidadoresPorTipo();
   }
 
   cancelar(): void {
@@ -165,9 +241,10 @@ export class GraficaCadastroRapidoDialogComponent {
 
   private cadastroRequest(): GraficaCadastroRequest {
     const raw = this.form.getRawValue();
+    const nome = raw.nome.trim();
     return {
-      codigo: raw.codigo.trim(),
-      nome: raw.nome.trim(),
+      codigo: this.codigo(nome),
+      nome,
       descricao: raw.descricao?.trim() || null,
       ativo: true,
     };
@@ -175,17 +252,30 @@ export class GraficaCadastroRapidoDialogComponent {
 
   private formatoRequest(): GraficaFormatoRequest {
     const raw = this.form.getRawValue();
+    const nome = raw.nome.trim();
     return {
-      codigo: raw.codigo.trim(),
-      nome: raw.nome.trim(),
-      descricao: null,
+      codigo: this.codigo(nome),
+      nome,
+      descricao: raw.descricao?.trim() || null,
       largura: raw.largura,
       altura: raw.altura,
-      larguraUtil: raw.largura,
-      alturaUtil: raw.altura,
+      larguraUtil: raw.larguraUtil,
+      alturaUtil: raw.alturaUtil,
       unidadeDimensao: raw.unidadeDimensao,
       ativo: true,
     };
+  }
+
+  private configurarValidadoresPorTipo(): void {
+    const formato = this.data.tipo === 'formato';
+    const obrigatorioMaiorQueZero = formato ? [Validators.required, Validators.min(0.01)] : [];
+    const opcionalMaiorQueZero = formato ? [Validators.min(0.01)] : [];
+    this.form.controls.altura.setValidators(obrigatorioMaiorQueZero);
+    this.form.controls.largura.setValidators(obrigatorioMaiorQueZero);
+    this.form.controls.alturaUtil.setValidators(opcionalMaiorQueZero);
+    this.form.controls.larguraUtil.setValidators(opcionalMaiorQueZero);
+    this.form.controls.unidadeDimensao.setValidators(formato ? [Validators.required] : []);
+    this.form.updateValueAndValidity({ emitEvent: false });
   }
 
   private codigo(valor: string): string {
