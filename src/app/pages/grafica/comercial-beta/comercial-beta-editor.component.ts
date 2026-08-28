@@ -724,17 +724,18 @@ export class ComercialBetaEditorComponent implements OnInit {
     .title-step { font-weight: 700; color: var(--mdc-theme-primary, #1976d2); }
     .wizard-body { flex: 1; overflow: auto; background: #fff; }
     .wizard-stepper { display: flex; flex-direction: column; min-height: 100%; background: #fff; }
+    .wizard-stepper ::ng-deep .mat-horizontal-stepper-wrapper { flex: 1; width: 100%; display: flex; flex-direction: column; min-width: 0; }
     .wizard-stepper ::ng-deep .mat-horizontal-stepper-header-container { position: sticky; top: 0; z-index: 2; background: #fff; padding: 4px 24px 0; }
     .wizard-stepper ::ng-deep .mat-horizontal-stepper-header { height: 56px; }
-    .wizard-stepper ::ng-deep .mat-horizontal-content-container { flex: 1; display: flex; padding: 0; }
-    .wizard-stepper ::ng-deep .mat-horizontal-stepper-content[aria-expanded='true'] { flex: 1; display: flex; min-width: 0; }
+    .wizard-stepper ::ng-deep .mat-horizontal-content-container { flex: 1; width: 100%; display: flex; padding: 0; }
+    .wizard-stepper ::ng-deep .mat-horizontal-stepper-content[aria-expanded='true'] { flex: 1; width: 100%; display: flex; min-width: 0; }
     .wizard-footer { position: sticky; bottom: 0; z-index: 3; background: #fff; border-top: 1px solid rgba(0, 0, 0, .06); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     .wizard-footer .right { display: flex; gap: 10px; }
     .primary-action { display: inline-flex; align-items: center; gap: 8px; }
-    .step-inner { width: 100%; max-width: 1200px; margin: 0 auto; padding: 12px 24px 16px; }
+    .step-inner { width: 100%; max-width: 1200px; box-sizing: border-box; margin: 0 auto; padding: 12px 24px 16px; }
     .step-wide { max-width: 1400px; }
     .step-full { max-width: none; }
-    .produto-step { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .produto-step { flex: 1; width: 100%; min-height: 0; display: flex; flex-direction: column; }
     .compact-list, .option-list { display: flex; flex-direction: column; gap: 8px; }
     .sku-result, .option-button { width: 100%; justify-content: space-between; min-height: 50px; text-align: left; border-radius: 8px; color: #0f172a; border: 1px solid rgba(0, 0, 0, .06); padding: 6px 12px; }
     .sku-result span, .sku-result strong, .sku-result small { display: block; min-width: 0; }
@@ -765,7 +766,7 @@ export class ComercialBetaEditorComponent implements OnInit {
     .funnel-option { width: 100%; min-height: 38px; justify-content: space-between; text-align: left; border-radius: 6px; border: 1px solid transparent; color: #0f172a; cursor: pointer; }
     .funnel-option ::ng-deep .mdc-button__label { width: 100%; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .funnel-option span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .funnel-option mat-icon { flex: 0 0 auto; width: 18px; height: 18px; font-size: 18px; color: #94a3b8; }
+    .funnel-option mat-icon { order: 2; flex: 0 0 auto; width: 18px; height: 18px; font-size: 18px; color: #94a3b8; }
     .funnel-option:hover { background: #f8fafc; border-color: #cbd5e1; }
     .funnel-option.active { background: #e8f2ff; border-color: #93c5fd; color: var(--mdc-theme-primary, #1976d2); font-weight: 700; }
     .funnel-option.active mat-icon { color: var(--mdc-theme-primary, #1976d2); }
