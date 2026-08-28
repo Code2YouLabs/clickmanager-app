@@ -68,6 +68,13 @@ type ProdutoFormSnapshot = {
       </div>
 
       <form id="grafica-produto-form" [formGroup]="form" class="produto-form" (ngSubmit)="salvar()">
+        @if (isClone) {
+          <div class="clone-alert" role="status">
+            <mat-icon>info</mat-icon>
+            <span>Você está criando um novo produto a partir de um produto existente. Para salvar, altere pelo menos um dos seguintes dados: Nome, Material, Formato ou Cor.</span>
+          </div>
+        }
+
         <app-section-card title="Dados do produto">
           <div class="form-grid product-grid">
             <app-input-texto-restrito
@@ -167,7 +174,7 @@ type ProdutoFormSnapshot = {
       </form>
 
       <button page-footer-right mat-stroked-button class="cancel-button" type="button" (click)="cancelar()">Cancelar</button>
-      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-produto-form" [disabled]="form.invalid || salvando || uploading">
+      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-produto-form" [disabled]="salvarDesabilitado">
         <mat-icon>save</mat-icon>Salvar
       </button>
     </app-page-card>
@@ -194,6 +201,26 @@ type ProdutoFormSnapshot = {
       color: #b45309;
       font-size: 0.84rem;
       font-weight: 600;
+    }
+    .clone-alert {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: start;
+      gap: 10px;
+      padding: 12px 14px;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      background: #eff6ff;
+      color: #1e3a8a;
+      font-size: 0.9rem;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+    .clone-alert mat-icon {
+      width: 20px;
+      height: 20px;
+      font-size: 20px;
+      color: #2563eb;
     }
     :host ::ng-deep .product-images .deposito-galeria {
       gap: 8px;
@@ -293,6 +320,7 @@ type ProdutoFormSnapshot = {
 })
 export class GraficaProdutoFormComponent implements OnInit {
   isEdit = false;
+  isClone = false;
   salvando = false;
   uploading = false;
   graficaProduto?: GraficaProduto;
@@ -308,6 +336,7 @@ export class GraficaProdutoFormComponent implements OnInit {
   private precoSnapshot?: any;
   private imagemPrincipalSnapshot: any = null;
   private galeriaSnapshot: any[] = [];
+  private cloneIdentidadeSnapshot?: Pick<ProdutoFormSnapshot, 'nome' | 'materialId' | 'formatoId' | 'corId'>;
 
   form = this.fb.group({
     nome: this.fb.control<string>('', { nonNullable: true, validators: [Validators.required] }),
@@ -347,11 +376,25 @@ export class GraficaProdutoFormComponent implements OnInit {
   }
 
   get titulo(): string {
+    if (this.isClone) {
+      return 'Clonar Produto';
+    }
     return this.isEdit ? 'Editar Produto' : 'Novo Produto';
   }
 
   get subtitulo(): string {
+    if (this.isClone) {
+      return 'Cadastro de produto gráfico a partir de um produto existente';
+    }
     return this.isEdit ? 'Atualize os dados do produto' : 'Cadastro de produto gráfico';
+  }
+
+  get cloneSalvarBloqueado(): boolean {
+    return this.isClone && !!this.cloneIdentidadeSnapshot && this.identidadeCloneInalterada();
+  }
+
+  get salvarDesabilitado(): boolean {
+    return this.form.invalid || this.salvando || this.uploading || this.cloneSalvarBloqueado;
   }
 
   constructor(
@@ -366,12 +409,18 @@ export class GraficaProdutoFormComponent implements OnInit {
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
+    const cloneFrom = Number(this.route.snapshot.queryParamMap?.get('cloneFrom'));
     this.isEdit = !!id;
-    this.carregarBase(id || null);
+    this.isClone = !this.isEdit && !!cloneFrom;
+    this.carregarBase(id || (this.isClone ? cloneFrom : null));
   }
 
   salvar(): void {
     if (this.form.invalid || this.uploading || !this.validarProduto()) return;
+    if (this.cloneSalvarBloqueado) {
+      this.toastr.warning('Altere Nome, Material, Formato ou Cor para salvar o clone.');
+      return;
+    }
     this.precoForm.markAllAsTouched();
     this.precoForm.updateValueAndValidity();
     if (this.precoForm.invalid) {
@@ -692,6 +741,30 @@ export class GraficaProdutoFormComponent implements OnInit {
     this.precoSnapshot = this.clone(this.precoForm.getRawValue());
     this.imagemPrincipalSnapshot = this.clone(this.imagemPrincipal);
     this.galeriaSnapshot = this.clone(this.galeria);
+    if (this.isClone) {
+      this.cloneIdentidadeSnapshot = this.identidadeCloneAtual();
+    }
+  }
+
+  private identidadeCloneAtual(): Pick<ProdutoFormSnapshot, 'nome' | 'materialId' | 'formatoId' | 'corId'> {
+    const raw = this.form.getRawValue();
+    return {
+      nome: (raw.nome || '').trim(),
+      materialId: raw.materialId ?? null,
+      formatoId: raw.formatoId ?? null,
+      corId: raw.corId ?? null,
+    };
+  }
+
+  private identidadeCloneInalterada(): boolean {
+    if (!this.cloneIdentidadeSnapshot) {
+      return false;
+    }
+    const atual = this.identidadeCloneAtual();
+    return atual.nome === this.cloneIdentidadeSnapshot.nome
+      && atual.materialId === this.cloneIdentidadeSnapshot.materialId
+      && atual.formatoId === this.cloneIdentidadeSnapshot.formatoId
+      && atual.corId === this.cloneIdentidadeSnapshot.corId;
   }
 
   private buildImagensPayload(): CatalogoProdutoImagemRequest[] {

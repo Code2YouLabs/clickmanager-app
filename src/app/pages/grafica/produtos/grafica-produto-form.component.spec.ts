@@ -3,6 +3,7 @@ import { FormControl } from '@angular/forms';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
+import { of } from 'rxjs';
 import { CatalogoCategoriaService } from '../../catalogo/shared/services/catalogo.service';
 import { DepositoImagemService } from '../../deposito/services/deposito-imagem.service';
 import { GraficaProdutoService } from '../shared/grafica.service';
@@ -12,18 +13,40 @@ describe('GraficaProdutoFormComponent', () => {
   let fixture: ComponentFixture<GraficaProdutoFormComponent>;
   let component: GraficaProdutoFormComponent;
   let router: jasmine.SpyObj<Router>;
+  let routeSnapshot: any;
+  let graficaService: jasmine.SpyObj<GraficaProdutoService>;
 
   beforeEach(() => {
     router = jasmine.createSpyObj('Router', ['navigate']);
+    routeSnapshot = {
+      paramMap: { get: () => null },
+      queryParamMap: { get: () => null },
+    };
+    graficaService = jasmine.createSpyObj('GraficaProdutoService', [
+      'detalhar',
+      'listarPrecos',
+      'listarMateriais',
+      'listarFormatos',
+      'listarCores',
+      'listarAcabamentos',
+      'listarServicos',
+    ]);
+    graficaService.detalhar.and.returnValue(of(produtoGrafico()));
+    graficaService.listarPrecos.and.returnValue(of([]));
+    graficaService.listarMateriais.and.returnValue(of([{ id: 1, codigo: 'COUCHE', nome: 'Couchê 150g', ativo: true }]));
+    graficaService.listarFormatos.and.returnValue(of([{ id: 2, codigo: '10X15', nome: '10x15', ativo: true }]));
+    graficaService.listarCores.and.returnValue(of([{ id: 3, codigo: '4X4', nome: '4x4', ativo: true }]));
+    graficaService.listarAcabamentos.and.returnValue(of([]));
+    graficaService.listarServicos.and.returnValue(of([]));
 
     TestBed.configureTestingModule({
       imports: [GraficaProdutoFormComponent, NoopAnimationsModule],
       providers: [
-        { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => null } } } },
+        { provide: ActivatedRoute, useValue: { snapshot: routeSnapshot } },
         { provide: Router, useValue: router },
         { provide: ToastrService, useValue: jasmine.createSpyObj('ToastrService', ['success', 'error', 'warning']) },
-        { provide: GraficaProdutoService, useValue: {} },
-        { provide: CatalogoCategoriaService, useValue: {} },
+        { provide: GraficaProdutoService, useValue: graficaService },
+        { provide: CatalogoCategoriaService, useValue: { options: () => of([]) } },
         { provide: DepositoImagemService, useValue: {} },
       ],
     });
@@ -106,4 +129,68 @@ describe('GraficaProdutoFormComponent', () => {
     ]);
     expect(payload.corId).toBe(3);
   });
+
+  it('carrega clone com valores do produto original e bloqueia salvar ate mudar identidade', () => {
+    routeSnapshot.queryParamMap = { get: (key: string) => key === 'cloneFrom' ? '1' : null };
+
+    component.ngOnInit();
+
+    expect(component.isClone).toBeTrue();
+    expect(component.isEdit).toBeFalse();
+    expect(graficaService.detalhar).toHaveBeenCalledWith(1);
+    expect(component.form.getRawValue()).toEqual(jasmine.objectContaining({
+      nome: 'Panfleto',
+      materialId: 1,
+      formatoId: 2,
+      corId: 3,
+    }));
+    expect((component as any).produtoPayload().catalogoProdutoId).toBeNull();
+    expect(component.cloneSalvarBloqueado).toBeTrue();
+    expect(component.salvarDesabilitado).toBeTrue();
+
+    component.form.controls.nome.setValue('Panfleto Premium');
+
+    expect(component.cloneSalvarBloqueado).toBeFalse();
+    expect(component.salvarDesabilitado).toBeFalse();
+
+    component.form.controls.nome.setValue('Panfleto');
+
+    expect(component.cloneSalvarBloqueado).toBeTrue();
+  });
+
+  it('restaura snapshot original ao cancelar clone', () => {
+    routeSnapshot.queryParamMap = { get: (key: string) => key === 'cloneFrom' ? '1' : null };
+    component.ngOnInit();
+    component.form.patchValue({ nome: 'Panfleto Premium', materialId: null });
+
+    component.cancelar();
+
+    expect(component.form.getRawValue()).toEqual(jasmine.objectContaining({
+      nome: 'Panfleto',
+      materialId: 1,
+      formatoId: 2,
+      corId: 3,
+    }));
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(component.cloneSalvarBloqueado).toBeTrue();
+  });
 });
+
+function produtoGrafico() {
+  return {
+    id: 1,
+    catalogoProdutoId: 10,
+    catalogoProdutoNome: 'Panfleto',
+    catalogoProdutoDescricao: 'Panfleto promocional',
+    catalogoCategoriaId: null,
+    catalogoProdutoExibirNoSite: true,
+    imagens: [],
+    ativo: true,
+    material: { id: 1, codigo: 'COUCHE', nome: 'Couchê 150g', ativo: true },
+    formato: { id: 2, codigo: '10X15', nome: '10x15', ativo: true },
+    cor: { id: 3, codigo: '4X4', nome: '4x4', ativo: true },
+    acabamentos: [],
+    servicos: [],
+    parametros: [],
+  };
+}

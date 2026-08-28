@@ -100,6 +100,32 @@ describe('GraficaProdutosComponent', () => {
     expect(service.excluir).toHaveBeenCalledWith(1);
   });
 
+  it('confirma clone e navega para cadastro com produto base', () => {
+    const row = { id: 1, catalogoProdutoId: 10, catalogoProdutoNome: 'Panfleto', ativo: true, acabamentos: [], servicos: [], parametros: [] };
+    const dialog = (component as unknown as { dialog: MatDialog }).dialog;
+    spyOn(dialog, 'open').and.returnValue({ afterClosed: () => of(true) } as never);
+
+    component.clonar(row);
+
+    expect(dialog.open).toHaveBeenCalledWith(jasmine.any(Function), jasmine.objectContaining({
+      data: jasmine.objectContaining({
+        title: 'Clonar produto',
+        message: 'Deseja realmente usar "Panfleto" como base para criar um novo produto?',
+        confirmText: 'Clonar',
+      }),
+    }));
+    expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/produtos/novo'], { queryParams: { cloneFrom: 1 } });
+  });
+
+  it('cancela confirmacao de clone sem navegar', () => {
+    const row = { id: 1, catalogoProdutoId: 10, catalogoProdutoNome: 'Panfleto', ativo: true, acabamentos: [], servicos: [], parametros: [] };
+    spyOn((component as unknown as { dialog: MatDialog }).dialog, 'open').and.returnValue({ afterClosed: () => of(false) } as never);
+
+    component.clonar(row);
+
+    expect(router.navigate).not.toHaveBeenCalledWith(['/page/grafica/produtos/novo'], jasmine.anything());
+  });
+
   it('limpa filtros sem acoplar regra de dominio na tabela', () => {
     component.filterState = { materialId: 1, acabamentoIds: [4] };
     component.pagina = 2;

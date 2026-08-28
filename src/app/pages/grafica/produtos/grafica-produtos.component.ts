@@ -118,11 +118,9 @@ type GraficaProdutosFilters = {
             <button mat-icon-button type="button" matTooltip="Editar" [attr.aria-label]="'Editar ' + (row.catalogoProdutoNome || 'produto')" (click)="configurar(row)">
               <mat-icon>edit</mat-icon>
             </button>
-            <span class="acao-disabled" matTooltip="Clonar - em breve">
-              <button mat-icon-button type="button" aria-label="Clonar produto" disabled>
-                <mat-icon>content_copy</mat-icon>
-              </button>
-            </span>
+            <button mat-icon-button type="button" matTooltip="Clonar" [attr.aria-label]="'Clonar ' + (row.catalogoProdutoNome || 'produto')" (click)="clonar(row)">
+              <mat-icon>content_copy</mat-icon>
+            </button>
             <button mat-icon-button type="button" color="warn" matTooltip="Excluir" [attr.aria-label]="'Excluir ' + (row.catalogoProdutoNome || 'produto')" (click)="excluir(row)">
               <mat-icon>delete</mat-icon>
             </button>
@@ -212,9 +210,6 @@ type GraficaProdutosFilters = {
       white-space: nowrap;
     }
 
-    .acao-disabled {
-      display: inline-flex;
-    }
   `],
 })
 export class GraficaProdutosComponent implements OnInit {
@@ -372,6 +367,24 @@ export class GraficaProdutosComponent implements OnInit {
 
   configurar(item: GraficaProduto): void {
     this.router.navigate(['/page/grafica/produtos', item.id, 'editar']);
+  }
+
+  clonar(item: GraficaProduto): void {
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      width: '420px',
+      data: {
+        title: 'Clonar produto',
+        message: `Deseja realmente usar "${item.catalogoProdutoNome || 'este produto'}" como base para criar um novo produto?`,
+        confirmText: 'Clonar',
+      },
+    });
+
+    ref.afterClosed().subscribe((confirmado) => {
+      if (!confirmado) {
+        return;
+      }
+      this.router.navigate(['/page/grafica/produtos/novo'], { queryParams: { cloneFrom: item.id } });
+    });
   }
 
   excluir(item: GraficaProduto): void {
