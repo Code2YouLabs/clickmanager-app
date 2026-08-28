@@ -367,14 +367,16 @@ export class ComercialBetaEditorComponent implements OnInit {
     <div class="wizard-shell">
       <div class="dialog-header">
         <div class="title-stack">
-          <h2 mat-dialog-title class="m-b-0">Adicionar produto</h2>
-          <p>Encontre o produto pela combinação de características.</p>
+          <h2 mat-dialog-title class="m-b-0">
+            <span class="title-main">Adicionar produto</span>
+            <span class="title-divider">-</span>
+            <span class="title-step" aria-live="polite">{{ currentStepLabel }}</span>
+          </h2>
         </div>
         <button mat-icon-button mat-dialog-close aria-label="Fechar">
           <mat-icon>close</mat-icon>
         </button>
       </div>
-      <mat-divider></mat-divider>
 
       <mat-dialog-content class="wizard-body">
         <mat-horizontal-stepper [linear]="true" #stepper class="wizard-stepper">
@@ -714,18 +716,21 @@ export class ComercialBetaEditorComponent implements OnInit {
   styles: [`
     :host ::ng-deep .mat-mdc-dialog-content { max-height: initial !important; padding: 0 !important; }
     .wizard-shell { display: flex; flex-direction: column; min-height: 78vh; height: min(97vh, calc(100dvh - 8px)); max-height: 1200px; background: #fff; }
-    .dialog-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 20px 24px 16px; gap: 12px; }
-    .title-stack h2 { font-size: 22px; line-height: 1.25; font-weight: 700; }
-    .title-stack p { margin: 4px 0 0; color: #64748b; font-size: 14px; }
+    .dialog-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px 8px; gap: 12px; }
+    .title-stack h2 { font-size: 20px; line-height: 1.3; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .title-main { font-weight: 600; }
+    .title-divider { color: #6b7280; font-weight: 500; }
+    .title-step { font-weight: 700; color: var(--mdc-theme-primary, #1976d2); }
     .wizard-body { flex: 1; overflow: auto; background: #fff; }
     .wizard-stepper { display: flex; flex-direction: column; min-height: 100%; background: #fff; }
-    .wizard-stepper ::ng-deep .mat-horizontal-stepper-header-container { position: sticky; top: 0; z-index: 2; background: #fff; border-bottom: 1px solid rgba(0, 0, 0, .06); padding: 8px 24px 0; }
+    .wizard-stepper ::ng-deep .mat-horizontal-stepper-header-container { position: sticky; top: 0; z-index: 2; background: #fff; padding: 4px 24px 0; }
+    .wizard-stepper ::ng-deep .mat-horizontal-stepper-header { height: 56px; }
     .wizard-stepper ::ng-deep .mat-horizontal-content-container { flex: 1; display: flex; padding: 0; }
     .wizard-stepper ::ng-deep .mat-horizontal-stepper-content[aria-expanded='true'] { flex: 1; display: flex; min-width: 0; }
     .wizard-footer { position: sticky; bottom: 0; z-index: 3; background: #fff; border-top: 1px solid rgba(0, 0, 0, .06); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     .wizard-footer .right { display: flex; gap: 10px; }
     .primary-action { display: inline-flex; align-items: center; gap: 8px; }
-    .step-inner { width: 100%; max-width: 1200px; margin: 0 auto; padding: 24px; }
+    .step-inner { width: 100%; max-width: 1200px; margin: 0 auto; padding: 12px 24px 16px; }
     .step-wide { max-width: 1400px; }
     .step-full { max-width: none; }
     .produto-step { min-height: 0; }
@@ -746,16 +751,18 @@ export class ComercialBetaEditorComponent implements OnInit {
     .resolved-product mat-icon { color: #0f766e; }
     .resolved-product p { margin: 4px 0; color: #475569; overflow-wrap: anywhere; }
     .resolved-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
-    .funnel-grid { flex: 1; min-height: 430px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+    .funnel-grid { flex: 1; min-height: 468px; display: grid; grid-template-columns: repeat(4, minmax(220px, 1fr)); gap: 14px; align-items: stretch; }
     .funnel-column { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto auto; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
-    .funnel-header { padding: 14px 14px 10px; }
-    .funnel-search { width: 100%; margin-top: 10px; font-size: 13px; }
+    .funnel-header { min-width: 0; padding: 12px 14px 10px; }
+    .funnel-search { width: 100%; max-width: 100%; margin-top: 10px; font-size: 13px; }
     .funnel-search ::ng-deep .mat-mdc-form-field-infix { min-height: 36px; padding-top: 7px; padding-bottom: 7px; }
+    .funnel-search ::ng-deep .mat-mdc-form-field-flex { min-width: 0; }
     .funnel-search ::ng-deep .mat-mdc-text-field-wrapper { background: #fff; }
     .funnel-search ::ng-deep .mat-mdc-form-field-icon-suffix { color: #64748b; }
     .funnel-separator { height: 1px; background: #e2e8f0; }
     .funnel-list { display: flex; flex-direction: column; gap: 6px; padding: 10px; }
     .funnel-option { width: 100%; min-height: 38px; justify-content: space-between; text-align: left; border-radius: 6px; border: 1px solid transparent; color: #0f172a; cursor: pointer; }
+    .funnel-option ::ng-deep .mdc-button__label { width: 100%; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .funnel-option span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .funnel-option mat-icon { flex: 0 0 auto; width: 18px; height: 18px; font-size: 18px; color: #94a3b8; }
     .funnel-option:hover { background: #f8fafc; border-color: #cbd5e1; }
