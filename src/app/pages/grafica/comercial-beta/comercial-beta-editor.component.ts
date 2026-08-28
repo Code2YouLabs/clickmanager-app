@@ -17,6 +17,13 @@ import { GraficaProdutoService } from '../shared/grafica.service';
 import { GraficaProdutoBuscaRapidaDialogComponent } from './grafica-produto-busca-rapida-dialog.component';
 
 type ComercialBetaTipo = 'rascunhos' | 'orcamentos' | 'pedidos';
+type FunilColuna = 'produto' | 'material' | 'formato' | 'cor';
+
+interface FunilOpcao {
+  key: string;
+  label: string;
+  produto?: GraficaProduto;
+}
 
 @Component({
   selector: 'app-grafica-comercial-beta-editor',
@@ -376,8 +383,8 @@ export class ComercialBetaEditorComponent implements OnInit {
         <mat-horizontal-stepper [linear]="true" #stepper class="wizard-stepper">
           <mat-step [stepControl]="produtoForm" label="Produto e Variação">
             <form [formGroup]="produtoForm" class="step-inner step-full produto-step">
-              <div class="locator-layout">
-                <section class="direct-search">
+              <section class="selection-card">
+                <div class="direct-search-block">
                   <div class="sec-title">Pesquisar diretamente</div>
                   <mat-form-field appearance="outline" class="wizard-search">
                     <input
@@ -389,19 +396,29 @@ export class ComercialBetaEditorComponent implements OnInit {
                       (ngModelChange)="buscarProdutosDireto($event)" />
                     <mat-icon matSuffix>search</mat-icon>
                   </mat-form-field>
-                  <div class="result-list">
+                </div>
+
+                <ng-container *ngIf="buscaAtiva && !produtoSelecionado; else fluxoCaracteristicas">
+                  <div class="section-intro">
+                    <div>
+                      <div class="rev-title">Resultados</div>
+                      <h3>Selecione o produto encontrado</h3>
+                    </div>
+                    <mat-progress-spinner *ngIf="buscandoProdutos" mode="indeterminate" diameter="28"></mat-progress-spinner>
+                  </div>
+
+                  <div class="compact-list">
                     <button
                       mat-button
                       type="button"
                       class="sku-result"
                       *ngFor="let produto of produtos"
-                      [class.active]="produtoSelecionado?.id === produto.id"
                       (click)="selecionarProduto(produto, true)">
                       <span>
                         <strong>{{ produtoNome(produto) }}</strong>
                         <small>{{ variacoesResumo(produto) }}</small>
                       </span>
-                      <mat-icon>chevron_right</mat-icon>
+                      <span class="select-action">Selecionar</span>
                     </button>
                     <div class="empty-state compact" *ngIf="buscandoProdutos">
                       <mat-icon>hourglass_empty</mat-icon>
@@ -412,68 +429,150 @@ export class ComercialBetaEditorComponent implements OnInit {
                       <span>Nenhum produto encontrado.</span>
                     </div>
                   </div>
-                </section>
+                </ng-container>
 
-                <section class="funnel-panel">
-                  <div class="breadcrumb-line" *ngIf="breadcrumb.length">
-                    <button
-                      mat-button
-                      type="button"
-                      *ngFor="let item of breadcrumb; let i = index"
-                      (click)="voltarParaSelecao(i)">
-                      {{ item.label }}
-                    </button>
+                <ng-template #fluxoCaracteristicas>
+                  <div class="or-divider">
+                    <span>ou encontre pelas características</span>
                   </div>
 
-                  <ng-container *ngIf="!produtoSelecionado; else configuradorProduto">
-                    <div class="funnel-question">
-                      <div>
-                        <div class="rev-title">Produto</div>
-                        <h3>Escolha o produto base</h3>
-                      </div>
-                    </div>
-                    <div class="result-list">
-                      <button
-                        mat-button
-                        type="button"
-                        class="sku-result"
-                        *ngFor="let produto of produtos"
-                        (click)="selecionarProduto(produto, false)">
-                        <span>
-                          <strong>{{ produtoNome(produto) }}</strong>
-                          <small>{{ produto.catalogoProdutoDescricao || variacoesResumo(produto) }}</small>
-                        </span>
-                        <mat-icon>chevron_right</mat-icon>
-                      </button>
+                  <ng-container *ngIf="!produtoSelecionado; else produtoResolvidoTpl">
+                    <div class="funnel-grid">
+                      <section class="funnel-column">
+                        <div class="funnel-header">
+                          <div class="rev-title">Produto</div>
+                          <h3>Escolha o produto</h3>
+                        </div>
+                        <div class="funnel-separator"></div>
+                        <div class="funnel-list">
+                          <button
+                            mat-button
+                            type="button"
+                            class="funnel-option"
+                            *ngFor="let opcao of opcoesPaginadas('produto')"
+                            [class.active]="produtoNomeSelecionado === opcao.label"
+                            (click)="selecionarProdutoFunil(opcao)">
+                            {{ opcao.label }}
+                          </button>
+                          <div class="empty-state compact" *ngIf="carregandoFunil">
+                            <mat-icon>hourglass_empty</mat-icon>
+                            <span>Carregando produtos...</span>
+                          </div>
+                          <div class="empty-state compact" *ngIf="!carregandoFunil && !opcoesFunil('produto').length">
+                            <span>Nenhum produto encontrado.</span>
+                          </div>
+                        </div>
+                        <div class="funnel-separator"></div>
+                        <div class="funnel-pager">
+                          <button mat-icon-button type="button" [disabled]="!podePaginarAnterior('produto')" (click)="paginaAnteriorFunil('produto')" aria-label="Página anterior de produtos">
+                            <mat-icon>chevron_left</mat-icon>
+                          </button>
+                          <span>{{ paginaAtualFunil('produto') }} / {{ totalPaginasFunil('produto') }}</span>
+                          <button mat-icon-button type="button" [disabled]="!podePaginarProxima('produto')" (click)="proximaPaginaFunil('produto')" aria-label="Próxima página de produtos">
+                            <mat-icon>chevron_right</mat-icon>
+                          </button>
+                        </div>
+                      </section>
+
+                      <section class="funnel-column" *ngIf="produtoNomeSelecionado">
+                        <div class="funnel-header">
+                          <div class="rev-title">Material</div>
+                          <h3>Escolha o material</h3>
+                        </div>
+                        <div class="funnel-separator"></div>
+                        <div class="funnel-list">
+                          <button
+                            mat-button
+                            type="button"
+                            class="funnel-option"
+                            *ngFor="let opcao of opcoesPaginadas('material')"
+                            [class.active]="materialSelecionadoId === +opcao.key"
+                            (click)="selecionarMaterialFunil(opcao)">
+                            {{ opcao.label }}
+                          </button>
+                          <div class="empty-state compact" *ngIf="!opcoesFunil('material').length">
+                            <span>Nenhum material encontrado.</span>
+                          </div>
+                        </div>
+                        <div class="funnel-separator"></div>
+                        <div class="funnel-pager">
+                          <button mat-icon-button type="button" [disabled]="!podePaginarAnterior('material')" (click)="paginaAnteriorFunil('material')" aria-label="Página anterior de materiais">
+                            <mat-icon>chevron_left</mat-icon>
+                          </button>
+                          <span>{{ paginaAtualFunil('material') }} / {{ totalPaginasFunil('material') }}</span>
+                          <button mat-icon-button type="button" [disabled]="!podePaginarProxima('material')" (click)="proximaPaginaFunil('material')" aria-label="Próxima página de materiais">
+                            <mat-icon>chevron_right</mat-icon>
+                          </button>
+                        </div>
+                      </section>
+
+                      <section class="funnel-column" *ngIf="produtoNomeSelecionado && materialSelecionadoId">
+                        <div class="funnel-header">
+                          <div class="rev-title">Formato</div>
+                          <h3>Escolha o formato</h3>
+                        </div>
+                        <div class="funnel-separator"></div>
+                        <div class="funnel-list">
+                          <button
+                            mat-button
+                            type="button"
+                            class="funnel-option"
+                            *ngFor="let opcao of opcoesPaginadas('formato')"
+                            [class.active]="formatoSelecionadoId === +opcao.key"
+                            (click)="selecionarFormatoFunil(opcao)">
+                            {{ opcao.label }}
+                          </button>
+                          <div class="empty-state compact" *ngIf="!opcoesFunil('formato').length">
+                            <span>Nenhum formato encontrado.</span>
+                          </div>
+                        </div>
+                        <div class="funnel-separator"></div>
+                        <div class="funnel-pager">
+                          <button mat-icon-button type="button" [disabled]="!podePaginarAnterior('formato')" (click)="paginaAnteriorFunil('formato')" aria-label="Página anterior de formatos">
+                            <mat-icon>chevron_left</mat-icon>
+                          </button>
+                          <span>{{ paginaAtualFunil('formato') }} / {{ totalPaginasFunil('formato') }}</span>
+                          <button mat-icon-button type="button" [disabled]="!podePaginarProxima('formato')" (click)="proximaPaginaFunil('formato')" aria-label="Próxima página de formatos">
+                            <mat-icon>chevron_right</mat-icon>
+                          </button>
+                        </div>
+                      </section>
+
+                      <section class="funnel-column" *ngIf="produtoNomeSelecionado && materialSelecionadoId && formatoSelecionadoId">
+                        <div class="funnel-header">
+                          <div class="rev-title">Cor</div>
+                          <h3>Escolha a cor</h3>
+                        </div>
+                        <div class="funnel-separator"></div>
+                        <div class="funnel-list">
+                          <button
+                            mat-button
+                            type="button"
+                            class="funnel-option"
+                            *ngFor="let opcao of opcoesPaginadas('cor')"
+                            [class.active]="corSelecionadaId === +opcao.key"
+                            (click)="selecionarCorFunil(opcao)">
+                            {{ opcao.label }}
+                          </button>
+                          <div class="empty-state compact" *ngIf="!opcoesFunil('cor').length">
+                            <span>Nenhuma cor encontrada.</span>
+                          </div>
+                        </div>
+                        <div class="funnel-separator"></div>
+                        <div class="funnel-pager">
+                          <button mat-icon-button type="button" [disabled]="!podePaginarAnterior('cor')" (click)="paginaAnteriorFunil('cor')" aria-label="Página anterior de cores">
+                            <mat-icon>chevron_left</mat-icon>
+                          </button>
+                          <span>{{ paginaAtualFunil('cor') }} / {{ totalPaginasFunil('cor') }}</span>
+                          <button mat-icon-button type="button" [disabled]="!podePaginarProxima('cor')" (click)="proximaPaginaFunil('cor')" aria-label="Próxima página de cores">
+                            <mat-icon>chevron_right</mat-icon>
+                          </button>
+                        </div>
+                      </section>
                     </div>
                   </ng-container>
 
-                  <ng-template #configuradorProduto>
-                    <div class="funnel-question" *ngIf="parametroAtual; else produtoResolvidoTpl">
-                      <div>
-                        <div class="rev-title">Próxima escolha</div>
-                        <h3>Escolha {{ parametroAtual.nome }}</h3>
-                      </div>
-                      <mat-progress-spinner *ngIf="carregandoOpcoes" mode="indeterminate" diameter="28"></mat-progress-spinner>
-                    </div>
-
-                    <div class="option-list" *ngIf="parametroAtual">
-                      <button
-                        mat-button
-                        type="button"
-                        class="option-button"
-                        *ngFor="let opcao of opcoesAtuais"
-                        [class.active]="selecoes[parametroAtual.codigo] === opcao.codigo"
-                        (click)="selecionarOpcao(parametroAtual, opcao.codigo)">
-                        {{ opcao.nome }}
-                      </button>
-                      <div class="empty-state" *ngIf="!carregandoOpcoes && !opcoesAtuais.length">
-                        <mat-icon>warning</mat-icon>
-                        <span>Nenhuma combinação encontrada. Volte e altere uma das escolhas.</span>
-                      </div>
-                    </div>
-
-                    <ng-template #produtoResolvidoTpl>
+                  <ng-template #produtoResolvidoTpl>
                       <div class="resolved-product">
                         <mat-icon>check_circle</mat-icon>
                         <div>
@@ -481,63 +580,15 @@ export class ComercialBetaEditorComponent implements OnInit {
                           <h3>{{ produtoSelecionado ? produtoNome(produtoSelecionado) : '-' }}</h3>
                           <p>{{ resumoProdutoResolvido }}</p>
                           <small>Código: {{ produtoSelecionado?.catalogoProdutoCodigo || produtoSelecionado?.catalogoProdutoId }}</small>
+                          <div class="resolved-actions">
+                            <button mat-stroked-button color="primary" type="button" (click)="limparProdutoSelecionado()">Alterar seleção</button>
+                            <button mat-flat-button color="primary" type="button" (click)="avancarStep()">Continuar</button>
+                          </div>
                         </div>
                       </div>
-                    </ng-template>
                   </ng-template>
-                </section>
-
-                <aside class="selected-panel">
-                  <div class="rev-title">Resumo</div>
-                  <ng-container *ngIf="produtoSelecionado; else nenhumProduto">
-                    <h3>{{ produtoNome(produtoSelecionado) }}</h3>
-                    <p>{{ produtoSelecionado.catalogoProdutoDescricao || 'Sem descrição.' }}</p>
-                    <mat-divider></mat-divider>
-                    <div class="summary-line">
-                      <span>Variações</span>
-                      <strong>{{ produtoSelecionado.parametros.length || 0 }}</strong>
-                    </div>
-                    <div class="summary-line">
-                      <span>Acabamentos</span>
-                      <strong>{{ produtoSelecionado.acabamentos.length || 0 }}</strong>
-                    </div>
-                    <div class="summary-line">
-                      <span>Serviços</span>
-                      <strong>{{ produtoSelecionado.servicos.length || 0 }}</strong>
-                    </div>
-                  </ng-container>
-                  <ng-template #nenhumProduto>
-                    <h3>Nenhum produto selecionado</h3>
-                    <mat-divider></mat-divider>
-                    <div class="summary-line">
-                      <span>Variações</span>
-                      <strong>0</strong>
-                    </div>
-                    <p>Selecione um produto para ver o resumo antes de avançar.</p>
-                  </ng-template>
-                </aside>
-              </div>
-
-                <div class="sec-title m-t-24">Acabamentos</div>
-                <div class="opt-grid" *ngIf="produtoSelecionado?.acabamentos?.length; else semAcabamentos">
-                  <label class="opt-card" *ngFor="let acabamento of produtoSelecionado?.acabamentos">
-                    <mat-checkbox
-                      class="opt-check"
-                      [checked]="acabamentoSelecionado(acabamento.id)"
-                      (change)="alternarAcabamento(acabamento.id, $event.checked)">
-                    </mat-checkbox>
-                    <span>
-                      <span class="opt-name">{{ acabamento.nome }}</span>
-                      <span class="opt-desc">{{ acabamento.descricao || 'Acabamento gráfico' }}</span>
-                    </span>
-                    <span class="opt-price">-</span>
-                  </label>
-                </div>
-                <ng-template #semAcabamentos>
-                  <div class="empty-state compact">
-                    <span>Sem acabamentos disponíveis.</span>
-                  </div>
                 </ng-template>
+              </section>
             </form>
           </mat-step>
 
@@ -695,22 +746,39 @@ export class ComercialBetaEditorComponent implements OnInit {
     .step-inner { width: 100%; max-width: 1200px; margin: 0 auto; padding: 24px; }
     .step-wide { max-width: 1400px; }
     .step-full { max-width: none; }
-    .locator-layout { display: grid; grid-template-columns: 360px minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
-    .direct-search, .funnel-panel, .selected-panel { border: 1px solid rgba(0, 0, 0, .08); border-radius: 10px; background: #fff; padding: 18px; }
-    .result-list, .option-list { display: flex; flex-direction: column; gap: 8px; }
-    .sku-result, .option-button { width: 100%; justify-content: space-between; min-height: 48px; text-align: left; border-radius: 8px; color: #0f172a; }
-    .sku-result span, .sku-result strong, .sku-result small { display: block; }
-    .sku-result small { color: #6b7280; margin-top: 2px; white-space: normal; }
+    .selection-card { width: 100%; border: 1px solid rgba(0, 0, 0, .08); border-radius: 10px; background: #fff; padding: 22px; }
+    .direct-search-block { margin-bottom: 18px; }
+    .or-divider { display: flex; align-items: center; gap: 12px; color: #64748b; font-size: 13px; margin: 4px 0 18px; }
+    .or-divider::before, .or-divider::after { content: ''; height: 1px; flex: 1; background: rgba(0, 0, 0, .08); }
+    .compact-list, .option-list { display: flex; flex-direction: column; gap: 8px; }
+    .sku-result, .option-button { width: 100%; justify-content: space-between; min-height: 50px; text-align: left; border-radius: 8px; color: #0f172a; border: 1px solid rgba(0, 0, 0, .06); padding: 6px 12px; }
+    .sku-result span, .sku-result strong, .sku-result small { display: block; min-width: 0; }
+    .sku-result strong, .option-button { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sku-result small { color: #6b7280; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .sku-result.active, .option-button.active { background: #e8f2ff; color: var(--mdc-theme-primary, #1976d2); font-weight: 700; }
+    .select-action { color: var(--mdc-theme-primary, #1976d2); font-weight: 700; flex: 0 0 auto; }
     .breadcrumb-line { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-bottom: 16px; }
-    .breadcrumb-line button { min-width: 0; padding: 0 8px; }
+    .breadcrumb-line button { min-width: 0; padding: 0 8px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .breadcrumb-line button::after { content: '>'; color: #94a3b8; margin-left: 10px; }
     .breadcrumb-line button:last-child::after { content: ''; margin: 0; }
-    .funnel-question { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
-    .funnel-question h3, .resolved-product h3 { margin: 4px 0 0; font-size: 20px; }
+    .section-intro { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .section-intro h3, .resolved-product h3 { margin: 4px 0 0; font-size: 20px; overflow-wrap: anywhere; }
     .resolved-product { display: grid; grid-template-columns: auto 1fr; gap: 12px; padding: 18px; border: 1px solid #bfdbfe; border-radius: 10px; background: #eff6ff; }
     .resolved-product mat-icon { color: #0f766e; }
-    .resolved-product p { margin: 4px 0; color: #475569; }
+    .resolved-product p { margin: 4px 0; color: #475569; overflow-wrap: anywhere; }
+    .resolved-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+    .funnel-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+    .funnel-column { min-width: 0; display: grid; grid-template-rows: auto auto minmax(280px, 1fr) auto auto; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
+    .funnel-header { padding: 14px 14px 10px; min-height: 72px; }
+    .funnel-header h3 { margin: 4px 0 0; font-size: 16px; line-height: 1.25; overflow-wrap: anywhere; }
+    .funnel-separator { height: 1px; background: #e2e8f0; }
+    .funnel-list { display: flex; flex-direction: column; gap: 6px; padding: 10px; }
+    .funnel-option { width: 100%; min-height: 38px; justify-content: flex-start; text-align: left; border-radius: 6px; border: 1px solid transparent; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+    .funnel-option:hover { background: #f8fafc; border-color: #cbd5e1; }
+    .funnel-option.active { background: #e8f2ff; border-color: #93c5fd; color: var(--mdc-theme-primary, #1976d2); font-weight: 700; }
+    .funnel-pager { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 4px 8px; color: #475569; font-weight: 700; }
+    .funnel-pager button { width: 32px; height: 32px; padding: 0; }
+    .funnel-pager span { min-width: 46px; text-align: center; font-size: 13px; }
     .wizard-search { width: 100%; }
     .produto-table-card, .selected-panel, .review-card, .price-card, .price-box, .var-card { border: 1px solid rgba(0, 0, 0, .08); border-radius: 10px; background: #fff; }
     .produto-table-card { overflow: hidden; }
@@ -769,28 +837,38 @@ export class ComercialBetaEditorComponent implements OnInit {
     .text-center { text-align: center; }
     .text-right { text-align: right; }
     @media (max-width: 1100px) {
-      .locator-layout, .price-layout { grid-template-columns: 1fr; }
+      .price-layout { grid-template-columns: 1fr; }
       .var-grid { grid-template-columns: 1fr; }
+      .funnel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
     @media (max-width: 720px) {
       .form-grid, .rev-header { grid-template-columns: 1fr; }
       .step-inner { padding: 16px; }
-      .produto-table { min-width: 760px; }
-      .produto-table-card { overflow-x: auto; }
+      .selection-card { padding: 16px; }
+      .funnel-grid { grid-template-columns: 1fr; }
+      .funnel-column { grid-template-rows: auto auto auto auto auto; }
       .wizard-footer { align-items: stretch; }
       .wizard-footer .right { flex: 1; justify-content: flex-end; }
+      .resolved-actions button { flex: 1 1 180px; }
     }
   `],
 })
 export class GraficaProdutoWizardDialogComponent implements OnInit {
   @ViewChild('stepper') stepper?: MatStepper;
   produtos: GraficaProduto[] = [];
+  produtosFunil: GraficaProduto[] = [];
   parametros: GraficaParametro[] = [];
   selecoes: Record<string, string> = {};
   caminhoSelecoes: Array<{ codigo: string; label: string; valor: string }> = [];
   parametroAtual: GraficaParametro | null = null;
   opcoesAtuais: GraficaOpcao[] = [];
   produtoSelecionado: GraficaProduto | null = null;
+  produtoNomeSelecionado: string | null = null;
+  materialSelecionadoId: number | null = null;
+  formatoSelecionadoId: number | null = null;
+  corSelecionadaId: number | null = null;
+  paginasFunil: Record<FunilColuna, number> = { produto: 0, material: 0, formato: 0, cor: 0 };
+  readonly itensPorPaginaFunil = 6;
   produtoBusca = '';
   acabamentosSelecionados = new Set<number>();
   servicosSelecionados = new Set<number>();
@@ -798,6 +876,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
   composicao: ComposicaoComercialResolvida | null = null;
   precificando = false;
   buscandoProdutos = false;
+  carregandoFunil = false;
   carregandoOpcoes = false;
   private readonly buscaProdutos$ = new Subject<string>();
   produtoForm = this.fb.group({ produtoGraficoId: [null as number | null, Validators.required] });
@@ -831,12 +910,17 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
       this.selecionarProduto(this.data.produtoPreSelecionado, true, true);
     } else {
       this.buscarProdutosDireto('');
+      this.carregarProdutosFunil();
     }
   }
 
   get breadcrumb(): Array<{ label: string }> {
     const produto = this.produtoSelecionado ? [{ label: this.produtoNome(this.produtoSelecionado) }] : [];
     return [...produto, ...this.caminhoSelecoes.map((item) => ({ label: item.valor }))];
+  }
+
+  get buscaAtiva(): boolean {
+    return this.produtoBusca.trim().length > 0;
   }
 
   get currentStepLabel(): string {
@@ -877,6 +961,81 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
 
   buscarProdutosDireto(termo: string): void {
     this.buscaProdutos$.next((termo || '').trim());
+  }
+
+  opcoesFunil(coluna: FunilColuna): FunilOpcao[] {
+    if (coluna === 'produto') {
+      return this.agruparOpcoes(this.produtosFunil, (produto) => this.produtoNome(produto));
+    }
+    if (coluna === 'material') {
+      return this.agruparCadastro(this.produtosPorProduto(), (produto) => produto.material);
+    }
+    if (coluna === 'formato') {
+      return this.agruparCadastro(this.produtosPorMaterial(), (produto) => produto.formato);
+    }
+    return this.agruparCadastro(this.produtosPorFormato(), (produto) => produto.cor, true);
+  }
+
+  opcoesPaginadas(coluna: FunilColuna): FunilOpcao[] {
+    const inicio = this.paginasFunil[coluna] * this.itensPorPaginaFunil;
+    return this.opcoesFunil(coluna).slice(inicio, inicio + this.itensPorPaginaFunil);
+  }
+
+  paginaAtualFunil(coluna: FunilColuna): number {
+    return Math.min(this.paginasFunil[coluna] + 1, this.totalPaginasFunil(coluna));
+  }
+
+  totalPaginasFunil(coluna: FunilColuna): number {
+    return Math.max(1, Math.ceil(this.opcoesFunil(coluna).length / this.itensPorPaginaFunil));
+  }
+
+  podePaginarAnterior(coluna: FunilColuna): boolean {
+    return this.paginasFunil[coluna] > 0;
+  }
+
+  podePaginarProxima(coluna: FunilColuna): boolean {
+    return this.paginasFunil[coluna] + 1 < this.totalPaginasFunil(coluna);
+  }
+
+  paginaAnteriorFunil(coluna: FunilColuna): void {
+    if (!this.podePaginarAnterior(coluna)) return;
+    this.paginasFunil[coluna] -= 1;
+  }
+
+  proximaPaginaFunil(coluna: FunilColuna): void {
+    if (!this.podePaginarProxima(coluna)) return;
+    this.paginasFunil[coluna] += 1;
+  }
+
+  selecionarProdutoFunil(opcao: FunilOpcao): void {
+    this.produtoNomeSelecionado = opcao.label;
+    this.materialSelecionadoId = null;
+    this.formatoSelecionadoId = null;
+    this.corSelecionadaId = null;
+    this.resetarPaginasFunil('material', 'formato', 'cor');
+    this.limparProdutoResolvido();
+  }
+
+  selecionarMaterialFunil(opcao: FunilOpcao): void {
+    this.materialSelecionadoId = Number(opcao.key);
+    this.formatoSelecionadoId = null;
+    this.corSelecionadaId = null;
+    this.resetarPaginasFunil('formato', 'cor');
+    this.limparProdutoResolvido();
+  }
+
+  selecionarFormatoFunil(opcao: FunilOpcao): void {
+    this.formatoSelecionadoId = Number(opcao.key);
+    this.corSelecionadaId = null;
+    this.resetarPaginasFunil('cor');
+    this.limparProdutoResolvido();
+  }
+
+  selecionarCorFunil(opcao: FunilOpcao): void {
+    this.corSelecionadaId = Number(opcao.key);
+    if (opcao.produto) {
+      this.selecionarProduto(opcao.produto, true);
+    }
   }
 
   selecionarProduto(produto: GraficaProduto, direto = false, iniciarEmPreco = false): void {
@@ -1078,7 +1237,94 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
       }));
   }
 
-  private limparProdutoSelecionado(): void {
+  limparProdutoSelecionado(): void {
+    this.produtoSelecionado = null;
+    this.produtoForm.reset({ produtoGraficoId: null });
+    this.produtoBusca = '';
+    this.buscarProdutosDireto('');
+    this.produtoNomeSelecionado = null;
+    this.materialSelecionadoId = null;
+    this.formatoSelecionadoId = null;
+    this.corSelecionadaId = null;
+    this.resetarPaginasFunil('produto', 'material', 'formato', 'cor');
+    this.parametros = [];
+    this.selecoes = {};
+    this.caminhoSelecoes = [];
+    this.parametroAtual = null;
+    this.opcoesAtuais = [];
+    this.acabamentosSelecionados.clear();
+    this.servicosSelecionados.clear();
+    this.limparPreco();
+  }
+
+  private carregarProdutosFunil(page = 0, acumulado: GraficaProduto[] = []): void {
+    if (page === 0) {
+      this.carregandoFunil = true;
+    }
+    this.graficaService.listar({ page, size: 200, ativo: true, sort: 'nome,asc' }).subscribe({
+      next: (pagina) => {
+        const produtos = [...acumulado, ...(pagina.content || [])];
+        if (!pagina.last && pagina.content?.length) {
+          this.carregarProdutosFunil(page + 1, produtos);
+          return;
+        }
+        this.produtosFunil = produtos;
+        this.carregandoFunil = false;
+      },
+      error: () => {
+        this.produtosFunil = acumulado;
+        this.carregandoFunil = false;
+      },
+    });
+  }
+
+  private produtosPorProduto(): GraficaProduto[] {
+    return this.produtosFunil.filter((produto) => this.produtoNome(produto) === this.produtoNomeSelecionado);
+  }
+
+  private produtosPorMaterial(): GraficaProduto[] {
+    return this.produtosPorProduto().filter((produto) => produto.material?.id === this.materialSelecionadoId);
+  }
+
+  private produtosPorFormato(): GraficaProduto[] {
+    return this.produtosPorMaterial().filter((produto) => produto.formato?.id === this.formatoSelecionadoId);
+  }
+
+  private agruparCadastro(
+    produtos: GraficaProduto[],
+    cadastro: (produto: GraficaProduto) => { id: number; nome: string } | null | undefined,
+    manterProduto = false,
+  ): FunilOpcao[] {
+    const mapa = new Map<string, FunilOpcao>();
+    produtos.forEach((produto) => {
+      const item = cadastro(produto);
+      if (!item?.id || !item.nome) return;
+      const key = String(item.id);
+      if (!mapa.has(key)) {
+        mapa.set(key, { key, label: item.nome, produto: manterProduto ? produto : undefined });
+      }
+    });
+    return [...mapa.values()].sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
+  }
+
+  private agruparOpcoes(produtos: GraficaProduto[], label: (produto: GraficaProduto) => string): FunilOpcao[] {
+    const mapa = new Map<string, FunilOpcao>();
+    produtos.forEach((produto) => {
+      const nome = label(produto).trim();
+      if (!nome) return;
+      const key = nome.toLocaleLowerCase('pt-BR');
+      if (!mapa.has(key)) {
+        mapa.set(key, { key, label: nome });
+      }
+    });
+    return [...mapa.values()].sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
+  }
+
+  private resetarPaginasFunil(...colunas: FunilColuna[]): void {
+    colunas.forEach((coluna) => this.paginasFunil[coluna] = 0);
+  }
+
+  private limparProdutoResolvido(): void {
     this.produtoSelecionado = null;
     this.produtoForm.reset({ produtoGraficoId: null });
     this.parametros = [];
