@@ -367,11 +367,8 @@ export class ComercialBetaEditorComponent implements OnInit {
     <div class="wizard-shell">
       <div class="dialog-header">
         <div class="title-stack">
-          <h2 mat-dialog-title class="m-b-0">
-            <span class="title-main">Adicionar produto</span>
-            <span class="title-divider">-</span>
-            <span class="title-step" aria-live="polite">{{ currentStepLabel }}</span>
-          </h2>
+          <h2 mat-dialog-title class="m-b-0">Adicionar produto</h2>
+          <p>Encontre o produto pela combinação de características.</p>
         </div>
         <button mat-icon-button mat-dialog-close aria-label="Fechar">
           <mat-icon>close</mat-icon>
@@ -383,65 +380,21 @@ export class ComercialBetaEditorComponent implements OnInit {
         <mat-horizontal-stepper [linear]="true" #stepper class="wizard-stepper">
           <mat-step [stepControl]="produtoForm" label="Produto e Variação">
             <form [formGroup]="produtoForm" class="step-inner step-full produto-step">
-              <section class="selection-card">
-                <div class="direct-search-block">
-                  <div class="sec-title">Pesquisar diretamente</div>
-                  <mat-form-field appearance="outline" class="wizard-search">
-                    <input
-                      matInput
-                      type="search"
-                      placeholder="Pesquisar produto"
-                      [(ngModel)]="produtoBusca"
-                      [ngModelOptions]="{ standalone: true }"
-                      (ngModelChange)="buscarProdutosDireto($event)" />
-                    <mat-icon matSuffix>search</mat-icon>
-                  </mat-form-field>
-                </div>
-
-                <ng-container *ngIf="buscaAtiva && !produtoSelecionado; else fluxoCaracteristicas">
-                  <div class="section-intro">
-                    <div>
-                      <div class="rev-title">Resultados</div>
-                      <h3>Selecione o produto encontrado</h3>
-                    </div>
-                    <mat-progress-spinner *ngIf="buscandoProdutos" mode="indeterminate" diameter="28"></mat-progress-spinner>
-                  </div>
-
-                  <div class="compact-list">
-                    <button
-                      mat-button
-                      type="button"
-                      class="sku-result"
-                      *ngFor="let produto of produtos"
-                      (click)="selecionarProduto(produto, true)">
-                      <span>
-                        <strong>{{ produtoNome(produto) }}</strong>
-                        <small>{{ variacoesResumo(produto) }}</small>
-                      </span>
-                      <span class="select-action">Selecionar</span>
-                    </button>
-                    <div class="empty-state compact" *ngIf="buscandoProdutos">
-                      <mat-icon>hourglass_empty</mat-icon>
-                      <span>Buscando produtos...</span>
-                    </div>
-                    <div class="empty-state compact" *ngIf="!buscandoProdutos && !produtos.length">
-                      <mat-icon>search_off</mat-icon>
-                      <span>Nenhum produto encontrado.</span>
-                    </div>
-                  </div>
-                </ng-container>
-
-                <ng-template #fluxoCaracteristicas>
-                  <div class="or-divider">
-                    <span>ou encontre pelas características</span>
-                  </div>
-
                   <ng-container *ngIf="!produtoSelecionado; else produtoResolvidoTpl">
                     <div class="funnel-grid">
                       <section class="funnel-column">
                         <div class="funnel-header">
                           <div class="rev-title">Produto</div>
-                          <h3>Escolha o produto</h3>
+                          <mat-form-field appearance="outline" class="funnel-search" subscriptSizing="dynamic">
+                            <input
+                              matInput
+                              type="search"
+                              placeholder="Buscar"
+                              [(ngModel)]="filtrosFunil.produto"
+                              [ngModelOptions]="{ standalone: true }"
+                              (ngModelChange)="buscarNaColunaFunil('produto', $event)" />
+                            <mat-icon matSuffix>search</mat-icon>
+                          </mat-form-field>
                         </div>
                         <div class="funnel-separator"></div>
                         <div class="funnel-list">
@@ -452,7 +405,8 @@ export class ComercialBetaEditorComponent implements OnInit {
                             *ngFor="let opcao of opcoesPaginadas('produto')"
                             [class.active]="produtoNomeSelecionado === opcao.label"
                             (click)="selecionarProdutoFunil(opcao)">
-                            {{ opcao.label }}
+                            <span>{{ opcao.label }}</span>
+                            <mat-icon>chevron_right</mat-icon>
                           </button>
                           <div class="empty-state compact" *ngIf="carregandoFunil">
                             <mat-icon>hourglass_empty</mat-icon>
@@ -477,7 +431,16 @@ export class ComercialBetaEditorComponent implements OnInit {
                       <section class="funnel-column" *ngIf="produtoNomeSelecionado">
                         <div class="funnel-header">
                           <div class="rev-title">Material</div>
-                          <h3>Escolha o material</h3>
+                          <mat-form-field appearance="outline" class="funnel-search" subscriptSizing="dynamic">
+                            <input
+                              matInput
+                              type="search"
+                              placeholder="Buscar"
+                              [(ngModel)]="filtrosFunil.material"
+                              [ngModelOptions]="{ standalone: true }"
+                              (ngModelChange)="buscarNaColunaFunil('material', $event)" />
+                            <mat-icon matSuffix>search</mat-icon>
+                          </mat-form-field>
                         </div>
                         <div class="funnel-separator"></div>
                         <div class="funnel-list">
@@ -488,7 +451,8 @@ export class ComercialBetaEditorComponent implements OnInit {
                             *ngFor="let opcao of opcoesPaginadas('material')"
                             [class.active]="materialSelecionadoId === +opcao.key"
                             (click)="selecionarMaterialFunil(opcao)">
-                            {{ opcao.label }}
+                            <span>{{ opcao.label }}</span>
+                            <mat-icon>chevron_right</mat-icon>
                           </button>
                           <div class="empty-state compact" *ngIf="!opcoesFunil('material').length">
                             <span>Nenhum material encontrado.</span>
@@ -509,7 +473,16 @@ export class ComercialBetaEditorComponent implements OnInit {
                       <section class="funnel-column" *ngIf="produtoNomeSelecionado && materialSelecionadoId">
                         <div class="funnel-header">
                           <div class="rev-title">Formato</div>
-                          <h3>Escolha o formato</h3>
+                          <mat-form-field appearance="outline" class="funnel-search" subscriptSizing="dynamic">
+                            <input
+                              matInput
+                              type="search"
+                              placeholder="Buscar"
+                              [(ngModel)]="filtrosFunil.formato"
+                              [ngModelOptions]="{ standalone: true }"
+                              (ngModelChange)="buscarNaColunaFunil('formato', $event)" />
+                            <mat-icon matSuffix>search</mat-icon>
+                          </mat-form-field>
                         </div>
                         <div class="funnel-separator"></div>
                         <div class="funnel-list">
@@ -520,7 +493,8 @@ export class ComercialBetaEditorComponent implements OnInit {
                             *ngFor="let opcao of opcoesPaginadas('formato')"
                             [class.active]="formatoSelecionadoId === +opcao.key"
                             (click)="selecionarFormatoFunil(opcao)">
-                            {{ opcao.label }}
+                            <span>{{ opcao.label }}</span>
+                            <mat-icon>chevron_right</mat-icon>
                           </button>
                           <div class="empty-state compact" *ngIf="!opcoesFunil('formato').length">
                             <span>Nenhum formato encontrado.</span>
@@ -541,7 +515,16 @@ export class ComercialBetaEditorComponent implements OnInit {
                       <section class="funnel-column" *ngIf="produtoNomeSelecionado && materialSelecionadoId && formatoSelecionadoId">
                         <div class="funnel-header">
                           <div class="rev-title">Cor</div>
-                          <h3>Escolha a cor</h3>
+                          <mat-form-field appearance="outline" class="funnel-search" subscriptSizing="dynamic">
+                            <input
+                              matInput
+                              type="search"
+                              placeholder="Buscar"
+                              [(ngModel)]="filtrosFunil.cor"
+                              [ngModelOptions]="{ standalone: true }"
+                              (ngModelChange)="buscarNaColunaFunil('cor', $event)" />
+                            <mat-icon matSuffix>search</mat-icon>
+                          </mat-form-field>
                         </div>
                         <div class="funnel-separator"></div>
                         <div class="funnel-list">
@@ -552,7 +535,8 @@ export class ComercialBetaEditorComponent implements OnInit {
                             *ngFor="let opcao of opcoesPaginadas('cor')"
                             [class.active]="corSelecionadaId === +opcao.key"
                             (click)="selecionarCorFunil(opcao)">
-                            {{ opcao.label }}
+                            <span>{{ opcao.label }}</span>
+                            <mat-icon>chevron_right</mat-icon>
                           </button>
                           <div class="empty-state compact" *ngIf="!opcoesFunil('cor').length">
                             <span>Nenhuma cor encontrada.</span>
@@ -587,8 +571,6 @@ export class ComercialBetaEditorComponent implements OnInit {
                         </div>
                       </div>
                   </ng-template>
-                </ng-template>
-              </section>
             </form>
           </mat-step>
 
@@ -732,24 +714,21 @@ export class ComercialBetaEditorComponent implements OnInit {
   styles: [`
     :host ::ng-deep .mat-mdc-dialog-content { max-height: initial !important; padding: 0 !important; }
     .wizard-shell { display: flex; flex-direction: column; min-height: 78vh; height: min(97vh, calc(100dvh - 8px)); max-height: 1200px; background: #fff; }
-    .dialog-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 12px; gap: 12px; }
-    .title-stack h2 { font-size: 20px; line-height: 1.3; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .title-main { font-weight: 600; }
-    .title-divider { color: #6b7280; font-weight: 500; }
-    .title-step { font-weight: 700; color: var(--mdc-theme-primary, #1976d2); }
+    .dialog-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 20px 24px 16px; gap: 12px; }
+    .title-stack h2 { font-size: 22px; line-height: 1.25; font-weight: 700; }
+    .title-stack p { margin: 4px 0 0; color: #64748b; font-size: 14px; }
     .wizard-body { flex: 1; overflow: auto; background: #fff; }
-    .wizard-stepper { background: #fff; }
+    .wizard-stepper { display: flex; flex-direction: column; min-height: 100%; background: #fff; }
     .wizard-stepper ::ng-deep .mat-horizontal-stepper-header-container { position: sticky; top: 0; z-index: 2; background: #fff; border-bottom: 1px solid rgba(0, 0, 0, .06); padding: 8px 24px 0; }
+    .wizard-stepper ::ng-deep .mat-horizontal-content-container { flex: 1; display: flex; padding: 0; }
+    .wizard-stepper ::ng-deep .mat-horizontal-stepper-content[aria-expanded='true'] { flex: 1; display: flex; min-width: 0; }
     .wizard-footer { position: sticky; bottom: 0; z-index: 3; background: #fff; border-top: 1px solid rgba(0, 0, 0, .06); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     .wizard-footer .right { display: flex; gap: 10px; }
     .primary-action { display: inline-flex; align-items: center; gap: 8px; }
     .step-inner { width: 100%; max-width: 1200px; margin: 0 auto; padding: 24px; }
     .step-wide { max-width: 1400px; }
     .step-full { max-width: none; }
-    .selection-card { width: 100%; border: 1px solid rgba(0, 0, 0, .08); border-radius: 10px; background: #fff; padding: 22px; }
-    .direct-search-block { margin-bottom: 18px; }
-    .or-divider { display: flex; align-items: center; gap: 12px; color: #64748b; font-size: 13px; margin: 4px 0 18px; }
-    .or-divider::before, .or-divider::after { content: ''; height: 1px; flex: 1; background: rgba(0, 0, 0, .08); }
+    .produto-step { min-height: 0; }
     .compact-list, .option-list { display: flex; flex-direction: column; gap: 8px; }
     .sku-result, .option-button { width: 100%; justify-content: space-between; min-height: 50px; text-align: left; border-radius: 8px; color: #0f172a; border: 1px solid rgba(0, 0, 0, .06); padding: 6px 12px; }
     .sku-result span, .sku-result strong, .sku-result small { display: block; min-width: 0; }
@@ -767,15 +746,21 @@ export class ComercialBetaEditorComponent implements OnInit {
     .resolved-product mat-icon { color: #0f766e; }
     .resolved-product p { margin: 4px 0; color: #475569; overflow-wrap: anywhere; }
     .resolved-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
-    .funnel-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
-    .funnel-column { min-width: 0; display: grid; grid-template-rows: auto auto minmax(280px, 1fr) auto auto; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
-    .funnel-header { padding: 14px 14px 10px; min-height: 72px; }
-    .funnel-header h3 { margin: 4px 0 0; font-size: 16px; line-height: 1.25; overflow-wrap: anywhere; }
+    .funnel-grid { flex: 1; min-height: 430px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+    .funnel-column { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto auto; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
+    .funnel-header { padding: 14px 14px 10px; }
+    .funnel-search { width: 100%; margin-top: 10px; font-size: 13px; }
+    .funnel-search ::ng-deep .mat-mdc-form-field-infix { min-height: 36px; padding-top: 7px; padding-bottom: 7px; }
+    .funnel-search ::ng-deep .mat-mdc-text-field-wrapper { background: #fff; }
+    .funnel-search ::ng-deep .mat-mdc-form-field-icon-suffix { color: #64748b; }
     .funnel-separator { height: 1px; background: #e2e8f0; }
     .funnel-list { display: flex; flex-direction: column; gap: 6px; padding: 10px; }
-    .funnel-option { width: 100%; min-height: 38px; justify-content: flex-start; text-align: left; border-radius: 6px; border: 1px solid transparent; color: #0f172a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+    .funnel-option { width: 100%; min-height: 38px; justify-content: space-between; text-align: left; border-radius: 6px; border: 1px solid transparent; color: #0f172a; cursor: pointer; }
+    .funnel-option span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .funnel-option mat-icon { flex: 0 0 auto; width: 18px; height: 18px; font-size: 18px; color: #94a3b8; }
     .funnel-option:hover { background: #f8fafc; border-color: #cbd5e1; }
     .funnel-option.active { background: #e8f2ff; border-color: #93c5fd; color: var(--mdc-theme-primary, #1976d2); font-weight: 700; }
+    .funnel-option.active mat-icon { color: var(--mdc-theme-primary, #1976d2); }
     .funnel-pager { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 4px 8px; color: #475569; font-weight: 700; }
     .funnel-pager button { width: 32px; height: 32px; padding: 0; }
     .funnel-pager span { min-width: 46px; text-align: center; font-size: 13px; }
@@ -844,9 +829,8 @@ export class ComercialBetaEditorComponent implements OnInit {
     @media (max-width: 720px) {
       .form-grid, .rev-header { grid-template-columns: 1fr; }
       .step-inner { padding: 16px; }
-      .selection-card { padding: 16px; }
       .funnel-grid { grid-template-columns: 1fr; }
-      .funnel-column { grid-template-rows: auto auto auto auto auto; }
+      .funnel-column { min-height: 360px; grid-template-rows: auto auto minmax(0, 1fr) auto auto; }
       .wizard-footer { align-items: stretch; }
       .wizard-footer .right { flex: 1; justify-content: flex-end; }
       .resolved-actions button { flex: 1 1 180px; }
@@ -868,6 +852,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
   formatoSelecionadoId: number | null = null;
   corSelecionadaId: number | null = null;
   paginasFunil: Record<FunilColuna, number> = { produto: 0, material: 0, formato: 0, cor: 0 };
+  filtrosFunil: Record<FunilColuna, string> = { produto: '', material: '', formato: '', cor: '' };
   readonly itensPorPaginaFunil = 6;
   produtoBusca = '';
   acabamentosSelecionados = new Set<number>();
@@ -964,16 +949,17 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
   }
 
   opcoesFunil(coluna: FunilColuna): FunilOpcao[] {
+    const filtrar = (opcoes: FunilOpcao[]) => this.filtrarOpcoesFunil(coluna, opcoes);
     if (coluna === 'produto') {
-      return this.agruparOpcoes(this.produtosFunil, (produto) => this.produtoNome(produto));
+      return filtrar(this.agruparOpcoes(this.produtosFunil, (produto) => this.produtoNome(produto)));
     }
     if (coluna === 'material') {
-      return this.agruparCadastro(this.produtosPorProduto(), (produto) => produto.material);
+      return filtrar(this.agruparCadastro(this.produtosPorProduto(), (produto) => produto.material));
     }
     if (coluna === 'formato') {
-      return this.agruparCadastro(this.produtosPorMaterial(), (produto) => produto.formato);
+      return filtrar(this.agruparCadastro(this.produtosPorMaterial(), (produto) => produto.formato));
     }
-    return this.agruparCadastro(this.produtosPorFormato(), (produto) => produto.cor, true);
+    return filtrar(this.agruparCadastro(this.produtosPorFormato(), (produto) => produto.cor, true));
   }
 
   opcoesPaginadas(coluna: FunilColuna): FunilOpcao[] {
@@ -1005,6 +991,11 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
   proximaPaginaFunil(coluna: FunilColuna): void {
     if (!this.podePaginarProxima(coluna)) return;
     this.paginasFunil[coluna] += 1;
+  }
+
+  buscarNaColunaFunil(coluna: FunilColuna, termo: string): void {
+    this.filtrosFunil[coluna] = termo || '';
+    this.resetarPaginasFunil(coluna);
   }
 
   selecionarProdutoFunil(opcao: FunilOpcao): void {
@@ -1246,6 +1237,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
     this.materialSelecionadoId = null;
     this.formatoSelecionadoId = null;
     this.corSelecionadaId = null;
+    this.filtrosFunil = { produto: '', material: '', formato: '', cor: '' };
     this.resetarPaginasFunil('produto', 'material', 'formato', 'cor');
     this.parametros = [];
     this.selecoes = {};
@@ -1322,6 +1314,20 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
 
   private resetarPaginasFunil(...colunas: FunilColuna[]): void {
     colunas.forEach((coluna) => this.paginasFunil[coluna] = 0);
+  }
+
+  private filtrarOpcoesFunil(coluna: FunilColuna, opcoes: FunilOpcao[]): FunilOpcao[] {
+    const termo = this.normalizarBusca(this.filtrosFunil[coluna]);
+    if (!termo) return opcoes;
+    return opcoes.filter((opcao) => this.normalizarBusca(opcao.label).includes(termo));
+  }
+
+  private normalizarBusca(valor?: string | null): string {
+    return (valor || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleLowerCase('pt-BR')
+      .trim();
   }
 
   private limparProdutoResolvido(): void {
