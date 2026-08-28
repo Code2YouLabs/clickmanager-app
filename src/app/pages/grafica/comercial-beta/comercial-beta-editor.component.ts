@@ -377,6 +377,7 @@ export class ComercialBetaEditorComponent implements OnInit {
           <mat-icon>close</mat-icon>
         </button>
       </div>
+      <mat-divider></mat-divider>
 
       <mat-dialog-content class="wizard-body">
         <mat-horizontal-stepper [linear]="true" #stepper class="wizard-stepper">
@@ -733,7 +734,7 @@ export class ComercialBetaEditorComponent implements OnInit {
     .step-inner { width: 100%; max-width: 1200px; margin: 0 auto; padding: 12px 24px 16px; }
     .step-wide { max-width: 1400px; }
     .step-full { max-width: none; }
-    .produto-step { min-height: 0; }
+    .produto-step { flex: 1; min-height: 0; display: flex; flex-direction: column; }
     .compact-list, .option-list { display: flex; flex-direction: column; gap: 8px; }
     .sku-result, .option-button { width: 100%; justify-content: space-between; min-height: 50px; text-align: left; border-radius: 8px; color: #0f172a; border: 1px solid rgba(0, 0, 0, .06); padding: 6px 12px; }
     .sku-result span, .sku-result strong, .sku-result small { display: block; min-width: 0; }
@@ -751,7 +752,7 @@ export class ComercialBetaEditorComponent implements OnInit {
     .resolved-product mat-icon { color: #0f766e; }
     .resolved-product p { margin: 4px 0; color: #475569; overflow-wrap: anywhere; }
     .resolved-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
-    .funnel-grid { flex: 1; min-height: 468px; display: grid; grid-template-columns: repeat(4, minmax(220px, 1fr)); gap: 14px; align-items: stretch; }
+    .funnel-grid { flex: 1; width: 100%; min-height: 468px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; align-items: stretch; }
     .funnel-column { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto auto; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
     .funnel-header { min-width: 0; padding: 12px 14px 10px; }
     .funnel-search { width: 100%; max-width: 100%; margin-top: 10px; font-size: 13px; }
