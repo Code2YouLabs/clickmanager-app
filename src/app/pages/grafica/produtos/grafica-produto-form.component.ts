@@ -5,15 +5,16 @@ import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { catchError, forkJoin, map, Observable, of, switchMap } from 'rxjs';
 import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
-import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
 import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { PrecoSelectorComponent } from 'src/app/components/preco/preco-selector.component';
+import { RichTextEditorComponent } from 'src/app/components/rich-text-editor/rich-text-editor.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { MaterialModule } from 'src/app/material.module';
 import { ToastrService } from 'ngx-toastr';
+import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { DepositoImagemGaleriaComponent } from '../../deposito/components/deposito-imagem-galeria/deposito-imagem-galeria.component';
-import { CatalogoCategoriaOption, CatalogoProdutoImagemRequest } from '../../catalogo/shared/models/catalogo.models';
+import { CatalogoCategoria, CatalogoCategoriaOption, CatalogoProdutoImagemRequest } from '../../catalogo/shared/models/catalogo.models';
 import { CatalogoCategoriaService } from '../../catalogo/shared/services/catalogo.service';
 import { catalogoErrorMessage, catalogoSlugify } from '../../catalogo/shared/utils/catalogo-utils';
 import {
@@ -27,6 +28,7 @@ import {
   GraficaProdutoRequest,
 } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
+import { GraficaProdutoAcabamentoDialogComponent, ProdutoAcabamentoUx } from './grafica-produto-acabamento-dialog.component';
 import { GraficaCadastroRapidoDialogComponent } from './grafica-cadastro-rapido-dialog.component';
 
 type TipoPrecoLegado = 'FIXO' | 'QUANTIDADE' | 'DEMANDA' | 'METRO';
@@ -55,7 +57,7 @@ type ProdutoFormSnapshot = {
     PrecoSelectorComponent,
     DepositoImagemGaleriaComponent,
     InputTextoRestritoComponent,
-    InputTextareaComponent,
+    RichTextEditorComponent,
     InputOptionsComponent,
   ],
   template: `
@@ -77,13 +79,16 @@ type ProdutoFormSnapshot = {
 
         <app-section-card title="Dados do produto">
           <div class="form-grid product-grid">
-            <app-input-texto-restrito
-              [control]="nomeControl"
-              label="Nome"
-              placeholder="Panfleto 10x15 Couchê 150g 4x4"
-              [maxlength]="160"
-              requiredError="Informe o nome do produto.">
-            </app-input-texto-restrito>
+            <div class="product-name">
+              <app-input-texto-restrito
+                [control]="nomeControl"
+                label="Nome"
+                placeholder="Panfleto"
+                [maxlength]="160"
+                requiredError="Informe o nome do produto.">
+              </app-input-texto-restrito>
+            </div>
+
             <div class="product-category">
               <app-input-options
                 [control]="categoriaControl"
@@ -91,17 +96,25 @@ type ProdutoFormSnapshot = {
                 placeholder="Categoria"
                 [options]="categorias"
                 [showNull]="true"
-                nullLabel="Sem categoria">
+                nullLabel="Sem categoria"
+                createLabel="Nova categoria"
+                [createDisabled]="salvando"
+                (createClick)="abrirCadastroRapido('categoria')">
               </app-input-options>
-              <mat-checkbox formControlName="exibirNoSite">Exibir este produto no site</mat-checkbox>
             </div>
-            <app-input-textarea
-              [control]="descricaoControl"
-              label="Descrição"
-              [rows]="7"
-              [maxlength]="500">
-            </app-input-textarea>
-            <div class="product-images">
+
+            <div class="rich-field product-media-field">
+              <mat-label class="f-s-14 f-w-600 m-b-4 d-block">Descrição</mat-label>
+              <small class="product-field-subtitle">Use a descrição para detalhes comerciais, instruções e diferenciais do produto.</small>
+              <app-rich-text-editor
+                formControlName="descricao"
+                placeholder="Digite a descrição do produto"
+                [minHeight]="180"
+                [maxLength]="5000">
+              </app-rich-text-editor>
+            </div>
+
+            <div class="product-images product-media-field">
               <app-deposito-imagem-galeria
                 context="catalogo-produtos"
                 uploadEndpoint="api/grafica/produtos/imagens/upload"
@@ -113,6 +126,10 @@ type ProdutoFormSnapshot = {
                 (imagensChange)="onGaleriaChange($event)"
                 (uploadingChange)="uploading = $event">
               </app-deposito-imagem-galeria>
+            </div>
+
+            <div class="product-publish-option">
+              <mat-checkbox formControlName="exibirNoSite">Exibir este produto no site</mat-checkbox>
             </div>
           </div>
         </app-section-card>
@@ -146,18 +163,6 @@ type ProdutoFormSnapshot = {
               [createDisabled]="salvando"
               (createClick)="abrirCadastroRapido('cor')">
             </app-input-options>
-            <mat-form-field appearance="outline">
-              <mat-label>Acabamentos</mat-label>
-              <mat-select multiple formControlName="acabamentoIds">
-                <mat-option *ngFor="let item of acabamentos" [value]="item.id">{{ item.nome }}</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <mat-form-field appearance="outline">
-              <mat-label>Serviços</mat-label>
-              <mat-select multiple formControlName="servicoIds">
-                <mat-option *ngFor="let item of servicos" [value]="item.id">{{ item.nome }}</mat-option>
-              </mat-select>
-            </mat-form-field>
           </div>
         </app-section-card>
 
@@ -169,7 +174,47 @@ type ProdutoFormSnapshot = {
             [formGroup]="precoForm"
             [tiposDisponiveis]="['FIXO', 'QUANTIDADE', 'DEMANDA', 'METRO']">
           </app-preco-selector>
-          <div class="validation-hint" *ngIf="precoForm.invalid">Complete os campos obrigatórios da política de preço.</div>
+        </app-section-card>
+
+        <app-section-card title="Acabamentos" subtitle="Operações opcionais aplicadas ao produto.">
+          <button section-card-actions mat-stroked-button color="primary" type="button" (click)="abrirAcabamentoDialog()">
+            <mat-icon>add</mat-icon>
+            Adicionar acabamento
+          </button>
+
+          @if (!acabamentosProduto.length) {
+            <div class="acabamentos-empty">
+              <div class="acabamentos-empty__icon">
+                <mat-icon>construction</mat-icon>
+              </div>
+              <div>
+                <strong>Nenhum acabamento adicionado</strong>
+                <p>Adicione operações como corte, laminação ou encadernação para testar a organização visual desta tela.</p>
+              </div>
+            </div>
+          } @else {
+            <div class="acabamentos-list">
+              @for (item of acabamentosProduto; track item.id) {
+                <div class="acabamento-row">
+                  <div class="acabamento-row__content">
+                    <strong>{{ item.nome }}</strong>
+                    @if (item.descricao) {
+                      <span class="acabamento-row__desc">{{ item.descricao }}</span>
+                    }
+                    <span class="acabamento-row__meta">{{ acabamentoResumo(item) }}</span>
+                  </div>
+                  <div class="acabamento-row__actions">
+                    <button mat-icon-button type="button" matTooltip="Editar" [attr.aria-label]="'Editar ' + item.nome" (click)="abrirAcabamentoDialog(item)">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button color="warn" type="button" matTooltip="Excluir" [attr.aria-label]="'Excluir ' + item.nome" (click)="confirmarExcluirAcabamento(item)">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
         </app-section-card>
       </form>
 
@@ -182,19 +227,127 @@ type ProdutoFormSnapshot = {
   styles: [`
     .produto-form { display: flex; flex-direction: column; gap: 16px; }
     .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: center; }
-    .product-grid { align-items: start; }
+    .product-grid {
+      grid-template-areas:
+        "name category"
+        "description images"
+        "publish .";
+      align-items: start;
+    }
+    .product-name {
+      grid-area: name;
+      min-width: 0;
+    }
     .product-category {
-      display: grid;
-      gap: 2px;
+      grid-area: category;
+      min-width: 0;
     }
     .product-category mat-form-field {
       width: 100%;
     }
+    .product-publish-option {
+      grid-area: publish;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding-left: 4px;
+    }
+    .product-media-field {
+      align-self: start;
+    }
+    .product-field-subtitle {
+      display: block;
+      min-height: 19px;
+      margin-bottom: 8px;
+      color: #64748b;
+      font-size: 0.82rem;
+      line-height: 1.35;
+    }
     .product-images {
+      grid-area: images;
       min-width: 0;
+    }
+    .rich-field {
+      grid-area: description;
+      min-width: 0;
+    }
+    :host ::ng-deep .rich-field .NgxEditor__Wrapper {
+      min-height: 180px;
     }
     .grafica-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .full { width: 100%; }
+    .acabamentos-empty {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      align-items: center;
+      padding: 14px;
+      border: 1px dashed #d6e0ee;
+      border-radius: 10px;
+      background: #f8fafc;
+      color: #1f2937;
+    }
+    .acabamentos-empty__icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: #eef4ff;
+      color: #2f66e8;
+    }
+    .acabamentos-empty p {
+      margin: 2px 0 0;
+      color: #64748b;
+      font-size: 0.86rem;
+      line-height: 1.35;
+    }
+    .acabamentos-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 320px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+    .acabamento-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 14px;
+      border: 1px solid #e5edf6;
+      border-radius: 10px;
+      background: #fff;
+    }
+    .acabamento-row__content {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+    .acabamento-row__content strong,
+    .acabamento-row__desc,
+    .acabamento-row__meta {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .acabamento-row__desc {
+      color: #64748b;
+      font-size: 0.84rem;
+    }
+    .acabamento-row__meta {
+      color: #2f66e8;
+      font-size: 0.84rem;
+      font-weight: 600;
+    }
+    .acabamento-row__actions {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
     app-deposito-imagem-galeria { display: block; }
     .validation-hint {
       margin-top: 8px;
@@ -312,8 +465,22 @@ type ProdutoFormSnapshot = {
     @media (max-width: 768px) {
       .form-grid,
       .grafica-grid { grid-template-columns: 1fr; }
+      .product-grid {
+        grid-template-areas:
+          "name"
+          "category"
+          "description"
+          "publish"
+          "images";
+      }
       :host ::ng-deep .product-images .deposito-galeria__grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .acabamento-row {
+        grid-template-columns: 1fr;
+      }
+      .acabamento-row__actions {
+        justify-content: flex-end;
       }
     }
   `],
@@ -330,10 +497,12 @@ export class GraficaProdutoFormComponent implements OnInit {
   cores: GraficaCadastro[] = [];
   acabamentos: GraficaCadastro[] = [];
   servicos: GraficaCadastro[] = [];
+  acabamentosProduto: ProdutoAcabamentoUx[] = [];
   imagemPrincipal: any = null;
   galeria: any[] = [];
   private produtoSnapshot?: ProdutoFormSnapshot;
   private precoSnapshot?: any;
+  private acabamentosProdutoSnapshot: ProdutoAcabamentoUx[] = [];
   private imagemPrincipalSnapshot: any = null;
   private galeriaSnapshot: any[] = [];
   private cloneIdentidadeSnapshot?: Pick<ProdutoFormSnapshot, 'nome' | 'materialId' | 'formatoId' | 'corId'>;
@@ -465,23 +634,63 @@ export class GraficaProdutoFormComponent implements OnInit {
     }
     this.imagemPrincipal = this.clone(this.imagemPrincipalSnapshot);
     this.galeria = this.clone(this.galeriaSnapshot);
+    this.acabamentosProduto = this.clone(this.acabamentosProdutoSnapshot);
     this.form.markAsPristine();
     this.form.markAsUntouched();
     this.precoForm.markAsPristine();
     this.precoForm.markAsUntouched();
   }
 
-  abrirCadastroRapido(tipo: 'material' | 'formato' | 'cor'): void {
+  abrirCadastroRapido(tipo: 'material' | 'formato' | 'cor' | 'categoria'): void {
     this.dialog.open(GraficaCadastroRapidoDialogComponent, {
       width: '720px',
       maxWidth: '92vw',
-      data: { tipo },
+      data: { tipo, categorias: this.categorias },
       autoFocus: false,
     }).afterClosed().subscribe((item) => {
       if (item) {
         this.recarregarOpcaoCriada(tipo, item);
       }
     });
+  }
+
+  abrirAcabamentoDialog(acabamento?: ProdutoAcabamentoUx): void {
+    this.dialog.open(GraficaProdutoAcabamentoDialogComponent, {
+      width: '760px',
+      maxWidth: '94vw',
+      data: {
+        acabamento: acabamento ? this.clone(acabamento) : null,
+        nextId: this.proximoAcabamentoId(),
+      },
+      autoFocus: false,
+    }).afterClosed().subscribe((resultado?: ProdutoAcabamentoUx | null) => {
+      if (!resultado) return;
+      const existe = this.acabamentosProduto.some((item) => item.id === resultado.id);
+      this.acabamentosProduto = existe
+        ? this.acabamentosProduto.map((item) => item.id === resultado.id ? resultado : item)
+        : [...this.acabamentosProduto, resultado];
+      this.form.markAsDirty();
+    });
+  }
+
+  confirmarExcluirAcabamento(acabamento: ProdutoAcabamentoUx): void {
+    this.dialog.open(ConfirmDialogComponent, {
+      width: '420px',
+      data: {
+        title: 'Excluir acabamento',
+        message: `Excluir "${acabamento.nome}" desta prova visual?`,
+        confirmText: 'Excluir',
+        confirmColor: 'warn',
+      },
+    }).afterClosed().subscribe((confirmado) => {
+      if (!confirmado) return;
+      this.acabamentosProduto = this.acabamentosProduto.filter((item) => item.id !== acabamento.id);
+      this.form.markAsDirty();
+    });
+  }
+
+  acabamentoResumo(item: ProdutoAcabamentoUx): string {
+    return `${this.aplicacaoLabel(item.aplicacao)} · ${this.precoResumo(item.preco)}`;
   }
 
   private carregarBase(id: number | null): void {
@@ -514,7 +723,7 @@ export class GraficaProdutoFormComponent implements OnInit {
     });
   }
 
-  private recarregarOpcaoCriada(tipo: 'material' | 'formato' | 'cor', item: GraficaCadastro | GraficaFormato): void {
+  private recarregarOpcaoCriada(tipo: 'material' | 'formato' | 'cor' | 'categoria', item: GraficaCadastro | GraficaFormato | CatalogoCategoria): void {
     this.listarCadastroRapido(tipo).subscribe({
       next: (itens) => {
         this.aplicarListaCadastro(tipo, itens);
@@ -528,15 +737,16 @@ export class GraficaProdutoFormComponent implements OnInit {
     });
   }
 
-  private listarCadastroRapido(tipo: 'material' | 'formato' | 'cor'): Observable<Array<GraficaCadastro | GraficaFormato>> {
+  private listarCadastroRapido(tipo: 'material' | 'formato' | 'cor' | 'categoria'): Observable<Array<GraficaCadastro | GraficaFormato | CatalogoCategoriaOption>> {
     switch (tipo) {
       case 'material': return this.graficaService.listarMateriais();
       case 'formato': return this.graficaService.listarFormatos();
       case 'cor': return this.graficaService.listarCores();
+      case 'categoria': return this.categoriaService.options(true);
     }
   }
 
-  private aplicarListaCadastro(tipo: 'material' | 'formato' | 'cor', itens: Array<GraficaCadastro | GraficaFormato>): void {
+  private aplicarListaCadastro(tipo: 'material' | 'formato' | 'cor' | 'categoria', itens: Array<GraficaCadastro | GraficaFormato | CatalogoCategoriaOption>): void {
     switch (tipo) {
       case 'material':
         this.materiais = itens as GraficaCadastro[];
@@ -547,27 +757,45 @@ export class GraficaProdutoFormComponent implements OnInit {
       case 'cor':
         this.cores = itens as GraficaCadastro[];
         break;
+      case 'categoria':
+        this.categorias = itens as CatalogoCategoriaOption[];
+        break;
     }
   }
 
-  private selecionarCadastroCriado(tipo: 'material' | 'formato' | 'cor', id: number): void {
+  private selecionarCadastroCriado(tipo: 'material' | 'formato' | 'cor' | 'categoria', id: number): void {
     const control = {
       material: this.form.controls.materialId,
       formato: this.form.controls.formatoId,
       cor: this.form.controls.corId,
+      categoria: this.form.controls.categoriaId,
     }[tipo];
     control.setValue(id);
     control.markAsDirty();
     this.form.markAsDirty();
   }
 
-  private comItemCriado(tipo: 'material' | 'formato' | 'cor', item: GraficaCadastro | GraficaFormato): Array<GraficaCadastro | GraficaFormato> {
+  private comItemCriado(tipo: 'material' | 'formato' | 'cor' | 'categoria', item: GraficaCadastro | GraficaFormato | CatalogoCategoria): Array<GraficaCadastro | GraficaFormato | CatalogoCategoriaOption> {
     const atual = {
       material: this.materiais,
       formato: this.formatos,
       cor: this.cores,
+      categoria: this.categorias,
     }[tipo];
-    return atual.some((opcao) => opcao.id === item.id) ? atual : [...atual, item];
+    const itemCriado = tipo === 'categoria'
+      ? this.toCategoriaOption(item as CatalogoCategoria)
+      : item;
+    return atual.some((opcao) => opcao.id === itemCriado.id) ? atual : [...atual, itemCriado];
+  }
+
+  private toCategoriaOption(item: CatalogoCategoria): CatalogoCategoriaOption {
+    return {
+      id: item.id,
+      codigo: item.codigo,
+      nome: item.nome,
+      slug: item.slug,
+      ativo: item.ativo,
+    };
   }
 
   private aplicarProduto(produto: GraficaProduto): void {
@@ -586,6 +814,7 @@ export class GraficaProdutoFormComponent implements OnInit {
     const imagens = produto.imagens || [];
     this.imagemPrincipal = imagens.find((img) => img.principal && img.ativo !== false)?.arquivo || null;
     this.galeria = imagens.filter((img) => !img.principal && img.ativo !== false).map((img) => img.arquivo).filter(Boolean);
+    this.acabamentosProduto = this.toAcabamentosProdutoUx(produto.acabamentos || []);
     this.graficaService.listarPrecos(produto.id).subscribe({
       next: (politicas) => {
         this.aplicarPreco((politicas || [])[0]);
@@ -630,11 +859,12 @@ export class GraficaProdutoFormComponent implements OnInit {
         this.precoForm = this.fb.group({
           tipo: ['METRO'],
           precoMetro: [politica.precoMetroQuadrado ?? null],
-          precoMinimo: [null],
-          alturaMaxima: [null],
-          larguraMaxima: [null],
-          modoCobranca: ['QUADRADO'],
-          largurasLinearesPermitidas: [''],
+          precoMinimo: [politica.minimoMetroQuadrado ?? null],
+          alturaMaxima: [politica.alturaMaxima ?? null],
+          larguraMaxima: [politica.larguraMaxima ?? null],
+          modoCobranca: [politica.modoCobranca ?? 'QUADRADO'],
+          unidadeDimensao: [politica.unidadeDimensao ?? 'METRO'],
+          largurasLinearesPermitidas: [politica.largurasLinearesPermitidas ?? ''],
         });
         break;
     }
@@ -665,6 +895,7 @@ export class GraficaProdutoFormComponent implements OnInit {
   private precoPayload(): GraficaPrecoPoliticaRequest {
     const preco = this.precoForm.getRawValue() as any;
     const tipo = preco.tipo as TipoPrecoLegado;
+    const metroLinear = tipo === 'METRO' && preco.modoCobranca === 'LINEAR';
     return {
       nome: 'Preço principal',
       tipo: this.toTipoGrafica(tipo),
@@ -672,7 +903,12 @@ export class GraficaProdutoFormComponent implements OnInit {
       multiplicaQuantidade: tipo === 'FIXO',
       valorFixo: tipo === 'FIXO' ? this.num(preco.valor) : null,
       precoMetroQuadrado: tipo === 'METRO' ? this.num(preco.precoMetro) : null,
-      minimoMetroQuadrado: null,
+      minimoMetroQuadrado: tipo === 'METRO' && preco.precoMinimo !== null && preco.precoMinimo !== undefined && preco.precoMinimo !== '' ? this.num(preco.precoMinimo) : null,
+      alturaMaxima: tipo === 'METRO' && preco.alturaMaxima !== null && preco.alturaMaxima !== undefined && preco.alturaMaxima !== '' ? this.num(preco.alturaMaxima) : null,
+      larguraMaxima: tipo === 'METRO' && !metroLinear && preco.larguraMaxima !== null && preco.larguraMaxima !== undefined && preco.larguraMaxima !== '' ? this.num(preco.larguraMaxima) : null,
+      largurasLinearesPermitidas: metroLinear && preco.largurasLinearesPermitidas ? String(preco.largurasLinearesPermitidas).trim() : null,
+      modoCobranca: tipo === 'METRO' ? (preco.modoCobranca || 'QUADRADO') : null,
+      unidadeDimensao: tipo === 'METRO' ? (preco.unidadeDimensao || 'METRO') : null,
       selecaoOpcaoIds: [],
       faixas: tipo === 'DEMANDA' ? this.toFaixasGrafica(preco.faixas || []) : [],
       lotes: tipo === 'QUANTIDADE' ? this.toLotesGrafica(preco.faixas || []) : [],
@@ -741,6 +977,7 @@ export class GraficaProdutoFormComponent implements OnInit {
     this.precoSnapshot = this.clone(this.precoForm.getRawValue());
     this.imagemPrincipalSnapshot = this.clone(this.imagemPrincipal);
     this.galeriaSnapshot = this.clone(this.galeria);
+    this.acabamentosProdutoSnapshot = this.clone(this.acabamentosProduto);
     if (this.isClone) {
       this.cloneIdentidadeSnapshot = this.identidadeCloneAtual();
     }
@@ -816,6 +1053,7 @@ export class GraficaProdutoFormComponent implements OnInit {
           alturaMaxima: [preco?.alturaMaxima ?? null],
           larguraMaxima: [preco?.larguraMaxima ?? null],
           modoCobranca: [preco?.modoCobranca ?? 'QUADRADO'],
+          unidadeDimensao: [preco?.unidadeDimensao ?? 'METRO'],
           largurasLinearesPermitidas: [preco?.largurasLinearesPermitidas ?? ''],
         });
     }
@@ -823,6 +1061,58 @@ export class GraficaProdutoFormComponent implements OnInit {
 
   private clone<T>(value: T): T {
     return JSON.parse(JSON.stringify(value));
+  }
+
+  private toAcabamentosProdutoUx(itens: GraficaCadastro[]): ProdutoAcabamentoUx[] {
+    return itens.map((item) => ({
+      id: item.id,
+      nome: item.nome,
+      descricao: item.descricao || null,
+      aplicacao: 'FOLHA',
+      preco: { tipo: 'FIXO', valor: null },
+    }));
+  }
+
+  private proximoAcabamentoId(): number {
+    const menorMockId = this.acabamentosProduto
+      .map((item) => item.id)
+      .filter((id) => id < 0)
+      .sort((a, b) => a - b)[0];
+    return menorMockId ? menorMockId - 1 : -1;
+  }
+
+  private aplicacaoLabel(aplicacao: ProdutoAcabamentoUx['aplicacao']): string {
+    switch (aplicacao) {
+      case 'FOLHA': return 'Por folha';
+      case 'PECA': return 'Por peça';
+      case 'SERVICO': return 'Por serviço';
+      case 'METRO_QUADRADO': return 'Por metro quadrado';
+      case 'METRO_LINEAR': return 'Por metro linear';
+    }
+  }
+
+  private precoResumo(preco: Record<string, any>): string {
+    const tipo = (preco?.['tipo'] || 'FIXO') as TipoPrecoLegado;
+    switch (tipo) {
+      case 'FIXO':
+        return `Preço fixo${this.valorResumo(preco?.['valor'])}`;
+      case 'QUANTIDADE':
+        return this.faixasResumo('Preço por quantidade', preco?.['faixas']);
+      case 'DEMANDA':
+        return this.faixasResumo('Preço por demanda', preco?.['faixas']);
+      case 'METRO':
+        return `Preço por metro${this.valorResumo(preco?.['precoMetro'])}`;
+    }
+  }
+
+  private faixasResumo(label: string, faixas: any[] | undefined): string {
+    const total = faixas?.length || 0;
+    return total ? `${label} · ${total} faixa${total > 1 ? 's' : ''}` : label;
+  }
+
+  private valorResumo(valor: unknown): string {
+    const numero = this.num(valor);
+    return numero > 0 ? ` · ${numero.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}` : '';
   }
 
   private graficaErrorMessage(error: unknown, fallback: string): string {
