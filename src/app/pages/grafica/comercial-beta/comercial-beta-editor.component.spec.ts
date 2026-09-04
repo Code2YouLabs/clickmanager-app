@@ -555,6 +555,37 @@ describe('GraficaProdutoWizardDialogComponent', () => {
     expect(opcoes[0].servico?.id).toBe(22);
   });
 
+  it('servico sem preco pula direto para revisao', fakeAsync(() => {
+    const component = criarWizard();
+    component.stepper = stepperMock(0) as any;
+
+    component.selecionarServicoFunil(servico({ id: 22, nome: 'Instalação' }));
+    tick(0);
+
+    expect(component.stepper?.selectedIndex).toBe(3);
+    expect(component.composicao?.itens[0].nomeProduto).toBe('Serviço: Instalação');
+    expect(component.composicao?.itens[0].valorTotal).toBe(0);
+  }));
+
+  it('servico com preco resolve composicao e pula acabamentos ao avancar', fakeAsync(() => {
+    const component = criarWizard();
+    const graficaService = (component as any).graficaService;
+    component.stepper = stepperMock(0) as any;
+    graficaService.resolverComposicaoServico.and.returnValue(of(composicaoServico()));
+
+    component.selecionarServicoFunil(servicoComPreco({ id: 22, nome: 'Instalação' }));
+    tick(0);
+    component.preco = precoServicoCalculado();
+    component.avancarStep();
+    tick(0);
+
+    expect(graficaService.resolverComposicaoServico).toHaveBeenCalledWith(22, jasmine.objectContaining({
+      precificacao: jasmine.objectContaining({ quantidade: 1 }),
+    }));
+    expect(component.stepper?.selectedIndex).toBe(3);
+    expect(component.composicao?.itens[0].nomeProduto).toBe('Serviço: Instalação');
+  }));
+
   it('pagina colunas e resolve produto final ao selecionar cor', () => {
     const component = criarWizard();
     const produtos = Array.from({ length: 8 }, (_, index) => produto({
@@ -586,11 +617,20 @@ describe('GraficaProdutoWizardDialogComponent', () => {
 });
 
 function criarWizard(): GraficaProdutoWizardDialogComponent {
-  const graficaService = jasmine.createSpyObj('GraficaProdutoService', ['listar', 'detalhar', 'listarPrecos', 'listarServicos']);
+  const graficaService = jasmine.createSpyObj('GraficaProdutoService', [
+    'listar',
+    'detalhar',
+    'listarPrecos',
+    'listarServicos',
+    'resolverComposicaoServico',
+    'resolverComposicaoComercial',
+  ]);
   graficaService.listar.and.returnValue(of({ content: [], pageNumber: 0, pageSize: 20, totalElements: 0, totalPages: 0, last: true }));
   graficaService.detalhar.and.returnValue(of(produto()));
   graficaService.listarPrecos.and.returnValue(of([]));
   graficaService.listarServicos.and.returnValue(of([]));
+  graficaService.resolverComposicaoServico.and.returnValue(of(composicaoServico()));
+  graficaService.resolverComposicaoComercial.and.returnValue(of(composicaoServico()));
   return new GraficaProdutoWizardDialogComponent(
     new FormBuilder(),
     graficaService,
@@ -598,6 +638,16 @@ function criarWizard(): GraficaProdutoWizardDialogComponent {
     jasmine.createSpyObj('ToastrService', ['error']) as any,
     { cliente: null },
   );
+}
+
+function stepperMock(selectedIndex = 0) {
+  return {
+    selectedIndex,
+    steps: {
+      get: () => ({ completed: false, interacted: false }),
+      forEach: () => undefined,
+    },
+  };
 }
 
 function produto(overrides: {
@@ -634,4 +684,72 @@ function servico(overrides: { id?: number; nome?: string } = {}) {
     ativo: true,
     politicas: [],
   };
+}
+
+function servicoComPreco(overrides: { id?: number; nome?: string } = {}) {
+  return {
+    ...servico(overrides),
+    politicas: [{
+      id: 40,
+      nome: 'Preço do serviço',
+      tipo: 'FIXO',
+      ativo: true,
+      multiplicaQuantidade: true,
+      valorFixo: 150,
+      faixas: [],
+      lotes: [],
+      selecoes: [],
+      especificidade: 0,
+    }],
+  } as any;
+}
+
+function precoServicoCalculado() {
+  return {
+    status: 'PRECO_CALCULADO',
+    mensagem: 'Preço calculado.',
+    produtoGraficoId: null,
+    catalogoProdutoId: null,
+    selecoesResolvidas: [],
+    tipoPrecificacao: 'FIXO',
+    quantidadeSolicitada: 1,
+    valorUnitario: 150,
+    valorTotal: 150,
+    largura: null,
+    altura: null,
+    unidadeDimensao: 'METRO',
+    areaReal: null,
+    areaFaturada: null,
+    regraAplicadaId: 40,
+    regraAplicadaNome: 'Preço do serviço',
+    detalhes: [],
+  } as any;
+}
+
+function composicaoServico() {
+  return {
+    clienteNome: null,
+    clienteTelefone: null,
+    observacaoCliente: null,
+    origem: 'GRAFICA',
+    referenciaOrigem: '22',
+    desconto: 0,
+    acrescimo: 0,
+    frete: 0,
+    itens: [{
+      origem: 'GRAFICA',
+      catalogoProdutoId: null,
+      codigoProduto: 'SERVICO',
+      nomeProduto: 'Serviço: Instalação',
+      unidadeVenda: 'UN',
+      caracteristicasResumo: 'Serviço gráfico',
+      quantidade: 1,
+      valorUnitario: 150,
+      desconto: 0,
+      acrescimo: 0,
+      valorTotal: 150,
+      observacao: null,
+      ordem: 0,
+    }],
+  } as any;
 }

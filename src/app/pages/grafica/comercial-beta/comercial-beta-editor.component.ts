@@ -2512,7 +2512,7 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
             </form>
           </mat-step>
 
-          <mat-step label="Acabamentos/Serviços" [optional]="!possuiAdicionaisDisponiveis" [completed]="!possuiAdicionaisDisponiveis">
+          <mat-step label="Acabamentos" [optional]="!possuiAdicionaisDisponiveis" [completed]="!possuiAdicionaisDisponiveis">
             <div class="step-inner step-wide services-step">
               <div class="services-shell">
                 <section class="price-product-card">
@@ -2577,7 +2577,7 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
                         <span class="text-center">Qtd</span>
                         <span class="text-right">Total</span>
                       </div>
-                      <div class="rev-row" *ngFor="let item of composicao.itens">
+                      <div class="rev-row" *ngFor="let item of itensRevisao">
                         <span>
                           <strong class="rev-item">{{ item.nomeProduto }}</strong>
                           <small>{{ item.unidadeVenda || 'un' }}</small>
@@ -2585,6 +2585,12 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
                         <span class="text-center">{{ item.quantidade | number:'1.0-3':'pt-BR' }}</span>
                         <span class="text-right">{{ item.valorTotal | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
                       </div>
+                    </div>
+                    <div class="review-actions">
+                      <button mat-stroked-button color="primary" type="button" (click)="adicionarMaisItens()">
+                        <mat-icon>add</mat-icon>
+                        <span>Adicionar mais itens</span>
+                      </button>
                     </div>
 
                   </section>
@@ -2798,6 +2804,9 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
     .review-grid { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 430px; gap: 16px; align-items: start; }
     .review-items-card { min-height: 330px; padding: 28px; }
     .review-items-card h3 { margin: 0 0 16px; font-size: 18px; line-height: 1.3; }
+    .review-actions { display: flex; justify-content: flex-end; margin-top: 16px; }
+    .review-actions button { display: inline-flex; align-items: center; gap: 8px; }
+    .review-actions mat-icon { width: 18px; height: 18px; font-size: 18px; }
     .review-addons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 18px; }
     .review-addons h4 { margin: 0 0 10px; font-size: 15px; line-height: 1.3; }
     .addon-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 58px; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
@@ -2892,6 +2901,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
   loteSelecionado: GraficaPrecoLote | null = null;
   preco: GraficaPrecificacaoResultado | null = null;
   composicao: ComposicaoComercialResolvida | null = null;
+  itensAcumulados: ComposicaoComercialResolvida['itens'] = [];
   precificando = false;
   buscandoProdutos = false;
   carregandoFunil = false;
@@ -2949,7 +2959,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
   }
 
   get currentStepLabel(): string {
-    const labels = ['Produto/Serviço e Variação', 'Configurar Preço', 'Acabamentos/Serviços', 'Revisão'];
+    const labels = ['Produto/Serviço e Variação', 'Configurar Preço', 'Acabamentos', 'Revisão'];
     return labels[this.stepper?.selectedIndex || 0] || labels[0];
   }
 
@@ -3123,9 +3133,17 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
   }
 
   get totalComposicao(): number {
-    return this.composicao?.itens?.length
-      ? this.composicao.itens.reduce((total, item) => total + Number(item.valorTotal || 0), 0)
+    const itens = this.itensRevisao;
+    return itens.length
+      ? itens.reduce((total, item) => total + Number(item.valorTotal || 0), 0)
       : Number(this.preco?.valorTotal || 0);
+  }
+
+  get itensRevisao(): ComposicaoComercialResolvida['itens'] {
+    return [
+      ...this.itensAcumulados,
+      ...(this.composicao?.itens || []),
+    ];
   }
 
   get acabamentosSelecionadosDetalhe(): any[] {
@@ -3284,6 +3302,11 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
     }
     this.configurarFormularioPreco();
     this.limparPreco();
+    if (!this.politicaPrecoAtual) {
+      this.composicao = this.composicaoServicoSemPreco(servico);
+      this.irParaRevisaoSemAdicionais();
+      return;
+    }
     setTimeout(() => {
       if (this.stepper) {
         this.stepper.selectedIndex = 1;
@@ -3434,7 +3457,25 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
   }
 
   adicionar(): void {
-    this.dialogRef.close(this.composicao);
+    if (!this.composicao && !this.itensAcumulados.length) {
+      this.dialogRef.close(null);
+      return;
+    }
+    this.dialogRef.close(this.composicaoFinal());
+  }
+
+  adicionarMaisItens(): void {
+    if (this.composicao?.itens?.length) {
+      this.itensAcumulados = [...this.itensAcumulados, ...this.composicao.itens];
+    }
+    this.resetarItemAtual();
+    if (this.stepper) {
+      this.stepper.selectedIndex = 0;
+      this.stepper.steps.forEach((step, index) => {
+        step.completed = index === 0 ? false : step.completed;
+        step.interacted = false;
+      });
+    }
   }
 
   avancarStep(): void {
@@ -3470,7 +3511,12 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
 
 	  private irParaRevisaoSemAdicionais(): void {
 	    if (!this.stepper) return;
+	    const stepPreco = this.stepper.steps.get(1);
 	    const stepAdicionais = this.stepper.steps.get(2);
+	    if (stepPreco) {
+	      stepPreco.completed = true;
+	      stepPreco.interacted = true;
+	    }
 	    if (stepAdicionais) {
 	      stepAdicionais.completed = true;
 	      stepAdicionais.interacted = true;
@@ -3484,7 +3530,12 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
 
 	  private irParaRevisaoComAdicionais(): void {
 	    if (!this.stepper) return;
+	    const stepPreco = this.stepper.steps.get(1);
 	    const stepAdicionais = this.stepper.steps.get(2);
+	    if (stepPreco) {
+	      stepPreco.completed = true;
+	      stepPreco.interacted = true;
+	    }
 	    if (stepAdicionais) {
 	      stepAdicionais.completed = true;
 	      stepAdicionais.interacted = true;
@@ -3816,6 +3867,58 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
         observacao: null,
         ordem: 0,
       }],
+    };
+  }
+
+  private composicaoServicoSemPreco(servico: GraficaServico): ComposicaoComercialResolvida {
+    return {
+      clienteNome: this.data?.cliente?.clienteNome || null,
+      clienteTelefone: this.data?.cliente?.clienteTelefone || null,
+      observacaoCliente: this.data?.cliente?.observacaoCliente || null,
+      origem: 'GRAFICA',
+      referenciaOrigem: String(servico.id),
+      desconto: 0,
+      acrescimo: 0,
+      frete: 0,
+      itens: [{
+        origem: 'GRAFICA',
+        catalogoProdutoId: 0,
+        codigoProduto: servico.codigo || null,
+        nomeProduto: `Serviço: ${servico.nome}`,
+        unidadeVenda: 'UN',
+        caracteristicasResumo: servico.descricao || 'Serviço gráfico',
+        quantidade: 1,
+        valorUnitario: 0,
+        desconto: 0,
+        acrescimo: 0,
+        valorTotal: 0,
+        observacao: null,
+        ordem: 0,
+        snapshotComercial: JSON.stringify({
+          tipo: 'SERVICO',
+          servicoId: servico.id,
+          servicoNome: servico.nome,
+          precificacao: this.body().precificacao,
+        }),
+      }],
+    };
+  }
+
+  private composicaoFinal(): ComposicaoComercialResolvida | null {
+    const itens = this.itensRevisao;
+    if (!itens.length) return null;
+    return {
+      ...(this.composicao || {
+        clienteNome: this.data?.cliente?.clienteNome || null,
+        clienteTelefone: this.data?.cliente?.clienteTelefone || null,
+        observacaoCliente: this.data?.cliente?.observacaoCliente || null,
+        origem: 'GRAFICA',
+        referenciaOrigem: null,
+        desconto: 0,
+        acrescimo: 0,
+        frete: 0,
+      }),
+      itens,
     };
   }
 
@@ -4167,5 +4270,30 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
     this.politicaPrecoAtual = null;
     this.loteSelecionado = null;
     this.limparPreco();
+  }
+
+  private resetarItemAtual(): void {
+    this.produtoSelecionado = null;
+    this.servicoAtual = null;
+    this.produtoForm.reset({ produtoGraficoId: null });
+    this.produtoBusca = '';
+    this.produtoNomeSelecionado = null;
+    this.materialSelecionadoId = null;
+    this.formatoSelecionadoId = null;
+    this.corSelecionadaId = null;
+    this.filtrosFunil = { produto: '', material: '', formato: '', cor: '' };
+    this.resetarPaginasFunil('produto', 'material', 'formato', 'cor');
+    this.parametros = [];
+    this.selecoes = {};
+    this.caminhoSelecoes = [];
+    this.parametroAtual = null;
+    this.opcoesAtuais = [];
+    this.acabamentosSelecionados.clear();
+    this.servicosSelecionados.clear();
+    this.politicasPreco = [];
+    this.politicaPrecoAtual = null;
+    this.loteSelecionado = null;
+    this.preco = null;
+    this.composicao = null;
   }
 }
