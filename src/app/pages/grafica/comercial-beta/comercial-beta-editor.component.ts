@@ -1544,11 +1544,7 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
   }
 
   private comercialComposicaoRequest(destino: ComercialBetaTipo): { origemTipo: 'PRODUTO' | 'SERVICO'; origemId: number; body: GraficaComercialComposicaoRequest } | null {
-    const principalIndex = this.itens.findIndex((item) => {
-      const snapshotItem = this.safeJson(item.snapshotComercial);
-      return Number(this.produtoGraficoIdSnapshot(snapshotItem) || 0) > 0
-        || Number(this.servicoGraficoIdSnapshot(snapshotItem) || 0) > 0;
-    });
+    const principalIndex = this.indiceItemPrincipalComercial();
     const primeiro = this.itens[principalIndex >= 0 ? principalIndex : 0];
     const snapshot = this.safeJson(primeiro?.snapshotComercial);
     const produtoGraficoId = Number(this.produtoGraficoIdSnapshot(snapshot) || 0);
@@ -2084,6 +2080,30 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
 
   private servicoGraficoIdSnapshot(snapshot: any): number | null {
     return snapshot?.servicoGraficoId ?? snapshot?.servicoId ?? snapshot?.servico?.id ?? null;
+  }
+
+  private indiceItemPrincipalComercial(): number {
+    const produtoIndex = this.itens.findIndex((item) => {
+      const snapshot = this.safeJson(item.snapshotComercial);
+      return Number(this.produtoGraficoIdSnapshot(snapshot) || 0) > 0;
+    });
+    if (produtoIndex >= 0) return produtoIndex;
+
+    const servicoComPrecoIndex = this.itens.findIndex((item) => {
+      const snapshot = this.safeJson(item.snapshotComercial);
+      return Number(this.servicoGraficoIdSnapshot(snapshot) || 0) > 0 && this.snapshotTemPrecoConfigurado(snapshot);
+    });
+    if (servicoComPrecoIndex >= 0) return servicoComPrecoIndex;
+
+    return this.itens.findIndex((item) => {
+      const snapshot = this.safeJson(item.snapshotComercial);
+      return Number(this.servicoGraficoIdSnapshot(snapshot) || 0) > 0;
+    });
+  }
+
+  private snapshotTemPrecoConfigurado(snapshot: any): boolean {
+    const precificacao = snapshot?.precificacao;
+    return !!precificacao && precificacao.status !== 'SEM_PRECO_CONFIGURADO';
   }
 
   private clientePayload(): any {

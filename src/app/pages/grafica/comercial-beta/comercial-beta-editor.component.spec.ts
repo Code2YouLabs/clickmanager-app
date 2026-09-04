@@ -257,6 +257,7 @@ describe('ComercialBetaEditorComponent', () => {
         tipo: 'SERVICO',
         servicoGraficoId: 11,
         entrada: { quantidade: 1, largura: null, altura: null, unidadeDimensao: 'METRO', selecoes: {} },
+        precificacao: { status: 'PRECO_CALCULADO' },
       }),
     }] as any;
 
@@ -289,6 +290,57 @@ describe('ComercialBetaEditorComponent', () => {
     component.salvarComo('pedidos');
 
     expect((component as any).graficaService.criarPedidoServico).toHaveBeenCalledWith(12, jasmine.any(Object));
+  });
+
+  it('prioriza produto como principal quando pedido mistura servico sem preco e produto', () => {
+    const component = criarEditor('pedidos');
+    component.tipo = 'pedidos';
+    component.clienteConfirmado = { id: 7, nome: 'Lorena Bello', telefone: '31999999999', email: null } as any;
+    component.itens = [
+      {
+        origem: 'GRAFICA',
+        catalogoProdutoId: 0,
+        codigoProduto: 'LEGADO_10',
+        nomeProduto: 'Serviço: Arte simples',
+        unidadeVenda: 'UN',
+        caracteristicasResumo: 'Criação de arte básica/rápida.',
+        quantidade: 1,
+        valorUnitario: 0,
+        valorTotal: 0,
+        snapshotComercial: JSON.stringify({
+          tipo: 'SERVICO',
+          servicoGraficoId: 9,
+          entrada: { selecoes: {}, quantidade: 1, largura: null, altura: null, unidadeDimensao: 'METRO' },
+          precificacao: null,
+        }),
+      },
+      {
+        origem: 'GRAFICA',
+        catalogoProdutoId: 30,
+        codigoProduto: 'BANNER_FRONT_LIGHT',
+        nomeProduto: 'Banner Front Light',
+        unidadeVenda: 'UNIDADE',
+        caracteristicasResumo: 'Lona 440g · 0,9 × 0,9 m · 4x0 · Área faturada: 0,81 m²',
+        quantidade: 1,
+        valorUnitario: 95,
+        valorTotal: 76.95,
+        snapshotComercial: JSON.stringify({
+          produtoGraficoId: 27,
+          entrada: { quantidade: 1, largura: 90, altura: 90, unidadeDimensao: 'CENTIMETRO' },
+          precificacao: { tipo: 'POR_METRO_QUADRADO', status: 'PRECO_CALCULADO' },
+        }),
+      },
+    ] as any;
+
+    component.salvarComo('pedidos');
+
+    expect((component as any).graficaService.criarPedidoGrafico).toHaveBeenCalledWith(27, jasmine.objectContaining({
+      adicionais: jasmine.arrayContaining([
+        jasmine.objectContaining({ nomeProduto: 'Serviço: Arte simples', linhaComercial: true }),
+      ]),
+      precificacao: jasmine.objectContaining({ quantidade: 1, largura: 90 }),
+    }));
+    expect((component as any).graficaService.criarPedidoServico).not.toHaveBeenCalled();
   });
 
   it('preenche o valor com o saldo em aberto ao selecionar forma depois de um pagamento valido', () => {
