@@ -90,6 +90,9 @@ export interface ProdutoAcabamentoUx {
   `,
   styleUrls: ['../../../components/dialog/dialog-form-shell.scss'],
   styles: [`
+    .dialog-head {
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+    }
     .acabamento-dialog-form {
       display: flex;
       flex-direction: column;
@@ -201,11 +204,13 @@ export class GraficaProdutoAcabamentoDialogComponent implements OnDestroy {
     switch (tipo) {
       case 'FIXO':
         return this.fb.group({
+          politicaId: [preco?.politicaId ?? null],
           tipo: ['FIXO'],
           valor: [preco?.valor ?? null],
         });
       case 'QUANTIDADE':
         return this.fb.group({
+          politicaId: [preco?.politicaId ?? null],
           tipo: ['QUANTIDADE'],
           faixas: this.fb.array((preco?.faixas?.length ? preco.faixas : [{ quantidade: null, valor: null }]).map((faixa: any) => this.fb.group({
             quantidade: [faixa.quantidade ?? null],
@@ -214,6 +219,7 @@ export class GraficaProdutoAcabamentoDialogComponent implements OnDestroy {
         });
       case 'DEMANDA':
         return this.fb.group({
+          politicaId: [preco?.politicaId ?? null],
           tipo: ['DEMANDA'],
           faixas: this.fb.array((preco?.faixas?.length ? preco.faixas : [{ de: 1, ate: null, valorUnitario: null }]).map((faixa: any) => this.fb.group({
             de: [faixa.de ?? null],
@@ -223,6 +229,7 @@ export class GraficaProdutoAcabamentoDialogComponent implements OnDestroy {
         });
       case 'METRO':
         return this.fb.group({
+          politicaId: [preco?.politicaId ?? null],
           tipo: ['METRO'],
           precoMetro: [preco?.precoMetro ?? null],
           precoMinimo: [preco?.precoMinimo ?? null],

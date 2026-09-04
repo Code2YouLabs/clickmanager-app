@@ -4,18 +4,17 @@ import {
   FormArray, FormControl, AbstractControl, ValidatorFn
 } from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { MatSelectModule } from '@angular/material/select';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
-import { MatRadioModule } from '@angular/material/radio';
 import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { Subscription } from 'rxjs';
 
 import { InputMoedaComponent } from '../inputs/input-moeda/input-moeda.component';
 import { InputNumericoComponent } from '../inputs/input-numerico/input-numerico.component';
 import { InputTextoRestritoComponent } from '../inputs/input-texto/input-texto-restrito.component';
+import { InputUnidadeMedidaComponent } from '../inputs/input-unidade-medida/input-unidade-medida.component';
+import { InputOptionsComponent } from '../inputs/input-options/input-options.component';
 
 @Component({
   selector: 'app-preco-selector',
@@ -25,16 +24,15 @@ import { InputTextoRestritoComponent } from '../inputs/input-texto/input-texto-r
   imports: [
     CommonModule,
     ReactiveFormsModule,
-    MatSelectModule,
-    MatFormFieldModule,
-    MatInputModule,
     MatButtonModule,
+    MatButtonToggleModule,
     MatCardModule,
     MatIconModule,
-    MatRadioModule,
     InputMoedaComponent,
     InputNumericoComponent,
-    InputTextoRestritoComponent
+    InputTextoRestritoComponent,
+    InputUnidadeMedidaComponent,
+    InputOptionsComponent
   ]
 })
 export class PrecoSelectorComponent implements OnInit, OnChanges {
@@ -42,10 +40,20 @@ export class PrecoSelectorComponent implements OnInit, OnChanges {
   @Input() formGroup!: FormGroup;
   @Input() tiposDisponiveis?: string[];
 
+  readonly unidadesDimensao = [
+    { value: 'METRO', label: 'Metro (m)' },
+    { value: 'CENTIMETRO', label: 'Centímetro (cm)' },
+    { value: 'MILIMETRO', label: 'Milímetro (mm)' },
+  ];
+  tiposPrecoOptions: { value: string; label: string }[] = [];
+
   private todosTipos = ['FIXO', 'HORA', 'QUANTIDADE', 'DEMANDA', 'METRO'];
   private demandaSubs: Subscription[] = [];
 
   private tipoSub?: Subscription;
+  private modoCobrancaSub?: Subscription;
+  private tiposPrecoOptionsKey = '';
+  private formGroupAtual?: FormGroup;
 
   get tipos(): string[] {
     return this.tiposDisponiveis?.length ? this.tiposDisponiveis : this.todosTipos;
@@ -54,17 +62,32 @@ export class PrecoSelectorComponent implements OnInit, OnChanges {
   constructor(private fb: FormBuilder) { }
 
   ngOnInit(): void {
-    this.setupForm();
-    this.setupTipoListener();
+    this.atualizarTiposPrecoOptions();
+    if (this.formGroup && this.formGroup !== this.formGroupAtual) {
+      this.formGroupAtual = this.formGroup;
+      this.setupForm();
+      this.setupTipoListener();
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['formGroup'] && changes['formGroup'].currentValue) {
+    this.atualizarTiposPrecoOptions();
+    if (changes['formGroup']?.currentValue && changes['formGroup'].currentValue !== this.formGroupAtual) {
+      this.formGroupAtual = changes['formGroup'].currentValue;
       this.setupForm();
       this.setupTipoListener();
     } else if (changes['tiposDisponiveis'] && this.formGroup) {
       this.setupForm();
     }
+  }
+
+  private atualizarTiposPrecoOptions(): void {
+    const tipos = this.tipos;
+    const key = tipos.join('|');
+    if (key === this.tiposPrecoOptionsKey) return;
+
+    this.tiposPrecoOptionsKey = key;
+    this.tiposPrecoOptions = tipos.map(tipo => ({ value: tipo, label: this.traduzirTipo(tipo) }));
   }
 
   private setupForm(): void {
@@ -80,16 +103,11 @@ export class PrecoSelectorComponent implements OnInit, OnChanges {
     if (!this.existeEstruturaPara(tipoAtual)) {
       this.onTipoSelecionado(tipoAtual);
     } else {
+      if (tipoAtual === 'METRO') {
+        this.setupModoCobrancaMetroListener();
+      }
       this.aplicarValidadorDePreco(tipoAtual);
     }
-  }
-
-  private tipoPermitidoAtual(): string {
-    const tipoAtual = this.formGroup.get('tipo')?.value;
-    if (tipoAtual && this.tipos.includes(tipoAtual)) {
-      return tipoAtual;
-    }
-    return this.tipos[0] || 'FIXO';
   }
 
   private setupTipoListener(): void {
@@ -110,6 +128,14 @@ export class PrecoSelectorComponent implements OnInit, OnChanges {
     });
   }
 
+  private tipoPermitidoAtual(): string {
+    const tipoAtual = this.formGroup.get('tipo')?.value;
+    if (tipoAtual && this.tipos.includes(tipoAtual)) {
+      return tipoAtual;
+    }
+    return this.tipos[0] || 'FIXO';
+  }
+
   private existeEstruturaPara(tipo: string): boolean {
     switch (tipo) {
       case 'FIXO':
@@ -120,7 +146,7 @@ export class PrecoSelectorComponent implements OnInit, OnChanges {
       case 'DEMANDA':
         return this.formGroup.contains('faixas');
       case 'METRO':
-        return ['precoMetro', 'precoMinimo', 'alturaMaxima', 'larguraMaxima', 'modoCobranca', 'largurasLinearesPermitidas']
+        return ['precoMetro', 'precoMinimo', 'alturaMaxima', 'larguraMaxima', 'modoCobranca', 'unidadeDimensao', 'largurasLinearesPermitidas']
           .every(c => this.formGroup.contains(c));
       default:
         return false;
@@ -131,9 +157,14 @@ export class PrecoSelectorComponent implements OnInit, OnChanges {
     switch (tipo) {
       case 'FIXO': return 'Preço Fixo';
       case 'HORA': return 'Preço por Hora';
-      case 'QUANTIDADE': return 'Preço por Quantidade';
-      case 'DEMANDA': return 'Preço por Demanda';
+      case 'QUANTIDADE':
+      case 'POR_LOTE':
+        return 'Quantidade Fechada';
+      case 'DEMANDA':
+      case 'POR_FAIXA_QUANTIDADE':
+        return 'Faixa de Quantidade';
       case 'METRO': return 'Preço por Metro';
+      case 'POR_METRO_QUADRADO': return 'Preço por Metro';
       default: return tipo;
     }
   }
@@ -144,6 +175,8 @@ export class PrecoSelectorComponent implements OnInit, OnChanges {
       this.demandaSubs.forEach(s => s.unsubscribe());
       this.demandaSubs = [];
     }
+    this.modoCobrancaSub?.unsubscribe();
+    this.modoCobrancaSub = undefined;
 
     // limpa controles anteriores, mantendo apenas 'tipo'
     Object.keys(this.formGroup.controls).forEach(c => {
@@ -183,7 +216,9 @@ export class PrecoSelectorComponent implements OnInit, OnChanges {
         this.formGroup.addControl('alturaMaxima', this.fb.control(null));
         this.formGroup.addControl('larguraMaxima', this.fb.control(null));
         this.formGroup.addControl('modoCobranca', this.fb.control('QUADRADO', Validators.required));
+        this.formGroup.addControl('unidadeDimensao', this.fb.control('METRO', Validators.required));
         this.formGroup.addControl('largurasLinearesPermitidas', this.fb.control(''));
+        this.setupModoCobrancaMetroListener();
         break;
     }
 
@@ -326,8 +361,17 @@ export class PrecoSelectorComponent implements OnInit, OnChanges {
   private validatorMetro(): ValidatorFn {
     return (ctrl: AbstractControl) => {
       const precoMetro = Number(ctrl.get('precoMetro')?.value);
+      const unidadeDimensao = ctrl.get('unidadeDimensao')?.value;
+      const modoCobranca = ctrl.get('modoCobranca')?.value;
+      const larguras = String(ctrl.get('largurasLinearesPermitidas')?.value || '').trim();
       if (!precoMetro || precoMetro <= 0) {
         return { precoInvalido: { msg: 'Informe o Preço por metro (maior que 0).' } };
+      }
+      if (!unidadeDimensao) {
+        return { precoInvalido: { msg: 'Informe a unidade de medida do preço por metro.' } };
+      }
+      if (modoCobranca === 'LINEAR' && !larguras) {
+        return { precoInvalido: { msg: 'Informe as larguras permitidas para o modo linear.' } };
       }
       return null;
     };
@@ -346,6 +390,49 @@ export class PrecoSelectorComponent implements OnInit, OnChanges {
 
   get faixas(): FormArray {
     return this.formGroup?.get('faixas') as FormArray;
+  }
+
+  get unidadeDimensaoSelecionada(): string {
+    return this.formGroup?.get('unidadeDimensao')?.value || 'METRO';
+  }
+
+  get unidadeDimensaoSimbolo(): string {
+    switch (this.unidadeDimensaoSelecionada) {
+      case 'CENTIMETRO': return 'cm';
+      case 'MILIMETRO': return 'mm';
+      default: return 'm';
+    }
+  }
+
+  get modoCobrancaMetro(): string {
+    return this.formGroup?.get('modoCobranca')?.value || 'QUADRADO';
+  }
+
+  selecionarModoCobrancaMetro(modo: 'QUADRADO' | 'LINEAR'): void {
+    this.formGroup?.get('modoCobranca')?.setValue(modo);
+  }
+
+  private setupModoCobrancaMetroListener(): void {
+    const modoControl = this.formGroup?.get('modoCobranca');
+    const largurasControl = this.formGroup?.get('largurasLinearesPermitidas');
+    const larguraMaximaControl = this.formGroup?.get('larguraMaxima');
+    if (!modoControl || !largurasControl) return;
+
+    this.modoCobrancaSub?.unsubscribe();
+    const aplicar = (modo: string) => {
+      if (modo === 'LINEAR') {
+        largurasControl.setValidators([Validators.required]);
+        larguraMaximaControl?.setValue(null, { emitEvent: false });
+      } else {
+        largurasControl.clearValidators();
+        largurasControl.setValue('', { emitEvent: false });
+      }
+      largurasControl.updateValueAndValidity({ emitEvent: false });
+      this.formGroup.updateValueAndValidity({ emitEvent: false });
+    };
+
+    aplicar(modoControl.value || 'QUADRADO');
+    this.modoCobrancaSub = modoControl.valueChanges.subscribe((modo) => aplicar(modo || 'QUADRADO'));
   }
 
   private criarFaixaDemanda(

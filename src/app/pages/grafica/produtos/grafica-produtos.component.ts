@@ -33,8 +33,6 @@ type GraficaProdutosFilters = {
   materialIds?: number[];
   formatoIds?: number[];
   corIds?: number[];
-  acabamentoIds?: number[];
-  servicoIds?: number[];
 };
 
 @Component({
@@ -234,8 +232,6 @@ export class GraficaProdutosComponent implements OnInit {
   materiais: GraficaCadastro[] = [];
   formatos: GraficaFormato[] = [];
   cores: GraficaCadastro[] = [];
-  acabamentos: GraficaCadastro[] = [];
-  servicos: GraficaCadastro[] = [];
 
   readonly columns: DataTableColumn<GraficaProduto>[] = [
     { key: 'imagem', label: 'Imagem', width: '72px' },
@@ -260,8 +256,6 @@ export class GraficaProdutosComponent implements OnInit {
       { key: 'materialIds', label: 'Material', type: 'multi-select', width: '220px', options: this.toOptions(this.materiais) },
       { key: 'formatoIds', label: 'Formato', type: 'multi-select', width: '180px', options: this.toOptions(this.formatos) },
       { key: 'corIds', label: 'Cor', type: 'multi-select', width: '140px', options: this.toOptions(this.cores) },
-      { key: 'acabamentoIds', label: 'Acabamentos', type: 'multi-select', width: '220px', options: this.toOptions(this.acabamentos) },
-      { key: 'servicoIds', label: 'Serviços', type: 'multi-select', width: '220px', options: this.toOptions(this.servicos) },
     ];
   }
 
@@ -348,13 +342,23 @@ export class GraficaProdutosComponent implements OnInit {
       return this.linhasLote(politica);
     }
     if (politica.tipo === 'POR_METRO_QUADRADO') {
-      const linhas = [`${this.moeda(politica.precoMetroQuadrado)} / m²`];
+      const unidade = this.unidadeDimensaoSimbolo(politica.unidadeDimensao);
+      const modo = politica.modoCobranca === 'LINEAR' ? 'linear' : 'm²';
+      const linhas = [`${this.moeda(politica.precoMetroQuadrado)} / ${modo} (${unidade})`];
       if (politica.minimoMetroQuadrado !== null && politica.minimoMetroQuadrado !== undefined) {
         linhas.push(`Mín. ${this.moeda(politica.minimoMetroQuadrado)}`);
       }
       return linhas;
     }
     return ['Sem preço'];
+  }
+
+  private unidadeDimensaoSimbolo(unidade: string | null | undefined): string {
+    switch (unidade) {
+      case 'CENTIMETRO': return 'cm';
+      case 'MILIMETRO': return 'mm';
+      default: return 'm';
+    }
   }
 
   novo(): void {
@@ -419,15 +423,11 @@ export class GraficaProdutosComponent implements OnInit {
       materiais: this.graficaService.listarMateriais(),
       formatos: this.graficaService.listarFormatos(),
       cores: this.graficaService.listarCores(),
-      acabamentos: this.graficaService.listarAcabamentos(),
-      servicos: this.graficaService.listarServicos(),
     }).subscribe({
-      next: ({ materiais, formatos, cores, acabamentos, servicos }) => {
+      next: ({ materiais, formatos, cores }) => {
         this.materiais = materiais || [];
         this.formatos = formatos || [];
         this.cores = cores || [];
-        this.acabamentos = acabamentos || [];
-        this.servicos = servicos || [];
         this.carregandoFiltros = false;
       },
       error: (error) => {
@@ -446,9 +446,6 @@ export class GraficaProdutosComponent implements OnInit {
       materialIds: this.toNumberArray(filters.materialIds),
       formatoIds: this.toNumberArray(filters.formatoIds),
       corIds: this.toNumberArray(filters.corIds),
-      // Multi-selects usam semântica OR no backend: qualquer acabamento/serviço selecionado é suficiente.
-      acabamentoIds: this.toNumberArray(filters.acabamentoIds),
-      servicoIds: this.toNumberArray(filters.servicoIds),
       sort: this.toSortParam(),
     };
   }

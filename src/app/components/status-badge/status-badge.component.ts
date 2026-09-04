@@ -31,6 +31,7 @@ export class StatusBadgeComponent {
     FECHADO: { icon: 'task_alt', label: 'Fechado', className: 'chip-producao' },
     PARCIAL: { icon: 'payments', label: 'Parcial', className: 'chip-aguardando' },
     PAGO: { icon: 'check_circle', label: 'Pago', className: 'chip-pronto' },
+    CONFIRMADO: { icon: 'check_circle', label: 'Confirmado', className: 'chip-pronto' },
     EM_ANALISE: { icon: 'manage_search', label: 'Em análise', className: 'chip-analise' },
     AGUARDANDO_CLIENTE: { icon: 'hourglass_empty', label: 'Aguard. cliente', className: 'chip-aguardando' },
     RESPONDIDO: { icon: 'chat_bubble', label: 'Respondido', className: 'chip-orcamento' },

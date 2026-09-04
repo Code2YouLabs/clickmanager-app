@@ -9,16 +9,19 @@ import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea
 import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
 import { UnitInputComponent } from 'src/app/components/inputs/unit-input/unit-input.component';
 import { MaterialModule } from 'src/app/material.module';
+import { CatalogoCategoria, CatalogoCategoriaOption, CatalogoCategoriaRequest } from '../../catalogo/shared/models/catalogo.models';
+import { CatalogoCategoriaService } from '../../catalogo/shared/services/catalogo.service';
 import { catalogoErrorMessage, catalogoSlugify } from '../../catalogo/shared/utils/catalogo-utils';
 import { GraficaCadastro, GraficaCadastroRequest, GraficaFormato, GraficaFormatoRequest } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
 
-type CadastroRapidoTipo = 'material' | 'formato' | 'cor';
+type CadastroRapidoTipo = 'material' | 'formato' | 'cor' | 'categoria';
 type UnidadeGrafica = 'METRO' | 'CENTIMETRO' | 'MILIMETRO';
-type CadastroRapidoResult = GraficaCadastro | GraficaFormato;
+type CadastroRapidoResult = GraficaCadastro | GraficaFormato | CatalogoCategoria;
 
 interface CadastroRapidoDialogData {
   tipo: CadastroRapidoTipo;
+  categorias?: CatalogoCategoriaOption[];
 }
 
 @Component({
@@ -45,6 +48,16 @@ interface CadastroRapidoDialogData {
           [maxlength]="140"
           [requiredError]="nomeRequiredError">
         </app-input-texto-restrito>
+
+        <app-input-options
+          *ngIf="data.tipo === 'categoria'"
+          [control]="categoriaPaiControl"
+          label="Categoria pai"
+          placeholder="Categoria pai"
+          [options]="categoriasPai"
+          [showNull]="true"
+          nullLabel="Sem categoria pai">
+        </app-input-options>
 
         <ng-container *ngIf="data.tipo === 'formato'">
           <app-input-options
@@ -101,7 +114,7 @@ interface CadastroRapidoDialogData {
         <app-input-textarea
           class="quick-create-form__wide"
           [control]="descricaoControl"
-          label="Descrição"
+          [label]="descricaoLabel"
           [rows]="4"
           [maxlength]="500">
         </app-input-textarea>
@@ -157,6 +170,7 @@ export class GraficaCadastroRapidoDialogComponent {
     larguraUtil: this.fb.control<number | null>(null),
     alturaUtil: this.fb.control<number | null>(null),
     unidadeDimensao: this.fb.control<UnidadeGrafica>('CENTIMETRO', { nonNullable: true }),
+    categoriaPaiId: this.fb.control<number | null>(null),
   });
 
   get titulo(): string {
@@ -164,6 +178,7 @@ export class GraficaCadastroRapidoDialogComponent {
       material: 'Novo material',
       formato: 'Novo formato',
       cor: 'Nova cor',
+      categoria: 'Nova categoria',
     }[this.data.tipo];
   }
 
@@ -172,6 +187,7 @@ export class GraficaCadastroRapidoDialogComponent {
       material: 'Ex.: Couchê 150g',
       formato: 'Ex.: 10x15',
       cor: 'Ex.: 4x4',
+      categoria: 'Ex.: Panfletos',
     }[this.data.tipo];
   }
 
@@ -180,7 +196,12 @@ export class GraficaCadastroRapidoDialogComponent {
       material: 'Informe o nome do material.',
       formato: 'Informe o nome do formato.',
       cor: 'Informe o nome da cor.',
+      categoria: 'Informe o nome da categoria.',
     }[this.data.tipo];
+  }
+
+  get descricaoLabel(): string {
+    return this.data.tipo === 'categoria' ? 'Descrição curta' : 'Descrição';
   }
 
   get unidadeSuffix(): string {
@@ -198,10 +219,13 @@ export class GraficaCadastroRapidoDialogComponent {
   get larguraUtilControl(): FormControl<number | null> { return this.form.controls.larguraUtil; }
   get alturaUtilControl(): FormControl<number | null> { return this.form.controls.alturaUtil; }
   get unidadeControl(): FormControl<UnidadeGrafica> { return this.form.controls.unidadeDimensao; }
+  get categoriaPaiControl(): FormControl<number | null> { return this.form.controls.categoriaPaiId; }
+  get categoriasPai(): CatalogoCategoriaOption[] { return this.data.categorias || []; }
 
   constructor(
     private readonly fb: FormBuilder,
     private readonly service: GraficaProdutoService,
+    private readonly categoriaService: CatalogoCategoriaService,
     private readonly toastr: ToastrService,
     private readonly dialogRef: MatDialogRef<GraficaCadastroRapidoDialogComponent, CadastroRapidoResult | null>,
     @Inject(MAT_DIALOG_DATA) public readonly data: CadastroRapidoDialogData,
@@ -220,11 +244,7 @@ export class GraficaCadastroRapidoDialogComponent {
     }
 
     this.salvando = true;
-    const request$: Observable<CadastroRapidoResult> = this.data.tipo === 'formato'
-      ? this.service.salvarFormato(this.formatoRequest())
-      : this.data.tipo === 'material'
-        ? this.service.salvarMaterial(this.cadastroRequest())
-        : this.service.salvarCor(this.cadastroRequest());
+    const request$: Observable<CadastroRapidoResult> = this.buildRequest();
 
     request$.subscribe({
       next: (item) => {
@@ -264,6 +284,35 @@ export class GraficaCadastroRapidoDialogComponent {
       unidadeDimensao: raw.unidadeDimensao,
       ativo: true,
     };
+  }
+
+  private categoriaRequest(): CatalogoCategoriaRequest {
+    const raw = this.form.getRawValue();
+    const nome = raw.nome.trim();
+    return {
+      codigo: this.codigo(nome),
+      nome,
+      slug: catalogoSlugify(nome),
+      descricaoCurta: raw.descricao?.trim() || null,
+      descricaoCompleta: null,
+      categoriaPaiId: raw.categoriaPaiId,
+      ordemExibicao: 0,
+      destaque: false,
+      ativo: true,
+    };
+  }
+
+  private buildRequest(): Observable<CadastroRapidoResult> {
+    switch (this.data.tipo) {
+      case 'formato':
+        return this.service.salvarFormato(this.formatoRequest());
+      case 'material':
+        return this.service.salvarMaterial(this.cadastroRequest());
+      case 'cor':
+        return this.service.salvarCor(this.cadastroRequest());
+      case 'categoria':
+        return this.categoriaService.criar(this.categoriaRequest());
+    }
   }
 
   private configurarValidadoresPorTipo(): void {

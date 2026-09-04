@@ -1,35 +1,41 @@
-<app-section-card titulo="Itens do pedido" [divider]="true">
+<app-section-card [titulo]="titulo" [divider]="true">
   <div class="itens-wrapper" [class.inativo]="inativo">
-    <div class="d-flex gap-8 flex-wrap m-b-8" actions *ngIf="mostrarAcoes">
-      <button mat-flat-button color="primary" type="button" (click)="buscarProdutos.emit()" [disabled]="inativo">
+    <div class="itens-actions" actions *ngIf="mostrarAcoes">
+      <button mat-flat-button color="primary" class="add-item-button" type="button" (click)="buscarProdutos.emit()" [disabled]="inativo">
         <mat-icon>add</mat-icon>
         {{ buscarProdutosLabel }}
       </button>
-      <button mat-stroked-button color="primary" type="button" (click)="buscaRapida.emit()" [disabled]="inativo" *ngIf="mostrarBuscaRapida">
+      <button mat-stroked-button color="primary" class="secondary-item-button" type="button" (click)="buscaRapida.emit()" [disabled]="inativo" *ngIf="mostrarBuscaRapida">
         <mat-icon>search</mat-icon>
         {{ buscaRapidaLabel }}
       </button>
-      <button mat-stroked-button color="accent" type="button" (click)="descreverItens.emit()" [disabled]="inativo" *ngIf="mostrarDescreverItens">
+      <button mat-stroked-button color="accent" class="secondary-item-button" type="button" (click)="descreverItens.emit()" [disabled]="inativo" *ngIf="mostrarDescreverItens">
         <mat-icon>edit_note</mat-icon>
         {{ descreverItensLabel }}
       </button>
     </div>
 
-    <div class="table-responsive m-t-12" *ngIf="itens.length; else emptyItens">
-      <table class="table table-hover b-1 no-wrap w-100 rounded text-left table-bg-light m-b-20">
-        <thead>
-        <tr>
-            <th class="p-12 header-cell">Item</th>
-            <th class="p-12 header-cell text-right">Qtd</th>
-          <th class="p-12 header-cell text-right">Valor</th>
-          <th class="p-12 header-cell text-right">Subtotal</th>
-          <th class="p-12 header-cell text-right" *ngIf="mostrarAcoes">Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr class="bordered-row" *ngFor="let item of itens; let i = index">
-          <td class="p-12">{{ item.descricao }}</td>
-          <td class="p-12 text-right">
+    <div class="order-items" *ngIf="itens.length; else emptyItens">
+      <div class="order-items__header" [class.with-actions]="mostrarAcoes">
+        <span>Item</span>
+        <span>Qtd</span>
+        <span>Valor</span>
+        <span>Subtotal</span>
+        <span *ngIf="mostrarAcoes">Ações</span>
+      </div>
+
+      <div class="order-items__row" [class.with-actions]="mostrarAcoes" *ngFor="let item of itens; let i = index">
+        <div class="item-main">
+          <div class="item-title-line">
+            <span class="item-badge" *ngIf="item.tipoLinha && item.tipoLinha !== 'PRINCIPAL'">{{ item.tipoLinha === 'SERVICO' ? 'Serviço' : item.tipoLinha === 'ACABAMENTO' ? 'Acabamento' : 'Adicional' }}</span>
+            <strong>{{ item.descricao }}</strong>
+          </div>
+          <div class="item-spec" *ngIf="item.especificacao">{{ item.especificacao }}</div>
+          <div class="item-details" *ngIf="item.detalhes?.length">
+            <span *ngFor="let detalhe of item.detalhes">{{ detalhe }}</span>
+          </div>
+        </div>
+        <div class="item-qtd">
             <ng-container *ngIf="permitirAlterarQuantidade; else qtdText">
               <input
                 type="number"
@@ -44,25 +50,37 @@
             <ng-template #qtdText>
               <span>{{ item.quantidade }}</span>
             </ng-template>
-          </td>
-          <td class="p-12 text-right">{{ item.valor | currency:'BRL':'symbol':'1.2-2' }}</td>
-          <td class="p-12 text-right">
-            {{ (item.subTotal ?? item.quantidade * item.valor) | currency:'BRL':'symbol':'1.2-2' }}
-          </td>
-          <td class="p-12 text-right action-link" *ngIf="mostrarAcoes">
-            <button mat-icon-button color="warn" type="button" (click)="removerItem.emit(i)" matTooltip="Remover item" [disabled]="inativo">
+        </div>
+        <div class="item-money">
+          <strong>{{ item.valor | currency:'BRL':'symbol':'1.2-2' }}</strong>
+          <small *ngIf="item.valorContexto">{{ item.valorContexto }}</small>
+        </div>
+        <div class="item-money item-subtotal">
+          <strong>{{ (item.subTotal ?? item.quantidade * item.valor) | currency:'BRL':'symbol':'1.2-2' }}</strong>
+          <small *ngIf="item.subtotalResumo">{{ item.subtotalResumo }}</small>
+        </div>
+        <div class="item-actions" *ngIf="mostrarAcoes">
+            <button
+              mat-icon-button
+              color="warn"
+              class="remove-item-button"
+              type="button"
+              (pointerdown)="$event.stopPropagation()"
+              (pointerup)="onRemoverItem(item, i, $event)"
+              (click)="onRemoverItem(item, i, $event)"
+              matTooltip="Remover item"
+              [disabled]="inativo">
               <mat-icon>delete</mat-icon>
             </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-    <div class="subtotal-inline">
-      <div class="subtotal-label">Subtotal (itens)</div>
-      <div class="subtotal-value">
-        <span class="currency">{{ subtotal | currency:'BRL':'symbol':'1.2-2' }}</span>
+        </div>
       </div>
-    </div>
+
+      <div class="subtotal-inline">
+        <div class="subtotal-label">Subtotal (itens)</div>
+        <div class="subtotal-value">
+          <span class="currency">{{ subtotal | currency:'BRL':'symbol':'1.2-2' }}</span>
+        </div>
+      </div>
     </div>
 
     <ng-template #emptyItens>

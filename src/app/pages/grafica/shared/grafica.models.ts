@@ -3,6 +3,9 @@ import { CatalogoPaginaResponse, CatalogoProdutoImagem, CatalogoProdutoImagemReq
 export type GraficaTipoParametro = 'SELECAO' | 'NUMERO_INTEIRO' | 'NUMERO_DECIMAL' | 'TEXTO';
 export type GraficaTipoPrecificacao = 'FIXO' | 'POR_FAIXA_QUANTIDADE' | 'POR_LOTE' | 'POR_METRO_QUADRADO';
 export type GraficaPrecificacaoStatus = 'CONFIGURACAO_INCOMPLETA' | 'CONFIGURACAO_INVALIDA' | 'SEM_PRECO_CONFIGURADO' | 'PRECO_CALCULADO';
+export type GraficaUnidadeDimensao = 'METRO' | 'CENTIMETRO' | 'MILIMETRO';
+export type GraficaModoCobrancaMetro = 'QUADRADO' | 'LINEAR';
+export type GraficaProdutoAcabamentoFormaAplicacao = 'POR_FOLHA' | 'POR_PECA' | 'POR_SERVICO' | 'POR_METRO_QUADRADO' | 'POR_METRO_LINEAR';
 
 export interface GraficaProduto {
   id: number;
@@ -19,8 +22,7 @@ export interface GraficaProduto {
   material?: GraficaCadastro | null;
   formato?: GraficaFormato | null;
   cor?: GraficaCadastro | null;
-  acabamentos: GraficaCadastro[];
-  servicos: GraficaCadastro[];
+  acabamentos: GraficaProdutoAcabamento[];
   parametros: GraficaParametro[];
   dependencias?: GraficaDependencia[];
   createdAt?: string | null;
@@ -57,8 +59,7 @@ export interface GraficaProdutoRequest {
   materialId?: number | null;
   formatoId?: number | null;
   corId?: number | null;
-  acabamentoIds?: number[];
-  servicoIds?: number[];
+  acabamentos?: GraficaProdutoAcabamentoRequest[];
 }
 
 export interface GraficaProdutoListParams {
@@ -72,8 +73,6 @@ export interface GraficaProdutoListParams {
   formatoIds?: number[];
   corId?: number | null;
   corIds?: number[];
-  acabamentoIds?: number[];
-  servicoIds?: number[];
   sort?: string | null;
 }
 
@@ -182,6 +181,11 @@ export interface GraficaPrecoPolitica {
   valorFixo?: number | null;
   precoMetroQuadrado?: number | null;
   minimoMetroQuadrado?: number | null;
+  alturaMaxima?: number | null;
+  larguraMaxima?: number | null;
+  largurasLinearesPermitidas?: string | null;
+  modoCobranca?: GraficaModoCobrancaMetro | null;
+  unidadeDimensao?: GraficaUnidadeDimensao | null;
   especificidade?: number | null;
   selecoes: GraficaPrecoSelecao[];
   faixas: GraficaPrecoFaixa[];
@@ -197,9 +201,36 @@ export interface GraficaPrecoPoliticaRequest {
   valorFixo?: number | null;
   precoMetroQuadrado?: number | null;
   minimoMetroQuadrado?: number | null;
+  alturaMaxima?: number | null;
+  larguraMaxima?: number | null;
+  largurasLinearesPermitidas?: string | null;
+  modoCobranca?: GraficaModoCobrancaMetro | null;
+  unidadeDimensao?: GraficaUnidadeDimensao | null;
   selecaoOpcaoIds?: number[];
   faixas?: GraficaPrecoFaixa[];
   lotes?: GraficaPrecoLote[];
+}
+
+export interface GraficaProdutoAcabamento {
+  id: number;
+  nome: string;
+  descricao?: string | null;
+  formaAplicacao: GraficaProdutoAcabamentoFormaAplicacao;
+  ativo: boolean;
+  ordem: number;
+  politicas: GraficaPrecoPolitica[];
+  createdAt?: string | null;
+  updatedAt?: string | null;
+}
+
+export interface GraficaProdutoAcabamentoRequest {
+  id?: number | null;
+  nome: string;
+  descricao?: string | null;
+  formaAplicacao: GraficaProdutoAcabamentoFormaAplicacao;
+  ativo?: boolean | null;
+  ordem?: number | null;
+  politicas?: GraficaPrecoPoliticaRequest[];
 }
 
 export interface GraficaPrecificacaoRequest {
@@ -208,7 +239,7 @@ export interface GraficaPrecificacaoRequest {
   quantidade?: number | null;
   largura?: number | null;
   altura?: number | null;
-  unidadeDimensao?: 'METRO' | 'CENTIMETRO' | 'MILIMETRO';
+  unidadeDimensao?: GraficaUnidadeDimensao;
 }
 
 export interface GraficaCadastro {
@@ -226,28 +257,12 @@ export interface GraficaCadastroRequest {
   ativo?: boolean | null;
 }
 
-export interface GraficaAcabamento extends GraficaCadastro {
-  materialId?: number | null;
-  materialNome?: string | null;
-  formatoId?: number | null;
-  formatoNome?: string | null;
-  aplicacao?: 'PECA' | 'FOLHA' | 'METRO_QUADRADO' | 'METRO_LINEAR' | 'SERVICO' | null;
-  precoConfiguracao?: Record<string, any> | null;
-}
-
-export interface GraficaAcabamentoRequest extends GraficaCadastroRequest {
-  materialId?: number | null;
-  formatoId?: number | null;
-  aplicacao?: 'PECA' | 'FOLHA' | 'METRO_QUADRADO' | 'METRO_LINEAR' | 'SERVICO' | null;
-  precoConfiguracao?: Record<string, any> | null;
-}
-
 export interface GraficaServico extends GraficaCadastro {
-  precoConfiguracao?: Record<string, any> | null;
+  politicas?: GraficaPrecoPolitica[];
 }
 
 export interface GraficaServicoRequest extends GraficaCadastroRequest {
-  precoConfiguracao?: Record<string, any> | null;
+  politicas?: GraficaPrecoPoliticaRequest[];
 }
 
 export interface GraficaFormato {
@@ -279,8 +294,8 @@ export interface GraficaFormatoRequest {
 export interface GraficaPrecificacaoResultado {
   status: GraficaPrecificacaoStatus;
   mensagem: string;
-  produtoGraficoId: number;
-  catalogoProdutoId: number;
+  produtoGraficoId?: number | null;
+  catalogoProdutoId?: number | null;
   selecoesResolvidas: GraficaPrecoSelecao[];
   tipoPrecificacao?: GraficaTipoPrecificacao | null;
   quantidadeSolicitada?: number | null;
@@ -325,9 +340,10 @@ export interface GraficaPagina<T> {
 
 export interface ItemComercialResolvido {
   origem: 'CATALOGO' | 'GRAFICA' | 'SMARTCALC';
-  catalogoProdutoId: number;
+  catalogoProdutoId?: number | null;
   codigoProduto?: string | null;
   nomeProduto?: string | null;
+  descricaoProduto?: string | null;
   unidadeVenda?: string | null;
   caracteristicasResumo?: string | null;
   quantidade: number;
@@ -386,6 +402,7 @@ export interface GraficaComercialComposicaoRequest {
     observacao?: string | null;
     snapshot?: Record<string, any> | null;
   }>;
+  pagamentosPretendidos?: RecebimentoPretendidoRequest[];
 }
 
 export interface GraficaComercialDestinoResponse {
@@ -398,16 +415,31 @@ export interface GraficaComercialDestinoResponse {
 
 export interface ComercialItemResponse {
   id: number;
-  origem: string;
-  catalogoProdutoId: number;
+  origem?: string | null;
+  origemProduto?: string | null;
+  catalogoProdutoId?: number | null;
+  produtoOrigemId?: number | null;
   codigoProduto?: string | null;
-  nomeProduto: string;
+  nomeProduto?: string | null;
+  produtoNome?: string | null;
+  descricaoProduto?: string | null;
+  descricaoProdutoSnapshot?: string | null;
+  caracteristicasResumo?: string | null;
+  caracteristicasResumoSnapshot?: string | null;
   unidadeVenda?: string | null;
+  unidadeVendaSnapshot?: string | null;
   quantidade: number;
   valorUnitario: number;
+  precoUnitario?: number | null;
   desconto?: number | null;
   acrescimo?: number | null;
-  valorTotal: number;
+  valorTotal?: number | null;
+  subtotal?: number | null;
+  subtotalEstimado?: number | null;
+  observacao?: string | null;
+  snapshotComercial?: string | null;
+  snapshotGrafica?: string | null;
+  snapshotCalculadora?: string | null;
   ordem?: number | null;
 }
 
@@ -422,6 +454,8 @@ export interface RascunhoComercialResponse {
   acrescimo: number;
   frete: number;
   total: number;
+  observacaoCliente?: string | null;
+  observacaoInterna?: string | null;
   convertidoParaTipo?: string | null;
   convertidoParaId?: number | null;
   convertidoEm?: string | null;
@@ -440,14 +474,142 @@ export interface PedidoComercialResumo {
 
 export interface PedidoComercialDetalhe extends PedidoComercialResumo {
   empresaId?: number | null;
+  clienteId?: number | null;
+  clienteDocumento?: string | null;
+  clienteTelefone?: string | null;
+  clienteEmail?: string | null;
+  subtotal?: number | null;
+  desconto?: number | null;
+  acrescimo?: number | null;
+  frete?: number | null;
+  observacaoInterna?: string | null;
+  observacaoCliente?: string | null;
+  responsavelNome?: string | null;
   itens: ComercialItemResponse[];
+}
+
+export interface PedidoFluxoPermissoes {
+  editarCliente: boolean;
+  editarItens: boolean;
+  observacoes: boolean;
+  pagamentos: boolean;
+  alterarStatus: boolean;
+}
+
+export interface PedidoFluxoTransicao {
+  status: string;
+  label: string;
+  permitida: boolean;
+  motivo?: string | null;
+}
+
+export interface PedidoFluxoStatus {
+  status: string;
+  label: string;
+  descricao: string;
+  ordem: number;
+  atual: boolean;
+  concluido: boolean;
+  finalStatus: boolean;
+}
+
+export interface PedidoFluxoResponse {
+  statusAtual: string;
+  label: string;
+  descricao: string;
+  finalStatus: boolean;
+  permissoes: PedidoFluxoPermissoes;
+  proximasTransicoes: PedidoFluxoTransicao[];
+  fluxo: PedidoFluxoStatus[];
+}
+
+export interface ResumoFinanceiroOrigem {
+  empresaId: number;
+  origemTipo: string;
+  origemId: number;
+  subtotal: number;
+  desconto: number;
+  acrescimo: number;
+  frete: number;
+  total: number;
+  totalRecebido: number;
+  saldoAberto: number;
+  percentualPago: number;
+  quitado: boolean;
+}
+
+export interface RecebimentoPretendidoRequest {
+  formaPagamento: string;
+  valor: number;
+  dataRecebimento?: string | null;
+  observacao?: string | null;
+}
+
+export interface RegistrarRecebimentoRequest extends RecebimentoPretendidoRequest {
+  empresaId?: number | null;
+  origemTipo: 'PEDIDO';
+  origemId: number;
+  referenciaExterna?: string | null;
+}
+
+export interface PedidoAjustesFinanceirosRequest {
+  desconto: number;
+  acrescimo: number;
+  frete: number;
+}
+
+export type OrcamentoAjustesComerciaisRequest = PedidoAjustesFinanceirosRequest;
+
+export interface PedidoCriadoResponse {
+  pedidoId: number;
+  empresaId?: number | null;
+  numero: string;
+  status: string;
+  total: number;
+}
+
+export interface RecebimentoResponse {
+  id: number;
+  empresaId: number;
+  origemTipo: string;
+  origemId: number;
+  clienteId?: number | null;
+  clienteNome?: string | null;
+  valor: number;
+  formaPagamento: string;
+  dataRecebimento?: string | null;
+  status: string;
+  referenciaExterna?: string | null;
+  observacao?: string | null;
+  criadoEm?: string | null;
 }
 
 export interface OrcamentoComercialResumo {
   id: number;
+  empresaId?: number | null;
   protocolo: string;
   nomeCliente?: string | null;
+  telefoneCliente?: string | null;
+  emailCliente?: string | null;
+  clienteId?: number | null;
+  responsavelId?: number | null;
+  responsavelNome?: string | null;
+  atendenteUsuarioId?: number | null;
+  atendenteNomeSnapshot?: string | null;
   status: string;
+  subtotal?: number | null;
+  desconto?: number | null;
+  acrescimo?: number | null;
+  frete?: number | null;
+  total?: number | null;
   totalEstimado?: number | null;
+  validoAte?: string | null;
+  observacaoCliente?: string | null;
+  observacaoInterna?: string | null;
   createdAt?: string | null;
+  itens?: ComercialItemResponse[];
+}
+
+export interface OrcamentoComercialDetalhe extends OrcamentoComercialResumo {
+  itens: ComercialItemResponse[];
 }

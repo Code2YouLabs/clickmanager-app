@@ -13,8 +13,6 @@ describe('GraficaProdutoService', () => {
       materialIds: [1],
       formatoIds: [2],
       corIds: [3, 6],
-      acabamentoIds: [4],
-      servicoIds: [5],
       sort: 'nome,desc'
     });
     service.buscarPorCatalogo(10);
@@ -35,7 +33,6 @@ describe('GraficaProdutoService', () => {
     service.excluirMaterial(11);
     service.excluirFormato(12);
     service.excluirCor(13);
-    service.excluirAcabamento(14);
     service.excluirServico(15);
 
     expect(api.get.calls.argsFor(0)[0]).toBe('api/grafica/produtos');
@@ -43,8 +40,6 @@ describe('GraficaProdutoService', () => {
     expect(api.get.calls.argsFor(0)[1].getAll('materialIds')).toEqual(['1']);
     expect(api.get.calls.argsFor(0)[1].getAll('formatoIds')).toEqual(['2']);
     expect(api.get.calls.argsFor(0)[1].getAll('corIds')).toEqual(['3', '6']);
-    expect(api.get.calls.argsFor(0)[1].getAll('acabamentoIds')).toEqual(['4']);
-    expect(api.get.calls.argsFor(0)[1].getAll('servicoIds')).toEqual(['5']);
     expect(api.get.calls.argsFor(0)[1].get('sort')).toBe('nome,desc');
     expect(api.get.calls.argsFor(1)[0]).toBe('api/grafica/produtos/catalogo/10');
     expect(api.get.calls.mostRecent().args[0]).toBe('api/grafica/produtos/1/precos');
@@ -64,7 +59,6 @@ describe('GraficaProdutoService', () => {
     expect(api.delete.calls.argsFor(1)[0]).toBe('api/grafica/materiais/11');
     expect(api.delete.calls.argsFor(2)[0]).toBe('api/grafica/formatos/12');
     expect(api.delete.calls.argsFor(3)[0]).toBe('api/grafica/cores/13');
-    expect(api.delete.calls.argsFor(4)[0]).toBe('api/grafica/acabamentos/14');
-    expect(api.delete.calls.argsFor(5)[0]).toBe('api/grafica/servicos/15');
+    expect(api.delete.calls.argsFor(4)[0]).toBe('api/grafica/servicos/15');
   });
 });

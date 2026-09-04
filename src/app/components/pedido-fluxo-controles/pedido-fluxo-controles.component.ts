@@ -11,17 +11,14 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { SectionCardComponent } from '../section-card/section-card.component';
-import { StatusLabelPipe } from 'src/app/pipes/status-label.pipe';
 import { ManualLinkComponent } from '../manual-link/manual-link.component';
 import { PedidoTrocarStatusDialogComponent } from './pedido-trocar-status-dialog.component';
 import { StatusBadgeComponent } from '../status-badge/status-badge.component';
 
-const FLOW_STEPS = ['RASCUNHO', 'AGUARDANDO_PAGAMENTO', 'PENDENTE', 'EM_PRODUCAO', 'PRONTO', 'ENTREGUE'];
+const FLOW_STEPS = ['AGUARDANDO_PAGAMENTO', 'PENDENTE', 'EM_PRODUCAO', 'PRONTO', 'ENTREGUE'];
 
 const STATUS_DESCRICAO: Record<string, string> = {
-  RASCUNHO: 'Revise cliente e itens antes de confirmar.',
   PENDENTE: 'Pedido criado. Registre pagamento para avançar.',
-  ORCAMENTO: 'Aguardando aprovação do cliente.',
   AGUARDANDO_PAGAMENTO: 'Aguardando pagamento do cliente.',
   EM_PRODUCAO: 'Produção em andamento.',
   PRONTO: 'Pronto para entrega/retirada.',
@@ -30,9 +27,7 @@ const STATUS_DESCRICAO: Record<string, string> = {
 };
 
 const STATUS_UI: Record<string, { icon: string; tone: 'blue' | 'orange' | 'green' | 'red' | 'gray' }> = {
-  RASCUNHO: { icon: 'edit', tone: 'blue' },
   PENDENTE: { icon: 'schedule', tone: 'blue' },
-  ORCAMENTO: { icon: 'assignment', tone: 'orange' },
   AGUARDANDO_PAGAMENTO: { icon: 'credit_card', tone: 'orange' },
   EM_PRODUCAO: { icon: 'lock', tone: 'blue' },
   PRONTO: { icon: 'check_circle', tone: 'green' },
@@ -56,7 +51,6 @@ const STATUS_UI: Record<string, { icon: string; tone: 'blue' | 'orange' | 'green
     MatDialogModule,
     SectionCardComponent,
     RouterModule,
-    StatusLabelPipe,
     ManualLinkComponent,
     StatusBadgeComponent
   ],
@@ -81,6 +75,8 @@ export class PedidoFluxoControlesComponent implements OnChanges {
   @Input() statusControl!: FormControl;
   @Input() statusOptions: string[] = [];
   @Input() transicoes: { status: string; label: string; bloqueado: boolean; motivo?: string }[] = [];
+  @Input() fluxoSteps: { status: string; label: string; atual?: boolean; concluido?: boolean }[] = [];
+  @Input() descricaoStatus: string | null = null;
   @Input() permiteAdicionarPagamento = false;
   @Input() permiteFinalizar = false;
   @Input() permiteIniciarProducao = false;
@@ -141,11 +137,6 @@ export class PedidoFluxoControlesComponent implements OnChanges {
       showAdvanced = false;
     } else {
       switch (statusKey) {
-        case 'RASCUNHO':
-          helperText = 'Rascunho: revise itens e cliente antes de confirmar.';
-          nextAction = { label: 'Confirmar pedido', icon: 'check_circle', color: 'primary' as const, type: 'confirmarPedido' };
-          showCancel = true;
-          break;
         case 'PENDENTE':
           helperText = 'Pedido confirmado. Envie para produção.';
           nextAction = { label: 'Iniciar produção', icon: 'play_arrow', color: 'primary' as const, type: 'enviarProducao' };
@@ -189,6 +180,7 @@ export class PedidoFluxoControlesComponent implements OnChanges {
         label: proximaTransicao.label || this.statusLabel(proximaTransicao.status),
         icon: 'arrow_forward',
         color: 'primary' as const,
+        disabled: proximaTransicao.bloqueado,
         type: 'mudarStatus',
         target: proximaTransicao.status
       };
@@ -201,18 +193,29 @@ export class PedidoFluxoControlesComponent implements OnChanges {
     }
 
     this.vm = {
-      helperText: helperText || STATUS_DESCRICAO[statusKey] || defaultHelper,
+      helperText: this.descricaoStatus || helperText || STATUS_DESCRICAO[statusKey] || defaultHelper,
       statusLabel: this.statusLabel(statusKey),
       nextAction,
       showCancel,
       showAdvanced,
       tone: (STATUS_UI[statusKey]?.tone || 'gray') as any,
-      steps: FLOW_STEPS.map((s, idx) => ({
-        label: this.statusLabel(s),
-        active: s === statusKey,
-        done: idx < FLOW_STEPS.indexOf(statusKey),
-      }))
+      steps: this.stepsVm(statusKey)
     };
+  }
+
+  private stepsVm(statusKey: string): { label: string; active: boolean; done: boolean }[] {
+    if (this.fluxoSteps?.length) {
+      return this.fluxoSteps.map(step => ({
+        label: step.label || this.statusLabel(step.status),
+        active: !!step.atual || step.status === statusKey,
+        done: !!step.concluido
+      }));
+    }
+    return FLOW_STEPS.map((s, idx) => ({
+      label: this.statusLabel(s),
+      active: s === statusKey,
+      done: idx < FLOW_STEPS.indexOf(statusKey),
+    }));
   }
 
   statusLabel(val: string): string {

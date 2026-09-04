@@ -12,11 +12,11 @@ import { PageCardComponent } from 'src/app/components/page-card/page-card.compon
 import { MaterialModule } from 'src/app/material.module';
 import { ToastrService } from 'ngx-toastr';
 import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils';
-import { GraficaAcabamento } from '../shared/grafica.models';
+import { GraficaServico } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
 
 @Component({
-  selector: 'app-grafica-acabamentos',
+  selector: 'app-grafica-servicos',
   standalone: true,
   imports: [
     CommonModule,
@@ -27,24 +27,24 @@ import { GraficaProdutoService } from '../shared/grafica.service';
     DataTableCellDirective,
   ],
   template: `
-    <app-page-card titulo="Acabamentos gráficos" subtitulo="Acabamentos usados na configuração de produtos gráficos">
+    <app-page-card titulo="Serviços gráficos" subtitulo="Serviços usados na configuração de produtos gráficos">
       <div page-header-actions>
         <button mat-flat-button color="primary" type="button" (click)="novo()">
           <mat-icon>add</mat-icon>
-          Novo acabamento
+          Novo serviço
         </button>
       </div>
 
       <app-data-table
         [columns]="columns"
-        [data]="acabamentosPaginados"
+        [data]="servicosPaginados"
         [search]="searchConfig"
         [pagination]="pagination"
         [loading]="carregando"
         [emptyState]="{
-          title: 'Nenhum acabamento encontrado',
-          description: 'Cadastre um acabamento para configurar produtos gráficos.',
-          filteredTitle: 'Nenhum acabamento encontrado',
+          title: 'Nenhum serviço encontrado',
+          description: 'Cadastre um serviço para configurar produtos gráficos.',
+          filteredTitle: 'Nenhum serviço encontrado',
           filteredDescription: 'Altere a busca.'
         }"
         rowKey="id"
@@ -52,7 +52,7 @@ import { GraficaProdutoService } from '../shared/grafica.service';
         (pageChange)="onPageChange($event)">
 
         <ng-template appDataTableCell="nome" let-row>
-          <strong class="acabamento-nome">{{ row.nome }}</strong>
+          <strong class="servico-nome">{{ row.nome }}</strong>
         </ng-template>
 
         <ng-template appDataTableCell="descricao" let-row>
@@ -69,7 +69,7 @@ import { GraficaProdutoService } from '../shared/grafica.service';
               <mat-icon>edit</mat-icon>
             </button>
             <span matTooltip="Clonar - em breve">
-              <button mat-icon-button type="button" aria-label="Clonar acabamento" disabled>
+              <button mat-icon-button type="button" aria-label="Clonar serviço" disabled>
                 <mat-icon>content_copy</mat-icon>
               </button>
             </span>
@@ -82,7 +82,7 @@ import { GraficaProdutoService } from '../shared/grafica.service';
     </app-page-card>
   `,
   styles: [`
-    .acabamento-nome {
+    .servico-nome {
       display: block;
       color: #111827;
       line-height: 1.25;
@@ -114,8 +114,8 @@ import { GraficaProdutoService } from '../shared/grafica.service';
     }
   `],
 })
-export class GraficaAcabamentosComponent implements OnInit {
-  acabamentos: GraficaAcabamento[] = [];
+export class GraficaServicosComponent implements OnInit {
+  servicos: GraficaServico[] = [];
   pagina = 0;
   tamanho = 10;
   termo = '';
@@ -123,34 +123,34 @@ export class GraficaAcabamentosComponent implements OnInit {
 
   readonly searchConfig = {
     enabled: true,
-    label: 'Buscar acabamentos',
+    label: 'Buscar serviços',
     placeholder: 'Buscar por nome ou descrição',
     debounceMs: 300,
   };
 
-  readonly columns: DataTableColumn<GraficaAcabamento>[] = [
+  readonly columns: DataTableColumn<GraficaServico>[] = [
     { key: 'nome', label: 'Nome', width: '260px' },
     { key: 'descricao', label: 'Descrição' },
     { key: 'preco', label: 'Preço', width: '180px' },
     { key: 'acoes', label: 'Ações', align: 'end', width: '152px' },
   ];
 
-  get acabamentosFiltrados(): GraficaAcabamento[] {
+  get servicosFiltrados(): GraficaServico[] {
     const termo = this.termo.trim().toLowerCase();
-    if (!termo) return this.acabamentos;
-    return this.acabamentos.filter((item) => `${item.nome || ''} ${item.descricao || ''}`.toLowerCase().includes(termo));
+    if (!termo) return this.servicos;
+    return this.servicos.filter((item) => `${item.nome || ''} ${item.descricao || ''}`.toLowerCase().includes(termo));
   }
 
-  get acabamentosPaginados(): GraficaAcabamento[] {
+  get servicosPaginados(): GraficaServico[] {
     const inicio = this.pagina * this.tamanho;
-    return this.acabamentosFiltrados.slice(inicio, inicio + this.tamanho);
+    return this.servicosFiltrados.slice(inicio, inicio + this.tamanho);
   }
 
   get pagination(): DataTablePagination {
     return {
       pageIndex: this.pagina,
       pageSize: this.tamanho,
-      totalItems: this.acabamentosFiltrados.length,
+      totalItems: this.servicosFiltrados.length,
       pageSizeOptions: [10, 20, 50],
     };
   }
@@ -168,12 +168,12 @@ export class GraficaAcabamentosComponent implements OnInit {
 
   carregar(): void {
     this.carregando = true;
-    this.service.listarAcabamentos().pipe(finalize(() => this.carregando = false)).subscribe({
+    this.service.listarServicos().pipe(finalize(() => this.carregando = false)).subscribe({
       next: (items) => {
-        this.acabamentos = items || [];
+        this.servicos = items || [];
         this.pagina = 0;
       },
-      error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível carregar acabamentos.')),
+      error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível carregar serviços.')),
     });
   }
 
@@ -188,35 +188,35 @@ export class GraficaAcabamentosComponent implements OnInit {
   }
 
   novo(): void {
-    this.router.navigate(['/page/grafica/acabamentos/novo']);
+    this.router.navigate(['/page/grafica/servicos/novo']);
   }
 
-  editar(item: GraficaAcabamento): void {
-    this.router.navigate(['/page/grafica/acabamentos', item.id, 'editar']);
+  editar(item: GraficaServico): void {
+    this.router.navigate(['/page/grafica/servicos', item.id, 'editar']);
   }
 
-  precoResumo(item: GraficaAcabamento): string {
-    const preco = item.precoConfiguracao || {};
-    switch (preco['tipo']) {
+  precoResumo(item: GraficaServico): string {
+    const politica = item.politicas?.find((preco) => preco.ativo !== false);
+    if (!politica) return 'A configurar';
+    switch (politica.tipo) {
       case 'FIXO':
-        return this.moeda(preco['valor']);
-      case 'QUANTIDADE':
-      case 'DEMANDA':
-        return 'Por faixas';
-      case 'METRO':
-        return 'Por metro';
-      case 'HORA':
-        return 'Por hora';
+        return this.moeda(politica.valorFixo);
+      case 'POR_FAIXA_QUANTIDADE':
+        return 'Faixa de Quantidade';
+      case 'POR_LOTE':
+        return 'Quantidade Fechada';
+      case 'POR_METRO_QUADRADO':
+        return 'Preço por Metro';
       default:
         return 'A configurar';
     }
   }
 
-  excluir(item: GraficaAcabamento): void {
+  excluir(item: GraficaServico): void {
     const ref = this.dialog.open(ConfirmDialogComponent, {
       width: '420px',
       data: {
-        title: 'Excluir acabamento',
+        title: 'Excluir serviço',
         message: `Deseja excluir "${item.nome}"?`,
         confirmText: 'Excluir',
         confirmColor: 'warn',
@@ -226,12 +226,12 @@ export class GraficaAcabamentosComponent implements OnInit {
     ref.afterClosed().subscribe((confirmado) => {
       if (!confirmado) return;
       this.carregando = true;
-      this.service.excluirAcabamento(item.id).pipe(finalize(() => this.carregando = false)).subscribe({
+      this.service.excluirServico(item.id).pipe(finalize(() => this.carregando = false)).subscribe({
         next: () => {
-          this.toastr.success('Acabamento excluído.');
+          this.toastr.success('Serviço excluído.');
           this.carregar();
         },
-        error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível excluir o acabamento.')),
+        error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível excluir o serviço.')),
       });
     });
   }

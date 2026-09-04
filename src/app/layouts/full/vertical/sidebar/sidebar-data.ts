@@ -25,13 +25,6 @@ export const navItems: NavItem[] = [
         allowedEmpresaTipos: deposito,
     },
     {
-        displayName: 'SmartCalc',
-        iconName: 'calculator',
-        bgcolor: 'primary',
-        route: '/smartcalc',
-        allowedEmpresaTipos: grafica,
-    },
-    {
         navCap: 'Operação',
         allowedEmpresaTipos: todosSegmentos,
     },
@@ -44,20 +37,32 @@ export const navItems: NavItem[] = [
         allowedEmpresaTipos: deposito,
     },
     {
-        displayName: 'Pedidos',
-        iconName: 'file-text',
-        bgcolor: 'primary',
-        route: '/page/pedido',
-        requiredPermission: ['PEDIDOS_VER', 'PEDIDOS_CADASTRAR'],
-        allowedEmpresaTipos: grafica,
-    },
-    {
         displayName: 'Clientes',
         iconName: 'users',
         bgcolor: 'primary',
         route: '/page/cliente',
         requiredPermission: ['CLIENTE_VER', 'CLIENTE_CADASTRAR', 'CLIENTE_EDITAR', 'CLIENTE_EXCLUIR'],
         allowedEmpresaTipos: todosSegmentos,
+    },
+    {
+        navCap: 'Comercial',
+        allowedEmpresaTipos: grafica,
+    },
+    {
+        displayName: 'Pedidos',
+        iconName: 'shopping-cart',
+        bgcolor: 'primary',
+        route: '/page/grafica/comercial-beta/pedidos',
+        requiredPermission: ['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER'],
+        allowedEmpresaTipos: grafica,
+    },
+    {
+        displayName: 'Orçamentos',
+        iconName: 'file-invoice',
+        bgcolor: 'primary',
+        route: '/page/grafica/comercial-beta/orcamentos',
+        requiredPermission: ['ORCAMENTOS_VER', 'GRAFICA_PRODUTOS_VER'],
+        allowedEmpresaTipos: grafica,
     },
     {
         navCap: 'Catálogo',
@@ -71,6 +76,8 @@ export const navItems: NavItem[] = [
         requiredPermission: [
             'GRAFICA_PRODUTOS_VER',
             'GRAFICA_PRODUTOS_EDITAR',
+            'ORCAMENTOS_VER',
+            'PEDIDOS_VER',
             'DEPOSITO_ITENS_VER',
             'DEPOSITO_CATEGORIAS_VER',
             'DEPOSITO_MARCAS_VER',
@@ -85,7 +92,6 @@ export const navItems: NavItem[] = [
             { displayName: 'Materiais', iconName: 'point', bgcolor: 'transparent', route: '/page/grafica/materiais', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: grafica },
             { displayName: 'Formatos', iconName: 'point', bgcolor: 'transparent', route: '/page/grafica/formatos', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: grafica },
             { displayName: 'Cores', iconName: 'point', bgcolor: 'transparent', route: '/page/grafica/cores', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: grafica },
-            { displayName: 'Acabamentos', iconName: 'point', bgcolor: 'transparent', route: '/page/grafica/acabamentos', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: grafica },
             { displayName: 'Serviços', iconName: 'point', bgcolor: 'transparent', route: '/page/grafica/servicos', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: grafica },
             {
                 displayName: 'Produtos',
@@ -146,32 +152,6 @@ export const navItems: NavItem[] = [
     {
         navCap: 'Gestão',
         allowedEmpresaTipos: todosSegmentos,
-    },
-    {
-        displayName: 'Gestão de Pessoas',
-        iconName: 'briefcase',
-        bgcolor: 'primary',
-        route: '/page/funcionarios',
-        requiredPermission: ['FUNCIONARIO_VER', 'FOLHA_VER'],
-        allowedEmpresaTipos: grafica,
-        children: [
-            {
-                displayName: 'Funcionários',
-                iconName: 'point',
-                bgcolor: 'transparent',
-                route: '/page/funcionarios',
-                requiredPermission: ['FUNCIONARIO_VER'],
-                allowedEmpresaTipos: grafica,
-            },
-            {
-                displayName: 'Folha de Pagamento',
-                iconName: 'point',
-                bgcolor: 'transparent',
-                route: '/page/folha-pagamento',
-                requiredPermission: ['FOLHA_VER'],
-                allowedEmpresaTipos: grafica,
-            }
-        ]
     },
     {
         displayName: 'Usuários',
@@ -316,14 +296,6 @@ export const navItems: NavItem[] = [
         allowedEmpresaTipos: todosSegmentos,
         children: [
             {
-                displayName: 'SmartCalc',
-                iconName: 'point',
-                bgcolor: 'transparent',
-                route: '/page/calculadora/config/criar',
-                requiredPermission: ['CONFIG_CALCULADORAS'],
-                allowedEmpresaTipos: grafica,
-            },
-            {
                 displayName: 'Presença Pública',
                 iconName: 'point',
                 bgcolor: 'transparent',
@@ -356,14 +328,6 @@ export const navItems: NavItem[] = [
                 requiredPermission: ['CONFIG_EMAIL'],
                 allowedEmpresaTipos: grafica,
             },
-            {
-                displayName: 'Folha (Gestão de Pessoas)',
-                iconName: 'point',
-                bgcolor: 'transparent',
-                route: '/page/config/folha-pagamento',
-                requiredPermission: ['FOLHA_CONFIGURAR'],
-                allowedEmpresaTipos: grafica,
-            }
         ]
     },
     {

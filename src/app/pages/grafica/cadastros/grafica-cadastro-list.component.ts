@@ -23,7 +23,7 @@ import { catalogoErrorMessage, catalogoSlugify } from '../../catalogo/shared/uti
 import { GraficaCadastro, GraficaCadastroRequest, GraficaFormato, GraficaFormatoRequest } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
 
-type CadastroTipo = 'categorias' | 'materiais' | 'formatos' | 'cores' | 'acabamentos' | 'servicos';
+type CadastroTipo = 'categorias' | 'materiais' | 'formatos' | 'cores' | 'servicos';
 type Item = GraficaCadastro | GraficaFormato | CatalogoCategoria;
 type UnidadeGrafica = 'METRO' | 'CENTIMETRO' | 'MILIMETRO';
 
@@ -107,21 +107,6 @@ type UnidadeGrafica = 'METRO' | 'CENTIMETRO' | 'MILIMETRO';
                 </mat-form-field>
               }
 
-              @if (tipo === 'acabamentos') {
-                <app-input-options [control]="materialControl" label="Material" [options]="materiais" nullLabel="Sem material"></app-input-options>
-                <app-input-options [control]="formatoControl" label="Formato" [options]="formatos" nullLabel="Sem formato"></app-input-options>
-                <mat-form-field appearance="outline">
-                  <mat-label>Aplicação</mat-label>
-                  <mat-select formControlName="aplicacao">
-                    <mat-option value="PECA">Por peça</mat-option>
-                    <mat-option value="FOLHA">Por folha</mat-option>
-                    <mat-option value="METRO_QUADRADO">Por metro quadrado</mat-option>
-                    <mat-option value="METRO_LINEAR">Por metro linear</mat-option>
-                    <mat-option value="SERVICO">Por serviço</mat-option>
-                  </mat-select>
-                </mat-form-field>
-              }
-
               <app-input-textarea
                 class="cadastro-grid__wide"
                 [control]="descricaoControl"
@@ -136,14 +121,13 @@ type UnidadeGrafica = 'METRO' | 'CENTIMETRO' | 'MILIMETRO';
               }
             </div>
 
-            @if (tipo === 'acabamentos' || tipo === 'servicos') {
+            @if (tipo === 'servicos') {
               <div class="pricing-block">
                 <app-section-card title="Precificação">
                   <app-preco-selector
                     [formGroup]="precoForm"
-                    [tiposDisponiveis]="tipo === 'servicos' ? ['FIXO'] : ['FIXO', 'QUANTIDADE', 'DEMANDA', 'METRO', 'HORA']">
+                    [tiposDisponiveis]="['FIXO']">
                   </app-preco-selector>
-                  <div class="validation-hint" *ngIf="precoForm.invalid">Complete os campos obrigatórios da política de preço.</div>
                 </app-section-card>
               </div>
             }
@@ -282,8 +266,6 @@ export class GraficaCadastroListComponent implements OnInit {
   get categoriaPaiControl(): FormControl<number | null> { return this.form.controls.categoriaPaiId; }
   get descricaoCurtaControl(): FormControl<string> { return this.form.controls.descricaoCurta; }
   get descricaoCompletaControl(): FormControl<string> { return this.form.controls.descricaoCompleta; }
-  get materialControl(): FormControl<number | null> { return this.form.controls.materialId; }
-  get formatoControl(): FormControl<number | null> { return this.form.controls.formatoId; }
 
   get titulo(): string {
     return {
@@ -291,7 +273,6 @@ export class GraficaCadastroListComponent implements OnInit {
       materiais: 'Materiais gráficos',
       formatos: 'Formatos gráficos',
       cores: 'Cores gráficas',
-      acabamentos: 'Acabamentos gráficos',
       servicos: 'Serviços gráficos',
     }[this.tipo];
   }
@@ -319,14 +300,6 @@ export class GraficaCadastroListComponent implements OnInit {
         { key: 'dimensao', label: 'Dimensão', width: '160px' },
         { key: 'dimensaoUtil', label: 'Área útil', width: '180px' },
         { key: 'descricao', label: 'Descrição' },
-        { key: 'acoes', label: 'Ações', align: 'end', width: '152px' },
-      ];
-    }
-    if (this.tipo === 'acabamentos') {
-      return [
-        { key: 'nome', label: 'Nome', width: '260px' },
-        { key: 'descricao', label: 'Descrição' },
-        { key: 'preco', label: 'Preço', width: '180px' },
         { key: 'acoes', label: 'Ações', align: 'end', width: '152px' },
       ];
     }
@@ -511,10 +484,6 @@ export class GraficaCadastroListComponent implements OnInit {
         this.categoriasPai = (page.content || []).filter((categoria: CatalogoCategoria) => categoria.id !== this.editandoId);
       });
     }
-    if (this.tipo === 'acabamentos') {
-      this.service.listarMateriais().pipe(catchError(() => of([]))).subscribe((itens) => this.materiais = itens || []);
-      this.service.listarFormatos().pipe(catchError(() => of([]))).subscribe((itens) => this.formatos = itens || []);
-    }
   }
 
   private listar(): Observable<Item[]> {
@@ -527,7 +496,6 @@ export class GraficaCadastroListComponent implements OnInit {
       case 'materiais': return this.service.listarMateriais();
       case 'formatos': return this.service.listarFormatos();
       case 'cores': return this.service.listarCores();
-      case 'acabamentos': return this.service.listarAcabamentos();
       case 'servicos': return this.service.listarServicos();
       default: return of([]);
     }
@@ -543,7 +511,6 @@ export class GraficaCadastroListComponent implements OnInit {
       case 'materiais': return this.service.salvarMaterial(request as GraficaCadastroRequest, this.editandoId);
       case 'formatos': return this.service.salvarFormato(request as GraficaFormatoRequest, this.editandoId);
       case 'cores': return this.service.salvarCor(request as GraficaCadastroRequest, this.editandoId);
-      case 'acabamentos': return this.service.salvarAcabamento(request as GraficaCadastroRequest, this.editandoId);
       case 'servicos': return this.service.salvarServico(request as GraficaCadastroRequest, this.editandoId);
       default: return of({} as Item);
     }
@@ -555,8 +522,8 @@ export class GraficaCadastroListComponent implements OnInit {
       case 'materiais': return this.service.excluirMaterial(id);
       case 'formatos': return this.service.excluirFormato(id);
       case 'cores': return this.service.excluirCor(id);
-      case 'acabamentos': return this.service.excluirAcabamento(id);
       case 'servicos': return this.service.excluirServico(id);
+      default: return of(void 0);
     }
   }
 
@@ -615,7 +582,7 @@ export class GraficaCadastroListComponent implements OnInit {
   }
 
   private normalizarTipo(tipo: string | null): CadastroTipo {
-    return (['categorias', 'materiais', 'formatos', 'cores', 'acabamentos', 'servicos'].includes(tipo || '') ? tipo : 'materiais') as CadastroTipo;
+    return (['categorias', 'materiais', 'formatos', 'cores', 'servicos'].includes(tipo || '') ? tipo : 'materiais') as CadastroTipo;
   }
 
   private get entidadeSingular(): string {
@@ -624,7 +591,6 @@ export class GraficaCadastroListComponent implements OnInit {
       materiais: 'material',
       formatos: 'formato',
       cores: 'cor',
-      acabamentos: 'acabamento',
       servicos: 'serviço',
     }[this.tipo];
   }

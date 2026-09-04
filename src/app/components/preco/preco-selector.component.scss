@@ -1,20 +1,196 @@
 .price-selector-shell {
   box-shadow: none;
   border: 1px solid rgba(148, 163, 184, 0.16);
-  background: #fbfdff;
-  border-radius: 18px;
-  padding: 14px 16px 16px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.price-selector-section {
+  min-width: 0;
+}
+
+.price-selector-section--type {
+  margin-bottom: 8px;
 }
 
 .price-selector-mode {
-  margin-top: 8px;
-  border-top: 1px solid rgba(148, 163, 184, 0.14);
+  margin-top: 10px;
+  border-top: 0;
 }
 
 .price-selector-mode__content {
-  padding: 14px 0 0;
+  padding: 0;
 }
 
 .price-selector-mode__content .mb-4:last-child {
   margin-bottom: 0 !important;
+}
+
+.metro-price-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  align-items: stretch;
+}
+
+.metro-price-grid--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.metro-price-group {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.metro-price-group--wide {
+  grid-column: 1 / -1;
+}
+
+.metro-price-group__title {
+  display: block;
+  margin-bottom: 12px;
+  color: #111827;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.metro-price-group__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+  align-items: start;
+}
+
+.metro-price-group__grid--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.metro-price-control {
+  min-width: 0;
+}
+
+.metro-price-control--wide {
+  grid-column: 1 / -1;
+}
+
+.metro-price-control--charge {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.metro-price-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.metro-price-toggle {
+  height: 38px;
+  border-color: #dbe5f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.metro-price-toggle .mat-button-toggle {
+  flex: 1 1 0;
+  color: #334155;
+  font-size: 13px;
+}
+
+.metro-price-toggle .mat-button-toggle-checked {
+  color: var(--mdc-theme-primary, #1976d2);
+  font-weight: 700;
+  background: #e8f2ff;
+}
+
+:host ::ng-deep .metro-price-toggle .mat-button-toggle-button {
+  height: 38px;
+}
+
+:host ::ng-deep .metro-price-toggle .mat-button-toggle-label-content {
+  line-height: 38px;
+  padding: 0 10px;
+}
+
+:host ::ng-deep .metro-price-grid .mat-mdc-form-field-subscript-wrapper {
+  min-height: 0;
+}
+
+:host ::ng-deep .metro-price-grid .mat-mdc-form-field-infix {
+  min-height: 38px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+:host ::ng-deep .metro-price-grid .mat-mdc-text-field-wrapper {
+  min-height: 38px;
+}
+
+:host ::ng-deep .metro-price-grid app-input-moeda,
+:host ::ng-deep .metro-price-grid app-input-numerico,
+:host ::ng-deep .metro-price-grid app-input-texto-restrito,
+:host ::ng-deep .metro-price-grid app-input-unidade-medida,
+:host ::ng-deep .price-selector-section--type app-input-options,
+:host ::ng-deep .price-selector-mode app-input-options {
+  display: block;
+}
+
+.price-range-row {
+  min-width: 0;
+}
+
+.price-range-divider {
+  border-bottom: 1px solid #e2e8f0;
+  margin: 2px 0 12px;
+}
+
+.price-range-add {
+  margin-top: 2px;
+}
+
+.price-range-control-with-action {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 40px;
+  gap: 8px;
+  align-items: end;
+}
+
+.price-range-control-with-action__input {
+  min-width: 0;
+}
+
+.price-demand-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 12px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .metro-price-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .metro-price-group__grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .metro-price-control--wide {
+    grid-column: auto;
+  }
+
+  .price-demand-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 }

@@ -12,7 +12,7 @@ describe('GraficaProdutoBuscaRapidaDialogComponent', () => {
   let dialogRef: jasmine.SpyObj<MatDialogRef<GraficaProdutoBuscaRapidaDialogComponent>>;
 
   beforeEach(() => {
-    service = jasmine.createSpyObj('GraficaProdutoService', ['listar']);
+    service = jasmine.createSpyObj('GraficaProdutoService', ['listar', 'listarServicos']);
     dialogRef = jasmine.createSpyObj('MatDialogRef', ['close']);
     service.listar.and.returnValue(of({
       content: [produto()],
@@ -22,6 +22,7 @@ describe('GraficaProdutoBuscaRapidaDialogComponent', () => {
       totalPages: 1,
       last: true,
     }));
+    service.listarServicos.and.returnValue(of([]));
 
     TestBed.configureTestingModule({
       imports: [GraficaProdutoBuscaRapidaDialogComponent, NoopAnimationsModule],
@@ -48,7 +49,8 @@ describe('GraficaProdutoBuscaRapidaDialogComponent', () => {
       search: null,
       sort: 'nome,asc',
     }));
-    expect(component.produtos.length).toBe(1);
+    expect(component.itens.length).toBe(1);
+    expect(component.itens[0].tipo).toBe('PRODUTO');
   }));
 
   it('aplica debounce pesquisando por nome ou codigo', fakeAsync(() => {
@@ -97,12 +99,28 @@ describe('GraficaProdutoBuscaRapidaDialogComponent', () => {
     fixture.detectChanges();
     tick(0);
 
-    expect(component.emptyMessage).toBe('Nenhum produto encontrado.');
+    expect(component.emptyMessage).toBe('Nenhum item encontrado.');
 
     const selecionado = produto();
-    component.selecionar(selecionado);
+    component.selecionar({ tipo: 'PRODUTO', produto: selecionado });
 
-    expect(dialogRef.close).toHaveBeenCalledWith(selecionado);
+    expect(dialogRef.close).toHaveBeenCalledWith({ tipo: 'PRODUTO', produto: selecionado });
+  }));
+
+  it('inclui servicos ativos junto dos produtos', fakeAsync(() => {
+    service.listarServicos.and.returnValue(of([{
+      id: 44,
+      codigo: 'LOGO',
+      nome: 'Criação de Logomarca',
+      descricao: 'Serviço avulso',
+      ativo: true,
+      politicas: [],
+    }]));
+
+    fixture.detectChanges();
+    tick(0);
+
+    expect(component.itens.map((item) => item.tipo)).toEqual(['SERVICO', 'PRODUTO']);
   }));
 });
 
@@ -117,7 +135,6 @@ function produto() {
     formato: { id: 2, codigo: '10X15', nome: '10x15', ativo: true },
     cor: { id: 3, codigo: '4X4', nome: '4x4', ativo: true },
     acabamentos: [],
-    servicos: [],
     parametros: [],
   };
 }

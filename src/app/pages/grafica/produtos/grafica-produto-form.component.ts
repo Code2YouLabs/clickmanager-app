@@ -25,6 +25,8 @@ import {
   GraficaPrecoPolitica,
   GraficaPrecoPoliticaRequest,
   GraficaProduto,
+  GraficaProdutoAcabamento,
+  GraficaProdutoAcabamentoFormaAplicacao,
   GraficaProdutoRequest,
 } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
@@ -40,8 +42,6 @@ type ProdutoFormSnapshot = {
   materialId: number | null;
   formatoId: number | null;
   corId: number | null;
-  acabamentoIds: number[];
-  servicoIds: number[];
 };
 
 @Component({
@@ -495,8 +495,6 @@ export class GraficaProdutoFormComponent implements OnInit {
   materiais: GraficaCadastro[] = [];
   formatos: GraficaFormato[] = [];
   cores: GraficaCadastro[] = [];
-  acabamentos: GraficaCadastro[] = [];
-  servicos: GraficaCadastro[] = [];
   acabamentosProduto: ProdutoAcabamentoUx[] = [];
   imagemPrincipal: any = null;
   galeria: any[] = [];
@@ -515,8 +513,6 @@ export class GraficaProdutoFormComponent implements OnInit {
     materialId: this.fb.control<number | null>(null),
     formatoId: this.fb.control<number | null>(null),
     corId: this.fb.control<number | null>(null),
-    acabamentoIds: this.fb.control<number[]>([], { nonNullable: true }),
-    servicoIds: this.fb.control<number[]>([], { nonNullable: true }),
   });
   precoForm: FormGroup = this.fb.group({ tipo: ['FIXO'] });
 
@@ -699,16 +695,12 @@ export class GraficaProdutoFormComponent implements OnInit {
       materiais: this.graficaService.listarMateriais().pipe(catchError(() => of([]))),
       formatos: this.graficaService.listarFormatos().pipe(catchError(() => of([]))),
       cores: this.graficaService.listarCores().pipe(catchError(() => of([]))),
-      acabamentos: this.graficaService.listarAcabamentos().pipe(catchError(() => of([]))),
-      servicos: this.graficaService.listarServicos().pipe(catchError(() => of([]))),
     }).pipe(
       switchMap((base) => {
         this.categorias = base.categorias || [];
         this.materiais = base.materiais || [];
         this.formatos = base.formatos || [];
         this.cores = base.cores || [];
-        this.acabamentos = base.acabamentos || [];
-        this.servicos = base.servicos || [];
         return id ? this.graficaService.detalhar(id) : of(null);
       })
     ).subscribe({
@@ -808,8 +800,6 @@ export class GraficaProdutoFormComponent implements OnInit {
       materialId: produto.material?.id || null,
       formatoId: produto.formato?.id || null,
       corId: produto.cor?.id || null,
-      acabamentoIds: produto.acabamentos?.map((item) => item.id) || [],
-      servicoIds: produto.servicos?.map((item) => item.id) || [],
     });
     const imagens = produto.imagens || [];
     this.imagemPrincipal = imagens.find((img) => img.principal && img.ativo !== false)?.arquivo || null;
@@ -887,8 +877,15 @@ export class GraficaProdutoFormComponent implements OnInit {
       materialId: raw.materialId,
       formatoId: raw.formatoId,
       corId: raw.corId,
-      acabamentoIds: raw.acabamentoIds,
-      servicoIds: raw.servicoIds,
+      acabamentos: this.acabamentosProduto.map((item, index) => ({
+        id: item.id > 0 ? item.id : null,
+        nome: item.nome,
+        descricao: item.descricao || null,
+        formaAplicacao: this.toFormaAplicacaoBackend(item.aplicacao),
+        ativo: true,
+        ordem: index + 1,
+        politicas: [this.precoPayloadFromUx(item.preco, item.nome)],
+      })),
     };
   }
 
@@ -1025,11 +1022,13 @@ export class GraficaProdutoFormComponent implements OnInit {
     switch (tipo) {
       case 'FIXO':
         return this.fb.group({
+          politicaId: [preco?.politicaId ?? null],
           tipo: ['FIXO'],
           valor: [preco?.valor ?? null],
         });
       case 'QUANTIDADE':
         return this.fb.group({
+          politicaId: [preco?.politicaId ?? null],
           tipo: ['QUANTIDADE'],
           faixas: this.fb.array((preco?.faixas?.length ? preco.faixas : [{ quantidade: null, valor: null }]).map((faixa: any) => this.fb.group({
             quantidade: [faixa.quantidade ?? null],
@@ -1038,6 +1037,7 @@ export class GraficaProdutoFormComponent implements OnInit {
         });
       case 'DEMANDA':
         return this.fb.group({
+          politicaId: [preco?.politicaId ?? null],
           tipo: ['DEMANDA'],
           faixas: this.fb.array((preco?.faixas?.length ? preco.faixas : [{ de: 1, ate: null, valorUnitario: null }]).map((faixa: any) => this.fb.group({
             de: [faixa.de ?? null],
@@ -1047,6 +1047,7 @@ export class GraficaProdutoFormComponent implements OnInit {
         });
       case 'METRO':
         return this.fb.group({
+          politicaId: [preco?.politicaId ?? null],
           tipo: ['METRO'],
           precoMetro: [preco?.precoMetro ?? null],
           precoMinimo: [preco?.precoMinimo ?? null],
@@ -1063,14 +1064,89 @@ export class GraficaProdutoFormComponent implements OnInit {
     return JSON.parse(JSON.stringify(value));
   }
 
-  private toAcabamentosProdutoUx(itens: GraficaCadastro[]): ProdutoAcabamentoUx[] {
+  private toAcabamentosProdutoUx(itens: GraficaProdutoAcabamento[]): ProdutoAcabamentoUx[] {
     return itens.map((item) => ({
       id: item.id,
       nome: item.nome,
       descricao: item.descricao || null,
-      aplicacao: 'FOLHA',
-      preco: { tipo: 'FIXO', valor: null },
+      aplicacao: this.toAplicacaoUx(item.formaAplicacao),
+      preco: this.precoUxFromPolitica((item.politicas || [])[0]),
     }));
+  }
+
+  private toFormaAplicacaoBackend(aplicacao: ProdutoAcabamentoUx['aplicacao']): GraficaProdutoAcabamentoFormaAplicacao {
+    switch (aplicacao) {
+      case 'FOLHA': return 'POR_FOLHA';
+      case 'PECA': return 'POR_PECA';
+      case 'SERVICO': return 'POR_SERVICO';
+      case 'METRO_QUADRADO': return 'POR_METRO_QUADRADO';
+      case 'METRO_LINEAR': return 'POR_METRO_LINEAR';
+    }
+  }
+
+  private toAplicacaoUx(aplicacao: GraficaProdutoAcabamentoFormaAplicacao): ProdutoAcabamentoUx['aplicacao'] {
+    switch (aplicacao) {
+      case 'POR_FOLHA': return 'FOLHA';
+      case 'POR_PECA': return 'PECA';
+      case 'POR_SERVICO': return 'SERVICO';
+      case 'POR_METRO_QUADRADO': return 'METRO_QUADRADO';
+      case 'POR_METRO_LINEAR': return 'METRO_LINEAR';
+    }
+  }
+
+  private precoPayloadFromUx(preco: Record<string, any>, nome: string): GraficaPrecoPoliticaRequest {
+    const tipo = (preco?.['tipo'] || 'FIXO') as TipoPrecoLegado;
+    const metroLinear = tipo === 'METRO' && preco?.['modoCobranca'] === 'LINEAR';
+    return {
+      id: Number(preco?.['politicaId']) > 0 ? Number(preco?.['politicaId']) : null,
+      nome: `Preço ${nome}`,
+      tipo: this.toTipoGrafica(tipo),
+      ativo: true,
+      multiplicaQuantidade: tipo === 'FIXO',
+      valorFixo: tipo === 'FIXO' ? this.num(preco?.['valor']) : null,
+      precoMetroQuadrado: tipo === 'METRO' ? this.num(preco?.['precoMetro']) : null,
+      minimoMetroQuadrado: tipo === 'METRO' && preco?.['precoMinimo'] !== null && preco?.['precoMinimo'] !== undefined && preco?.['precoMinimo'] !== '' ? this.num(preco?.['precoMinimo']) : null,
+      alturaMaxima: tipo === 'METRO' && preco?.['alturaMaxima'] !== null && preco?.['alturaMaxima'] !== undefined && preco?.['alturaMaxima'] !== '' ? this.num(preco?.['alturaMaxima']) : null,
+      larguraMaxima: tipo === 'METRO' && !metroLinear && preco?.['larguraMaxima'] !== null && preco?.['larguraMaxima'] !== undefined && preco?.['larguraMaxima'] !== '' ? this.num(preco?.['larguraMaxima']) : null,
+      largurasLinearesPermitidas: metroLinear && preco?.['largurasLinearesPermitidas'] ? String(preco?.['largurasLinearesPermitidas']).trim() : null,
+      modoCobranca: tipo === 'METRO' ? (preco?.['modoCobranca'] || 'QUADRADO') : null,
+      unidadeDimensao: tipo === 'METRO' ? (preco?.['unidadeDimensao'] || 'METRO') : null,
+      selecaoOpcaoIds: [],
+      faixas: tipo === 'DEMANDA' ? this.toFaixasGrafica(preco?.['faixas'] || []) : [],
+      lotes: tipo === 'QUANTIDADE' ? this.toLotesGrafica(preco?.['faixas'] || []) : [],
+    };
+  }
+
+  private precoUxFromPolitica(politica?: GraficaPrecoPolitica): Record<string, any> {
+    if (!politica) return { tipo: 'FIXO', valor: null };
+    switch (politica.tipo) {
+      case 'FIXO':
+        return { politicaId: politica.id ?? null, tipo: 'FIXO', valor: politica.valorFixo ?? null };
+      case 'POR_LOTE':
+        return {
+          politicaId: politica.id ?? null,
+          tipo: 'QUANTIDADE',
+          faixas: (politica.lotes || []).map((lote) => ({ quantidade: lote.quantidade, valor: lote.valorLote })),
+        };
+      case 'POR_FAIXA_QUANTIDADE':
+        return {
+          politicaId: politica.id ?? null,
+          tipo: 'DEMANDA',
+          faixas: (politica.faixas || []).map((faixa) => ({ de: faixa.inicio, ate: faixa.fim ?? null, valorUnitario: faixa.valorUnitario })),
+        };
+      case 'POR_METRO_QUADRADO':
+        return {
+          politicaId: politica.id ?? null,
+          tipo: 'METRO',
+          precoMetro: politica.precoMetroQuadrado ?? null,
+          precoMinimo: politica.minimoMetroQuadrado ?? null,
+          alturaMaxima: politica.alturaMaxima ?? null,
+          larguraMaxima: politica.larguraMaxima ?? null,
+          modoCobranca: politica.modoCobranca ?? 'QUADRADO',
+          unidadeDimensao: politica.unidadeDimensao ?? 'METRO',
+          largurasLinearesPermitidas: politica.largurasLinearesPermitidas ?? '',
+        };
+    }
   }
 
   private proximoAcabamentoId(): number {
@@ -1124,7 +1200,7 @@ export class GraficaProdutoFormComponent implements OnInit {
       FORMATO_GRAFICO_NAO_ENCONTRADO: 'Formato não encontrado para esta empresa.',
       COR_GRAFICA_NAO_ENCONTRADA: 'Cor não encontrada para esta empresa.',
       ACABAMENTO_GRAFICO_NAO_ENCONTRADO: 'Acabamento não encontrado para esta empresa.',
-      SERVICO_GRAFICO_NAO_ENCONTRADO: 'Serviço não encontrado para esta empresa.',
+      ACABAMENTO_PRODUTO_NAO_ENCONTRADO: 'Acabamento não encontrado neste produto.',
       FAIXA_PRECO_COM_GAP: 'As faixas de quantidade possuem intervalo sem preço.',
       FAIXA_PRECO_SOBREPOSTA: 'As faixas de quantidade possuem sobreposição.',
       FAIXA_PRECO_INVERTIDA: 'Há uma faixa com final menor que o início.',

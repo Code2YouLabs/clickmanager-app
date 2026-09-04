@@ -19,7 +19,6 @@ describe('GraficaProdutosComponent', () => {
       'listarMateriais',
       'listarFormatos',
       'listarCores',
-      'listarAcabamentos',
       'listarServicos',
       'listarPrecos',
       'excluir',
@@ -29,7 +28,6 @@ describe('GraficaProdutosComponent', () => {
     service.listarMateriais.and.returnValue(of([{ id: 1, codigo: 'COUCHE', nome: 'Couchê 150g', ativo: true }]));
     service.listarFormatos.and.returnValue(of([{ id: 2, codigo: '10X15', nome: '10x15', ativo: true }]));
     service.listarCores.and.returnValue(of([{ id: 3, codigo: '4X4', nome: '4x4', ativo: true }]));
-    service.listarAcabamentos.and.returnValue(of([{ id: 4, codigo: 'LAMINACAO', nome: 'Laminação', ativo: true }]));
     service.listarServicos.and.returnValue(of([{ id: 5, codigo: 'CRIACAO', nome: 'Criação', ativo: true }]));
     service.listarPrecos.and.returnValue(of([]));
     service.excluir.and.returnValue(of(void 0));
@@ -71,15 +69,11 @@ describe('GraficaProdutosComponent', () => {
       materialIds: [1],
       formatoIds: [2],
       corIds: [3, 6],
-      acabamentoIds: [4],
-      servicoIds: [5],
     });
     expect(service.listar.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({
       materialIds: [1],
       formatoIds: [2],
       corIds: [3, 6],
-      acabamentoIds: [4],
-      servicoIds: [5],
     }));
 
     component.onPageChange({ pageIndex: 2, pageSize: 20, length: 100 });
@@ -90,7 +84,7 @@ describe('GraficaProdutosComponent', () => {
   });
 
   it('executa acoes de configurar e excluir fora da tabela generica', () => {
-    const row = { id: 1, catalogoProdutoId: 10, catalogoProdutoNome: 'Panfleto', ativo: true, acabamentos: [], servicos: [], parametros: [] };
+    const row = { id: 1, catalogoProdutoId: 10, catalogoProdutoNome: 'Panfleto', ativo: true, acabamentos: [], parametros: [] };
     spyOn((component as unknown as { dialog: MatDialog }).dialog, 'open').and.returnValue({ afterClosed: () => of(true) } as never);
 
     component.configurar(row);
@@ -101,7 +95,7 @@ describe('GraficaProdutosComponent', () => {
   });
 
   it('confirma clone e navega para cadastro com produto base', () => {
-    const row = { id: 1, catalogoProdutoId: 10, catalogoProdutoNome: 'Panfleto', ativo: true, acabamentos: [], servicos: [], parametros: [] };
+    const row = { id: 1, catalogoProdutoId: 10, catalogoProdutoNome: 'Panfleto', ativo: true, acabamentos: [], parametros: [] };
     const dialog = (component as unknown as { dialog: MatDialog }).dialog;
     spyOn(dialog, 'open').and.returnValue({ afterClosed: () => of(true) } as never);
 
@@ -118,7 +112,7 @@ describe('GraficaProdutosComponent', () => {
   });
 
   it('cancela confirmacao de clone sem navegar', () => {
-    const row = { id: 1, catalogoProdutoId: 10, catalogoProdutoNome: 'Panfleto', ativo: true, acabamentos: [], servicos: [], parametros: [] };
+    const row = { id: 1, catalogoProdutoId: 10, catalogoProdutoNome: 'Panfleto', ativo: true, acabamentos: [], parametros: [] };
     spyOn((component as unknown as { dialog: MatDialog }).dialog, 'open').and.returnValue({ afterClosed: () => of(false) } as never);
 
     component.clonar(row);
@@ -127,7 +121,7 @@ describe('GraficaProdutosComponent', () => {
   });
 
   it('limpa filtros sem acoplar regra de dominio na tabela', () => {
-    component.filterState = { materialId: 1, acabamentoIds: [4] };
+    component.filterState = { materialId: 1 };
     component.pagina = 2;
 
     component.onFilterChange({});

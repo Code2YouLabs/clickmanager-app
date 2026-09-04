@@ -2,8 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { catchError, finalize, map, of, switchMap } from 'rxjs';
-import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
+import { finalize, map, of, switchMap } from 'rxjs';
 import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
 import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
@@ -12,24 +11,19 @@ import { SectionCardComponent } from 'src/app/components/section-card/section-ca
 import { MaterialModule } from 'src/app/material.module';
 import { ToastrService } from 'ngx-toastr';
 import { catalogoErrorMessage, catalogoSlugify } from '../../catalogo/shared/utils/catalogo-utils';
-import { GraficaAcabamento, GraficaAcabamentoRequest, GraficaCadastro, GraficaFormato } from '../shared/grafica.models';
+import { GraficaPrecoPolitica, GraficaPrecoPoliticaRequest, GraficaServico, GraficaServicoRequest } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
 
-type AplicacaoAcabamento = 'PECA' | 'FOLHA' | 'METRO_QUADRADO' | 'METRO_LINEAR' | 'SERVICO';
-
-type AcabamentoFormSnapshot = {
+type ServicoFormSnapshot = {
   form: {
     nome: string;
     descricao: string;
-    materialId: number | null;
-    formatoId: number | null;
-    aplicacao: AplicacaoAcabamento;
   };
   preco: any;
 };
 
 @Component({
-  selector: 'app-grafica-acabamento-form',
+  selector: 'app-grafica-servico-form',
   standalone: true,
   imports: [
     CommonModule,
@@ -40,7 +34,6 @@ type AcabamentoFormSnapshot = {
     SectionCardComponent,
     InputTextoRestritoComponent,
     InputTextareaComponent,
-    InputOptionsComponent,
     PrecoSelectorComponent,
   ],
   template: `
@@ -52,40 +45,16 @@ type AcabamentoFormSnapshot = {
         </button>
       </div>
 
-      <form id="grafica-acabamento-form" [formGroup]="form" class="acabamento-form" (ngSubmit)="salvar()">
-        <app-section-card title="Dados do acabamento">
+      <form id="grafica-servico-form" [formGroup]="form" class="servico-form" (ngSubmit)="salvar()">
+        <app-section-card title="Dados do serviço">
           <div class="form-grid">
             <app-input-texto-restrito
               [control]="nomeControl"
               label="Nome"
-              placeholder="Ex.: Laminação fosca"
+              placeholder="Ex.: Arte final"
               [maxlength]="140"
-              requiredError="Informe o nome do acabamento.">
+              requiredError="Informe o nome do serviço.">
             </app-input-texto-restrito>
-
-            <app-input-options
-              [control]="materialControl"
-              label="Material"
-              [options]="materiais"
-              nullLabel="Sem material">
-            </app-input-options>
-
-            <app-input-options
-              [control]="formatoControl"
-              label="Formato"
-              [options]="formatos"
-              nullLabel="Sem formato">
-            </app-input-options>
-
-            <app-input-options
-              [control]="aplicacaoControl"
-              label="Aplicação"
-              placeholder="Aplicação"
-              [options]="aplicacoes"
-              labelKey="label"
-              valueKey="value"
-              [showNull]="false">
-            </app-input-options>
 
             <app-input-textarea
               class="form-grid__wide"
@@ -100,21 +69,20 @@ type AcabamentoFormSnapshot = {
         <app-section-card title="Precificação">
           <app-preco-selector
             [formGroup]="precoForm"
-            [tiposDisponiveis]="['FIXO', 'QUANTIDADE', 'DEMANDA', 'METRO', 'HORA']">
+            [tiposDisponiveis]="['FIXO', 'DEMANDA', 'QUANTIDADE', 'METRO']">
           </app-preco-selector>
-          <div class="validation-hint" *ngIf="precoForm.invalid">Complete os campos obrigatórios da política de preço.</div>
         </app-section-card>
       </form>
 
       <button page-footer-right mat-stroked-button class="cancel-button" type="button" (click)="cancelar()">Cancelar</button>
-      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-acabamento-form" [disabled]="form.invalid || precoForm.invalid || salvando">
+      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-servico-form" [disabled]="form.invalid || precoForm.invalid || salvando">
         <mat-icon>save</mat-icon>
         Salvar
       </button>
     </app-page-card>
   `,
   styles: [`
-    .acabamento-form {
+    .servico-form {
       display: flex;
       flex-direction: column;
       gap: 16px;
@@ -166,44 +134,28 @@ type AcabamentoFormSnapshot = {
     }
   `],
 })
-export class GraficaAcabamentoFormComponent implements OnInit {
-  acabamentoId?: number;
+export class GraficaServicoFormComponent implements OnInit {
+  servicoId?: number;
   salvando = false;
   carregando = false;
-  snapshot?: AcabamentoFormSnapshot;
-  materiais: GraficaCadastro[] = [];
-  formatos: GraficaFormato[] = [];
-
-  readonly aplicacoes = [
-    { value: 'PECA', label: 'Por peça' },
-    { value: 'FOLHA', label: 'Por folha' },
-    { value: 'METRO_QUADRADO', label: 'Por metro quadrado' },
-    { value: 'METRO_LINEAR', label: 'Por metro linear' },
-    { value: 'SERVICO', label: 'Por serviço' },
-  ];
+  snapshot?: ServicoFormSnapshot;
 
   form = this.fb.group({
     nome: this.fb.control('', { nonNullable: true, validators: [Validators.required] }),
     descricao: this.fb.control('', { nonNullable: true }),
-    materialId: this.fb.control<number | null>(null),
-    formatoId: this.fb.control<number | null>(null),
-    aplicacao: this.fb.control<AplicacaoAcabamento>('PECA', { nonNullable: true }),
   });
-  precoForm: FormGroup = this.fb.group({ tipo: ['FIXO'], valor: [null] });
+  precoForm: FormGroup = this.criarPrecoForm();
 
   get titulo(): string {
-    return this.acabamentoId ? 'Editar acabamento' : 'Novo acabamento';
+    return this.servicoId ? 'Editar serviço' : 'Novo serviço';
   }
 
   get subtitulo(): string {
-    return this.acabamentoId ? 'Atualize os dados do acabamento gráfico' : 'Cadastro de acabamento gráfico';
+    return this.servicoId ? 'Atualize os dados do serviço gráfico' : 'Cadastro de serviço gráfico';
   }
 
   get nomeControl(): FormControl<string> { return this.form.controls.nome; }
   get descricaoControl(): FormControl<string> { return this.form.controls.descricao; }
-  get materialControl(): FormControl<number | null> { return this.form.controls.materialId; }
-  get formatoControl(): FormControl<number | null> { return this.form.controls.formatoId; }
-  get aplicacaoControl(): FormControl<AplicacaoAcabamento> { return this.form.controls.aplicacao; }
 
   constructor(
     private readonly fb: FormBuilder,
@@ -214,32 +166,31 @@ export class GraficaAcabamentoFormComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.carregarApoio();
     this.carregando = true;
     this.route.paramMap.pipe(
       switchMap((params) => {
         const id = Number(params.get('id'));
-        this.acabamentoId = Number.isFinite(id) && id > 0 ? id : undefined;
-        if (!this.acabamentoId) return of(null);
-        return this.service.listarAcabamentos().pipe(
-          map((items) => (items || []).find((item) => item.id === this.acabamentoId) || null)
+        this.servicoId = Number.isFinite(id) && id > 0 ? id : undefined;
+        if (!this.servicoId) return of(null);
+        return this.service.listarServicos().pipe(
+          map((items) => (items || []).find((item) => item.id === this.servicoId) || null)
         );
       }),
       finalize(() => this.carregando = false),
     ).subscribe({
-      next: (acabamento) => {
-        if (this.acabamentoId && !acabamento) {
-          this.toastr.error('Acabamento não encontrado.');
+      next: (servico) => {
+        if (this.servicoId && !servico) {
+          this.toastr.error('Serviço não encontrado.');
           this.voltar();
           return;
         }
-        if (acabamento) {
-          this.aplicarAcabamento(acabamento);
+        if (servico) {
+          this.aplicarServico(servico);
         } else {
           this.registrarSnapshot();
         }
       },
-      error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível carregar o acabamento.')),
+      error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível carregar o serviço.')),
     });
   }
 
@@ -257,12 +208,12 @@ export class GraficaAcabamentoFormComponent implements OnInit {
     }
 
     this.salvando = true;
-    this.service.salvarAcabamento(this.toRequest(), this.acabamentoId).pipe(finalize(() => this.salvando = false)).subscribe({
+    this.service.salvarServico(this.toRequest(), this.servicoId).pipe(finalize(() => this.salvando = false)).subscribe({
       next: () => {
-        this.toastr.success('Acabamento salvo.');
+        this.toastr.success('Serviço salvo.');
         this.voltar();
       },
-      error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível salvar o acabamento.')),
+      error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível salvar o serviço.')),
     });
   }
 
@@ -280,18 +231,15 @@ export class GraficaAcabamentoFormComponent implements OnInit {
   }
 
   voltar(): void {
-    this.router.navigate(['/page/grafica/acabamentos']);
+    this.router.navigate(['/page/grafica/servicos']);
   }
 
-  private aplicarAcabamento(acabamento: GraficaAcabamento): void {
+  private aplicarServico(servico: GraficaServico): void {
     this.form.reset({
-      nome: acabamento.nome || '',
-      descricao: acabamento.descricao || '',
-      materialId: acabamento.materialId || null,
-      formatoId: acabamento.formatoId || null,
-      aplicacao: acabamento.aplicacao || 'PECA',
+      nome: servico.nome || '',
+      descricao: servico.descricao || '',
     });
-    this.precoForm = this.criarPrecoForm(acabamento.precoConfiguracao);
+    this.precoForm = this.criarPrecoForm(servico.politicas?.[0]);
     this.registrarSnapshot();
   }
 
@@ -302,68 +250,113 @@ export class GraficaAcabamentoFormComponent implements OnInit {
     };
   }
 
-  private carregarApoio(): void {
-    this.service.listarMateriais().pipe(catchError(() => of([]))).subscribe((items) => this.materiais = items || []);
-    this.service.listarFormatos().pipe(catchError(() => of([]))).subscribe((items) => this.formatos = items || []);
-  }
-
-  private toRequest(): GraficaAcabamentoRequest {
+  private toRequest(): GraficaServicoRequest {
     const raw = this.form.getRawValue();
     const nome = raw.nome.trim();
     return {
       codigo: this.codigo(nome),
       nome,
       descricao: raw.descricao?.trim() || null,
-      materialId: raw.materialId,
-      formatoId: raw.formatoId,
-      aplicacao: raw.aplicacao,
-      precoConfiguracao: this.precoForm.getRawValue(),
+      politicas: [this.toPoliticaRequest(this.precoForm.getRawValue())],
       ativo: true,
     };
   }
 
-  private criarPrecoForm(preco: any): FormGroup {
-    const tipo = (preco?.tipo || 'FIXO') as string;
-    switch (tipo) {
+  private criarPrecoForm(politica: GraficaPrecoPolitica | any = null): FormGroup {
+    if (!politica || !politica.tipo) {
+      return this.fb.group({
+        tipo: ['FIXO'],
+        valor: [null],
+      });
+    }
+    switch (politica.tipo) {
+      case 'POR_LOTE':
       case 'QUANTIDADE':
         return this.fb.group({
           tipo: ['QUANTIDADE'],
-          faixas: this.fb.array((preco?.faixas?.length ? preco.faixas : [{ quantidade: null, valor: null }]).map((faixa: any) => this.fb.group({
-            quantidade: [faixa.quantidade ?? null],
-            valor: [faixa.valor ?? null],
+          faixas: this.fb.array((politica.lotes || politica.faixas || []).map((lote: any) => this.fb.group({
+            quantidade: [lote.quantidade ?? null],
+            valor: [lote.valorLote ?? lote.valor ?? null],
           }))),
         });
+      case 'POR_FAIXA_QUANTIDADE':
       case 'DEMANDA':
         return this.fb.group({
           tipo: ['DEMANDA'],
-          faixas: this.fb.array((preco?.faixas?.length ? preco.faixas : [{ de: 1, ate: null, valorUnitario: null }]).map((faixa: any) => this.fb.group({
-            de: [faixa.de ?? null],
-            ate: [faixa.ate ?? null],
-            valorUnitario: [faixa.valorUnitario ?? null],
+          faixas: this.fb.array((politica.faixas || []).map((faixa: any) => this.fb.group({
+            de: [faixa.inicio ?? faixa.de ?? null],
+            ate: [faixa.fim ?? faixa.ate ?? null],
+            valor: [faixa.valorUnitario ?? faixa.valor ?? null],
           }))),
         });
+      case 'POR_METRO_QUADRADO':
       case 'METRO':
         return this.fb.group({
           tipo: ['METRO'],
-          precoMetro: [preco?.precoMetro ?? null],
-          precoMinimo: [preco?.precoMinimo ?? null],
-          alturaMaxima: [preco?.alturaMaxima ?? null],
-          larguraMaxima: [preco?.larguraMaxima ?? null],
-          modoCobranca: [preco?.modoCobranca ?? 'QUADRADO'],
-          largurasLinearesPermitidas: [preco?.largurasLinearesPermitidas ?? ''],
+          precoMetro: [politica.precoMetroQuadrado ?? politica.precoMetro ?? null],
+          precoMinimo: [politica.minimoMetroQuadrado ?? politica.precoMinimo ?? null],
+          alturaMaxima: [politica.alturaMaxima ?? null],
+          larguraMaxima: [politica.larguraMaxima ?? null],
+          modoCobranca: [politica.modoCobranca ?? 'QUADRADO'],
+          unidadeDimensao: [politica.unidadeDimensao ?? 'METRO'],
+          largurasLinearesPermitidas: [politica.largurasLinearesPermitidas ?? ''],
         });
-      case 'HORA':
-        return this.fb.group({
-          tipo: ['HORA'],
-          valorHora: [preco?.valorHora ?? null],
-          tempoEstimado: [preco?.tempoEstimado ?? null],
-        });
+      case 'FIXO':
       default:
         return this.fb.group({
           tipo: ['FIXO'],
-          valor: [preco?.valor ?? null],
+          valor: [politica.valorFixo ?? politica.valor ?? null],
         });
     }
+  }
+
+  private toPoliticaRequest(preco: any): GraficaPrecoPoliticaRequest {
+    const tipo = preco?.tipo || 'FIXO';
+    return {
+      nome: 'Preço do serviço',
+      tipo: this.toTipoPrecificacao(tipo),
+      ativo: true,
+      multiplicaQuantidade: tipo === 'FIXO',
+      valorFixo: tipo === 'FIXO' ? this.num(preco.valor) : null,
+      precoMetroQuadrado: tipo === 'METRO' ? this.num(preco.precoMetro) : null,
+      minimoMetroQuadrado: tipo === 'METRO' ? this.numOpcional(preco.precoMinimo) : null,
+      alturaMaxima: tipo === 'METRO' ? this.numOpcional(preco.alturaMaxima) : null,
+      larguraMaxima: tipo === 'METRO' && preco.modoCobranca !== 'LINEAR' ? this.numOpcional(preco.larguraMaxima) : null,
+      largurasLinearesPermitidas: tipo === 'METRO' && preco.modoCobranca === 'LINEAR' ? (preco.largurasLinearesPermitidas || null) : null,
+      modoCobranca: tipo === 'METRO' ? (preco.modoCobranca || 'QUADRADO') : null,
+      unidadeDimensao: tipo === 'METRO' ? (preco.unidadeDimensao || 'METRO') : null,
+      selecaoOpcaoIds: [],
+      faixas: tipo === 'DEMANDA'
+        ? (preco.faixas || []).map((faixa: any) => ({
+          inicio: this.num(faixa.de),
+          fim: this.numOpcional(faixa.ate),
+          valorUnitario: this.num(faixa.valor),
+        }))
+        : [],
+      lotes: tipo === 'QUANTIDADE'
+        ? (preco.faixas || []).map((lote: any) => ({
+          quantidade: this.num(lote.quantidade),
+          valorLote: this.num(lote.valor),
+        }))
+        : [],
+    };
+  }
+
+  private toTipoPrecificacao(tipo: string): any {
+    switch (tipo) {
+      case 'QUANTIDADE': return 'POR_LOTE';
+      case 'DEMANDA': return 'POR_FAIXA_QUANTIDADE';
+      case 'METRO': return 'POR_METRO_QUADRADO';
+      default: return 'FIXO';
+    }
+  }
+
+  private num(valor: any): number {
+    return Number(valor || 0);
+  }
+
+  private numOpcional(valor: any): number | null {
+    return valor === null || valor === undefined || valor === '' ? null : Number(valor);
   }
 
   private codigo(valor: string): string {

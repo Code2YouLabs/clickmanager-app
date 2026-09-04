@@ -28,16 +28,12 @@ describe('GraficaProdutoFormComponent', () => {
       'listarMateriais',
       'listarFormatos',
       'listarCores',
-      'listarAcabamentos',
-      'listarServicos',
     ]);
     graficaService.detalhar.and.returnValue(of(produtoGrafico()));
     graficaService.listarPrecos.and.returnValue(of([]));
     graficaService.listarMateriais.and.returnValue(of([{ id: 1, codigo: 'COUCHE', nome: 'Couchê 150g', ativo: true }]));
     graficaService.listarFormatos.and.returnValue(of([{ id: 2, codigo: '10X15', nome: '10x15', ativo: true }]));
     graficaService.listarCores.and.returnValue(of([{ id: 3, codigo: '4X4', nome: '4x4', ativo: true }]));
-    graficaService.listarAcabamentos.and.returnValue(of([]));
-    graficaService.listarServicos.and.returnValue(of([]));
 
     TestBed.configureTestingModule({
       imports: [GraficaProdutoFormComponent, NoopAnimationsModule],
@@ -73,7 +69,6 @@ describe('GraficaProdutoFormComponent', () => {
       descricao: 'Panfleto promocional',
       exibirNoSite: true,
       materialId: 1,
-      acabamentoIds: [2],
     });
     component.precoForm.patchValue({ tipo: 'FIXO' });
     component.precoForm.addControl('valor', new FormControl(25));
@@ -84,7 +79,6 @@ describe('GraficaProdutoFormComponent', () => {
       descricao: 'Alterado',
       exibirNoSite: false,
       materialId: null,
-      acabamentoIds: [3],
     });
     component.precoForm.patchValue({ valor: 80 });
 
@@ -95,7 +89,6 @@ describe('GraficaProdutoFormComponent', () => {
       descricao: 'Panfleto promocional',
       exibirNoSite: true,
       materialId: 1,
-      acabamentoIds: [2],
     }));
     expect(component.precoForm.getRawValue()).toEqual(jasmine.objectContaining({ tipo: 'FIXO', valor: 25 }));
     expect(router.navigate).not.toHaveBeenCalled();
@@ -190,7 +183,6 @@ function produtoGrafico() {
     formato: { id: 2, codigo: '10X15', nome: '10x15', ativo: true },
     cor: { id: 3, codigo: '4X4', nome: '4x4', ativo: true },
     acabamentos: [],
-    servicos: [],
     parametros: [],
   };
 }

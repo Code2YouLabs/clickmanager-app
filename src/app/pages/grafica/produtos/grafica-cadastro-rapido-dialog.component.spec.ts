@@ -3,6 +3,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ToastrService } from 'ngx-toastr';
 import { of } from 'rxjs';
+import { CatalogoCategoriaService } from '../../catalogo/shared/services/catalogo.service';
 import { GraficaProdutoService } from '../shared/grafica.service';
 import { GraficaCadastroRapidoDialogComponent } from './grafica-cadastro-rapido-dialog.component';
 
@@ -11,6 +12,7 @@ describe('GraficaCadastroRapidoDialogComponent', () => {
   let component: GraficaCadastroRapidoDialogComponent;
   let service: jasmine.SpyObj<GraficaProdutoService>;
   let dialogRef: jasmine.SpyObj<MatDialogRef<GraficaCadastroRapidoDialogComponent>>;
+  let categoriaService: jasmine.SpyObj<CatalogoCategoriaService>;
   let data: { tipo: 'material' | 'formato' | 'cor' };
 
   function create(tipo: 'material' | 'formato' | 'cor'): void {
@@ -19,12 +21,15 @@ describe('GraficaCadastroRapidoDialogComponent', () => {
     service.salvarMaterial.and.returnValue(of({ id: 1, codigo: 'COUCHE_150G', nome: 'Couchê 150g', ativo: true }));
     service.salvarFormato.and.returnValue(of({ id: 2, codigo: 'A4', nome: 'A4', ativo: true }));
     service.salvarCor.and.returnValue(of({ id: 3, codigo: '4X4', nome: '4x4', ativo: true }));
+    categoriaService = jasmine.createSpyObj('CatalogoCategoriaService', ['criar']);
+    categoriaService.criar.and.returnValue(of({ id: 4, nome: 'Panfletos', slug: 'panfletos', ativo: true } as any));
     dialogRef = jasmine.createSpyObj('MatDialogRef', ['close']);
 
     TestBed.configureTestingModule({
       imports: [GraficaCadastroRapidoDialogComponent, NoopAnimationsModule],
       providers: [
         { provide: GraficaProdutoService, useValue: service },
+        { provide: CatalogoCategoriaService, useValue: categoriaService },
         { provide: ToastrService, useValue: jasmine.createSpyObj('ToastrService', ['success', 'error']) },
         { provide: MatDialogRef, useValue: dialogRef },
         { provide: MAT_DIALOG_DATA, useValue: data },
