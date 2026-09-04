@@ -33,6 +33,8 @@ interface FunilOpcao {
   key: string;
   label: string;
   produto?: GraficaProduto;
+  servico?: GraficaServico;
+  tipo?: 'PRODUTO' | 'SERVICO';
 }
 
 interface AcabamentoComercialCalculado {
@@ -2085,7 +2087,7 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
       <div class="dialog-header">
         <div class="title-stack">
           <h2 mat-dialog-title class="m-b-0">
-            <span class="title-main">Adicionar produto</span>
+            <span class="title-main">Adicionar item</span>
             <span class="title-divider">-</span>
             <span class="title-step" aria-live="polite">{{ currentStepLabel }}</span>
           </h2>
@@ -2098,12 +2100,12 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
 
       <mat-dialog-content class="wizard-body">
         <mat-horizontal-stepper [linear]="true" #stepper class="wizard-stepper" (selectionChange)="onStepSelectionChange($event)">
-          <mat-step [stepControl]="produtoForm" label="Produto e Variação">
+          <mat-step [stepControl]="produtoForm" label="Produto/Serviço e Variação">
             <form [formGroup]="produtoForm" class="step-inner step-full produto-step">
                     <div class="funnel-grid">
                       <section class="funnel-column">
                         <div class="funnel-header">
-                          <div class="rev-title">Produto</div>
+                          <div class="rev-title">Produto ou serviço</div>
                           <mat-form-field appearance="outline" class="funnel-search" subscriptSizing="dynamic">
                             <input
                               matInput
@@ -2122,26 +2124,29 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
                             type="button"
                             class="funnel-option"
                             *ngFor="let opcao of opcoesPaginadas('produto')"
-                            [class.active]="produtoNomeSelecionado === opcao.label"
+                            [class.active]="opcao.servico ? servicoAtual?.id === opcao.servico.id : produtoNomeSelecionado === opcao.label"
                             (click)="selecionarProdutoFunil(opcao)">
-                            <span>{{ opcao.label }}</span>
+                            <span class="funnel-option-label">
+                              <span>{{ opcao.label }}</span>
+                              <small *ngIf="opcao.servico">Serviço</small>
+                            </span>
                             <mat-icon>chevron_right</mat-icon>
                           </button>
                           <div class="empty-state compact" *ngIf="carregandoFunil">
                             <mat-icon>hourglass_empty</mat-icon>
-                            <span>Carregando produtos...</span>
+                            <span>Carregando itens...</span>
                           </div>
                           <div class="empty-state compact" *ngIf="!carregandoFunil && !opcoesFunil('produto').length">
-                            <span>Nenhum produto encontrado.</span>
+                            <span>Nenhum item encontrado.</span>
                           </div>
                         </div>
                         <div class="funnel-separator"></div>
                         <div class="funnel-pager">
-                          <button mat-icon-button type="button" [disabled]="!podePaginarAnterior('produto')" (click)="paginaAnteriorFunil('produto')" aria-label="Página anterior de produtos">
+                          <button mat-icon-button type="button" [disabled]="!podePaginarAnterior('produto')" (click)="paginaAnteriorFunil('produto')" aria-label="Página anterior de itens">
                             <mat-icon>chevron_left</mat-icon>
                           </button>
                           <span>{{ paginaAtualFunil('produto') }} / {{ totalPaginasFunil('produto') }}</span>
-                          <button mat-icon-button type="button" [disabled]="!podePaginarProxima('produto')" (click)="proximaPaginaFunil('produto')" aria-label="Próxima página de produtos">
+                          <button mat-icon-button type="button" [disabled]="!podePaginarProxima('produto')" (click)="proximaPaginaFunil('produto')" aria-label="Próxima página de itens">
                             <mat-icon>chevron_right</mat-icon>
                           </button>
                         </div>
@@ -2281,9 +2286,9 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
               <div class="price-shell">
                 <section class="price-product-card">
                   <div>
-                    <div class="rev-title">Produto selecionado</div>
-                    <h3>{{ produtoSelecionado ? produtoNome(produtoSelecionado) : 'Produto' }}</h3>
-                    <div class="price-variation">{{ resumoVariacaoSelecionada }}</div>
+                    <div class="rev-title">Item selecionado</div>
+                    <h3>{{ itemSelecionadoNome }}</h3>
+                    <div class="price-variation">{{ itemSelecionadoResumo }}</div>
                   </div>
                   <span class="price-type">{{ tipoPrecoLabel }}</span>
                 </section>
@@ -2512,9 +2517,9 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
               <div class="services-shell">
                 <section class="price-product-card">
                   <div>
-                    <div class="rev-title">Produto selecionado</div>
-                    <h3>{{ produtoSelecionado ? produtoNome(produtoSelecionado) : 'Produto' }}</h3>
-                    <div class="price-variation">{{ resumoVariacaoSelecionada }}</div>
+                    <div class="rev-title">Item selecionado</div>
+                    <h3>{{ itemSelecionadoNome }}</h3>
+                    <div class="price-variation">{{ itemSelecionadoResumo }}</div>
                   </div>
                   <span class="price-type">{{ tipoPrecoLabel }}</span>
                 </section>
@@ -2556,9 +2561,9 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
               <div class="review-shell" *ngIf="composicao; else semComposicao">
                 <section class="price-product-card">
                   <div>
-                    <div class="rev-title">Produto selecionado</div>
-                    <h3>{{ produtoSelecionado ? produtoNome(produtoSelecionado) : '-' }}</h3>
-                    <div class="price-variation">{{ resumoVariacaoSelecionada }}</div>
+                    <div class="rev-title">Item selecionado</div>
+                    <h3>{{ itemSelecionadoNome }}</h3>
+                    <div class="price-variation">{{ itemSelecionadoResumo }}</div>
                   </div>
                   <span class="price-type">{{ tipoPrecoLabel }}</span>
                 </section>
@@ -2678,6 +2683,9 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
     .funnel-option { width: 100%; min-height: 38px; justify-content: space-between; text-align: left; border-radius: 6px; border: 1px solid transparent; color: #0f172a; cursor: pointer; }
     .funnel-option ::ng-deep .mdc-button__label { width: 100%; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
     .funnel-option span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .funnel-option-label { display: inline-flex; align-items: center; gap: 8px; }
+    .funnel-option-label small { flex: 0 0 auto; padding: 2px 7px; border-radius: 999px; background: #eef2ff; color: #475569; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+    .funnel-option.active .funnel-option-label small { background: #dbeafe; color: var(--mdc-theme-primary, #1976d2); }
     .funnel-option mat-icon { order: 2; flex: 0 0 auto; width: 18px; height: 18px; font-size: 18px; color: #94a3b8; }
     .funnel-option:hover { background: #f8fafc; border-color: #cbd5e1; }
     .funnel-option.active { background: #e8f2ff; border-color: #93c5fd; color: var(--mdc-theme-primary, #1976d2); font-weight: 700; }
@@ -2859,12 +2867,14 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
   @ViewChild('quantidadeWizardInputContainer') quantidadeWizardInputContainer?: ElementRef<HTMLElement>;
   produtos: GraficaProduto[] = [];
   produtosFunil: GraficaProduto[] = [];
+  servicosFunil: GraficaServico[] = [];
   parametros: GraficaParametro[] = [];
   selecoes: Record<string, string> = {};
   caminhoSelecoes: Array<{ codigo: string; label: string; valor: string }> = [];
   parametroAtual: GraficaParametro | null = null;
   opcoesAtuais: GraficaOpcao[] = [];
   produtoSelecionado: GraficaProduto | null = null;
+  servicoAtual: GraficaServico | null = null;
   produtoNomeSelecionado: string | null = null;
   materialSelecionadoId: number | null = null;
   formatoSelecionadoId: number | null = null;
@@ -2905,6 +2915,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
 
   ngOnInit(): void {
     this.quantidadeForm.valueChanges.subscribe(() => this.limparPreco());
+    this.carregarServicosFunil();
     this.buscaProdutos$.pipe(
       debounceTime(250),
       distinctUntilChanged(),
@@ -2926,6 +2937,9 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
   }
 
   get breadcrumb(): Array<{ label: string }> {
+    if (this.servicoAtual) {
+      return [{ label: this.servicoAtual.nome }];
+    }
     const produto = this.produtoSelecionado ? [{ label: this.produtoNome(this.produtoSelecionado) }] : [];
     return [...produto, ...this.caminhoSelecoes.map((item) => ({ label: item.valor }))];
   }
@@ -2935,8 +2949,18 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
   }
 
   get currentStepLabel(): string {
-    const labels = ['Produto e Variação', 'Configurar Preço', 'Acabamentos/Serviços', 'Revisão'];
+    const labels = ['Produto/Serviço e Variação', 'Configurar Preço', 'Acabamentos/Serviços', 'Revisão'];
     return labels[this.stepper?.selectedIndex || 0] || labels[0];
+  }
+
+  get itemSelecionadoNome(): string {
+    if (this.servicoAtual) return this.servicoAtual.nome;
+    return this.produtoSelecionado ? this.produtoNome(this.produtoSelecionado) : 'Item';
+  }
+
+  get itemSelecionadoResumo(): string {
+    if (this.servicoAtual) return this.servicoAtual.descricao || 'Serviço gráfico';
+    return this.resumoVariacaoSelecionada;
   }
 
   get isFirstStep(): boolean {
@@ -2954,7 +2978,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
   get nextDisabled(): boolean {
     const index = this.stepper?.selectedIndex || 0;
     if (index === 0) {
-      return this.produtoForm.invalid || !!this.parametroAtual || this.carregandoOpcoes;
+      return !this.servicoAtual && (this.produtoForm.invalid || !!this.parametroAtual || this.carregandoOpcoes);
     }
     if (index === 1) return this.quantidadeForm.invalid || !this.precoValido || this.precificando;
     if (index === 3) return !this.composicao || this.precificando;
@@ -3143,7 +3167,17 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
   opcoesFunil(coluna: FunilColuna): FunilOpcao[] {
     const filtrar = (opcoes: FunilOpcao[]) => this.filtrarOpcoesFunil(coluna, opcoes);
     if (coluna === 'produto') {
-      return filtrar(this.agruparOpcoes(this.produtosFunil, (produto) => this.produtoNome(produto)));
+      return filtrar([
+        ...this.agruparOpcoes(this.produtosFunil, (produto) => this.produtoNome(produto)),
+        ...this.servicosFunil
+          .filter((servico) => servico.ativo !== false)
+          .map((servico) => ({
+            key: `servico:${servico.id}`,
+            label: servico.nome,
+            servico,
+            tipo: 'SERVICO' as const,
+          })),
+      ].sort((a, b) => a.label.localeCompare(b.label, 'pt-BR')));
     }
     if (coluna === 'material') {
       return filtrar(this.agruparCadastro(this.produtosPorProduto(), (produto) => produto.material));
@@ -3191,6 +3225,11 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
   }
 
   selecionarProdutoFunil(opcao: FunilOpcao): void {
+    if (opcao.servico) {
+      this.selecionarServicoFunil(opcao.servico);
+      return;
+    }
+    this.servicoAtual = null;
     this.produtoNomeSelecionado = opcao.label;
     this.materialSelecionadoId = null;
     this.formatoSelecionadoId = null;
@@ -3222,7 +3261,39 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
     this.resolverProdutoFunil();
   }
 
+  selecionarServicoFunil(servico: GraficaServico): void {
+    this.servicoAtual = servico;
+    this.produtoSelecionado = null;
+    this.produtoNomeSelecionado = null;
+    this.materialSelecionadoId = null;
+    this.formatoSelecionadoId = null;
+    this.corSelecionadaId = null;
+    this.parametros = [];
+    this.selecoes = {};
+    this.caminhoSelecoes = [];
+    this.parametroAtual = null;
+    this.opcoesAtuais = [];
+    this.acabamentosSelecionados.clear();
+    this.servicosSelecionados.clear();
+    this.produtoForm.patchValue({ produtoGraficoId: servico.id });
+    this.politicasPreco = (servico.politicas || []).filter((politica) => politica.ativo !== false);
+    this.politicaPrecoAtual = this.resolverPoliticaPrecoAtual();
+    this.loteSelecionado = this.lotesPreco[0] || null;
+    if (this.loteSelecionado) {
+      this.quantidadeForm.patchValue({ quantidade: this.loteSelecionado.quantidade }, { emitEvent: false });
+    }
+    this.configurarFormularioPreco();
+    this.limparPreco();
+    setTimeout(() => {
+      if (this.stepper) {
+        this.stepper.selectedIndex = 1;
+        this.focarQuantidadePreco(true);
+      }
+    });
+  }
+
   selecionarProduto(produto: GraficaProduto, direto = false, iniciarEmPreco = false): void {
+    this.servicoAtual = null;
     this.produtoSelecionado = produto;
     this.produtoForm.patchValue({ produtoGraficoId: produto.id });
     this.graficaService.detalhar(produto.id).subscribe({
@@ -3308,10 +3379,13 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
 
   precificar(): void {
     const id = this.produtoForm.value.produtoGraficoId;
-    if (!id) return;
+    if (!id && !this.servicoAtual) return;
     const body = this.body();
 	    this.precificando = true;
-	    this.graficaService.precificar(id, body.precificacao).subscribe({
+	    const precificacao$ = this.servicoAtual
+	      ? this.graficaService.precificarServico(this.servicoAtual.id, body.precificacao)
+	      : this.graficaService.precificar(id!, body.precificacao);
+	    precificacao$.subscribe({
 	      next: (preco) => {
 	        this.preco = preco;
 	        this.precificando = false;
@@ -3329,7 +3403,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
 
   resolverComposicao(depois?: () => void): void {
     const id = this.produtoForm.value.produtoGraficoId;
-    if (!id) return;
+    if (!id && !this.servicoAtual) return;
     let finalizado = false;
     const finalizar = () => {
       if (finalizado) return;
@@ -3338,15 +3412,22 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
       depois?.();
     };
     this.precificando = true;
-    this.graficaService.resolverComposicaoComercial(id, this.body()).subscribe({
+    const request$ = this.servicoAtual
+      ? this.graficaService.resolverComposicaoServico(this.servicoAtual.id, this.body())
+      : this.graficaService.resolverComposicaoComercial(id!, this.body());
+    request$.subscribe({
       next: (composicao) => {
-        this.composicao = this.composicaoComAdicionais(composicao);
+        this.composicao = this.servicoAtual ? composicao : this.composicaoComAdicionais(composicao);
         finalizar();
       },
       complete: () => finalizar(),
       error: () => {
-        const composicao = this.composicaoDaPrecificacao();
-        this.composicao = composicao ? this.composicaoComAdicionais(composicao) : null;
+        if (this.servicoAtual) {
+          this.composicao = null;
+        } else {
+          const composicao = this.composicaoDaPrecificacao();
+          this.composicao = composicao ? this.composicaoComAdicionais(composicao) : null;
+        }
         finalizar();
       },
     });
@@ -3877,6 +3958,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
 
   limparProdutoSelecionado(): void {
     this.produtoSelecionado = null;
+    this.servicoAtual = null;
     this.produtoForm.reset({ produtoGraficoId: null });
     this.produtoBusca = '';
     this.buscarProdutosDireto('');
@@ -3917,6 +3999,13 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
         this.produtosFunil = acumulado;
         this.carregandoFunil = false;
       },
+    });
+  }
+
+  private carregarServicosFunil(): void {
+    this.graficaService.listarServicos().subscribe({
+      next: (servicos) => this.servicosFunil = (servicos || []).filter((servico) => servico.ativo !== false),
+      error: () => this.servicosFunil = [],
     });
   }
 
@@ -4065,6 +4154,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
 
   private limparProdutoResolvido(): void {
     this.produtoSelecionado = null;
+    this.servicoAtual = null;
     this.produtoForm.reset({ produtoGraficoId: null });
     this.parametros = [];
     this.selecoes = {};

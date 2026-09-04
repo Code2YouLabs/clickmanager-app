@@ -498,10 +498,11 @@ function resumoFinanceiro(overrides: { total: number; totalRecebido: number; sal
 
 describe('GraficaProdutoWizardDialogComponent', () => {
   it('produto pre selecionado avanca para etapa de preco', fakeAsync(() => {
-    const graficaService = jasmine.createSpyObj('GraficaProdutoService', ['listar', 'detalhar', 'listarPrecos']);
+    const graficaService = jasmine.createSpyObj('GraficaProdutoService', ['listar', 'detalhar', 'listarPrecos', 'listarServicos']);
     graficaService.listar.and.returnValue(of({ content: [], pageNumber: 0, pageSize: 20, totalElements: 0, totalPages: 0, last: true }));
     graficaService.detalhar.and.returnValue(of(produto()));
     graficaService.listarPrecos.and.returnValue(of([]));
+    graficaService.listarServicos.and.returnValue(of([]));
     const component = new GraficaProdutoWizardDialogComponent(
       new FormBuilder(),
       graficaService,
@@ -539,6 +540,21 @@ describe('GraficaProdutoWizardDialogComponent', () => {
     expect(component.opcoesFunil('cor').map((item) => item.label)).toEqual(['1x0']);
   });
 
+  it('exibe servicos junto com produtos na coluna inicial', () => {
+    const component = criarWizard();
+    component.produtosFunil = [
+      produto({ id: 11, nome: 'Panfleto' }),
+    ];
+    component.servicosFunil = [
+      servico({ id: 22, nome: 'Instalação' }),
+    ];
+
+    const opcoes = component.opcoesFunil('produto');
+
+    expect(opcoes.map((item) => item.label)).toEqual(['Instalação', 'Panfleto']);
+    expect(opcoes[0].servico?.id).toBe(22);
+  });
+
   it('pagina colunas e resolve produto final ao selecionar cor', () => {
     const component = criarWizard();
     const produtos = Array.from({ length: 8 }, (_, index) => produto({
@@ -570,10 +586,11 @@ describe('GraficaProdutoWizardDialogComponent', () => {
 });
 
 function criarWizard(): GraficaProdutoWizardDialogComponent {
-  const graficaService = jasmine.createSpyObj('GraficaProdutoService', ['listar', 'detalhar', 'listarPrecos']);
+  const graficaService = jasmine.createSpyObj('GraficaProdutoService', ['listar', 'detalhar', 'listarPrecos', 'listarServicos']);
   graficaService.listar.and.returnValue(of({ content: [], pageNumber: 0, pageSize: 20, totalElements: 0, totalPages: 0, last: true }));
   graficaService.detalhar.and.returnValue(of(produto()));
   graficaService.listarPrecos.and.returnValue(of([]));
+  graficaService.listarServicos.and.returnValue(of([]));
   return new GraficaProdutoWizardDialogComponent(
     new FormBuilder(),
     graficaService,
@@ -605,5 +622,16 @@ function produto(overrides: {
     cor: { id: overrides.corId ?? 3, codigo: '4X4', nome: overrides.corNome ?? '4x4', ativo: true },
     acabamentos: [],
     parametros: [],
+  };
+}
+
+function servico(overrides: { id?: number; nome?: string } = {}) {
+  return {
+    id: overrides.id ?? 22,
+    codigo: 'SERVICO',
+    nome: overrides.nome ?? 'Instalação',
+    descricao: 'Serviço gráfico',
+    ativo: true,
+    politicas: [],
   };
 }
