@@ -62,6 +62,8 @@ export class PrecoSelectorComponent implements OnInit, OnChanges {
     if (changes['formGroup'] && changes['formGroup'].currentValue) {
       this.setupForm();
       this.setupTipoListener();
+    } else if (changes['tiposDisponiveis'] && this.formGroup) {
+      this.setupForm();
     }
   }
 
@@ -72,16 +74,22 @@ export class PrecoSelectorComponent implements OnInit, OnChanges {
       this.formGroup.addControl('tipo', this.fb.control('', Validators.required));
     }
 
-    const tipoAtual = this.formGroup.get('tipo')?.value || this.tipos[0];
-    if (!this.formGroup.get('tipo')?.value) {
-      this.formGroup.get('tipo')?.setValue(tipoAtual, { emitEvent: false });
-    }
+    const tipoAtual = this.tipoPermitidoAtual();
+    this.formGroup.get('tipo')?.setValue(tipoAtual, { emitEvent: false });
 
     if (!this.existeEstruturaPara(tipoAtual)) {
       this.onTipoSelecionado(tipoAtual);
     } else {
       this.aplicarValidadorDePreco(tipoAtual);
     }
+  }
+
+  private tipoPermitidoAtual(): string {
+    const tipoAtual = this.formGroup.get('tipo')?.value;
+    if (tipoAtual && this.tipos.includes(tipoAtual)) {
+      return tipoAtual;
+    }
+    return this.tipos[0] || 'FIXO';
   }
 
   private setupTipoListener(): void {

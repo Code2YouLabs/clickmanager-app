@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { Subscription } from 'rxjs';
 import { MaterialModule } from 'src/app/material.module';
 import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
 import { PrecoSelectorComponent } from 'src/app/components/preco/preco-selector.component';
@@ -31,9 +32,17 @@ export interface ProdutoAcabamentoUx {
     SectionCardComponent,
   ],
   template: `
-    <h2 mat-dialog-title>{{ data.acabamento ? 'Editar acabamento' : 'Adicionar acabamento' }}</h2>
+    <h2 mat-dialog-title class="dialog-head">
+      <div class="dialog-head__copy">
+        <strong>{{ data.acabamento ? 'Editar acabamento' : 'Adicionar acabamento' }}</strong>
+        <span>Defina como este acabamento será aplicado e precificado no produto.</span>
+      </div>
+      <button type="button" mat-icon-button aria-label="Fechar" (click)="fechar()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </h2>
 
-    <mat-dialog-content>
+    <mat-dialog-content class="dialog-content">
       <form [formGroup]="form" class="acabamento-dialog-form">
         <div class="dialog-grid">
           <app-input-texto-restrito
@@ -65,27 +74,28 @@ export interface ProdutoAcabamentoUx {
         <app-section-card title="Precificação">
           <app-preco-selector
             [formGroup]="precoForm"
-            [tiposDisponiveis]="['FIXO', 'DEMANDA', 'QUANTIDADE', 'METRO']">
+            [tiposDisponiveis]="tiposPrecoPermitidos">
           </app-preco-selector>
         </app-section-card>
       </form>
     </mat-dialog-content>
 
-    <mat-dialog-actions align="end">
-      <button mat-button type="button" (click)="fechar()">Cancelar</button>
+    <mat-dialog-actions align="end" class="dialog-actions">
+      <button mat-stroked-button type="button" (click)="fechar()">Cancelar</button>
       <button mat-flat-button color="primary" type="button" (click)="salvar()">
         <mat-icon>check</mat-icon>
-        Salvar
+        <span>Salvar</span>
       </button>
     </mat-dialog-actions>
   `,
+  styleUrls: ['../../../components/dialog/dialog-form-shell.scss'],
   styles: [`
     .acabamento-dialog-form {
       display: flex;
       flex-direction: column;
       gap: 16px;
       padding-top: 4px;
-      min-width: min(680px, 82vw);
+      width: min(700px, 100%);
     }
     .dialog-grid {
       display: grid;
@@ -105,9 +115,12 @@ export interface ProdutoAcabamentoUx {
     :host ::ng-deep app-preco-selector .price-selector-mode {
       border-top: 0;
     }
+    :host ::ng-deep .mat-mdc-dialog-content {
+      max-height: min(68vh, 720px);
+    }
     @media (max-width: 640px) {
       .acabamento-dialog-form {
-        min-width: 0;
+        width: 100%;
       }
       .dialog-grid {
         grid-template-columns: 1fr;
@@ -115,7 +128,16 @@ export interface ProdutoAcabamentoUx {
     }
   `],
 })
-export class GraficaProdutoAcabamentoDialogComponent {
+export class GraficaProdutoAcabamentoDialogComponent implements OnDestroy {
+  private readonly tiposPrecoPorAplicacao: Record<ProdutoAcabamentoAplicacao, ProdutoAcabamentoPrecoTipo[]> = {
+    FOLHA: ['FIXO', 'DEMANDA'],
+    PECA: ['FIXO', 'DEMANDA'],
+    SERVICO: ['FIXO', 'DEMANDA', 'QUANTIDADE'],
+    METRO_QUADRADO: ['METRO'],
+    METRO_LINEAR: ['METRO'],
+  };
+  private readonly aplicacaoSub: Subscription;
+
   form = this.fb.group({
     nome: this.fb.control('', { nonNullable: true, validators: [Validators.required] }),
     descricao: this.fb.control('', { nonNullable: true }),
@@ -125,6 +147,10 @@ export class GraficaProdutoAcabamentoDialogComponent {
 
   get nomeControl() {
     return this.form.controls.nome;
+  }
+
+  get tiposPrecoPermitidos(): ProdutoAcabamentoPrecoTipo[] {
+    return this.tiposPrecoPorAplicacao[this.form.controls.aplicacao.value] || this.tiposPrecoPorAplicacao.FOLHA;
   }
 
   constructor(
@@ -140,6 +166,12 @@ export class GraficaProdutoAcabamentoDialogComponent {
       aplicacao: acabamento?.aplicacao || 'FOLHA',
     });
     this.precoForm = this.criarPrecoForm(acabamento?.preco);
+    this.garantirTipoPrecoPermitido();
+    this.aplicacaoSub = this.form.controls.aplicacao.valueChanges.subscribe(() => this.garantirTipoPrecoPermitido());
+  }
+
+  ngOnDestroy(): void {
+    this.aplicacaoSub.unsubscribe();
   }
 
   fechar(): void {
@@ -201,5 +233,12 @@ export class GraficaProdutoAcabamentoDialogComponent {
           largurasLinearesPermitidas: [preco?.largurasLinearesPermitidas ?? ''],
         });
     }
+  }
+
+  private garantirTipoPrecoPermitido(): void {
+    const permitidos = this.tiposPrecoPermitidos;
+    const tipoAtual = this.precoForm.get('tipo')?.value as ProdutoAcabamentoPrecoTipo | null;
+    if (tipoAtual && permitidos.includes(tipoAtual)) return;
+    this.precoForm.get('tipo')?.setValue(permitidos[0]);
   }
 }
