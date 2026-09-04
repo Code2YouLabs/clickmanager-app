@@ -239,6 +239,58 @@ describe('ComercialBetaEditorComponent', () => {
     expect((component as any).router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial-beta', 'orcamentos', 22]);
   });
 
+  it('cria pedido quando o primeiro item e um servico grafico', () => {
+    const component = criarEditor('pedidos');
+    component.tipo = 'pedidos';
+    component.clienteConfirmado = { id: 7, nome: 'Lorena Bello', telefone: '31999999999', email: null } as any;
+    component.itens = [{
+      origem: 'GRAFICA',
+      catalogoProdutoId: null,
+      codigoProduto: 'SERVICO',
+      nomeProduto: 'Serviço: Arte complexa',
+      unidadeVenda: 'UN',
+      caracteristicasResumo: 'Preço fixo',
+      quantidade: 1,
+      valorUnitario: 150,
+      valorTotal: 150,
+      snapshotComercial: JSON.stringify({
+        tipo: 'SERVICO',
+        servicoGraficoId: 11,
+        entrada: { quantidade: 1, largura: null, altura: null, unidadeDimensao: 'METRO', selecoes: {} },
+      }),
+    }] as any;
+
+    component.salvarComo('pedidos');
+
+    expect((component as any).graficaService.criarPedidoServico).toHaveBeenCalledWith(11, jasmine.objectContaining({
+      clienteId: 7,
+      precificacao: jasmine.objectContaining({ quantidade: 1 }),
+    }));
+    expect((component as any).router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial-beta', 'pedidos', 22]);
+  });
+
+  it('cria pedido reconhecendo snapshot legado de servico', () => {
+    const component = criarEditor('pedidos');
+    component.tipo = 'pedidos';
+    component.clienteConfirmado = { id: 7, nome: 'Lorena Bello', telefone: '31999999999', email: null } as any;
+    component.itens = [{
+      origem: 'GRAFICA',
+      nomeProduto: 'Serviço: Arte simples',
+      quantidade: 1,
+      valorUnitario: 0,
+      valorTotal: 0,
+      snapshotComercial: JSON.stringify({
+        tipo: 'SERVICO',
+        servicoId: 12,
+        precificacao: { quantidade: 1, largura: null, altura: null, unidadeDimensao: 'METRO', selecoes: {} },
+      }),
+    }] as any;
+
+    component.salvarComo('pedidos');
+
+    expect((component as any).graficaService.criarPedidoServico).toHaveBeenCalledWith(12, jasmine.any(Object));
+  });
+
   it('preenche o valor com o saldo em aberto ao selecionar forma depois de um pagamento valido', () => {
     const component = criarEditor();
     component.resumoFinanceiro = resumoFinanceiro({ total: 2222.6, totalRecebido: 1515, saldoAberto: 707.6 });
@@ -387,6 +439,8 @@ function criarEditor(tipo = 'pedidos'): ComercialBetaEditorComponent {
     'buscarFluxoPedidoComercial',
     'converterRascunhoParaPedido',
     'converterRascunhoParaOrcamento',
+    'criarPedidoServico',
+    'criarPedidoGrafico',
   ]);
   graficaService.listarFormasPagamento.and.returnValue(of([]));
   graficaService.cancelarRecebimento.and.returnValue(of({}));
@@ -396,6 +450,8 @@ function criarEditor(tipo = 'pedidos'): ComercialBetaEditorComponent {
   graficaService.buscarFluxoPedidoComercial.and.returnValue(of(fluxoAberto()));
   graficaService.converterRascunhoParaPedido.and.returnValue(of({ tipo: 'PEDIDO', id: 22 }));
   graficaService.converterRascunhoParaOrcamento.and.returnValue(of({ tipo: 'ORCAMENTO', id: 22 }));
+  graficaService.criarPedidoServico.and.returnValue(of({ tipo: 'PEDIDO', id: 22 }));
+  graficaService.criarPedidoGrafico.and.returnValue(of({ tipo: 'PEDIDO', id: 22 }));
   const clienteService = jasmine.createSpyObj('ClienteService', ['buscarPorId', 'buscarPorNome']);
   clienteService.buscarPorId.and.returnValue(of({
     clienteId: 7,

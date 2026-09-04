@@ -1544,12 +1544,17 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
   }
 
   private comercialComposicaoRequest(destino: ComercialBetaTipo): { origemTipo: 'PRODUTO' | 'SERVICO'; origemId: number; body: GraficaComercialComposicaoRequest } | null {
-    const primeiro = this.itens[0];
-    const snapshot = this.safeJson(primeiro.snapshotComercial);
-    const produtoGraficoId = Number(snapshot?.produtoGraficoId || 0);
-    const servicoGraficoId = Number(snapshot?.servicoGraficoId || 0);
-    const precificacao = snapshot?.entrada;
-    const adicionais = this.itens.slice(1).map((item) => ({
+    const principalIndex = this.itens.findIndex((item) => {
+      const snapshotItem = this.safeJson(item.snapshotComercial);
+      return Number(this.produtoGraficoIdSnapshot(snapshotItem) || 0) > 0
+        || Number(this.servicoGraficoIdSnapshot(snapshotItem) || 0) > 0;
+    });
+    const primeiro = this.itens[principalIndex >= 0 ? principalIndex : 0];
+    const snapshot = this.safeJson(primeiro?.snapshotComercial);
+    const produtoGraficoId = Number(this.produtoGraficoIdSnapshot(snapshot) || 0);
+    const servicoGraficoId = Number(this.servicoGraficoIdSnapshot(snapshot) || 0);
+    const precificacao = snapshot?.entrada || snapshot?.precificacao || {};
+    const adicionais = this.itens.filter((_, index) => index !== (principalIndex >= 0 ? principalIndex : 0)).map((item) => ({
       linhaComercial: true,
       catalogoProdutoId: item.catalogoProdutoId,
       codigoProduto: item.codigoProduto || null,
@@ -1926,7 +1931,8 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
   private detalhesItem(item: ComposicaoComercialResolvida['itens'][number], snapshot: any, tipoLinha: ItemPedidoView['tipoLinha'], valorContexto: string | null): string[] {
     const detalhes: string[] = [];
     if (tipoLinha !== 'PRINCIPAL') {
-      detalhes.push(tipoLinha === 'SERVICO' ? 'Serviço adicional vinculado ao item' : 'Acabamento vinculado ao item');
+      const servicoPrincipal = tipoLinha === 'SERVICO' && Number(this.servicoGraficoIdSnapshot(snapshot) || 0) > 0;
+      detalhes.push(servicoPrincipal ? 'Serviço do pedido' : tipoLinha === 'SERVICO' ? 'Serviço adicional vinculado ao item' : 'Acabamento vinculado ao item');
     }
     if (valorContexto) {
       detalhes.push(`Cobrança: ${valorContexto}`);
@@ -2057,13 +2063,27 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
   }
 
   private selecoesDoSnapshot(snapshot: any): Record<string, string> {
-    const selecoes = Array.isArray(snapshot?.selecoes) ? snapshot.selecoes : [];
+    const selecoes = Array.isArray(snapshot?.selecoes)
+      ? snapshot.selecoes
+      : Array.isArray(snapshot?.entrada?.selecoesResolvidas)
+        ? snapshot.entrada.selecoesResolvidas
+        : Array.isArray(snapshot?.precificacao?.selecoesResolvidas)
+          ? snapshot.precificacao.selecoesResolvidas
+          : [];
     return selecoes.reduce((acc: Record<string, string>, selecao: any) => {
       if (selecao.parametroCodigo && selecao.opcaoCodigo) {
         acc[selecao.parametroCodigo] = selecao.opcaoCodigo;
       }
       return acc;
     }, {});
+  }
+
+  private produtoGraficoIdSnapshot(snapshot: any): number | null {
+    return snapshot?.produtoGraficoId ?? snapshot?.produto?.id ?? null;
+  }
+
+  private servicoGraficoIdSnapshot(snapshot: any): number | null {
+    return snapshot?.servicoGraficoId ?? snapshot?.servicoId ?? snapshot?.servico?.id ?? null;
   }
 
   private clientePayload(): any {
@@ -3424,6 +3444,14 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
 	    return error?.error?.message || error?.error?.userMessage || error?.message || fallback;
 	  }
 
+  private safeJson(value?: string | null): any {
+    try {
+      return value ? JSON.parse(value) : null;
+    } catch {
+      return null;
+    }
+  }
+
   resolverComposicao(depois?: () => void): void {
     const id = this.produtoForm.value.produtoGraficoId;
     if (!id && !this.servicoAtual) return;
@@ -3440,7 +3468,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
       : this.graficaService.resolverComposicaoComercial(id!, this.body());
     request$.subscribe({
       next: (composicao) => {
-        this.composicao = this.servicoAtual ? composicao : this.composicaoComAdicionais(composicao);
+        this.composicao = this.servicoAtual ? this.composicaoServicoComSnapshot(composicao) : this.composicaoComAdicionais(composicao);
         finalizar();
       },
       complete: () => finalizar(),
@@ -3866,6 +3894,12 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
         valorTotal,
         observacao: null,
         ordem: 0,
+        snapshotComercial: JSON.stringify({
+          tipo: 'PRODUTO',
+          produtoGraficoId: this.produtoSelecionado.id,
+          entrada: this.body().precificacao,
+          precificacao: this.preco,
+        }),
       }],
     };
   }
@@ -3896,11 +3930,38 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
         ordem: 0,
         snapshotComercial: JSON.stringify({
           tipo: 'SERVICO',
+          servicoGraficoId: servico.id,
           servicoId: servico.id,
           servicoNome: servico.nome,
-          precificacao: this.body().precificacao,
+          entrada: this.body().precificacao,
+          precificacao: null,
         }),
       }],
+    };
+  }
+
+  private composicaoServicoComSnapshot(composicao: ComposicaoComercialResolvida): ComposicaoComercialResolvida {
+    if (!this.servicoAtual) return composicao;
+    const entrada = this.body().precificacao;
+    return {
+      ...composicao,
+      itens: (composicao.itens || []).map((item, index) => {
+        const snapshotAtual = this.safeJson(item.snapshotComercial) || {};
+        return {
+          ...item,
+          nomeProduto: item.nomeProduto || `Serviço: ${this.servicoAtual!.nome}`,
+          ordem: item.ordem ?? index,
+          snapshotComercial: JSON.stringify({
+            ...snapshotAtual,
+            tipo: snapshotAtual.tipo || 'SERVICO',
+            servicoGraficoId: snapshotAtual.servicoGraficoId || this.servicoAtual!.id,
+            servicoId: snapshotAtual.servicoId || this.servicoAtual!.id,
+            servicoNome: snapshotAtual.servicoNome || this.servicoAtual!.nome,
+            entrada: snapshotAtual.entrada || entrada,
+            precificacao: snapshotAtual.precificacao || this.preco,
+          }),
+        };
+      }),
     };
   }
 
