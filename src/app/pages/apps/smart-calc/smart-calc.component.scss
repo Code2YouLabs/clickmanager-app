@@ -408,6 +408,18 @@
   padding: 18px 20px;
 }
 
+.result-item-title {
+  color: var(--sc-fg);
+  font-weight: 700;
+}
+
+.result-item-spec {
+  margin-top: 3px;
+  color: var(--sc-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
 .results-pane--fresh .results-pane__body > * {
   animation: resultPulse 0.28s ease;
 }

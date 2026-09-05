@@ -252,7 +252,12 @@
         <tbody>
           @for (it of itens(); track it.id) {
           <tr>
-            <td>{{ it.nomeComposto }}</td>
+            <td>
+              <div class="result-item-title">{{ it.nomeComposto }}</div>
+              @if (it.descricao) {
+                <div class="result-item-spec">{{ it.descricao }}</div>
+              }
+            </td>
             <td class="num">{{ it.quantidade }}</td>
             <td class="num">{{ it.valor | currency:'BRL':'symbol-narrow':'1.2-2' }}</td>
             <td class="num">{{ it.subTotal | currency:'BRL':'symbol-narrow':'1.2-2' }}</td>

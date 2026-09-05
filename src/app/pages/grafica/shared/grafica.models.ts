@@ -345,6 +345,10 @@ export interface ItemComercialResolvido {
   codigoProduto?: string | null;
   nomeProduto?: string | null;
   descricaoProduto?: string | null;
+  categoriaNome?: string | null;
+  marcaNome?: string | null;
+  produtoSlug?: string | null;
+  imagemUrl?: string | null;
   unidadeVenda?: string | null;
   caracteristicasResumo?: string | null;
   quantidade: number;
@@ -425,6 +429,10 @@ export interface ComercialItemResponse {
   produtoNome?: string | null;
   descricaoProduto?: string | null;
   descricaoProdutoSnapshot?: string | null;
+  categoriaNome?: string | null;
+  marcaNome?: string | null;
+  produtoSlug?: string | null;
+  imagemUrl?: string | null;
   caracteristicasResumo?: string | null;
   caracteristicasResumoSnapshot?: string | null;
   unidadeVenda?: string | null;
