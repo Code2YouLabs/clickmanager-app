@@ -1,182 +1,152 @@
-<div class="smartcalc-page smartcalc">
-  <header class="sc-page-header">
-    <div class="sc-page-header__main">
-      <span class="sc-page-header__icon">
-        <mat-icon>calculate</mat-icon>
-      </span>
-      <div class="sc-page-header__copy">
-        @if (!mobileViewport()) {
-        <span class="sc-page-header__eyebrow">SmartCalc</span>
-        }
-        <h1>{{ mobileViewport() ? 'Simule orçamentos automaticamente' : 'Simule e gere orçamentos automaticamente' }}</h1>
-        <p>{{ mobileViewport() ? (produtoInitSelecionado?.nome || 'Produto, medidas e extras. O valor atualiza sozinho.') : (produtoInitSelecionado?.nome || 'Escolha produto, medidas e extras para transformar cálculo em pedido sem fricção.') }}</p>
-      </div>
-    </div>
-
-    <div class="sc-page-header__meta">
-      @if (!carregandoConfig && !carregandoProdutos && !configAtiva) {
-      <div class="sc-alert-badge">
+<app-page-card
+  class="smartcalc-page"
+  titulo="SmartCalc – Calculadora Inteligente"
+  subtitulo="Calcule automaticamente o melhor aproveitamento de produção.">
+  <div page-header-actions class="header-actions">
+    @if (!carregandoConfig && !carregandoProdutos && !configAtiva) {
+      <span class="status-chip status-chip--danger">
         <mat-icon>block</mat-icon>
-        <span>SmartCalc desativado</span>
-      </div>
-      }
+        SmartCalc desativado
+      </span>
+    }
 
-      <div class="badge badge--ok subtle">Cálculo automático</div>
-
-      @if (carregandoCalculo) {
-      <div class="badge subtle">Atualizando resultado…</div>
-      }
-    </div>
-  </header>
+    @if (carregandoCalculo) {
+      <span class="status-chip">
+        <mat-progress-spinner diameter="16" mode="indeterminate"></mat-progress-spinner>
+        Calculando
+      </span>
+    }
+  </div>
 
   @if (!carregandoConfig && !carregandoProdutos && !configAtiva) {
-  <div class="sc-banner">
-    <div class="banner-left">
-      <div class="icon-wrap">
-        <mat-icon>block</mat-icon>
-      </div>
-      <div class="banner-text">
-        <div class="title">SmartCalc desativado</div>
-        <div class="subtitle">Ative nas configurações para usar a calculadora.</div>
+    <div class="feedback feedback--warning" role="status">
+      <mat-icon>info</mat-icon>
+      <div>
+        <strong>SmartCalc desativado</strong>
+        <span>Ative nas configurações para usar a calculadora.</span>
       </div>
     </div>
-  </div>
+  }
+
+  @if (erroProdutos) {
+    <div class="feedback feedback--error" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <div>
+        <strong>Não foi possível carregar o SmartCalc</strong>
+        <span>{{ erroProdutos }}</span>
+      </div>
+    </div>
   }
 
   <form class="smartcalc-layout" [formGroup]="form">
     <div class="smartcalc-layout__main">
-      <section class="section-card section-card--flat">
-        <div class="section-card__header">
-          <div class="section-title">
-            <span class="step-badge">1</span>
-            <div>
-              <div class="title">Produto e material</div>
-              <div class="hint">{{ mobileViewport() ? 'Escolha a base principal do cálculo.' : 'Selecione a base do cálculo para liberar as opções corretas.' }}</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="section-card__body select-grid">
+      <app-section-card title="1. Produto e material" subtitle="Escolha a base principal do cálculo.">
+        <div class="form-grid form-grid--two">
           <div class="field-stack">
-            <app-input-options [control]="form.controls.produtoId" label="Produto"
-              [placeholder]="'Ex: Cartão de visita, panfleto, adesivo'" [options]="produtos" labelKey="nome"
-              valueKey="id" [disabled]="carregandoProdutos || !!erroProdutos"
-              [nullLabel]="erroProdutos || (!produtos.length && !carregandoProdutos ? 'Nenhum produto disponível' : 'Selecione um produto...')"></app-input-options>
-            <div class="field-hint">{{ mobileViewport() ? 'Escolha o que você quer calcular.' : 'Escolha o item base que você quer simular.' }}</div>
+            <app-input-options
+              [control]="form.controls.produtoId"
+              label="Produto"
+              placeholder="Produto"
+              [options]="produtos"
+              labelKey="nome"
+              valueKey="id"
+              [disabled]="carregandoProdutos || !!erroProdutos"
+              [nullLabel]="erroProdutos || (!produtos.length && !carregandoProdutos ? 'Nenhum produto disponível' : 'Selecione um produto')">
+            </app-input-options>
+            <div class="field-hint">Escolha o item base.</div>
           </div>
 
           <div class="field-stack">
-            <app-input-options [control]="form.controls.materialId" label="Material"
-              [placeholder]="'Ex: Couché 150g, adesivo, sulfite'" [options]="materiais" labelKey="nome"
-              valueKey="id" [disabled]="carregandoProdutos || !!erroProdutos || !materiais.length"
-              [nullLabel]="!materiais.length ? 'Nenhum material disponível' : '-- Selecione --'"></app-input-options>
-            <div class="field-hint">{{ mobileViewport() ? 'Esse material define custo e aproveitamento.' : 'Defina a base que mais impacta no custo e no formato.' }}</div>
+            <app-input-options
+              [control]="form.controls.materialId"
+              label="Material"
+              placeholder="Material"
+              [options]="materiais"
+              labelKey="nome"
+              valueKey="id"
+              [disabled]="carregandoProdutos || !!erroProdutos || !materiais.length"
+              [nullLabel]="!materiais.length ? 'Nenhum material disponível' : 'Selecione um material'">
+            </app-input-options>
+            <div class="field-hint">Material usado no cálculo.</div>
           </div>
         </div>
 
-        <div class="product-meta" *ngIf="produtoInitSelecionado as ps">
-          <div class="meta-name">
+        @if (produtoInitSelecionado; as produtoSelecionado) {
+          <div class="selected-product">
             <mat-icon>inventory_2</mat-icon>
-            <span>{{ ps.nome }}</span>
-          </div>
-          <div class="meta-tags">
-            <button type="button" class="badge badge--count badge--interactive" *ngIf="ps.variacoes.length"
-              (click)="focarMaterialSelector()">
-              {{ ps.variacoes.length }} variações
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section class="section-card section-card--flat">
-        <div class="section-card__header">
-          <div class="section-title">
-            <span class="step-badge">2</span>
             <div>
-              <div class="title">Medidas e quantidade</div>
-              <div class="hint">{{ mobileViewport() ? 'Preencha e acompanhe o valor em tempo real.' : 'Informe os dados do item para atualizar o cálculo automaticamente.' }}</div>
+              <strong>{{ produtoSelecionado.nome }}</strong>
+              @if (produtoSelecionado.variacoes.length) {
+                <span>{{ produtoSelecionado.variacoes.length }} formatos disponíveis</span>
+              }
             </div>
           </div>
-          <div class="subtitle" *ngIf="isMetroLinear()">
-            Largura fixa: {{ getLinearLarguraMaxima() ?? '—' }} cm
-          </div>
+        }
+      </app-section-card>
+
+      <app-section-card title="2. Medidas e quantidade" subtitle="Informe os dados do item.">
+        <div section-card-actions *ngIf="isMetroLinear()" class="section-note">
+          Largura fixa: {{ getLinearLarguraMaxima() ?? '—' }} cm
         </div>
 
-        <div class="section-card__body param-grid">
+        <div class="form-grid form-grid--three">
           <div class="field-stack">
-            <app-input-numerico [control]="form.controls.largura" label="Largura (cm)"
-              placeholder="Ex: 9"></app-input-numerico>
-            <div class="field-hint">{{ mobileViewport() ? 'Largura final do produto.' : 'Informe a largura final do produto.' }}</div>
-          </div>
-
-          <div class="field-stack">
-            <app-input-numerico [control]="form.controls.altura" label="Altura (cm)"
-              placeholder="Ex: 5"></app-input-numerico>
-            <div class="field-hint">{{ mobileViewport() ? 'Altura final para a melhor distribuição.' : 'Use a altura final para achar a melhor distribuição.' }}</div>
+            <app-input-numerico [control]="form.controls.largura" label="Largura (cm)" placeholder="Ex: 9"></app-input-numerico>
+            <div class="field-hint">Largura final do item.</div>
           </div>
 
           <div class="field-stack">
-            <app-input-numerico [control]="form.controls.quantidade" label="Quantidade"
-              placeholder="Ex: 500"></app-input-numerico>
-            <div class="field-hint">{{ mobileViewport() ? 'A quantidade define produção e valor.' : 'A quantidade ajuda a definir produção, sobra e valor.' }}</div>
+            <app-input-numerico [control]="form.controls.altura" label="Altura (cm)" placeholder="Ex: 5"></app-input-numerico>
+            <div class="field-hint">Altura final do item.</div>
           </div>
-        </div>
-      </section>
 
-      <section class="section-card section-card--flat">
-        <div class="section-card__header">
-          <div class="section-title">
-            <span class="step-badge optional">3</span>
-            <div>
-              <div class="title">Extras</div>
-              <div class="hint">{{ mobileViewport() ? 'Marque só o que entra no cálculo.' : 'Acabamentos entram no cálculo sem sair da tela.' }}</div>
-            </div>
+          <div class="field-stack">
+            <app-input-numerico [control]="form.controls.quantidade" label="Quantidade" placeholder="Ex: 500"></app-input-numerico>
+            <div class="field-hint">Quantidade solicitada.</div>
           </div>
         </div>
+      </app-section-card>
 
-        <div class="section-card__body extras-stack">
-          <div class="extras-block">
-            <div class="extras-block__heading">
-              <div class="extras-block__title">Acabamentos</div>
-              <div class="extras-block__meta">Opcional</div>
-            </div>
-            <app-input-multi-select [control]="form.controls.acabamentosIds" [label]="mobileViewport() ? '' : 'Acabamentos (opcional)'"
-              [searchPlaceholder]="mobileViewport() ? 'Buscar acabamento' : 'Buscar opção'" [showSelectedCount]="!mobileViewport()"
-              [options]="acabamentos" [cardMinHeight]="multiSelectCardMinHeight()"
-              [listHeight]="multiSelectListHeight()" [visualStyle]="mobileViewport() ? 'subtle' : 'default'"></app-input-multi-select>
+      <app-section-card title="3. Acabamentos" subtitle="Selecione os acabamentos opcionais.">
+        @if (acabamentos.length) {
+          <app-input-multi-select
+            [control]="form.controls.acabamentosIds"
+            label=""
+            searchPlaceholder="Buscar acabamento"
+            [showSelectedCount]="true"
+            [options]="acabamentos"
+            [cardMinHeight]="multiSelectCardMinHeight()"
+            [listHeight]="multiSelectListHeight()"
+            visualStyle="subtle">
+          </app-input-multi-select>
+        } @else {
+          <div class="empty-inline">
+            <mat-icon>info</mat-icon>
+            <span>Nenhum acabamento disponível para este produto.</span>
           </div>
-        </div>
-      </section>
+        }
+      </app-section-card>
     </div>
 
     <aside class="smartcalc-layout__sidebar smartcalc-layout__sidebar--desktop">
-      <mat-card class="results-pane" [class.results-pane--updating]="carregandoCalculo" [class.results-pane--fresh]="animandoResultado()">
-        <div class="results-pane__header">
-          <div>
-            <div class="title">Resultado do cálculo</div>
-            <div class="hint">Solicitado, produzido e sobra útil sempre à vista.</div>
-          </div>
-          <div class="badge subtle" *ngIf="carregandoCalculo">Atualizando…</div>
-        </div>
-
-        <div class="results-pane__body">
-          <ng-container [ngTemplateOutlet]="resultContentTpl"></ng-container>
-        </div>
-
-        <div class="results-pane__footer">
-          <ng-container [ngTemplateOutlet]="resultFooterTpl"></ng-container>
-        </div>
-      </mat-card>
+      <app-section-card
+        class="result-section"
+        title="Resultado do cálculo"
+        subtitle="Resumo de produção e valor."
+        [divider]="true">
+        <ng-container [ngTemplateOutlet]="resultContentTpl"></ng-container>
+        <ng-container [ngTemplateOutlet]="resultFooterTpl"></ng-container>
+      </app-section-card>
     </aside>
   </form>
 
   <app-mobile-total-bar
-    [label]="mobileViewport() ? 'Total' : 'Total estimado'"
+    label="Total"
     [valueText]="(total() | currency:'BRL':'symbol-narrow':'1.2-2') ?? ''"
-    [detailText]="mobileViewport() ? 'Detalhes' : 'Ver detalhes'"
+    detailText="Detalhes"
     [expanded]="resultadoMobileAberto()"
     [loading]="carregandoCalculo"
-    [actionText]="carregandoAdd ? 'Criando...' : 'Criar rascunho →'"
+    [actionText]="carregandoAdd ? 'Criando...' : 'Criar rascunho'"
     [actionDisabled]="!temResultado() || carregandoAdd || needsRecalcular() || carregandoCalculo"
     bottomOffset="var(--mobile-bottom-nav-height, 0px)"
     [attachedToBottomNav]="true"
@@ -189,15 +159,15 @@
   <div class="mobile-result-sheet-backdrop" *ngIf="resultadoMobileAberto()" (click)="fecharResultadoMobile()"></div>
 
   <section class="mobile-result-sheet" [class.mobile-result-sheet--open]="resultadoMobileAberto()">
-    <div class="mobile-result-sheet__top"
+    <div
+      class="mobile-result-sheet__top"
       role="button"
       tabindex="0"
       aria-label="Fechar detalhes do cálculo"
       (click)="fecharResultadoMobile()"
       (keydown.enter)="fecharResultadoMobile()"
       (keydown.space)="fecharResultadoMobile(); $event.preventDefault()">
-      <div (touchstart)="iniciarGestoSheet($event)"
-        (touchend)="finalizarGestoSheet($event)">
+      <div (touchstart)="iniciarGestoSheet($event)" (touchend)="finalizarGestoSheet($event)">
         <div class="mobile-result-sheet__pull">
           <div class="mobile-result-sheet__pull-handle"></div>
         </div>
@@ -209,135 +179,136 @@
     </div>
 
     <div class="mobile-result-sheet__footer">
-      <div class="footer-left">
-        <div *ngIf="erroCalculo" class="error-text">{{ erroCalculo }}</div>
-        <div *ngIf="needsRecalcular() && !carregandoCalculo" class="muted small">
-          Atualizando o cálculo automaticamente…
-        </div>
-      </div>
-
-      <div class="actions">
-        <button mat-stroked-button type="button" (click)="limpar()" [disabled]="carregandoCalculo || carregandoAdd">
-          Limpar
-        </button>
-      </div>
+      <ng-container [ngTemplateOutlet]="resultFooterTpl"></ng-container>
     </div>
   </section>
 
   <ng-template #resultContentTpl>
     @if (carregandoCalculo && !temResultado()) {
-    <div class="loading">
-      <mat-progress-spinner diameter="32" mode="indeterminate"></mat-progress-spinner>
-      <span>Calculando...</span>
-    </div>
+      <div class="loading">
+        <mat-progress-spinner diameter="28" mode="indeterminate"></mat-progress-spinner>
+        <span>Calculando...</span>
+      </div>
     } @else if (!resultado() || itens().length === 0) {
-    <div class="empty-state">
-      <mat-icon>insights</mat-icon>
-      <div class="title">Pronto para calcular</div>
-      <div class="desc">Preencha produto, medidas e quantidade para ver a distribuição aqui.</div>
-    </div>
+      <div class="empty-state">
+        <mat-icon>insights</mat-icon>
+        <strong>Pronto para calcular</strong>
+        <span>Informe produto, medidas e quantidade.</span>
+      </div>
     } @else {
-    <div class="calc-block">
-      <div class="calc-block__title">Itens calculados</div>
+      @if (erroCalculo) {
+        <div class="feedback feedback--error" role="alert">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ erroCalculo }}</span>
+        </div>
+      }
 
-      <table class="result-table">
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th class="num">Qtd</th>
-            <th class="num">Valor</th>
-            <th class="num">Subtotal</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (it of itens(); track it.id) {
-          <tr>
-            <td>
-              <div class="result-item-title">{{ it.nomeComposto }}</div>
-              @if (it.descricao) {
-                <div class="result-item-spec">{{ it.descricao }}</div>
+      <div class="result-block">
+        <div class="block-title">Itens calculados</div>
+
+        <div class="table-wrap">
+          <table class="result-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th class="num">Qtd</th>
+                <th class="num">Valor</th>
+                <th class="num">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (it of itens(); track it.id) {
+                <tr>
+                  <td>
+                    <div class="result-item-title">{{ it.nomeComposto }}</div>
+                    @if (it.descricao) {
+                      <div class="result-item-spec">{{ it.descricao }}</div>
+                    }
+                  </td>
+                  <td class="num">{{ it.quantidade }}</td>
+                  <td class="num">{{ it.valor | currency:'BRL':'symbol-narrow':'1.2-2' }}</td>
+                  <td class="num">{{ it.subTotal | currency:'BRL':'symbol-narrow':'1.2-2' }}</td>
+                </tr>
               }
-            </td>
-            <td class="num">{{ it.quantidade }}</td>
-            <td class="num">{{ it.valor | currency:'BRL':'symbol-narrow':'1.2-2' }}</td>
-            <td class="num">{{ it.subTotal | currency:'BRL':'symbol-narrow':'1.2-2' }}</td>
-          </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-
-    @if (resultado()?.observacaoResumo; as resumo) {
-    <div class="distribution-panel">
-      <div class="distribution-panel__header">
-        <div class="title">Distribuição</div>
-        <div class="hint">Aproveitamento calculado com base na melhor combinação encontrada.</div>
-      </div>
-
-      <div class="summary-tiles summary-tiles--featured">
-        <div class="tile highlight">
-          <div class="label">Produzido</div>
-          <div class="value">{{ resumo.produzido }}</div>
-          <div class="cost" *ngIf="resumo.custoUnitarioProduzido != null">
-            Custo unit.: {{ resumo.custoUnitarioProduzido | currency:'BRL':'symbol-narrow':'1.2-2' }}
-          </div>
-        </div>
-        <div class="tile accent">
-          <div class="label">Sobra útil</div>
-          <div class="value">{{ resumo.sobraUtil }}</div>
-          <div class="microcopy">Você pode aproveitar sem custo adicional.</div>
-        </div>
-        <div class="tile secondary">
-          <div class="label">Solicitado</div>
-          <div class="value">{{ resumo.solicitado }}</div>
-          <div class="cost" *ngIf="resumo.custoUnitarioSolicitado != null">
-            Custo unit.: {{ resumo.custoUnitarioSolicitado | currency:'BRL':'symbol-narrow':'1.2-2' }}
-          </div>
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <div class="folhas-bloco" *ngIf="resumo.distribuicao?.length">
-        <div class="folhas-head">
-          <div class="folhas-title">Folhas utilizadas</div>
-          <div class="folhas-hint">Melhor combinação encontrada automaticamente.</div>
-        </div>
-        <div class="distribution-list">
-          @for (d of resumo.distribuicao; track $index) {
-          <div class="row">
-            <div class="tag">{{ d.formato }} • {{ d.orientacao }}</div>
-            <div class="detail">{{ d.folhas }} folha(s) × {{ d.porFolha }}/folha</div>
+      @if (resultado()?.observacaoResumo; as resumo) {
+        <div class="result-block">
+          <div class="metric-grid">
+            <app-metric-card
+              label="Produzido"
+              [value]="resumo.produzido + ''"
+              [detail]="detalheCusto('Custo unit.', resumo.custoUnitarioProduzido)"
+              icon="stack-2"
+              accent="primary">
+            </app-metric-card>
+            <app-metric-card
+              label="Sobra útil"
+              [value]="resumo.sobraUtil + ''"
+              [detail]="detalheSobra(resumo.sobraUtil)"
+              icon="circle-check"
+              accent="warning">
+            </app-metric-card>
+            <app-metric-card
+              label="Solicitado"
+              [value]="resumo.solicitado + ''"
+              [detail]="detalheCusto('Custo unit.', resumo.custoUnitarioSolicitado)"
+              icon="clipboard-list"
+              accent="success">
+            </app-metric-card>
           </div>
-          }
         </div>
-      </div>
-    </div>
-    }
 
-    @if (!mobileViewport()) {
-    <div class="total-highlight">
-      <div class="label">Total estimado</div>
-      <div class="value">{{ total() | currency:'BRL':'symbol-narrow':'1.2-2' }}</div>
-    </div>
-    }
+        @if (resumo.distribuicao?.length) {
+          <div class="result-block">
+            <div class="block-title">Distribuição da produção</div>
+            <div class="distribution-list">
+              @for (d of resumo.distribuicao; track $index) {
+                <div class="distribution-row">
+                  <div>
+                    <strong>{{ d.formato }} · {{ d.orientacao | titlecase }}</strong>
+                    <span>{{ d.folhas }} folha(s) × {{ d.porFolha }} por folha</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      }
+
+      <div class="total-summary">
+        <span>Total</span>
+        <strong>{{ total() | currency:'BRL':'symbol-narrow':'1.2-2' }}</strong>
+      </div>
     }
   </ng-template>
 
   <ng-template #resultFooterTpl>
-    <div class="footer-left">
-      <div *ngIf="erroCalculo" class="error-text">{{ erroCalculo }}</div>
-      <div *ngIf="needsRecalcular() && !carregandoCalculo" class="muted small">
-        Atualizando o cálculo automaticamente…
+    <div class="result-actions">
+      <div class="result-actions__status">
+        @if (erroCalculo) {
+          <span class="error-text">{{ erroCalculo }}</span>
+        } @else if (needsRecalcular() && !carregandoCalculo) {
+          <span class="muted">Atualizando o cálculo automaticamente...</span>
+        }
+      </div>
+
+      <div class="result-actions__buttons">
+        <button mat-stroked-button type="button" (click)="limpar()" [disabled]="carregandoCalculo || carregandoAdd">
+          Limpar
+        </button>
+        <button
+          mat-flat-button
+          color="primary"
+          type="button"
+          (click)="adicionarAoPedido()"
+          [disabled]="!temResultado() || carregandoAdd || needsRecalcular() || carregandoCalculo">
+          {{ carregandoAdd ? 'Criando rascunho...' : 'Criar rascunho' }}
+        </button>
       </div>
     </div>
-
-    <div class="actions">
-      <button mat-stroked-button type="button" (click)="limpar()" [disabled]="carregandoCalculo || carregandoAdd">
-        Limpar
-      </button>
-      <button mat-flat-button color="primary" type="button" (click)="adicionarAoPedido()"
-        [disabled]="!temResultado() || carregandoAdd || needsRecalcular() || carregandoCalculo">
-        {{ carregandoAdd ? 'Criando rascunho...' : 'Criar rascunho →' }}
-      </button>
-    </div>
   </ng-template>
-</div>
+</app-page-card>

@@ -4,11 +4,13 @@ import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } 
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatCard } from '@angular/material/card';
 
 import { InputMultiSelectComponent } from 'src/app/components/inputs/input-multi-select/input-multi-select-component';
 import { InputNumericoComponent } from 'src/app/components/inputs/input-numerico/input-numerico.component';
 import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
+import { MetricCardComponent } from 'src/app/components/metric-card/metric-card.component';
+import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
 
 import { SmartCalcInitDataService } from './smart-calc-init-data.service';
@@ -44,8 +46,10 @@ type Acabamento = { id: string; nome: string };
     InputMultiSelectComponent,
     InputNumericoComponent,
     InputOptionsComponent,
+    MetricCardComponent,
+    PageCardComponent,
+    SectionCardComponent,
     MobileTotalBarComponent,
-    MatCard,
   ],
   templateUrl: './smart-calc.component.html',
   styleUrls: ['./smart-calc.component.scss'],
@@ -76,7 +80,6 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
   erroCalculo: string | null = null;
   carregandoAdd = false;
   needsRecalcular = signal(false);
-  animandoResultado = signal(false);
   mobileViewport = signal(false);
   resultadoMobileAberto = signal(false);
   private readonly recalculo$ = new Subject<void>();
@@ -199,7 +202,7 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
           this.toastr.warning('O SmartCalc está desabilitado nas configurações.', 'SmartCalc');
         }
 
-        // 4) carrega INIT (produtos + variações + materiais/acabamentos)
+        // 4) carrega INIT (produtos + formatos + materiais/acabamentos)
         this.carregarInit();
       },
       error: (err) => {
@@ -368,11 +371,10 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
         this.resultado.set(res ?? { itens: [], total: 0, observacao: undefined });
         this.needsRecalcular.set(false);
         this.carregandoCalculo = false;
-        this.dispararAnimacaoResultado();
       },
       error: (err) => {
         if (requestId !== this.calculoRequestId) return;
-        const msg = extrairMensagemErro(err, 'Não foi possível calcular. Tente novamente.');
+        const msg = this.mensagemErroCalculo(err);
         if (!automatico) {
           this.toastr.error(msg, 'SmartCalc', { timeOut: 6000, closeButton: true, progressBar: true });
         }
@@ -428,30 +430,63 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
           this.router.navigate(rascunho?.id ? ['/page/grafica/comercial-beta/rascunhos', rascunho.id] : ['/page/grafica/comercial-beta/rascunhos']);
         },
         error: (err) =>
-          this.toastr.error(err?.error?.message ?? err?.message ?? 'Falha ao criar rascunho.', 'SmartCalc'),
+          this.toastr.error(extrairMensagemErro(err, 'Falha ao criar rascunho.'), 'SmartCalc'),
       });
   }
 
-  limpar(): void {
-  this.calculoRequestId++;
-  this.carregandoCalculo = false;
-  this.focoInicialAplicado = false;
-  this.resultadoMobileAberto.set(false);
-  this.form.reset({
-    largura: null,
-    altura: null,
-    quantidade: null,
-    produtoId: null,
-    materialId: null,
-    acabamentosIds: [],
-    permiteRotacao: true,
-  });
+  private mensagemErroCalculo(err: unknown): string {
+    const msg = extrairMensagemErro(err, 'Não foi possível calcular. Tente novamente.');
+    const codigo = String((err as any)?.error?.message ?? (err as any)?.message ?? msg).toUpperCase();
+    if (codigo.includes('SMARTCALC_DIMENSOES_INVALIDAS')) {
+      return 'As medidas informadas não cabem nos formatos disponíveis para este produto.';
+    }
+    if (codigo.includes('SEM_PRECO_CONFIGURADO')) {
+      return 'Não há preço configurado para calcular este produto.';
+    }
+    if (codigo.includes('SMARTCALC_PRODUTO_NAO_HABILITADO')) {
+      return 'Este produto não está habilitado para uso no SmartCalc.';
+    }
+    return msg;
+  }
 
-  this.resetProdutoDependencias();
-}
+  limpar(): void {
+    this.calculoRequestId++;
+    this.carregandoCalculo = false;
+    this.focoInicialAplicado = false;
+    this.resultadoMobileAberto.set(false);
+    this.form.reset({
+      largura: null,
+      altura: null,
+      quantidade: null,
+      produtoId: null,
+      materialId: null,
+      acabamentosIds: [],
+      permiteRotacao: true,
+    });
+
+    this.resetProdutoDependencias();
+  }
 
   enviarParaPedido(): void {
     this.adicionarAoPedido();
+  }
+
+  detalheCusto(label: string, valor?: number | null): string {
+    return valor == null ? '' : `${label} ${this.formatarMoeda(valor)}`;
+  }
+
+  detalheSobra(sobra?: number | null): string {
+    const valor = Number(sobra || 0);
+    return valor > 0 ? `+${valor} sem alterar o custo` : 'Sem sobra útil';
+  }
+
+  private formatarMoeda(valor: number): string {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number(valor || 0));
   }
 
   fechar(): void {
@@ -503,11 +538,6 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
     return this.configAtiva && this.form.valid && !this.carregandoProdutos;
   }
 
-  private dispararAnimacaoResultado(): void {
-    this.animandoResultado.set(true);
-    setTimeout(() => this.animandoResultado.set(false), 260);
-  }
-
   private agendarFocoInicial(): void {
     if (this.focoInicialAplicado) return;
 
@@ -518,12 +548,6 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
       trigger.focus();
       this.focoInicialAplicado = true;
     }, 0);
-  }
-
-  focarMaterialSelector(): void {
-    const trigger = this.obterTriggerSelect('.smartcalc-page app-input-options:nth-of-type(2)');
-    trigger?.focus();
-    trigger?.click();
   }
 
   private obterTriggerSelect(seletorBase: string): HTMLElement | null {
@@ -570,11 +594,11 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
   }
 
   multiSelectCardMinHeight(): number {
-    return this.mobileViewport() ? 168 : 220;
+    return this.mobileViewport() ? 150 : 170;
   }
 
   multiSelectListHeight(): number {
-    return this.mobileViewport() ? 124 : 220;
+    return this.mobileViewport() ? 110 : 140;
   }
 
   private atualizarViewport(): void {
