@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { animate, state, style, transition, trigger } from '@angular/animations';
 import {
   AfterContentInit,
   Component,
@@ -21,6 +22,7 @@ import { DataTableCellDirective } from './data-table-cell.directive';
 import {
   DataTableAction,
   DataTableActionEvent,
+  DataTableActionsMode,
   DataTableColumn,
   DataTableEmptyState,
   DataTableFilter,
@@ -44,6 +46,13 @@ interface DataTableFilterChip {
   imports: [CommonModule, FormsModule, ReactiveFormsModule, MaterialModule, SectionCardComponent],
   templateUrl: './data-table.component.html',
   styleUrl: './data-table.component.scss',
+  animations: [
+    trigger('detailExpand', [
+      state('collapsed', style({ height: '0px', minHeight: '0', visibility: 'hidden' })),
+      state('expanded', style({ height: '*', visibility: 'visible' })),
+      transition('expanded <=> collapsed', animate('225ms cubic-bezier(0.4, 0.0, 0.2, 1)')),
+    ]),
+  ],
 })
 export class DataTableComponent<T = unknown>
   implements AfterContentInit, OnChanges, OnDestroy {
@@ -56,6 +65,10 @@ export class DataTableComponent<T = unknown>
   @Input() pagination: DataTablePagination | null = null;
   @Input() loading = false;
   @Input() actions: DataTableAction<T>[] = [];
+  @Input() actionsMode: DataTableActionsMode = 'menu';
+  @Input() expandable = false;
+  @Input() expandOnRowClick = false;
+  @Input() expandAriaLabel = 'Expandir linha';
   @Input() sort: DataTableSort = { active: '', direction: '' };
   @Input() emptyState: DataTableEmptyState = {};
   @Input() rowKey: keyof T | string | ((row: T) => unknown) = 'id';
@@ -76,6 +89,7 @@ export class DataTableComponent<T = unknown>
   templateMap = new Map<string, DataTableCellDirective<T>>();
   internalFilters: DataTableFilterState = {};
   filtersExpanded = false;
+  expandedRow: T | null = null;
 
   private readonly destroy$ = new Subject<void>();
   private searchChanges$ = new Subject<string>();
@@ -87,8 +101,11 @@ export class DataTableComponent<T = unknown>
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['columns'] || changes['actions']) {
-      this.displayedColumns = [...this.columns.map((column) => column.key), ...(this.actions.length ? ['__actions'] : [])];
+    if (changes['columns'] || changes['actions'] || changes['expandable']) {
+      this.displayedColumns = [
+        ...this.columns.map((column) => column.key),
+        ...(this.actions.length || this.expandable ? ['__actions'] : []),
+      ];
     }
 
     if (changes['filterState']) {
@@ -158,6 +175,22 @@ export class DataTableComponent<T = unknown>
     this.action.emit({ action: tableAction.id, row });
   }
 
+  toggleRow(row: T, event?: Event): void {
+    event?.stopPropagation();
+    if (!this.expandable) return;
+    this.expandedRow = this.isExpanded(row) ? null : row;
+  }
+
+  onRowClick(row: T): void {
+    if (this.expandOnRowClick) {
+      this.toggleRow(row);
+    }
+  }
+
+  isExpanded(row: T): boolean {
+    return this.expandedRow === row;
+  }
+
   visibleActions(row: T): DataTableAction<T>[] {
     return this.actions.filter((item) => item.visible ? item.visible(row) : true);
   }
@@ -168,6 +201,10 @@ export class DataTableComponent<T = unknown>
 
   cellTemplate(key: string): DataTableCellDirective<T> | undefined {
     return this.templateMap.get(key);
+  }
+
+  get expandedTemplate(): DataTableCellDirective<T> | undefined {
+    return this.templateMap.get('__expandedDetail');
   }
 
   cellValue(row: T, column: DataTableColumn<T>): unknown {

@@ -1,22 +1,42 @@
 <mat-card class="cardWithShadow status-grid-card">
   <mat-card-header class="status-grid-card__header">
     <div>
-      <mat-card-title>Status</mat-card-title>
-      <mat-card-subtitle>Pedidos por etapa</mat-card-subtitle>
+      <mat-card-title>Operação</mat-card-title>
+      <mat-card-subtitle>Pedidos e orçamentos por status</mat-card-subtitle>
     </div>
   </mat-card-header>
 
   <mat-card-content class="status-grid-card__content">
-    <div class="status-grid">
-      @for (item of stats; track item.status) {
-      <button
-        type="button"
-        class="status-grid__item status-grid__item--{{ item.tone }}"
-        (click)="abrirStatus(item.status)">
-        <strong class="status-grid__value">{{ item.quantidade }}</strong>
-        <span class="status-grid__label">{{ item.label }}</span>
-      </button>
-      }
+    <div class="status-grid-section">
+      <h4>Etapas dos pedidos</h4>
+      <div class="status-grid">
+        @for (item of pedidoStats; track item.status) {
+        <button
+          type="button"
+          class="status-grid__item status-grid__item--{{ item.tone }}"
+          (click)="abrirStatus(item)">
+          <strong class="status-grid__value">{{ item.quantidade }}</strong>
+          <span class="status-grid__label">{{ item.label }}</span>
+          <small class="status-grid__amount">{{ formatBRL(item.valor) }}</small>
+        </button>
+        }
+      </div>
+    </div>
+
+    <div class="status-grid-section">
+      <h4>Status dos orçamentos</h4>
+      <div class="status-grid">
+        @for (item of orcamentoStats; track item.status) {
+        <button
+          type="button"
+          class="status-grid__item status-grid__item--{{ item.tone }}"
+          (click)="abrirStatus(item)">
+          <strong class="status-grid__value">{{ item.quantidade }}</strong>
+          <span class="status-grid__label">{{ item.label }}</span>
+          <small class="status-grid__amount">{{ formatBRL(item.valor) }}</small>
+        </button>
+        }
+      </div>
     </div>
   </mat-card-content>
 </mat-card>

@@ -49,6 +49,13 @@
   line-height: 1;
 }
 
+.dashboard-mobile__summary-amount {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
 .dashboard-desktop {
   display: none;
 }
@@ -136,7 +143,7 @@
 
   .dashboard-desktop__hero-metric {
     display: grid;
-    gap: 8px;
+    gap: 6px;
     padding: 16px 16px;
     border-radius: 18px;
     background: rgba(255, 255, 255, 0.86);
@@ -170,6 +177,13 @@
     font-size: 1.4rem;
     font-weight: 800;
     line-height: 1.05;
+  }
+
+  .dashboard-desktop__hero-metric small {
+    color: #64748b;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1.15;
   }
 
   .dashboard-desktop__analytics,

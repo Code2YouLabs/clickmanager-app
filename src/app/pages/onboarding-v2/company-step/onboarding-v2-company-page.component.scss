@@ -28,26 +28,7 @@
 }
 
 .onboarding-page__section--empresa {
-  gap: 14px;
-}
-
-.onboarding-page__microcopy {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  align-self: flex-start;
-  padding: 10px 14px;
-  border-radius: 999px;
-  background: rgba(37, 99, 235, 0.08);
-  color: #2563eb;
-  font-size: 0.88rem;
-  font-weight: 600;
-}
-
-.onboarding-page__microcopy .mat-icon {
-  width: 18px;
-  height: 18px;
-  font-size: 18px;
+  gap: 16px;
 }
 
 .onboarding-v2-company__form {
@@ -72,12 +53,6 @@
 
   .onboarding-page {
     padding: 10px 10px 14px;
-  }
-
-  .onboarding-page__microcopy {
-    width: 100%;
-    justify-content: center;
-    font-size: 0.82rem;
   }
 
   .onboarding-v2-page__loading {

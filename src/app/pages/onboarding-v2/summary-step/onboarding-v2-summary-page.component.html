@@ -4,19 +4,19 @@
       <div class="w-100 position-relative rounded bg-white auth-card onboarding-page-card">
         <div class="auth-body onboarding-page">
           <app-onboarding-shell
-            tituloFluxo="Configuração inicial"
-            tituloEtapa="Resumo e finalização"
-            subtituloEtapa="Seu sistema já está pronto para começar."
-            progressoComplementar="último passo"
-            [passoAtual]="3"
-            [totalPassos]="3"
+            tituloFluxo=""
+            tituloEtapa=""
+            subtituloEtapa=""
+            progressoComplementar=""
+            [passoAtual]="2"
+            [totalPassos]="2"
             [progressoPercentual]="100"
             [showBack]="false"
             [showSkip]="false"
             [primaryLabel]="onboardingV2State.saving() ? 'Finalizando...' : 'Entrar no painel'"
             [primaryDisabled]="carregando || onboardingV2State.saving()"
             [primaryLoading]="onboardingV2State.saving()"
-            primaryHint="Você poderá ajustar produtos e configurações no painel."
+            primaryHint=""
             (principal)="submit()"
           >
             <ng-container *ngIf="carregando; else loadedTemplate">
@@ -24,81 +24,37 @@
             </ng-container>
 
             <ng-template #loadedTemplate>
-            <ng-container *ngIf="onboardingV2State.resumo(); else errorTemplate">
-              <section class="onboarding-page__section">
-                <div class="onboarding-v2-summary__grid">
+              <ng-container *ngIf="onboardingV2State.resumo(); else errorTemplate">
+                <section class="onboarding-page__section">
                   <app-section-card
-                    titulo="Empresa"
-                    [subtitulo]="onboardingV2State.resumo()?.empresa?.email || 'Base principal confirmada.'"
+                    titulo="Resumo"
+                    subtitulo=""
                     [divider]="true"
                   >
                     <div class="onboarding-v2-summary__list">
                       <div class="onboarding-v2-summary__item">
-                        <span>Nome</span>
+                        <span>Empresa</span>
                         <strong>{{ onboardingV2State.resumo()?.empresa?.nome }}</strong>
                       </div>
+
                       <div class="onboarding-v2-summary__item">
                         <span>Telefone</span>
                         <strong>{{ onboardingV2State.resumo()?.empresa?.telefone || 'Não informado' }}</strong>
                       </div>
+
+                      <div class="onboarding-v2-summary__item">
+                        <span>E-mail</span>
+                        <strong>{{ onboardingV2State.resumo()?.empresa?.email || 'Não informado' }}</strong>
+                      </div>
+
                       <div class="onboarding-v2-summary__item">
                         <span>Responsável</span>
                         <strong>{{ onboardingV2State.resumo()?.empresa?.responsavelNome || 'Não informado' }}</strong>
                       </div>
                     </div>
                   </app-section-card>
-
-                  <app-section-card
-                    titulo="Base inicial"
-                    subtitulo="Sua conta já está preparada com os produtos que você escolheu no passo anterior."
-                    [divider]="true"
-                  >
-                    <div class="onboarding-v2-summary__pill">
-                      {{ onboardingV2State.resumo()?.quantidadeProdutosCriados || 0 }} produto(s) configurado(s)
-                    </div>
-                  </app-section-card>
-                </div>
-
-                <app-section-card
-                  titulo="Produtos criados"
-                  subtitulo="Sua conta já nasce com uma base inicial pronta para uso."
-                  [divider]="true"
-                >
-                  <div class="onboarding-v2-summary__headline">
-                    <strong>{{ onboardingV2State.resumo()?.quantidadeProdutosCriados || 0 }}</strong>
-                    <span>produto(s) preparado(s)</span>
-                  </div>
-
-                  <div class="onboarding-v2-summary__products">
-                    <article class="onboarding-v2-summary__product" *ngFor="let produto of onboardingV2State.resumo()?.produtosCriados">
-                      <strong>{{ produto.nome }}</strong>
-                      <span *ngIf="produto.descricao">{{ produto.descricao }}</span>
-                    </article>
-                  </div>
-                </app-section-card>
-
-                <app-section-card
-                  titulo="Próximos passos"
-                  subtitulo="O sistema já destravou a etapa mais pesada. Daqui para frente é operação."
-                  [divider]="true"
-                >
-                  <div class="onboarding-v2-summary__next-list">
-                    <div class="onboarding-v2-summary__next-item">
-                      <mat-icon>check_circle</mat-icon>
-                      <span>Revise os produtos no cadastro técnico quando quiser personalizar sua base.</span>
-                    </div>
-                    <div class="onboarding-v2-summary__next-item">
-                      <mat-icon>check_circle</mat-icon>
-                      <span>Use o SmartCalc e o painel imediatamente com a estrutura inicial criada.</span>
-                    </div>
-                    <div class="onboarding-v2-summary__next-item">
-                      <mat-icon>check_circle</mat-icon>
-                      <span>Adicione mais materiais, formatos e preços conforme sua operação evoluir.</span>
-                    </div>
-                  </div>
-                </app-section-card>
-              </section>
-            </ng-container>
+                </section>
+              </ng-container>
             </ng-template>
           </app-onboarding-shell>
         </div>

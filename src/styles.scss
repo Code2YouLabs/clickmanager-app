@@ -67,6 +67,26 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
     padding-right: 8px;
   }
 
+.grafica-produto-wizard-panel {
+  width: min(1720px, calc(100vw - 104px)) !important;
+  max-width: 96vw !important;
+  height: min(900px, calc(100dvh - 96px)) !important;
+  max-height: 92vh !important;
+}
+
+.grafica-produto-wizard-panel .mat-mdc-dialog-panel,
+.grafica-produto-wizard-panel .mat-mdc-dialog-surface {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  padding-inline: 0;
+}
+
+.grafica-produto-wizard-panel .mat-mdc-dialog-content,
+.grafica-produto-wizard-panel .wizard-body {
+  max-height: none !important;
+}
+
 .dialog-mobile-fullscreen {
   max-width: 100vw !important;
   width: 100vw !important;

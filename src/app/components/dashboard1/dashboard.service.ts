@@ -43,6 +43,19 @@ export interface ReceitaResumoResponse {
     porForma: { forma: FormaPagamento; valor: number }[]; // donut
 }
 
+export interface GraficaDashboardIndicador {
+    codigo: string;
+    label: string;
+    quantidade: number;
+    valor: number;
+}
+
+export interface GraficaDashboardResumoResponse {
+    indicadores: GraficaDashboardIndicador[];
+    pedidoStatus: GraficaDashboardIndicador[];
+    orcamentoStatus: GraficaDashboardIndicador[];
+}
+
 export interface DashboardComparativoResponse {
     empresa: {
         nome: string;
@@ -68,8 +81,9 @@ export interface DashboardComparativoResponse {
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
 
-    private readonly endpointComparativo = 'api/dashboard/comparativo';
-    private readonly endpointReceita = 'api/dashboard/receita-resumo';
+    private readonly endpointComparativo = 'api/grafica/dashboard/comparativo';
+    private readonly endpointReceita = 'api/grafica/dashboard/receita-resumo';
+    private readonly endpointResumo = 'api/grafica/dashboard/resumo';
 
     constructor(private api: ApiService) { }
 
@@ -99,6 +113,10 @@ export class DashboardService {
 
     obterReceitaResumo(req: ReceitaResumoRequest): Observable<ReceitaResumoResponse> {
         return this.api.post<ReceitaResumoResponse>(this.endpointReceita, req);
+    }
+
+    obterResumoGrafica(): Observable<GraficaDashboardResumoResponse> {
+        return this.api.get<GraficaDashboardResumoResponse>(this.endpointResumo);
     }
 
     private nomeMes(index: number): string {

@@ -57,6 +57,8 @@ export interface DataTableActionEvent<T> {
   row: T;
 }
 
+export type DataTableActionsMode = 'menu' | 'buttons';
+
 export interface DataTableEmptyState {
   title?: string;
   description?: string;

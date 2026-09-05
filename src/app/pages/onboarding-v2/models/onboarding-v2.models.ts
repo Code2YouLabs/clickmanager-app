@@ -127,14 +127,14 @@ export type OnboardingV2ProductsPayload = {
   produtoModeloIds: number[];
 };
 
-export const ONBOARDING_V2_STEP_ORDER: OnboardingStep[] = ['company', 'products', 'summary'];
+export const ONBOARDING_V2_STEP_ORDER: OnboardingStep[] = ['company', 'summary'];
 
 export function resolveOnboardingV2Route(step: OnboardingStep): string {
   switch (step) {
     case 'company':
       return '/onboarding-v2/empresa';
     case 'products':
-      return '/onboarding-v2/produtos';
+      return '/onboarding-v2/resumo';
     case 'summary':
       return '/onboarding-v2/resumo';
   }
@@ -143,12 +143,8 @@ export function resolveOnboardingV2Route(step: OnboardingStep): string {
 export function resolveOnboardingV2StepFromProgress(
   progress: Pick<OnboardingProgress, 'status' | 'currentStep' | 'onboardingConcluido'>
 ): OnboardingStep {
-  if (progress.status === 'products_completed') {
+  if (progress.status === 'products_completed' || progress.status === 'company_completed') {
     return 'summary';
-  }
-
-  if (progress.status === 'company_completed') {
-    return 'products';
   }
 
   return progress.currentStep;

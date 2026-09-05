@@ -53,6 +53,15 @@
   background: rgba(248, 250, 252, 0.72);
 }
 
+.deposito-galeria__panel--clickable {
+  cursor: pointer;
+}
+
+.deposito-galeria__panel:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.18);
+  outline-offset: 2px;
+}
+
 .deposito-galeria__panel--dragging {
   border-color: rgba(37, 99, 235, 0.85);
   background: rgba(239, 246, 255, 0.92);
@@ -60,6 +69,7 @@
 }
 
 .deposito-galeria__trigger {
+  border: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -79,7 +89,7 @@
   cursor: not-allowed;
 }
 
-.deposito-galeria__trigger input {
+.deposito-galeria__input {
   display: none;
 }
 

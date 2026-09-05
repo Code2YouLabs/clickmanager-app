@@ -87,6 +87,14 @@ function encontrarItem(items: NavItem[], displayName: string): NavItem | undefin
   return undefined;
 }
 
+function itensDaSecao(items: NavItem[], navCap: string): NavItem[] {
+  const start = items.findIndex((item) => item.navCap === navCap);
+  if (start < 0) return [];
+  const endOffset = items.slice(start + 1).findIndex((item) => !!item.navCap);
+  const end = endOffset < 0 ? items.length : start + 1 + endOffset;
+  return items.slice(start + 1, end).filter((item) => !item.navCap);
+}
+
 function labels(items: NavItem[]): string[] {
   return items.map((item) => item.navCap || item.displayName || '');
 }
@@ -95,29 +103,36 @@ describe('menu principal do ClickManager', () => {
   it('padroniza o menu da gráfica por função e sem Gerenciar Produtos', () => {
     const menu = filtrar(TipoEmpresa.GRAFICA);
     const catalogo = itemPorNome(menu, 'Catálogo');
+    const comercial = itensDaSecao(menu, 'Comercial');
 
     expect(labels(menu)).toContain('Operação');
+    expect(labels(menu)).toContain('Comercial');
     expect(labels(menu)).toContain('Gestão');
     expect(labels(menu)).toContain('Presença Digital');
     expect(labels(menu)).toContain('Configurações');
     expect(labels(menu)).toContain('Ajuda');
-    expect(itemPorNome(menu, 'SmartCalc')?.route).toBe('/smartcalc');
-    expect(itemPorNome(menu, 'Pedidos')?.route).toBe('/page/pedido');
+    expect(itemPorNome(menu, 'SmartCalc')).toBeFalsy();
+    expect(menu.some((item) => item.displayName === 'Pedidos' && item.route === '/page/pedido')).toBeFalse();
     expect(itemPorNome(menu, 'Clientes')?.route).toBe('/page/cliente');
     expect(labels(menu)).not.toContain('Gerenciar Produtos');
     expect(labels(menu)).not.toContain('Gerenciar Pedidos');
     expect(labels(menu)).not.toContain('Gerenciar Clientes');
-    expect(filhos(catalogo)).toEqual(['Comercial Beta', 'Produtos', 'Categorias', 'Materiais', 'Formatos', 'Cores', 'Acabamentos', 'Serviços']);
-    expect(filhos(encontrarItem(menu, 'Comercial Beta'))).toEqual(['Rascunhos', 'Orçamentos', 'Pedidos']);
-    expect(itemPorNome(menu, 'Gestão de Pessoas')).toBeTruthy();
+    expect(comercial.map((item) => item.displayName)).toEqual(['Pedidos', 'Orçamentos']);
+    expect(comercial.map((item) => item.route)).toEqual([
+      '/page/grafica/comercial-beta/pedidos',
+      '/page/grafica/comercial-beta/orcamentos',
+    ]);
+    expect(filhos(catalogo)).toEqual(['Produtos', 'Categorias', 'Materiais', 'Formatos', 'Cores', 'Acabamentos', 'Serviços']);
+    expect(itemPorNome(menu, 'Gestão de Pessoas')).toBeFalsy();
     expect(itemPorNome(menu, 'Meu Site')).toBeTruthy();
   });
 
-  it('mostra Comercial Beta para proprietário de gráfica mesmo sem permissões no perfil', () => {
+  it('mostra Comercial para proprietário de gráfica mesmo sem permissões no perfil', () => {
     const menu = filtrar(TipoEmpresa.GRAFICA, [], 'CATALOGO_NOVO', ['LINKS', 'CALCULADORA_MATERIAIS'], true);
+    const comercial = itensDaSecao(menu, 'Comercial');
 
-    expect(encontrarItem(menu, 'Comercial Beta')).toBeTruthy();
-    expect(filhos(encontrarItem(menu, 'Comercial Beta'))).toEqual(['Rascunhos', 'Orçamentos', 'Pedidos']);
+    expect(labels(menu)).toContain('Comercial');
+    expect(comercial.map((item) => item.displayName)).toEqual(['Pedidos', 'Orçamentos']);
   });
 
   it('mostra Catálogo do depósito novo com produtos, categorias e marcas', () => {
@@ -147,15 +162,13 @@ describe('menu principal do ClickManager', () => {
     ]);
   });
 
-  it('mantém apenas destinos permitidos no Comercial Beta para usuário comum', () => {
+  it('mantém apenas destinos permitidos em Comercial para usuário comum', () => {
     const menu = filtrar(TipoEmpresa.GRAFICA, ['PEDIDOS_VER'], 'CATALOGO_NOVO', [], false);
-    const catalogo = itemPorNome(menu, 'Catálogo');
-    const comercialBeta = encontrarItem(menu, 'Comercial Beta');
+    const comercial = itensDaSecao(menu, 'Comercial');
 
     expect(itemPorNome(menu, 'Pedidos')).toBeTruthy();
-    expect(catalogo).toBeTruthy();
-    expect(filhos(catalogo)).toEqual(['Comercial Beta']);
-    expect(filhos(comercialBeta)).toEqual(['Pedidos']);
+    expect(comercial.map((item) => item.displayName)).toEqual(['Pedidos']);
+    expect(itemPorNome(menu, 'Catálogo')).toBeFalsy();
     expect(encontrarItem(menu, 'Produtos')).toBeFalsy();
     expect(itemPorNome(menu, 'Usuários')).toBeFalsy();
   });

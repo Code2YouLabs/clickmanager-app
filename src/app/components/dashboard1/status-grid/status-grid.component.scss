@@ -4,7 +4,23 @@
 }
 
 .status-grid-card__content {
+  display: grid;
+  gap: 18px;
   padding-top: 8px;
+}
+
+.status-grid-section {
+  display: grid;
+  gap: 10px;
+}
+
+.status-grid-section h4 {
+  margin: 0;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .status-grid {
@@ -14,7 +30,7 @@
 }
 
 .status-grid__item {
-  min-height: 92px;
+  min-height: 104px;
   width: 100%;
   padding: 14px 12px;
   border-radius: 18px;
@@ -43,6 +59,13 @@
   color: #475569;
   font-size: 0.8rem;
   font-weight: 600;
+  line-height: 1.15;
+}
+
+.status-grid__amount {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
   line-height: 1.15;
 }
 
@@ -92,7 +115,7 @@
   }
 
   .status-grid__item {
-    min-height: 86px;
+    min-height: 96px;
     padding: 13px 11px;
     border-radius: 16px;
   }
@@ -123,6 +146,7 @@
   }
 
   .status-grid-card__content {
+    gap: 16px;
     padding-top: 4px;
   }
 
@@ -132,7 +156,7 @@
 
   .status-grid__item {
     position: relative;
-    min-height: 76px;
+    min-height: 82px;
     padding: 12px 12px;
     border-radius: 16px;
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.96) 100%);
@@ -156,6 +180,10 @@
 
   .status-grid__label {
     font-size: 0.76rem;
+  }
+
+  .status-grid__amount {
+    font-size: 0.7rem;
   }
 
   .status-grid__item--warning {

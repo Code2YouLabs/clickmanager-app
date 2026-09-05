@@ -73,6 +73,16 @@ export class DepositoImagemGaleriaComponent implements OnChanges {
     }
   }
 
+  abrirSeletorArquivos(input: HTMLInputElement, event?: Event): void {
+    event?.preventDefault();
+    event?.stopPropagation();
+    if (this.carregando || this.limiteAtingido) {
+      return;
+    }
+
+    input.click();
+  }
+
   onDragOver(event: DragEvent): void {
     event.preventDefault();
     event.stopPropagation();

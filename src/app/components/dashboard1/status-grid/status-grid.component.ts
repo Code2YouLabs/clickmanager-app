@@ -4,13 +4,15 @@ import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { MaterialModule } from '../../../material.module';
-import { DashboardComparativoResponse, DashboardService } from '../dashboard.service';
+import { DashboardService, GraficaDashboardIndicador } from '../dashboard.service';
 
 interface StatusGridItem {
   status: string;
   label: string;
   quantidade: number;
+  valor: number;
   tone: 'neutral' | 'warning' | 'info' | 'primary' | 'success' | 'danger';
+  tipo: 'pedido' | 'orcamento';
 }
 
 @Component({
@@ -21,18 +23,25 @@ interface StatusGridItem {
   styleUrls: ['./status-grid.component.scss'],
 })
 export class AppStatusGridComponent implements OnInit {
-  readonly statusOrder = [
-    'RASCUNHO',
-    'PENDENTE',
-    'ORCAMENTO',
+  pedidoStats: StatusGridItem[] = [];
+  orcamentoStats: StatusGridItem[] = [];
+
+  private readonly pedidoStatusOrder = [
     'AGUARDANDO_PAGAMENTO',
+    'PENDENTE',
     'EM_PRODUCAO',
     'PRONTO',
     'ENTREGUE',
-    'CANCELADO',
   ];
 
-  stats: StatusGridItem[] = [];
+  private readonly orcamentoStatusOrder = [
+    'ABERTO',
+    'ENVIADO',
+    'APROVADO',
+    'RECUSADO',
+    'VENCIDO',
+    'CANCELADO',
+  ];
 
   constructor(
     private dashboardService: DashboardService,
@@ -43,55 +52,98 @@ export class AppStatusGridComponent implements OnInit {
     await this.carregarStatus();
   }
 
-  abrirStatus(status: string): void {
-    this.router.navigate(['/page/pedido'], { queryParams: { status } });
+  abrirStatus(item: StatusGridItem): void {
+    if (item.tipo === 'orcamento') {
+      this.router.navigate(['/page/grafica/comercial-beta/orcamentos'], { queryParams: { status: item.status } });
+      return;
+    }
+    this.router.navigate(['/page/grafica/comercial-beta/pedidos'], { queryParams: { status: item.status } });
   }
 
   private async carregarStatus(): Promise<void> {
-    const agora = new Date();
-    const resposta: DashboardComparativoResponse = await firstValueFrom(
-      this.dashboardService.obterComparativoSimples(
-        1,
-        agora.getFullYear(),
-        agora.getMonth(),
-        Math.max(0, agora.getMonth() - 1),
-        'quantidade'
-      )
-    );
+    const resposta = await firstValueFrom(this.dashboardService.obterResumoGrafica());
+    const pedidos = new Map(resposta.pedidoStatus.map((item) => [item.codigo, item]));
+    const orcamentos = new Map(resposta.orcamentoStatus.map((item) => [item.codigo, item]));
 
-    const quantidades = new Map(resposta.kpis.map((item) => [item.status, Number(item.quantidade || 0)]));
-
-    this.stats = this.statusOrder.map((status) => ({
+    this.pedidoStats = this.pedidoStatusOrder.map((status) => this.toStatusGridItem(
+      pedidos.get(status),
       status,
-      label: this.mapLabel(status),
-      quantidade: quantidades.get(status) ?? 0,
-      tone: this.mapTone(status),
-    }));
+      this.mapPedidoLabel(status),
+      this.mapPedidoTone(status),
+      'pedido',
+    ));
+
+    this.orcamentoStats = this.orcamentoStatusOrder.map((status) => this.toStatusGridItem(
+      orcamentos.get(status),
+      status,
+      this.mapOrcamentoLabel(status),
+      this.mapOrcamentoTone(status),
+      'orcamento',
+    ));
   }
 
-  private mapLabel(status: string): string {
+  formatBRL(valor: number): string {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0);
+  }
+
+  private toStatusGridItem(
+    indicador: GraficaDashboardIndicador | undefined,
+    status: string,
+    label: string,
+    tone: StatusGridItem['tone'],
+    tipo: StatusGridItem['tipo'],
+  ): StatusGridItem {
+    return {
+      status,
+      label: indicador?.label || label,
+      quantidade: indicador?.quantidade || 0,
+      valor: indicador?.valor || 0,
+      tone,
+      tipo,
+    };
+  }
+
+  private mapPedidoLabel(status: string): string {
     const labels: Record<string, string> = {
-      RASCUNHO: 'Rascunho',
-      PENDENTE: 'Pendente',
-      ORCAMENTO: 'Orçamento',
       AGUARDANDO_PAGAMENTO: 'Pagamento',
+      PENDENTE: 'Pendente',
       EM_PRODUCAO: 'Produção',
       PRONTO: 'Pronto',
       ENTREGUE: 'Entregue',
+    };
+    return labels[status] ?? status;
+  }
+
+  private mapOrcamentoLabel(status: string): string {
+    const labels: Record<string, string> = {
+      ABERTO: 'Aberto',
+      ENVIADO: 'Enviado',
+      APROVADO: 'Aprovado',
+      RECUSADO: 'Recusado',
+      VENCIDO: 'Vencido',
       CANCELADO: 'Cancelado',
     };
     return labels[status] ?? status;
   }
 
-  private mapTone(status: string): StatusGridItem['tone'] {
+  private mapPedidoTone(status: string): StatusGridItem['tone'] {
     const tones: Record<string, StatusGridItem['tone']> = {
-      RASCUNHO: 'neutral',
-      PENDENTE: 'warning',
-      ORCAMENTO: 'info',
       AGUARDANDO_PAGAMENTO: 'warning',
+      PENDENTE: 'neutral',
       EM_PRODUCAO: 'primary',
       PRONTO: 'success',
       ENTREGUE: 'success',
+    };
+    return tones[status] ?? 'neutral';
+  }
+
+  private mapOrcamentoTone(status: string): StatusGridItem['tone'] {
+    const tones: Record<string, StatusGridItem['tone']> = {
+      ABERTO: 'info',
+      ENVIADO: 'primary',
+      APROVADO: 'success',
+      RECUSADO: 'danger',
+      VENCIDO: 'warning',
       CANCELADO: 'danger',
     };
     return tones[status] ?? 'neutral';

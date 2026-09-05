@@ -1,75 +1,93 @@
-<div class="blank-layout-container justify-content-center align-items-center">
+<div class="blank-layout-container justify-content-center align-items-center login-page">
   <div class="position-relative row w-100 h-100vh bg-gredient justify-content-center">
-    <div class="col-lg-4 d-flex align-items-center">
+    <div class="col-12 col-sm-10 col-md-7 col-lg-4 d-flex align-items-center justify-content-center">
       <mat-card class="cardWithShadow boxed-auth">
-        <mat-card-content>
-          <div class="text-center">
+        <mat-card-content class="login-body">
+          <div class="text-center login-branding">
             <app-branding></app-branding>
           </div>
 
-          <div class="login-hero text-center m-t-24">
-            <span class="login-kicker">Bem-vindo de volta 👋</span>
-            <h1 class="login-title m-t-12">Acesse sua conta</h1>
-            <p class="login-subtitle m-t-12">Gerencie seus pedidos e orçamentos em um só lugar</p>
+          <div class="login-social-row">
+            <button
+              type="button"
+              mat-stroked-button
+              class="google-login-btn"
+              [disabled]="submitting || googleLoading"
+              (click)="handleGoogleClick()">
+              <span class="google-login-btn__icon">
+                <img src="assets/images/svgs/google-icon.svg" alt="" width="20" height="20" />
+              </span>
+              {{ googleLoading ? 'Entrando...' : 'Google' }}
+            </button>
           </div>
 
-          <form class="m-t-24 login-form" [formGroup]="form" (ngSubmit)="submit()">
-            <mat-label class="mat-subtitle-2 f-s-14 f-w-600 m-b-12 d-block">E-mail</mat-label>
+          <div class="login-divider m-t-30"><span>ou</span></div>
+
+          <form class="m-t-30 login-form" [formGroup]="form" (ngSubmit)="submit()">
+            <mat-label class="f-s-14 f-w-600 m-b-12 d-block">E-mail</mat-label>
             <mat-form-field appearance="outline" class="w-100" color="primary">
               <input
                 matInput
                 type="email"
                 inputmode="email"
                 autocomplete="email"
-                placeholder="seuemail@empresa.com"
                 formControlName="uname" />
               @if(f['uname'].touched && f['uname'].invalid) {
-              <mat-hint class="m-b-16 error-msg">
-                @if(f['uname'].errors && f['uname'].errors['required']) {
-                <div class="text-error">E-mail é obrigatório.</div>
-                } @if(f['uname'].errors && f['uname'].errors['minlength']) {
-                <div class="text-error">Informe um e-mail válido.</div>
-                } @if(f['uname'].errors && f['uname'].errors['email']) {
-                <div class="text-error">Informe um e-mail válido.</div>
-                }
-              </mat-hint>
+                <mat-hint class="m-b-16 error-msg">
+                  @if(f['uname'].errors && f['uname'].errors['required']) {
+                    <div class="text-error">E-mail é obrigatório.</div>
+                  } @if(f['uname'].errors && f['uname'].errors['email']) {
+                    <div class="text-error">Informe um e-mail válido.</div>
+                  }
+                </mat-hint>
               }
             </mat-form-field>
 
-            <mat-label class="mat-subtitle-2 f-s-14 f-w-600 m-b-12 d-block">Senha</mat-label>
+            <mat-label class="f-s-14 f-w-600 m-b-12 d-block">Senha</mat-label>
             <mat-form-field appearance="outline" class="w-100" color="primary">
               <input
                 matInput
-                type="password"
+                [type]="showPassword ? 'text' : 'password'"
                 autocomplete="current-password"
-                placeholder="Digite sua senha"
                 formControlName="password" />
+              <button
+                type="button"
+                mat-icon-button
+                matSuffix
+                [attr.aria-label]="showPassword ? 'Ocultar senha' : 'Mostrar senha'"
+                (click)="showPassword = !showPassword">
+                <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
               @if(f['password'].touched && f['password'].invalid) {
-              <mat-hint class="m-b-16 error-msg">
-                @if(f['password'].errors && f['password'].errors['required']) {
-                <div class="text-error">Senha é obrigatória.</div>
-                }
-              </mat-hint>
+                <mat-hint class="m-b-16 error-msg">
+                  @if(f['password'].errors && f['password'].errors['required']) {
+                    <div class="text-error">Senha é obrigatória.</div>
+                  }
+                </mat-hint>
               }
             </mat-form-field>
 
             <div class="d-flex align-items-center m-b-16 login-options">
               <mat-checkbox color="primary" formControlName="lembrar">Manter conectado</mat-checkbox>
-              <a [routerLink]="['/authentication/recuperar-senha']"
+              <a
+                [routerLink]="['/authentication/recuperar-senha']"
                 class="text-primary f-w-600 text-decoration-none m-l-auto f-s-14">
-                Esqueceu a senha?</a>
+                Esqueceu a senha?
+              </a>
             </div>
 
-            <button mat-flat-button color="primary" class="w-100 login-submit-btn" [disabled]="!form.valid">
-              Entrar na conta
+            <button mat-flat-button color="primary" class="w-100 login-submit-btn" [disabled]="!form.valid || submitting">
+              {{ submitting ? 'Entrando...' : 'Entrar na conta' }}
             </button>
           </form>
 
-          <span class="d-block f-w-500 text-center m-t-24 f-s-14 login-register-copy">
+          <span class="d-block f-w-500 text-center m-t-24 login-register-copy">
             Ainda não tem conta?
-            <a (click)="abrirCriacaoConta()"
+            <a
+              (click)="abrirCriacaoConta()"
               class="text-decoration-none text-primary f-w-600 f-s-14">
-              Criar conta grátis</a>
+              Criar conta grátis
+            </a>
           </span>
         </mat-card-content>
       </mat-card>

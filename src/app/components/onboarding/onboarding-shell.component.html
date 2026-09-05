@@ -4,7 +4,7 @@
       <button mat-icon-button type="button" *ngIf="showBack" (click)="voltar.emit()" aria-label="Voltar">
         <mat-icon>arrow_back</mat-icon>
       </button>
-      <h1 class="onboarding-shell__mobile-title">{{ tituloEtapa }}</h1>
+      <h1 class="onboarding-shell__mobile-title" *ngIf="tituloEtapa">{{ tituloEtapa }}</h1>
       <div class="onboarding-shell__mobile-actions">
         <strong class="onboarding-shell__mobile-progress">{{ progressoPercentual | number: '1.0-0' }}%</strong>
         <button
@@ -22,8 +22,8 @@
     <div class="onboarding-shell__brand">
       <img src="./assets/images/logos/logoClickManager.png" alt="ClickManager" />
       <div>
-        <span class="onboarding-shell__eyebrow">{{ tituloFluxo }}</span>
-        <h1>{{ tituloEtapa }}</h1>
+        <span class="onboarding-shell__eyebrow" *ngIf="tituloFluxo">{{ tituloFluxo }}</span>
+        <h1 *ngIf="tituloEtapa">{{ tituloEtapa }}</h1>
         <p *ngIf="subtituloEtapa">{{ subtituloEtapa }}</p>
       </div>
     </div>

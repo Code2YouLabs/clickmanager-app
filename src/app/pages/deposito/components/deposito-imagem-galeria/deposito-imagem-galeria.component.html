@@ -14,17 +14,29 @@
       </span>
       }
 
-      <label class="deposito-galeria__trigger" [class.deposito-galeria__trigger--disabled]="carregando || limiteAtingido">
-        <input type="file" multiple [disabled]="carregando || limiteAtingido" (change)="onFilesSelected($event)" />
+      <input #fileInput class="deposito-galeria__input" type="file" multiple [disabled]="carregando || limiteAtingido" (change)="onFilesSelected($event)" />
+      <button
+        class="deposito-galeria__trigger"
+        type="button"
+        [class.deposito-galeria__trigger--disabled]="carregando || limiteAtingido"
+        [disabled]="carregando || limiteAtingido"
+        (click)="abrirSeletorArquivos(fileInput, $event)">
         <mat-icon>add_photo_alternate</mat-icon>
         <span>{{ gerenciarPrincipal ? 'Selecionar imagens' : 'Adicionar imagens' }}</span>
-      </label>
+      </button>
     </div>
   </div>
 
   <div
     class="deposito-galeria__panel"
     [class.deposito-galeria__panel--dragging]="arrastandoArquivos"
+    [class.deposito-galeria__panel--clickable]="!carregando && !limiteAtingido"
+    role="button"
+    tabindex="0"
+    [attr.aria-disabled]="carregando || limiteAtingido"
+    (click)="abrirSeletorArquivos(fileInput, $event)"
+    (keydown.enter)="abrirSeletorArquivos(fileInput, $event)"
+    (keydown.space)="abrirSeletorArquivos(fileInput, $event)"
     (dragover)="onDragOver($event)"
     (dragleave)="onDragLeave($event)"
     (drop)="onDrop($event)">
@@ -36,7 +48,7 @@
     } @else {
     <div class="deposito-galeria__grid">
       @for (imagem of imagensParaExibicao; track trackByImagem($index, imagem)) {
-      <article class="deposito-galeria__card" [class.deposito-galeria__card--primary]="isImagemPrincipal(imagem)">
+      <article class="deposito-galeria__card" [class.deposito-galeria__card--primary]="isImagemPrincipal(imagem)" (click)="$event.stopPropagation()">
         <div class="deposito-galeria__preview">
           <img [src]="getImagemSrc(imagem)" [alt]="imagem.altText || imagem.titulo || 'Imagem da galeria'" loading="lazy" decoding="async" />
           @if (isImagemPrincipal(imagem)) {

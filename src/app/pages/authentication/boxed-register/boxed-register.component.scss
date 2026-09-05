@@ -1,22 +1,32 @@
 .register-page {
-  padding: 32px 16px;
+  min-height: 100vh;
+  padding: 24px 12px;
 }
 
 .register-card {
-  max-width: 760px;
-  margin: 0 auto;
-  border: 1px solid rgba(0, 123, 255, 0.08);
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  width: 100%;
+  max-width: 510px;
+  border-radius: 16px;
 }
 
 .register-body {
-  padding: 40px 40px 32px;
+  padding: 32px;
+}
+
+.register-branding {
+  line-height: 0;
 }
 
 :host ::ng-deep {
-  .register-body app-branding {
+  .register-branding app-branding {
     display: inline-flex;
     justify-content: center;
+  }
+
+  .register-branding app-branding img,
+  .register-branding app-branding svg {
+    max-height: 42px;
+    width: auto;
   }
 
   .register-body .mat-mdc-form-field {
@@ -24,202 +34,109 @@
   }
 
   .register-body .mat-mdc-text-field-wrapper {
-    min-height: 56px;
-    border-radius: 16px;
+    border-radius: 18px;
+    min-height: 44px;
   }
 
   .register-body .mat-mdc-form-field-infix {
-    min-height: 56px;
-    padding-top: 16px;
-    padding-bottom: 16px;
+    min-height: 44px;
+    padding-top: 10px;
+    padding-bottom: 10px;
   }
 
-  .register-body .mdc-text-field--focused .mdc-notched-outline__leading,
-  .register-body .mdc-text-field--focused .mdc-notched-outline__notch,
-  .register-body .mdc-text-field--focused .mdc-notched-outline__trailing {
-    border-width: 2px;
+  .register-body .mat-mdc-form-field-subscript-wrapper {
+    min-height: 22px;
   }
 
-  .register-body .mat-mdc-form-field.mat-focused .mat-mdc-text-field-wrapper {
-    box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.08);
-  }
-
-  .password-field .mat-mdc-form-field-subscript-wrapper {
-    margin-top: 2px;
+  .register-body .mat-mdc-icon-button {
+    width: 42px;
+    height: 42px;
+    padding: 8px;
   }
 }
 
-.register-branding {
-  line-height: 0;
+.register-social-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  margin-top: 28px;
 }
 
-.register-hero {
-  max-width: 640px;
-  margin: 0 auto;
+.google-register-btn {
+  width: 100%;
+  min-height: 46px;
+  border-radius: 24px;
+  border-color: #1e9df1;
+  color: #168ee0;
+  background: #fff;
+  font-size: 16px;
+  font-weight: 700;
 }
 
-.register-kicker {
+.google-register-btn:not(:disabled):hover {
+  border-color: #0d6efd;
+  background: #f7fbff;
+}
+
+.google-register-btn__icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 16px;
-  border-radius: 999px;
-  background: rgba(0, 123, 255, 0.08);
-  color: #0d6efd;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  margin-right: 10px;
 }
 
-.register-title {
-  margin: 0;
-  color: #17233c;
-  max-width: 560px;
-  margin-left: auto;
-  margin-right: auto;
-  font-size: clamp(32px, 4.2vw, 42px);
-  font-weight: 800;
-  line-height: 1.08;
-  letter-spacing: -0.03em;
-  text-wrap: balance;
-}
-
-.register-title-break {
+.google-register-btn__icon img {
   display: block;
 }
 
-.register-subtitle {
-  max-width: 520px;
-  margin-left: auto;
-  margin-right: auto;
-  margin-bottom: 0;
-  color: #5d6b87;
-  font-size: 18px;
-  font-weight: 500;
-  line-height: 1.5;
-}
-
-.register-benefits {
+.register-divider {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-}
-
-.register-benefits-inline {
-  display: none;
-  margin-bottom: 0;
-  color: #5d6b87;
-  font-size: 13px;
+  align-items: center;
+  gap: 24px;
+  color: #17233c;
+  font-size: 14px;
   font-weight: 600;
-  line-height: 1.4;
+  white-space: nowrap;
 }
 
-.register-benefit-chip {
+.register-divider::before,
+.register-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e7edf5;
+}
+
+.register-divider span {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 14px;
-  border-radius: 999px;
-  background: #f8fbff;
-  border: 1px solid rgba(0, 123, 255, 0.12);
-  color: #42526b;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.register-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.register-section {
-  padding: 28px 28px 20px;
-  border-radius: 24px;
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0.82) 0%, #ffffff 100%);
-  border: 1px solid rgba(17, 24, 39, 0.06);
-}
-
-.register-section-header {
-  margin-bottom: 18px;
-}
-
-.register-section-title {
-  margin: 0;
-  color: #17233c;
-  font-size: 22px;
-  font-weight: 800;
-}
-
-.register-section-copy {
-  margin: 8px 0 0;
-  color: #6b7a90;
-  font-size: 15px;
-  line-height: 1.45;
-}
-
-.password-field {
-  height: 100%;
-}
-
-.password-label-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.password-strength {
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.strength-basic {
-  color: #c27d00;
-}
-
-.strength-good {
-  color: #0d6efd;
-}
-
-.strength-strong {
-  color: #0f9d58;
-}
-
-.register-cta {
-  text-align: center;
 }
 
 .register-submit-btn {
-  min-height: 56px;
-  border-radius: 16px;
-  font-size: 17px;
+  min-height: 48px;
+  border-radius: 24px;
+  font-size: 16px;
   font-weight: 700;
-  box-shadow: 0 12px 24px rgba(13, 110, 253, 0.18);
-}
-
-.register-submit-btn:disabled {
-  box-shadow: none;
 }
 
 .register-login {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .register-login-copy {
-  color: #6b7a90;
-  font-size: 15px;
+  color: #17233c;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .register-login-link {
   color: #0d6efd;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   text-decoration: none;
 }
@@ -229,182 +146,24 @@
   text-decoration: underline;
 }
 
-.text-success {
-  color: #0f9d58;
-}
-
-@media (max-width: 767px) {
+@media (max-width: 575px) {
   .register-page {
-    padding: 12px 10px;
+    padding: 12px;
   }
 
   .register-body {
-    padding: 12px 12px 16px;
+    padding: 24px 18px;
   }
 
   :host ::ng-deep {
-    .register-body app-branding img,
-    .register-body app-branding svg {
-      max-height: 30px;
-      width: auto;
-    }
-
-    .register-body .mat-mdc-form-field-infix {
-      min-height: 52px;
-      padding-top: 14px;
-      padding-bottom: 14px;
-    }
-
-    .register-body .mat-mdc-text-field-wrapper {
-      min-height: 52px;
-      border-radius: 14px;
-    }
-
-    .password-field .mat-mdc-icon-button {
-      width: 42px;
-      height: 42px;
-      padding: 8px;
-    }
-
-    .password-field .mat-mdc-form-field-hint,
-    .password-field .mat-mdc-form-field-error {
-      font-size: 11px;
-      line-height: 1.25;
+    .register-branding app-branding img,
+    .register-branding app-branding svg {
+      max-height: 36px;
     }
   }
 
-  .register-title {
-    max-width: 100%;
-    font-size: 26px;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-  }
-
-  .register-hero {
-    max-width: 100%;
-    margin-top: 0 !important;
-  }
-
-  .register-kicker {
-    padding: 6px 10px;
-    font-size: 11px;
-  }
-
-  .register-title.m-t-12 {
-    margin-top: 8px !important;
-  }
-
-  .register-subtitle {
-    max-width: 100%;
+  .register-divider {
+    gap: 14px;
     font-size: 14px;
-    line-height: 1.4;
-  }
-
-  .register-subtitle.m-t-12,
-  .register-benefits-inline.m-t-12 {
-    margin-top: 8px !important;
-  }
-
-  .register-benefits {
-    display: none;
-  }
-
-  .register-benefits-inline {
-    display: block;
-    font-size: 12px;
-    color: #7b889d;
-    font-weight: 500;
-  }
-
-  .register-section {
-    padding: 14px 12px 10px;
-    border-radius: 18px;
-  }
-
-  .register-section.m-t-24 {
-    margin-top: 12px !important;
-  }
-
-  .register-section-header {
-    margin-bottom: 12px;
-  }
-
-  .register-section-title {
-    font-size: 18px;
-  }
-
-  .register-section-copy {
-    margin-top: 4px;
-    font-size: 13px;
-    line-height: 1.35;
-  }
-
-  .register-field-col {
-    margin-bottom: 0 !important;
-  }
-
-  .password-label-row {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .register-cta {
-    position: sticky;
-    bottom: 0;
-    z-index: 3;
-    margin-top: 12px !important;
-    padding-top: 8px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #fff 35%);
-  }
-
-  .register-submit-btn {
-    min-height: 52px;
-    font-size: 16px;
-    border-radius: 14px;
-  }
-
-  .register-login {
-    margin-top: 14px !important;
-    gap: 4px 8px;
-  }
-
-  .register-login-copy,
-  .register-login-link {
-    font-size: 14px;
-  }
-}
-
-@media (max-width: 575px) {
-  .register-page {
-    padding: 6px;
-  }
-
-  .register-card {
-    border-radius: 20px;
-  }
-
-  .register-body {
-    padding: 10px 10px 14px;
-  }
-
-  .register-hero {
-    margin-top: 4px !important;
-  }
-
-  .register-title {
-    font-size: 24px;
-  }
-
-  .register-subtitle {
-    font-size: 14px;
-  }
-
-  .register-section {
-    padding: 14px 12px 10px;
-  }
-
-  .register-submit-btn {
-    min-height: 50px;
   }
 }

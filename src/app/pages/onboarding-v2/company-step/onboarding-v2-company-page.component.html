@@ -4,31 +4,26 @@
       <div class="w-100 position-relative rounded bg-white auth-card onboarding-page-card">
         <div class="auth-body onboarding-page">
           <app-onboarding-shell
-            tituloFluxo="Configuração inicial"
-            tituloEtapa="Vamos começar pela sua empresa"
-            subtituloEtapa="Preencha as informações básicas para configurar seu sistema."
-            progressoComplementar="leva menos de 1 minuto"
+            tituloFluxo=""
+            tituloEtapa=""
+            subtituloEtapa=""
+            progressoComplementar=""
             [passoAtual]="1"
-            [totalPassos]="3"
-            [progressoPercentual]="33"
+            [totalPassos]="2"
+            [progressoPercentual]="50"
             [showBack]="false"
             [showSkip]="false"
             [primaryLabel]="onboardingV2State.saving() ? 'Salvando...' : 'Continuar'"
             [primaryDisabled]="carregando || form.invalid || onboardingV2State.saving()"
             [primaryLoading]="onboardingV2State.saving()"
-            primaryHint="Você ainda poderá ajustar esses dados depois."
+            primaryHint=""
             (principal)="submit()"
           >
             <ng-container *ngIf="!carregando; else loadingTemplate">
               <section class="onboarding-page__section onboarding-page__section--empresa">
-                <div class="onboarding-page__microcopy">
-                  <mat-icon>bolt</mat-icon>
-                  <span>Isso leva menos de 1 minuto</span>
-                </div>
-
                 <app-section-card
-                  titulo="Base do cadastro"
-                  subtitulo="Comece pelo essencial. Os outros detalhes podem evoluir depois."
+                  titulo="Empresa"
+                  subtitulo=""
                   [divider]="true"
                 >
                   <form [formGroup]="form" class="onboarding-v2-company__form">
@@ -57,39 +52,13 @@
                           placeholder="contato@suaempresa.com"
                         ></app-input-email>
                       </div>
-
-                      <div class="col-md-6">
-                        <app-input-documento
-                          [control]="cnpjControl"
-                          label="CNPJ"
-                          placeholder="00.000.000/0000-00"
-                        ></app-input-documento>
-                      </div>
-
-                      <div class="col-md-6">
-                        <app-input-texto-restrito
-                          [control]="inscricaoEstadualControl"
-                          label="Inscrição estadual"
-                          placeholder="Opcional"
-                          [maxlength]="60"
-                        ></app-input-texto-restrito>
-                      </div>
-
-                      <div class="col-md-6">
-                        <app-input-texto-restrito
-                          [control]="horarioControl"
-                          label="Horário"
-                          placeholder="Ex.: Seg a Sex, 08h às 18h"
-                          [maxlength]="120"
-                        ></app-input-texto-restrito>
-                      </div>
                     </div>
                   </form>
                 </app-section-card>
 
                 <app-section-card
                   titulo="Responsável"
-                  subtitulo="Quem vai começar a operar a conta?"
+                  subtitulo=""
                   [divider]="true"
                 >
                   <div class="row">
@@ -112,75 +81,6 @@
                   </div>
                 </app-section-card>
 
-                <app-section-card
-                  titulo="Endereço"
-                  subtitulo="Opcional agora. Se preencher, o sistema já deixa sua base mais organizada."
-                  [divider]="true"
-                >
-                  <div [formGroup]="enderecoGroup" class="row">
-                    <div class="col-md-4">
-                      <app-input-cep
-                        [control]="cepControl"
-                        label="CEP"
-                        (enderecoEncontrado)="preencherEnderecoViaCep($event)"
-                      ></app-input-cep>
-                    </div>
-
-                    <div class="col-md-8">
-                      <app-input-texto-restrito
-                        [control]="logradouroControl"
-                        label="Logradouro"
-                        placeholder="Rua, avenida..."
-                        [maxlength]="160"
-                      ></app-input-texto-restrito>
-                    </div>
-
-                    <div class="col-md-3">
-                      <app-input-texto-restrito
-                        [control]="numeroControl"
-                        label="Número"
-                        placeholder="Nº"
-                        [maxlength]="10"
-                      ></app-input-texto-restrito>
-                    </div>
-
-                    <div class="col-md-9">
-                      <app-input-texto-restrito
-                        [control]="complementoControl"
-                        label="Complemento"
-                        placeholder="Sala, bloco, referência..."
-                        [maxlength]="120"
-                      ></app-input-texto-restrito>
-                    </div>
-
-                    <div class="col-md-4">
-                      <app-input-texto-restrito
-                        [control]="bairroControl"
-                        label="Bairro"
-                        placeholder="Informe o bairro"
-                        [maxlength]="120"
-                      ></app-input-texto-restrito>
-                    </div>
-
-                    <div class="col-md-5">
-                      <app-input-texto-restrito
-                        [control]="cidadeControl"
-                        label="Cidade"
-                        placeholder="Informe a cidade"
-                        [maxlength]="120"
-                      ></app-input-texto-restrito>
-                    </div>
-
-                    <div class="col-md-3">
-                      <app-input-texto-restrito
-                        [control]="estadoControl"
-                        label="UF"
-                        placeholder="UF"
-                        [maxlength]="2"
-                      ></app-input-texto-restrito>
-                    </div>
-                  </div>
-                </app-section-card>
               </section>
             </ng-container>
           </app-onboarding-shell>

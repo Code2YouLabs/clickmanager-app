@@ -39,6 +39,15 @@ export class AuthService {
     );
   }
 
+  loginGoogle(payload: { credential?: string; accessToken?: string }, lembrar = false): Observable<Usuario> {
+    lembrar ? this.tokenStorage.usarLocalStorage() : this.tokenStorage.usarSessionStorage();
+
+    return this.authApi.loginGoogle(payload).pipe(
+      tap(tokens => this.persistirTokens(tokens)),
+      switchMap(() => this.carregarUsuarioCompleto())
+    );
+  }
+
   autenticarComTokens(tokens: AuthTokens, lembrar = false): Observable<Usuario> {
     lembrar ? this.tokenStorage.usarLocalStorage() : this.tokenStorage.usarSessionStorage();
 

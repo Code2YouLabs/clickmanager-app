@@ -151,6 +151,34 @@
   text-align: right;
 }
 
+.data-table__inline-actions,
+.data-table__menu-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.data-table__row {
+  cursor: default;
+}
+
+.data-table__row--expanded td {
+  border-bottom-width: 0;
+}
+
+.data-table__detail-row {
+  height: 0;
+}
+
+.data-table__detail-cell {
+  padding: 0 !important;
+}
+
+.data-table__detail {
+  overflow: hidden;
+}
+
 .data-table-empty {
   padding: 28px 16px;
   text-align: center;

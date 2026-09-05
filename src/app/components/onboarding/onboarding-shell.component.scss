@@ -7,7 +7,7 @@
 .onboarding-shell__header {
   position: relative;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 24px;
   padding: 24px 28px;
@@ -29,14 +29,14 @@
 
 .onboarding-shell__brand {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 16px;
   min-width: 0;
 }
 
 .onboarding-shell__brand img {
-  width: 44px;
-  height: 44px;
+  width: 190px;
+  height: auto;
   object-fit: contain;
   flex: 0 0 auto;
 }
@@ -159,7 +159,7 @@
 
   .onboarding-shell__mobile-top {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 8px;
     width: 100%;
@@ -187,14 +187,18 @@
     display: none;
   }
 
-  .onboarding-shell__eyebrow,
-  .onboarding-shell__brand img {
+  .onboarding-shell__eyebrow {
     display: none;
   }
 
   .onboarding-shell__brand {
-    display: block;
+    display: flex;
+    justify-content: center;
     width: 100%;
+  }
+
+  .onboarding-shell__brand img {
+    width: 168px;
   }
 
   .onboarding-shell__progress {

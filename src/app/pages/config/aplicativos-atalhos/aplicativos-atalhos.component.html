@@ -1,6 +1,6 @@
 <app-page-card
   titulo="Aplicativos e atalhos"
-  subtitulo="Configure o menu de aplicativos e os links de trabalho.">
+  subtitulo="Configure os links de trabalho exibidos como atalhos.">
   @if (carregando) {
   <div class="links-state">
     <mat-spinner diameter="32"></mat-spinner>
@@ -14,27 +14,6 @@
       <span>Você pode visualizar estas configurações, mas não possui permissão para editar.</span>
     </div>
     }
-
-    <app-section-card titulo="Aplicativos" subtitulo="Itens exibidos no menu Aplicativos.">
-      <div formArrayName="aplicativos">
-      @for (app of aplicativosCatalogo; track app.aplicativo; let i = $index) {
-      <div class="app-row" [formGroupName]="i">
-        <div class="app-row__icon">
-          <i-tabler [name]="app.icone" class="icon-22 d-flex"></i-tabler>
-        </div>
-        <div class="app-row__content">
-          <strong>{{ app.nome }}</strong>
-          <span>{{ app.descricao }}</span>
-        </div>
-        <mat-slide-toggle
-          formControlName="ativo"
-          color="primary"
-          [aria-label]="'Exibir ' + app.nome">
-        </mat-slide-toggle>
-      </div>
-      }
-      </div>
-    </app-section-card>
 
     <app-section-card titulo="Atalhos" subtitulo="Links externos usados pela operação.">
       <button actions mat-stroked-button color="primary" type="button" [disabled]="!podeEditar || salvando" (click)="adicionarAtalho()">

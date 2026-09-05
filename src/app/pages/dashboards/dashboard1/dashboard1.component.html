@@ -4,6 +4,9 @@
     <button type="button" class="dashboard-mobile__summary-card" (click)="abrirResumo(card)">
       <span class="dashboard-mobile__summary-label">{{ card.label }}</span>
       <strong class="dashboard-mobile__summary-value">{{ card.value }}</strong>
+      @if(card.amount) {
+      <span class="dashboard-mobile__summary-amount">{{ card.amount }}</span>
+      }
     </button>
     }
   </div>
@@ -34,6 +37,9 @@
       <div class="dashboard-desktop__hero-metric dashboard-desktop__hero-metric--{{ card.accent || 'neutral' }}">
         <span>{{ card.label }}</span>
         <strong>{{ card.value }}</strong>
+        @if(card.amount) {
+        <small>{{ card.amount }}</small>
+        }
       </div>
       }
     </div>
