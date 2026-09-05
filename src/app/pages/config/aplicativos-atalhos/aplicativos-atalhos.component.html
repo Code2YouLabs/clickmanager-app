@@ -62,6 +62,25 @@
       </div>
     </app-section-card>
 
+    <app-section-card titulo="Aplicativos" subtitulo="Defina quais aplicativos aparecem no menu superior.">
+      <div formArrayName="aplicativos" class="apps-list">
+        @for (appControl of aplicativos.controls; track appControl.controls.aplicativo.value; let i = $index) {
+        <div class="app-row" [formGroupName]="i">
+          <span class="app-row__icon">
+            <i-tabler [name]="aplicativosCatalogo[i].icone" class="icon-22 d-flex"></i-tabler>
+          </span>
+          <div class="app-row__content">
+            <strong>{{ aplicativosCatalogo[i].nome }}</strong>
+            <span>{{ aplicativosCatalogo[i].descricao }}</span>
+          </div>
+          <mat-slide-toggle formControlName="ativo" color="primary">
+            Ativo
+          </mat-slide-toggle>
+        </div>
+        }
+      </div>
+    </app-section-card>
+
     <div class="links-actions">
       <button mat-flat-button color="primary" type="submit" [disabled]="!podeSalvar">
         @if (salvando) {

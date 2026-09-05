@@ -65,6 +65,15 @@ export const navItems: NavItem[] = [
         allowedEmpresaTipos: grafica,
     },
     {
+        displayName: 'SmartCalc',
+        iconName: 'calculator',
+        bgcolor: 'primary',
+        route: '/smartcalc',
+        featureKey: 'SMARTCALC',
+        requiredPermission: ['SMARTCALC_USAR'],
+        allowedEmpresaTipos: grafica,
+    },
+    {
         navCap: 'Catálogo',
         allowedEmpresaTipos: todosSegmentos,
     },
@@ -319,6 +328,15 @@ export const navItems: NavItem[] = [
                 featureKey: 'CALCULADORA_MATERIAIS',
                 requiredPermission: ['CALCULADORA_MATERIAIS_CONFIGURAR'],
                 allowedEmpresaTipos: todosSegmentos,
+            },
+            {
+                displayName: 'Configuração SmartCalc',
+                iconName: 'point',
+                bgcolor: 'transparent',
+                route: '/page/calculadora/config/criar',
+                featureKey: 'SMARTCALC',
+                requiredPermission: ['CONFIG_CALCULADORAS'],
+                allowedEmpresaTipos: grafica,
             },
             {
                 displayName: 'Servidor de E-mail',

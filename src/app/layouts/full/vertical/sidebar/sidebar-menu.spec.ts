@@ -28,6 +28,7 @@ const todasPermissoes = [
   'CLICKTV_TELAS_GERENCIAR',
   'DADOS_EMPRESA',
   'CONFIG_CALCULADORAS',
+  'SMARTCALC_USAR',
   'CONFIGURACOES_APLICATIVOS_ATALHOS_VER',
   'CALCULADORA_MATERIAIS_CONFIGURAR',
   'CONFIG_EMAIL',
@@ -45,7 +46,7 @@ function filtrar(
   tipoEmpresa: TipoEmpresa,
   permissoesUsuario = todasPermissoes,
   versaoCatalogo: 'LEGADO_DEPOSITO' | 'CATALOGO_NOVO' = 'CATALOGO_NOVO',
-  features: string[] = ['LINKS', 'CALCULADORA_MATERIAIS'],
+  features: string[] = ['LINKS', 'CALCULADORA_MATERIAIS', 'SMARTCALC'],
   proprietario = true,
 ): NavItem[] {
   const usuario: Usuario = {
@@ -111,28 +112,29 @@ describe('menu principal do ClickManager', () => {
     expect(labels(menu)).toContain('Presença Digital');
     expect(labels(menu)).toContain('Configurações');
     expect(labels(menu)).toContain('Ajuda');
-    expect(itemPorNome(menu, 'SmartCalc')).toBeFalsy();
+    expect(itemPorNome(menu, 'SmartCalc')?.route).toBe('/smartcalc');
     expect(menu.some((item) => item.displayName === 'Pedidos' && item.route === '/page/pedido')).toBeFalse();
     expect(itemPorNome(menu, 'Clientes')?.route).toBe('/page/cliente');
     expect(labels(menu)).not.toContain('Gerenciar Produtos');
     expect(labels(menu)).not.toContain('Gerenciar Pedidos');
     expect(labels(menu)).not.toContain('Gerenciar Clientes');
-    expect(comercial.map((item) => item.displayName)).toEqual(['Pedidos', 'Orçamentos']);
+    expect(comercial.map((item) => item.displayName)).toEqual(['Pedidos', 'Orçamentos', 'SmartCalc']);
     expect(comercial.map((item) => item.route)).toEqual([
       '/page/grafica/comercial-beta/pedidos',
       '/page/grafica/comercial-beta/orcamentos',
+      '/smartcalc',
     ]);
-    expect(filhos(catalogo)).toEqual(['Produtos', 'Categorias', 'Materiais', 'Formatos', 'Cores', 'Acabamentos', 'Serviços']);
+    expect(filhos(catalogo)).toEqual(['Produtos', 'Categorias', 'Materiais', 'Formatos', 'Cores', 'Serviços']);
     expect(itemPorNome(menu, 'Gestão de Pessoas')).toBeFalsy();
     expect(itemPorNome(menu, 'Meu Site')).toBeTruthy();
   });
 
   it('mostra Comercial para proprietário de gráfica mesmo sem permissões no perfil', () => {
-    const menu = filtrar(TipoEmpresa.GRAFICA, [], 'CATALOGO_NOVO', ['LINKS', 'CALCULADORA_MATERIAIS'], true);
+    const menu = filtrar(TipoEmpresa.GRAFICA, [], 'CATALOGO_NOVO', ['LINKS', 'CALCULADORA_MATERIAIS', 'SMARTCALC'], true);
     const comercial = itensDaSecao(menu, 'Comercial');
 
     expect(labels(menu)).toContain('Comercial');
-    expect(comercial.map((item) => item.displayName)).toEqual(['Pedidos', 'Orçamentos']);
+    expect(comercial.map((item) => item.displayName)).toEqual(['Pedidos', 'Orçamentos', 'SmartCalc']);
   });
 
   it('mostra Catálogo do depósito novo com produtos, categorias e marcas', () => {
@@ -177,8 +179,10 @@ describe('menu principal do ClickManager', () => {
     const menu = filtrar(TipoEmpresa.GRAFICA, todasPermissoes, 'CATALOGO_NOVO', []);
 
     expect(itemPorNome(menu, 'ClickLink')).toBeFalsy();
+    expect(itemPorNome(menu, 'SmartCalc')).toBeFalsy();
     const configuracoes = itemPorNome(menu, 'Configurações');
     expect(filhos(configuracoes)).not.toContain('Calculadora de Materiais');
+    expect(filhos(configuracoes)).not.toContain('Configuração SmartCalc');
   });
 
   it('remove labels de seção sem itens visíveis', () => {
