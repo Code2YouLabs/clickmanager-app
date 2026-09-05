@@ -70,6 +70,7 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
   acabamentos: Acabamento[] = [];
 
   carregandoProdutos = false;
+  carregandoConfig = true;
   erroProdutos: string | null = null;
   carregandoCalculo = false;
   erroCalculo: string | null = null;
@@ -187,6 +188,7 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
       next: (cfg) => {
         this.config = cfg;
         this.configAtiva = !!cfg?.ativo;
+        this.carregandoConfig = false;
 
         this.allowedProductIds.clear();
         for (const p of (cfg?.produtos ?? [])) {
@@ -204,6 +206,7 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
         console.error('[SmartCalc] erro ao obter config', err);
         // sem config -> não trava a tela
         this.configAtiva = true;
+        this.carregandoConfig = false;
         this.carregarInit();
       },
     });

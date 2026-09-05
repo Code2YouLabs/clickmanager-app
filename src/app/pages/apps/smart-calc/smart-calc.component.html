@@ -14,7 +14,7 @@
     </div>
 
     <div class="sc-page-header__meta">
-      @if (!configAtiva) {
+      @if (!carregandoConfig && !carregandoProdutos && !configAtiva) {
       <div class="sc-alert-badge">
         <mat-icon>block</mat-icon>
         <span>SmartCalc desativado</span>
@@ -29,7 +29,7 @@
     </div>
   </header>
 
-  @if (!configAtiva) {
+  @if (!carregandoConfig && !carregandoProdutos && !configAtiva) {
   <div class="sc-banner">
     <div class="banner-left">
       <div class="icon-wrap">
@@ -61,7 +61,7 @@
             <app-input-options [control]="form.controls.produtoId" label="Produto"
               [placeholder]="'Ex: Cartão de visita, panfleto, adesivo'" [options]="produtos" labelKey="nome"
               valueKey="id" [disabled]="carregandoProdutos || !!erroProdutos"
-              [nullLabel]="erroProdutos || 'Selecione um produto...'"></app-input-options>
+              [nullLabel]="erroProdutos || (!produtos.length && !carregandoProdutos ? 'Nenhum produto disponível' : 'Selecione um produto...')"></app-input-options>
             <div class="field-hint">{{ mobileViewport() ? 'Escolha o que você quer calcular.' : 'Escolha o item base que você quer simular.' }}</div>
           </div>
 

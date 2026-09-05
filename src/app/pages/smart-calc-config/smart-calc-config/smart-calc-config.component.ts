@@ -84,11 +84,12 @@ export class CalculadoraConfigComponent implements OnInit {
                 next: (res) => {
                     this.configAtual = res?.config ?? undefined;
                     this.produtoOptions = res?.produtosDisponiveis ?? [];
+                    const idsDisponiveis = new Set(this.produtoOptions.map((produto) => produto.id));
                     const produtos = res?.config?.produtos ?? [];
 
                     const produtoIds = produtos
                         .map(p => p?.id)
-                        .filter((id): id is number => typeof id === 'number');
+                        .filter((id): id is number => typeof id === 'number' && idsDisponiveis.has(id));
 
                     this.form.patchValue({
                         ativo: res?.config?.ativo ?? false,
