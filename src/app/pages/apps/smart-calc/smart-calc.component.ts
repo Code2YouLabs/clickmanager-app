@@ -1,7 +1,6 @@
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatDialog } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -22,22 +21,16 @@ import { SmartCalcInitResponse, ProdutoSmartCalcInitResponse, ProdutoVariacaoSma
 import { ProdutoListagem } from 'src/app/models/produto/produto-listagem.model';
 
 import { ToastrService } from 'ngx-toastr';
-import { Subject, of, switchMap, map, finalize, Observable, debounceTime, takeUntil } from 'rxjs';
+import { Subject, finalize, debounceTime, takeUntil } from 'rxjs';
 
-import { PedidoItemRequest } from 'src/app/models/pedido/pedido-item-request.model';
-import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { Router } from '@angular/router';
-import { PedidoService } from '../../pedido/pedido.service';
-import { ItemTipo } from 'src/app/models/pedido/item-tipo.enum';
-import { PedidoResponse } from 'src/app/models/pedido/pedido-response.model';
 
 import { CalculadoraConfigService } from 'src/app/pages/smart-calc-config/calculadora-config.service';
 import { CalculadoraConfigResponse } from 'src/app/models/calculadora/calculadora-config-response.model';
 import { extrairMensagemErro } from 'src/app/utils/mensagem.util';
 
 type Material = { id: number; nome: string; descricao?: string };
-type Servico = { id: number; nome: string };
-type Acabamento = { id: number; nome: string };
+type Acabamento = { id: string; nome: string };
 
 @Component({
   selector: 'app-smart-calc',
@@ -73,10 +66,7 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
   private variacoesPorMaterialInit = new Map<number, ProdutoVariacaoSmartCalcInitResponse[]>();
 
   // (para pedido) variação escolhida para o material atual
-  private variacaoSelecionadaId: number | null = null;
-
   materiais: Material[] = [];
-  servicos: Servico[] = [];
   acabamentos: Acabamento[] = [];
 
   carregandoProdutos = false;
@@ -103,8 +93,7 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
     quantidade: FormControl<number | null>;
     produtoId: FormControl<number | null>;
     materialId: FormControl<number | null>;
-    servicosIds: FormControl<number[]>;
-    acabamentosIds: FormControl<number[]>;
+    acabamentosIds: FormControl<string[]>;
     permiteRotacao: FormControl<boolean>;
   }>;
 
@@ -129,8 +118,6 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private initSvc: SmartCalcInitDataService, // ✅ NOVO: só init
     private dataSvc: SmartCalcDataService, // ✅ por enquanto mantém cálculo + pedido aqui
-    private pedidoService: PedidoService,
-    private dialog: MatDialog,
     private toastr: ToastrService,
     private router: Router,
     private calcCfgSvc: CalculadoraConfigService,
@@ -147,8 +134,7 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
       quantidade: this.fb.control<number | null>(null, [Validators.required, Validators.min(1)]),
       produtoId: this.fb.control<number | null>(null, [Validators.required]),
       materialId: this.fb.control<number | null>(null),
-      servicosIds: this.fb.nonNullable.control<number[]>([]),
-      acabamentosIds: this.fb.nonNullable.control<number[]>([]),
+      acabamentosIds: this.fb.nonNullable.control<string[]>([]),
       permiteRotacao: this.fb.nonNullable.control(true),
     });
 
@@ -211,7 +197,7 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
           this.toastr.warning('O SmartCalc está desabilitado nas configurações.', 'SmartCalc');
         }
 
-        // 4) carrega INIT (produtos + variações + materiais/acabamentos/serviços)
+        // 4) carrega INIT (produtos + variações + materiais/acabamentos)
         this.carregarInit();
       },
       error: (err) => {
@@ -288,14 +274,12 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
     this.resultado.set(null);
     this.needsRecalcular.set(false);
 
-    this.servicos = [];
     this.acabamentos = [];
     this.materiais = [];
 
     this.variacoesPorMaterialInit.clear();
 
     this.form.controls.materialId.setValue(null, { emitEvent: false });
-    this.form.controls.servicosIds.setValue([], { emitEvent: false });
     this.form.controls.acabamentosIds.setValue([], { emitEvent: false });
 
     this.form.controls.largura.setValue(null, { emitEvent: false });
@@ -310,11 +294,9 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
     // limpa estado dependente
     this.resultado.set(null);
     this.needsRecalcular.set(false);
-    this.servicos = [];
     this.acabamentos = [];
     this.materiais = [];
     this.variacoesPorMaterialInit.clear();
-    this.variacaoSelecionadaId = null;
     this.form.controls.materialId.setValue(null, { emitEvent: false });
 
     const prod = (this.init?.produtos ?? []).find((p) => p.id === produtoId) ?? null;
@@ -344,34 +326,20 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
   }
 
   private atualizarListasPorMaterial(materialId?: number): void {
-    // acabamentos/serviços do INIT filtrados por material
+    // acabamentos do INIT filtrados por material
     const novosAcab = this.initSvc
       .extrairAcabamentosPorMaterial(this.variacoesPorMaterialInit, materialId)
-      .map((a) => ({ id: a.id, nome: a.nome }));
-
-    const novosServs = this.initSvc
-      .extrairServicosPorMaterial(this.variacoesPorMaterialInit, materialId)
-      .map((s) => ({ id: s.id, nome: s.nome }));
+      .map((a) => ({ id: String(a.id), nome: a.nome }));
 
     this.acabamentos = novosAcab;
-    this.servicos = novosServs;
-
-    // guarda variacaoId (para PedidoItemRequest)
-    this.variacaoSelecionadaId = this.initSvc.obterVariacaoIdSelecionada(this.variacoesPorMaterialInit, materialId);
 
     // remove seleções inválidas
     const selAcab = (this.form.controls.acabamentosIds.value ?? []).filter((id) =>
       this.acabamentos.some((a) => a.id === id)
     );
-    const selServ = (this.form.controls.servicosIds.value ?? []).filter((id) =>
-      this.servicos.some((s) => s.id === id)
-    );
 
     if (selAcab.length !== (this.form.controls.acabamentosIds.value ?? []).length) {
       this.form.controls.acabamentosIds.setValue(selAcab);
-    }
-    if (selServ.length !== (this.form.controls.servicosIds.value ?? []).length) {
-      this.form.controls.servicosIds.setValue(selServ);
     }
   }
 
@@ -384,18 +352,8 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
     }
     if (!this.temParametrosMinimosParaCalcular()) return;
 
-    const v = this.form.getRawValue();
-    if (v.largura == null || v.altura == null || v.quantidade == null || v.produtoId == null) return;
-
-    const payload: SmartCalcRequest = {
-      produtoId: v.produtoId,
-      materialId: v.materialId ?? undefined,
-      largura: Number(v.largura),
-      altura: Number(v.altura),
-      quantidade: Number(v.quantidade),
-      servicosIds: v.servicosIds ?? [],
-      acabamentosIds: v.acabamentosIds ?? [],
-    };
+    const payload = this.montarPayload();
+    if (!payload) return;
 
     this.carregandoCalculo = true;
     this.erroCalculo = null;
@@ -423,6 +381,22 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
     });
   }
 
+  private montarPayload(): SmartCalcRequest | null {
+    const v = this.form.getRawValue();
+    if (v.largura == null || v.altura == null || v.quantidade == null || v.produtoId == null) return null;
+    return {
+      catalogoProdutoId: v.produtoId,
+      produtoId: v.produtoId,
+      materialId: v.materialId ?? undefined,
+      largura: Number(v.largura),
+      altura: Number(v.altura),
+      quantidade: Number(v.quantidade),
+      unidadeDimensao: 'CENTIMETRO',
+      acabamentosCodigos: v.acabamentosIds ?? [],
+      acabamentosIds: v.acabamentosIds ?? [],
+    };
+  }
+
   // ==========================================================
   // PEDIDO: (por enquanto fica no dataSvc antigo)
   // ==========================================================
@@ -438,166 +412,21 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const r = this.resultado();
-    const itensCalc: any[] = Array.isArray(r?.itens) && r!.itens.length ? r!.itens : [top];
-
-    const gerarGrupo = () => (globalThis as any).crypto?.randomUUID?.() ?? String(Date.now() + Math.random());
-    const baseKeyByVar = new Map<number, string>();
-
-    const normalizar = (v: any) => (v ?? '').toString().toLowerCase().trim();
-    const matchOptionId = (nomeItem: string, lista: { id: number; nome: string }[]) => {
-      const alvo = normalizar(nomeItem);
-      const achado = lista.find((opt) => alvo.includes(normalizar(opt.nome)));
-      return achado?.id;
-    };
-
-    const itens: PedidoItemRequest[] = [];
-
-    for (const item of itensCalc) {
-      const nomeItem = item.nomeComposto ?? item.nome ?? item.descricao ?? 'Item calculado';
-      const quantidade = Number(item.quantidade ?? top.quantidade ?? 1);
-      const subTotal = Number(item.subTotal ?? 0);
-      const unitTop = Number(item.precoUnitario ?? (quantidade > 0 ? subTotal / quantidade : 0));
-      const unitario = Number.isFinite(unitTop) && unitTop > 0 ? unitTop : 0;
-
-      const largura = Number(item.largura ?? top.largura ?? 0) || undefined;
-      const altura = Number(item.altura ?? top.altura ?? 0) || undefined;
-
-      const variacaoId = Number(item.produtoVariacaoId ?? item.variacaoId ?? this.getSelectedVariacaoId() ?? item.produtoId ?? 0);
-
-      const tipoItem: ItemTipo =
-        (item.tipo as ItemTipo | undefined) ??
-        (item.servicoId ? ItemTipo.SERVICO : item.acabamentoId ? ItemTipo.ACABAMENTO : ItemTipo.BASE);
-
-      if (tipoItem === ItemTipo.BASE && !variacaoId) {
-        this.toastr.error('Variação não identificada para um dos itens.');
-        return;
-      }
-
-      const grupoKeyDireto: string | undefined = item.grupoKey;
-      let grupoKey: string;
-
-      if (grupoKeyDireto) {
-        grupoKey = grupoKeyDireto;
-      } else if (tipoItem === ItemTipo.BASE && variacaoId) {
-        grupoKey = gerarGrupo();
-        baseKeyByVar.set(variacaoId, grupoKey);
-      } else if (variacaoId && baseKeyByVar.has(variacaoId)) {
-        grupoKey = baseKeyByVar.get(variacaoId)!;
-      } else {
-        grupoKey = gerarGrupo();
-      }
-
-      const acabamentoId = item.acabamentoId ?? matchOptionId(nomeItem, this.acabamentos ?? []);
-      const servicoId = item.servicoId ?? matchOptionId(nomeItem, this.servicos ?? []);
-
-      itens.push({
-        grupoKey,
-        tipo: tipoItem,
-        descricao: nomeItem,
-        quantidade,
-        valor: unitario,
-        subTotal,
-        produtoVariacaoId: tipoItem === ItemTipo.BASE ? variacaoId : undefined,
-        largura,
-        altura,
-        acabamentoId: tipoItem === ItemTipo.ACABAMENTO ? acabamentoId : undefined,
-        servicoId: tipoItem === ItemTipo.SERVICO ? servicoId : undefined,
-      });
-    }
-
+    const payload = this.montarPayload();
+    if (!payload) return;
     this.carregandoAdd = true;
-    const usuario = this.dataSvc.getUsuarioLogado();
-
     this.dataSvc
-      .getDraftByUser$()
-      .pipe(
-        switchMap((draft) => {
-          if (draft) {
-            const ref = this.dialog.open(ConfirmDialogComponent, {
-              data: {
-                title: 'Rascunho já existente',
-                message: `Atendente: ${usuario?.nome}\nPedido: #${draft.numero}\n\nDeseja adicionar ao pedido existente?`,
-                confirmText: 'Usar existente',
-                confirmColor: 'primary',
-                cancelText: 'Criar novo',
-              },
-            });
-
-            return ref.afterClosed().pipe(
-              switchMap((useExisting: boolean) => {
-                if (useExisting === true) {
-                  return this.saveObsSeTiver$(draft.id).pipe(
-                    switchMap(() => this.dataSvc.addItensToPedido$(draft.id, itens)),
-                    map(() => draft)
-                  );
-                }
-                if (useExisting === false) {
-                  return this.dataSvc.createDraftForUser$().pipe(
-                    switchMap((p) =>
-                      this.saveObsSeTiver$(p.id).pipe(
-                        switchMap(() => this.dataSvc.addItensToPedido$(p.id, itens)),
-                        map(() => p)
-                      )
-                    )
-                  );
-                }
-                return of(null);
-              })
-            );
-          }
-
-          return this.dataSvc.createDraftForUser$().pipe(
-            switchMap((p) =>
-              this.saveObsSeTiver$(p.id).pipe(
-                switchMap(() => this.dataSvc.addItensToPedido$(p.id, itens)),
-                map(() => p)
-              )
-            )
-          );
-        }),
-        finalize(() => (this.carregandoAdd = false))
-      )
+      .criarRascunhoSmartCalc(payload)
+      .pipe(finalize(() => (this.carregandoAdd = false)))
       .subscribe({
-        next: (pedido) => {
-          if (!pedido) return;
-          const num = pedido?.numero ? ` #${pedido.numero}` : '';
-          this.toastr.success(`Itens adicionados ao pedido${num}.`, 'SmartCalc');
-
-          const ref = this.dialog.open(ConfirmDialogComponent, {
-            data: {
-              title: 'Abrir pedido?',
-              message: `Deseja abrir o pedido${num} agora?`,
-              confirmText: 'Abrir pedido',
-              confirmColor: 'primary',
-            },
-          });
-
-          ref.afterClosed()
-            .pipe(switchMap((go: boolean): Observable<PedidoResponse | null> => (go ? this.pedidoService.buscarPorId(pedido.id) : of(null))))
-            .subscribe({
-              next: (p) => {
-                if (!p) return;
-                this.router.navigate(['/page/pedido/detalhe', p.id]);
-              },
-              error: (err) =>
-                this.toastr.error(err?.error?.message ?? err?.message ?? 'Falha ao abrir o pedido.', 'SmartCalc'),
-            });
+        next: (rascunho) => {
+          const num = rascunho?.referencia ? ` #${rascunho.referencia}` : '';
+          this.toastr.success(`Rascunho criado${num}.`, 'SmartCalc');
+          this.router.navigate(rascunho?.id ? ['/page/grafica/comercial-beta/rascunhos', rascunho.id] : ['/page/grafica/comercial-beta/rascunhos']);
         },
         error: (err) =>
-          this.toastr.error(err?.error?.message ?? err?.message ?? 'Falha ao adicionar itens ao pedido.', 'SmartCalc'),
+          this.toastr.error(err?.error?.message ?? err?.message ?? 'Falha ao criar rascunho.', 'SmartCalc'),
       });
-  }
-
-  private saveObsSeTiver$(pedidoId: number): Observable<void | null> {
-    const obs = (this.observacao() ?? '').trim();
-    if (!obs) return of(null);
-    return this.pedidoService.atualizar(pedidoId, { observacoes: obs } as any) as unknown as Observable<void>;
-  }
-
-  // ✅ agora vem do INIT (id da variação do material atual)
-  private getSelectedVariacaoId(): number | undefined {
-    return this.variacaoSelecionadaId ?? undefined;
   }
 
   limpar(): void {
@@ -611,7 +440,6 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
     quantidade: null,
     produtoId: null,
     materialId: null,
-    servicosIds: [],
     acabamentosIds: [],
     permiteRotacao: true,
   });

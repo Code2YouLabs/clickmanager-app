@@ -13,7 +13,7 @@ export type MaterialBasico = { id: number; nome: string };
 
 @Injectable({ providedIn: 'root' })
 export class SmartCalcInitDataService {
-  private readonly initEndpoint = 'api/smartcalc-init';
+  private readonly initEndpoint = 'api/grafica/smartcalc/init';
 
   constructor(private api: ApiService) {}
 
@@ -31,7 +31,7 @@ export class SmartCalcInitDataService {
     const mapId = new Map<number, ProdutoVariacaoSmartCalcInitResponse[]>();
     (prod?.variacoes ?? []).forEach(v => {
       const mid = v?.material?.id;
-      if (mid == null) return;
+      if (typeof mid !== 'number') return;
       const arr = mapId.get(mid) ?? [];
       arr.push(v);
       mapId.set(mid, arr);
@@ -55,15 +55,6 @@ export class SmartCalcInitDataService {
     return this.dedupeById(all);
   }
 
-  extrairServicosPorMaterial(
-    variacoesPorMaterial: Map<number, ProdutoVariacaoSmartCalcInitResponse[]>,
-    materialId?: number
-  ): IdNomeResponse[] {
-    const variacoes = materialId ? (variacoesPorMaterial.get(materialId) ?? []) : [];
-    const all = variacoes.flatMap(v => v.servicos ?? []).filter(s => s?.id != null);
-    return this.dedupeById(all);
-  }
-
   obterVariacaoIdSelecionada(
     variacoesPorMaterial: Map<number, ProdutoVariacaoSmartCalcInitResponse[]>,
     materialId?: number
@@ -72,8 +63,8 @@ export class SmartCalcInitDataService {
     return variacoesPorMaterial.get(materialId)?.[0]?.id ?? null;
   }
 
-  private dedupeById<T extends { id: number }>(arr: T[]): T[] {
-    const map = new Map<number, T>();
+  private dedupeById<T extends { id: number | string }>(arr: T[]): T[] {
+    const map = new Map<number | string, T>();
     for (const item of arr) {
       if (!map.has(item.id)) map.set(item.id, item);
     }

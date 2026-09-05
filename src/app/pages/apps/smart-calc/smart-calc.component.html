@@ -129,7 +129,7 @@
             <span class="step-badge optional">3</span>
             <div>
               <div class="title">Extras</div>
-              <div class="hint">{{ mobileViewport() ? 'Marque só o que entra no cálculo.' : 'Acabamentos e serviços entram no cálculo sem sair da tela.' }}</div>
+              <div class="hint">{{ mobileViewport() ? 'Marque só o que entra no cálculo.' : 'Acabamentos entram no cálculo sem sair da tela.' }}</div>
             </div>
           </div>
         </div>
@@ -143,17 +143,6 @@
             <app-input-multi-select [control]="form.controls.acabamentosIds" [label]="mobileViewport() ? '' : 'Acabamentos (opcional)'"
               [searchPlaceholder]="mobileViewport() ? 'Buscar acabamento' : 'Buscar opção'" [showSelectedCount]="!mobileViewport()"
               [options]="acabamentos" [cardMinHeight]="multiSelectCardMinHeight()"
-              [listHeight]="multiSelectListHeight()" [visualStyle]="mobileViewport() ? 'subtle' : 'default'"></app-input-multi-select>
-          </div>
-
-          <div class="extras-block">
-            <div class="extras-block__heading">
-              <div class="extras-block__title">Serviços</div>
-              <div class="extras-block__meta">Opcional</div>
-            </div>
-            <app-input-multi-select [control]="form.controls.servicosIds" [label]="mobileViewport() ? '' : 'Serviços (opcional)'"
-              [searchPlaceholder]="mobileViewport() ? 'Buscar serviço' : 'Buscar opção'" [showSelectedCount]="!mobileViewport()"
-              [options]="servicos" [cardMinHeight]="multiSelectCardMinHeight()"
               [listHeight]="multiSelectListHeight()" [visualStyle]="mobileViewport() ? 'subtle' : 'default'"></app-input-multi-select>
           </div>
         </div>

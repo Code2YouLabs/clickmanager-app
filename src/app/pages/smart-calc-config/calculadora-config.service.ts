@@ -6,14 +6,17 @@ import { CalculadoraConfigResponse } from 'src/app/models/calculadora/calculador
 import { ProdutoOption } from 'src/app/models/produto/produto-option.model';
 
 export interface SmartCalcConfigApiResponse {
-  config: CalculadoraConfigResponse | null;
+  config?: CalculadoraConfigResponse | null;
+  id?: number;
+  ativo?: boolean;
+  catalogoProdutoIds?: number[];
   produtosDisponiveis: ProdutoOption[];
 }
 
 @Injectable({ providedIn: 'root' })
 export class CalculadoraConfigService {
 
-  private baseUrl = 'api/smartcalc-config';
+  private baseUrl = 'api/grafica/smartcalc/config';
 
   constructor(private api: ApiService) {}
 
@@ -22,10 +25,7 @@ export class CalculadoraConfigService {
    */
   getConfigCompleta(): Observable<SmartCalcConfigApiResponse> {
     return this.api.get<SmartCalcConfigApiResponse>(this.baseUrl).pipe(
-      map(res => ({
-        config: res?.config ?? null,
-        produtosDisponiveis: res?.produtosDisponiveis ?? []
-      }))
+      map(res => this.normalizarResponse(res))
     );
   }
 
@@ -33,12 +33,32 @@ export class CalculadoraConfigService {
    * Retorna somente o objeto de configuração (compat com chamadas existentes).
    */ 
   getConfig(): Observable<CalculadoraConfigResponse | null> {
-    return this.getConfigCompleta().pipe(map(res => res.config));
+    return this.getConfigCompleta().pipe(map(res => res.config ?? null));
   }
 
   salvar(req: CalculadoraConfigRequest): Observable<CalculadoraConfigResponse | null> {
-    return this.api.post<SmartCalcConfigApiResponse | CalculadoraConfigResponse>(this.baseUrl, req).pipe(
-      map(res => (res as SmartCalcConfigApiResponse)?.config ?? res as CalculadoraConfigResponse ?? null)
+    return this.api.post<SmartCalcConfigApiResponse | CalculadoraConfigResponse>(this.baseUrl, {
+      ativo: req.ativo,
+      catalogoProdutoIds: req.produtoIds ?? [],
+    }).pipe(
+      map(res => this.normalizarResponse(res as SmartCalcConfigApiResponse).config ?? null)
     );
+  }
+
+  private normalizarResponse(res: SmartCalcConfigApiResponse | CalculadoraConfigResponse | null | undefined): SmartCalcConfigApiResponse {
+    const api = res as SmartCalcConfigApiResponse | null | undefined;
+    if (api?.config) {
+      return { config: api.config, produtosDisponiveis: api.produtosDisponiveis ?? [] };
+    }
+    const produtosDisponiveis = api?.produtosDisponiveis ?? [];
+    const catalogoProdutoIds = api?.catalogoProdutoIds ?? [];
+    return {
+      config: {
+        id: api?.id ?? 0,
+        ativo: !!api?.ativo,
+        produtos: catalogoProdutoIds.map(id => produtosDisponiveis.find(p => p.id === id) ?? ({ id, nome: `Produto ${id}` })),
+      },
+      produtosDisponiveis,
+    };
   }
 }
