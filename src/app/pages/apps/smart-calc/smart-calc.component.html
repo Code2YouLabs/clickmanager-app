@@ -176,12 +176,12 @@
     [detailText]="mobileViewport() ? 'Detalhes' : 'Ver detalhes'"
     [expanded]="resultadoMobileAberto()"
     [loading]="carregandoCalculo"
-    [actionText]="carregandoAdd ? 'Criando...' : 'Criar pedido →'"
+    [actionText]="carregandoAdd ? 'Criando...' : 'Criar rascunho →'"
     [actionDisabled]="!temResultado() || carregandoAdd || needsRecalcular() || carregandoCalculo"
     bottomOffset="var(--mobile-bottom-nav-height, 0px)"
     [attachedToBottomNav]="true"
     expandAriaLabel="Ver detalhes do cálculo"
-    actionAriaLabel="Criar pedido"
+    actionAriaLabel="Criar rascunho"
     (expand)="alternarResultadoMobile()"
     (action)="adicionarAoPedido()">
   </app-mobile-total-bar>
@@ -331,7 +331,7 @@
       </button>
       <button mat-flat-button color="primary" type="button" (click)="adicionarAoPedido()"
         [disabled]="!temResultado() || carregandoAdd || needsRecalcular() || carregandoCalculo">
-        {{ carregandoAdd ? 'Criando pedido...' : 'Criar pedido →' }}
+        {{ carregandoAdd ? 'Criando rascunho...' : 'Criar rascunho →' }}
       </button>
     </div>
   </ng-template>

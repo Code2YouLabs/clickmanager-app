@@ -401,7 +401,7 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
   }
 
   // ==========================================================
-  // PEDIDO: (por enquanto fica no dataSvc antigo)
+  // RASCUNHO: (por enquanto fica no dataSvc antigo)
   // ==========================================================
   adicionarAoPedido(): void {
     if (!this.configAtiva) {
