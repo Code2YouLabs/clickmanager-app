@@ -225,6 +225,7 @@ export interface GraficaProdutoAcabamento {
 
 export interface GraficaProdutoAcabamentoRequest {
   id?: number | null;
+  codigo?: string | null;
   nome: string;
   descricao?: string | null;
   formaAplicacao: GraficaProdutoAcabamentoFormaAplicacao;

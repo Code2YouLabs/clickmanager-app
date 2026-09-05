@@ -878,13 +878,14 @@ export class GraficaProdutoFormComponent implements OnInit {
       formatoId: raw.formatoId,
       corId: raw.corId,
       acabamentos: this.acabamentosProduto.map((item, index) => ({
-        id: item.id > 0 ? item.id : null,
+        id: !this.isClone && item.id > 0 ? item.id : null,
+        codigo: this.codigo(item.nome).slice(0, 50),
         nome: item.nome,
         descricao: item.descricao || null,
         formaAplicacao: this.toFormaAplicacaoBackend(item.aplicacao),
         ativo: true,
         ordem: index + 1,
-        politicas: [this.precoPayloadFromUx(item.preco, item.nome)],
+        politicas: [this.precoPayloadFromUx(item.preco, item.nome, this.isClone)],
       })),
     };
   }
@@ -1094,11 +1095,11 @@ export class GraficaProdutoFormComponent implements OnInit {
     }
   }
 
-  private precoPayloadFromUx(preco: Record<string, any>, nome: string): GraficaPrecoPoliticaRequest {
+  private precoPayloadFromUx(preco: Record<string, any>, nome: string, novoRegistro = false): GraficaPrecoPoliticaRequest {
     const tipo = (preco?.['tipo'] || 'FIXO') as TipoPrecoLegado;
     const metroLinear = tipo === 'METRO' && preco?.['modoCobranca'] === 'LINEAR';
     return {
-      id: Number(preco?.['politicaId']) > 0 ? Number(preco?.['politicaId']) : null,
+      id: !novoRegistro && Number(preco?.['politicaId']) > 0 ? Number(preco?.['politicaId']) : null,
       nome: `Preço ${nome}`,
       tipo: this.toTipoGrafica(tipo),
       ativo: true,

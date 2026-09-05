@@ -6,6 +6,7 @@ import { ToastrService } from 'ngx-toastr';
 import { of } from 'rxjs';
 import { CatalogoCategoriaService } from '../../catalogo/shared/services/catalogo.service';
 import { DepositoImagemService } from '../../deposito/services/deposito-imagem.service';
+import { GraficaProduto } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
 import { GraficaProdutoFormComponent } from './grafica-produto-form.component';
 
@@ -151,6 +152,26 @@ describe('GraficaProdutoFormComponent', () => {
     expect(component.cloneSalvarBloqueado).toBeTrue();
   });
 
+  it('cria payload de clone sem reaproveitar ids de acabamento e politica', () => {
+    routeSnapshot.queryParamMap = { get: (key: string) => key === 'cloneFrom' ? '1' : null };
+
+    component.ngOnInit();
+    component.form.controls.formatoId.setValue(4);
+
+    const payload = (component as any).produtoPayload();
+
+    expect(payload.acabamentos?.[0]).toEqual(jasmine.objectContaining({
+      id: null,
+      codigo: 'LAMINACAO',
+      nome: 'Laminação',
+    }));
+    expect(payload.acabamentos?.[0].politicas?.[0]).toEqual(jasmine.objectContaining({
+      id: null,
+      tipo: 'FIXO',
+      valorFixo: 12,
+    }));
+  });
+
   it('restaura snapshot original ao cancelar clone', () => {
     routeSnapshot.queryParamMap = { get: (key: string) => key === 'cloneFrom' ? '1' : null };
     component.ngOnInit();
@@ -169,7 +190,7 @@ describe('GraficaProdutoFormComponent', () => {
   });
 });
 
-function produtoGrafico() {
+function produtoGrafico(): GraficaProduto {
   return {
     id: 1,
     catalogoProdutoId: 10,
@@ -182,7 +203,25 @@ function produtoGrafico() {
     material: { id: 1, codigo: 'COUCHE', nome: 'Couchê 150g', ativo: true },
     formato: { id: 2, codigo: '10X15', nome: '10x15', ativo: true },
     cor: { id: 3, codigo: '4X4', nome: '4x4', ativo: true },
-    acabamentos: [],
+    acabamentos: [{
+      id: 20,
+      nome: 'Laminação',
+      descricao: 'Brilho',
+      formaAplicacao: 'POR_SERVICO',
+      ativo: true,
+      ordem: 1,
+      politicas: [{
+        id: 30,
+        nome: 'Preço Laminação',
+        tipo: 'FIXO',
+        ativo: true,
+        multiplicaQuantidade: true,
+        valorFixo: 12,
+        selecoes: [],
+        faixas: [],
+        lotes: [],
+      }],
+    }],
     parametros: [],
   };
 }
