@@ -863,7 +863,7 @@ export class GraficaProdutoFormComponent implements OnInit {
   private produtoPayload(): GraficaProdutoRequest {
     const raw = this.form.getRawValue();
     return {
-      catalogoProdutoId: null,
+      catalogoProdutoId: this.catalogoProdutoIdPayload(raw.nome),
       ativo: true,
       produto: {
         codigo: this.codigo(raw.nome).slice(0, 50),
@@ -1000,6 +1000,15 @@ export class GraficaProdutoFormComponent implements OnInit {
       && atual.materialId === this.cloneIdentidadeSnapshot.materialId
       && atual.formatoId === this.cloneIdentidadeSnapshot.formatoId
       && atual.corId === this.cloneIdentidadeSnapshot.corId;
+  }
+
+  private catalogoProdutoIdPayload(nome: string): number | null {
+    if (!this.isClone || !this.cloneIdentidadeSnapshot || !this.graficaProduto?.catalogoProdutoId) {
+      return null;
+    }
+    return (nome || '').trim() === this.cloneIdentidadeSnapshot.nome
+      ? this.graficaProduto.catalogoProdutoId
+      : null;
   }
 
   private buildImagensPayload(): CatalogoProdutoImagemRequest[] {

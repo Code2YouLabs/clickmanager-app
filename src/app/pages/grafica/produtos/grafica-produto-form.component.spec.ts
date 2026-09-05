@@ -138,7 +138,7 @@ describe('GraficaProdutoFormComponent', () => {
       formatoId: 2,
       corId: 3,
     }));
-    expect((component as any).produtoPayload().catalogoProdutoId).toBeNull();
+    expect((component as any).produtoPayload().catalogoProdutoId).toBe(10);
     expect(component.cloneSalvarBloqueado).toBeTrue();
     expect(component.salvarDesabilitado).toBeTrue();
 
@@ -170,6 +170,42 @@ describe('GraficaProdutoFormComponent', () => {
       tipo: 'FIXO',
       valorFixo: 12,
     }));
+  });
+
+  it('clone mudando apenas formato preserva catalogoProdutoId', () => {
+    routeSnapshot.queryParamMap = { get: (key: string) => key === 'cloneFrom' ? '1' : null };
+
+    component.ngOnInit();
+    component.form.controls.formatoId.setValue(4);
+
+    expect((component as any).produtoPayload().catalogoProdutoId).toBe(10);
+  });
+
+  it('clone mudando apenas material preserva catalogoProdutoId', () => {
+    routeSnapshot.queryParamMap = { get: (key: string) => key === 'cloneFrom' ? '1' : null };
+
+    component.ngOnInit();
+    component.form.controls.materialId.setValue(5);
+
+    expect((component as any).produtoPayload().catalogoProdutoId).toBe(10);
+  });
+
+  it('clone mudando apenas cor preserva catalogoProdutoId', () => {
+    routeSnapshot.queryParamMap = { get: (key: string) => key === 'cloneFrom' ? '1' : null };
+
+    component.ngOnInit();
+    component.form.controls.corId.setValue(6);
+
+    expect((component as any).produtoPayload().catalogoProdutoId).toBe(10);
+  });
+
+  it('clone mudando nome cria nova familia de catalogo', () => {
+    routeSnapshot.queryParamMap = { get: (key: string) => key === 'cloneFrom' ? '1' : null };
+
+    component.ngOnInit();
+    component.form.controls.nome.setValue('Adesivo Transparente');
+
+    expect((component as any).produtoPayload().catalogoProdutoId).toBeNull();
   });
 
   it('restaura snapshot original ao cancelar clone', () => {
