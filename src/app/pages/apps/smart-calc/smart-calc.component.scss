@@ -374,9 +374,27 @@
   padding: 0 0 8px;
 }
 
+:host ::ng-deep app-input-multi-select .smart-card--subtle .smart-selected {
+  height: auto;
+  min-height: 0;
+  padding-bottom: 8px;
+}
+
+:host ::ng-deep app-input-multi-select .smart-card--subtle .smart-selected__label {
+  margin-bottom: 6px;
+}
+
+:host ::ng-deep app-input-multi-select .smart-card--subtle .smart-selected__chips {
+  min-height: 0;
+  flex: initial;
+}
+
+:host ::ng-deep app-input-multi-select .smart-card--subtle .smart-selected__empty {
+  display: none;
+}
+
 :host ::ng-deep app-input-multi-select .smart-card--subtle .smart-card-content {
   height: auto !important;
-  max-height: 170px;
   padding-right: 0;
   border-top: 0;
 }

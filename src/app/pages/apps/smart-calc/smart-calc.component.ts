@@ -594,11 +594,13 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
   }
 
   multiSelectCardMinHeight(): number {
-    return this.mobileViewport() ? 150 : 170;
+    return 0;
   }
 
   multiSelectListHeight(): number {
-    return this.mobileViewport() ? 110 : 140;
+    const optionHeight = this.mobileViewport() ? 44 : 48;
+    const visibleOptions = Math.min(Math.max(this.acabamentos.length, 1), 4);
+    return visibleOptions * optionHeight;
   }
 
   private atualizarViewport(): void {
