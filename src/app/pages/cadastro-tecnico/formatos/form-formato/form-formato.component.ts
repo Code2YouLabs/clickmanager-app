@@ -40,6 +40,7 @@ import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mob
 export class FormFormatoComponent implements OnInit {
   form!: FormGroup;
   isEditMode = false;
+  isCloneMode = false;
   formatoId!: number;
   isMobileView = false;
 
@@ -67,6 +68,13 @@ export class FormFormatoComponent implements OnInit {
         this.isEditMode = true;
         this.formatoId = +id;
         this.carregarFormato(this.formatoId);
+        return;
+      }
+
+      const cloneFrom = Number(this.route.snapshot.queryParamMap.get('cloneFrom'));
+      if (Number.isFinite(cloneFrom) && cloneFrom > 0) {
+        this.isCloneMode = true;
+        this.carregarFormato(cloneFrom, true);
       }
     });
   }
@@ -76,11 +84,11 @@ export class FormFormatoComponent implements OnInit {
     this.atualizarViewport();
   }
 
-  carregarFormato(id: number): void {
+  carregarFormato(id: number, comoClone = false): void {
     this.formatoService.buscarPorId(id).subscribe({
       next: (formato: Formato) => {
         this.form.patchValue({
-          nome: formato.nome,
+          nome: comoClone ? this.nomeClone(formato.nome) : formato.nome,
           larguraCm: formato.larguraCm,
           alturaCm: formato.alturaCm,
           larguraUtilCm: formato.larguraUtilCm,
@@ -159,6 +167,9 @@ export class FormFormatoComponent implements OnInit {
   }
 
   get tituloPagina(): string {
+    if (this.isCloneMode) {
+      return 'Clonar Formato';
+    }
     return this.isEditMode ? 'Editar Formato' : 'Novo Formato';
   }
 
@@ -176,5 +187,9 @@ export class FormFormatoComponent implements OnInit {
     }
 
     this.isMobileView = window.innerWidth <= 768;
+  }
+
+  private nomeClone(nome: string): string {
+    return `${nome || 'Formato'} Cópia`;
   }
 }

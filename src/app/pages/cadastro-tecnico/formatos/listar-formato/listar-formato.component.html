@@ -37,6 +37,9 @@
             <a (click)="editar(f)" class="m-r-10 cursor-pointer">
               <i-tabler name="edit" class="icon-18"></i-tabler>
             </a>
+            <a (click)="clonar(f)" class="m-r-10 cursor-pointer">
+              <i-tabler name="copy" class="icon-18"></i-tabler>
+            </a>
             <a (click)="excluir(f)" class="cursor-pointer">
               <i-tabler name="trash" class="icon-18"></i-tabler>
             </a>
@@ -112,6 +115,10 @@
   <button mat-menu-item type="button" (click)="editar(formatoSelecionadoMenu!)" [disabled]="!formatoSelecionadoMenu">
     <mat-icon>edit</mat-icon>
     <span>Editar</span>
+  </button>
+  <button mat-menu-item type="button" (click)="clonar(formatoSelecionadoMenu!)" [disabled]="!formatoSelecionadoMenu">
+    <mat-icon>content_copy</mat-icon>
+    <span>Clonar</span>
   </button>
   <button mat-menu-item type="button" (click)="excluir(formatoSelecionadoMenu!)" [disabled]="!formatoSelecionadoMenu">
     <mat-icon>delete</mat-icon>

@@ -37,6 +37,10 @@
                             <i-tabler name="edit" class="icon-18"></i-tabler>
                         </a>
 
+                        <a *temPermissao="'SERVICOS_CADASTRAR'" (click)="clonar(servico)" class="m-r-10 cursor-pointer">
+                            <i-tabler name="copy" class="icon-18"></i-tabler>
+                        </a>
+
                         <a *temPermissao="'SERVICOS_EXCLUIR'" (click)="excluir(servico)" class="cursor-pointer">
                             <i-tabler name="trash" class="icon-18"></i-tabler>
                         </a>
@@ -121,6 +125,15 @@
         [disabled]="!servicoSelecionadoMenu">
         <mat-icon>edit</mat-icon>
         <span>Editar</span>
+    </button>
+    <button
+        *temPermissao="'SERVICOS_CADASTRAR'"
+        mat-menu-item
+        type="button"
+        (click)="clonar(servicoSelecionadoMenu!)"
+        [disabled]="!servicoSelecionadoMenu">
+        <mat-icon>content_copy</mat-icon>
+        <span>Clonar</span>
     </button>
     <button
         *temPermissao="'SERVICOS_EXCLUIR'"

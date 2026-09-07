@@ -42,6 +42,7 @@ export class FormServicoComponent implements OnInit {
 
   form!: FormGroup;
   isEditMode = false;
+  isCloneMode = false;
   servicoId!: number;
   isMobileView = false;
 
@@ -78,13 +79,20 @@ export class FormServicoComponent implements OnInit {
       this.isEditMode = true;
       this.servicoId = +id;
       this.carregarServico(this.servicoId);
+      return;
+    }
+
+    const cloneFrom = Number(this.route.snapshot.queryParamMap.get('cloneFrom'));
+    if (Number.isFinite(cloneFrom) && cloneFrom > 0) {
+      this.isCloneMode = true;
+      this.carregarServico(cloneFrom, true);
     }
   }
 
-  carregarServico(id: number): void {
+  carregarServico(id: number, comoClone = false): void {
     this.servicoService.buscarPorId(id).subscribe({
       next: (servico: ServicoResponse) => this.form.patchValue({
-        nome: servico.nome,
+        nome: comoClone ? this.nomeClone(servico.nome) : servico.nome,
         descricao: servico.descricao,
         preco: servico.preco
       }),
@@ -130,6 +138,9 @@ export class FormServicoComponent implements OnInit {
   }
 
   get tituloPagina(): string {
+    if (this.isCloneMode) {
+      return 'Clonar Serviço';
+    }
     return this.isEditMode ? 'Editar Serviço' : 'Novo Serviço';
   }
 
@@ -147,6 +158,10 @@ export class FormServicoComponent implements OnInit {
     }
 
     this.isMobileView = window.innerWidth <= 768;
+  }
+
+  private nomeClone(nome: string): string {
+    return `${nome || 'Serviço'} Cópia`;
   }
 
 }

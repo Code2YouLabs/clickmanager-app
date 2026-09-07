@@ -35,6 +35,7 @@ import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mob
 export class FormCoresComponent implements OnInit{
   form!: FormGroup;
   isEditMode = false;
+  isCloneMode = false;
   corId!: number;
   isMobileView = false;
 
@@ -59,6 +60,13 @@ export class FormCoresComponent implements OnInit{
         this.isEditMode = true;
         this.corId = +id;
         this.carregarCor(this.corId);
+        return;
+      }
+
+      const cloneFrom = Number(this.route.snapshot.queryParamMap.get('cloneFrom'));
+      if (Number.isFinite(cloneFrom) && cloneFrom > 0) {
+        this.isCloneMode = true;
+        this.carregarCor(cloneFrom, true);
       }
     });
   }
@@ -68,11 +76,11 @@ export class FormCoresComponent implements OnInit{
     this.atualizarViewport();
   }
 
-  carregarCor(id: number): void {
+  carregarCor(id: number, comoClone = false): void {
     this.coresService.buscarPorId(id).subscribe({
       next: (cor: Cor) => {
         this.form.patchValue({
-          nome: cor.nome,
+          nome: comoClone ? this.nomeClone(cor.nome) : cor.nome,
           descricao: cor.descricao
         });
       },
@@ -133,6 +141,9 @@ export class FormCoresComponent implements OnInit{
   }
 
   get tituloPagina(): string {
+    if (this.isCloneMode) {
+      return 'Clonar Cor';
+    }
     return this.isEditMode ? 'Editar Cor' : 'Nova Cor';
   }
 
@@ -150,5 +161,9 @@ export class FormCoresComponent implements OnInit{
     }
 
     this.isMobileView = window.innerWidth <= 768;
+  }
+
+  private nomeClone(nome: string): string {
+    return `${nome || 'Cor'} Cópia`;
   }
 }

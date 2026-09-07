@@ -111,6 +111,23 @@ export class ListarServicoComponent implements OnInit {
     this.router.navigate(['/page/cadastro-tecnico/servico/editar', servico.id]);
   }
 
+  clonar(servico: ServicoListagem): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Clonar serviço',
+        message: `Deseja usar "${servico.nome}" como base para criar um novo serviço?`,
+        confirmText: 'Clonar'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmado => {
+      if (confirmado) {
+        this.router.navigate(['/page/cadastro-tecnico/servico/criar'], { queryParams: { cloneFrom: servico.id } });
+      }
+    });
+  }
+
   excluir(servico: ServicoListagem): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '400px',

@@ -105,6 +105,23 @@ export class ListarCoresComponent implements OnInit{
     this.router.navigate(['page/cadastro-tecnico/cores/editar', cor.id]);
   }
 
+  clonar(cor: Cor): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Clonar cor',
+        message: `Deseja usar "${cor.nome}" como base para criar uma nova cor?`,
+        confirmText: 'Clonar'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.router.navigate(['/page/cadastro-tecnico/cores/nova'], { queryParams: { cloneFrom: cor.id } });
+      }
+    });
+  }
+
   excluir(cor: Cor): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '400px',

@@ -109,6 +109,23 @@ export class ListarMaterialComponent implements OnInit {
     this.router.navigate(['page/cadastro-tecnico/materiais/editar', material.id]);
   }
 
+  clonar(material: Material): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Clonar material',
+        message: `Deseja usar "${material.nome}" como base para criar um novo material?`,
+        confirmText: 'Clonar'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.router.navigate(['/page/cadastro-tecnico/materiais/nova'], { queryParams: { cloneFrom: material.id } });
+      }
+    });
+  }
+
   excluir(material: Material): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '400px',

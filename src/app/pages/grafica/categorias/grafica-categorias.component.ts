@@ -71,11 +71,9 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
             <button mat-icon-button type="button" matTooltip="Editar" [attr.aria-label]="'Editar ' + row.nome" (click)="editar(row)">
               <mat-icon>edit</mat-icon>
             </button>
-            <span matTooltip="Clonar - em breve">
-              <button mat-icon-button type="button" aria-label="Clonar categoria" disabled>
-                <mat-icon>content_copy</mat-icon>
-              </button>
-            </span>
+            <button mat-icon-button type="button" matTooltip="Clonar" [attr.aria-label]="'Clonar ' + row.nome" (click)="clonar(row)">
+              <mat-icon>content_copy</mat-icon>
+            </button>
             <button mat-icon-button type="button" color="warn" matTooltip="Excluir" [attr.aria-label]="'Excluir ' + row.nome" (click)="excluir(row)">
               <mat-icon>delete</mat-icon>
             </button>
@@ -189,6 +187,24 @@ export class GraficaCategoriasComponent implements OnInit {
 
   editar(item: CatalogoCategoria): void {
     this.router.navigate(['/page/grafica/categorias', item.id, 'editar']);
+  }
+
+  clonar(item: CatalogoCategoria): void {
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      width: '420px',
+      data: {
+        title: 'Clonar categoria',
+        message: `Deseja usar "${item.nome}" como base para criar uma nova categoria?`,
+        confirmText: 'Clonar',
+      },
+    });
+
+    ref.afterClosed().subscribe((confirmado) => {
+      if (!confirmado) {
+        return;
+      }
+      this.router.navigate(['/page/grafica/categorias/novo'], { queryParams: { cloneFrom: item.id } });
+    });
   }
 
   excluir(item: CatalogoCategoria): void {

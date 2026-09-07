@@ -110,6 +110,23 @@ export class ListarFormatoComponent implements OnInit {
     this.router.navigate(['page/cadastro-tecnico/formatos/editar', formato.id]);
   }
 
+  clonar(formato: Formato): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Clonar formato',
+        message: `Deseja usar "${formato.nome}" como base para criar um novo formato?`,
+        confirmText: 'Clonar'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.router.navigate(['/page/cadastro-tecnico/formatos/criar'], { queryParams: { cloneFrom: formato.id } });
+      }
+    });
+  }
+
   excluir(formato: Formato): void {
     const dialogRef = this.dialog.open(ConfirmDialogComponent, {
       width: '400px',

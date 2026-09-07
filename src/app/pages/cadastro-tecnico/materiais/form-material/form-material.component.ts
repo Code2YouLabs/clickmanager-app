@@ -34,6 +34,7 @@ import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mob
 export class FormMaterialComponent implements OnInit {
   form!: FormGroup;
   isEditMode = false;
+  isCloneMode = false;
   materialId!: number;
   isMobileView = false;
 
@@ -58,6 +59,13 @@ export class FormMaterialComponent implements OnInit {
         this.isEditMode = true;
         this.materialId = +id;
         this.carregarMaterial(this.materialId);
+        return;
+      }
+
+      const cloneFrom = Number(this.route.snapshot.queryParamMap.get('cloneFrom'));
+      if (Number.isFinite(cloneFrom) && cloneFrom > 0) {
+        this.isCloneMode = true;
+        this.carregarMaterial(cloneFrom, true);
       }
     });
   }
@@ -67,11 +75,11 @@ export class FormMaterialComponent implements OnInit {
     this.atualizarViewport();
   }
 
-  carregarMaterial(id: number): void {
+  carregarMaterial(id: number, comoClone = false): void {
     this.materialService.buscarPorId(id).subscribe({
       next: (material: Material) => {
         this.form.patchValue({
-          nome: material.nome,
+          nome: comoClone ? this.nomeClone(material.nome) : material.nome,
           descricao: material.descricao
         });
       },
@@ -132,6 +140,9 @@ export class FormMaterialComponent implements OnInit {
   }
 
   get tituloPagina(): string {
+    if (this.isCloneMode) {
+      return 'Clonar Material';
+    }
     return this.isEditMode ? 'Editar Material' : 'Novo Material';
   }
 
@@ -149,5 +160,9 @@ export class FormMaterialComponent implements OnInit {
     }
 
     this.isMobileView = window.innerWidth <= 768;
+  }
+
+  private nomeClone(nome: string): string {
+    return `${nome || 'Material'} Cópia`;
   }
 }

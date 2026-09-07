@@ -132,6 +132,7 @@ type CategoriaFormSnapshot = {
 })
 export class GraficaCategoriaFormComponent implements OnInit {
   categoriaId?: number;
+  cloneFromId?: number;
   categoriasPai: CatalogoCategoriaOption[] = [];
   salvando = false;
   carregando = false;
@@ -145,10 +146,16 @@ export class GraficaCategoriaFormComponent implements OnInit {
   });
 
   get titulo(): string {
+    if (this.cloneFromId) {
+      return 'Clonar categoria';
+    }
     return this.categoriaId ? 'Editar categoria' : 'Nova categoria';
   }
 
   get subtitulo(): string {
+    if (this.cloneFromId) {
+      return 'Revise os dados e salve como uma nova categoria gráfica';
+    }
     return this.categoriaId ? 'Atualize os dados da categoria gráfica' : 'Cadastro de categoria gráfica';
   }
 
@@ -175,9 +182,11 @@ export class GraficaCategoriaFormComponent implements OnInit {
       switchMap((params) => {
         const id = Number(params.get('id'));
         this.categoriaId = Number.isFinite(id) && id > 0 ? id : undefined;
+        const cloneFrom = Number(this.route.snapshot.queryParamMap.get('cloneFrom'));
+        this.cloneFromId = !this.categoriaId && Number.isFinite(cloneFrom) && cloneFrom > 0 ? cloneFrom : undefined;
         return forkJoin({
           categoriasPai: this.service.options(true).pipe(catchError(() => of([]))),
-          categoria: this.categoriaId ? this.service.detalhar(this.categoriaId) : of(null),
+          categoria: this.categoriaId || this.cloneFromId ? this.service.detalhar(this.categoriaId || this.cloneFromId!) : of(null),
         });
       }),
       finalize(() => this.carregando = false),
@@ -185,7 +194,7 @@ export class GraficaCategoriaFormComponent implements OnInit {
       next: ({ categoriasPai, categoria }) => {
         this.categoriasPai = categoriasPai || [];
         if (categoria) {
-          this.aplicarCategoria(categoria);
+          this.aplicarCategoria(categoria, !!this.cloneFromId);
         } else {
           this.registrarSnapshot();
         }
@@ -229,9 +238,9 @@ export class GraficaCategoriaFormComponent implements OnInit {
     this.router.navigate(['/page/grafica/categorias']);
   }
 
-  private aplicarCategoria(categoria: CatalogoCategoria): void {
+  private aplicarCategoria(categoria: CatalogoCategoria, comoClone = false): void {
     this.form.reset({
-      nome: categoria.nome || '',
+      nome: comoClone ? this.nomeClone(categoria.nome) : categoria.nome || '',
       categoriaPaiId: categoria.categoriaPaiId || null,
       descricaoCurta: categoria.descricaoCurta || '',
       descricaoCompleta: categoria.descricaoCompleta || '',
@@ -261,5 +270,9 @@ export class GraficaCategoriaFormComponent implements OnInit {
 
   private codigo(valor: string): string {
     return catalogoSlugify(valor).toUpperCase().replace(/-/g, '_').slice(0, 50);
+  }
+
+  private nomeClone(nome: string): string {
+    return `${nome || 'Categoria'} Cópia`;
   }
 }
