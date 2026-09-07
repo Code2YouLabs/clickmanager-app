@@ -1,6 +1,12 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
 .status-grid-card {
   border-radius: 22px;
   overflow: hidden;
+  height: 100%;
 }
 
 .status-grid-card__content {

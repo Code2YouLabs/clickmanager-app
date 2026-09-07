@@ -28,7 +28,7 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .dashboard-kpis--loading {
@@ -38,6 +38,7 @@
 .dashboard-kpi-button {
   display: block;
   width: 100%;
+  height: 100%;
   padding: 0;
   border: 0;
   background: transparent;
@@ -53,37 +54,81 @@
 
 .dashboard-main-grid {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(280px, 0.72fr);
-  gap: 16px;
+  grid-template-columns: minmax(0, 2.2fr) minmax(300px, 0.78fr);
+  gap: 14px;
   align-items: stretch;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .dashboard-secondary-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.9fr);
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
   align-items: stretch;
 }
 
 .dashboard-chart-section,
 .dashboard-quick-section {
   min-width: 0;
+  height: 100%;
+}
+
+:host ::ng-deep .dashboard-page .page-card,
+:host ::ng-deep .dashboard-chart-section .section-card,
+:host ::ng-deep .dashboard-quick-section .section-card,
+:host ::ng-deep app-status-grid,
+:host ::ng-deep app-receita-resumo,
+:host ::ng-deep app-status-grid .status-grid-card,
+:host ::ng-deep app-receita-resumo .dashboard-receita-card {
+  height: 100%;
+}
+
+:host ::ng-deep .dashboard-page .page-card {
+  border-radius: 18px;
+}
+
+:host ::ng-deep .dashboard-chart-section .section-card,
+:host ::ng-deep .dashboard-quick-section .section-card,
+:host ::ng-deep app-status-grid .status-grid-card,
+:host ::ng-deep app-receita-resumo .dashboard-receita-card {
+  border-radius: 16px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  overflow: hidden;
+}
+
+:host ::ng-deep .dashboard-chart-section .section-card,
+:host ::ng-deep .dashboard-quick-section .section-card {
+  display: flex;
+  flex-direction: column;
 }
 
 :host ::ng-deep .dashboard-chart-section .section-card__body,
 :host ::ng-deep .dashboard-quick-section .section-card__body {
+  flex: 1;
   padding-top: 0;
+}
+
+:host ::ng-deep .dashboard-quick-section .section-card__body {
+  display: flex;
 }
 
 :host ::ng-deep .dashboard-chart-section app-comparativo-pedidos .dashboard-chart-card,
 :host ::ng-deep .dashboard-chart-section app-comparativo-pedidos .mat-mdc-card {
   box-shadow: none !important;
   border: 0;
+  border-radius: 0;
+}
+
+:host ::ng-deep app-status-grid .mat-mdc-card,
+:host ::ng-deep app-receita-resumo .mat-mdc-card {
+  margin: 0;
 }
 
 .quick-actions {
   display: grid;
+  width: 100%;
+  align-content: start;
   gap: 10px;
 }
 
@@ -154,6 +199,13 @@
   .dashboard-main-grid,
   .dashboard-secondary-grid {
     grid-template-columns: 1fr;
+  }
+
+  :host ::ng-deep app-status-grid,
+  :host ::ng-deep app-receita-resumo,
+  :host ::ng-deep app-status-grid .status-grid-card,
+  :host ::ng-deep app-receita-resumo .dashboard-receita-card {
+    height: auto;
   }
 }
 

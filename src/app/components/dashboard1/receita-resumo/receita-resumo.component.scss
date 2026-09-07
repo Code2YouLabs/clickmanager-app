@@ -1,11 +1,18 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
 .dashboard-receita-card {
   border-radius: 24px;
   background: linear-gradient(135deg, #f8fbff 0%, #ffffff 70%);
+  height: 100%;
 }
 
 .dashboard-receita-card__content {
   display: grid;
   gap: 16px;
+  min-height: 100%;
 }
 
 .dashboard-receita-card__top {
