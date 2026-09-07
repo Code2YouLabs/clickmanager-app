@@ -56,6 +56,17 @@ export interface GraficaDashboardResumoResponse {
     orcamentoStatus: GraficaDashboardIndicador[];
 }
 
+export interface GraficaDashboardVisaoGeralResponse extends GraficaDashboardResumoResponse {
+    receita: {
+        inicio: string;
+        fim: string;
+        label: string;
+        valorTotal: number;
+        totalPedidos: number;
+        porForma: { forma: string; valor: number }[];
+    };
+}
+
 export interface DashboardComparativoResponse {
     empresa: {
         nome: string;
@@ -84,6 +95,7 @@ export class DashboardService {
     private readonly endpointComparativo = 'api/grafica/dashboard/comparativo';
     private readonly endpointReceita = 'api/grafica/dashboard/receita-resumo';
     private readonly endpointResumo = 'api/grafica/dashboard/resumo';
+    private readonly endpointVisaoGeral = 'api/grafica/dashboard/visao-geral';
 
     constructor(private api: ApiService) { }
 
@@ -117,6 +129,10 @@ export class DashboardService {
 
     obterResumoGrafica(): Observable<GraficaDashboardResumoResponse> {
         return this.api.get<GraficaDashboardResumoResponse>(this.endpointResumo);
+    }
+
+    obterVisaoGeralGrafica(): Observable<GraficaDashboardVisaoGeralResponse> {
+        return this.api.get<GraficaDashboardVisaoGeralResponse>(this.endpointVisaoGeral);
     }
 
     private nomeMes(index: number): string {
