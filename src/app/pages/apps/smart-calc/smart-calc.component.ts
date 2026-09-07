@@ -2,10 +2,10 @@ import { Component, ElementRef, HostListener, OnDestroy, OnInit, computed, signa
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
-import { InputMultiSelectComponent } from 'src/app/components/inputs/input-multi-select/input-multi-select-component';
 import { InputNumericoComponent } from 'src/app/components/inputs/input-numerico/input-numerico.component';
 import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
 import { MetricCardComponent } from 'src/app/components/metric-card/metric-card.component';
@@ -41,9 +41,9 @@ type Acabamento = { id: string; nome: string };
     CommonModule,
     ReactiveFormsModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    InputMultiSelectComponent,
     InputNumericoComponent,
     InputOptionsComponent,
     MetricCardComponent,
@@ -593,14 +593,19 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
     }
   }
 
-  multiSelectCardMinHeight(): number {
-    return 0;
+  acabamentoSelecionado(id: string): boolean {
+    return (this.form.controls.acabamentosIds.value ?? []).some((selecionado) => String(selecionado) === String(id));
   }
 
-  multiSelectListHeight(): number {
-    const optionHeight = this.mobileViewport() ? 44 : 48;
-    const visibleOptions = Math.min(Math.max(this.acabamentos.length, 1), 4);
-    return visibleOptions * optionHeight;
+  alternarAcabamento(id: string, checked: boolean): void {
+    const atual = this.form.controls.acabamentosIds.value ?? [];
+    const next = checked
+      ? Array.from(new Set([...atual, id]))
+      : atual.filter((selecionado) => String(selecionado) !== String(id));
+
+    this.form.controls.acabamentosIds.setValue(next);
+    this.form.controls.acabamentosIds.markAsDirty();
+    this.form.controls.acabamentosIds.markAsTouched();
   }
 
   private atualizarViewport(): void {

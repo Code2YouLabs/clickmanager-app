@@ -109,16 +109,18 @@
 
       <app-section-card title="3. Acabamentos" subtitle="Selecione os acabamentos opcionais.">
         @if (acabamentos.length) {
-          <app-input-multi-select
-            [control]="form.controls.acabamentosIds"
-            label=""
-            searchPlaceholder="Buscar acabamento"
-            [showSelectedCount]="true"
-            [options]="acabamentos"
-            [cardMinHeight]="multiSelectCardMinHeight()"
-            [listHeight]="multiSelectListHeight()"
-            visualStyle="subtle">
-          </app-input-multi-select>
+          <div class="acabamentos-grid">
+            @for (acabamento of acabamentos; track acabamento.id) {
+              <label class="acabamento-option">
+                <span>{{ acabamento.nome }}</span>
+                <mat-checkbox
+                  color="primary"
+                  [checked]="acabamentoSelecionado(acabamento.id)"
+                  (change)="alternarAcabamento(acabamento.id, $event.checked)">
+                </mat-checkbox>
+              </label>
+            }
+          </div>
         } @else {
           <div class="empty-inline">
             <mat-icon>info</mat-icon>

@@ -354,54 +354,37 @@
 }
 
 :host ::ng-deep app-input-options .mat-mdc-form-field,
-:host ::ng-deep app-input-numerico .mat-mdc-form-field,
-:host ::ng-deep app-input-multi-select .mat-mdc-form-field {
+:host ::ng-deep app-input-numerico .mat-mdc-form-field {
   width: 100%;
 }
 
-:host ::ng-deep app-input-multi-select .smart-card--subtle {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+.acabamentos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
 }
 
-:host ::ng-deep app-input-multi-select .smart-card--subtle mat-card-header {
-  display: none;
-}
+.acabamento-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
 
-:host ::ng-deep app-input-multi-select .smart-card--subtle .smart-search {
-  padding: 0 0 8px;
-}
-
-:host ::ng-deep app-input-multi-select .smart-card--subtle .smart-selected {
-  height: auto;
-  min-height: 0;
-  padding-bottom: 8px;
-}
-
-:host ::ng-deep app-input-multi-select .smart-card--subtle .smart-selected__label {
-  margin-bottom: 6px;
-}
-
-:host ::ng-deep app-input-multi-select .smart-card--subtle .smart-selected__chips {
-  min-height: 0;
-  flex: initial;
-}
-
-:host ::ng-deep app-input-multi-select .smart-card--subtle .smart-selected__empty {
-  display: none;
-}
-
-:host ::ng-deep app-input-multi-select .smart-card--subtle .smart-card-content {
-  height: auto !important;
-  padding-right: 0;
-  border-top: 0;
-}
-
-:host ::ng-deep app-input-multi-select .smart-card--subtle .smart-list .mdc-list-item {
-  min-height: 42px;
-  border-bottom: 1px solid #eef2f7;
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .mobile-result-sheet,
@@ -438,6 +421,7 @@
 
   .form-grid--two,
   .form-grid--three,
+  .acabamentos-grid,
   .metric-grid {
     grid-template-columns: 1fr;
   }
