@@ -29,7 +29,7 @@
                 Voltar
             </button>
 
-            <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid">
+            <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || cloneNomeInvalido">
                 {{ textoAcaoPrincipal }}
             </button>
         </div>
@@ -44,7 +44,7 @@
     [expandable]="false"
     secondaryActionText="Voltar"
     [actionText]="textoAcaoPrincipal"
-    [actionDisabled]="form.invalid"
+    [actionDisabled]="form.invalid || cloneNomeInvalido"
     bottomOffset="58px"
     [attachedToBottomNav]="true"
     (secondaryAction)="voltar()"

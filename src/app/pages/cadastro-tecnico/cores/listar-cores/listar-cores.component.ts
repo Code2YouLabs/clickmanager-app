@@ -9,6 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { Router, RouterModule } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { ToastrService } from 'ngx-toastr';
 import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
@@ -33,6 +34,7 @@ import { MobileFabActionComponent } from 'src/app/components/mobile-fab-action/m
     MatIconModule,
     MatButtonModule,
     MatMenuModule,
+    MatTooltipModule,
     MatRippleModule,
     TablerIconsModule,
     RouterModule,

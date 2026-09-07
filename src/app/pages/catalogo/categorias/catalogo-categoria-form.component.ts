@@ -44,7 +44,7 @@ import { CatalogoCategoriaCaracteristicasComponent } from './catalogo-categoria-
         <app-catalogo-categoria-caracteristicas [categoriaId]="categoriaId"></app-catalogo-categoria-caracteristicas>
         <div class="actions">
           <button mat-stroked-button type="button" (click)="voltar()">Voltar</button>
-          <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || salvando">{{ salvando ? 'Salvando...' : 'Salvar' }}</button>
+          <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || salvando || cloneNomeInvalido">{{ salvando ? 'Salvando...' : 'Salvar' }}</button>
         </div>
       </form>
     </app-page-card>
@@ -67,6 +67,7 @@ export class CatalogoCategoriaFormComponent implements OnInit, CanDeactivateWith
   isEdit = false;
   isClone = false;
   categoriaId?: number;
+  private cloneNomeOriginal?: string;
   salvando = false;
   salvo = false;
   slugManual = false;
@@ -98,6 +99,7 @@ export class CatalogoCategoriaFormComponent implements OnInit, CanDeactivateWith
       this.isClone = true;
       this.service.detalhar(cloneFrom).subscribe({
         next: (item) => {
+          this.cloneNomeOriginal = item.nome;
           this.form.patchValue({
             ...item,
             codigo: this.codigoClone(item.codigo),
@@ -117,6 +119,10 @@ export class CatalogoCategoriaFormComponent implements OnInit, CanDeactivateWith
     return 'Nova categoria';
   }
 
+  get cloneNomeInvalido(): boolean {
+    return this.isClone && this.nomeIgualAoOriginal(this.form.controls.nome.value);
+  }
+
   get categoriasPaiDisponiveis(): CatalogoCategoriaOption[] {
     return this.categoriasPai.filter((item) => item.id !== this.categoriaId);
   }
@@ -124,6 +130,10 @@ export class CatalogoCategoriaFormComponent implements OnInit, CanDeactivateWith
   salvar(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      return;
+    }
+    if (this.cloneNomeInvalido) {
+      this.toastr.warning('Altere o nome para salvar o clone.');
       return;
     }
     this.salvando = true;
@@ -157,5 +167,13 @@ export class CatalogoCategoriaFormComponent implements OnInit, CanDeactivateWith
 
   private codigoClone(codigo: string | null | undefined): string {
     return `${codigo || 'CATEGORIA'}_COPIA`.slice(0, 50);
+  }
+
+  private nomeIgualAoOriginal(nome: string | null | undefined): boolean {
+    return this.normalizarNome(nome) === this.normalizarNome(this.cloneNomeOriginal);
+  }
+
+  private normalizarNome(nome: string | null | undefined): string {
+    return (nome || '').trim().toLocaleLowerCase('pt-BR');
   }
 }

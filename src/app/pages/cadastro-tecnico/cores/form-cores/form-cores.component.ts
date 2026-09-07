@@ -38,6 +38,7 @@ export class FormCoresComponent implements OnInit{
   isCloneMode = false;
   corId!: number;
   isMobileView = false;
+  private cloneNomeOriginal?: string;
 
   constructor(
     private fb: FormBuilder,
@@ -79,6 +80,9 @@ export class FormCoresComponent implements OnInit{
   carregarCor(id: number, comoClone = false): void {
     this.coresService.buscarPorId(id).subscribe({
       next: (cor: Cor) => {
+        if (comoClone) {
+          this.cloneNomeOriginal = cor.nome;
+        }
         this.form.patchValue({
           nome: comoClone ? this.nomeClone(cor.nome) : cor.nome,
           descricao: cor.descricao
@@ -93,6 +97,10 @@ export class FormCoresComponent implements OnInit{
 
   onSubmit(): void {
     if (this.form.invalid) return;
+    if (this.cloneNomeInvalido) {
+      this.toastr.warning('Altere o nome para salvar o clone.');
+      return;
+    }
 
     const corData = this.form.value as Cor;
 
@@ -151,6 +159,10 @@ export class FormCoresComponent implements OnInit{
     return this.isEditMode ? 'Atualizar' : 'Salvar';
   }
 
+  get cloneNomeInvalido(): boolean {
+    return this.isCloneMode && this.nomeIgualAoOriginal(this.form?.get('nome')?.value);
+  }
+
   voltar(): void {
     this.router.navigate(['/page/cadastro-tecnico/cores']);
   }
@@ -165,5 +177,13 @@ export class FormCoresComponent implements OnInit{
 
   private nomeClone(nome: string): string {
     return `${nome || 'Cor'} Cópia`;
+  }
+
+  private nomeIgualAoOriginal(nome: string | null | undefined): boolean {
+    return this.normalizarNome(nome) === this.normalizarNome(this.cloneNomeOriginal);
+  }
+
+  private normalizarNome(nome: string | null | undefined): string {
+    return (nome || '').trim().toLocaleLowerCase('pt-BR');
   }
 }

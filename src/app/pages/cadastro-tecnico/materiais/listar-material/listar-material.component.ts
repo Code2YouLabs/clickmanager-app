@@ -9,6 +9,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { Router, RouterModule } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ToastrService } from 'ngx-toastr';
 import { MatRippleModule } from '@angular/material/core';
 import { TablerIconsModule } from 'angular-tabler-icons';
@@ -32,6 +33,7 @@ import { MobileFabActionComponent } from 'src/app/components/mobile-fab-action/m
     MatIconModule,
     MatButtonModule,
     MatMenuModule,
+    MatTooltipModule,
     MatRippleModule,
     TablerIconsModule,
     RouterModule,

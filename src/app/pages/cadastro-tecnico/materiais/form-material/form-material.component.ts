@@ -37,6 +37,7 @@ export class FormMaterialComponent implements OnInit {
   isCloneMode = false;
   materialId!: number;
   isMobileView = false;
+  private cloneNomeOriginal?: string;
 
   constructor(
     private fb: FormBuilder,
@@ -78,6 +79,9 @@ export class FormMaterialComponent implements OnInit {
   carregarMaterial(id: number, comoClone = false): void {
     this.materialService.buscarPorId(id).subscribe({
       next: (material: Material) => {
+        if (comoClone) {
+          this.cloneNomeOriginal = material.nome;
+        }
         this.form.patchValue({
           nome: comoClone ? this.nomeClone(material.nome) : material.nome,
           descricao: material.descricao
@@ -92,6 +96,10 @@ export class FormMaterialComponent implements OnInit {
 
   onSubmit(): void {
     if (this.form.invalid) return;
+    if (this.cloneNomeInvalido) {
+      this.toastr.warning('Altere o nome para salvar o clone.');
+      return;
+    }
 
     const materialData = this.form.value as Material;
 
@@ -150,6 +158,10 @@ export class FormMaterialComponent implements OnInit {
     return this.isEditMode ? 'Atualizar' : 'Salvar';
   }
 
+  get cloneNomeInvalido(): boolean {
+    return this.isCloneMode && this.nomeIgualAoOriginal(this.form?.get('nome')?.value);
+  }
+
   voltar(): void {
     this.router.navigate(['/page/cadastro-tecnico/materiais']);
   }
@@ -164,5 +176,13 @@ export class FormMaterialComponent implements OnInit {
 
   private nomeClone(nome: string): string {
     return `${nome || 'Material'} Cópia`;
+  }
+
+  private nomeIgualAoOriginal(nome: string | null | undefined): boolean {
+    return this.normalizarNome(nome) === this.normalizarNome(this.cloneNomeOriginal);
+  }
+
+  private normalizarNome(nome: string | null | undefined): string {
+    return (nome || '').trim().toLocaleLowerCase('pt-BR');
   }
 }

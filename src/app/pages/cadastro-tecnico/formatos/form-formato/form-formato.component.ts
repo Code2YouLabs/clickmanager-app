@@ -43,6 +43,7 @@ export class FormFormatoComponent implements OnInit {
   isCloneMode = false;
   formatoId!: number;
   isMobileView = false;
+  private cloneNomeOriginal?: string;
 
   constructor(
     private fb: FormBuilder,
@@ -87,6 +88,9 @@ export class FormFormatoComponent implements OnInit {
   carregarFormato(id: number, comoClone = false): void {
     this.formatoService.buscarPorId(id).subscribe({
       next: (formato: Formato) => {
+        if (comoClone) {
+          this.cloneNomeOriginal = formato.nome;
+        }
         this.form.patchValue({
           nome: comoClone ? this.nomeClone(formato.nome) : formato.nome,
           larguraCm: formato.larguraCm,
@@ -104,6 +108,10 @@ export class FormFormatoComponent implements OnInit {
 
   onSubmit(): void {
     if (this.form.invalid) return;
+    if (this.cloneNomeInvalido) {
+      this.toastr.warning('Altere o nome para salvar o clone.');
+      return;
+    }
 
     const formatoData = this.form.value as Formato;
 
@@ -177,6 +185,10 @@ export class FormFormatoComponent implements OnInit {
     return this.isEditMode ? 'Atualizar' : 'Salvar';
   }
 
+  get cloneNomeInvalido(): boolean {
+    return this.isCloneMode && this.nomeIgualAoOriginal(this.form?.get('nome')?.value);
+  }
+
   voltar(): void {
     this.router.navigate(['/page/cadastro-tecnico/formatos']);
   }
@@ -191,5 +203,13 @@ export class FormFormatoComponent implements OnInit {
 
   private nomeClone(nome: string): string {
     return `${nome || 'Formato'} Cópia`;
+  }
+
+  private nomeIgualAoOriginal(nome: string | null | undefined): boolean {
+    return this.normalizarNome(nome) === this.normalizarNome(this.cloneNomeOriginal);
+  }
+
+  private normalizarNome(nome: string | null | undefined): string {
+    return (nome || '').trim().toLocaleLowerCase('pt-BR');
   }
 }
