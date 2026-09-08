@@ -8,7 +8,7 @@ import { finalize } from 'rxjs/operators';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { DataTableCellDirective } from 'src/app/components/data-table/data-table-cell.directive';
 import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
-import { DataTableColumn, DataTablePagination } from 'src/app/components/data-table/data-table.models';
+import { DataTableAction, DataTableActionEvent, DataTableColumn, DataTablePagination } from 'src/app/components/data-table/data-table.models';
 import {
   HierarchyTreeAction,
   HierarchyTreeActionEvent,
@@ -18,6 +18,7 @@ import {
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { MaterialModule } from 'src/app/material.module';
 import { ToastrService } from 'ngx-toastr';
+import { AuthService } from 'src/app/services/auth.service';
 import { CatalogoCategoria, CatalogoListParams } from '../../catalogo/shared/models/catalogo.models';
 import { CatalogoCategoriaService } from '../../catalogo/shared/services/catalogo.service';
 import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils';
@@ -57,10 +58,12 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
           filteredTitle: 'Nenhuma categoria encontrada',
           filteredDescription: 'Altere a busca.'
         }"
+        [actions]="categoriaActions"
         rowKey="id"
         (searchChange)="onSearch($event)"
         (pageChange)="onPageChange($event)"
-        (sortChange)="onSortChange($event)">
+        (sortChange)="onSortChange($event)"
+        (action)="onTableAction($event)">
 
         <div data-table-toolbar-actions class="visualizacao-toggle">
           <mat-button-toggle-group
@@ -91,19 +94,6 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
           <span class="descricao-cell">{{ descricaoLinha(row) }}</span>
         </ng-template>
 
-        <ng-template appDataTableCell="acoes" let-row>
-          <div class="acoes-cell">
-            <button mat-icon-button type="button" matTooltip="Editar" [attr.aria-label]="'Editar ' + row.nome" (click)="editar(row)">
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button mat-icon-button type="button" matTooltip="Clonar" [attr.aria-label]="'Clonar ' + row.nome" (click)="clonar(row)">
-              <mat-icon>content_copy</mat-icon>
-            </button>
-            <button mat-icon-button type="button" color="warn" matTooltip="Excluir" [attr.aria-label]="'Excluir ' + row.nome" (click)="excluir(row)">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </div>
-        </ng-template>
       </app-data-table>
 
       @if (visualizacao === 'arvore') {
@@ -178,15 +168,6 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
       -webkit-line-clamp: 2;
     }
 
-    .acoes-cell {
-      display: inline-flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 4px;
-      min-width: 132px;
-      white-space: nowrap;
-    }
-
     @media (max-width: 760px) {
       .visualizacao-toggle,
       .visualizacao-toggle mat-button-toggle-group {
@@ -202,7 +183,6 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
 })
 export class GraficaCategoriasComponent implements OnInit {
   categorias: CatalogoCategoria[] = [];
-  categoriasArvoreBase: CatalogoCategoria[] = [];
   categoriasArvore: HierarchyTreeNode<CatalogoCategoria>[] = [];
   total = 0;
   pagina = 0;
@@ -224,14 +204,21 @@ export class GraficaCategoriasComponent implements OnInit {
     { key: 'nome', label: 'Nome', sortable: true, sortKey: 'nome', width: '260px' },
     { key: 'categoriaPai', label: 'Categoria pai', width: '220px' },
     { key: 'descricao', label: 'Descrição' },
-    { key: 'acoes', label: 'Ações', align: 'end', width: '152px' },
   ];
 
-  readonly treeActions: HierarchyTreeAction<CatalogoCategoria>[] = [
-    { id: 'editar', label: 'Editar', icon: 'edit' },
-    { id: 'clonar', label: 'Clonar', icon: 'content_copy' },
-    { id: 'excluir', label: 'Excluir', icon: 'delete', color: 'warn' },
-  ];
+  readonly permissoes = {
+    editar: ['CATALOGO_CATEGORIAS_EDITAR', 'GRAFICA_PRODUTOS_EDITAR'],
+    clonar: ['CATALOGO_CATEGORIAS_CADASTRAR', 'GRAFICA_PRODUTOS_EDITAR'],
+    excluir: ['CATALOGO_CATEGORIAS_EXCLUIR', 'GRAFICA_PRODUTOS_EDITAR'],
+  };
+
+  get categoriaActions(): DataTableAction<CatalogoCategoria>[] {
+    return this.actionDefinitions().filter((action) => this.podeExecutar(action.id));
+  }
+
+  get treeActions(): HierarchyTreeAction<CatalogoCategoria>[] {
+    return this.actionDefinitions().filter((action) => this.podeExecutar(action.id));
+  }
 
   get pagination(): DataTablePagination {
     return {
@@ -247,6 +234,7 @@ export class GraficaCategoriasComponent implements OnInit {
     private readonly router: Router,
     private readonly toastr: ToastrService,
     private readonly dialog: MatDialog,
+    private readonly auth: AuthService,
   ) {}
 
   ngOnInit(): void {
@@ -274,6 +262,7 @@ export class GraficaCategoriasComponent implements OnInit {
     this.pagina = 0;
     if (this.visualizacao === 'arvore') {
       this.refreshCategoriasArvore();
+      return;
     }
     this.carregar();
   }
@@ -300,21 +289,12 @@ export class GraficaCategoriasComponent implements OnInit {
     this.carregar();
   }
 
+  onTableAction(event: DataTableActionEvent<CatalogoCategoria>): void {
+    this.executarAcaoCategoria(event.action, event.row);
+  }
+
   onTreeAction(event: HierarchyTreeActionEvent<CatalogoCategoria>): void {
-    const item = event.node.data;
-    if (event.action === 'editar') {
-      this.editar(item);
-      return;
-    }
-
-    if (event.action === 'clonar') {
-      this.clonar(item);
-      return;
-    }
-
-    if (event.action === 'excluir') {
-      this.excluir(item);
-    }
+    this.executarAcaoCategoria(event.action, event.node.data);
   }
 
   novo(): void {
@@ -361,17 +341,15 @@ export class GraficaCategoriasComponent implements OnInit {
       } else {
         this.carregando = true;
       }
-      this.service.inativar(item.id).pipe(finalize(() => {
+      this.service.excluir(item.id).pipe(finalize(() => {
         this.carregando = false;
         this.carregandoArvore = false;
       })).subscribe({
         next: () => {
           this.toastr.success('Categoria excluída.');
-          this.categoriasArvoreBase = [];
-          this.categoriasArvore = [];
           this.carregar();
         },
-        error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível excluir a categoria.')),
+        error: (error) => this.exibirErroExclusao(error, item),
       });
     });
   }
@@ -398,16 +376,13 @@ export class GraficaCategoriasComponent implements OnInit {
   }
 
   private carregarArvore(): void {
-    if (this.categoriasArvoreBase.length) {
-      return;
-    }
-
     this.carregandoArvore = true;
-    this.service.listar({ page: 0, size: 5000, ativo: true, sort: 'nome,asc' })
+    this.service.listarTodas({ ativo: true, sort: 'nome,asc' })
       .pipe(finalize(() => this.carregandoArvore = false))
       .subscribe({
-        next: (page) => {
-          this.categoriasArvoreBase = page.content || [];
+        next: (items) => {
+          this.categorias = items || [];
+          this.total = this.categorias.length;
           this.refreshCategoriasArvore();
         },
         error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível carregar categorias.')),
@@ -447,7 +422,7 @@ export class GraficaCategoriasComponent implements OnInit {
   }
 
   private refreshCategoriasArvore(): void {
-    const nodes = this.buildTree(this.categoriasArvoreBase);
+    const nodes = this.buildTree(this.categorias);
     const termo = this.normalize(this.termo);
     this.categoriasArvore = termo ? this.filterTree(nodes, termo) : nodes;
   }
@@ -502,5 +477,86 @@ export class GraficaCategoriasComponent implements OnInit {
 
   private normalize(value: string | null | undefined): string {
     return (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  }
+
+  private executarAcaoCategoria(action: string, item: CatalogoCategoria): void {
+    if (action === 'editar') {
+      if (!this.temPermissaoAcao(this.permissoes.editar)) return;
+      this.editar(item);
+      return;
+    }
+
+    if (action === 'clonar') {
+      if (!this.temPermissaoAcao(this.permissoes.clonar)) return;
+      this.clonar(item);
+      return;
+    }
+
+    if (action === 'excluir') {
+      if (!this.temPermissaoAcao(this.permissoes.excluir)) return;
+      this.excluir(item);
+    }
+  }
+
+  private actionDefinitions(): Array<{ id: string; label: string; icon: string; color?: 'primary' | 'accent' | 'warn' }> {
+    return [
+      { id: 'editar', label: 'Editar', icon: 'edit' },
+      { id: 'clonar', label: 'Clonar', icon: 'content_copy' },
+      { id: 'excluir', label: 'Excluir', icon: 'delete', color: 'warn' },
+    ];
+  }
+
+  private podeExecutar(action: string): boolean {
+    if (action === 'editar') return this.auth.temAlgumaPermissao(this.permissoes.editar);
+    if (action === 'clonar') return this.auth.temAlgumaPermissao(this.permissoes.clonar);
+    if (action === 'excluir') return this.auth.temAlgumaPermissao(this.permissoes.excluir);
+    return false;
+  }
+
+  private temPermissaoAcao(permissoes: string[]): boolean {
+    const permitido = this.auth.temAlgumaPermissao(permissoes);
+    if (!permitido) {
+      this.toastr.warning('Você não possui permissão para executar esta ação.');
+    }
+    return permitido;
+  }
+
+  private exibirErroExclusao(error: any, item: CatalogoCategoria): void {
+    const body = error?.error;
+    const codigo = body?.codigo || body?.code;
+    if (codigo !== 'CATEGORIA_EM_USO') {
+      this.toastr.error(catalogoErrorMessage(error, 'Não foi possível excluir a categoria.'));
+      return;
+    }
+
+    this.toastr.error(
+      this.dependenciasHtml(body?.dependencias),
+      `Não é possível excluir "${this.escapeHtml(item.nome)}".`,
+      { enableHtml: true, timeOut: 12000, closeButton: true }
+    );
+  }
+
+  private dependenciasHtml(dependencias: any): string {
+    const grupos = [
+      ['Subcategorias', dependencias?.subcategorias || []],
+      ['Produtos', dependencias?.produtos || []],
+      ['Características', dependencias?.caracteristicas || []],
+    ];
+
+    const conteudo = grupos
+      .filter(([, items]) => Array.isArray(items) && items.length)
+      .map(([titulo, items]) => `<strong>${titulo}</strong><ul>${(items as any[]).map((dep) => `<li>${this.escapeHtml(dep.nome || dep.id)}</li>`).join('')}</ul>`)
+      .join('');
+
+    return `Remova ou reorganize estes vínculos antes:<br>${conteudo}`;
+  }
+
+  private escapeHtml(value: unknown): string {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 }
