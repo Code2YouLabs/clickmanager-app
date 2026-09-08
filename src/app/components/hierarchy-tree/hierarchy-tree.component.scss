@@ -1,0 +1,160 @@
+.hierarchy-tree-card {
+  display: block;
+}
+
+.hierarchy-tree-shell {
+  position: relative;
+  min-height: 180px;
+}
+
+.hierarchy-tree {
+  display: block;
+  background: transparent;
+}
+
+.hierarchy-tree__node,
+.hierarchy-tree__nested-node {
+  display: block;
+}
+
+.hierarchy-tree__row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 6px;
+}
+
+.hierarchy-tree__row:hover {
+  background: var(--mat-sys-surface-bright);
+}
+
+.hierarchy-tree__row--leaf {
+  grid-template-columns: 40px minmax(0, 1fr) auto auto;
+}
+
+.hierarchy-tree__toggle {
+  width: 36px;
+  height: 36px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.hierarchy-tree__toggle--hidden {
+  visibility: hidden;
+}
+
+.hierarchy-tree__drag-handle {
+  width: 32px;
+  height: 32px;
+  color: var(--mat-sys-on-surface-variant);
+  cursor: grab;
+}
+
+.hierarchy-tree__content {
+  min-width: 0;
+}
+
+.hierarchy-tree__label {
+  overflow: hidden;
+  color: var(--mat-sys-on-surface);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hierarchy-tree__description {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 12px;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.hierarchy-tree__meta {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.hierarchy-tree__actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  min-width: 116px;
+}
+
+.hierarchy-tree__children {
+  margin-left: 24px;
+  padding-left: 16px;
+  border-left: 1px solid var(--mat-sys-outline-variant);
+}
+
+.hierarchy-tree__children--collapsed {
+  display: none;
+}
+
+.hierarchy-tree-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.hierarchy-tree-empty strong,
+.hierarchy-tree-empty span {
+  display: block;
+}
+
+.hierarchy-tree-empty strong {
+  margin-bottom: 4px;
+  color: var(--mat-sys-on-surface);
+}
+
+.hierarchy-tree-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+@media (max-width: 760px) {
+  .hierarchy-tree__row {
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    gap: 4px;
+    padding: 6px 2px;
+  }
+
+  .hierarchy-tree__toggle {
+    width: 32px;
+    height: 32px;
+  }
+
+  .hierarchy-tree__meta {
+    display: none;
+  }
+
+  .hierarchy-tree__actions {
+    min-width: 96px;
+    gap: 0;
+  }
+
+  .hierarchy-tree__actions button {
+    width: 32px;
+    height: 32px;
+  }
+
+  .hierarchy-tree__children {
+    margin-left: 12px;
+    padding-left: 10px;
+  }
+}

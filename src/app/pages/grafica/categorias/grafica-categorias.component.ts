@@ -9,6 +9,12 @@ import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog
 import { DataTableCellDirective } from 'src/app/components/data-table/data-table-cell.directive';
 import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
 import { DataTableColumn, DataTablePagination } from 'src/app/components/data-table/data-table.models';
+import {
+  HierarchyTreeAction,
+  HierarchyTreeActionEvent,
+  HierarchyTreeComponent,
+  HierarchyTreeNode,
+} from 'src/app/components/hierarchy-tree/hierarchy-tree.component';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { MaterialModule } from 'src/app/material.module';
 import { ToastrService } from 'ngx-toastr';
@@ -26,6 +32,7 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
     PageCardComponent,
     DataTableComponent,
     DataTableCellDirective,
+    HierarchyTreeComponent,
   ],
   template: `
     <app-page-card titulo="Categorias gráficas" subtitulo="Organização dos produtos gráficos no catálogo">
@@ -42,6 +49,7 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
         [search]="searchConfig"
         [pagination]="pagination"
         [loading]="carregando"
+        [showTable]="visualizacao === 'lista'"
         [sort]="sort"
         [emptyState]="{
           title: 'Nenhuma categoria encontrada',
@@ -53,6 +61,22 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
         (searchChange)="onSearch($event)"
         (pageChange)="onPageChange($event)"
         (sortChange)="onSortChange($event)">
+
+        <div data-table-toolbar-actions class="visualizacao-toggle">
+          <mat-button-toggle-group
+            [value]="visualizacao"
+            aria-label="Visualização das categorias"
+            (change)="alterarVisualizacao($event.value)">
+            <mat-button-toggle value="lista" aria-label="Visualizar em lista">
+              <mat-icon>view_list</mat-icon>
+              <span>Lista</span>
+            </mat-button-toggle>
+            <mat-button-toggle value="arvore" aria-label="Visualizar em árvore">
+              <mat-icon>account_tree</mat-icon>
+              <span>Árvore</span>
+            </mat-button-toggle>
+          </mat-button-toggle-group>
+        </div>
 
         <ng-template appDataTableCell="nome" let-row>
           <strong class="categoria-nome">{{ row.nome }}</strong>
@@ -80,9 +104,47 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
           </div>
         </ng-template>
       </app-data-table>
+
+      @if (visualizacao === 'arvore') {
+        <app-hierarchy-tree
+          [nodes]="categoriasArvore"
+          [actions]="treeActions"
+          [loading]="carregandoArvore"
+          [expandAll]="!!termo"
+          emptyTitle="Nenhuma categoria encontrada"
+          [emptyDescription]="termo ? 'Altere a busca.' : 'Cadastre uma categoria para organizar os produtos gráficos.'"
+          (action)="onTreeAction($event)">
+        </app-hierarchy-tree>
+      }
     </app-page-card>
   `,
   styles: [`
+    .visualizacao-toggle {
+      display: inline-flex;
+    }
+
+    .visualizacao-toggle mat-button-toggle-group {
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .visualizacao-toggle mat-button-toggle {
+      min-width: 96px;
+    }
+
+    .visualizacao-toggle ::ng-deep .mat-button-toggle-label-content {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 36px;
+    }
+
+    .visualizacao-toggle mat-icon {
+      width: 18px;
+      height: 18px;
+      font-size: 18px;
+    }
+
     .categoria-nome {
       display: block;
       color: #111827;
@@ -107,15 +169,31 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
       min-width: 132px;
       white-space: nowrap;
     }
+
+    @media (max-width: 760px) {
+      .visualizacao-toggle,
+      .visualizacao-toggle mat-button-toggle-group {
+        width: 100%;
+      }
+
+      .visualizacao-toggle mat-button-toggle {
+        flex: 1 1 0;
+        min-width: 0;
+      }
+    }
   `],
 })
 export class GraficaCategoriasComponent implements OnInit {
   categorias: CatalogoCategoria[] = [];
+  categoriasArvoreBase: CatalogoCategoria[] = [];
+  categoriasArvore: HierarchyTreeNode<CatalogoCategoria>[] = [];
   total = 0;
   pagina = 0;
   tamanho = 10;
   termo = '';
   carregando = false;
+  carregandoArvore = false;
+  visualizacao: 'lista' | 'arvore' = 'lista';
   sort: Sort = { active: 'nome', direction: 'asc' };
 
   readonly searchConfig = {
@@ -130,6 +208,12 @@ export class GraficaCategoriasComponent implements OnInit {
     { key: 'categoriaPai', label: 'Categoria pai', width: '220px' },
     { key: 'descricao', label: 'Descrição' },
     { key: 'acoes', label: 'Ações', align: 'end', width: '152px' },
+  ];
+
+  readonly treeActions: HierarchyTreeAction<CatalogoCategoria>[] = [
+    { id: 'editar', label: 'Editar', icon: 'edit' },
+    { id: 'clonar', label: 'Clonar', icon: 'content_copy' },
+    { id: 'excluir', label: 'Excluir', icon: 'delete', color: 'warn' },
   ];
 
   get pagination(): DataTablePagination {
@@ -153,6 +237,11 @@ export class GraficaCategoriasComponent implements OnInit {
   }
 
   carregar(): void {
+    if (this.visualizacao === 'arvore') {
+      this.carregarArvore();
+      return;
+    }
+
     this.carregando = true;
     this.service.listar(this.listParams()).pipe(finalize(() => this.carregando = false)).subscribe({
       next: (page) => {
@@ -166,6 +255,9 @@ export class GraficaCategoriasComponent implements OnInit {
   onSearch(value: string): void {
     this.termo = value;
     this.pagina = 0;
+    if (this.visualizacao === 'arvore') {
+      this.refreshCategoriasArvore();
+    }
     this.carregar();
   }
 
@@ -179,6 +271,33 @@ export class GraficaCategoriasComponent implements OnInit {
     this.sort = event;
     this.pagina = 0;
     this.carregar();
+  }
+
+  alterarVisualizacao(value: 'lista' | 'arvore'): void {
+    if (!value || value === this.visualizacao) {
+      return;
+    }
+
+    this.visualizacao = value;
+    this.pagina = 0;
+    this.carregar();
+  }
+
+  onTreeAction(event: HierarchyTreeActionEvent<CatalogoCategoria>): void {
+    const item = event.node.data;
+    if (event.action === 'editar') {
+      this.editar(item);
+      return;
+    }
+
+    if (event.action === 'clonar') {
+      this.clonar(item);
+      return;
+    }
+
+    if (event.action === 'excluir') {
+      this.excluir(item);
+    }
   }
 
   novo(): void {
@@ -220,10 +339,19 @@ export class GraficaCategoriasComponent implements OnInit {
 
     ref.afterClosed().subscribe((confirmado) => {
       if (!confirmado) return;
-      this.carregando = true;
-      this.service.inativar(item.id).pipe(finalize(() => this.carregando = false)).subscribe({
+      if (this.visualizacao === 'arvore') {
+        this.carregandoArvore = true;
+      } else {
+        this.carregando = true;
+      }
+      this.service.inativar(item.id).pipe(finalize(() => {
+        this.carregando = false;
+        this.carregandoArvore = false;
+      })).subscribe({
         next: () => {
           this.toastr.success('Categoria excluída.');
+          this.categoriasArvoreBase = [];
+          this.categoriasArvore = [];
           this.carregar();
         },
         error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível excluir a categoria.')),
@@ -250,5 +378,112 @@ export class GraficaCategoriasComponent implements OnInit {
       return 'nome,asc';
     }
     return `${this.sort.active},${this.sort.direction}`;
+  }
+
+  private carregarArvore(): void {
+    if (this.categoriasArvoreBase.length) {
+      return;
+    }
+
+    this.carregandoArvore = true;
+    this.service.listar({ page: 0, size: 5000, ativo: true, sort: 'nome,asc' })
+      .pipe(finalize(() => this.carregandoArvore = false))
+      .subscribe({
+        next: (page) => {
+          this.categoriasArvoreBase = page.content || [];
+          this.refreshCategoriasArvore();
+        },
+        error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível carregar categorias.')),
+      });
+  }
+
+  private buildTree(items: CatalogoCategoria[]): HierarchyTreeNode<CatalogoCategoria>[] {
+    const nodeMap = new Map<number, HierarchyTreeNode<CatalogoCategoria>>();
+    const roots: HierarchyTreeNode<CatalogoCategoria>[] = [];
+
+    this.sortCategorias(items).forEach((item) => {
+      nodeMap.set(item.id, {
+        id: item.id,
+        label: item.nome,
+        description: this.descricaoArvore(item),
+        data: item,
+        children: [],
+      });
+    });
+
+    this.sortCategorias(items).forEach((item) => {
+      const node = nodeMap.get(item.id);
+      if (!node) {
+        return;
+      }
+
+      const parent = item.categoriaPaiId ? nodeMap.get(item.categoriaPaiId) : null;
+      if (parent) {
+        parent.children = [...(parent.children || []), node];
+      } else {
+        roots.push(node);
+      }
+    });
+
+    this.applyMeta(roots);
+    return roots;
+  }
+
+  private refreshCategoriasArvore(): void {
+    const nodes = this.buildTree(this.categoriasArvoreBase);
+    const termo = this.normalize(this.termo);
+    this.categoriasArvore = termo ? this.filterTree(nodes, termo) : nodes;
+  }
+
+  private filterTree(nodes: HierarchyTreeNode<CatalogoCategoria>[], termo: string): HierarchyTreeNode<CatalogoCategoria>[] {
+    return nodes.reduce<HierarchyTreeNode<CatalogoCategoria>[]>((acc, node) => {
+      const children = this.filterTree(node.children || [], termo);
+      const selfMatches = this.nodeMatches(node.data, termo);
+
+      if (selfMatches || children.length) {
+        acc.push({ ...node, children });
+      }
+
+      return acc;
+    }, []);
+  }
+
+  private nodeMatches(item: CatalogoCategoria, termo: string): boolean {
+    const values = [
+      item.nome,
+      item.codigo,
+      item.descricaoCurta,
+      item.descricaoCompleta,
+      item.categoriaPaiNome,
+    ];
+    return values.some((value) => this.normalize(value).includes(termo));
+  }
+
+  private applyMeta(nodes: HierarchyTreeNode<CatalogoCategoria>[]): void {
+    nodes.forEach((node) => {
+      const children = node.children || [];
+      node.meta = children.length ? `${children.length} ${children.length === 1 ? 'subcategoria' : 'subcategorias'}` : null;
+      this.applyMeta(children);
+    });
+  }
+
+  private sortCategorias(items: CatalogoCategoria[]): CatalogoCategoria[] {
+    return [...items].sort((a, b) => {
+      const ordemA = a.ordemExibicao ?? Number.MAX_SAFE_INTEGER;
+      const ordemB = b.ordemExibicao ?? Number.MAX_SAFE_INTEGER;
+      if (ordemA !== ordemB) {
+        return ordemA - ordemB;
+      }
+      return a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' });
+    });
+  }
+
+  private descricaoArvore(item: CatalogoCategoria): string | null {
+    const descricao = item.descricaoCurta || item.descricaoCompleta;
+    return descricao && descricao.trim() ? descricao : null;
+  }
+
+  private normalize(value: string | null | undefined): string {
+    return (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   }
 }

@@ -30,6 +30,11 @@
   gap: 8px;
 }
 
+.data-table-toolbar__section--search {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
 .data-table-toolbar-card--collapsed.data-table-toolbar-card--has-active .data-table-toolbar__section {
   gap: 6px;
 }
@@ -43,6 +48,17 @@
 
 .data-table-toolbar__search {
   width: 100%;
+}
+
+.data-table-toolbar__actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.data-table-toolbar__actions:empty {
+  display: none;
 }
 
 .data-table-toolbar ::ng-deep .mat-mdc-text-field-wrapper {
@@ -196,6 +212,14 @@
 }
 
 @media (max-width: 760px) {
+  .data-table-toolbar__section--search {
+    grid-template-columns: 1fr;
+  }
+
+  .data-table-toolbar__actions {
+    justify-content: flex-start;
+  }
+
   .data-table-toolbar__filters-header {
     align-items: flex-start;
     flex-direction: column;

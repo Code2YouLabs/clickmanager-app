@@ -64,6 +64,7 @@ export class DataTableComponent<T = unknown>
   @Input() search: DataTableSearchConfig = { enabled: false };
   @Input() pagination: DataTablePagination | null = null;
   @Input() loading = false;
+  @Input() showTable = true;
   @Input() actions: DataTableAction<T>[] = [];
   @Input() actionsMode: DataTableActionsMode = 'menu';
   @Input() expandable = false;

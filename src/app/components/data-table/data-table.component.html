@@ -7,12 +7,16 @@
   [title]="toolbarTitle">
   <div class="data-table-toolbar">
     @if (search.enabled) {
-    <div class="data-table-toolbar__section">
+    <div class="data-table-toolbar__section data-table-toolbar__section--search">
       <mat-form-field appearance="outline" class="data-table-toolbar__search">
         <mat-label>{{ search.placeholder || 'Pesquisar' }}</mat-label>
         <mat-icon matPrefix>search</mat-icon>
         <input matInput type="search" [formControl]="searchControl" />
       </mat-form-field>
+
+      <div class="data-table-toolbar__actions">
+        <ng-content select="[data-table-toolbar-actions]"></ng-content>
+      </div>
     </div>
     }
 
@@ -82,6 +86,7 @@
 </app-section-card>
 }
 
+@if (showTable) {
 <div class="data-table-container">
   @if (loading) {
     <div class="data-table-loading" aria-live="polite">
@@ -235,6 +240,7 @@
     </mat-paginator>
   }
 </div>
+}
 
 <mat-menu #actionsMenu="matMenu">
   <ng-template matMenuContent let-row="row">
