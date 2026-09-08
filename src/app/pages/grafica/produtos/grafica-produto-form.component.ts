@@ -96,6 +96,7 @@ type ProdutoFormSnapshot = {
                 placeholder="Categoria"
                 [options]="categorias"
                 [showNull]="true"
+                [clearable]="true"
                 nullLabel="Sem categoria"
                 createLabel="Nova categoria"
                 [createDisabled]="salvando"
@@ -140,6 +141,7 @@ type ProdutoFormSnapshot = {
               [control]="materialControl"
               label="Material"
               [options]="materiais"
+              [clearable]="true"
               nullLabel="Sem material"
               createLabel="Novo material"
               [createDisabled]="salvando"
@@ -149,6 +151,7 @@ type ProdutoFormSnapshot = {
               [control]="formatoControl"
               label="Formato"
               [options]="formatos"
+              [clearable]="true"
               nullLabel="Sem formato"
               createLabel="Novo formato"
               [createDisabled]="salvando"
@@ -158,6 +161,7 @@ type ProdutoFormSnapshot = {
               [control]="corControl"
               label="Cor"
               [options]="cores"
+              [clearable]="true"
               nullLabel="Sem cor"
               createLabel="Nova cor"
               [createDisabled]="salvando"
@@ -863,7 +867,7 @@ export class GraficaProdutoFormComponent implements OnInit {
   private produtoPayload(): GraficaProdutoRequest {
     const raw = this.form.getRawValue();
     return {
-      catalogoProdutoId: this.catalogoProdutoIdPayload(raw.nome),
+      catalogoProdutoId: this.catalogoProdutoIdPayload(),
       ativo: true,
       produto: {
         codigo: this.codigo(raw.nome).slice(0, 50),
@@ -1002,13 +1006,8 @@ export class GraficaProdutoFormComponent implements OnInit {
       && atual.corId === this.cloneIdentidadeSnapshot.corId;
   }
 
-  private catalogoProdutoIdPayload(nome: string): number | null {
-    if (!this.isClone || !this.cloneIdentidadeSnapshot || !this.graficaProduto?.catalogoProdutoId) {
-      return null;
-    }
-    return (nome || '').trim() === this.cloneIdentidadeSnapshot.nome
-      ? this.graficaProduto.catalogoProdutoId
-      : null;
+  private catalogoProdutoIdPayload(): number | null {
+    return null;
   }
 
   private buildImagensPayload(): CatalogoProdutoImagemRequest[] {

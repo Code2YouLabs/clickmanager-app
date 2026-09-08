@@ -138,7 +138,7 @@ describe('GraficaProdutoFormComponent', () => {
       formatoId: 2,
       corId: 3,
     }));
-    expect((component as any).produtoPayload().catalogoProdutoId).toBe(10);
+    expect((component as any).produtoPayload().catalogoProdutoId).toBeNull();
     expect(component.cloneSalvarBloqueado).toBeTrue();
     expect(component.salvarDesabilitado).toBeTrue();
 
@@ -172,38 +172,38 @@ describe('GraficaProdutoFormComponent', () => {
     }));
   });
 
-  it('clone mudando apenas formato preserva catalogoProdutoId', () => {
+  it('clone mudando apenas formato cria novo catalogoProduto', () => {
     routeSnapshot.queryParamMap = { get: (key: string) => key === 'cloneFrom' ? '1' : null };
 
     component.ngOnInit();
     component.form.controls.formatoId.setValue(4);
 
-    expect((component as any).produtoPayload().catalogoProdutoId).toBe(10);
+    expect((component as any).produtoPayload().catalogoProdutoId).toBeNull();
   });
 
-  it('clone mudando apenas material preserva catalogoProdutoId', () => {
+  it('clone mudando apenas material cria novo catalogoProduto', () => {
     routeSnapshot.queryParamMap = { get: (key: string) => key === 'cloneFrom' ? '1' : null };
 
     component.ngOnInit();
     component.form.controls.materialId.setValue(5);
 
-    expect((component as any).produtoPayload().catalogoProdutoId).toBe(10);
+    expect((component as any).produtoPayload().catalogoProdutoId).toBeNull();
   });
 
-  it('clone mudando apenas cor preserva catalogoProdutoId', () => {
+  it('clone mudando apenas cor cria novo catalogoProduto', () => {
     routeSnapshot.queryParamMap = { get: (key: string) => key === 'cloneFrom' ? '1' : null };
 
     component.ngOnInit();
     component.form.controls.corId.setValue(6);
 
-    expect((component as any).produtoPayload().catalogoProdutoId).toBe(10);
+    expect((component as any).produtoPayload().catalogoProdutoId).toBeNull();
   });
 
-  it('clone mudando nome cria nova familia de catalogo', () => {
+  it('clone cria nova familia de catalogo mesmo mantendo nome original', () => {
     routeSnapshot.queryParamMap = { get: (key: string) => key === 'cloneFrom' ? '1' : null };
 
     component.ngOnInit();
-    component.form.controls.nome.setValue('Adesivo Transparente');
+    component.form.controls.formatoId.setValue(4);
 
     expect((component as any).produtoPayload().catalogoProdutoId).toBeNull();
   });
