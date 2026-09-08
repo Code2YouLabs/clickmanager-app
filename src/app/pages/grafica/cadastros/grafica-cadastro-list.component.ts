@@ -174,11 +174,9 @@ type UnidadeGrafica = 'METRO' | 'CENTIMETRO' | 'MILIMETRO';
               <button mat-icon-button type="button" matTooltip="Editar" (click)="editar(row)">
                 <mat-icon>edit</mat-icon>
               </button>
-              <span matTooltip="Clonar - em breve">
-                <button mat-icon-button type="button" aria-label="Clonar" disabled>
-                  <mat-icon>content_copy</mat-icon>
-                </button>
-              </span>
+              <button mat-icon-button type="button" matTooltip="Clonar" [attr.aria-label]="'Clonar ' + row.nome" (click)="clonar(row)">
+                <mat-icon>content_copy</mat-icon>
+              </button>
               <button mat-icon-button type="button" color="warn" matTooltip="Excluir" (click)="excluir(row)">
                 <mat-icon>delete</mat-icon>
               </button>
@@ -400,6 +398,36 @@ export class GraficaCadastroListComponent implements OnInit {
     });
     this.aplicarValidadores();
     this.registrarSnapshot();
+  }
+
+  clonar(item: Item): void {
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      width: '420px',
+      data: {
+        title: `Clonar ${this.entidadeSingular}`,
+        message: `Deseja criar um novo cadastro a partir de "${item.nome}"?`,
+        confirmText: 'Clonar',
+      },
+    });
+
+    ref.afterClosed().subscribe((confirmado) => {
+      if (!confirmado) return;
+      this.editandoId = undefined;
+      this.form.patchValue({
+        nome: `${item.nome || 'Cadastro'} Cópia`,
+        descricao: this.descricaoLinha(item) === '-' ? '' : this.descricaoLinha(item),
+        categoriaPaiId: this.isCategoria(item) ? item.categoriaPaiId || null : null,
+        descricaoCurta: this.isCategoria(item) ? item.descricaoCurta || '' : '',
+        descricaoCompleta: this.isCategoria(item) ? item.descricaoCompleta || '' : '',
+        largura: this.isFormato(item) ? item.largura || null : null,
+        altura: this.isFormato(item) ? item.altura || null : null,
+        larguraUtil: this.isFormato(item) ? item.larguraUtil || null : null,
+        alturaUtil: this.isFormato(item) ? item.alturaUtil || null : null,
+        unidadeDimensao: this.isFormato(item) ? item.unidadeDimensao || 'CENTIMETRO' : 'CENTIMETRO',
+      });
+      this.aplicarValidadores();
+      this.registrarSnapshot();
+    });
   }
 
   cancelar(): void {

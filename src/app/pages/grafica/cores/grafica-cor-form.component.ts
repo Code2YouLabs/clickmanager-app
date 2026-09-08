@@ -63,7 +63,7 @@ type CorFormSnapshot = {
       </form>
 
       <button page-footer-right mat-stroked-button class="cancel-button" type="button" (click)="cancelar()">Cancelar</button>
-      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-cor-form" [disabled]="form.invalid || salvando">
+      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-cor-form" [disabled]="form.invalid || salvando || cloneNomeInvalido">
         <mat-icon>save</mat-icon>
         Salvar
       </button>
@@ -106,6 +106,8 @@ type CorFormSnapshot = {
 })
 export class GraficaCorFormComponent implements OnInit {
   corId?: number;
+  cloneFromId?: number;
+  private cloneNomeOriginal?: string;
   salvando = false;
   carregando = false;
   snapshot?: CorFormSnapshot;
@@ -116,11 +118,17 @@ export class GraficaCorFormComponent implements OnInit {
   });
 
   get titulo(): string {
+    if (this.cloneFromId) return 'Clonar cor';
     return this.corId ? 'Editar cor' : 'Nova cor';
   }
 
   get subtitulo(): string {
+    if (this.cloneFromId) return 'Revise os dados e salve para criar o clone';
     return this.corId ? 'Atualize os dados da cor gráfica' : 'Cadastro de cor gráfica';
+  }
+
+  get cloneNomeInvalido(): boolean {
+    return !!this.cloneFromId && this.nomeIgualAoOriginal(this.form.controls.nome.value);
   }
 
   get nomeControl(): FormControl<string> { return this.form.controls.nome; }
@@ -140,21 +148,24 @@ export class GraficaCorFormComponent implements OnInit {
       switchMap((params) => {
         const id = Number(params.get('id'));
         this.corId = Number.isFinite(id) && id > 0 ? id : undefined;
-        if (!this.corId) return of(null);
+        const cloneFrom = Number(this.route.snapshot.queryParamMap.get('cloneFrom'));
+        this.cloneFromId = !this.corId && Number.isFinite(cloneFrom) && cloneFrom > 0 ? cloneFrom : undefined;
+        const origemId = this.corId || this.cloneFromId;
+        if (!origemId) return of(null);
         return this.service.listarCores().pipe(
-          map((items) => (items || []).find((item) => item.id === this.corId) || null)
+          map((items) => (items || []).find((item) => item.id === origemId) || null)
         );
       }),
       finalize(() => this.carregando = false),
     ).subscribe({
       next: (cor) => {
-        if (this.corId && !cor) {
+        if ((this.corId || this.cloneFromId) && !cor) {
           this.toastr.error('Cor não encontrada.');
           this.voltar();
           return;
         }
         if (cor) {
-          this.aplicarCor(cor);
+          this.aplicarCor(cor, !!this.cloneFromId);
         } else {
           this.registrarSnapshot();
         }
@@ -166,6 +177,10 @@ export class GraficaCorFormComponent implements OnInit {
   salvar(): void {
     if (this.form.invalid || this.salvando) {
       this.form.markAllAsTouched();
+      return;
+    }
+    if (this.cloneNomeInvalido) {
+      this.toastr.warning('Altere o nome para salvar o clone.');
       return;
     }
 
@@ -193,9 +208,12 @@ export class GraficaCorFormComponent implements OnInit {
     this.router.navigate(['/page/grafica/cores']);
   }
 
-  private aplicarCor(cor: GraficaCadastro): void {
+  private aplicarCor(cor: GraficaCadastro, comoClone = false): void {
+    if (comoClone) {
+      this.cloneNomeOriginal = cor.nome;
+    }
     this.form.reset({
-      nome: cor.nome || '',
+      nome: comoClone ? this.nomeClone(cor.nome) : cor.nome || '',
       descricao: cor.descricao || '',
     });
     this.registrarSnapshot();
@@ -218,5 +236,17 @@ export class GraficaCorFormComponent implements OnInit {
 
   private codigo(valor: string): string {
     return catalogoSlugify(valor).toUpperCase().replace(/-/g, '_').slice(0, 80);
+  }
+
+  private nomeClone(nome: string | null | undefined): string {
+    return `${nome || 'Cor'} Cópia`;
+  }
+
+  private nomeIgualAoOriginal(nome: string | null | undefined): boolean {
+    return this.normalizarNome(nome) === this.normalizarNome(this.cloneNomeOriginal);
+  }
+
+  private normalizarNome(nome: string | null | undefined): string {
+    return (nome || '').trim().toLocaleLowerCase('pt-BR');
   }
 }

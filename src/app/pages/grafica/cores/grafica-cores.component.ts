@@ -64,11 +64,9 @@ import { GraficaProdutoService } from '../shared/grafica.service';
             <button mat-icon-button type="button" matTooltip="Editar" [attr.aria-label]="'Editar ' + row.nome" (click)="editar(row)">
               <mat-icon>edit</mat-icon>
             </button>
-            <span matTooltip="Clonar - em breve">
-              <button mat-icon-button type="button" aria-label="Clonar cor" disabled>
-                <mat-icon>content_copy</mat-icon>
-              </button>
-            </span>
+            <button mat-icon-button type="button" matTooltip="Clonar" [attr.aria-label]="'Clonar ' + row.nome" (click)="clonar(row)">
+              <mat-icon>content_copy</mat-icon>
+            </button>
             <button mat-icon-button type="button" color="warn" matTooltip="Excluir" [attr.aria-label]="'Excluir ' + row.nome" (click)="excluir(row)">
               <mat-icon>delete</mat-icon>
             </button>
@@ -182,6 +180,22 @@ export class GraficaCoresComponent implements OnInit {
 
   editar(item: GraficaCadastro): void {
     this.router.navigate(['/page/grafica/cores', item.id, 'editar']);
+  }
+
+  clonar(item: GraficaCadastro): void {
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      width: '420px',
+      data: {
+        title: 'Clonar cor',
+        message: `Deseja criar uma cor a partir de "${item.nome}"?`,
+        confirmText: 'Clonar',
+      },
+    });
+
+    ref.afterClosed().subscribe((confirmado) => {
+      if (!confirmado) return;
+      this.router.navigate(['/page/grafica/cores/novo'], { queryParams: { cloneFrom: item.id } });
+    });
   }
 
   excluir(item: GraficaCadastro): void {

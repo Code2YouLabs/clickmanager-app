@@ -63,7 +63,7 @@ type MaterialFormSnapshot = {
       </form>
 
       <button page-footer-right mat-stroked-button class="cancel-button" type="button" (click)="cancelar()">Cancelar</button>
-      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-material-form" [disabled]="form.invalid || salvando">
+      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-material-form" [disabled]="form.invalid || salvando || cloneNomeInvalido">
         <mat-icon>save</mat-icon>
         Salvar
       </button>
@@ -106,6 +106,8 @@ type MaterialFormSnapshot = {
 })
 export class GraficaMaterialFormComponent implements OnInit {
   materialId?: number;
+  cloneFromId?: number;
+  private cloneNomeOriginal?: string;
   salvando = false;
   carregando = false;
   snapshot?: MaterialFormSnapshot;
@@ -116,11 +118,17 @@ export class GraficaMaterialFormComponent implements OnInit {
   });
 
   get titulo(): string {
+    if (this.cloneFromId) return 'Clonar material';
     return this.materialId ? 'Editar material' : 'Novo material';
   }
 
   get subtitulo(): string {
+    if (this.cloneFromId) return 'Revise os dados e salve para criar o clone';
     return this.materialId ? 'Atualize os dados do material gráfico' : 'Cadastro de material gráfico';
+  }
+
+  get cloneNomeInvalido(): boolean {
+    return !!this.cloneFromId && this.nomeIgualAoOriginal(this.form.controls.nome.value);
   }
 
   get nomeControl(): FormControl<string> { return this.form.controls.nome; }
@@ -140,21 +148,24 @@ export class GraficaMaterialFormComponent implements OnInit {
       switchMap((params) => {
         const id = Number(params.get('id'));
         this.materialId = Number.isFinite(id) && id > 0 ? id : undefined;
-        if (!this.materialId) return of(null);
+        const cloneFrom = Number(this.route.snapshot.queryParamMap.get('cloneFrom'));
+        this.cloneFromId = !this.materialId && Number.isFinite(cloneFrom) && cloneFrom > 0 ? cloneFrom : undefined;
+        const origemId = this.materialId || this.cloneFromId;
+        if (!origemId) return of(null);
         return this.service.listarMateriais().pipe(
-          map((items) => (items || []).find((item) => item.id === this.materialId) || null)
+          map((items) => (items || []).find((item) => item.id === origemId) || null)
         );
       }),
       finalize(() => this.carregando = false),
     ).subscribe({
       next: (material) => {
-        if (this.materialId && !material) {
+        if ((this.materialId || this.cloneFromId) && !material) {
           this.toastr.error('Material não encontrado.');
           this.voltar();
           return;
         }
         if (material) {
-          this.aplicarMaterial(material);
+          this.aplicarMaterial(material, !!this.cloneFromId);
         } else {
           this.registrarSnapshot();
         }
@@ -166,6 +177,10 @@ export class GraficaMaterialFormComponent implements OnInit {
   salvar(): void {
     if (this.form.invalid || this.salvando) {
       this.form.markAllAsTouched();
+      return;
+    }
+    if (this.cloneNomeInvalido) {
+      this.toastr.warning('Altere o nome para salvar o clone.');
       return;
     }
 
@@ -193,9 +208,12 @@ export class GraficaMaterialFormComponent implements OnInit {
     this.router.navigate(['/page/grafica/materiais']);
   }
 
-  private aplicarMaterial(material: GraficaCadastro): void {
+  private aplicarMaterial(material: GraficaCadastro, comoClone = false): void {
+    if (comoClone) {
+      this.cloneNomeOriginal = material.nome;
+    }
     this.form.reset({
-      nome: material.nome || '',
+      nome: comoClone ? this.nomeClone(material.nome) : material.nome || '',
       descricao: material.descricao || '',
     });
     this.registrarSnapshot();
@@ -218,5 +236,17 @@ export class GraficaMaterialFormComponent implements OnInit {
 
   private codigo(valor: string): string {
     return catalogoSlugify(valor).toUpperCase().replace(/-/g, '_').slice(0, 80);
+  }
+
+  private nomeClone(nome: string | null | undefined): string {
+    return `${nome || 'Material'} Cópia`;
+  }
+
+  private nomeIgualAoOriginal(nome: string | null | undefined): boolean {
+    return this.normalizarNome(nome) === this.normalizarNome(this.cloneNomeOriginal);
+  }
+
+  private normalizarNome(nome: string | null | undefined): string {
+    return (nome || '').trim().toLocaleLowerCase('pt-BR');
   }
 }
