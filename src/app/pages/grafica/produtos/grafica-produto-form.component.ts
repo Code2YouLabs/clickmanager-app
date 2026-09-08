@@ -73,7 +73,7 @@ type ProdutoFormSnapshot = {
         @if (isClone) {
           <div class="clone-alert" role="status">
             <mat-icon>info</mat-icon>
-            <span>Você está criando um novo produto a partir de um produto existente. Para salvar, altere pelo menos um dos seguintes dados: Nome, Material, Formato ou Cor.</span>
+            <span>Você está criando um novo produto a partir de um produto existente.</span>
           </div>
         }
 
@@ -507,7 +507,6 @@ export class GraficaProdutoFormComponent implements OnInit {
   private acabamentosProdutoSnapshot: ProdutoAcabamentoUx[] = [];
   private imagemPrincipalSnapshot: any = null;
   private galeriaSnapshot: any[] = [];
-  private cloneIdentidadeSnapshot?: Pick<ProdutoFormSnapshot, 'nome' | 'materialId' | 'formatoId' | 'corId'>;
 
   form = this.fb.group({
     nome: this.fb.control<string>('', { nonNullable: true, validators: [Validators.required] }),
@@ -558,12 +557,8 @@ export class GraficaProdutoFormComponent implements OnInit {
     return this.isEdit ? 'Atualize os dados do produto' : 'Cadastro de produto gráfico';
   }
 
-  get cloneSalvarBloqueado(): boolean {
-    return this.isClone && !!this.cloneIdentidadeSnapshot && this.identidadeCloneInalterada();
-  }
-
   get salvarDesabilitado(): boolean {
-    return this.form.invalid || this.salvando || this.uploading || this.cloneSalvarBloqueado;
+    return this.form.invalid || this.salvando || this.uploading;
   }
 
   constructor(
@@ -586,10 +581,6 @@ export class GraficaProdutoFormComponent implements OnInit {
 
   salvar(): void {
     if (this.form.invalid || this.uploading || !this.validarProduto()) return;
-    if (this.cloneSalvarBloqueado) {
-      this.toastr.warning('Altere Nome, Material, Formato ou Cor para salvar o clone.');
-      return;
-    }
     this.precoForm.markAllAsTouched();
     this.precoForm.updateValueAndValidity();
     if (this.precoForm.invalid) {
@@ -980,30 +971,6 @@ export class GraficaProdutoFormComponent implements OnInit {
     this.imagemPrincipalSnapshot = this.clone(this.imagemPrincipal);
     this.galeriaSnapshot = this.clone(this.galeria);
     this.acabamentosProdutoSnapshot = this.clone(this.acabamentosProduto);
-    if (this.isClone) {
-      this.cloneIdentidadeSnapshot = this.identidadeCloneAtual();
-    }
-  }
-
-  private identidadeCloneAtual(): Pick<ProdutoFormSnapshot, 'nome' | 'materialId' | 'formatoId' | 'corId'> {
-    const raw = this.form.getRawValue();
-    return {
-      nome: (raw.nome || '').trim(),
-      materialId: raw.materialId ?? null,
-      formatoId: raw.formatoId ?? null,
-      corId: raw.corId ?? null,
-    };
-  }
-
-  private identidadeCloneInalterada(): boolean {
-    if (!this.cloneIdentidadeSnapshot) {
-      return false;
-    }
-    const atual = this.identidadeCloneAtual();
-    return atual.nome === this.cloneIdentidadeSnapshot.nome
-      && atual.materialId === this.cloneIdentidadeSnapshot.materialId
-      && atual.formatoId === this.cloneIdentidadeSnapshot.formatoId
-      && atual.corId === this.cloneIdentidadeSnapshot.corId;
   }
 
   private catalogoProdutoIdPayload(): number | null {

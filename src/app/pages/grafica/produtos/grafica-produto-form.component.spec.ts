@@ -124,7 +124,7 @@ describe('GraficaProdutoFormComponent', () => {
     expect(payload.corId).toBe(3);
   });
 
-  it('carrega clone com valores do produto original e bloqueia salvar ate mudar identidade', () => {
+  it('carrega clone com valores do produto original sem reaproveitar ids internos', () => {
     routeSnapshot.queryParamMap = { get: (key: string) => key === 'cloneFrom' ? '1' : null };
 
     component.ngOnInit();
@@ -139,17 +139,8 @@ describe('GraficaProdutoFormComponent', () => {
       corId: 3,
     }));
     expect((component as any).produtoPayload().catalogoProdutoId).toBeNull();
-    expect(component.cloneSalvarBloqueado).toBeTrue();
-    expect(component.salvarDesabilitado).toBeTrue();
-
-    component.form.controls.nome.setValue('Panfleto Premium');
-
-    expect(component.cloneSalvarBloqueado).toBeFalse();
+    expect((component as any).produtoPayload().familiaProdutoGraficoId).toBeUndefined();
     expect(component.salvarDesabilitado).toBeFalse();
-
-    component.form.controls.nome.setValue('Panfleto');
-
-    expect(component.cloneSalvarBloqueado).toBeTrue();
   });
 
   it('cria payload de clone sem reaproveitar ids de acabamento e politica', () => {
@@ -199,13 +190,14 @@ describe('GraficaProdutoFormComponent', () => {
     expect((component as any).produtoPayload().catalogoProdutoId).toBeNull();
   });
 
-  it('clone cria nova familia de catalogo mesmo mantendo nome original', () => {
+  it('clone mantendo nome original deixa familia ser resolvida pelo backend', () => {
     routeSnapshot.queryParamMap = { get: (key: string) => key === 'cloneFrom' ? '1' : null };
 
     component.ngOnInit();
     component.form.controls.formatoId.setValue(4);
 
     expect((component as any).produtoPayload().catalogoProdutoId).toBeNull();
+    expect((component as any).produtoPayload().familiaProdutoGraficoId).toBeUndefined();
   });
 
   it('restaura snapshot original ao cancelar clone', () => {
@@ -222,7 +214,7 @@ describe('GraficaProdutoFormComponent', () => {
       corId: 3,
     }));
     expect(router.navigate).not.toHaveBeenCalled();
-    expect(component.cloneSalvarBloqueado).toBeTrue();
+    expect(component.salvarDesabilitado).toBeFalse();
   });
 });
 

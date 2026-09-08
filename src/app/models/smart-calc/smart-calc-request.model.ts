@@ -1,5 +1,6 @@
 export interface SmartCalcRequest {
 
+    familiaProdutoGraficoId?: number;
     catalogoProdutoId?: number;
     produtoId?: number;
     materialId?: number | null;

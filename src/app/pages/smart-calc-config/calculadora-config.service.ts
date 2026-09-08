@@ -9,6 +9,7 @@ export interface SmartCalcConfigApiResponse {
   config?: CalculadoraConfigResponse | null;
   id?: number;
   ativo?: boolean;
+  familiaProdutoGraficoIds?: number[];
   catalogoProdutoIds?: number[];
   produtosDisponiveis: ProdutoOption[];
 }
@@ -39,7 +40,7 @@ export class CalculadoraConfigService {
   salvar(req: CalculadoraConfigRequest): Observable<CalculadoraConfigResponse | null> {
     return this.api.post<SmartCalcConfigApiResponse | CalculadoraConfigResponse>(this.baseUrl, {
       ativo: req.ativo,
-      catalogoProdutoIds: req.produtoIds ?? [],
+      familiaProdutoGraficoIds: req.produtoIds ?? [],
     }).pipe(
       map(res => this.normalizarResponse(res as SmartCalcConfigApiResponse).config ?? null)
     );
@@ -51,12 +52,12 @@ export class CalculadoraConfigService {
       return { config: api.config, produtosDisponiveis: api.produtosDisponiveis ?? [] };
     }
     const produtosDisponiveis = api?.produtosDisponiveis ?? [];
-    const catalogoProdutoIds = api?.catalogoProdutoIds ?? [];
+    const familiaProdutoGraficoIds = api?.familiaProdutoGraficoIds ?? api?.catalogoProdutoIds ?? [];
     return {
       config: {
         id: api?.id ?? 0,
         ativo: !!api?.ativo,
-        produtos: catalogoProdutoIds.map(id => produtosDisponiveis.find(p => p.id === id) ?? ({ id, nome: `Produto ${id}` })),
+        produtos: familiaProdutoGraficoIds.map(id => produtosDisponiveis.find(p => p.id === id) ?? ({ id, familiaProdutoGraficoId: id, nome: `Produto ${id}` })),
       },
       produtosDisponiveis,
     };

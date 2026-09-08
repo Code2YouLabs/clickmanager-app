@@ -390,7 +390,7 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
     const v = this.form.getRawValue();
     if (v.largura == null || v.altura == null || v.quantidade == null || v.produtoId == null) return null;
     return {
-      catalogoProdutoId: v.produtoId,
+      familiaProdutoGraficoId: v.produtoId,
       produtoId: v.produtoId,
       materialId: v.materialId ?? undefined,
       largura: Number(v.largura),

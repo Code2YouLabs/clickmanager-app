@@ -10,6 +10,8 @@ export type GraficaProdutoAcabamentoFormaAplicacao = 'POR_FOLHA' | 'POR_PECA' | 
 export interface GraficaProduto {
   id: number;
   catalogoProdutoId: number;
+  familiaProdutoGraficoId?: number | null;
+  familiaProdutoGraficoNome?: string | null;
   catalogoProdutoCodigo?: string | null;
   catalogoProdutoNome?: string | null;
   catalogoProdutoDescricao?: string | null;

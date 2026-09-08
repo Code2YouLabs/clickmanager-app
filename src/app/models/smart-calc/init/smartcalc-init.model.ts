@@ -15,6 +15,7 @@ export interface SmartCalcInitResponse {
  */
 export interface ProdutoSmartCalcInitResponse {
   id: number;
+  familiaProdutoGraficoId?: number;
   catalogoProdutoId?: number;
   nome: string;
   variacoes: ProdutoVariacaoSmartCalcInitResponse[];
