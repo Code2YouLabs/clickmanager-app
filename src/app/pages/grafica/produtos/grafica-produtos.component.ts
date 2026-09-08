@@ -35,6 +35,11 @@ type GraficaProdutosFilters = {
   corIds?: number[];
 };
 
+type CategoriaResumoLinha = {
+  partes: string[];
+  truncada: boolean;
+};
+
 @Component({
   selector: 'app-grafica-produtos',
   standalone: true,
@@ -90,6 +95,27 @@ type GraficaProdutosFilters = {
           @if (configuracaoLinha(row)) {
             <small>{{ configuracaoLinha(row) }}</small>
           }
+        </ng-template>
+
+        <ng-template appDataTableCell="categoria" let-row>
+          <div class="categoria-cell">
+            @for (linha of categoriaResumo(row); track $index) {
+              <span class="categoria-path" [attr.title]="categoriaTitulo(linha)">
+                @if (linha.truncada) {
+                  <span class="categoria-path__ellipsis">...</span>
+                }
+                @for (parte of linha.partes; track $index) {
+                  <span class="categoria-path__parte" [class.categoria-path__parte--final]="$last">{{ parte }}</span>
+                  @if (!$last) {
+                    <span class="categoria-path__separator">-&gt;</span>
+                  }
+                }
+              </span>
+            }
+            @if (categoriaExcedente(row) > 0) {
+              <span class="categoria-path categoria-path--extra">+{{ categoriaExcedente(row) }}</span>
+            }
+          </div>
         </ng-template>
 
         <ng-template appDataTableCell="descricao" let-row>
@@ -159,6 +185,41 @@ type GraficaProdutosFilters = {
       line-height: 1.35;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
+    }
+
+    .categoria-cell {
+      display: grid;
+      max-width: 300px;
+      gap: 2px;
+      color: #4b5563;
+      font-size: 0.82rem;
+      line-height: 1.3;
+    }
+
+    .categoria-path {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .categoria-path__ellipsis,
+    .categoria-path__separator {
+      color: #9ca3af;
+    }
+
+    .categoria-path__separator {
+      margin: 0 4px;
+    }
+
+    .categoria-path__parte--final {
+      color: #111827;
+      font-weight: 700;
+    }
+
+    .categoria-path--extra {
+      color: #6b7280;
+      font-weight: 700;
     }
 
     .preco-cell {
@@ -235,7 +296,8 @@ export class GraficaProdutosComponent implements OnInit {
 
   readonly columns: DataTableColumn<GraficaProduto>[] = [
     { key: 'imagem', label: 'Imagem', width: '72px' },
-    { key: 'produto', label: 'Produto', sortable: true, sortKey: 'nome', width: '260px' },
+    { key: 'produto', label: 'Produto', sortable: true, sortKey: 'nome', width: '240px' },
+    { key: 'categoria', label: 'Categoria', width: '300px' },
     { key: 'descricao', label: 'Descrição' },
     { key: 'preco', label: 'Preço', width: '180px' },
     { key: 'publicacao', label: 'Publicação', width: '140px' },
@@ -316,11 +378,54 @@ export class GraficaProdutosComponent implements OnInit {
     return nomes.join(' · ');
   }
 
+  categoriaResumo(item: GraficaProduto): CategoriaResumoLinha[] {
+    return this.categoriaCaminhos(item).slice(-5).map((caminho) => this.formatarCategoriaCaminho(caminho));
+  }
+
+  categoriaExcedente(item: GraficaProduto): number {
+    const total = this.categoriaCaminhos(item).length;
+    return Math.max(total - 5, 0);
+  }
+
+  categoriaTitulo(linha: CategoriaResumoLinha): string {
+    return `${linha.truncada ? '... ' : ''}${linha.partes.join(' -> ')}`;
+  }
+
   imagemProduto(item: GraficaProduto): string {
     const imagem = (item.imagens || [])
       .filter((img) => img.ativo !== false)
       .sort((a, b) => Number(b.principal === true) - Number(a.principal === true) || (a.ordem ?? 0) - (b.ordem ?? 0))[0];
     return resolveStorageImageUrl(imagem?.arquivo, 'THUMBNAIL', STORAGE_IMAGE_PLACEHOLDER);
+  }
+
+  private categoriaCaminhos(item: GraficaProduto): string[][] {
+    const caminhosMultiplos = (item.catalogoCategoriasCaminhos || [])
+      .map((caminho) => this.normalizarCategoriaCaminho(caminho))
+      .filter((caminho) => caminho.length > 0);
+    if (caminhosMultiplos.length > 0) {
+      return caminhosMultiplos;
+    }
+
+    const caminhoAtual = this.normalizarCategoriaCaminho(item.catalogoCategoriaCaminho || []);
+    if (caminhoAtual.length > 0) {
+      return [caminhoAtual];
+    }
+    const nomeAtual = (item.catalogoCategoriaNome || '').trim();
+    return nomeAtual ? [[nomeAtual]] : [['-']];
+  }
+
+  private normalizarCategoriaCaminho(caminho: string[]): string[] {
+    return caminho
+      .map((parte) => (parte || '').trim())
+      .filter((parte) => parte.length > 0);
+  }
+
+  private formatarCategoriaCaminho(caminho: string[]): CategoriaResumoLinha {
+    const partes = caminho.slice(-4);
+    return {
+      partes,
+      truncada: caminho.length > partes.length,
+    };
   }
 
   precoResumo(item: GraficaProduto): string[] {

@@ -129,4 +129,62 @@ describe('GraficaProdutosComponent', () => {
     expect(component.filterState).toEqual({});
     expect(component.pagina).toBe(0);
   });
+
+  it('resume categoria pelo caminho da arvore com ultimo nivel em destaque', () => {
+    const row = {
+      id: 1,
+      catalogoProdutoId: 10,
+      catalogoProdutoNome: 'Panfleto',
+      catalogoCategoriaNome: 'Cartões',
+      catalogoCategoriaCaminho: ['Gráfica', 'Impressão', 'Offset', 'Cartões', 'Cartão 4x4'],
+      ativo: true,
+      acabamentos: [],
+      parametros: [],
+    };
+
+    const resumo = component.categoriaResumo(row);
+
+    expect(resumo).toEqual([{
+      partes: ['Impressão', 'Offset', 'Cartões', 'Cartão 4x4'],
+      truncada: true,
+    }]);
+    expect(component.categoriaTitulo(resumo[0])).toBe('... Impressão -> Offset -> Cartões -> Cartão 4x4');
+  });
+
+  it('limita categorias em cinco linhas e informa excedente para multiplos caminhos futuros', () => {
+    const row = {
+      id: 1,
+      catalogoProdutoId: 10,
+      catalogoProdutoNome: 'Panfleto',
+      catalogoCategoriasCaminhos: [
+        ['C1'],
+        ['C2'],
+        ['C3'],
+        ['C4'],
+        ['C5'],
+        ['C6'],
+        ['C7'],
+      ],
+      ativo: true,
+      acabamentos: [],
+      parametros: [],
+    };
+
+    expect(component.categoriaResumo(row).map((linha) => linha.partes.join(''))).toEqual(['C3', 'C4', 'C5', 'C6', 'C7']);
+    expect(component.categoriaExcedente(row)).toBe(2);
+  });
+
+  it('usa nome da categoria atual como fallback quando caminho nao vem do backend', () => {
+    const row = {
+      id: 1,
+      catalogoProdutoId: 10,
+      catalogoProdutoNome: 'Panfleto',
+      catalogoCategoriaNome: 'Impressão',
+      ativo: true,
+      acabamentos: [],
+      parametros: [],
+    };
+
+    expect(component.categoriaResumo(row)).toEqual([{ partes: ['Impressão'], truncada: false }]);
+  });
 });

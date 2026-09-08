@@ -15,6 +15,8 @@ export interface GraficaProduto {
   catalogoProdutoDescricao?: string | null;
   catalogoCategoriaId?: number | null;
   catalogoCategoriaNome?: string | null;
+  catalogoCategoriaCaminho?: string[] | null;
+  catalogoCategoriasCaminhos?: string[][] | null;
   catalogoProdutoExibirNoSite?: boolean | null;
   imagens?: CatalogoProdutoImagem[] | null;
   catalogoProdutoAtivo?: boolean | null;
