@@ -8,7 +8,7 @@ import { finalize } from 'rxjs/operators';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { DataTableCellDirective } from 'src/app/components/data-table/data-table-cell.directive';
 import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
-import { DataTableAction, DataTableActionEvent, DataTableColumn, DataTablePagination } from 'src/app/components/data-table/data-table.models';
+import { DataTableColumn, DataTablePagination } from 'src/app/components/data-table/data-table.models';
 import {
   HierarchyTreeAction,
   HierarchyTreeActionEvent,
@@ -58,12 +58,10 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
           filteredTitle: 'Nenhuma categoria encontrada',
           filteredDescription: 'Altere a busca.'
         }"
-        [actions]="categoriaActions"
         rowKey="id"
         (searchChange)="onSearch($event)"
         (pageChange)="onPageChange($event)"
-        (sortChange)="onSortChange($event)"
-        (action)="onTableAction($event)">
+        (sortChange)="onSortChange($event)">
 
         <div data-table-toolbar-actions class="visualizacao-toggle">
           <mat-button-toggle-group
@@ -94,6 +92,25 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
           <span class="descricao-cell">{{ descricaoLinha(row) }}</span>
         </ng-template>
 
+        <ng-template appDataTableCell="acoes" let-row>
+          <div class="acoes-cell">
+            @if (podeExecutar('editar')) {
+              <button mat-icon-button type="button" matTooltip="Editar" [attr.aria-label]="'Editar ' + row.nome" (click)="executarAcaoCategoria('editar', row)">
+                <mat-icon>edit</mat-icon>
+              </button>
+            }
+            @if (podeExecutar('clonar')) {
+              <button mat-icon-button type="button" matTooltip="Clonar" [attr.aria-label]="'Clonar ' + row.nome" (click)="executarAcaoCategoria('clonar', row)">
+                <mat-icon>content_copy</mat-icon>
+              </button>
+            }
+            @if (podeExecutar('excluir')) {
+              <button mat-icon-button type="button" color="warn" matTooltip="Excluir" [attr.aria-label]="'Excluir ' + row.nome" (click)="executarAcaoCategoria('excluir', row)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            }
+          </div>
+        </ng-template>
       </app-data-table>
 
       @if (visualizacao === 'arvore') {
@@ -168,6 +185,15 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
       -webkit-line-clamp: 2;
     }
 
+    .acoes-cell {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+      min-width: 132px;
+      white-space: nowrap;
+    }
+
     @media (max-width: 760px) {
       .visualizacao-toggle,
       .visualizacao-toggle mat-button-toggle-group {
@@ -204,6 +230,7 @@ export class GraficaCategoriasComponent implements OnInit {
     { key: 'nome', label: 'Nome', sortable: true, sortKey: 'nome', width: '260px' },
     { key: 'categoriaPai', label: 'Categoria pai', width: '220px' },
     { key: 'descricao', label: 'Descrição' },
+    { key: 'acoes', label: 'Ações', align: 'end', width: '152px' },
   ];
 
   readonly permissoes = {
@@ -211,10 +238,6 @@ export class GraficaCategoriasComponent implements OnInit {
     clonar: ['CATALOGO_CATEGORIAS_CADASTRAR', 'GRAFICA_PRODUTOS_EDITAR'],
     excluir: ['CATALOGO_CATEGORIAS_EXCLUIR', 'GRAFICA_PRODUTOS_EDITAR'],
   };
-
-  get categoriaActions(): DataTableAction<CatalogoCategoria>[] {
-    return this.actionDefinitions().filter((action) => this.podeExecutar(action.id));
-  }
 
   get treeActions(): HierarchyTreeAction<CatalogoCategoria>[] {
     return this.actionDefinitions().filter((action) => this.podeExecutar(action.id));
@@ -287,10 +310,6 @@ export class GraficaCategoriasComponent implements OnInit {
     this.visualizacao = value;
     this.pagina = 0;
     this.carregar();
-  }
-
-  onTableAction(event: DataTableActionEvent<CatalogoCategoria>): void {
-    this.executarAcaoCategoria(event.action, event.row);
   }
 
   onTreeAction(event: HierarchyTreeActionEvent<CatalogoCategoria>): void {
@@ -479,7 +498,7 @@ export class GraficaCategoriasComponent implements OnInit {
     return (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   }
 
-  private executarAcaoCategoria(action: string, item: CatalogoCategoria): void {
+  executarAcaoCategoria(action: string, item: CatalogoCategoria): void {
     if (action === 'editar') {
       if (!this.temPermissaoAcao(this.permissoes.editar)) return;
       this.editar(item);
@@ -506,7 +525,7 @@ export class GraficaCategoriasComponent implements OnInit {
     ];
   }
 
-  private podeExecutar(action: string): boolean {
+  podeExecutar(action: string): boolean {
     if (action === 'editar') return this.auth.temAlgumaPermissao(this.permissoes.editar);
     if (action === 'clonar') return this.auth.temAlgumaPermissao(this.permissoes.clonar);
     if (action === 'excluir') return this.auth.temAlgumaPermissao(this.permissoes.excluir);

@@ -46,7 +46,7 @@ describe('GraficaCategoriasComponent', () => {
   afterEach(() => TestBed.resetTestingModule());
 
   it('editar pela lista e pela arvore usa a mesma navegacao', () => {
-    component.onTableAction({ action: 'editar', row: categoria });
+    component.executarAcaoCategoria('editar', categoria);
     component.onTreeAction({ action: 'editar', node: { id: categoria.id, label: categoria.nome, data: categoria } });
 
     expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/categorias', 1, 'editar']);
@@ -54,7 +54,7 @@ describe('GraficaCategoriasComponent', () => {
   });
 
   it('clonar pela lista e pela arvore usa o mesmo fluxo', () => {
-    component.onTableAction({ action: 'clonar', row: categoria });
+    component.executarAcaoCategoria('clonar', categoria);
     component.onTreeAction({ action: 'clonar', node: { id: categoria.id, label: categoria.nome, data: categoria } });
 
     expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/categorias/novo'], { queryParams: { cloneFrom: 1 } });
@@ -64,7 +64,7 @@ describe('GraficaCategoriasComponent', () => {
   it('excluir pela lista atualiza a lista pelo mesmo endpoint canonico', () => {
     component.visualizacao = 'lista';
 
-    component.onTableAction({ action: 'excluir', row: categoria });
+    component.executarAcaoCategoria('excluir', categoria);
 
     expect(service.excluir).toHaveBeenCalledWith(1);
     expect(service.listar).toHaveBeenCalledWith(jasmine.objectContaining({ page: 0, size: 10, ativo: true }));
@@ -107,7 +107,7 @@ describe('GraficaCategoriasComponent', () => {
       },
     })));
 
-    component.onTableAction({ action: 'excluir', row: categoria });
+    component.executarAcaoCategoria('excluir', categoria);
 
     expect(toastr.error).toHaveBeenCalledWith(
       jasmine.stringMatching(/Subcategorias.*Couchê.*Produtos.*Impressão A4/s),
