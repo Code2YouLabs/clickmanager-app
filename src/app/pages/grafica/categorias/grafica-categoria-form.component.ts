@@ -89,7 +89,7 @@ type CategoriaFormSnapshot = {
       </form>
 
       <button page-footer-right mat-stroked-button class="cancel-button" type="button" (click)="cancelar()">Cancelar</button>
-      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-categoria-form" [disabled]="form.invalid || salvando || cloneNomeInvalido">
+      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-categoria-form" [disabled]="form.invalid || salvando">
         <mat-icon>save</mat-icon>
         Salvar
       </button>
@@ -134,7 +134,6 @@ export class GraficaCategoriaFormComponent implements OnInit {
   categoriaId?: number;
   cloneFromId?: number;
   categoriasPai: CatalogoCategoriaOption[] = [];
-  private cloneNomeOriginal?: string;
   salvando = false;
   carregando = false;
   snapshot?: CategoriaFormSnapshot;
@@ -162,10 +161,6 @@ export class GraficaCategoriaFormComponent implements OnInit {
 
   get categoriasPaiDisponiveis(): CatalogoCategoriaOption[] {
     return this.categoriasPai.filter((categoria) => categoria.id !== this.categoriaId);
-  }
-
-  get cloneNomeInvalido(): boolean {
-    return !!this.cloneFromId && this.nomeIgualAoOriginal(this.form.controls.nome.value);
   }
 
   get nomeControl(): FormControl<string> { return this.form.controls.nome; }
@@ -199,7 +194,7 @@ export class GraficaCategoriaFormComponent implements OnInit {
       next: ({ categoriasPai, categoria }) => {
         this.categoriasPai = categoriasPai || [];
         if (categoria) {
-          this.aplicarCategoria(categoria, !!this.cloneFromId);
+          this.aplicarCategoria(categoria);
         } else {
           this.registrarSnapshot();
         }
@@ -213,11 +208,6 @@ export class GraficaCategoriaFormComponent implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
-    if (this.cloneNomeInvalido) {
-      this.toastr.warning('Altere o nome para salvar o clone.');
-      return;
-    }
-
     this.salvando = true;
     const request = this.toRequest();
     const action = this.categoriaId
@@ -247,12 +237,9 @@ export class GraficaCategoriaFormComponent implements OnInit {
     this.router.navigate(['/page/grafica/categorias']);
   }
 
-  private aplicarCategoria(categoria: CatalogoCategoria, comoClone = false): void {
-    if (comoClone) {
-      this.cloneNomeOriginal = categoria.nome;
-    }
+  private aplicarCategoria(categoria: CatalogoCategoria): void {
     this.form.reset({
-      nome: comoClone ? this.nomeClone(categoria.nome) : categoria.nome || '',
+      nome: categoria.nome || '',
       categoriaPaiId: categoria.categoriaPaiId || null,
       descricaoCurta: categoria.descricaoCurta || '',
       descricaoCompleta: categoria.descricaoCompleta || '',
@@ -284,15 +271,4 @@ export class GraficaCategoriaFormComponent implements OnInit {
     return catalogoSlugify(valor).toUpperCase().replace(/-/g, '_').slice(0, 50);
   }
 
-  private nomeClone(nome: string): string {
-    return `${nome || 'Categoria'} Cópia`;
-  }
-
-  private nomeIgualAoOriginal(nome: string | null | undefined): boolean {
-    return this.normalizarNome(nome) === this.normalizarNome(this.cloneNomeOriginal);
-  }
-
-  private normalizarNome(nome: string | null | undefined): string {
-    return (nome || '').trim().toLocaleLowerCase('pt-BR');
-  }
 }

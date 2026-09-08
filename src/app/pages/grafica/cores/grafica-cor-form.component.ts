@@ -63,7 +63,7 @@ type CorFormSnapshot = {
       </form>
 
       <button page-footer-right mat-stroked-button class="cancel-button" type="button" (click)="cancelar()">Cancelar</button>
-      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-cor-form" [disabled]="form.invalid || salvando || cloneNomeInvalido">
+      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-cor-form" [disabled]="form.invalid || salvando">
         <mat-icon>save</mat-icon>
         Salvar
       </button>
@@ -107,7 +107,6 @@ type CorFormSnapshot = {
 export class GraficaCorFormComponent implements OnInit {
   corId?: number;
   cloneFromId?: number;
-  private cloneNomeOriginal?: string;
   salvando = false;
   carregando = false;
   snapshot?: CorFormSnapshot;
@@ -125,10 +124,6 @@ export class GraficaCorFormComponent implements OnInit {
   get subtitulo(): string {
     if (this.cloneFromId) return 'Revise os dados e salve para criar o clone';
     return this.corId ? 'Atualize os dados da cor gráfica' : 'Cadastro de cor gráfica';
-  }
-
-  get cloneNomeInvalido(): boolean {
-    return !!this.cloneFromId && this.nomeIgualAoOriginal(this.form.controls.nome.value);
   }
 
   get nomeControl(): FormControl<string> { return this.form.controls.nome; }
@@ -165,7 +160,7 @@ export class GraficaCorFormComponent implements OnInit {
           return;
         }
         if (cor) {
-          this.aplicarCor(cor, !!this.cloneFromId);
+          this.aplicarCor(cor);
         } else {
           this.registrarSnapshot();
         }
@@ -179,11 +174,6 @@ export class GraficaCorFormComponent implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
-    if (this.cloneNomeInvalido) {
-      this.toastr.warning('Altere o nome para salvar o clone.');
-      return;
-    }
-
     this.salvando = true;
     this.service.salvarCor(this.toRequest(), this.corId).pipe(finalize(() => this.salvando = false)).subscribe({
       next: () => {
@@ -208,12 +198,9 @@ export class GraficaCorFormComponent implements OnInit {
     this.router.navigate(['/page/grafica/cores']);
   }
 
-  private aplicarCor(cor: GraficaCadastro, comoClone = false): void {
-    if (comoClone) {
-      this.cloneNomeOriginal = cor.nome;
-    }
+  private aplicarCor(cor: GraficaCadastro): void {
     this.form.reset({
-      nome: comoClone ? this.nomeClone(cor.nome) : cor.nome || '',
+      nome: cor.nome || '',
       descricao: cor.descricao || '',
     });
     this.registrarSnapshot();
@@ -238,15 +225,4 @@ export class GraficaCorFormComponent implements OnInit {
     return catalogoSlugify(valor).toUpperCase().replace(/-/g, '_').slice(0, 80);
   }
 
-  private nomeClone(nome: string | null | undefined): string {
-    return `${nome || 'Cor'} Cópia`;
-  }
-
-  private nomeIgualAoOriginal(nome: string | null | undefined): boolean {
-    return this.normalizarNome(nome) === this.normalizarNome(this.cloneNomeOriginal);
-  }
-
-  private normalizarNome(nome: string | null | undefined): string {
-    return (nome || '').trim().toLocaleLowerCase('pt-BR');
-  }
 }

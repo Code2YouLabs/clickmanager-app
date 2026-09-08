@@ -124,7 +124,7 @@ type FormatoFormSnapshot = {
       </form>
 
       <button page-footer-right mat-stroked-button class="cancel-button" type="button" (click)="cancelar()">Cancelar</button>
-      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-formato-form" [disabled]="form.invalid || salvando || cloneNomeInvalido">
+      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-formato-form" [disabled]="form.invalid || salvando">
         <mat-icon>save</mat-icon>
         Salvar
       </button>
@@ -168,7 +168,6 @@ type FormatoFormSnapshot = {
 export class GraficaFormatoFormComponent implements OnInit {
   formatoId?: number;
   cloneFromId?: number;
-  private cloneNomeOriginal?: string;
   salvando = false;
   carregando = false;
   snapshot?: FormatoFormSnapshot;
@@ -197,10 +196,6 @@ export class GraficaFormatoFormComponent implements OnInit {
   get subtitulo(): string {
     if (this.cloneFromId) return 'Revise os dados e salve para criar o clone';
     return this.formatoId ? 'Atualize os dados do formato gráfico' : 'Cadastro de formato gráfico';
-  }
-
-  get cloneNomeInvalido(): boolean {
-    return !!this.cloneFromId && this.nomeIgualAoOriginal(this.form.controls.nome.value);
   }
 
   get unidadeSuffix(): string {
@@ -250,7 +245,7 @@ export class GraficaFormatoFormComponent implements OnInit {
           return;
         }
         if (formato) {
-          this.aplicarFormato(formato, !!this.cloneFromId);
+          this.aplicarFormato(formato);
         } else {
           this.registrarSnapshot();
         }
@@ -264,11 +259,6 @@ export class GraficaFormatoFormComponent implements OnInit {
       this.form.markAllAsTouched();
       return;
     }
-    if (this.cloneNomeInvalido) {
-      this.toastr.warning('Altere o nome para salvar o clone.');
-      return;
-    }
-
     this.salvando = true;
     this.service.salvarFormato(this.toRequest(), this.formatoId).pipe(finalize(() => this.salvando = false)).subscribe({
       next: () => {
@@ -293,12 +283,9 @@ export class GraficaFormatoFormComponent implements OnInit {
     this.router.navigate(['/page/grafica/formatos']);
   }
 
-  private aplicarFormato(formato: GraficaFormato, comoClone = false): void {
-    if (comoClone) {
-      this.cloneNomeOriginal = formato.nome;
-    }
+  private aplicarFormato(formato: GraficaFormato): void {
     this.form.reset({
-      nome: comoClone ? this.nomeClone(formato.nome) : formato.nome || '',
+      nome: formato.nome || '',
       descricao: formato.descricao || '',
       largura: formato.largura || null,
       altura: formato.altura || null,
@@ -333,15 +320,4 @@ export class GraficaFormatoFormComponent implements OnInit {
     return catalogoSlugify(valor).toUpperCase().replace(/-/g, '_').slice(0, 80);
   }
 
-  private nomeClone(nome: string | null | undefined): string {
-    return `${nome || 'Formato'} Cópia`;
-  }
-
-  private nomeIgualAoOriginal(nome: string | null | undefined): boolean {
-    return this.normalizarNome(nome) === this.normalizarNome(this.cloneNomeOriginal);
-  }
-
-  private normalizarNome(nome: string | null | undefined): string {
-    return (nome || '').trim().toLocaleLowerCase('pt-BR');
-  }
 }

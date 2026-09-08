@@ -75,7 +75,7 @@ type ServicoFormSnapshot = {
       </form>
 
       <button page-footer-right mat-stroked-button class="cancel-button" type="button" (click)="cancelar()">Cancelar</button>
-      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-servico-form" [disabled]="form.invalid || precoForm.invalid || salvando || cloneNomeInvalido">
+      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-servico-form" [disabled]="form.invalid || precoForm.invalid || salvando">
         <mat-icon>save</mat-icon>
         Salvar
       </button>
@@ -137,7 +137,6 @@ type ServicoFormSnapshot = {
 export class GraficaServicoFormComponent implements OnInit {
   servicoId?: number;
   cloneFromId?: number;
-  private cloneNomeOriginal?: string;
   salvando = false;
   carregando = false;
   snapshot?: ServicoFormSnapshot;
@@ -156,10 +155,6 @@ export class GraficaServicoFormComponent implements OnInit {
   get subtitulo(): string {
     if (this.cloneFromId) return 'Revise os dados e salve para criar o clone';
     return this.servicoId ? 'Atualize os dados do serviço gráfico' : 'Cadastro de serviço gráfico';
-  }
-
-  get cloneNomeInvalido(): boolean {
-    return !!this.cloneFromId && this.nomeIgualAoOriginal(this.form.controls.nome.value);
   }
 
   get nomeControl(): FormControl<string> { return this.form.controls.nome; }
@@ -196,7 +191,7 @@ export class GraficaServicoFormComponent implements OnInit {
           return;
         }
         if (servico) {
-          this.aplicarServico(servico, !!this.cloneFromId);
+          this.aplicarServico(servico);
         } else {
           this.registrarSnapshot();
         }
@@ -208,10 +203,6 @@ export class GraficaServicoFormComponent implements OnInit {
   salvar(): void {
     if (this.form.invalid || this.salvando) {
       this.form.markAllAsTouched();
-      return;
-    }
-    if (this.cloneNomeInvalido) {
-      this.toastr.warning('Altere o nome para salvar o clone.');
       return;
     }
     this.precoForm.markAllAsTouched();
@@ -249,12 +240,9 @@ export class GraficaServicoFormComponent implements OnInit {
     this.router.navigate(['/page/grafica/servicos']);
   }
 
-  private aplicarServico(servico: GraficaServico, comoClone = false): void {
-    if (comoClone) {
-      this.cloneNomeOriginal = servico.nome;
-    }
+  private aplicarServico(servico: GraficaServico): void {
     this.form.reset({
-      nome: comoClone ? this.nomeClone(servico.nome) : servico.nome || '',
+      nome: servico.nome || '',
       descricao: servico.descricao || '',
     });
     this.precoForm = this.criarPrecoForm(servico.politicas?.[0]);
@@ -381,15 +369,4 @@ export class GraficaServicoFormComponent implements OnInit {
     return catalogoSlugify(valor).toUpperCase().replace(/-/g, '_').slice(0, 80);
   }
 
-  private nomeClone(nome: string | null | undefined): string {
-    return `${nome || 'Serviço'} Cópia`;
-  }
-
-  private nomeIgualAoOriginal(nome: string | null | undefined): boolean {
-    return this.normalizarNome(nome) === this.normalizarNome(this.cloneNomeOriginal);
-  }
-
-  private normalizarNome(nome: string | null | undefined): string {
-    return (nome || '').trim().toLocaleLowerCase('pt-BR');
-  }
 }
