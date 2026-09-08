@@ -8,7 +8,7 @@
   <div class="data-table-toolbar">
     @if (search.enabled) {
     <div class="data-table-toolbar__section data-table-toolbar__section--search">
-      <mat-form-field appearance="outline" class="data-table-toolbar__search">
+      <mat-form-field appearance="outline" class="data-table-toolbar__search hide-hint">
         <mat-label>{{ search.placeholder || 'Pesquisar' }}</mat-label>
         <mat-icon matPrefix>search</mat-icon>
         <input matInput type="search" [formControl]="searchControl" />

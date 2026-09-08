@@ -32,7 +32,8 @@
 
 .data-table-toolbar__section--search {
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
+  align-items: start;
+  column-gap: 10px;
 }
 
 .data-table-toolbar-card--collapsed.data-table-toolbar-card--has-active .data-table-toolbar__section {
@@ -52,7 +53,7 @@
 
 .data-table-toolbar__actions {
   display: inline-flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-end;
   gap: 8px;
 }

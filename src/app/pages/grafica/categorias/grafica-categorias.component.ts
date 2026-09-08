@@ -65,6 +65,7 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
         <div data-table-toolbar-actions class="visualizacao-toggle">
           <mat-button-toggle-group
             [value]="visualizacao"
+            hideSingleSelectionIndicator
             aria-label="Visualização das categorias"
             (change)="alterarVisualizacao($event.value)">
             <mat-button-toggle value="lista" aria-label="Visualizar em lista">
@@ -124,19 +125,35 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
     }
 
     .visualizacao-toggle mat-button-toggle-group {
+      height: var(--mat-form-field-container-height, 37px);
       border-radius: 8px;
+      border-color: var(--mat-sys-outline-variant);
       overflow: hidden;
     }
 
     .visualizacao-toggle mat-button-toggle {
+      height: var(--mat-form-field-container-height, 37px);
       min-width: 96px;
+      color: var(--mat-sys-on-surface);
     }
 
     .visualizacao-toggle ::ng-deep .mat-button-toggle-label-content {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      line-height: 36px;
+      height: 100%;
+      line-height: 1;
+      padding: 0 12px;
+      font-weight: 600;
+    }
+
+    .visualizacao-toggle ::ng-deep .mat-button-toggle-button {
+      height: 100%;
+    }
+
+    .visualizacao-toggle ::ng-deep .mat-button-toggle-checked {
+      background: color-mix(in srgb, var(--mat-sys-primary) 10%, var(--mat-sys-surface));
+      color: var(--mat-sys-primary);
     }
 
     .visualizacao-toggle mat-icon {

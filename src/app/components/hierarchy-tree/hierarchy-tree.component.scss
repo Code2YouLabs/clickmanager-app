@@ -19,12 +19,12 @@
 
 .hierarchy-tree__row {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto auto;
+  grid-template-columns: 36px minmax(0, 1fr) 40px;
   align-items: center;
-  gap: 8px;
-  min-height: 48px;
-  padding: 4px 8px;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  gap: 10px;
+  min-height: 46px;
+  padding: 3px 8px;
+  border-bottom: 1px solid color-mix(in srgb, var(--mat-sys-outline-variant) 70%, transparent);
   border-radius: 6px;
 }
 
@@ -33,7 +33,7 @@
 }
 
 .hierarchy-tree__row--leaf {
-  grid-template-columns: 40px minmax(0, 1fr) auto auto;
+  min-height: 44px;
 }
 
 .hierarchy-tree__toggle {
@@ -51,9 +51,24 @@
   height: 32px;
   color: var(--mat-sys-on-surface-variant);
   cursor: grab;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.hierarchy-tree__row:hover .hierarchy-tree__drag-handle,
+.hierarchy-tree__row:focus-within .hierarchy-tree__drag-handle {
+  opacity: 1;
 }
 
 .hierarchy-tree__content {
+  min-width: 0;
+}
+
+.hierarchy-tree__title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -61,10 +76,14 @@
   overflow: hidden;
   color: var(--mat-sys-on-surface);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.hierarchy-tree__row--parent > .hierarchy-tree__content .hierarchy-tree__label {
+  font-weight: 700;
 }
 
 .hierarchy-tree__description {
@@ -80,6 +99,7 @@
 .hierarchy-tree__meta {
   color: var(--mat-sys-on-surface-variant);
   font-size: 12px;
+  font-weight: 500;
   line-height: 1.2;
   white-space: nowrap;
 }
@@ -89,13 +109,23 @@
   align-items: center;
   justify-content: flex-end;
   gap: 2px;
-  min-width: 116px;
+  min-width: 40px;
+}
+
+.hierarchy-tree__actions-trigger {
+  opacity: 0;
+  transition: opacity 150ms ease, background-color 150ms ease;
+}
+
+.hierarchy-tree__row:hover .hierarchy-tree__actions-trigger,
+.hierarchy-tree__row:focus-within .hierarchy-tree__actions-trigger {
+  opacity: 1;
 }
 
 .hierarchy-tree__children {
-  margin-left: 24px;
-  padding-left: 16px;
-  border-left: 1px solid var(--mat-sys-outline-variant);
+  margin-left: 32px;
+  padding-left: 22px;
+  border-left: 1px solid color-mix(in srgb, var(--mat-sys-outline-variant) 64%, transparent);
 }
 
 .hierarchy-tree__children--collapsed {
@@ -129,8 +159,8 @@
 
 @media (max-width: 760px) {
   .hierarchy-tree__row {
-    grid-template-columns: 32px minmax(0, 1fr) auto;
-    gap: 4px;
+    grid-template-columns: 32px minmax(0, 1fr) 36px;
+    gap: 6px;
     padding: 6px 2px;
   }
 
@@ -140,21 +170,21 @@
   }
 
   .hierarchy-tree__meta {
-    display: none;
+    width: 100%;
   }
 
   .hierarchy-tree__actions {
-    min-width: 96px;
-    gap: 0;
+    min-width: 36px;
   }
 
-  .hierarchy-tree__actions button {
+  .hierarchy-tree__actions-trigger {
     width: 32px;
     height: 32px;
+    opacity: 1;
   }
 
   .hierarchy-tree__children {
-    margin-left: 12px;
-    padding-left: 10px;
+    margin-left: 16px;
+    padding-left: 14px;
   }
 }

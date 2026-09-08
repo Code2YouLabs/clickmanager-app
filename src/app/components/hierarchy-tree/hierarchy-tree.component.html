@@ -31,7 +31,10 @@
 </app-section-card>
 
 <ng-template #nodeRow let-node="node">
-  <div class="hierarchy-tree__row" [class.hierarchy-tree__row--leaf]="!hasChild(0, node)">
+  <div
+    class="hierarchy-tree__row"
+    [class.hierarchy-tree__row--parent]="hasChild(0, node)"
+    [class.hierarchy-tree__row--leaf]="!hasChild(0, node)">
     <button
       mat-icon-button
       type="button"
@@ -51,30 +54,46 @@
     }
 
     <div class="hierarchy-tree__content">
-      <div class="hierarchy-tree__label">{{ node.label }}</div>
+      <div class="hierarchy-tree__title">
+        <span class="hierarchy-tree__label">{{ node.label }}</span>
+        @if (node.meta) {
+          <span class="hierarchy-tree__meta">{{ node.meta }}</span>
+        }
+      </div>
       @if (node.description) {
         <div class="hierarchy-tree__description">{{ node.description }}</div>
       }
     </div>
 
-    @if (node.meta) {
-      <span class="hierarchy-tree__meta">{{ node.meta }}</span>
-    }
-
     @if (visibleActions(node).length) {
       <div class="hierarchy-tree__actions">
-        @for (item of visibleActions(node); track item.id) {
-          <button
-            mat-icon-button
-            type="button"
-            [disabled]="isActionDisabled(node, item)"
-            [matTooltip]="item.label"
-            [attr.aria-label]="item.label + ' ' + node.label"
-            (click)="emitAction(node, item, $event)">
-            <mat-icon [color]="item.color || null">{{ item.icon }}</mat-icon>
-          </button>
-        }
+        <button
+          mat-icon-button
+          type="button"
+          class="hierarchy-tree__actions-trigger"
+          [matMenuTriggerFor]="nodeActionsMenu"
+          [matMenuTriggerData]="{ node: node }"
+          matTooltip="Ações"
+          [attr.aria-label]="'Abrir ações de ' + node.label"
+          (click)="$event.stopPropagation()">
+          <mat-icon>more_vert</mat-icon>
+        </button>
       </div>
     }
   </div>
 </ng-template>
+
+<mat-menu #nodeActionsMenu="matMenu">
+  <ng-template matMenuContent let-node="node">
+    @for (item of visibleActions(node); track item.id) {
+      <button
+        mat-menu-item
+        type="button"
+        [disabled]="isActionDisabled(node, item)"
+        (click)="emitAction(node, item, $event)">
+        <mat-icon [color]="item.color || null">{{ item.icon }}</mat-icon>
+        <span>{{ item.label }}</span>
+      </button>
+    }
+  </ng-template>
+</mat-menu>
