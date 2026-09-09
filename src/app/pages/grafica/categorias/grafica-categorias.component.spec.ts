@@ -96,6 +96,23 @@ describe('GraficaCategoriasComponent', () => {
     expect(component.categoriasArvore[0].children?.[0].label).toBe('Couchê');
   });
 
+  it('arvore exibe nomes repetidos em ramos diferentes', () => {
+    service.listarTodas.and.returnValue(of([
+      item(1, 'Impressão'),
+      item(2, 'Cartão de visitas'),
+      item(3, 'Couchê 250g', 1),
+      item(4, 'Couchê 250g', 2),
+    ]));
+    component.visualizacao = 'arvore';
+
+    component.carregar();
+
+    const impressao = component.categoriasArvore.find((node) => node.id === 1);
+    const cartao = component.categoriasArvore.find((node) => node.id === 2);
+    expect(impressao?.children?.[0].label).toBe('Couchê 250g');
+    expect(cartao?.children?.[0].label).toBe('Couchê 250g');
+  });
+
   it('mostra dependencias estruturadas com o mesmo tratamento de erro', () => {
     service.excluir.and.returnValue(throwError(() => ({
       error: {
