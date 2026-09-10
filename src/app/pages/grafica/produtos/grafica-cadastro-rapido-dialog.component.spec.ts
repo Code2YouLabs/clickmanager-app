@@ -71,10 +71,31 @@ describe('GraficaCadastroRapidoDialogComponent', () => {
     });
   });
 
-  it('formato exige unidade altura e largura e preserva medidas uteis opcionais', () => {
+  it('formato permite salvar somente com nome', () => {
     create('formato');
 
     component.form.patchValue({ nome: 'A4' });
+    expect(component.form.valid).toBeTrue();
+
+    component.salvar();
+
+    expect(service.salvarFormato).toHaveBeenCalledWith({
+      codigo: 'A4',
+      nome: 'A4',
+      descricao: null,
+      largura: null,
+      altura: null,
+      larguraUtil: null,
+      alturaUtil: null,
+      unidadeDimensao: null,
+      ativo: true,
+    });
+  });
+
+  it('formato invalida dimensao parcial e preserva medidas uteis opcionais', () => {
+    create('formato');
+
+    component.form.patchValue({ nome: 'A4', altura: 29.7 });
     expect(component.form.invalid).toBeTrue();
 
     component.form.patchValue({

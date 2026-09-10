@@ -494,11 +494,13 @@ export class GraficaCadastroListComponent implements OnInit {
 
   dimensao(item: Item): string {
     if (!this.isFormato(item)) return '-';
+    if (!item.largura || !item.altura || !item.unidadeDimensao) return 'Sem dimensão física';
     return `${this.numero(item.largura)} x ${this.numero(item.altura)} ${this.unidade(item.unidadeDimensao)}`;
   }
 
   dimensaoUtil(item: Item): string {
     if (!this.isFormato(item)) return '-';
+    if (!item.larguraUtil || !item.alturaUtil || !item.unidadeDimensao) return '-';
     return `${this.numero(item.larguraUtil)} x ${this.numero(item.alturaUtil)} ${this.unidade(item.unidadeDimensao)} útil`;
   }
 

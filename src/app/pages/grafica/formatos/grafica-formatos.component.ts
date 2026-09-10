@@ -238,10 +238,12 @@ export class GraficaFormatosComponent implements OnInit {
   }
 
   dimensao(item: GraficaFormato): string {
+    if (!item.largura || !item.altura || !item.unidadeDimensao) return 'Sem dimensão física';
     return `${this.numero(item.largura)} x ${this.numero(item.altura)} ${this.unidade(item.unidadeDimensao)}`;
   }
 
   dimensaoUtil(item: GraficaFormato): string {
+    if (!item.larguraUtil || !item.alturaUtil || !item.unidadeDimensao) return '-';
     return `${this.numero(item.larguraUtil)} x ${this.numero(item.alturaUtil)} ${this.unidade(item.unidadeDimensao)} útil`;
   }
 

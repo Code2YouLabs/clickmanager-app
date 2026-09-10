@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, Inject } from '@angular/core';
-import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormControl, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
 import { Observable } from 'rxjs';
@@ -18,10 +18,16 @@ import { GraficaProdutoService } from '../shared/grafica.service';
 type CadastroRapidoTipo = 'material' | 'formato' | 'cor' | 'categoria';
 type UnidadeGrafica = 'METRO' | 'CENTIMETRO' | 'MILIMETRO';
 type CadastroRapidoResult = GraficaCadastro | GraficaFormato | CatalogoCategoria;
+type CategoriaHierarquicaOption = CatalogoCategoriaOption & {
+  nivel?: number;
+  caminho?: string;
+  caminhoPai?: string;
+  busca?: string;
+};
 
 interface CadastroRapidoDialogData {
   tipo: CadastroRapidoTipo;
-  categorias?: CatalogoCategoriaOption[];
+  categorias?: CategoriaHierarquicaOption[];
 }
 
 @Component({
@@ -55,6 +61,13 @@ interface CadastroRapidoDialogData {
           label="Categoria pai"
           placeholder="Categoria pai"
           [options]="categoriasPai"
+          [hierarchical]="true"
+          [searchable]="true"
+          optionSubtitleKey="caminhoPai"
+          optionLevelKey="nivel"
+          optionPathKey="caminho"
+          selectedLabelKey="caminho"
+          [searchKeys]="['busca']"
           [showNull]="true"
           nullLabel="Sem categoria pai">
         </app-input-options>
@@ -67,8 +80,14 @@ interface CadastroRapidoDialogData {
             [options]="unidades"
             labelKey="label"
             valueKey="value"
-            [showNull]="false">
+            [showNull]="true"
+            [clearable]="true"
+            nullLabel="Sem unidade">
           </app-input-options>
+
+          <small class="quick-create-form__wide quick-create-form__hint">
+            As dimensões são opcionais. Preencha quando este formato possuir medidas físicas usadas na produção ou cálculo.
+          </small>
 
           <app-unit-input
             formControlName="altura"
@@ -76,8 +95,8 @@ interface CadastroRapidoDialogData {
             [unit]="unidadeSuffix"
             [min]="0.01"
             [decimals]="2"
-            [required]="true"
-            [requiredError]="alturaControl.invalid && alturaControl.touched">
+            [required]="dimensaoIniciada"
+            [requiredError]="alturaObrigatoriaVisivel">
           </app-unit-input>
 
           <app-unit-input
@@ -86,8 +105,8 @@ interface CadastroRapidoDialogData {
             [unit]="unidadeSuffix"
             [min]="0.01"
             [decimals]="2"
-            [required]="true"
-            [requiredError]="larguraControl.invalid && larguraControl.touched">
+            [required]="dimensaoIniciada"
+            [requiredError]="larguraObrigatoriaVisivel">
           </app-unit-input>
 
           <app-unit-input
@@ -97,7 +116,7 @@ interface CadastroRapidoDialogData {
             [min]="0.01"
             [decimals]="2"
             [required]="false"
-            [requiredError]="alturaUtilControl.invalid && alturaUtilControl.touched">
+            [requiredError]="false">
           </app-unit-input>
 
           <app-unit-input
@@ -107,8 +126,12 @@ interface CadastroRapidoDialogData {
             [min]="0.01"
             [decimals]="2"
             [required]="false"
-            [requiredError]="larguraUtilControl.invalid && larguraUtilControl.touched">
+            [requiredError]="false">
           </app-unit-input>
+
+          <small class="quick-create-form__wide quick-create-form__validation" *ngIf="form.invalid && form.touched">
+            {{ formatoErrorMessage }}
+          </small>
         </ng-container>
 
         <app-input-textarea
@@ -141,6 +164,19 @@ interface CadastroRapidoDialogData {
     .quick-create-form__wide {
       grid-column: 1 / -1;
     }
+    .quick-create-form__hint {
+      margin-top: -6px;
+      color: #64748b;
+      font-size: 0.82rem;
+      line-height: 1.35;
+    }
+    .quick-create-form__validation {
+      margin-top: -6px;
+      color: #b45309;
+      font-size: 0.84rem;
+      font-weight: 600;
+      line-height: 1.35;
+    }
     mat-dialog-actions button {
       display: inline-flex;
       align-items: center;
@@ -169,9 +205,9 @@ export class GraficaCadastroRapidoDialogComponent {
     altura: this.fb.control<number | null>(null),
     larguraUtil: this.fb.control<number | null>(null),
     alturaUtil: this.fb.control<number | null>(null),
-    unidadeDimensao: this.fb.control<UnidadeGrafica>('CENTIMETRO', { nonNullable: true }),
+    unidadeDimensao: this.fb.control<UnidadeGrafica | null>(null),
     categoriaPaiId: this.fb.control<number | null>(null),
-  });
+  }, { validators: formatoDimensionalValidator() });
 
   get titulo(): string {
     return {
@@ -208,8 +244,32 @@ export class GraficaCadastroRapidoDialogComponent {
     switch (this.unidadeControl.value) {
       case 'METRO': return 'm';
       case 'MILIMETRO': return 'mm';
-      default: return 'cm';
+      case 'CENTIMETRO': return 'cm';
+      default: return '';
     }
+  }
+
+  get dimensaoIniciada(): boolean {
+    const raw = this.form.getRawValue();
+    return raw.largura != null || raw.altura != null || raw.unidadeDimensao != null;
+  }
+
+  get alturaObrigatoriaVisivel(): boolean {
+    return this.alturaControl.touched && this.form.hasError('dimensaoParcial') && this.alturaControl.value == null;
+  }
+
+  get larguraObrigatoriaVisivel(): boolean {
+    return this.larguraControl.touched && this.form.hasError('dimensaoParcial') && this.larguraControl.value == null;
+  }
+
+  get formatoErrorMessage(): string {
+    if (this.form.hasError('dimensaoParcial')) return 'Preencha altura e largura juntas.';
+    if (this.form.hasError('unidadeObrigatoria')) return 'Informe a unidade quando houver dimensões físicas.';
+    if (this.form.hasError('dimensaoObrigatoria')) return 'Informe altura e largura ou deixe a unidade vazia.';
+    if (this.form.hasError('dimensaoObrigatoriaParaAreaUtil')) return 'Área útil só pode ser informada quando altura e largura também estiverem preenchidas.';
+    if (this.form.hasError('alturaUtilMaior')) return 'Altura útil não pode ser maior que a altura.';
+    if (this.form.hasError('larguraUtilMaior')) return 'Largura útil não pode ser maior que a largura.';
+    return 'Revise os dados do formato.';
   }
 
   get nomeControl(): FormControl<string> { return this.form.controls.nome; }
@@ -218,9 +278,9 @@ export class GraficaCadastroRapidoDialogComponent {
   get alturaControl(): FormControl<number | null> { return this.form.controls.altura; }
   get larguraUtilControl(): FormControl<number | null> { return this.form.controls.larguraUtil; }
   get alturaUtilControl(): FormControl<number | null> { return this.form.controls.alturaUtil; }
-  get unidadeControl(): FormControl<UnidadeGrafica> { return this.form.controls.unidadeDimensao; }
+  get unidadeControl(): FormControl<UnidadeGrafica | null> { return this.form.controls.unidadeDimensao; }
   get categoriaPaiControl(): FormControl<number | null> { return this.form.controls.categoriaPaiId; }
-  get categoriasPai(): CatalogoCategoriaOption[] { return this.data.categorias || []; }
+  get categoriasPai(): CategoriaHierarquicaOption[] { return this.data.categorias || []; }
 
   constructor(
     private readonly fb: FormBuilder,
@@ -317,17 +377,48 @@ export class GraficaCadastroRapidoDialogComponent {
 
   private configurarValidadoresPorTipo(): void {
     const formato = this.data.tipo === 'formato';
-    const obrigatorioMaiorQueZero = formato ? [Validators.required, Validators.min(0.01)] : [];
     const opcionalMaiorQueZero = formato ? [Validators.min(0.01)] : [];
-    this.form.controls.altura.setValidators(obrigatorioMaiorQueZero);
-    this.form.controls.largura.setValidators(obrigatorioMaiorQueZero);
+    this.form.controls.altura.setValidators(opcionalMaiorQueZero);
+    this.form.controls.largura.setValidators(opcionalMaiorQueZero);
     this.form.controls.alturaUtil.setValidators(opcionalMaiorQueZero);
     this.form.controls.larguraUtil.setValidators(opcionalMaiorQueZero);
-    this.form.controls.unidadeDimensao.setValidators(formato ? [Validators.required] : []);
+    this.form.controls.unidadeDimensao.setValidators([]);
     this.form.updateValueAndValidity({ emitEvent: false });
   }
 
   private codigo(valor: string): string {
     return catalogoSlugify(valor).toUpperCase().replace(/-/g, '_').slice(0, 80);
   }
+}
+
+function formatoDimensionalValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const largura = control.get('largura')?.value;
+    const altura = control.get('altura')?.value;
+    const larguraUtil = control.get('larguraUtil')?.value;
+    const alturaUtil = control.get('alturaUtil')?.value;
+    const unidadeDimensao = control.get('unidadeDimensao')?.value;
+    const errors: ValidationErrors = {};
+
+    if ((largura == null) !== (altura == null)) {
+      errors['dimensaoParcial'] = true;
+    }
+    if ((largura != null || altura != null) && unidadeDimensao == null) {
+      errors['unidadeObrigatoria'] = true;
+    }
+    if (unidadeDimensao != null && largura == null && altura == null) {
+      errors['dimensaoObrigatoria'] = true;
+    }
+    if ((larguraUtil != null || alturaUtil != null) && (largura == null || altura == null)) {
+      errors['dimensaoObrigatoriaParaAreaUtil'] = true;
+    }
+    if (alturaUtil != null && altura != null && alturaUtil > altura) {
+      errors['alturaUtilMaior'] = true;
+    }
+    if (larguraUtil != null && largura != null && larguraUtil > largura) {
+      errors['larguraUtilMaior'] = true;
+    }
+
+    return Object.keys(errors).length ? errors : null;
+  };
 }

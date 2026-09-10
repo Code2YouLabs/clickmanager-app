@@ -127,6 +127,65 @@ describe('Clone dos cadastros da grafica', () => {
     expect((manual as any).toRequest()).toEqual(payloadClone);
   });
 
+  it('Formato: cloneFrom preserva formato nominal sem dimensoes', () => {
+    const service = graficaServiceSpy();
+    service.listarFormatos.and.returnValue(of([{
+      id: 23,
+      codigo: 'GG',
+      nome: 'GG',
+      descricao: 'Formato nominal',
+      largura: null,
+      altura: null,
+      larguraUtil: null,
+      alturaUtil: null,
+      unidadeDimensao: null,
+      ativo: true,
+    }]));
+    service.salvarFormato.and.returnValue(of({} as any));
+
+    const clone = new GraficaFormatoFormComponent(fb, service, route('23'), routerSpy(), toastrSpy());
+    clone.ngOnInit();
+    clone.salvar();
+
+    expect(service.salvarFormato.calls.mostRecent().args[0]).toEqual({
+      codigo: 'GG',
+      nome: 'GG',
+      descricao: 'Formato nominal',
+      largura: null,
+      altura: null,
+      larguraUtil: null,
+      alturaUtil: null,
+      unidadeDimensao: null,
+      ativo: true,
+    });
+    expect(service.salvarFormato.calls.mostRecent().args[1]).toBeUndefined();
+  });
+
+  it('Formato: valida nome obrigatorio, dimensao parcial e area util', () => {
+    const manual = new GraficaFormatoFormComponent(fb, graficaServiceSpy(), route(), routerSpy(), toastrSpy());
+
+    manual.form.reset({ nome: '', descricao: '', largura: null, altura: null, larguraUtil: null, alturaUtil: null, unidadeDimensao: null });
+    expect(manual.form.invalid).toBeTrue();
+
+    manual.form.reset({ nome: 'GG', descricao: '', largura: null, altura: null, larguraUtil: null, alturaUtil: null, unidadeDimensao: null });
+    expect(manual.form.valid).toBeTrue();
+
+    manual.form.patchValue({ altura: 30 });
+    expect(manual.form.hasError('dimensaoParcial')).toBeTrue();
+
+    manual.form.patchValue({ largura: 20 });
+    expect(manual.form.hasError('unidadeObrigatoria')).toBeTrue();
+
+    manual.form.patchValue({ unidadeDimensao: 'CENTIMETRO', alturaUtil: 31 });
+    expect(manual.form.hasError('alturaUtilMaior')).toBeTrue();
+
+    manual.form.patchValue({ alturaUtil: 29, larguraUtil: 21 });
+    expect(manual.form.hasError('larguraUtilMaior')).toBeTrue();
+
+    manual.form.patchValue({ larguraUtil: 19 });
+    expect(manual.form.valid).toBeTrue();
+  });
+
   it('Cor: cloneFrom preserva nome/descricao e salva por POST normal', () => {
     const service = graficaServiceSpy();
     service.listarCores.and.returnValue(of([{ id: 32, codigo: '4X4', nome: '4x4', descricao: 'Frente e verso', ativo: true }]));

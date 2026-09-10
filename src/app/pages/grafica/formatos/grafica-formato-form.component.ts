@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormControl, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { finalize, map, of, switchMap } from 'rxjs';
 import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
@@ -24,7 +24,7 @@ type FormatoFormSnapshot = {
   altura: number | null;
   larguraUtil: number | null;
   alturaUtil: number | null;
-  unidadeDimensao: UnidadeGrafica;
+  unidadeDimensao: UnidadeGrafica | null;
 };
 
 @Component({
@@ -69,8 +69,14 @@ type FormatoFormSnapshot = {
               [options]="unidades"
               labelKey="label"
               valueKey="value"
-              [showNull]="false">
+              [showNull]="true"
+              [clearable]="true"
+              nullLabel="Sem unidade">
             </app-input-options>
+
+            <small class="dimension-help form-grid__wide">
+              As dimensões são opcionais. Preencha quando este formato possuir medidas físicas usadas na produção ou cálculo.
+            </small>
 
             <app-unit-input
               formControlName="altura"
@@ -78,8 +84,8 @@ type FormatoFormSnapshot = {
               [unit]="unidadeSuffix"
               [min]="0.01"
               [decimals]="2"
-              [required]="true"
-              [requiredError]="alturaControl.invalid && alturaControl.touched">
+              [required]="dimensaoIniciada"
+              [requiredError]="alturaObrigatoriaVisivel">
             </app-unit-input>
 
             <app-unit-input
@@ -88,8 +94,8 @@ type FormatoFormSnapshot = {
               [unit]="unidadeSuffix"
               [min]="0.01"
               [decimals]="2"
-              [required]="true"
-              [requiredError]="larguraControl.invalid && larguraControl.touched">
+              [required]="dimensaoIniciada"
+              [requiredError]="larguraObrigatoriaVisivel">
             </app-unit-input>
 
             <app-unit-input
@@ -99,7 +105,7 @@ type FormatoFormSnapshot = {
               [min]="0.01"
               [decimals]="2"
               [required]="false"
-              [requiredError]="alturaUtilControl.invalid && alturaUtilControl.touched">
+              [requiredError]="false">
             </app-unit-input>
 
             <app-unit-input
@@ -109,8 +115,12 @@ type FormatoFormSnapshot = {
               [min]="0.01"
               [decimals]="2"
               [required]="false"
-              [requiredError]="larguraUtilControl.invalid && larguraUtilControl.touched">
+              [requiredError]="false">
             </app-unit-input>
+
+            <small class="validation-hint form-grid__wide" *ngIf="form.invalid && form.touched">
+              {{ formatoErrorMessage }}
+            </small>
 
             <app-input-textarea
               class="form-grid__wide"
@@ -148,6 +158,21 @@ type FormatoFormSnapshot = {
       grid-column: 1 / -1;
     }
 
+    .dimension-help {
+      margin-top: -8px;
+      color: #64748b;
+      font-size: 0.82rem;
+      line-height: 1.35;
+    }
+
+    .validation-hint {
+      margin-top: -8px;
+      color: #b45309;
+      font-size: 0.84rem;
+      font-weight: 600;
+      line-height: 1.35;
+    }
+
     .cancel-button {
       border-color: #fecaca;
       color: #b91c1c;
@@ -181,12 +206,12 @@ export class GraficaFormatoFormComponent implements OnInit {
   form = this.fb.group({
     nome: this.fb.control('', { nonNullable: true, validators: [Validators.required] }),
     descricao: this.fb.control('', { nonNullable: true }),
-    largura: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.01)]),
-    altura: this.fb.control<number | null>(null, [Validators.required, Validators.min(0.01)]),
+    largura: this.fb.control<number | null>(null, [Validators.min(0.01)]),
+    altura: this.fb.control<number | null>(null, [Validators.min(0.01)]),
     larguraUtil: this.fb.control<number | null>(null, [Validators.min(0.01)]),
     alturaUtil: this.fb.control<number | null>(null, [Validators.min(0.01)]),
-    unidadeDimensao: this.fb.control<UnidadeGrafica>('CENTIMETRO', { nonNullable: true, validators: [Validators.required] }),
-  });
+    unidadeDimensao: this.fb.control<UnidadeGrafica | null>(null),
+  }, { validators: formatoDimensionalValidator() });
 
   get titulo(): string {
     if (this.cloneFromId) return 'Clonar formato';
@@ -202,8 +227,32 @@ export class GraficaFormatoFormComponent implements OnInit {
     switch (this.unidadeControl.value) {
       case 'METRO': return 'm';
       case 'MILIMETRO': return 'mm';
-      default: return 'cm';
+      case 'CENTIMETRO': return 'cm';
+      default: return '';
     }
+  }
+
+  get dimensaoIniciada(): boolean {
+    const raw = this.form.getRawValue();
+    return raw.largura != null || raw.altura != null || raw.unidadeDimensao != null;
+  }
+
+  get alturaObrigatoriaVisivel(): boolean {
+    return this.alturaControl.touched && this.form.hasError('dimensaoParcial') && this.alturaControl.value == null;
+  }
+
+  get larguraObrigatoriaVisivel(): boolean {
+    return this.larguraControl.touched && this.form.hasError('dimensaoParcial') && this.larguraControl.value == null;
+  }
+
+  get formatoErrorMessage(): string {
+    if (this.form.hasError('dimensaoParcial')) return 'Preencha altura e largura juntas.';
+    if (this.form.hasError('unidadeObrigatoria')) return 'Informe a unidade quando houver dimensões físicas.';
+    if (this.form.hasError('dimensaoObrigatoria')) return 'Informe altura e largura ou deixe a unidade vazia.';
+    if (this.form.hasError('dimensaoObrigatoriaParaAreaUtil')) return 'Área útil só pode ser informada quando altura e largura também estiverem preenchidas.';
+    if (this.form.hasError('alturaUtilMaior')) return 'Altura útil não pode ser maior que a altura.';
+    if (this.form.hasError('larguraUtilMaior')) return 'Largura útil não pode ser maior que a largura.';
+    return 'Revise os dados do formato.';
   }
 
   get nomeControl(): FormControl<string> { return this.form.controls.nome; }
@@ -212,7 +261,7 @@ export class GraficaFormatoFormComponent implements OnInit {
   get alturaControl(): FormControl<number | null> { return this.form.controls.altura; }
   get larguraUtilControl(): FormControl<number | null> { return this.form.controls.larguraUtil; }
   get alturaUtilControl(): FormControl<number | null> { return this.form.controls.alturaUtil; }
-  get unidadeControl(): FormControl<UnidadeGrafica> { return this.form.controls.unidadeDimensao; }
+  get unidadeControl(): FormControl<UnidadeGrafica | null> { return this.form.controls.unidadeDimensao; }
 
   constructor(
     private readonly fb: FormBuilder,
@@ -291,7 +340,7 @@ export class GraficaFormatoFormComponent implements OnInit {
       altura: formato.altura || null,
       larguraUtil: formato.larguraUtil || null,
       alturaUtil: formato.alturaUtil || null,
-      unidadeDimensao: formato.unidadeDimensao || 'CENTIMETRO',
+      unidadeDimensao: formato.unidadeDimensao || null,
     });
     this.registrarSnapshot();
   }
@@ -320,4 +369,41 @@ export class GraficaFormatoFormComponent implements OnInit {
     return catalogoSlugify(valor).toUpperCase().replace(/-/g, '_').slice(0, 80);
   }
 
+}
+
+function formatoDimensionalValidator(): ValidatorFn {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const largura = control.get('largura')?.value;
+    const altura = control.get('altura')?.value;
+    const larguraUtil = control.get('larguraUtil')?.value;
+    const alturaUtil = control.get('alturaUtil')?.value;
+    const unidadeDimensao = control.get('unidadeDimensao')?.value;
+    const errors: ValidationErrors = {};
+
+    if ((largura == null) !== (altura == null)) {
+      errors['dimensaoParcial'] = true;
+    }
+
+    if ((largura != null || altura != null) && unidadeDimensao == null) {
+      errors['unidadeObrigatoria'] = true;
+    }
+
+    if (unidadeDimensao != null && largura == null && altura == null) {
+      errors['dimensaoObrigatoria'] = true;
+    }
+
+    if ((larguraUtil != null || alturaUtil != null) && (largura == null || altura == null)) {
+      errors['dimensaoObrigatoriaParaAreaUtil'] = true;
+    }
+
+    if (alturaUtil != null && altura != null && alturaUtil > altura) {
+      errors['alturaUtilMaior'] = true;
+    }
+
+    if (larguraUtil != null && largura != null && larguraUtil > largura) {
+      errors['larguraUtilMaior'] = true;
+    }
+
+    return Object.keys(errors).length ? errors : null;
+  };
 }
