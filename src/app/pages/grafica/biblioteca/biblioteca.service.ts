@@ -32,8 +32,8 @@ export class BibliotecaService {
       takeWhile(job => preparacaoAtiva(job), true),
     );
   }
-  importar(itens: BibliotecaItem[]) {
-    return this.api.post<SetupProgress>('api/grafica/biblioteca/importacoes', {
+  importar(itens: BibliotecaItem[], onboarding = false) {
+    return this.api.post<SetupProgress>(onboarding ? 'api/grafica/biblioteca/importacoes/onboarding' : 'api/grafica/biblioteca/importacoes', {
       produtoIds: itens.filter(i => i.tipo === 'PRODUTO').map(i => i.id),
       servicoIds: itens.filter(i => i.tipo === 'SERVICO').map(i => i.id),
     });

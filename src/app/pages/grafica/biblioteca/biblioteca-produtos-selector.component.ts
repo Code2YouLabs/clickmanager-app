@@ -133,7 +133,7 @@ export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
     if (this.importando || this.reconectando || this.erro || !this.selecionados.size) return;
     const itens = this.itens.filter(i => this.selecionados.has(this.chave(i)));
     this.importando = true; this.ocupado.emit(true); this.erro = ''; this.resultado = null;
-    this.service.importar(itens).pipe(timeout(15000), takeUntil(this.destruir)).subscribe({
+    this.service.importar(itens, this.onboarding).pipe(timeout(15000), takeUntil(this.destruir)).subscribe({
       next: job => { this.job = job; this.preparacao.emit(job); this.selecionados.clear(); this.observar(job.id); },
       error: () => {
         // POST pode ter sido confirmado mesmo se a resposta se perdeu. Consultar antes de permitir novo envio.

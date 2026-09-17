@@ -23,6 +23,11 @@ describe('Preparação persistente', () => {
     new BibliotecaService(api).importar([{id:1,tipo:'PRODUTO'},{id:1,tipo:'SERVICO'}] as any).subscribe();
     expect(api.post).toHaveBeenCalledWith('api/grafica/biblioteca/importacoes',{produtoIds:[1],servicoIds:[1]});
   });
+  it('usa o endpoint de onboarding somente quando solicitado', () => {
+    const api=jasmine.createSpyObj('ApiService',['post']);api.post.and.returnValue(of(job));
+    new BibliotecaService(api).importar([{id:15,tipo:'PRODUTO'}] as any, true).subscribe();
+    expect(api.post).toHaveBeenCalledWith('api/grafica/biblioteca/importacoes/onboarding',{produtoIds:[15],servicoIds:[]});
+  });
   it('mostra fase real, 47/150, porcentagem e estimativa aproximada', async () => {
     await TestBed.configureTestingModule({imports:[SetupProgressComponent,NoopAnimationsModule]}).compileComponents();
     const fixture=TestBed.createComponent(SetupProgressComponent);fixture.componentInstance.job=job;fixture.componentInstance.onboarding=true;fixture.detectChanges();

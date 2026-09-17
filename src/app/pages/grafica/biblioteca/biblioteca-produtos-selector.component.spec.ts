@@ -37,7 +37,7 @@ describe('BibliotecaProdutosSelectorComponent' , () => {
     const resultado: BibliotecaResultado = { importados: [{ bibliotecaProdutoId: 1, nome: produto.nome }], ignorados: [{bibliotecaProdutoId: 1,nome: servico.nome,motivo:'DUPLICADO'}], erros: [] };
     api.importar.and.returnValue(of(jobFinal));
     component.selecionarTodos(true); component.adicionar();
-    expect(api.importar).toHaveBeenCalledWith([produto,servico]); expect(component.resultado?.importados.length).toBe(resultado.importados.length);
+    expect(api.importar).toHaveBeenCalledWith([produto,servico], false); expect(component.resultado?.importados.length).toBe(resultado.importados.length);
     expect(component.selecionados.size).toBe(0); expect(api.listar).toHaveBeenCalledTimes(2);
   });
   it('bloqueia envio repetido e mantém seleção após falha', () => {
@@ -110,7 +110,7 @@ describe('BibliotecaProdutosSelectorComponent' , () => {
     expect(component.todosSelecionados).toBeTrue();
     api.importar.and.returnValue(of(jobFinal));
     component.adicionar();
-    expect(api.importar).toHaveBeenCalledWith([produto, servico]);
+    expect(api.importar).toHaveBeenCalledWith([produto, servico], false);
   });
 
   it('reconecta ao job ativo sem criar outra importação e sair não cancela o backend', () => {

@@ -81,6 +81,7 @@ describe('Narrativa do onboarding', () => {
     f.componentInstance.seletor!.selecionarTodos(true); f.detectChanges();
     f.nativeElement.querySelector('footer button[mat-flat-button]').click(); f.detectChanges();
     expect(f.componentInstance.stage).toBe('PREPARANDO');
+    expect(biblioteca.importar).toHaveBeenCalledWith(jasmine.any(Array), true);
     expect(f.nativeElement.querySelector('[aria-current="step"]').textContent).toContain('Preparando');
     expect(f.nativeElement.textContent).not.toContain('Quais produtos você oferece?');
     expect(f.nativeElement.querySelector('app-hierarchy-tree')).toBeNull();
@@ -93,6 +94,18 @@ describe('Narrativa do onboarding', () => {
     expect(f.nativeElement.querySelector('header').textContent).toContain('100%');
     expect(f.nativeElement.textContent).toContain('148 adicionados');
     expect(f.nativeElement.querySelector('header button')).toBeNull();
+    f.nativeElement.querySelector('.onboarding-page__completion-action button').click();
+    expect(state.finishOnboarding).toHaveBeenCalled(); f.destroy();
+  });
+
+  it('mostra alerta adicional sem inventar erro de produto e permite entrar', async () => {
+    biblioteca.ultima.and.returnValue(of({...done, status: 'CONCLUIDO_COM_ALERTAS', fase: 'CONCLUIDO_COM_ALERTAS',
+      alertaPreparacao: 'Sua empresa foi criada, mas uma configuração adicional não pôde ser concluída.'}));
+    const f = TestBed.createComponent(OnboardingV2ProductsPageComponent);
+    f.detectChanges(); await f.whenStable(); f.detectChanges();
+    expect(f.nativeElement.textContent).toContain('configuração adicional');
+    expect(f.nativeElement.textContent).toContain('148 adicionados');
+    expect(f.nativeElement.textContent).not.toContain('não puderam ser adicionados');
     f.nativeElement.querySelector('.onboarding-page__completion-action button').click();
     expect(state.finishOnboarding).toHaveBeenCalled(); f.destroy();
   });
