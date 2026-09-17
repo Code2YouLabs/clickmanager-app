@@ -1,4 +1,4 @@
-<p>Escolha produtos e serviços prontos para sua empresa. Depois de adicionar, você pode editar os cadastros e preços livremente.</p>
+@if (mostrarIntroducao) { <p>Escolha produtos e serviços prontos para sua empresa. Depois de adicionar, você pode editar os cadastros e preços livremente.</p> }
 <div class="biblioteca-toolbar">
   <mat-form-field appearance="outline">
     <mat-label>Pesquisar na biblioteca</mat-label>
@@ -33,7 +33,7 @@
 <div class="biblioteca-acoes">
   <mat-checkbox [checked]="todosSelecionados" [indeterminate]="algunsSelecionados" [disabled]="carregando || importando || !filtrados.length" (change)="selecionarTodos($event.checked)">Selecionar todos os resultados ({{ filtrados.length }})</mat-checkbox>
   <span aria-live="polite">{{ selecionados.size }} selecionado(s)</span>
-  <button mat-flat-button color="primary" [disabled]="carregando || importando || !selecionados.size" (click)="adicionar()">{{ importando ? 'Adicionando...' : 'Adicionar à empresa' }}</button>
+  @if (mostrarAcaoAdicionar) { <button mat-flat-button color="primary" [disabled]="carregando || importando || !selecionados.size" (click)="adicionar()">{{ importando ? 'Adicionando...' : 'Adicionar à empresa' }}</button> }
 </div>
 @if (carregando) { <mat-progress-bar mode="indeterminate" aria-label="Carregando biblioteca"></mat-progress-bar> }
 @if (modo === 'arvore') {

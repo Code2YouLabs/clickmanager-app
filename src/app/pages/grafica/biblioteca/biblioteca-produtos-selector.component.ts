@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, finalize, takeUntil } from 'rxjs';
 import { MaterialModule } from 'src/app/material.module';
@@ -13,6 +13,8 @@ import { BibliotecaItem, BibliotecaResultado, BibliotecaService } from './biblio
   styleUrls: ['./biblioteca-produtos-selector.component.scss'],
 })
 export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
+  @Input() mostrarAcaoAdicionar = true;
+  @Input() mostrarIntroducao = true;
   @Output() importado = new EventEmitter<BibliotecaResultado>();
   @Output() ocupado = new EventEmitter<boolean>();
   modo: 'arvore' | 'detalhada' = 'arvore';
