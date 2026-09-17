@@ -1,3 +1,4 @@
+import { OnboardingV2ProductsPageComponent } from './products-step/onboarding-v2-products-page.component';
 import { Routes } from '@angular/router';
 import { OnboardingV2CompanyPageComponent } from './company-step/onboarding-v2-company-page.component';
 import { OnboardingV2EntryPageComponent } from './entry/onboarding-v2-entry-page.component';
@@ -14,8 +15,7 @@ export const OnboardingV2Routes: Routes = [
   },
   {
     path: 'produtos',
-    redirectTo: 'resumo',
-    pathMatch: 'full',
+    component: OnboardingV2ProductsPageComponent,
   },
   {
     path: 'resumo',

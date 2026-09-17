@@ -45,6 +45,10 @@ export class OnboardingV2Service {
     return this.api.post<OnboardingProgress>(`${this.endpoint}/produtos`, payload);
   }
 
+  concluirBiblioteca(): Observable<OnboardingProgress> {
+    return this.api.post<OnboardingProgress>(`${this.endpoint}/biblioteca/concluir`, {});
+  }
+
   fetchResumo(): Observable<OnboardingV2Summary> {
     return this.fetchProgress();
   }

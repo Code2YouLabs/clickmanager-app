@@ -1,3 +1,4 @@
+import { BibliotecaDialogComponent } from '../biblioteca/biblioteca-dialog.component';
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
@@ -85,6 +86,10 @@ type CategoriaResumoLinha = {
         (filterChange)="onFilterChange($event)"
         (pageChange)="onPageChange($event)"
         (sortChange)="onSortChange($event)">
+
+        <div data-table-toolbar-actions>
+          <button mat-stroked-button color="primary" (click)="abrirBiblioteca()"><mat-icon>library_books</mat-icon>Biblioteca de produtos</button>
+        </div>
 
         <ng-template appDataTableCell="imagem" let-row>
           <img class="produto-thumb" [src]="imagemProduto(row)" [alt]="row.catalogoProdutoNome || 'Produto'" loading="lazy" decoding="async" />
@@ -464,6 +469,11 @@ export class GraficaProdutosComponent implements OnInit {
       case 'MILIMETRO': return 'mm';
       default: return 'm';
     }
+  }
+
+  abrirBiblioteca(): void {
+    this.dialog.open(BibliotecaDialogComponent, { width: '1120px', maxWidth: '96vw', maxHeight: '94vh' })
+      .afterClosed().subscribe(alterado => { if (alterado) { this.carregarFiltros(); this.carregar(); } });
   }
 
   novo(): void {
