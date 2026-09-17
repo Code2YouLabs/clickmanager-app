@@ -35,7 +35,8 @@ for (const host of [BibliotecaDialogComponent, OnboardingV2ProductsPageComponent
       const selector = fixture.debugElement.query(By.directive(BibliotecaProdutosSelectorComponent)).componentInstance as BibliotecaProdutosSelectorComponent;
       expect(selector.modo).toBe('arvore');
       const tree = fixture.debugElement.query(By.directive(HierarchyTreeComponent)).componentInstance as HierarchyTreeComponent;
-      expect(tree.treeControl.isExpanded(selector.arvore[0].children![0])).toBeTrue();
+      expect(tree.treeControl.isExpanded(selector.arvore[0].children![0])).toBe(host !== OnboardingV2ProductsPageComponent);
+      expect(tree.treeControl.isExpanded(selector.arvore[0])).toBe(host !== OnboardingV2ProductsPageComponent);
       const checkbox = fixture.nativeElement.querySelector('app-hierarchy-tree input[type="checkbox"]') as HTMLInputElement;
       checkbox.click(); fixture.detectChanges();
       expect(selector.selecionados.size).toBe(1);
@@ -48,24 +49,21 @@ for (const host of [BibliotecaDialogComponent, OnboardingV2ProductsPageComponent
       buttons[0].click(); fixture.detectChanges(); await fixture.whenStable();
       expect(selector.modo).toBe('arvore'); expect(selector.selecionados.size).toBe(1);
       if (host === OnboardingV2ProductsPageComponent) {
-        const layout = fixture.nativeElement.querySelector('.onboarding-page-layout') as HTMLElement;
         const header = fixture.nativeElement.querySelector('.onboarding-shell__header') as HTMLElement;
-        expect(header.querySelector('nav button[mat-flat-button]')!.textContent).toContain('Preparar minha empresa');
-        expect(fixture.nativeElement.querySelector('.onboarding-shell__footer')).toBeNull();
-        const spacer = document.createElement('div');
-        spacer.style.height = '2000px';
-        fixture.nativeElement.querySelector('.onboarding-shell__content').appendChild(spacer);
-        layout.scrollTop = 300;
-        await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-        const top = header.getBoundingClientRect().top - layout.getBoundingClientRect().top;
-        expect(layout.scrollTop).toBe(300);
-        expect(top).toBeGreaterThanOrEqual(0);
-        expect(top).toBeLessThanOrEqual(16);
+        expect(header.querySelector('button')).toBeNull();
+        expect(fixture.nativeElement.querySelector('.onboarding-shell__footer').textContent).toContain('Preparar meu catálogo');
+        expect(fixture.nativeElement.querySelector('[aria-current="step"]').textContent).toContain('Seu catálogo');
+        selector.termo = 'vinil'; fixture.detectChanges(); await fixture.whenStable(); fixture.detectChanges();
+        const filteredTree = fixture.debugElement.query(By.directive(HierarchyTreeComponent)).componentInstance as HierarchyTreeComponent;
+        expect(filteredTree.treeControl.isExpanded(selector.arvore[0])).toBeTrue();
         const api = TestBed.inject(BibliotecaService);
         spyOn(api, 'ultima').and.returnValue(of({ id: 1, status: 'CONCLUIDO', fase: 'CONCLUIDO', total: 1, processados: 1,
           criados: 1, duplicados: 0, erros: 0, tempoEstimadoRestanteSegundos: null, itens: [] }));
-        selector.reconectar(); fixture.detectChanges();
-        const entrar = header.querySelector('nav button[mat-flat-button]') as HTMLButtonElement;
+        selector.reconectar(); await fixture.whenStable(); fixture.detectChanges();
+        expect(header.textContent).toContain('100%');
+        expect(header.querySelectorAll('li.complete').length).toBe(3);
+        expect(fixture.nativeElement.textContent).not.toContain('Quais produtos você oferece?');
+        const entrar = fixture.nativeElement.querySelector('.onboarding-page__completion-action button') as HTMLButtonElement;
         expect(entrar.textContent).toContain('Entrar no ClickManager');
         expect(entrar.disabled).toBeFalse(); entrar.click();
         expect(TestBed.inject(Router).navigateByUrl).toHaveBeenCalledWith('/painel');

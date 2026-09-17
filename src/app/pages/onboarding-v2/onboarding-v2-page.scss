@@ -70,3 +70,10 @@
     display: none;
   }
 }
+
+.onboarding-page__intro {
+  h1 { margin: 0 0 12px; font-size: clamp(1.5rem, 3vw, 1.875rem); line-height: 1.25; }
+  p { margin: 0 0 8px; color: var(--mat-sys-on-surface-variant); }
+}
+.onboarding-page__completion-action { display: flex; justify-content: flex-end; padding-top: 20px; border-top: 1px solid var(--mat-sys-outline-variant); }
+@media (max-width: 768px) { .onboarding-page__completion-action button { width: 100%; min-height: 48px; } }

@@ -23,14 +23,14 @@
 </div>
 <div class="biblioteca-acoes">
   <mat-checkbox [checked]="todosSelecionados" [indeterminate]="algunsSelecionados" [disabled]="carregando || importando || !filtrados.length" (change)="selecionarTodos($event.checked)">Selecionar todos os resultados ({{ filtrados.length }})</mat-checkbox>
-  <span aria-live="polite">{{ selecionados.size }} selecionado(s)</span>
+  @if (!onboarding) { <span aria-live="polite">{{ selecionados.size }} selecionado(s)</span> }
   @if (mostrarAcaoAdicionar) { <button mat-flat-button color="primary" [disabled]="carregando || importando || !selecionados.size" (click)="adicionar()">{{ importando ? 'Adicionando...' : 'Adicionar à empresa' }}</button> }
 </div>
 @if (carregando) { <mat-progress-bar mode="indeterminate" aria-label="Carregando biblioteca"></mat-progress-bar> }
 @if (modo === 'arvore') {
   <app-hierarchy-tree [nodes]="arvore" [selectable]="true" [compact]="true"
     [selectionStates]="estados" [selectionDisabled]="importando || carregando" [loading]="carregando"
-    [expandAll]="true" emptyDescription="Altere a pesquisa ou a categoria."
+    [expandAll]="!onboarding || !!termo || !!categoria" [expandRoots]="!onboarding" emptyDescription="Altere a pesquisa ou a categoria."
     (selectionChange)="marcarNo($event)"></app-hierarchy-tree>
 } @else {
 <div class="biblioteca-lista" [attr.aria-busy]="carregando || importando">

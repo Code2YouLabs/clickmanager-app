@@ -31,7 +31,7 @@ describe('Preparação persistente', () => {
     expect(texto).toContain('Adicionando produtos e serviços');expect(texto).toContain('Cerca de 2 minutos');
     expect(fixture.componentInstance.percentual).toBeCloseTo(31.33,2);
     fixture.componentInstance.job={...job,status:'PENDENTE',fase:'AGUARDANDO',tempoEstimadoRestanteSegundos:null};fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Aguardando sua vez');
+    expect(fixture.nativeElement.textContent).toContain('Sua preparação começará em instantes');
     fixture.componentInstance.job={...job,status:'CONCLUIDO_COM_ALERTAS',fase:'CONCLUIDO_COM_ALERTAS',processados:150,erros:1,
       itens:[{id:1,tipo:'PRODUTO',templateId:3,status:'ERRO',nome:'Item exemplo',mensagem:'Verifique a configuração.',criadoId:null}]};fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Ver detalhes');expect(fixture.nativeElement.textContent).toContain('Item exemplo');

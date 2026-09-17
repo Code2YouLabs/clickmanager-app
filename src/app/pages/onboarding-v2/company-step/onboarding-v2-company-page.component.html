@@ -3,7 +3,7 @@
     <div class="position-relative w-100">
       <div class="w-100 position-relative rounded bg-white auth-card onboarding-page-card">
         <div class="auth-body onboarding-page">
-          <app-onboarding-shell [navigationInHeader]="true" [showExit]="false"
+          <app-onboarding-shell [semanticSteps]="true" [showExit]="false"
             tituloFluxo=""
             tituloEtapa=""
             subtituloEtapa=""
@@ -21,6 +21,7 @@
           >
             <ng-container *ngIf="!carregando; else loadingTemplate">
               <section class="onboarding-page__section onboarding-page__section--empresa">
+                <div class="onboarding-page__intro"><h1>Sua empresa</h1><p>Vamos começar com algumas informações básicas.</p></div>
                 <app-section-card
                   titulo="Empresa"
                   subtitulo=""

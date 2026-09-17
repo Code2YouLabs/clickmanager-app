@@ -3,7 +3,7 @@
     <div class="position-relative w-100">
       <div class="w-100 position-relative rounded bg-white auth-card onboarding-page-card">
         <div class="auth-body onboarding-page">
-          <app-onboarding-shell [navigationInHeader]="true" [showExit]="false"
+          <app-onboarding-shell [semanticSteps]="true" [completed]="!carregando && !erroCarregamento && !!onboardingV2State.resumo()" [showFooter]="false" [showExit]="false"
             tituloFluxo=""
             tituloEtapa=""
             subtituloEtapa=""
@@ -13,22 +13,18 @@
             [progressoPercentual]="100"
             [showBack]="false"
             [showSkip]="false"
-            [primaryLabel]="onboardingV2State.saving() ? 'Finalizando...' : 'Entrar no painel'"
-            [primaryDisabled]="carregando || onboardingV2State.saving()"
-            [primaryLoading]="onboardingV2State.saving()"
-            primaryHint=""
-            (principal)="submit()"
           >
             <ng-container *ngIf="carregando; else loadedTemplate">
               <ng-container *ngTemplateOutlet="loadingTemplate"></ng-container>
             </ng-container>
 
             <ng-template #loadedTemplate>
-              <ng-container *ngIf="onboardingV2State.resumo(); else errorTemplate">
+              <ng-container *ngIf="!erroCarregamento && onboardingV2State.resumo(); else errorTemplate">
                 <section class="onboarding-page__section">
+                  @if (job) { <app-setup-progress [job]="job" [onboarding]="true" /> } @else {
                   <app-section-card
-                    titulo="Resumo"
-                    subtitulo=""
+                    titulo="Tudo pronto!"
+                    subtitulo="Seu ClickManager está configurado e pronto para usar."
                     [divider]="true"
                   >
                     <div class="onboarding-v2-summary__list">
@@ -53,6 +49,11 @@
                       </div>
                     </div>
                   </app-section-card>
+                  }
+                  <p>Você poderá adicionar produtos pela Biblioteca a qualquer momento.</p>
+                  <div class="onboarding-page__completion-action">
+                    <button mat-flat-button color="primary" [disabled]="onboardingV2State.saving()" (click)="submit()">{{ onboardingV2State.saving() ? 'Finalizando...' : 'Entrar no ClickManager' }}</button>
+                  </div>
                 </section>
               </ng-container>
             </ng-template>
@@ -73,7 +74,7 @@
   <section class="onboarding-page__section">
     <app-section-card
       titulo="Não foi possível carregar o resumo"
-      [subtitulo]="onboardingV2State.error() || 'Tente carregar novamente ou entre direto no painel.'"
+      [subtitulo]="onboardingV2State.error() || 'Tente carregar novamente.'"
       [divider]="true"
     >
       <button mat-stroked-button color="primary" type="button" (click)="loadStep()">

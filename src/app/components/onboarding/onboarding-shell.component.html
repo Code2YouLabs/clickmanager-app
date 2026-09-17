@@ -1,5 +1,20 @@
-<section class="onboarding-shell" [class.onboarding-shell--header-navigation]="navigationInHeader">
+<section class="onboarding-shell" [class.onboarding-shell--header-navigation]="navigationInHeader" [class.onboarding-shell--semantic]="semanticSteps">
   <header class="onboarding-shell__header">
+    @if (semanticSteps) {
+      <div class="onboarding-shell__brand"><img src="./assets/images/logos/logoClickManager.png" alt="ClickManager" /></div>
+      <div class="onboarding-shell__steps">
+        <ol aria-label="Etapas da configuração">
+          @for (step of steps; track step; let i = $index) {
+            <li [class.active]="passoAtual === i + 1" [class.complete]="completed || passoAtual > i + 1"
+                [attr.aria-current]="!completed && passoAtual === i + 1 ? 'step' : null">
+              <span class="onboarding-shell__step-marker" aria-hidden="true">{{ completed || passoAtual > i + 1 ? '✓' : i + 1 }}</span>
+              <span>{{ step }}</span>
+            </li>
+          }
+        </ol>
+        <small>{{ completed ? 'Configuração concluída · 100%' : 'Etapa ' + passoAtual + ' de 3' }}</small>
+      </div>
+    } @else {
     <div class="onboarding-shell__mobile-top">
       <button mat-icon-button type="button" *ngIf="showBack" (click)="voltar.emit()" aria-label="Voltar">
         <mat-icon>arrow_back</mat-icon>
@@ -45,6 +60,7 @@
     <nav class="onboarding-shell__header-navigation" aria-label="Navegação da configuração" *ngIf="navigationInHeader && showFooter">
       <ng-container *ngTemplateOutlet="navigation"></ng-container>
     </nav>
+    }
   </header>
 
   <mat-menu #mobileMenu="matMenu">
@@ -73,8 +89,8 @@
     <div class="onboarding-shell__footer-right">
       <span class="onboarding-shell__hint" *ngIf="primaryHint">{{ primaryHint }}</span>
 
-      <button mat-button type="button" *ngIf="showSkip" (click)="pular.emit()">
-        Pular por agora
+      <button mat-button type="button" *ngIf="showSkip" [disabled]="skipDisabled" (click)="pular.emit()">
+        Pular por enquanto
       </button>
 
       <button

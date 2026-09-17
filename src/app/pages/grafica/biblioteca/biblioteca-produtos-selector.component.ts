@@ -21,7 +21,8 @@ export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
   @Input() mostrarAcaoAdicionar = true;
   @Input() mostrarIntroducao = true;
   @Output() importado = new EventEmitter<BibliotecaResultado>();
-  @Output() ocupado = new EventEmitter<boolean>();
+  @Output() preparacao = new EventEmitter<SetupProgress | null>(true);
+  @Output() ocupado = new EventEmitter<boolean>(true);
   modo: 'arvore' | 'detalhada' = 'arvore';
   arvore: HierarchyTreeNode<BibliotecaItem | null>[] = [];
   estados = new Map<string | number, HierarchyTreeSelectionState>();
@@ -119,10 +120,10 @@ export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
       next: job => {
         this.reconectando = false;
         if (job) {
-          this.job = job;
+          this.job = job; this.preparacao.emit(job);
           if (preparacaoAtiva(job)) { this.importando = true; this.observar(job.id); return; }
           this.receber(job, false);
-        } else { this.importando = false; this.ocupado.emit(false); }
+        } else { this.job = null; this.preparacao.emit(null); this.importando = false; this.ocupado.emit(false); }
         if (!this.onboarding || !job) this.carregar();
       },
       error: () => { this.reconectando = false; this.erro = 'Não foi possível consultar a preparação. Reconecte antes de continuar.'; },
@@ -133,7 +134,7 @@ export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
     const itens = this.itens.filter(i => this.selecionados.has(this.chave(i)));
     this.importando = true; this.ocupado.emit(true); this.erro = ''; this.resultado = null;
     this.service.importar(itens).pipe(timeout(15000), takeUntil(this.destruir)).subscribe({
-      next: job => { this.job = job; this.selecionados.clear(); this.observar(job.id); },
+      next: job => { this.job = job; this.preparacao.emit(job); this.selecionados.clear(); this.observar(job.id); },
       error: () => {
         // POST pode ter sido confirmado mesmo se a resposta se perdeu. Consultar antes de permitir novo envio.
         this.reconectar();
@@ -148,7 +149,7 @@ export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
     });
   }
   private receber(job: SetupProgress, notificar: boolean) {
-    this.job = job; this.importando = preparacaoAtiva(job); this.ocupado.emit(this.importando);
+    this.job = job; this.preparacao.emit(job); this.importando = preparacaoAtiva(job); this.ocupado.emit(this.importando);
     if (this.importando) return;
     this.selecionados.clear(); this.estados.forEach(e => { e.selected = 0; this.atualizarEstado(e); });
     const resultado: BibliotecaResultado = {

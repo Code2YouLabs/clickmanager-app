@@ -91,7 +91,7 @@ export class OnboardingV2CompanyPageComponent implements OnInit {
 
     this.onboardingV2State.saveCompany(this.buildPayload()).subscribe({
       next: (progress) => {
-        this.toastr.success('Dados salvos. Confira o resumo para finalizar.');
+        this.toastr.success('Dados salvos. Agora escolha seu catálogo.');
         this.router.navigateByUrl(resolveOnboardingV2RouteFromProgress(progress));
       },
       error: () => {

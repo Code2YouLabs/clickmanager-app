@@ -2,17 +2,34 @@
   <div class="auth-wrapper onboarding-page-wrapper">
     <div class="w-100 rounded bg-white auth-card onboarding-page-card">
       <div class="auth-body onboarding-page">
-        <app-onboarding-shell [navigationInHeader]="true" [showExit]="false" tituloFluxo="" tituloEtapa=""
-          subtituloEtapa=""
-          [passoAtual]="2" [totalPassos]="3" [progressoPercentual]="67" [showBack]="false" [showSkip]="false"
-          [primaryLabel]="acaoPrincipal" [primaryDisabled]="carregando || importando || avancando || !!seletor?.erro || !!seletor?.reconectando"
-          [primaryLoading]="avancando" primaryHint=""
-          (principal)="submit()">
-          @if (carregando) { <div class="onboarding-v2-page__loading" role="status" aria-label="Carregando biblioteca"><mat-spinner diameter="42" /></div> }
+        <app-onboarding-shell [semanticSteps]="true" [completed]="stage === 'CONCLUIDO'" [showExit]="false" tituloFluxo=""
+          [passoAtual]="stageNumber(stage)" [totalPassos]="3" [showBack]="false"
+          [showFooter]="!carregando && stage === 'CATALOGO' && !seletor?.reconectando"
+          [showSkip]="true" [skipDisabled]="bloqueado" (pular)="pular()"
+          primaryLabel="Preparar meu catálogo" [primaryDisabled]="bloqueado || !seletor?.selecionados?.size"
+          [primaryHint]="(seletor?.selecionados?.size || 0) + ' itens selecionados'" (principal)="submit()">
+          @if (carregando) { <div class="onboarding-v2-page__loading" role="status" aria-label="Carregando configuração"><mat-spinner diameter="42" /></div> }
           @else {
-            <app-section-card titulo="Biblioteca de produtos" subtitulo="Etapa opcional. Selecione os itens e confirme no cabeçalho para preparar seu catálogo." [divider]="true">
-              <app-biblioteca-produtos-selector [mostrarIntroducao]="false" [mostrarAcaoAdicionar]="false" [onboarding]="true" (ocupado)="importando = $event" />
-            </app-section-card>
+            @if (stage === 'CATALOGO' && !seletor?.reconectando) {
+              <div class="onboarding-page__intro">
+                <h1>Quais produtos você oferece?</h1>
+                <p>Escolha categorias inteiras ou produtos individuais. Você poderá adicionar outros produtos a qualquer momento.</p>
+                <p>Esta etapa é opcional.</p>
+              </div>
+            }
+            @if (stage === 'PREPARANDO' && !seletor?.job) {
+              <div class="onboarding-page__intro" role="status">
+                <h1>Estamos preparando seu ClickManager</h1>
+                <p>Isso pode levar alguns instantes. Você não precisa fazer nada.</p>
+              </div>
+            }
+            <app-biblioteca-produtos-selector [mostrarIntroducao]="false" [mostrarAcaoAdicionar]="false" [onboarding]="true"
+              (preparacao)="atualizarPreparacao($event)" (ocupado)="importando = $event" />
+            @if (stage === 'CONCLUIDO') {
+              <div class="onboarding-page__completion-action">
+                <button mat-flat-button color="primary" [disabled]="bloqueado" (click)="entrar()">{{ avancando ? 'Finalizando...' : 'Entrar no ClickManager' }}</button>
+              </div>
+            }
           }
         </app-onboarding-shell>
       </div>

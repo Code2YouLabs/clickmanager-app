@@ -7,7 +7,8 @@ import { ToastrService } from 'ngx-toastr';
 import { finalize, switchMap } from 'rxjs/operators';
 import { MaterialModule } from 'src/app/material.module';
 import { OnboardingShellComponent } from 'src/app/components/onboarding/onboarding-shell.component';
-import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
+import { SetupProgress } from 'src/app/components/setup-progress/setup-progress.component';
+import { OnboardingStage, catalogStage, stageNumber } from '../models/onboarding-presentation';
 import { AuthService } from 'src/app/services/auth.service';
 import {
   isOnboardingV2Finished,
@@ -19,12 +20,15 @@ import { OnboardingV2StateService } from '../services/onboarding-v2-state.servic
 @Component({
   selector: 'app-onboarding-v2-products-page',
   standalone: true,
-  imports: [CommonModule, MaterialModule, OnboardingShellComponent, SectionCardComponent, BibliotecaProdutosSelectorComponent],
+  imports: [CommonModule, MaterialModule, OnboardingShellComponent, BibliotecaProdutosSelectorComponent],
   templateUrl: './onboarding-v2-products-page.component.html',
   styleUrls: ['./onboarding-v2-products-page.component.scss'],
 })
 export class OnboardingV2ProductsPageComponent implements OnInit {
   @ViewChild(BibliotecaProdutosSelectorComponent) seletor?: BibliotecaProdutosSelectorComponent;
+  stage: OnboardingStage = 'CATALOGO';
+  readonly stageNumber = stageNumber;
+  atualizarPreparacao(job: SetupProgress | null) { this.stage = catalogStage(job); }
   carregando = true;
   importando = false;
   avancando = false;
@@ -46,22 +50,33 @@ export class OnboardingV2ProductsPageComponent implements OnInit {
     this.loadStep();
   }
 
-  submit(): void {
-    if (this.importando || this.avancando) return;
-    if (this.seletor?.selecionados.size) { this.seletor.adicionar(); return; }
-    this.avancando = true;
-    const concluido = !!this.seletor?.job && !this.seletor.importando;
-    const fluxo = concluido ? this.api.concluirBiblioteca().pipe(switchMap(() => this.onboardingV2State.finishOnboarding())) : this.api.concluirBiblioteca();
-    fluxo.pipe(finalize(() => this.avancando = false)).subscribe({
-      next: progress => this.router.navigateByUrl(concluido ? this.authService.getDefaultRouteForUsuario() : resolveOnboardingV2RouteFromProgress(progress)),
-      error: () => this.toastr.error('Não foi possível continuar. Tente novamente.'),
-    });
+  get bloqueado() {
+    return this.carregando || this.importando || this.avancando || !!this.seletor?.erro || !!this.seletor?.reconectando || !!this.seletor?.carregando;
   }
 
-  get acaoPrincipal() {
-    if (this.importando) return 'Preparando...';
-    if (this.seletor?.job) return 'Entrar no ClickManager';
-    return this.seletor?.selecionados.size ? 'Preparar minha empresa' : 'Continuar sem produtos';
+  submit(): void {
+    if (this.bloqueado || this.seletor?.importando || !this.seletor?.selecionados.size) return;
+    this.stage = 'PREPARANDO';
+    this.seletor.adicionar();
+  }
+
+  pular(): void {
+    if (this.bloqueado || this.stage !== 'CATALOGO') return;
+    this.concluir(false);
+  }
+
+  entrar(): void {
+    if (this.bloqueado || this.stage !== 'CONCLUIDO') return;
+    this.concluir(true);
+  }
+
+  private concluir(entrar: boolean): void {
+    this.avancando = true;
+    const fluxo = entrar ? this.api.concluirBiblioteca().pipe(switchMap(() => this.onboardingV2State.finishOnboarding())) : this.api.concluirBiblioteca();
+    fluxo.pipe(finalize(() => this.avancando = false)).subscribe({
+      next: progress => this.router.navigateByUrl(entrar ? this.authService.getDefaultRouteForUsuario() : resolveOnboardingV2RouteFromProgress(progress)),
+      error: () => this.toastr.error('Não foi possível continuar. Tente novamente.'),
+    });
   }
 
   private loadStep(): void {

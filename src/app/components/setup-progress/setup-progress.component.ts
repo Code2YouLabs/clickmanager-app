@@ -17,7 +17,7 @@ export function preparacaoAtiva(job: SetupProgress) { return job.status === 'PEN
     <section class="setup-progress" [class.setup-progress--onboarding]="onboarding" aria-label="Progresso da preparação">
       <mat-icon>{{ ativa ? 'inventory_2' : (job.erros ? 'info' : 'check_circle') }}</mat-icon>
       <h2>{{ titulo }}</h2>
-      <p>{{ ativa ? (onboarding ? 'Isso pode levar alguns instantes. Você não precisa fazer nada.' : 'Você pode fechar esta janela e continuar usando o sistema.') : 'Confira o resultado da preparação.' }}</p>
+      <p>{{ ativa ? (onboarding ? 'Isso pode levar alguns instantes. Você não precisa fazer nada.' : 'Você pode fechar esta janela e continuar usando o sistema.') : (onboarding && job.status !== 'ERRO' ? 'Seu ClickManager está configurado e pronto para usar.' : 'Confira o resultado da preparação.') }}</p>
       <p class="fase" role="status">{{ fase }}</p>
       <strong>{{ job.processados }} de {{ job.total }} itens processados</strong>
       <mat-progress-bar mode="determinate" [value]="percentual" aria-label="Itens processados" />
@@ -37,7 +37,7 @@ export function preparacaoAtiva(job: SetupProgress) { return job.status === 'PEN
     </section>`,
   styles: [`
     .setup-progress { padding: 24px; border: 1px solid var(--mat-sys-outline-variant); border-radius: 16px; }
-    .setup-progress--onboarding { max-width: 680px; margin: 24px auto; padding: 32px 24px; }
+    .setup-progress--onboarding { margin: 0; padding: 16px 0; border: 0; border-radius: 0; }
     h2 { margin: 12px 0; } p { color: var(--mat-sys-on-surface-variant); }
     mat-progress-bar { margin: 16px 0; } .fase { font-weight: 600; }
     .setup-progress__contadores { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0; }
@@ -51,15 +51,15 @@ export class SetupProgressComponent {
   get percentual() { return this.job.total ? Math.min(100, this.job.processados * 100 / this.job.total) : 0; }
   get titulo() {
     if (this.job.status === 'ERRO') return 'Não foi possível concluir a preparação';
-    if (!this.ativa) return this.job.erros ? 'Preparação concluída com alertas' : 'Tudo pronto!';
+    if (!this.ativa) return 'Tudo pronto!';
     return this.onboarding ? 'Estamos preparando seu ClickManager' : 'Adicionando itens à sua empresa';
   }
   get fase() {
-    return ({ AGUARDANDO: 'Aguardando sua vez na fila', IMPORTANDO_ITENS: 'Adicionando produtos e serviços ao catálogo',
+    return ({ AGUARDANDO: 'Sua preparação começará em instantes', IMPORTANDO_ITENS: 'Adicionando produtos e serviços ao catálogo',
       CONCLUIDO: 'Seu catálogo está pronto', CONCLUIDO_COM_ALERTAS: 'Seu catálogo está pronto; alguns itens precisam de atenção', ERRO: 'Preparação interrompida' } as Record<string,string>)[this.job.fase] || 'Preparando catálogo';
   }
   get estimativa() {
-    if (this.job.status === 'PENDENTE') return 'A preparação começará quando a importação anterior terminar.';
+    if (this.job.status === 'PENDENTE') return 'Estamos finalizando outra configuração antes da sua.';
     const segundos = this.job.tempoEstimadoRestanteSegundos;
     if (segundos == null) return 'Calculando tempo restante...';
     if (segundos < 60) return 'Menos de 1 minuto restante';

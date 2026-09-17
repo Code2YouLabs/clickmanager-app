@@ -52,6 +52,7 @@ export class HierarchyTreeComponent<T = unknown> implements OnChanges {
   @Input() emptyTitle = 'Nenhum item encontrado';
   @Input() emptyDescription = '';
   @Input() expandAll = false;
+  @Input() expandRoots = true;
   @Input() showDragHandle = false;
   @Input() selectable = false;
   @Input() selectionDisabled = false;
@@ -70,7 +71,7 @@ export class HierarchyTreeComponent<T = unknown> implements OnChanges {
       this.treeControl.dataNodes = this.nodes || [];
     }
 
-    if (changes['nodes'] || changes['expandAll']) {
+    if (changes['nodes'] || changes['expandAll'] || changes['expandRoots']) {
       queueMicrotask(() => {
         if (this.expandAll) {
           this.treeControl.expandAll();
@@ -78,7 +79,7 @@ export class HierarchyTreeComponent<T = unknown> implements OnChanges {
         }
 
         this.treeControl.collapseAll();
-        this.nodes.filter((node) => this.hasChildren(node)).forEach((node) => this.treeControl.expand(node));
+        if (this.expandRoots) this.nodes.filter((node) => this.hasChildren(node)).forEach((node) => this.treeControl.expand(node));
       });
     }
   }
