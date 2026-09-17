@@ -10,3 +10,5 @@ article { border: 1px solid var(--mat-sys-outline-variant, #dde3ec); border-radi
 details { margin-top: 12px; summary { cursor: pointer; } }
 .biblioteca-resultado { display: grid; gap: 6px; padding: 16px; border-left: 4px solid #238057; background: #f0f8f4; border-radius: 8px; }
 .biblioteca-erro { padding: 12px; color: #9b2525; }
+
+.biblioteca-toolbar mat-button-toggle-group { align-self: flex-start; flex-shrink: 0; }

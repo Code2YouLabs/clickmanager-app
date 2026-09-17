@@ -15,6 +15,13 @@ export interface HierarchyTreeNode<T = unknown> {
   children?: HierarchyTreeNode<T>[];
 }
 
+export interface HierarchyTreeSelectionState {
+  checked: boolean;
+  indeterminate: boolean;
+  selected: number;
+  total: number;
+}
+
 export interface HierarchyTreeAction<T = unknown> {
   id: string;
   label: string;
@@ -46,6 +53,11 @@ export class HierarchyTreeComponent<T = unknown> implements OnChanges {
   @Input() emptyDescription = '';
   @Input() expandAll = false;
   @Input() showDragHandle = false;
+  @Input() selectable = false;
+  @Input() selectionDisabled = false;
+  @Input() compact = false;
+  @Input() selectionStates = new Map<string | number, HierarchyTreeSelectionState>();
+  @Output() selectionChange = new EventEmitter<{ node: HierarchyTreeNode<T>; checked: boolean }>();
 
   @Output() action = new EventEmitter<HierarchyTreeActionEvent<T>>();
 
@@ -55,6 +67,7 @@ export class HierarchyTreeComponent<T = unknown> implements OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['nodes']) {
       this.dataSource.data = this.nodes || [];
+      this.treeControl.dataNodes = this.nodes || [];
     }
 
     if (changes['nodes'] || changes['expandAll']) {

@@ -44,8 +44,66 @@ describe('BibliotecaProdutosSelectorComponent', () => {
   it('renderiza a interface real com ações e acabamentos', async () => {
     await TestBed.configureTestingModule({ imports: [BibliotecaProdutosSelectorComponent,NoopAnimationsModule], providers: [{ provide: BibliotecaService,useValue: api }] }).compileComponents();
     const fixture = TestBed.createComponent(BibliotecaProdutosSelectorComponent); fixture.detectChanges();
+    fixture.componentInstance.modo = 'detalhada'; fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Adicionar à empresa');
     expect(fixture.nativeElement.textContent).toContain('Acabamentos disponíveis');
     fixture.destroy();
   });
+  it('monta categorias reais em profundidade arbitrária, inclusive com itens e subcategorias', () => {
+    component.itens = [produto, { ...produto, id: 2, categoria: 'Impressão' },
+      { ...produto, id: 3, categoria: 'Impressão > Papel > Especial' }];
+    expect(component.arvore.length).toBe(1);
+    const raiz = component.arvore[0];
+    expect(raiz.label).toBe('Impressão');
+    expect(raiz.children!.map(n => n.label)).toEqual(['Papel', 'Impressão A4 · Sulfite · A4 · 4x0']);
+    expect(raiz.children![0].children![1].label).toBe('Especial');
+    expect(component.estados.get(raiz.id)!.total).toBe(3);
+  });
+  it('seleciona e desmarca descendentes sem alterar outros ramos', () => {
+    const raiz = component.arvore[0];
+    component.marcarNo({ node: raiz, checked: true });
+    expect([...component.selecionados]).toEqual(['PRODUTO:1']);
+    expect(component.estados.get(raiz.id)!.checked).toBeTrue();
+    component.marcarNo({ node: raiz, checked: false });
+    expect(component.selecionados.size).toBe(0);
+  });
+  it('atualiza estado intermediário de todos os ancestrais sem reconstruir a árvore', () => {
+    component.itens = [produto, { ...produto, id: 2, formato: 'A3' }];
+    const arvore = component.arvore;
+    component.marcar(produto, true);
+    for (const node of [arvore[0], arvore[0].children![0]]) {
+      expect(component.estados.get(node.id)).toEqual({ checked: false, indeterminate: true, selected: 1, total: 2 });
+    }
+    expect(component.algunsSelecionados).toBeTrue();
+    expect(component.arvore).toBe(arvore);
+    component.marcarNo({ node: arvore[0].children![0], checked: true });
+    expect(component.todosSelecionados).toBeTrue();
+    expect(component.estados.get(arvore[0].id)!.indeterminate).toBeFalse();
+  });
+  it('busca mantém ancestrais, remove ramos vazios e limita seleção ao conjunto exibido', fakeAsync(() => {
+    component.itens = [produto, { ...produto, id: 2, formato: 'A3', nome: 'Impressão A3' }, servico];
+    component.pesquisar('a3'); tick(300);
+    expect(component.arvore.map(n => n.label)).toEqual(['Impressão']);
+    expect(component.arvore[0].children![0].label).toBe('Papel');
+    component.marcarNo({ node: component.arvore[0], checked: true });
+    expect([...component.selecionados]).toEqual(['PRODUTO:2']);
+    component.selecionarTodos(false); component.selecionarTodos(true);
+    expect([...component.selecionados]).toEqual(['PRODUTO:2']);
+    component.pesquisar(''); tick(300);
+    expect(component.estados.get(component.arvore[0].id)!.indeterminate).toBeTrue();
+  }));
+  it('preserva um único conjunto ao alternar modos nos dois sentidos e importar a seleção da árvore', () => {
+    const selecao = component.selecionados;
+    expect(component.modo).toBe('arvore');
+    component.marcarNo({ node: component.arvore[0], checked: true });
+    component.modo = 'detalhada';
+    expect(component.selecionados.has(component.chave(produto))).toBeTrue();
+    component.marcar(servico, true); component.modo = 'arvore';
+    expect(component.selecionados).toBe(selecao);
+    expect(component.todosSelecionados).toBeTrue();
+    api.importar.and.returnValue(of({ importados: [], ignorados: [], erros: [] }));
+    component.adicionar();
+    expect(api.importar).toHaveBeenCalledWith([produto, servico]);
+  });
+
 });

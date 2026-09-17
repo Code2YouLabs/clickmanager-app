@@ -1,5 +1,5 @@
 <app-section-card class="hierarchy-tree-card" [title]="title" [subtitle]="subtitle" [divider]="!!title || !!subtitle">
-  <div class="hierarchy-tree-shell">
+  <div class="hierarchy-tree-shell" [class.hierarchy-tree-shell--compact]="compact">
     @if (loading) {
       <div class="hierarchy-tree-loading" aria-live="polite">
         <mat-spinner diameter="36"></mat-spinner>
@@ -33,6 +33,7 @@
 <ng-template #nodeRow let-node="node">
   <div
     class="hierarchy-tree__row"
+    [class.hierarchy-tree__row--selectable]="selectable"
     [class.hierarchy-tree__row--parent]="hasChild(0, node)"
     [class.hierarchy-tree__row--leaf]="!hasChild(0, node)">
     <button
@@ -53,9 +54,18 @@
       </button>
     }
 
+    @if (selectable) {
+      <mat-checkbox [checked]="selectionStates.get(node.id)?.checked || false"
+        [indeterminate]="selectionStates.get(node.id)?.indeterminate || false"
+        [disabled]="selectionDisabled" [aria-label]="'Selecionar ' + node.label"
+        (change)="selectionChange.emit({ node: node, checked: $event.checked })"></mat-checkbox>
+    }
     <div class="hierarchy-tree__content">
       <div class="hierarchy-tree__title">
         <span class="hierarchy-tree__label">{{ node.label }}</span>
+        @if (selectable && hasChild(0, node)) {
+          <span class="hierarchy-tree__meta">{{ selectionStates.get(node.id)?.selected || 0 }}/{{ selectionStates.get(node.id)?.total || 0 }}</span>
+        }
         @if (node.meta) {
           <span class="hierarchy-tree__meta">{{ node.meta }}</span>
         }

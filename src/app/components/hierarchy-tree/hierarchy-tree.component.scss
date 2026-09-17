@@ -187,3 +187,15 @@
     padding-left: 14px;
   }
 }
+
+.hierarchy-tree__row--selectable {
+  grid-template-columns: 32px 40px minmax(0, 1fr);
+  gap: 4px;
+}
+.hierarchy-tree-shell--compact {
+  min-height: 0;
+  .hierarchy-tree__row { min-height: 40px; padding: 0 2px; }
+  .hierarchy-tree__label { white-space: normal; overflow-wrap: anywhere; font-weight: 400; }
+  .hierarchy-tree__children { margin-left: 16px; padding-left: 8px; }
+  .hierarchy-tree__meta { width: auto; }
+}
