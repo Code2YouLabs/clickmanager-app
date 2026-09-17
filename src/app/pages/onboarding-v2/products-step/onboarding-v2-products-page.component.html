@@ -2,14 +2,18 @@
   <div class="auth-wrapper onboarding-page-wrapper">
     <div class="w-100 rounded bg-white auth-card onboarding-page-card">
       <div class="auth-body onboarding-page">
-        <app-onboarding-shell tituloFluxo="Configuração inicial" tituloEtapa="Monte seu catálogo"
-          subtituloEtapa="Escolha produtos e serviços prontos. Você também poderá acessar a biblioteca depois."
+        <app-onboarding-shell [navigationInHeader]="true" [showExit]="false" tituloFluxo="" tituloEtapa=""
+          subtituloEtapa=""
           [passoAtual]="2" [totalPassos]="3" [progressoPercentual]="67" [showBack]="false" [showSkip]="false"
           primaryLabel="Continuar" [primaryDisabled]="carregando || importando || avancando"
-          [primaryLoading]="avancando" primaryHint="Esta etapa é opcional. Adicione os itens selecionados antes de continuar."
+          [primaryLoading]="avancando" primaryHint=""
           (principal)="submit()">
-          @if (carregando) { <mat-spinner diameter="40" /> }
-          @else { <app-biblioteca-produtos-selector (ocupado)="importando = $event" /> }
+          @if (carregando) { <div class="onboarding-v2-page__loading" role="status" aria-label="Carregando biblioteca"><mat-spinner diameter="42" /></div> }
+          @else {
+            <app-section-card titulo="Biblioteca de produtos" subtitulo="Etapa opcional. Adicione os itens selecionados antes de continuar. A biblioteca também estará disponível no catálogo." [divider]="true">
+              <app-biblioteca-produtos-selector [mostrarIntroducao]="false" (ocupado)="importando = $event" />
+            </app-section-card>
+          }
         </app-onboarding-shell>
       </div>
     </div>

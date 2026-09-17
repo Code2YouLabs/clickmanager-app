@@ -47,6 +47,21 @@ for (const host of [BibliotecaDialogComponent, OnboardingV2ProductsPageComponent
       expect(fixture.nativeElement.querySelector('article input[type="checkbox"]').checked).toBeTrue();
       buttons[0].click(); fixture.detectChanges(); await fixture.whenStable();
       expect(selector.modo).toBe('arvore'); expect(selector.selecionados.size).toBe(1);
+      if (host === OnboardingV2ProductsPageComponent) {
+        const layout = fixture.nativeElement.querySelector('.onboarding-page-layout') as HTMLElement;
+        const header = fixture.nativeElement.querySelector('.onboarding-shell__header') as HTMLElement;
+        expect(header.querySelector('nav button[mat-flat-button]')!.textContent).toContain('Continuar');
+        expect(fixture.nativeElement.querySelector('.onboarding-shell__footer')).toBeNull();
+        const spacer = document.createElement('div');
+        spacer.style.height = '2000px';
+        fixture.nativeElement.querySelector('.onboarding-shell__content').appendChild(spacer);
+        layout.scrollTop = 300;
+        await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+        const top = header.getBoundingClientRect().top - layout.getBoundingClientRect().top;
+        expect(layout.scrollTop).toBe(300);
+        expect(top).toBeGreaterThanOrEqual(0);
+        expect(top).toBeLessThanOrEqual(16);
+      }
       fixture.destroy();
     });
   });

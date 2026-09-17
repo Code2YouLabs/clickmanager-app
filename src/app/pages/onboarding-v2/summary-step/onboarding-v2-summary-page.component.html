@@ -1,9 +1,9 @@
 <div class="blank-layout-container justify-content-center onboarding-page-layout">
   <div class="auth-wrapper onboarding-page-wrapper">
-    <div class="position-relative shaper-wrapper">
+    <div class="position-relative w-100">
       <div class="w-100 position-relative rounded bg-white auth-card onboarding-page-card">
         <div class="auth-body onboarding-page">
-          <app-onboarding-shell
+          <app-onboarding-shell [navigationInHeader]="true" [showExit]="false"
             tituloFluxo=""
             tituloEtapa=""
             subtituloEtapa=""

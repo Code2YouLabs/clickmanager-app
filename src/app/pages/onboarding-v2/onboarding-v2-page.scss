@@ -1,0 +1,72 @@
+.onboarding-page-layout {
+  padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 28%),
+    linear-gradient(180deg, #eff5ff 0%, #f8fbff 100%);
+  height: 100dvh;
+  box-sizing: border-box;
+  overflow: auto;
+  align-items: flex-start;
+}
+
+.onboarding-page-wrapper {
+  width: min(1120px, 100%);
+  max-width: 1120px;
+}
+
+.onboarding-page-card {
+  margin: 0 auto;
+  border-radius: 24px;
+  overflow: visible;
+  box-shadow: 0 24px 60px rgba(14, 23, 38, 0.08);
+}
+
+.onboarding-page {
+  padding: 28px;
+}
+
+.onboarding-page__section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.onboarding-v2-page__loading {
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .onboarding-page-layout {
+    padding: 12px;
+  }
+
+  .onboarding-page-card {
+    border-radius: 24px;
+  }
+
+  .onboarding-page {
+    padding: 10px 10px 14px;
+  }
+
+  .onboarding-v2-page__loading {
+    min-height: 260px;
+  }
+
+  :host ::ng-deep app-section-card .section-card {
+    padding: 0;
+    box-shadow: none;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  :host ::ng-deep app-section-card .section-card__header {
+    margin-bottom: 6px;
+  }
+
+  :host ::ng-deep app-section-card mat-divider {
+    display: none;
+  }
+}

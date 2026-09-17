@@ -17,6 +17,7 @@ export class OnboardingShellComponent {
   @Input() passoAtual = 1;
   @Input() totalPassos = 1;
   @Input() progressoPercentual = 0;
+  @Input() navigationInHeader = false;
   @Input() showExit = true;
   @Input() showFooter = true;
   @Input() showBack = true;

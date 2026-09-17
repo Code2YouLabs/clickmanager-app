@@ -1,4 +1,4 @@
-<section class="onboarding-shell">
+<section class="onboarding-shell" [class.onboarding-shell--header-navigation]="navigationInHeader">
   <header class="onboarding-shell__header">
     <div class="onboarding-shell__mobile-top">
       <button mat-icon-button type="button" *ngIf="showBack" (click)="voltar.emit()" aria-label="Voltar">
@@ -42,6 +42,9 @@
       </div>
       <mat-progress-bar mode="determinate" [value]="progressoPercentual"></mat-progress-bar>
     </div>
+    <nav class="onboarding-shell__header-navigation" aria-label="Navegação da configuração" *ngIf="navigationInHeader && showFooter">
+      <ng-container *ngTemplateOutlet="navigation"></ng-container>
+    </nav>
   </header>
 
   <mat-menu #mobileMenu="matMenu">
@@ -55,7 +58,12 @@
     <ng-content></ng-content>
   </main>
 
-  <footer class="onboarding-shell__footer" *ngIf="showFooter">
+  <footer class="onboarding-shell__footer" *ngIf="showFooter && !navigationInHeader">
+    <ng-container *ngTemplateOutlet="navigation"></ng-container>
+  </footer>
+</section>
+
+<ng-template #navigation>
     <div class="onboarding-shell__footer-left">
       <button mat-stroked-button type="button" *ngIf="showBack" (click)="voltar.emit()">
         Voltar
@@ -81,5 +89,4 @@
         <span>{{ primaryLabel }}</span>
       </button>
     </div>
-  </footer>
-</section>
+</ng-template>
