@@ -20,14 +20,14 @@ for (const host of [BibliotecaDialogComponent, OnboardingV2ProductsPageComponent
       await TestBed.configureTestingModule({
         imports: [host, NoopAnimationsModule],
         providers: [
-          { provide: BibliotecaService, useValue: { listar: () => of([
+          { provide: BibliotecaService, useValue: { ultima: () => of(null), listar: () => of([
             { id: 1, tipo: 'PRODUTO', nome: 'Vinil', categoria: 'Adesivos > Folha > Especial', formato: 'A4', tiposPreco: [], acabamentos: [], jaExiste: false },
           ]) } },
           { provide: MatDialogRef, useValue: { close: () => {} } },
-          { provide: Router, useValue: {} }, { provide: ToastrService, useValue: {} },
-          { provide: OnboardingV2Service, useValue: {} },
-          { provide: AuthService, useValue: { isAuthenticated: () => true } },
-          { provide: OnboardingV2StateService, useValue: { refreshProgress: () => of({ onboardingVersion: 'v2', currentStep: 'products', status: 'company_completed', tipoEmpresa: 'GRAFICA' }) } },
+          { provide: Router, useValue: jasmine.createSpyObj('Router',['navigateByUrl']) }, { provide: ToastrService, useValue: {} },
+          { provide: OnboardingV2Service, useValue: { concluirBiblioteca: () => of({ currentStep: 'summary' }) } },
+          { provide: AuthService, useValue: { isAuthenticated: () => true, getDefaultRouteForUsuario: () => "/painel" } },
+          { provide: OnboardingV2StateService, useValue: { finishOnboarding: () => of({ currentStep: "summary", onboardingConcluido: true }), refreshProgress: () => of({ onboardingVersion: 'v2', currentStep: 'products', status: 'company_completed', tipoEmpresa: 'GRAFICA' }) } },
         ],
       }).compileComponents();
       const fixture = TestBed.createComponent(host as any);
@@ -50,7 +50,7 @@ for (const host of [BibliotecaDialogComponent, OnboardingV2ProductsPageComponent
       if (host === OnboardingV2ProductsPageComponent) {
         const layout = fixture.nativeElement.querySelector('.onboarding-page-layout') as HTMLElement;
         const header = fixture.nativeElement.querySelector('.onboarding-shell__header') as HTMLElement;
-        expect(header.querySelector('nav button[mat-flat-button]')!.textContent).toContain('Continuar');
+        expect(header.querySelector('nav button[mat-flat-button]')!.textContent).toContain('Preparar minha empresa');
         expect(fixture.nativeElement.querySelector('.onboarding-shell__footer')).toBeNull();
         const spacer = document.createElement('div');
         spacer.style.height = '2000px';
@@ -61,6 +61,14 @@ for (const host of [BibliotecaDialogComponent, OnboardingV2ProductsPageComponent
         expect(layout.scrollTop).toBe(300);
         expect(top).toBeGreaterThanOrEqual(0);
         expect(top).toBeLessThanOrEqual(16);
+        const api = TestBed.inject(BibliotecaService);
+        spyOn(api, 'ultima').and.returnValue(of({ id: 1, status: 'CONCLUIDO', fase: 'CONCLUIDO', total: 1, processados: 1,
+          criados: 1, duplicados: 0, erros: 0, tempoEstimadoRestanteSegundos: null, itens: [] }));
+        selector.reconectar(); fixture.detectChanges();
+        const entrar = header.querySelector('nav button[mat-flat-button]') as HTMLButtonElement;
+        expect(entrar.textContent).toContain('Entrar no ClickManager');
+        expect(entrar.disabled).toBeFalse(); entrar.click();
+        expect(TestBed.inject(Router).navigateByUrl).toHaveBeenCalledWith('/painel');
       }
       fixture.destroy();
     });

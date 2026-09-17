@@ -5,13 +5,13 @@
         <app-onboarding-shell [navigationInHeader]="true" [showExit]="false" tituloFluxo="" tituloEtapa=""
           subtituloEtapa=""
           [passoAtual]="2" [totalPassos]="3" [progressoPercentual]="67" [showBack]="false" [showSkip]="false"
-          primaryLabel="Continuar" [primaryDisabled]="carregando || importando || avancando"
+          [primaryLabel]="acaoPrincipal" [primaryDisabled]="carregando || importando || avancando || !!seletor?.erro || !!seletor?.reconectando"
           [primaryLoading]="avancando" primaryHint=""
           (principal)="submit()">
           @if (carregando) { <div class="onboarding-v2-page__loading" role="status" aria-label="Carregando biblioteca"><mat-spinner diameter="42" /></div> }
           @else {
-            <app-section-card titulo="Biblioteca de produtos" subtitulo="Etapa opcional. Adicione os itens selecionados antes de continuar. A biblioteca também estará disponível no catálogo." [divider]="true">
-              <app-biblioteca-produtos-selector [mostrarIntroducao]="false" (ocupado)="importando = $event" />
+            <app-section-card titulo="Biblioteca de produtos" subtitulo="Etapa opcional. Selecione os itens e confirme no cabeçalho para preparar seu catálogo." [divider]="true">
+              <app-biblioteca-produtos-selector [mostrarIntroducao]="false" [mostrarAcaoAdicionar]="false" [onboarding]="true" (ocupado)="importando = $event" />
             </app-section-card>
           }
         </app-onboarding-shell>

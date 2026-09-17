@@ -6,11 +6,18 @@ import { BibliotecaItem, BibliotecaResultado, BibliotecaService } from './biblio
 
 const produto: BibliotecaItem = { id: 1, tipo: 'PRODUTO', nome: 'Impressão A4', descricao: 'Colorida', categoria: 'Impressão > Papel', material: 'Sulfite', formato: 'A4', cor: '4x0', tiposPreco: ['FIXO'], acabamentos: ['Corte'], jaExiste: false };
 const servico: BibliotecaItem = { ...produto, tipo: 'SERVICO', nome: 'Criação de arte', categoria: 'Serviços', acabamentos: [] };
-describe('BibliotecaProdutosSelectorComponent', () => {
+const jobFinal: import('src/app/components/setup-progress/setup-progress.component').SetupProgress = {
+  id: 12, status: 'CONCLUIDO', fase: 'CONCLUIDO', total: 2, processados: 2, criados: 1, duplicados: 1, erros: 0, tempoEstimadoRestanteSegundos: null,
+  itens: [ {id:1,tipo:'PRODUTO',templateId:1,status:'CRIADO',nome:produto.nome,mensagem:null,criadoId:10},
+    {id:2,tipo:'SERVICO',templateId:1,status:'DUPLICADO',nome:servico.nome,mensagem:'DUPLICADO',criadoId:null} ],
+};
+describe('BibliotecaProdutosSelectorComponent' , () => {
   let component: BibliotecaProdutosSelectorComponent;
   let api: jasmine.SpyObj<BibliotecaService>;
   beforeEach(() => {
-    api = jasmine.createSpyObj('BibliotecaService', ['listar','importar']);
+    api = jasmine.createSpyObj('BibliotecaService', ['listar','importar','ultima','acompanhar']);
+    api.ultima.and.returnValue(of(null));
+    api.acompanhar.and.returnValue(of(jobFinal));
     api.listar.and.returnValue(of([produto,servico]));
     component = new BibliotecaProdutosSelectorComponent(api);
     component.ngOnInit();
@@ -28,18 +35,18 @@ describe('BibliotecaProdutosSelectorComponent', () => {
   });
   it('mostra sucesso parcial e atualiza o estado atual da empresa', () => {
     const resultado: BibliotecaResultado = { importados: [{ bibliotecaProdutoId: 1, nome: produto.nome }], ignorados: [{bibliotecaProdutoId: 1,nome: servico.nome,motivo:'DUPLICADO'}], erros: [] };
-    api.importar.and.returnValue(of(resultado));
+    api.importar.and.returnValue(of(jobFinal));
     component.selecionarTodos(true); component.adicionar();
-    expect(api.importar).toHaveBeenCalledWith([produto,servico]); expect(component.resultado).toBe(resultado);
+    expect(api.importar).toHaveBeenCalledWith([produto,servico]); expect(component.resultado?.importados.length).toBe(resultado.importados.length);
     expect(component.selecionados.size).toBe(0); expect(api.listar).toHaveBeenCalledTimes(2);
   });
   it('bloqueia envio repetido e mantém seleção após falha', () => {
-    const resposta = new Subject<BibliotecaResultado>(); api.importar.and.returnValue(resposta);
+    const resposta = new Subject<typeof jobFinal>(); api.importar.and.returnValue(resposta);
     component.marcar(produto,true); component.adicionar(); component.adicionar();
     expect(api.importar).toHaveBeenCalledTimes(1);
     resposta.error(new Error('SQL segredo'));
     expect(component.importando).toBeFalse(); expect(component.selecionados.size).toBe(1);
-    expect(component.erro).not.toContain('SQL');
+    expect(component.erro).not.toContain('SQL'); expect(api.ultima).toHaveBeenCalledTimes(2);
   });
   it('renderiza a interface real com ações e acabamentos', async () => {
     await TestBed.configureTestingModule({ imports: [BibliotecaProdutosSelectorComponent,NoopAnimationsModule], providers: [{ provide: BibliotecaService,useValue: api }] }).compileComponents();
@@ -101,9 +108,28 @@ describe('BibliotecaProdutosSelectorComponent', () => {
     component.marcar(servico, true); component.modo = 'arvore';
     expect(component.selecionados).toBe(selecao);
     expect(component.todosSelecionados).toBeTrue();
-    api.importar.and.returnValue(of({ importados: [], ignorados: [], erros: [] }));
+    api.importar.and.returnValue(of(jobFinal));
     component.adicionar();
     expect(api.importar).toHaveBeenCalledWith([produto, servico]);
+  });
+
+  it('reconecta ao job ativo sem criar outra importação e sair não cancela o backend', () => {
+    const progresso = new Subject<typeof jobFinal>();
+    api.ultima.and.returnValue(of({ ...jobFinal, status: 'PROCESSANDO', fase: 'IMPORTANDO_ITENS', processados: 1 }));
+    api.acompanhar.and.returnValue(progresso);
+    component.reconectar();
+    expect(component.importando).toBeTrue(); expect(api.importar).not.toHaveBeenCalled();
+    expect(progresso.observed).toBeTrue(); component.ngOnDestroy(); expect(progresso.observed).toBeFalse();
+  });
+  it('onboarding mantém tela de preparação até conclusão com alertas', () => {
+    component.onboarding = true;
+    const progresso = new Subject<typeof jobFinal>(); api.acompanhar.and.returnValue(progresso);
+    api.importar.and.returnValue(of({...jobFinal,status:'PENDENTE',fase:'AGUARDANDO',processados:0}));
+    component.selecionarTodos(true); component.adicionar();
+    expect(component.importando).toBeTrue();
+    progresso.next({...jobFinal,status:'CONCLUIDO_COM_ALERTAS',fase:'CONCLUIDO_COM_ALERTAS',erros:1});
+    expect(component.importando).toBeFalse(); expect(component.job?.erros).toBe(1);
+    expect(api.listar).toHaveBeenCalledTimes(1);
   });
 
 });

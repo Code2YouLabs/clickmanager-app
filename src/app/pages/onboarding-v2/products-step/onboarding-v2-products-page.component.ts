@@ -1,17 +1,15 @@
 import { BibliotecaProdutosSelectorComponent } from '../../grafica/biblioteca/biblioteca-produtos-selector.component';
 import { OnboardingV2Service } from '../services/onboarding-v2.service';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
-import { finalize } from 'rxjs/operators';
+import { finalize, switchMap } from 'rxjs/operators';
 import { MaterialModule } from 'src/app/material.module';
 import { OnboardingShellComponent } from 'src/app/components/onboarding/onboarding-shell.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { AuthService } from 'src/app/services/auth.service';
 import {
-  ProdutoTemplate,
-  formatCentavosToBrl,
   isOnboardingV2Finished,
   resolveOnboardingV2RouteFromProgress,
   resolveOnboardingV2StepFromProgress,
@@ -26,6 +24,7 @@ import { OnboardingV2StateService } from '../services/onboarding-v2-state.servic
   styleUrls: ['./onboarding-v2-products-page.component.scss'],
 })
 export class OnboardingV2ProductsPageComponent implements OnInit {
+  @ViewChild(BibliotecaProdutosSelectorComponent) seletor?: BibliotecaProdutosSelectorComponent;
   carregando = true;
   importando = false;
   avancando = false;
@@ -49,11 +48,20 @@ export class OnboardingV2ProductsPageComponent implements OnInit {
 
   submit(): void {
     if (this.importando || this.avancando) return;
+    if (this.seletor?.selecionados.size) { this.seletor.adicionar(); return; }
     this.avancando = true;
-    this.api.concluirBiblioteca().pipe(finalize(() => this.avancando = false)).subscribe({
-      next: progress => this.router.navigateByUrl(resolveOnboardingV2RouteFromProgress(progress)),
+    const concluido = !!this.seletor?.job && !this.seletor.importando;
+    const fluxo = concluido ? this.api.concluirBiblioteca().pipe(switchMap(() => this.onboardingV2State.finishOnboarding())) : this.api.concluirBiblioteca();
+    fluxo.pipe(finalize(() => this.avancando = false)).subscribe({
+      next: progress => this.router.navigateByUrl(concluido ? this.authService.getDefaultRouteForUsuario() : resolveOnboardingV2RouteFromProgress(progress)),
       error: () => this.toastr.error('Não foi possível continuar. Tente novamente.'),
     });
+  }
+
+  get acaoPrincipal() {
+    if (this.importando) return 'Preparando...';
+    if (this.seletor?.job) return 'Entrar no ClickManager';
+    return this.seletor?.selecionados.size ? 'Preparar minha empresa' : 'Continuar sem produtos';
   }
 
   private loadStep(): void {

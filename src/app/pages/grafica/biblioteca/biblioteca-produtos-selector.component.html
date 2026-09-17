@@ -1,3 +1,7 @@
+@if (erro) { <div role="alert" class="biblioteca-erro">{{ erro }} <button mat-button (click)="reconectar()" [disabled]="reconectando">Reconectar</button></div> }
+@if (reconectando) { <mat-progress-bar mode="indeterminate" aria-label="Consultando preparação" /> }
+@if (job) { <app-setup-progress [job]="job" [onboarding]="onboarding" /> }
+@if (!importando && !reconectando && (!onboarding || !job)) {
 @if (mostrarIntroducao) { <p>Escolha produtos e serviços prontos para sua empresa. Depois de adicionar, você pode editar os cadastros e preços livremente.</p> }
 <div class="biblioteca-toolbar">
   <mat-form-field appearance="outline">
@@ -17,19 +21,6 @@
     <mat-button-toggle value="detalhada">Detalhada</mat-button-toggle>
   </mat-button-toggle-group>
 </div>
-@if (erro) { <div role="alert" class="biblioteca-erro">{{ erro }} <button mat-button (click)="carregar()" [disabled]="carregando || importando">Atualizar biblioteca</button></div> }
-@if (resultado) {
-  <section class="biblioteca-resultado" role="status" aria-live="polite">
-    <strong>{{ resultado.importados.length }} item(ns) adicionado(s)</strong>
-    <span>{{ resultado.ignorados.length }} já existiam e foram ignorados</span>
-    @if (resultado.erros.length) {
-      <span>{{ resultado.erros.length }} não puderam ser criados</span>
-      <details><summary>Ver motivos</summary>
-        @for (item of resultado.erros; track $index) { <p>{{ item.nome || 'Item indisponível' }}: {{ item.mensagem }}</p> }
-      </details>
-    }
-  </section>
-}
 <div class="biblioteca-acoes">
   <mat-checkbox [checked]="todosSelecionados" [indeterminate]="algunsSelecionados" [disabled]="carregando || importando || !filtrados.length" (change)="selecionarTodos($event.checked)">Selecionar todos os resultados ({{ filtrados.length }})</mat-checkbox>
   <span aria-live="polite">{{ selecionados.size }} selecionado(s)</span>
@@ -59,5 +50,7 @@
     </article>
   } @empty { @if (!carregando && !erro) { <p>Nenhum item encontrado. Altere a pesquisa ou a categoria.</p> } }
 </div>
+
+}
 
 }

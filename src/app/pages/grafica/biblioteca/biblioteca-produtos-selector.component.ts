@@ -1,18 +1,23 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Subject, debounceTime, distinctUntilChanged, finalize, takeUntil } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged, finalize, takeUntil, Subscription, timeout } from 'rxjs';
+import { SetupProgress, SetupProgressComponent, preparacaoAtiva } from 'src/app/components/setup-progress/setup-progress.component';
 import { MaterialModule } from 'src/app/material.module';
 import { HierarchyTreeComponent, HierarchyTreeNode, HierarchyTreeSelectionState } from 'src/app/components/hierarchy-tree/hierarchy-tree.component';
 import { BibliotecaItem, BibliotecaResultado, BibliotecaService } from './biblioteca.service';
 
 @Component({
   selector: 'app-biblioteca-produtos-selector', standalone: true,
-  imports: [CommonModule, FormsModule, MaterialModule, HierarchyTreeComponent],
+  imports: [CommonModule, FormsModule, MaterialModule, HierarchyTreeComponent, SetupProgressComponent],
   templateUrl: './biblioteca-produtos-selector.component.html',
   styleUrls: ['./biblioteca-produtos-selector.component.scss'],
 })
 export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
+  @Input() onboarding = false;
+  job: SetupProgress | null = null;
+  reconectando = true;
+  private acompanhamento?: Subscription;
   @Input() mostrarAcaoAdicionar = true;
   @Input() mostrarIntroducao = true;
   @Output() importado = new EventEmitter<BibliotecaResultado>();
@@ -44,9 +49,9 @@ export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
   constructor(private readonly service: BibliotecaService) {}
   ngOnInit() {
     this.pesquisa.pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destruir)).subscribe(v => this.termo = this.normalizar(v));
-    this.carregar();
+    this.reconectar();
   }
-  ngOnDestroy() { this.destruir.next(); this.destruir.complete(); }
+  ngOnDestroy() { this.acompanhamento?.unsubscribe(); this.destruir.next(); this.destruir.complete(); }
   carregar() {
     this.carregando = true; this.erro = '';
     this.service.listar().pipe(takeUntil(this.destruir), finalize(() => this.carregando = false)).subscribe({
@@ -107,21 +112,52 @@ export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
     }
   }
   selecionarTodos(valor: boolean) { this.filtrados.forEach(i => this.marcar(i, valor)); }
+  reconectar() {
+    this.acompanhamento?.unsubscribe();
+    this.reconectando = true; this.erro = ''; this.ocupado.emit(true);
+    this.service.ultima().pipe(takeUntil(this.destruir)).subscribe({
+      next: job => {
+        this.reconectando = false;
+        if (job) {
+          this.job = job;
+          if (preparacaoAtiva(job)) { this.importando = true; this.observar(job.id); return; }
+          this.receber(job, false);
+        } else { this.importando = false; this.ocupado.emit(false); }
+        if (!this.onboarding || !job) this.carregar();
+      },
+      error: () => { this.reconectando = false; this.erro = 'Não foi possível consultar a preparação. Reconecte antes de continuar.'; },
+    });
+  }
   adicionar() {
-    if (this.importando || !this.selecionados.size) return;
+    if (this.importando || this.reconectando || this.erro || !this.selecionados.size) return;
     const itens = this.itens.filter(i => this.selecionados.has(this.chave(i)));
     this.importando = true; this.ocupado.emit(true); this.erro = ''; this.resultado = null;
-    this.service.importar(itens).pipe(takeUntil(this.destruir), finalize(() => {
-      this.importando = false; this.ocupado.emit(false);
-    })).subscribe({
-      next: resultado => {
-        this.resultado = resultado;
-        this.selecionados.clear();
-        this.estados.forEach(estado => { estado.selected = 0; this.atualizarEstado(estado); });
-        this.importado.emit(resultado); this.carregar();
+    this.service.importar(itens).pipe(timeout(15000), takeUntil(this.destruir)).subscribe({
+      next: job => { this.job = job; this.selecionados.clear(); this.observar(job.id); },
+      error: () => {
+        // POST pode ter sido confirmado mesmo se a resposta se perdeu. Consultar antes de permitir novo envio.
+        this.reconectar();
       },
-      error: () => this.erro = 'Não foi possível confirmar o resultado. Atualize a biblioteca antes de tentar novamente; itens que já existem serão ignorados.',
     });
+  }
+  private observar(id: number) {
+    this.acompanhamento?.unsubscribe();
+    this.acompanhamento = this.service.acompanhar(id).pipe(takeUntil(this.destruir)).subscribe({
+      next: job => this.receber(job, true),
+      error: () => this.erro = 'A conexão com o progresso foi interrompida. A importação continua no servidor. Reconecte para acompanhar.',
+    });
+  }
+  private receber(job: SetupProgress, notificar: boolean) {
+    this.job = job; this.importando = preparacaoAtiva(job); this.ocupado.emit(this.importando);
+    if (this.importando) return;
+    this.selecionados.clear(); this.estados.forEach(e => { e.selected = 0; this.atualizarEstado(e); });
+    const resultado: BibliotecaResultado = {
+      importados: job.itens.filter(i => i.status === 'CRIADO').map(i => ({bibliotecaProdutoId: i.templateId, nome: i.nome || '', servicoId: i.tipo === 'SERVICO' ? i.criadoId || undefined : undefined})),
+      ignorados: job.itens.filter(i => i.status === 'DUPLICADO').map(i => ({bibliotecaProdutoId: i.templateId, nome: i.nome || '', motivo: i.mensagem || ''})),
+      erros: job.itens.filter(i => i.status === 'ERRO').map(i => ({bibliotecaProdutoId: i.templateId, nome: i.nome || '', mensagem: i.mensagem || ''})),
+    };
+    this.resultado = resultado;
+    if (notificar) { this.importado.emit(resultado); if (!this.onboarding) this.carregar(); }
   }
   configuracao(item: BibliotecaItem) { return [item.material, item.formato, item.cor].filter(Boolean).join(" · "); }
   preco(tipo: string) {
