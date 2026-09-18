@@ -2,6 +2,8 @@ import { timer, exhaustMap, takeWhile, timeout } from 'rxjs';
 import { SetupProgress, preparacaoAtiva } from 'src/app/components/setup-progress/setup-progress.component';
 import { Injectable } from '@angular/core';
 import { ApiService } from 'src/app/services/api.service';
+import { HttpContext } from '@angular/common/http';
+import { SILENT_REQUEST } from 'src/app/interceptors/loading.interceptor';
 
 export interface BibliotecaItem {
   id: number;
@@ -25,10 +27,10 @@ export interface BibliotecaResultado {
 export class BibliotecaService {
   constructor(private readonly api: ApiService) {}
   listar() { return this.api.get<BibliotecaItem[]>('api/grafica/biblioteca/itens'); }
-  ultima() { return this.api.get<SetupProgress | null>('api/grafica/biblioteca/importacoes/ultima').pipe(timeout(15000)); }
+  ultima() { return this.api.get<SetupProgress | null>('api/grafica/biblioteca/importacoes/ultima', undefined, new HttpContext().set(SILENT_REQUEST, true)).pipe(timeout(15000)); }
   acompanhar(id: number) {
     return timer(0, 2000).pipe(
-      exhaustMap(() => this.api.get<SetupProgress>(`api/grafica/biblioteca/importacoes/${id}`).pipe(timeout(15000))),
+      exhaustMap(() => this.api.get<SetupProgress>(`api/grafica/biblioteca/importacoes/${id}`, undefined, new HttpContext().set(SILENT_REQUEST, true)).pipe(timeout(15000))),
       takeWhile(job => preparacaoAtiva(job), true),
     );
   }
