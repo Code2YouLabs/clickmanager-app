@@ -1,6 +1,6 @@
 @if (erro) { <div role="alert" class="biblioteca-erro">{{ erro }} <button mat-button (click)="reconectar()" [disabled]="reconectando">Reconectar</button></div> }
 @if (reconectando) { <mat-progress-bar mode="indeterminate" aria-label="Consultando preparação" /> }
-@if (job) { <app-setup-progress [job]="job" [onboarding]="onboarding" /> }
+@if (job) { <app-setup-progress [job]="job" [onboarding]="onboarding" [animarEtapas]="animarEtapas" (etapasConcluidas)="etapasConcluidas.emit()" /> }
 @if (!importando && !reconectando && (!onboarding || !job)) {
 @if (mostrarIntroducao) { <p>Escolha produtos e serviços prontos para sua empresa. Depois de adicionar, você pode editar os cadastros e preços livremente.</p> }
 <div class="biblioteca-toolbar">

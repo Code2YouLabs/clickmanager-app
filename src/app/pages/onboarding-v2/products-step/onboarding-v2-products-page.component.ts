@@ -28,7 +28,16 @@ export class OnboardingV2ProductsPageComponent implements OnInit {
   @ViewChild(BibliotecaProdutosSelectorComponent) seletor?: BibliotecaProdutosSelectorComponent;
   stage: OnboardingStage = 'CATALOGO';
   readonly stageNumber = stageNumber;
-  atualizarPreparacao(job: SetupProgress | null) { this.stage = catalogStage(job); }
+  animandoEtapas = false;
+  atualizarPreparacao(job: SetupProgress | null) {
+    if (!job) this.animandoEtapas = false;
+    const etapa = catalogStage(job);
+    this.stage = this.animandoEtapas && etapa === 'CONCLUIDO' ? 'PREPARANDO' : etapa;
+  }
+  concluirAnimacao(): void {
+    this.animandoEtapas = false;
+    this.stage = catalogStage(this.seletor?.job || null);
+  }
   carregando = true;
   importando = false;
   avancando = false;
@@ -56,6 +65,7 @@ export class OnboardingV2ProductsPageComponent implements OnInit {
 
   submit(): void {
     if (this.bloqueado || this.seletor?.importando || !this.seletor?.selecionados.size) return;
+    this.animandoEtapas = true;
     this.stage = 'PREPARANDO';
     this.seletor.adicionar();
   }

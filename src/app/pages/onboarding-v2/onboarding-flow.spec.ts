@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
@@ -12,8 +12,8 @@ import { OnboardingV2SummaryPageComponent } from './summary-step/onboarding-v2-s
 import { OnboardingV2StateService } from './services/onboarding-v2-state.service';
 import { OnboardingV2Service } from './services/onboarding-v2.service';
 
-const pending: SetupProgress = { id: 9, status: 'PENDENTE', fase: 'AGUARDANDO', total: 150, processados: 0, criados: 0, duplicados: 0, erros: 0, tempoEstimadoRestanteSegundos: null, itens: [] };
-const done: SetupProgress = { ...pending, status: 'CONCLUIDO', fase: 'CONCLUIDO', processados: 150, criados: 148, duplicados: 2 };
+const pending: SetupProgress = { id: 9, status: 'PENDENTE', fase: 'AGUARDANDO', total: 150, processados: 0, criados: 0, duplicados: 0, erros: 0, smartCalcPrevistos: 2, smartCalcPreparados: 0, tempoEstimadoRestanteSegundos: null, itens: [] };
+const done: SetupProgress = { ...pending, status: 'CONCLUIDO', fase: 'CONCLUIDO', processados: 150, criados: 148, duplicados: 2, smartCalcPreparados: 2 };
 const company = { nome: 'Gráfica Teste', telefone: '11999999999', email: 'teste@example.com', responsavelNome: 'Pessoa Teste', responsavelTelefone: '11988888888' };
 
 describe('Narrativa do onboarding', () => {
@@ -75,9 +75,9 @@ describe('Narrativa do onboarding', () => {
     expect(state.finishOnboarding).toHaveBeenCalled(); summary.destroy();
   });
 
-  it('muda imediatamente para etapa 3, acompanha dados reais e conclui dentro da tela', async () => {
+  it('mostra dois segundos por tarefa e libera a conclusão após os dados reais', fakeAsync(() => {
     const f = TestBed.createComponent(OnboardingV2ProductsPageComponent);
-    f.detectChanges(); await f.whenStable(); f.detectChanges();
+    f.detectChanges();
     f.componentInstance.seletor!.selecionarTodos(true); f.detectChanges();
     f.nativeElement.querySelector('footer button[mat-flat-button]').click(); f.detectChanges();
     expect(f.componentInstance.stage).toBe('PREPARANDO');
@@ -85,18 +85,23 @@ describe('Narrativa do onboarding', () => {
     expect(f.nativeElement.querySelector('[aria-current="step"]').textContent).toContain('Preparando');
     expect(f.nativeElement.textContent).not.toContain('Quais produtos você oferece?');
     expect(f.nativeElement.querySelector('app-hierarchy-tree')).toBeNull();
-    accepted.next(pending); accepted.complete(); updates.next(pending); await f.whenStable(); f.detectChanges();
-    expect(f.nativeElement.textContent).toContain('Sua preparação começará em instantes');
+    accepted.next(pending); accepted.complete(); updates.next(pending); f.detectChanges();
+    expect(f.nativeElement.querySelectorAll('app-setup-progress li[data-state="PROCESSANDO"]').length).toBe(1);
+    expect(f.nativeElement.querySelector('app-setup-progress li[data-state="PROCESSANDO"]').textContent).toContain('Criando sua empresa');
     updates.next({...pending, status: 'PROCESSANDO', fase: 'IMPORTANDO_ITENS', processados: 47, criados: 45, duplicados: 2, tempoEstimadoRestanteSegundos: 60}); f.detectChanges();
+    tick(4000); f.detectChanges();
     expect(f.nativeElement.textContent).toContain('47 de 150');
-    expect(f.nativeElement.textContent).toContain('Cerca de 1 minuto');
-    updates.next(done); await f.whenStable(); f.detectChanges();
+    expect(f.nativeElement.querySelector('app-setup-progress li[data-state="PROCESSANDO"]').textContent).toContain('Criando seu catálogo');
+    updates.next(done); f.detectChanges();
+    expect(f.componentInstance.stage).toBe('PREPARANDO');
+    expect(f.nativeElement.querySelector('.onboarding-page__completion-action button')).toBeNull();
+    tick(6000); f.detectChanges();
     expect(f.nativeElement.querySelector('header').textContent).toContain('100%');
-    expect(f.nativeElement.textContent).toContain('148 adicionados');
+    expect(f.nativeElement.textContent).toContain('148 produtos e serviços adicionados');
     expect(f.nativeElement.querySelector('header button')).toBeNull();
     f.nativeElement.querySelector('.onboarding-page__completion-action button').click();
     expect(state.finishOnboarding).toHaveBeenCalled(); f.destroy();
-  });
+  }));
 
   it('mostra alerta adicional sem inventar erro de produto e permite entrar', async () => {
     biblioteca.ultima.and.returnValue(of({...done, status: 'CONCLUIDO_COM_ALERTAS', fase: 'CONCLUIDO_COM_ALERTAS',
@@ -104,7 +109,7 @@ describe('Narrativa do onboarding', () => {
     const f = TestBed.createComponent(OnboardingV2ProductsPageComponent);
     f.detectChanges(); await f.whenStable(); f.detectChanges();
     expect(f.nativeElement.textContent).toContain('configuração adicional');
-    expect(f.nativeElement.textContent).toContain('148 adicionados');
+    expect(f.nativeElement.textContent).toContain('148 produtos e serviços adicionados');
     expect(f.nativeElement.textContent).not.toContain('não puderam ser adicionados');
     f.nativeElement.querySelector('.onboarding-page__completion-action button').click();
     expect(state.finishOnboarding).toHaveBeenCalled(); f.destroy();
@@ -120,7 +125,7 @@ describe('Narrativa do onboarding', () => {
       expect(biblioteca.importar).not.toHaveBeenCalled();
       expect(biblioteca.listar).not.toHaveBeenCalled();
       if (job === pending) expect(biblioteca.acompanhar).toHaveBeenCalledWith(9);
-      else expect(f.nativeElement.textContent).toContain('Tudo pronto!');
+      else expect(f.nativeElement.textContent).toContain('Tudo pronto para você!');
       f.destroy();
     });
   }
@@ -138,7 +143,7 @@ describe('Narrativa do onboarding', () => {
     biblioteca.ultima.and.returnValue(of(done));
     const f = TestBed.createComponent(OnboardingV2SummaryPageComponent);
     f.detectChanges(); await f.whenStable(); f.detectChanges();
-    expect(f.nativeElement.textContent).toContain('148 adicionados');
+    expect(f.nativeElement.textContent).toContain('148 produtos e serviços adicionados');
     expect(f.nativeElement.textContent).toContain('2 já existiam');
     expect(biblioteca.importar).not.toHaveBeenCalled(); f.destroy();
   });

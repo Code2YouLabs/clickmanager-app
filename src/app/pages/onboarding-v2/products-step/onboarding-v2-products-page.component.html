@@ -24,6 +24,7 @@
               </div>
             }
             <app-biblioteca-produtos-selector [mostrarIntroducao]="false" [mostrarAcaoAdicionar]="false" [onboarding]="true"
+              [animarEtapas]="animandoEtapas" (etapasConcluidas)="concluirAnimacao()"
               (preparacao)="atualizarPreparacao($event)" (ocupado)="importando = $event" />
             @if (stage === 'CONCLUIDO') {
               <div class="onboarding-page__completion-action">

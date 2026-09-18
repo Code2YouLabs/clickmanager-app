@@ -15,6 +15,8 @@ import { BibliotecaItem, BibliotecaResultado, BibliotecaService } from './biblio
 })
 export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
   @Input() onboarding = false;
+  @Input() animarEtapas = false;
+  @Output() etapasConcluidas = new EventEmitter<void>();
   job: SetupProgress | null = null;
   reconectando = true;
   private acompanhamento?: Subscription;

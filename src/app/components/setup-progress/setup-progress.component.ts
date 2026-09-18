@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, Output } from '@angular/core';
 import { MaterialModule } from 'src/app/material.module';
 
 export interface SetupProgress {
@@ -23,7 +23,7 @@ interface PreparationTask { label: string; state: TaskState; detail?: string; ca
     <section class="setup-progress" [class.setup-progress--onboarding]="onboarding" aria-label="Progresso da preparação">
       @if (onboarding) {
         <h2>{{ titulo }}</h2>
-        <p>{{ ativa ? 'Isso pode levar alguns instantes. Você não precisa fazer nada.' : 'Seu ClickManager foi preparado com os produtos e configurações que você escolheu.' }}</p>
+        <p>{{ exibicaoAtiva ? 'Isso pode levar alguns instantes. Você não precisa fazer nada.' : 'Seu ClickManager foi preparado com os produtos e configurações que você escolheu.' }}</p>
         <ol class="setup-progress__tasks">
           @for (task of tarefas; track task.label) {
             <li [attr.data-state]="task.state">
@@ -39,7 +39,7 @@ interface PreparationTask { label: string; state: TaskState; detail?: string; ca
             </li>
           }
         </ol>
-        @if (!ativa) {
+        @if (!exibicaoAtiva) {
           <div class="setup-progress__contadores" aria-live="polite">
             @if (job.criados) { <span>{{ job.criados }} produtos e serviços adicionados</span> }
             @if (job.duplicados) { <span>{{ job.duplicados }} já existiam</span> }
@@ -59,8 +59,8 @@ interface PreparationTask { label: string; state: TaskState; detail?: string; ca
           @if (job.erros) { <span>{{ job.erros }} não puderam ser adicionados</span> }
         </div>
       }
-      @if (!ativa && job.alertaPreparacao) { <p role="status">{{ job.alertaPreparacao }}</p> }
-      @if (!ativa && job.erros) {
+      @if (!exibicaoAtiva && job.alertaPreparacao) { <p role="status">{{ job.alertaPreparacao }}</p> }
+      @if (!exibicaoAtiva && job.erros) {
         <details><summary>Ver detalhes</summary>
           @for (item of job.itens; track item.id) {
             @if (item.status === 'ERRO') { <p>{{ item.nome || ('Item ' + item.templateId) }}: {{ item.mensagem }}</p> }
@@ -86,14 +86,55 @@ interface PreparationTask { label: string; state: TaskState; detail?: string; ca
     details p { overflow-wrap: anywhere; }
   `],
 })
-export class SetupProgressComponent {
+export class SetupProgressComponent implements OnChanges, OnDestroy {
   @Input({ required: true }) job!: SetupProgress;
   @Input() onboarding = false;
+  @Input() animarEtapas = false;
+  @Output() etapasConcluidas = new EventEmitter<void>();
+  private etapaVisual = -1;
+  private tempoMinimoDecorrido = false;
+  private temporizador?: ReturnType<typeof setTimeout>;
+
+  ngOnChanges(): void {
+    if (this.onboarding && this.animarEtapas && this.etapaVisual === -1) {
+      this.etapaVisual = 0;
+      this.agendarProximaEtapa();
+    } else if (this.animacaoAtiva) {
+      this.avancarSePronto();
+    }
+  }
+
+  ngOnDestroy(): void { clearTimeout(this.temporizador); }
+
+  private get animacaoAtiva() { return this.etapaVisual >= 0 && this.etapaVisual < 5; }
+  get exibicaoAtiva() { return this.ativa || this.animacaoAtiva; }
+
+  private agendarProximaEtapa(): void {
+    this.tempoMinimoDecorrido = false;
+    this.temporizador = setTimeout(() => {
+      this.tempoMinimoDecorrido = true;
+      this.avancarSePronto();
+    }, 2000);
+  }
+
+  private avancarSePronto(): void {
+    if (!this.animacaoAtiva || !this.tempoMinimoDecorrido) return;
+    const catalogoConcluido = this.job.processados >= this.job.total || !this.ativa;
+    const pronta = this.etapaVisual < 2 ||
+      (this.etapaVisual === 2 && catalogoConcluido) ||
+      (this.etapaVisual === 3 && (!(this.job.smartCalcPrevistos || 0) || !this.ativa)) ||
+      (this.etapaVisual === 4 && !this.ativa);
+    if (!pronta) return;
+    this.etapaVisual++;
+    if (this.animacaoAtiva) this.agendarProximaEtapa();
+    else this.etapasConcluidas.emit();
+  }
+
   get ativa() { return preparacaoAtiva(this.job); }
   get percentual() { return this.job.total ? Math.min(100, this.job.processados * 100 / this.job.total) : 0; }
   get titulo() {
     if (this.job.status === 'ERRO') return 'Não foi possível concluir a preparação';
-    if (!this.ativa) return this.onboarding ? 'Tudo pronto para você!' : 'Tudo pronto!';
+    if (!this.exibicaoAtiva) return this.onboarding ? 'Tudo pronto para você!' : 'Tudo pronto!';
     return this.onboarding ? 'Estamos preparando seu ClickManager' : 'Adicionando itens à sua empresa';
   }
   get tarefas(): PreparationTask[] {
@@ -107,7 +148,7 @@ export class SetupProgressComponent {
       : fim ? (this.job.alertaPreparacao || !this.job.smartCalcPreparados ? 'ALERTA' : 'CONCLUIDO') : 'PENDENTE';
     const finalizacao: TaskState = fim ? (this.job.status === 'ERRO' ? 'ALERTA' : 'CONCLUIDO')
       : catalogoConcluido && !preparandoSmartCalc ? 'PROCESSANDO' : 'PENDENTE';
-    return [
+    const tarefas: PreparationTask[] = [
       { label: 'Criando sua empresa', state: 'CONCLUIDO' },
       { label: 'Preparando estrutura inicial', state: 'CONCLUIDO' },
       { label: 'Criando seu catálogo', state: catalogo, detail: `${this.job.processados} de ${this.job.total} produtos e serviços`, catalog: true },
@@ -115,6 +156,14 @@ export class SetupProgressComponent {
         detail: smartCalc ? (fim && this.job.smartCalcPreparados ? `${this.job.smartCalcPreparados} produtos preparados` : undefined) : 'Nenhuma configuração inicial necessária' },
       { label: 'Finalizando sua configuração', state: finalizacao },
     ];
+    if (!this.animacaoAtiva) return tarefas;
+    return tarefas.map((tarefa, indice) => ({
+      ...tarefa,
+      state: indice < this.etapaVisual ? tarefa.state
+        : indice === this.etapaVisual ? (indice === 3 && !smartCalc ? 'CONCLUIDO' : 'PROCESSANDO')
+        : 'PENDENTE',
+      catalog: tarefa.catalog && indice <= this.etapaVisual,
+    }));
   }
   get fase() {
     if (this.job.status === 'CONCLUIDO_COM_ALERTAS' && this.job.alertaPreparacao && !this.job.erros) return 'Seu catálogo está pronto; uma configuração adicional precisa de atenção';
