@@ -56,6 +56,7 @@ export class CalculadoraConfigComponent implements OnInit {
     produtoOptions: ProdutoOption[] = [];
     selecionados = new Set<number>();
     configAtual?: CalculadoraConfigResponse;
+    private snapshot?: { ativo: boolean; selecionados: Set<number> };
 
     form = this.fb.nonNullable.group({
         ativo: this.fb.nonNullable.control<boolean>(true),
@@ -82,6 +83,7 @@ export class CalculadoraConfigComponent implements OnInit {
                     this.form.patchValue({
                         ativo: res?.config?.ativo ?? false,
                     });
+                    this.registrarSnapshot();
 
                 },
                 error: (err) => {
@@ -95,12 +97,8 @@ export class CalculadoraConfigComponent implements OnInit {
 
 
     onSubmit(): void {
-        if (this.carregando() || this.erroCarregamento || this.salvando()) return;
+        if (this.salvarDesabilitado) return;
         const formValue = this.form.getRawValue();
-        if (this.form.invalid) {
-            this.form.markAllAsTouched();
-            return;
-        }
 
         const req: CalculadoraConfigRequest = {
             ativo: formValue.ativo,
@@ -115,6 +113,8 @@ export class CalculadoraConfigComponent implements OnInit {
                     this.configAtual = res.config ?? undefined;
                     this.produtoOptions = res.produtosDisponiveis;
                     this.selecionados = new Set(this.produtoOptions.filter(p => p.habilitado).map(p => p.id));
+                    this.form.patchValue({ ativo: res.config?.ativo ?? formValue.ativo });
+                    this.registrarSnapshot();
                     this.toastr.success('Configurações salvas com sucesso!', 'SmartCalc');
                 },
                 error: (err) => {
@@ -143,6 +143,32 @@ export class CalculadoraConfigComponent implements OnInit {
 
     atualizarSelecao(ids: number[]): void {
         this.selecionados = new Set(ids);
+    }
+
+    get salvarDesabilitado(): boolean {
+        if (this.carregando() || this.erroCarregamento || this.salvando() || this.form.invalid || !this.snapshot) {
+            return true;
+        }
+        return this.form.controls.ativo.value === this.snapshot.ativo
+            && this.selecionados.size === this.snapshot.selecionados.size
+            && [...this.selecionados].every(id => this.snapshot!.selecionados.has(id));
+    }
+
+    cancelar(): void {
+        if (!this.snapshot) return;
+        this.form.reset({ ativo: this.snapshot.ativo });
+        this.selecionados = new Set(this.snapshot.selecionados);
+        this.form.markAsPristine();
+        this.form.markAsUntouched();
+    }
+
+    private registrarSnapshot(): void {
+        this.snapshot = {
+            ativo: this.form.controls.ativo.value,
+            selecionados: new Set(this.selecionados),
+        };
+        this.form.markAsPristine();
+        this.form.markAsUntouched();
     }
 
     produtoPorId(id: number): ProdutoOption | undefined {

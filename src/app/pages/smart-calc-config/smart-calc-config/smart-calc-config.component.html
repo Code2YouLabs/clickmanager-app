@@ -50,9 +50,9 @@
     </app-section-card>
   </form>
 
-  <button page-footer-right mat-stroked-button type="button" (click)="voltar()">Cancelar</button>
+  <button page-footer-right mat-stroked-button class="cancel-button" type="button" (click)="cancelar()">Cancelar</button>
   <button page-footer-right mat-flat-button color="primary" type="submit" form="smartcalc-config-form"
-    [disabled]="salvando() || carregando() || erroCarregamento">
+    [disabled]="salvarDesabilitado">
     <mat-icon>save</mat-icon> {{ textoAcaoPrincipal }}
   </button>
 </app-page-card>

@@ -37,6 +37,14 @@
   &__footer-left:empty + &__footer-right {
     margin-left: auto;
   }
+
+  &__footer ::ng-deep .cancel-button {
+    border-color: #fecaca;
+    color: #b91c1c;
+    background: #fef2f2;
+
+    &:hover { background: #fee2e2; }
+  }
 }
 
 @media (max-width: 768px) {

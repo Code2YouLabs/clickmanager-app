@@ -1,10 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { FormBuilder } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { ProdutoOption } from 'src/app/models/produto/produto-option.model';
-import { CalculadoraConfigService } from '../calculadora-config.service';
+import { CalculadoraConfigService, SmartCalcConfigApiResponse } from '../calculadora-config.service';
 import { CalculadoraConfigComponent } from './smart-calc-config.component';
 
 describe('CalculadoraConfigComponent', () => {
@@ -54,6 +54,31 @@ describe('CalculadoraConfigComponent', () => {
     expect(component.transferItems[2].editRoute).toEqual(['/page/grafica/produtos', 3, 'editar']);
   });
 
+  it('inicia com Salvar desabilitado e não salva ao abrir a página', () => {
+    const component = criar();
+    expect(component.salvarDesabilitado).toBeTrue();
+    component.onSubmit();
+    expect(service.salvar).not.toHaveBeenCalled();
+  });
+
+  it('habilita Salvar ao alterar a ativação e desabilita ao restaurá-la', () => {
+    const component = criar();
+    component.form.controls.ativo.setValue(false);
+    expect(component.salvarDesabilitado).toBeFalse();
+    component.form.controls.ativo.setValue(true);
+    expect(component.salvarDesabilitado).toBeTrue();
+  });
+
+  it('habilita Salvar ao adicionar ou remover produto', () => {
+    const component = criar();
+    component.atualizarSelecao([1, 2, 3]);
+    expect(component.salvarDesabilitado).toBeFalse();
+    component.atualizarSelecao([3, 1]);
+    expect(component.salvarDesabilitado).toBeTrue();
+    component.atualizarSelecao([1]);
+    expect(component.salvarDesabilitado).toBeFalse();
+  });
+
   it('move produtos com e sem pendência, salva seleção e ativação', () => {
     const component = criar();
     component.atualizarSelecao([2, 3]);
@@ -61,13 +86,31 @@ describe('CalculadoraConfigComponent', () => {
     component.onSubmit();
     expect(service.salvar).toHaveBeenCalledWith({ ativo: false, produtoGraficoIds: [2, 3] });
     expect(component.selectedIds).toEqual([1, 3]);
+    expect(component.salvarDesabilitado).toBeTrue();
     expect(toastr.success).toHaveBeenCalled();
   });
 
   it('mostra erro quando salvar falha', () => {
     service.salvar.and.returnValue(throwError(() => new Error('Falha')));
-    criar().onSubmit();
+    const component = criar();
+    component.form.controls.ativo.setValue(false);
+    component.onSubmit();
     expect(toastr.error).toHaveBeenCalled();
+    expect(component.salvarDesabilitado).toBeFalse();
+  });
+
+  it('desabilita Salvar durante a requisição e limpa o estado após sucesso', () => {
+    const resposta = new Subject<SmartCalcConfigApiResponse>();
+    service.salvar.and.returnValue(resposta);
+    const component = criar();
+    component.form.controls.ativo.setValue(false);
+    component.onSubmit();
+    expect(component.salvando()).toBeTrue();
+    expect(component.salvarDesabilitado).toBeTrue();
+    resposta.next({ config: { id: 10, ativo: false }, produtosDisponiveis: produtos });
+    resposta.complete();
+    expect(component.salvando()).toBeFalse();
+    expect(component.salvarDesabilitado).toBeTrue();
   });
 
   it('impede salvar se a configuração não carregou', () => {
@@ -81,5 +124,17 @@ describe('CalculadoraConfigComponent', () => {
   it('volta ao SmartCalc pelas ações da página', () => {
     criar().voltar();
     expect(router.navigate).toHaveBeenCalledWith(['/smartcalc']);
+  });
+
+  it('Cancelar restaura ativação e produtos sem navegar', () => {
+    const component = criar();
+    component.form.controls.ativo.setValue(false);
+    component.atualizarSelecao([2]);
+    expect(component.salvarDesabilitado).toBeFalse();
+    component.cancelar();
+    expect(component.form.controls.ativo.value).toBeTrue();
+    expect(component.selectedIds).toEqual([1, 3]);
+    expect(component.salvarDesabilitado).toBeTrue();
+    expect(router.navigate).not.toHaveBeenCalled();
   });
 });
