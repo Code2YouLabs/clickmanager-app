@@ -6,26 +6,40 @@
       <small>JPG, PNG, WEBP, SVG ou ICO até 10 MB. Resolução máxima: 10000 x 10000 px e até 40 MP.</small>
     </div>
 
-    @if (carregando) {
-    <span class="deposito-galeria__status">
-      <mat-spinner diameter="16"></mat-spinner>
-      Enviando...
-    </span>
-    }
+    <div class="deposito-galeria__header-actions">
+      @if (carregando) {
+      <span class="deposito-galeria__status">
+        <mat-spinner diameter="16"></mat-spinner>
+        Enviando...
+      </span>
+      }
+
+      <input #fileInput class="deposito-galeria__input" type="file" multiple [disabled]="carregando || limiteAtingido" (change)="onFilesSelected($event)" />
+      <button
+        class="deposito-galeria__trigger"
+        type="button"
+        [class.deposito-galeria__trigger--disabled]="carregando || limiteAtingido"
+        [disabled]="carregando || limiteAtingido"
+        (click)="abrirSeletorArquivos(fileInput, $event)">
+        <mat-icon>add_photo_alternate</mat-icon>
+        <span>{{ gerenciarPrincipal ? 'Selecionar imagens' : 'Adicionar imagens' }}</span>
+      </button>
+    </div>
   </div>
 
   <div
     class="deposito-galeria__panel"
     [class.deposito-galeria__panel--dragging]="arrastandoArquivos"
+    [class.deposito-galeria__panel--clickable]="!carregando && !limiteAtingido"
+    role="button"
+    tabindex="0"
+    [attr.aria-disabled]="carregando || limiteAtingido"
+    (click)="abrirSeletorArquivos(fileInput, $event)"
+    (keydown.enter)="abrirSeletorArquivos(fileInput, $event)"
+    (keydown.space)="abrirSeletorArquivos(fileInput, $event)"
     (dragover)="onDragOver($event)"
     (dragleave)="onDragLeave($event)"
     (drop)="onDrop($event)">
-    <label class="deposito-galeria__trigger">
-      <input type="file" multiple [disabled]="carregando" (change)="onFilesSelected($event)" />
-      <mat-icon>add_photo_alternate</mat-icon>
-      <span>{{ gerenciarPrincipal ? 'Selecionar imagens' : 'Adicionar imagens' }}</span>
-    </label>
-
     @if (!possuiImagens) {
     <div class="deposito-galeria__empty">
       <mat-icon>photo_library</mat-icon>
@@ -34,7 +48,7 @@
     } @else {
     <div class="deposito-galeria__grid">
       @for (imagem of imagensParaExibicao; track trackByImagem($index, imagem)) {
-      <article class="deposito-galeria__card" [class.deposito-galeria__card--primary]="isImagemPrincipal(imagem)">
+      <article class="deposito-galeria__card" [class.deposito-galeria__card--primary]="isImagemPrincipal(imagem)" (click)="$event.stopPropagation()">
         <div class="deposito-galeria__preview">
           <img [src]="getImagemSrc(imagem)" [alt]="imagem.altText || imagem.titulo || 'Imagem da galeria'" loading="lazy" decoding="async" />
           @if (isImagemPrincipal(imagem)) {
@@ -42,29 +56,32 @@
           }
         </div>
 
-        <div class="deposito-galeria__meta">
-          <strong>{{ imagem.titulo || ('Imagem ' + ($index + 1)) }}</strong>
-          <small>{{ imagem.contentType || 'image/*' }}</small>
-        </div>
-
         <div class="deposito-galeria__actions">
-          @if (gerenciarPrincipal && !isImagemPrincipal(imagem)) {
-          <button mat-icon-button type="button" matTooltip="Definir como principal" (click)="definirPrincipal(imagem)" [disabled]="carregando">
+          @if (gerenciarPrincipal) {
+          <button
+            class="deposito-galeria__action"
+            [class.deposito-galeria__action--primary-star]="isImagemPrincipal(imagem)"
+            mat-icon-button
+            type="button"
+            matTooltip="Definir como principal"
+            (click)="definirPrincipal(imagem)"
+            [disabled]="carregando">
             <mat-icon>star</mat-icon>
           </button>
           }
-          <button mat-icon-button type="button" (click)="moverParaCima($index)" [disabled]="!podeMoverParaCima($index, imagem) || carregando">
+          <button class="deposito-galeria__action" mat-icon-button type="button" color="warn" (click)="remover($index)" [disabled]="carregando">
+            <mat-icon>delete</mat-icon>
+          </button>
+          <button class="deposito-galeria__action" mat-icon-button type="button" (click)="moverParaCima($index)" [disabled]="!podeMoverParaCima($index, imagem) || carregando">
             <mat-icon>arrow_back</mat-icon>
           </button>
           <button
+            class="deposito-galeria__action"
             mat-icon-button
             type="button"
             (click)="moverParaBaixo($index)"
             [disabled]="!podeMoverParaBaixo($index, imagem) || carregando">
             <mat-icon>arrow_forward</mat-icon>
-          </button>
-          <button mat-icon-button type="button" color="warn" (click)="remover($index)" [disabled]="carregando">
-            <mat-icon>delete</mat-icon>
           </button>
         </div>
       </article>

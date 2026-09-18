@@ -1,5 +1,11 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
 .dashboard-chart-card {
   border-radius: 22px;
+  height: 100%;
 }
 
 .dashboard-chart-card__content {

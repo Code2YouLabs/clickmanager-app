@@ -18,7 +18,7 @@ import { CatalogoCategoriaCaracteristicasComponent } from './catalogo-categoria-
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterModule, MaterialModule, PageCardComponent, SectionCardComponent, RichTextEditorComponent, CatalogoCategoriaCaracteristicasComponent],
   template: `
-    <app-page-card [titulo]="isEdit ? 'Editar categoria' : 'Nova categoria'" subtitulo="Cadastro administrativo do novo catalogo">
+    <app-page-card [titulo]="tituloPagina" subtitulo="Cadastro administrativo do novo catalogo">
       <form [formGroup]="form" (ngSubmit)="salvar()">
         <app-section-card titulo="Identificacao" subtitulo="Codigo, nome, slug e hierarquia">
           <div class="grid">
@@ -44,7 +44,7 @@ import { CatalogoCategoriaCaracteristicasComponent } from './catalogo-categoria-
         <app-catalogo-categoria-caracteristicas [categoriaId]="categoriaId"></app-catalogo-categoria-caracteristicas>
         <div class="actions">
           <button mat-stroked-button type="button" (click)="voltar()">Voltar</button>
-          <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || salvando">{{ salvando ? 'Salvando...' : 'Salvar' }}</button>
+          <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || salvando || cloneNomeInvalido">{{ salvando ? 'Salvando...' : 'Salvar' }}</button>
         </div>
       </form>
     </app-page-card>
@@ -65,7 +65,9 @@ export class CatalogoCategoriaFormComponent implements OnInit, CanDeactivateWith
   });
   categoriasPai: CatalogoCategoriaOption[] = [];
   isEdit = false;
+  isClone = false;
   categoriaId?: number;
+  private cloneNomeOriginal?: string;
   salvando = false;
   salvo = false;
   slugManual = false;
@@ -89,7 +91,36 @@ export class CatalogoCategoriaFormComponent implements OnInit, CanDeactivateWith
         },
         error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Categoria nao encontrada.')),
       });
+      return;
     }
+
+    const cloneFrom = Number(this.route.snapshot.queryParamMap.get('cloneFrom'));
+    if (Number.isFinite(cloneFrom) && cloneFrom > 0) {
+      this.isClone = true;
+      this.service.detalhar(cloneFrom).subscribe({
+        next: (item) => {
+          this.cloneNomeOriginal = item.nome;
+          this.form.patchValue({
+            ...item,
+            codigo: this.codigoClone(item.codigo),
+            nome: this.nomeClone(item.nome),
+            slug: catalogoSlugify(this.nomeClone(item.nome)),
+          });
+          this.form.markAsPristine();
+        },
+        error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Categoria nao encontrada.')),
+      });
+    }
+  }
+
+  get tituloPagina(): string {
+    if (this.isEdit) return 'Editar categoria';
+    if (this.isClone) return 'Clonar categoria';
+    return 'Nova categoria';
+  }
+
+  get cloneNomeInvalido(): boolean {
+    return this.isClone && this.nomeIgualAoOriginal(this.form.controls.nome.value);
   }
 
   get categoriasPaiDisponiveis(): CatalogoCategoriaOption[] {
@@ -99,6 +130,10 @@ export class CatalogoCategoriaFormComponent implements OnInit, CanDeactivateWith
   salvar(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      return;
+    }
+    if (this.cloneNomeInvalido) {
+      this.toastr.warning('Altere o nome para salvar o clone.');
       return;
     }
     this.salvando = true;
@@ -125,4 +160,20 @@ export class CatalogoCategoriaFormComponent implements OnInit, CanDeactivateWith
 
   voltar(): void { this.router.navigate(['/page/catalogo/categorias']); }
   hasPendingChanges(): boolean { return !this.salvo && this.form.dirty && !this.salvando; }
+
+  private nomeClone(nome: string | null | undefined): string {
+    return `${nome || 'Categoria'} Copia`;
+  }
+
+  private codigoClone(codigo: string | null | undefined): string {
+    return `${codigo || 'CATEGORIA'}_COPIA`.slice(0, 50);
+  }
+
+  private nomeIgualAoOriginal(nome: string | null | undefined): boolean {
+    return this.normalizarNome(nome) === this.normalizarNome(this.cloneNomeOriginal);
+  }
+
+  private normalizarNome(nome: string | null | undefined): string {
+    return (nome || '').trim().toLocaleLowerCase('pt-BR');
+  }
 }

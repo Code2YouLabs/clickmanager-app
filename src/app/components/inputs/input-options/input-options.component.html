@@ -4,12 +4,56 @@
   </mat-label>
 
   <mat-form-field appearance="outline" class="w-100">
-    <mat-select [formControl]="control" [placeholder]="placeholder" [disabled]="disabled">
-      <mat-option *ngIf="showNull" [value]="null" disabled>{{ nullLabel }}</mat-option>
-      <mat-option *ngFor="let option of options" [value]="asValue(option)">
-        {{ asLabel(option) }}
+    <mat-select
+      [formControl]="control"
+      [placeholder]="placeholder"
+      [disabled]="disabled"
+      [panelClass]="panelClass"
+      (openedChange)="onSelectOpened($event)">
+      <mat-select-trigger>
+        <span class="input-options__trigger">{{ selectedLabel }}</span>
+      </mat-select-trigger>
+      <mat-option *ngIf="showNull" [value]="null" [disabled]="nullOptionDisabled">{{ nullLabel }}</mat-option>
+      <mat-option
+        *ngIf="isSearchEnabled"
+        class="input-options__search-option"
+        [value]="control.value"
+        (click)="$event.stopPropagation()">
+        <input
+          class="input-options__search-field"
+          type="text"
+          [formControl]="searchControl"
+          placeholder="Buscar..."
+          autocomplete="off"
+          (click)="$event.stopPropagation()"
+          (keydown)="$event.stopPropagation()" />
+      </mat-option>
+      <mat-option
+        *ngFor="let option of filteredOptions"
+        class="input-options__option"
+        [value]="asValue(option)">
+        <span class="input-options__option-content" [style.padding-left.px]="optionIndent(option)">
+          <span class="input-options__option-main">{{ asLabel(option) }}</span>
+          <span *ngIf="optionSubtitle(option)" class="input-options__option-subtitle">{{ optionSubtitle(option) }}</span>
+        </span>
+      </mat-option>
+      <mat-option *ngIf="isSearchEnabled && filteredOptions.length === 0" disabled>
+        Nenhum resultado encontrado
       </mat-option>
     </mat-select>
+
+    <button
+      *ngIf="createLabel"
+      mat-icon-button
+      matSuffix
+      type="button"
+      class="input-options__create"
+      [attr.aria-label]="createLabel"
+      [matTooltip]="createLabel"
+      [disabled]="createDisabled"
+      (click)="onCreateClick($event)">
+      <mat-icon>add</mat-icon>
+    </button>
 
     <mat-error *ngIf="control.invalid && control.touched">
       {{ errorMessage() }}

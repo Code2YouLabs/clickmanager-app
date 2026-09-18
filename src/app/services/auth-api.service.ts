@@ -11,6 +11,10 @@ export class AuthApiService {
     return this.api.post<AuthTokens>('auth/login', { username, password });
   }
 
+  loginGoogle(payload: { credential?: string; accessToken?: string }): Observable<AuthTokens> {
+    return this.api.post<AuthTokens>('auth/google', payload);
+  }
+
   refreshToken(refreshToken: string): Observable<AuthTokens> {
     return this.api.post<AuthTokens>('auth/refresh', { refreshToken });
   }

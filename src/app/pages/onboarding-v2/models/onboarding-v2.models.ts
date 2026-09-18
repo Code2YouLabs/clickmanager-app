@@ -147,10 +147,6 @@ export function resolveOnboardingV2StepFromProgress(
     return 'summary';
   }
 
-  if (progress.status === 'company_completed') {
-    return 'products';
-  }
-
   return progress.currentStep;
 }
 

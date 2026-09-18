@@ -1,6 +1,6 @@
-import { Component, HostListener, OnInit, DestroyRef, inject, signal } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
@@ -9,7 +9,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
 import { CalculadoraConfigService } from '../calculadora-config.service';
 import { CalculadoraConfigResponse } from 'src/app/models/calculadora/calculadora-config-response.model';
@@ -18,8 +18,8 @@ import { extrairMensagemErro } from 'src/app/utils/mensagem.util';
 import { ProdutoOption } from 'src/app/models/produto/produto-option.model';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
-import { InputMultiSelectComponent } from 'src/app/components/inputs/input-multi-select/input-multi-select-component';
-import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
+import { DualListTransferComponent, DualListTransferItem } from 'src/app/components/dual-list-transfer/dual-list-transfer.component';
+import { ProductIdentityComponent } from 'src/app/components/product-identity/product-identity.component';
 
 @Component({
     selector: 'app-calculadora-config',
@@ -34,8 +34,8 @@ import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mob
       RouterModule,
       PageCardComponent,
       SectionCardComponent,
-      InputMultiSelectComponent,
-      MobileTotalBarComponent
+      DualListTransferComponent,
+      ProductIdentityComponent
     ],
     templateUrl: './smart-calc-config.component.html',
     styleUrls: ['./smart-calc-config.component.scss']
@@ -46,35 +46,29 @@ export class CalculadoraConfigComponent implements OnInit {
     private calculadoraService = inject(CalculadoraConfigService);
     private toastr = inject(ToastrService);
     private route = inject(ActivatedRoute);
+    private router = inject(Router);
 
     carregando = signal<boolean>(true);
     salvando = signal<boolean>(false);
-    isMobileView = false;
+    erroCarregamento = false;
     isEditMode = false;
 
     produtoOptions: ProdutoOption[] = [];
+    selecionados = new Set<number>();
     configAtual?: CalculadoraConfigResponse;
+    private snapshot?: { ativo: boolean; selecionados: Set<number> };
 
     form = this.fb.nonNullable.group({
         ativo: this.fb.nonNullable.control<boolean>(true),
-        produtoIds: this.fb.nonNullable.control<number[]>([]),
     });
 
     ngOnInit(): void {
-        this.atualizarViewport();
         this.isEditMode = this.route.snapshot.routeConfig?.path?.includes('editar') ?? false;
         this.carregando.set(true);
         this.loadConfig();
     }
 
-    @HostListener('window:resize')
-    onWindowResize(): void {
-        this.atualizarViewport();
-    }
-
     private loadConfig(): void {
-        const t0 = performance.now();
-
         this.calculadoraService.getConfigCompleta()
             .pipe(
                 takeUntilDestroyed(this.destroyRef),
@@ -82,70 +76,122 @@ export class CalculadoraConfigComponent implements OnInit {
             )
             .subscribe({
                 next: (res) => {
+                    this.erroCarregamento = false;
                     this.configAtual = res?.config ?? undefined;
                     this.produtoOptions = res?.produtosDisponiveis ?? [];
-                    const produtos = res?.config?.produtos ?? [];
-
-                    const produtoIds = produtos
-                        .map(p => p?.id)
-                        .filter((id): id is number => typeof id === 'number');
-
+                    this.selecionados = new Set(this.produtoOptions.filter(p => p.habilitado).map(p => p.id));
                     this.form.patchValue({
                         ativo: res?.config?.ativo ?? false,
-                        produtoIds,
                     });
+                    this.registrarSnapshot();
 
                 },
                 error: (err) => {
+                    this.erroCarregamento = true;
                     const msg = extrairMensagemErro(err, 'Não foi possível carregar as configurações.');
                     this.toastr.error(msg, 'SmartCalc');
                     this.produtoOptions = [];
-                },
-                complete: () => {
-                    const t1 = performance.now();
                 }
             });
     }
 
 
-    private mapNomesToIds(nomes?: string[]): number[] {
-        if (!nomes?.length) return [];
-        const byName = new Map(this.produtoOptions.map(p => [p.nome, p.id]));
-        return nomes.map(n => byName.get(n)).filter((v): v is number => typeof v === 'number');
-    }
-
     onSubmit(): void {
+        if (this.salvarDesabilitado) return;
         const formValue = this.form.getRawValue();
-        if (formValue.ativo && (!formValue.produtoIds || formValue.produtoIds.length === 0)) {
-            this.toastr.warning('Para habilitar o SmartCalc, selecione ao menos um produto.');
-            this.form.markAllAsTouched();
-            return;
-        }
 
-        if (this.form.invalid) {
-            this.form.markAllAsTouched();
-            return;
-        }
-
-        const req: CalculadoraConfigRequest = formValue;
+        const req: CalculadoraConfigRequest = {
+            ativo: formValue.ativo,
+            produtoGraficoIds: [...this.selecionados],
+        };
         this.salvando.set(true);
 
         this.calculadoraService.salvar(req)
-            .pipe(takeUntilDestroyed(this.destroyRef))
+            .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.salvando.set(false)))
             .subscribe({
                 next: (res) => {
-                    this.configAtual = res ?? undefined;
+                    this.configAtual = res.config ?? undefined;
+                    this.produtoOptions = res.produtosDisponiveis;
+                    this.selecionados = new Set(this.produtoOptions.filter(p => p.habilitado).map(p => p.id));
+                    this.form.patchValue({ ativo: res.config?.ativo ?? formValue.ativo });
+                    this.registrarSnapshot();
                     this.toastr.success('Configurações salvas com sucesso!', 'SmartCalc');
                 },
                 error: (err) => {
                     const msg = extrairMensagemErro(err, 'Não foi possível salvar as configurações.');
                     this.toastr.error(msg, 'SmartCalc');
-                },
-                complete: () => this.salvando.set(false)
+                }
             });
     }
 
-    trackById = (_: number, item: ProdutoOption) => item.id;
+    get transferItems(): DualListTransferItem[] {
+        return this.produtoOptions.map(produto => ({
+            id: produto.id,
+            label: produto.nome,
+            searchText: [produto.materialNome, produto.formatoNome, produto.corNome, produto.codigo]
+                .filter(Boolean).join(' '),
+            group: produto.familiaNome || 'Sem família',
+            status: produto.suportado ? 'PRONTO' : 'PRECISA_AJUSTE',
+            details: produto.suportado ? [] : (produto.motivos || []).map(motivo => this.motivoTexto(motivo)),
+            editRoute: produto.suportado ? undefined : ['/page/grafica/produtos', produto.id, 'editar'],
+        }));
+    }
+
+    get selectedIds(): number[] {
+        return [...this.selecionados];
+    }
+
+    atualizarSelecao(ids: number[]): void {
+        this.selecionados = new Set(ids);
+    }
+
+    get salvarDesabilitado(): boolean {
+        if (this.carregando() || this.erroCarregamento || this.salvando() || this.form.invalid || !this.snapshot) {
+            return true;
+        }
+        return this.form.controls.ativo.value === this.snapshot.ativo
+            && this.selecionados.size === this.snapshot.selecionados.size
+            && [...this.selecionados].every(id => this.snapshot!.selecionados.has(id));
+    }
+
+    cancelar(): void {
+        if (!this.snapshot) return;
+        this.form.reset({ ativo: this.snapshot.ativo });
+        this.selecionados = new Set(this.snapshot.selecionados);
+        this.form.markAsPristine();
+        this.form.markAsUntouched();
+    }
+
+    private registrarSnapshot(): void {
+        this.snapshot = {
+            ativo: this.form.controls.ativo.value,
+            selecionados: new Set(this.selecionados),
+        };
+        this.form.markAsPristine();
+        this.form.markAsUntouched();
+    }
+
+    produtoPorId(id: number): ProdutoOption | undefined {
+        return this.produtoOptions.find(produto => produto.id === id);
+    }
+
+    motivoTexto(codigo: string): string {
+        const mensagens: Record<string, string> = {
+            EMPRESA_INVALIDA: 'Produto de outra empresa.',
+            PRODUTO_INATIVO: 'Produto inativo.',
+            FAMILIA_INVALIDA: 'Família do produto inválida.',
+            CATALOGO_INDISPONIVEL: 'Catálogo indisponível ou orçamento desativado.',
+            FORMATO_AUSENTE: 'Selecione um formato com dimensões físicas.',
+            FORMATO_INVALIDO: 'O formato não pertence à empresa.',
+            FORMATO_NAO_DIMENSIONAL: 'O formato não possui unidade dimensional.',
+            DIMENSOES_INVALIDAS: 'O formato não possui largura e altura produtivas válidas.',
+            PRECO_LOTE_NAO_SUPORTADO: 'Preço por lote ainda não é suportado no SmartCalc.',
+            PRECO_FAIXA_NAO_SUPORTADO: 'Preço por faixa de quantidade ainda não é suportado no SmartCalc.',
+            PRECO_AREA_NAO_SUPORTADO: 'Preço por metro quadrado ainda não é suportado no SmartCalc.',
+            PRECO_FIXO_INDISPONIVEL: 'Configure um preço fixo válido para uma unidade da base.',
+        };
+        return mensagens[codigo] || 'Produto ainda não compatível com o SmartCalc.';
+    }
 
     get tituloPagina(): string {
         return this.isEditMode ? 'Editar SmartCalc' : 'Configuração SmartCalc';
@@ -155,32 +201,13 @@ export class CalculadoraConfigComponent implements OnInit {
         return this.salvando() ? 'Salvando...' : 'Salvar';
     }
 
-    get resumoProdutos(): string {
-        const total = this.produtoIdsControl.value?.length ?? 0;
-        return total === 1 ? '1 produto habilitado' : `${total} produtos habilitados`;
-    }
-
     get resumoProdutosCurto(): string {
-        const total = this.produtoIdsControl.value?.length ?? 0;
+        const total = this.selecionados.size;
         return total === 1 ? '1 produto' : `${total} produtos`;
     }
 
-    get produtoIdsControl(): FormControl<number[]> {
-        return this.form.get('produtoIds') as FormControl<number[]>;
-    }
-
     voltar(): void {
-        if (typeof window !== 'undefined' && window.history.length > 1) {
-            window.history.back();
-            return;
-        }
+        this.router.navigate(['/smartcalc']);
     }
 
-    private atualizarViewport(): void {
-        if (typeof window === 'undefined') {
-            return;
-        }
-
-        this.isMobileView = window.innerWidth <= 768;
-    }
 }

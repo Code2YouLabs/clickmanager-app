@@ -293,7 +293,7 @@ export class AppComparativoPedidosComponent implements OnInit, AfterViewInit {
 
     try {
       const resp: DashboardComparativoResponse = await firstValueFrom(
-        this.dashboardService.obterComparativoSimples(1, this.ano, this.mesA, this.mesB, this.modo)
+        this.dashboardService.obterComparativoSimples(this.ano, this.mesA, this.mesB, this.modo)
       );
 
       const nomeA = resp.comparativo.mesA?.label ?? this.mesLabel(this.mesA);

@@ -38,12 +38,10 @@ export class AppCongratulateCardComponent implements OnInit {
   }
   
   private async carregarDoBack() {
-    const empresaId = 1;
     const agora = new Date();
 
     const resp: DashboardComparativoResponse = await firstValueFrom(
       this.dashboardService.obterComparativoSimples(
-        empresaId,
         agora.getFullYear(),
         agora.getMonth(),
         Math.max(0, agora.getMonth() - 1),

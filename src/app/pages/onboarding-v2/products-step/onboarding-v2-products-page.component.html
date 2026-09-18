@@ -1,105 +1,39 @@
 <div class="blank-layout-container justify-content-center onboarding-page-layout">
   <div class="auth-wrapper onboarding-page-wrapper">
-    <div class="position-relative shaper-wrapper">
-      <div class="w-100 position-relative rounded bg-white auth-card onboarding-page-card">
-        <div class="auth-body onboarding-page">
-          <app-onboarding-shell
-            tituloFluxo="Configuração inicial"
-            tituloEtapa="Escolha os produtos que você vende"
-            subtituloEtapa="Vamos criar uma base pronta para você começar mais rápido."
-            progressoComplementar="monte sua base inicial"
-            [passoAtual]="2"
-            [totalPassos]="3"
-            [progressoPercentual]="67"
-            [showBack]="false"
-            [showSkip]="false"
-            [primaryLabel]="onboardingV2State.saving() ? 'Criando produtos...' : 'Criar produtos e continuar'"
-            [primaryDisabled]="carregando || onboardingV2State.saving() || !onboardingV2State.selectedCount()"
-            [primaryLoading]="onboardingV2State.saving()"
-            [primaryHint]="onboardingV2State.selectedCount() + ' produto(s) selecionado(s)'"
-            (principal)="submit()"
-          >
-            <ng-container *ngIf="!carregando; else loadingTemplate">
-              <section class="onboarding-page__section">
-                <app-section-card
-                  titulo="Produtos sugeridos"
-                  subtitulo="Toque nos cards para marcar o que faz sentido para a sua base inicial."
-                  [divider]="true"
-                >
-                  <div class="onboarding-v2-products__counter">
-                    <strong>{{ onboardingV2State.selectedCount() }}</strong>
-                    <span>produto(s) selecionado(s)</span>
-                  </div>
-
-                  <div class="onboarding-v2-products__grid" *ngIf="onboardingV2State.produtos().length; else emptyTemplate">
-                    <article
-                      class="onboarding-v2-products__card"
-                      *ngFor="let produto of onboardingV2State.produtos(); trackBy: trackByProduto"
-                      [class.onboarding-v2-products__card--selected]="isSelected(produto.id)"
-                      (click)="toggleProduto(produto.id)"
-                    >
-                      <div class="onboarding-v2-products__card-top">
-                        <div>
-                          <div class="onboarding-v2-products__category" *ngIf="produto.categoria">{{ produto.categoria }}</div>
-                          <h3>{{ produto.nome }}</h3>
-                          <p *ngIf="produto.descricao">{{ produto.descricao }}</p>
-                        </div>
-
-                        <div class="onboarding-v2-products__check">
-                          <mat-icon>{{ isSelected(produto.id) ? 'check_circle' : 'radio_button_unchecked' }}</mat-icon>
-                        </div>
-                      </div>
-
-                      <div class="onboarding-v2-products__highlight" *ngIf="produto.destaque || itemPriceLabel(produto)">
-                        <span *ngIf="produto.destaque">{{ produto.destaque }}</span>
-                        <span *ngIf="itemPriceLabel(produto)">{{ itemPriceLabel(produto) }}</span>
-                      </div>
-
-                      <div class="onboarding-v2-products__meta">
-                        <div class="onboarding-v2-products__meta-block">
-                          <span class="onboarding-v2-products__meta-label">Serviços</span>
-                          <strong>{{ produto.servicos.length }}</strong>
-                        </div>
-
-                        <div class="onboarding-v2-products__meta-block">
-                          <span class="onboarding-v2-products__meta-label">Acabamentos</span>
-                          <strong>{{ produto.acabamentos.length }}</strong>
-                        </div>
-                      </div>
-
-                      <div class="onboarding-v2-products__tag-list" *ngIf="produto.servicos.length">
-                        <span class="onboarding-v2-products__tag" *ngFor="let servico of produto.servicos | slice:0:3">
-                          {{ servico.nome }}
-                        </span>
-                      </div>
-
-                      <div class="onboarding-v2-products__tag-list" *ngIf="produto.acabamentos.length">
-                        <span class="onboarding-v2-products__tag onboarding-v2-products__tag--soft" *ngFor="let acabamento of produto.acabamentos | slice:0:3">
-                          {{ acabamento.nome }}
-                        </span>
-                      </div>
-                    </article>
-                  </div>
-                </app-section-card>
-              </section>
-            </ng-container>
-          </app-onboarding-shell>
-        </div>
+    <div class="w-100 rounded bg-white auth-card onboarding-page-card">
+      <div class="auth-body onboarding-page">
+        <app-onboarding-shell [semanticSteps]="true" [completed]="stage === 'CONCLUIDO'" [showExit]="false" tituloFluxo=""
+          [passoAtual]="stageNumber(stage)" [totalPassos]="3" [showBack]="false"
+          [showFooter]="!carregando && stage === 'CATALOGO' && !seletor?.reconectando"
+          [showSkip]="true" [skipDisabled]="bloqueado" (pular)="pular()"
+          primaryLabel="Preparar meu catálogo" [primaryDisabled]="bloqueado || !seletor?.selecionados?.size"
+          [primaryHint]="(seletor?.selecionados?.size || 0) + ' itens selecionados'" (principal)="submit()">
+          @if (carregando) { <div class="onboarding-v2-page__loading" role="status" aria-label="Carregando configuração"><mat-spinner diameter="42" /></div> }
+          @else {
+            @if (stage === 'CATALOGO' && !seletor?.reconectando) {
+              <div class="onboarding-page__intro">
+                <h1>Quais produtos você oferece?</h1>
+                <p>Escolha categorias inteiras ou produtos individuais. Você poderá adicionar outros produtos a qualquer momento.</p>
+                <p>Esta etapa é opcional.</p>
+              </div>
+            }
+            @if (stage === 'PREPARANDO' && !seletor?.job) {
+              <div class="onboarding-page__intro" role="status">
+                <h1>Estamos preparando seu ClickManager</h1>
+                <p>Isso pode levar alguns instantes. Você não precisa fazer nada.</p>
+              </div>
+            }
+            <app-biblioteca-produtos-selector [mostrarIntroducao]="false" [mostrarAcaoAdicionar]="false" [onboarding]="true"
+              [animarEtapas]="animandoEtapas" (etapasConcluidas)="concluirAnimacao()"
+              (preparacao)="atualizarPreparacao($event)" (ocupado)="importando = $event" />
+            @if (stage === 'CONCLUIDO') {
+              <div class="onboarding-page__completion-action">
+                <button mat-flat-button color="primary" [disabled]="bloqueado" (click)="entrar()">{{ avancando ? 'Finalizando...' : 'Entrar no ClickManager' }}</button>
+              </div>
+            }
+          }
+        </app-onboarding-shell>
       </div>
     </div>
   </div>
 </div>
-
-<ng-template #loadingTemplate>
-  <div class="onboarding-v2-page__loading">
-    <mat-spinner diameter="42"></mat-spinner>
-  </div>
-</ng-template>
-
-<ng-template #emptyTemplate>
-  <div class="onboarding-v2-products__empty">
-    <mat-icon>inventory_2</mat-icon>
-    <strong>Nenhum produto sugerido ainda</strong>
-    <span>Não encontramos uma base inicial disponível para essa conta agora.</span>
-  </div>
-</ng-template>

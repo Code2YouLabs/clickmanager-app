@@ -14,9 +14,13 @@ type StatusConfig = { icon: string; label: string; className: string };
 })
 export class StatusBadgeComponent {
   @Input() status: string | null | undefined;
+  @Input() compact = false;
 
   private readonly map: Record<string, StatusConfig> = {
     ATIVO: { icon: 'check_circle', label: 'Ativo', className: 'chip-pronto' },
+    HABILITADO: { icon: 'check_circle', label: 'Habilitado', className: 'chip-pronto' },
+    DISPONIVEL: { icon: 'add_circle', label: 'Disponível', className: 'chip-orcamento' },
+    PRECISA_AJUSTE: { icon: 'warning', label: 'Precisa de ajuste', className: 'chip-aguardando' },
     AFASTADO: { icon: 'pause_circle', label: 'Afastado', className: 'chip-aguardando' },
     DESLIGADO: { icon: 'block', label: 'Desligado', className: 'chip-cancelado' },
     RASCUNHO: { icon: 'edit', label: 'Rascunho', className: 'chip-rascunho' },
@@ -31,6 +35,7 @@ export class StatusBadgeComponent {
     FECHADO: { icon: 'task_alt', label: 'Fechado', className: 'chip-producao' },
     PARCIAL: { icon: 'payments', label: 'Parcial', className: 'chip-aguardando' },
     PAGO: { icon: 'check_circle', label: 'Pago', className: 'chip-pronto' },
+    CONFIRMADO: { icon: 'check_circle', label: 'Confirmado', className: 'chip-pronto' },
     EM_ANALISE: { icon: 'manage_search', label: 'Em análise', className: 'chip-analise' },
     AGUARDANDO_CLIENTE: { icon: 'hourglass_empty', label: 'Aguard. cliente', className: 'chip-aguardando' },
     RESPONDIDO: { icon: 'chat_bubble', label: 'Respondido', className: 'chip-orcamento' },

@@ -12,10 +12,23 @@
     [helpFragment]="helpFragment"
     [helpExterno]="helpExterno"
     [permissao]="permissao"
-    [mostrarDivisor]="mostrarDivisor">
+    [mostrarDivisor]="showHeaderDivider">
+    <ng-content select="[page-header-actions]"></ng-content>
   </app-card-header>
 
   <mat-card-content [ngClass]="{'no-padding': !contentPadding}">
     <ng-content></ng-content>
   </mat-card-content>
+
+  <ng-container *ngIf="showFooter">
+    <mat-divider *ngIf="footerDivider" class="page-card__footer-divider"></mat-divider>
+    <mat-card-actions class="page-card__footer">
+      <div class="page-card__footer-left">
+        <ng-content select="[page-footer-left]"></ng-content>
+      </div>
+      <div class="page-card__footer-right">
+        <ng-content select="[page-footer-right]"></ng-content>
+      </div>
+    </mat-card-actions>
+  </ng-container>
 </mat-card>

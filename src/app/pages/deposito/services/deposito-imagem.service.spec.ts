@@ -38,4 +38,21 @@ describe('DepositoImagemService', () => {
     expect(body.get('principal')).toBe('true');
     req.flush({ id: 1, context: 'produtos' });
   });
+
+  it('uploads image to custom endpoint when provided', () => {
+    const file = new File(['x'], 'foto.png', { type: 'image/png' });
+
+    service.uploadToEndpoint('api/grafica/produtos/imagens/upload', file, 'catalogo-produtos', {
+      titulo: 'Foto',
+      principal: false,
+    }).subscribe();
+
+    const req = http.expectOne('http://localhost:8080/api/grafica/produtos/imagens/upload');
+    expect(req.request.method).toBe('POST');
+    const body = req.request.body as FormData;
+    expect(body.get('context')).toBe('catalogo-produtos');
+    expect(body.get('titulo')).toBe('Foto');
+    expect(body.get('principal')).toBe('false');
+    req.flush({ id: 1, arquivoId: 1, context: 'catalogo-produtos' });
+  });
 });

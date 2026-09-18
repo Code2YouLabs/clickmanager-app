@@ -8,8 +8,6 @@ import { ListarCoresComponent } from './cadastro-tecnico/cores/listar-cores/list
 import { FormCoresComponent } from './cadastro-tecnico/cores/form-cores/form-cores.component';
 import { ListarMaterialComponent } from './cadastro-tecnico/materiais/listar-material/listar-material.component';
 import { FormMaterialComponent } from './cadastro-tecnico/materiais/form-material/form-material.component';
-import { FormAcabamentoComponent } from './cadastro-tecnico/acabamentos/form-acabamento/form-acabamento.component';
-import { ListarAcabamentoComponent } from './cadastro-tecnico/acabamentos/listar-acabamento/listar-acabamento.component';
 import { FormFormatoComponent } from './cadastro-tecnico/formatos/form-formato/form-formato.component';
 import { ListarFormatoComponent } from './cadastro-tecnico/formatos/listar-formato/listar-formato.component';
 import { ListarProdutosComponent } from './cadastro-tecnico/produtos/listar-produtos/listar-produtos.component';
@@ -182,6 +180,495 @@ export const PagesRoutes: Routes = [
         { title: 'Dashboard', url: '/dashboards/dashboard1' },
         { title: 'Suporte', url: '/page/suporte' },
         { title: 'Detalhe' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/produtos',
+    loadComponent: () => import('./grafica/produtos/grafica-produtos.component').then((m) => m.GraficaProdutosComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_VER'],
+      title: 'Produtos graficos',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Produtos graficos' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/produtos/novo',
+    loadComponent: () => import('./grafica/produtos/grafica-produto-form.component').then((m) => m.GraficaProdutoFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Novo produto grafico',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Produtos graficos', url: '/page/grafica/produtos' },
+        { title: 'Novo produto grafico' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/produtos/:id/editar',
+    loadComponent: () => import('./grafica/produtos/grafica-produto-form.component').then((m) => m.GraficaProdutoFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Configurar produto grafico',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Produtos graficos', url: '/page/grafica/produtos' },
+        { title: 'Configurar produto grafico' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/categorias',
+    loadComponent: () => import('./grafica/categorias/grafica-categorias.component').then((m) => m.GraficaCategoriasComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_VER'],
+      title: 'Categorias graficas',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Categorias graficas' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/categorias/novo',
+    loadComponent: () => import('./grafica/categorias/grafica-categoria-form.component').then((m) => m.GraficaCategoriaFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Nova categoria grafica',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Categorias graficas', url: '/page/grafica/categorias' },
+        { title: 'Nova categoria grafica' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/categorias/:id/editar',
+    loadComponent: () => import('./grafica/categorias/grafica-categoria-form.component').then((m) => m.GraficaCategoriaFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Editar categoria grafica',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Categorias graficas', url: '/page/grafica/categorias' },
+        { title: 'Editar categoria grafica' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/materiais',
+    loadComponent: () => import('./grafica/materiais/grafica-materiais.component').then((m) => m.GraficaMateriaisComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_VER'],
+      title: 'Materiais graficos',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Materiais graficos' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/materiais/novo',
+    loadComponent: () => import('./grafica/materiais/grafica-material-form.component').then((m) => m.GraficaMaterialFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Novo material grafico',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Materiais graficos', url: '/page/grafica/materiais' },
+        { title: 'Novo material grafico' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/materiais/:id/editar',
+    loadComponent: () => import('./grafica/materiais/grafica-material-form.component').then((m) => m.GraficaMaterialFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Editar material grafico',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Materiais graficos', url: '/page/grafica/materiais' },
+        { title: 'Editar material grafico' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/formatos',
+    loadComponent: () => import('./grafica/formatos/grafica-formatos.component').then((m) => m.GraficaFormatosComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_VER'],
+      title: 'Formatos graficos',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Formatos graficos' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/formatos/novo',
+    loadComponent: () => import('./grafica/formatos/grafica-formato-form.component').then((m) => m.GraficaFormatoFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Novo formato grafico',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Formatos graficos', url: '/page/grafica/formatos' },
+        { title: 'Novo formato grafico' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/formatos/:id/editar',
+    loadComponent: () => import('./grafica/formatos/grafica-formato-form.component').then((m) => m.GraficaFormatoFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Editar formato grafico',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Formatos graficos', url: '/page/grafica/formatos' },
+        { title: 'Editar formato grafico' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/cores',
+    loadComponent: () => import('./grafica/cores/grafica-cores.component').then((m) => m.GraficaCoresComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_VER'],
+      title: 'Cores graficas',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Cores graficas' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/cores/novo',
+    loadComponent: () => import('./grafica/cores/grafica-cor-form.component').then((m) => m.GraficaCorFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Nova cor grafica',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Cores graficas', url: '/page/grafica/cores' },
+        { title: 'Nova cor grafica' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/cores/:id/editar',
+    loadComponent: () => import('./grafica/cores/grafica-cor-form.component').then((m) => m.GraficaCorFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Editar cor grafica',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Cores graficas', url: '/page/grafica/cores' },
+        { title: 'Editar cor grafica' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/servicos',
+    loadComponent: () => import('./grafica/servicos/grafica-servicos.component').then((m) => m.GraficaServicosComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_VER'],
+      title: 'Servicos graficos',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Servicos graficos' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/servicos/novo',
+    loadComponent: () => import('./grafica/servicos/grafica-servico-form.component').then((m) => m.GraficaServicoFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Novo servico grafico',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Servicos graficos', url: '/page/grafica/servicos' },
+        { title: 'Novo servico grafico' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/servicos/:id/editar',
+    loadComponent: () => import('./grafica/servicos/grafica-servico-form.component').then((m) => m.GraficaServicoFormComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_EDITAR'],
+      title: 'Editar servico grafico',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Servicos graficos', url: '/page/grafica/servicos' },
+        { title: 'Editar servico grafico' }
+      ]
+    }
+  },
+  {
+    path: 'grafica/comercial-beta/rascunhos',
+    loadComponent: () => import('./grafica/comercial-beta/comercial-beta-list.component').then((m) => m.ComercialBetaListComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_VER'],
+      tipo: 'rascunhos',
+      title: 'Rascunhos Comerciais',
+      urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Rascunhos' }]
+    }
+  },
+  {
+    path: 'grafica/comercial-beta/rascunhos/novo',
+    loadComponent: () => import('./grafica/comercial-beta/comercial-beta-editor.component').then((m) => m.ComercialBetaEditorComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_VER'],
+      tipo: 'rascunhos',
+      title: 'Novo Rascunho Comercial',
+      urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Novo rascunho' }]
+    }
+  },
+  {
+    path: 'grafica/comercial-beta/rascunhos/:id',
+    loadComponent: () => import('./grafica/comercial-beta/comercial-beta-editor.component').then((m) => m.ComercialBetaEditorComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_VER'],
+      tipo: 'rascunhos',
+      title: 'Rascunho Comercial',
+      urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Rascunho' }]
+    }
+  },
+  {
+    path: 'grafica/comercial-beta/orcamentos',
+    loadComponent: () => import('./grafica/comercial-beta/comercial-beta-list.component').then((m) => m.ComercialBetaListComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['ORCAMENTOS_VER', 'GRAFICA_PRODUTOS_VER'],
+      tipo: 'orcamentos',
+      title: 'Orçamentos Comerciais',
+      urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Orçamentos' }]
+    }
+  },
+  {
+    path: 'grafica/comercial-beta/orcamentos/novo',
+    loadComponent: () => import('./grafica/comercial-beta/comercial-beta-editor.component').then((m) => m.ComercialBetaEditorComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['ORCAMENTOS_CRIAR', 'GRAFICA_PRODUTOS_VER'],
+      tipo: 'orcamentos',
+      title: 'Novo Orçamento Comercial',
+      urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Novo orçamento' }]
+    }
+  },
+  {
+    path: 'grafica/comercial-beta/orcamentos/:id/impressao',
+    loadComponent: () => import('./grafica/comercial-beta/orcamento-comercial-impressao-page.component').then((m) => m.OrcamentoComercialImpressaoPageComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['ORCAMENTOS_VER', 'GRAFICA_PRODUTOS_VER'],
+      title: 'Impressão do Orçamento',
+      urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Orçamento' }, { title: 'Impressão' }]
+    }
+  },
+  {
+    path: 'grafica/comercial-beta/orcamentos/:id/whatsapp',
+    loadComponent: () => import('./grafica/comercial-beta/orcamento-comercial-whatsapp-page.component').then((m) => m.OrcamentoComercialWhatsappPageComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['ORCAMENTOS_VER', 'GRAFICA_PRODUTOS_VER'],
+      title: 'WhatsApp do Orçamento',
+      urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Orçamento' }, { title: 'WhatsApp' }]
+    }
+  },
+  {
+    path: 'grafica/comercial-beta/orcamentos/:id',
+    loadComponent: () => import('./grafica/comercial-beta/comercial-beta-editor.component').then((m) => m.ComercialBetaEditorComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['ORCAMENTOS_VER', 'GRAFICA_PRODUTOS_VER'],
+      tipo: 'orcamentos',
+      title: 'Orçamento Comercial',
+      urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Orçamento' }]
+    }
+  },
+  {
+    path: 'grafica/comercial-beta/pedidos',
+    loadComponent: () => import('./grafica/comercial-beta/comercial-beta-list.component').then((m) => m.ComercialBetaListComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER'],
+      tipo: 'pedidos',
+      title: 'Pedidos Comerciais',
+      urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Pedidos' }]
+    }
+  },
+  {
+    path: 'grafica/comercial-beta/pedidos/novo',
+    loadComponent: () => import('./grafica/comercial-beta/comercial-beta-editor.component').then((m) => m.ComercialBetaEditorComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['PEDIDOS_CADASTRAR', 'GRAFICA_PRODUTOS_VER'],
+      tipo: 'pedidos',
+      title: 'Novo Pedido Comercial',
+      urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Novo pedido' }]
+    }
+  },
+  {
+    path: 'grafica/comercial-beta/pedidos/:id/impressao',
+    loadComponent: () => import('./grafica/comercial-beta/pedido-comercial-impressao-page.component').then((m) => m.PedidoComercialImpressaoPageComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER'],
+      formato: 'completo',
+      title: 'Impressão do Pedido',
+      urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Pedido' }, { title: 'Impressão' }]
+    }
+  },
+  {
+    path: 'grafica/comercial-beta/pedidos/:id/impressao/duas-vias',
+    loadComponent: () => import('./grafica/comercial-beta/pedido-comercial-impressao-page.component').then((m) => m.PedidoComercialImpressaoPageComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER'],
+      formato: 'duas-vias',
+      title: 'Duas vias do Pedido',
+      urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Pedido' }, { title: 'Duas vias' }]
+    }
+  },
+  {
+    path: 'grafica/comercial-beta/pedidos/:id/impressao/etiqueta',
+    loadComponent: () => import('./grafica/comercial-beta/pedido-comercial-impressao-page.component').then((m) => m.PedidoComercialImpressaoPageComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER'],
+      formato: 'etiqueta',
+      title: 'Etiqueta do Pedido',
+      urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Pedido' }, { title: 'Etiqueta' }]
+    }
+  },
+  {
+    path: 'grafica/comercial-beta/pedidos/:id/whatsapp',
+    loadComponent: () => import('./grafica/comercial-beta/pedido-comercial-whatsapp-page.component').then((m) => m.PedidoComercialWhatsappPageComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER'],
+      title: 'WhatsApp do Pedido',
+      urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Pedido' }, { title: 'WhatsApp' }]
+    }
+  },
+  {
+    path: 'grafica/comercial-beta/pedidos/:id',
+    loadComponent: () => import('./grafica/comercial-beta/comercial-beta-editor.component').then((m) => m.ComercialBetaEditorComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER'],
+      tipo: 'pedidos',
+      title: 'Pedido Comercial',
+      urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Pedido' }]
+    }
+  },
+  {
+    path: 'grafica/:tipo',
+    loadComponent: () => import('./grafica/cadastros/grafica-cadastro-list.component').then((m) => m.GraficaCadastroListComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {
+      ...GRAFICA_ROUTE_DATA,
+      featureKey: 'GRAFICA',
+      requiredPermission: ['GRAFICA_PRODUTOS_VER'],
+      title: 'Cadastro grafico',
+      urls: [
+        { title: 'Grafica' },
+        { title: 'Cadastro grafico' }
       ]
     }
   },
@@ -547,48 +1034,6 @@ export const PagesRoutes: Routes = [
     }
   },
   {
-    path: 'cadastro-tecnico/acabamentos',
-    component: ListarAcabamentoComponent,
-    canActivate: [permissionGuard],
-    data: {
-      ...GRAFICA_ROUTE_DATA,
-      requiredPermission: ['PRODUTOS_VER'],
-      title: 'Lista de Acabamentos',
-      urls: [
-        { title: 'Cadastro Técnico', url: '/cadastro-tecnico' },
-        { title: 'Lista de Acabamentos' }
-      ]
-    }
-  },
-  {
-    path: 'cadastro-tecnico/acabamentos/criar',
-    component: FormAcabamentoComponent,
-    canActivate: [permissionGuard],
-    data: {
-      ...GRAFICA_ROUTE_DATA,
-      requiredPermission: ['PRODUTOS_CADASTRAR'],
-      title: 'Novo Acabamento',
-      urls: [
-        { title: 'Cadastro Técnico', url: '/cadastro-tecnico' },
-        { title: 'Novo Acabamento' }
-      ]
-    }
-  },
-  {
-    path: 'cadastro-tecnico/acabamentos/editar/:id',
-    component: FormAcabamentoComponent,
-    canActivate: [permissionGuard],
-    data: {
-      ...GRAFICA_ROUTE_DATA,
-      requiredPermission: ['PRODUTOS_EDITAR'],
-      title: 'Editar Acabamento',
-      urls: [
-        { title: 'Cadastro Técnico', url: '/cadastro-tecnico' },
-        { title: 'Editar Acabamento' }
-      ]
-    }
-  },
-  {
     path: 'cadastro-tecnico/formatos',
     component: ListarFormatoComponent,
     canActivate: [permissionGuard],
@@ -732,7 +1177,7 @@ export const PagesRoutes: Routes = [
     loadChildren: () =>
       import('./catalogo/catalogo.routes').then((m) => m.CatalogoRoutes),
     data: {
-      ...DEPOSITO_ROUTE_DATA,
+      ...SHARED_ROUTE_DATA,
       title: 'Catálogo',
     }
   },

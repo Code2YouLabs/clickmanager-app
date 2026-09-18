@@ -23,6 +23,10 @@ export class OnboardingV2Service {
     return this.api.post<OnboardingV2RegisterResponse>(`${this.endpoint}/register-empresa`, payload);
   }
 
+  registerEmpresaGoogle(payload: { credential?: string; accessToken?: string }): Observable<OnboardingV2RegisterResponse> {
+    return this.api.post<OnboardingV2RegisterResponse>(`${this.endpoint}/google`, payload);
+  }
+
   fetchProgress(): Observable<OnboardingProgress> {
     return this.api
       .get<OnboardingProgress | any>(`${this.endpoint}/progresso`)
@@ -39,6 +43,10 @@ export class OnboardingV2Service {
 
   saveProdutos(payload: OnboardingV2ProductsPayload): Observable<OnboardingProgress> {
     return this.api.post<OnboardingProgress>(`${this.endpoint}/produtos`, payload);
+  }
+
+  concluirBiblioteca(): Observable<OnboardingProgress> {
+    return this.api.post<OnboardingProgress>(`${this.endpoint}/biblioteca/concluir`, {});
   }
 
   fetchResumo(): Observable<OnboardingV2Summary> {

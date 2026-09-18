@@ -1,0 +1,56 @@
+@if (erro) { <div role="alert" class="biblioteca-erro">{{ erro }} <button mat-button (click)="reconectar()" [disabled]="reconectando">Reconectar</button></div> }
+@if (reconectando) { <mat-progress-bar mode="indeterminate" aria-label="Consultando preparação" /> }
+@if (job) { <app-setup-progress [job]="job" [onboarding]="onboarding" [animarEtapas]="animarEtapas" (etapasConcluidas)="etapasConcluidas.emit()" /> }
+@if (!importando && !reconectando && (!onboarding || !job)) {
+@if (mostrarIntroducao) { <p>Escolha produtos e serviços prontos para sua empresa. Depois de adicionar, você pode editar os cadastros e preços livremente.</p> }
+<div class="biblioteca-toolbar">
+  <mat-form-field appearance="outline">
+    <mat-label>Pesquisar na biblioteca</mat-label>
+    <input matInput [(ngModel)]="busca" (ngModelChange)="pesquisar($event)" [disabled]="importando" placeholder="Nome, material, formato ou cor">
+    <mat-icon matSuffix>search</mat-icon>
+  </mat-form-field>
+  <mat-form-field appearance="outline">
+    <mat-label>Categoria</mat-label>
+    <mat-select [(ngModel)]="categoria" [disabled]="importando">
+      <mat-option value="">Todas as categorias</mat-option>
+      @for (c of categorias; track c) { <mat-option [value]="c">{{ c }}</mat-option> }
+    </mat-select>
+  </mat-form-field>
+  <mat-button-toggle-group [(ngModel)]="modo" aria-label="Visualização da biblioteca">
+    <mat-button-toggle value="arvore">Árvore</mat-button-toggle>
+    <mat-button-toggle value="detalhada">Detalhada</mat-button-toggle>
+  </mat-button-toggle-group>
+</div>
+<div class="biblioteca-acoes">
+  <mat-checkbox [checked]="todosSelecionados" [indeterminate]="algunsSelecionados" [disabled]="carregando || importando || !filtrados.length" (change)="selecionarTodos($event.checked)">Selecionar todos os resultados ({{ filtrados.length }})</mat-checkbox>
+  @if (!onboarding) { <span aria-live="polite">{{ selecionados.size }} selecionado(s)</span> }
+  @if (mostrarAcaoAdicionar) { <button mat-flat-button color="primary" [disabled]="carregando || importando || !selecionados.size" (click)="adicionar()">{{ importando ? 'Adicionando...' : 'Adicionar à empresa' }}</button> }
+</div>
+@if (carregando) { <mat-progress-bar mode="indeterminate" aria-label="Carregando biblioteca"></mat-progress-bar> }
+@if (modo === 'arvore') {
+  <app-hierarchy-tree [nodes]="arvore" [selectable]="true" [compact]="true"
+    [selectionStates]="estados" [selectionDisabled]="importando || carregando" [loading]="carregando"
+    [expandAll]="!onboarding || !!termo || !!categoria" [expandRoots]="!onboarding" emptyDescription="Altere a pesquisa ou a categoria."
+    (selectionChange)="marcarNo($event)"></app-hierarchy-tree>
+} @else {
+<div class="biblioteca-lista" [attr.aria-busy]="carregando || importando">
+  @for (item of filtrados; track chave(item)) {
+    <article>
+      <mat-checkbox [checked]="selecionados.has(chave(item))" [disabled]="importando" (change)="marcar(item, $event.checked)" [attr.aria-label]="'Selecionar ' + item.nome + ' ' + (item.material || '') + ' ' + (item.formato || '') + ' ' + (item.cor || '')">
+        <strong>{{ item.nome }}</strong>
+      </mat-checkbox>
+      <div class="biblioteca-item-corpo">
+        <small>{{ item.tipo === 'SERVICO' ? 'Serviço' : 'Produto' }} · {{ item.categoria }}</small>
+        <p class="biblioteca-config">{{ configuracao(item) }}</p>
+        <p>{{ item.descricao }}</p>
+        <small>{{ item.tiposPreco.map(preco).join(' · ') }}</small>
+        @if (item.jaExiste) { <span class="biblioteca-existente">Configuração já cadastrada na empresa</span> }
+        @if (item.acabamentos.length) { <details><summary>Acabamentos disponíveis ({{ item.acabamentos.length }})</summary><ul>@for (acabamento of item.acabamentos; track $index) { <li>{{ acabamento }}</li> }</ul></details> }
+      </div>
+    </article>
+  } @empty { @if (!carregando && !erro) { <p>Nenhum item encontrado. Altere a pesquisa ou a categoria.</p> } }
+</div>
+
+}
+
+}

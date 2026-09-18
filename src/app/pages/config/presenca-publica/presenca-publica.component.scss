@@ -61,6 +61,107 @@
   overflow-wrap: anywhere;
 }
 
+.presenca-slug-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.presenca-slug-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.presenca-slug-input-group {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  min-width: 0;
+  border: 1px solid rgba(14, 23, 38, 0.12);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.presenca-slug-field {
+  width: 100%;
+  min-width: 0;
+}
+
+.presenca-slug-field ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+  padding-inline: 14px;
+}
+
+.presenca-slug-field ::ng-deep .mdc-notched-outline__leading,
+.presenca-slug-field ::ng-deep .mdc-notched-outline__notch,
+.presenca-slug-field ::ng-deep .mdc-notched-outline__trailing {
+  border-color: transparent !important;
+}
+
+.presenca-domain-suffix {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: 0 16px;
+  border-left: 1px solid rgba(14, 23, 38, 0.12);
+  color: #475569;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.presenca-slug-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.presenca-slug-actions button {
+  min-height: 40px;
+}
+
+.presenca-slug-actions mat-spinner {
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.presenca-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.presenca-preview strong {
+  color: #111827;
+  overflow-wrap: anywhere;
+}
+
+.presenca-feedback {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.presenca-feedback--success {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.presenca-feedback--error {
+  background: #ffebee;
+  color: #b71c1c;
+}
+
 .presenca-badge {
   display: inline-flex;
   align-items: center;
@@ -111,13 +212,30 @@
   }
 
   .presenca-host,
-  .presenca-actions {
+  .presenca-actions,
+  .presenca-slug-grid,
+  .presenca-slug-actions {
     align-items: stretch;
     flex-direction: column;
   }
 
+  .presenca-slug-grid {
+    display: flex;
+  }
+
+  .presenca-slug-input-group {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .presenca-domain-suffix {
+    min-height: 42px;
+    border-top: 1px solid rgba(14, 23, 38, 0.12);
+    border-left: 0;
+  }
+
   .presenca-host button,
-  .presenca-actions button {
+  .presenca-actions button,
+  .presenca-slug-actions button {
     width: 100%;
   }
 }

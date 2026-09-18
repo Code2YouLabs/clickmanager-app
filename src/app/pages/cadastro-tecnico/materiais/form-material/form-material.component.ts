@@ -34,8 +34,10 @@ import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mob
 export class FormMaterialComponent implements OnInit {
   form!: FormGroup;
   isEditMode = false;
+  isCloneMode = false;
   materialId!: number;
   isMobileView = false;
+  private cloneNomeOriginal?: string;
 
   constructor(
     private fb: FormBuilder,
@@ -58,6 +60,13 @@ export class FormMaterialComponent implements OnInit {
         this.isEditMode = true;
         this.materialId = +id;
         this.carregarMaterial(this.materialId);
+        return;
+      }
+
+      const cloneFrom = Number(this.route.snapshot.queryParamMap.get('cloneFrom'));
+      if (Number.isFinite(cloneFrom) && cloneFrom > 0) {
+        this.isCloneMode = true;
+        this.carregarMaterial(cloneFrom, true);
       }
     });
   }
@@ -67,11 +76,14 @@ export class FormMaterialComponent implements OnInit {
     this.atualizarViewport();
   }
 
-  carregarMaterial(id: number): void {
+  carregarMaterial(id: number, comoClone = false): void {
     this.materialService.buscarPorId(id).subscribe({
       next: (material: Material) => {
+        if (comoClone) {
+          this.cloneNomeOriginal = material.nome;
+        }
         this.form.patchValue({
-          nome: material.nome,
+          nome: comoClone ? this.nomeClone(material.nome) : material.nome,
           descricao: material.descricao
         });
       },
@@ -84,6 +96,10 @@ export class FormMaterialComponent implements OnInit {
 
   onSubmit(): void {
     if (this.form.invalid) return;
+    if (this.cloneNomeInvalido) {
+      this.toastr.warning('Altere o nome para salvar o clone.');
+      return;
+    }
 
     const materialData = this.form.value as Material;
 
@@ -132,11 +148,18 @@ export class FormMaterialComponent implements OnInit {
   }
 
   get tituloPagina(): string {
+    if (this.isCloneMode) {
+      return 'Clonar Material';
+    }
     return this.isEditMode ? 'Editar Material' : 'Novo Material';
   }
 
   get textoAcaoPrincipal(): string {
     return this.isEditMode ? 'Atualizar' : 'Salvar';
+  }
+
+  get cloneNomeInvalido(): boolean {
+    return this.isCloneMode && this.nomeIgualAoOriginal(this.form?.get('nome')?.value);
   }
 
   voltar(): void {
@@ -149,5 +172,17 @@ export class FormMaterialComponent implements OnInit {
     }
 
     this.isMobileView = window.innerWidth <= 768;
+  }
+
+  private nomeClone(nome: string): string {
+    return `${nome || 'Material'} Cópia`;
+  }
+
+  private nomeIgualAoOriginal(nome: string | null | undefined): boolean {
+    return this.normalizarNome(nome) === this.normalizarNome(this.cloneNomeOriginal);
+  }
+
+  private normalizarNome(nome: string | null | undefined): string {
+    return (nome || '').trim().toLocaleLowerCase('pt-BR');
   }
 }

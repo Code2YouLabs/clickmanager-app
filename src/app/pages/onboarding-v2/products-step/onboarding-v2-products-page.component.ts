@@ -1,15 +1,16 @@
+import { BibliotecaProdutosSelectorComponent } from '../../grafica/biblioteca/biblioteca-produtos-selector.component';
+import { OnboardingV2Service } from '../services/onboarding-v2.service';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
-import { finalize } from 'rxjs/operators';
+import { finalize, switchMap } from 'rxjs/operators';
 import { MaterialModule } from 'src/app/material.module';
 import { OnboardingShellComponent } from 'src/app/components/onboarding/onboarding-shell.component';
-import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
+import { SetupProgress } from 'src/app/components/setup-progress/setup-progress.component';
+import { OnboardingStage, catalogStage, stageNumber } from '../models/onboarding-presentation';
 import { AuthService } from 'src/app/services/auth.service';
 import {
-  ProdutoTemplate,
-  formatCentavosToBrl,
   isOnboardingV2Finished,
   resolveOnboardingV2RouteFromProgress,
   resolveOnboardingV2StepFromProgress,
@@ -19,14 +20,30 @@ import { OnboardingV2StateService } from '../services/onboarding-v2-state.servic
 @Component({
   selector: 'app-onboarding-v2-products-page',
   standalone: true,
-  imports: [CommonModule, MaterialModule, OnboardingShellComponent, SectionCardComponent],
+  imports: [CommonModule, MaterialModule, OnboardingShellComponent, BibliotecaProdutosSelectorComponent],
   templateUrl: './onboarding-v2-products-page.component.html',
   styleUrls: ['./onboarding-v2-products-page.component.scss'],
 })
 export class OnboardingV2ProductsPageComponent implements OnInit {
+  @ViewChild(BibliotecaProdutosSelectorComponent) seletor?: BibliotecaProdutosSelectorComponent;
+  stage: OnboardingStage = 'CATALOGO';
+  readonly stageNumber = stageNumber;
+  animandoEtapas = false;
+  atualizarPreparacao(job: SetupProgress | null) {
+    if (!job) this.animandoEtapas = false;
+    const etapa = catalogStage(job);
+    this.stage = this.animandoEtapas && etapa === 'CONCLUIDO' ? 'PREPARANDO' : etapa;
+  }
+  concluirAnimacao(): void {
+    this.animandoEtapas = false;
+    this.stage = catalogStage(this.seletor?.job || null);
+  }
   carregando = true;
+  importando = false;
+  avancando = false;
 
   constructor(
+    private readonly api: OnboardingV2Service,
     private readonly router: Router,
     private readonly toastr: ToastrService,
     private readonly authService: AuthService,
@@ -42,47 +59,34 @@ export class OnboardingV2ProductsPageComponent implements OnInit {
     this.loadStep();
   }
 
-  toggleProduto(produtoId: number): void {
-    this.onboardingV2State.toggleSelectedProduto(produtoId);
-  }
-
-  isSelected(produtoId: number): boolean {
-    return this.onboardingV2State.selectedProdutoIds().includes(produtoId);
+  get bloqueado() {
+    return this.carregando || this.importando || this.avancando || !!this.seletor?.erro || !!this.seletor?.reconectando || !!this.seletor?.carregando;
   }
 
   submit(): void {
-    const produtoModeloIds = this.onboardingV2State.selectedProdutoIds();
+    if (this.bloqueado || this.seletor?.importando || !this.seletor?.selecionados.size) return;
+    this.animandoEtapas = true;
+    this.stage = 'PREPARANDO';
+    this.seletor.adicionar();
+  }
 
-    if (!produtoModeloIds.length) {
-      this.toastr.warning('Selecione ao menos um produto para continuar.');
-      return;
-    }
+  pular(): void {
+    if (this.bloqueado || this.stage !== 'CATALOGO') return;
+    this.concluir(false);
+  }
 
-    this.onboardingV2State.saveProdutos({ produtoModeloIds }).subscribe({
-      next: (progress) => {
-        this.toastr.success('Base inicial criada. Vamos revisar o que foi preparado.');
-        this.router.navigateByUrl(resolveOnboardingV2RouteFromProgress(progress));
-      },
-      error: () => {
-        this.toastr.error(this.onboardingV2State.error() || 'Não foi possível criar os produtos agora.');
-      },
+  entrar(): void {
+    if (this.bloqueado || this.stage !== 'CONCLUIDO') return;
+    this.concluir(true);
+  }
+
+  private concluir(entrar: boolean): void {
+    this.avancando = true;
+    const fluxo = entrar ? this.api.concluirBiblioteca().pipe(switchMap(() => this.onboardingV2State.finishOnboarding())) : this.api.concluirBiblioteca();
+    fluxo.pipe(finalize(() => this.avancando = false)).subscribe({
+      next: progress => this.router.navigateByUrl(entrar ? this.authService.getDefaultRouteForUsuario() : resolveOnboardingV2RouteFromProgress(progress)),
+      error: () => this.toastr.error('Não foi possível continuar. Tente novamente.'),
     });
-  }
-
-  itemPriceLabel(produto: ProdutoTemplate): string | null {
-    const firstServicePrice = produto.servicos.find((item) => item.valorBaseCentavos > 0)?.valorBaseCentavos;
-    const firstAcabamentoPrice = produto.acabamentos.find((item) => item.valorBaseCentavos > 0)?.valorBaseCentavos;
-    const value = firstServicePrice ?? firstAcabamentoPrice ?? null;
-
-    if (value == null) {
-      return null;
-    }
-
-    return `${formatCentavosToBrl(value)} base`;
-  }
-
-  trackByProduto(index: number, produto: ProdutoTemplate): number {
-    return produto.id ?? index;
   }
 
   private loadStep(): void {
@@ -107,7 +111,7 @@ export class OnboardingV2ProductsPageComponent implements OnInit {
             return;
           }
 
-          this.loadProdutosSeNecessario();
+
         },
         error: () => {
           this.toastr.error(this.onboardingV2State.error() || 'Não foi possível carregar seus produtos sugeridos.');
@@ -115,16 +119,4 @@ export class OnboardingV2ProductsPageComponent implements OnInit {
       });
   }
 
-  private loadProdutosSeNecessario(): void {
-    const currentProducts = this.onboardingV2State.produtos();
-    if (currentProducts.length) {
-      return;
-    }
-
-    this.onboardingV2State.loadProdutosSugeridos().subscribe({
-      error: () => {
-        this.toastr.error(this.onboardingV2State.error() || 'Erro ao carregar produtos sugeridos.');
-      },
-    });
-  }
 }

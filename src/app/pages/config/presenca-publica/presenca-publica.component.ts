@@ -7,7 +7,8 @@ import { CardHeaderComponent } from 'src/app/components/card-header/card-header.
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { MaterialModule } from 'src/app/material.module';
 import { getClickManagerPublicHost, normalizeHostInput } from '../../links/utils/links-url.util';
-import { PresencaPublicaResponse } from './presenca-publica.models';
+import { catalogoSlugify } from '../../catalogo/shared/utils/catalogo-utils';
+import { PresencaPublicaResponse, PresencaPublicaSlugDisponivelResponse } from './presenca-publica.models';
 import { PresencaPublicaService } from './presenca-publica.service';
 
 @Component({
@@ -21,8 +22,13 @@ export class PresencaPublicaComponent implements OnInit {
   presenca: PresencaPublicaResponse | null = null;
   carregando = true;
   salvando = false;
+  consultandoSlug = false;
+  salvandoSlug = false;
+  slugConsultado: PresencaPublicaSlugDisponivelResponse | null = null;
+  readonly dominioFixo = 'clickmanager.com.br';
 
   readonly form = this.fb.group({
+    slug: ['', [Validators.required, Validators.maxLength(80), Validators.pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)]],
     dominio: ['', [Validators.maxLength(255)]],
     ativo: [false],
   });
@@ -36,6 +42,13 @@ export class PresencaPublicaComponent implements OnInit {
 
   ngOnInit(): void {
     this.carregar();
+    this.slugControl.valueChanges.subscribe(() => {
+      this.slugConsultado = null;
+    });
+  }
+
+  get slugControl(): FormControl<string | null> {
+    return this.form.get('slug') as FormControl<string | null>;
   }
 
   get dominioControl(): FormControl<string | null> {
@@ -48,6 +61,28 @@ export class PresencaPublicaComponent implements OnInit {
 
   get enderecoClickManager(): string {
     return getClickManagerPublicHost(this.presenca?.slugPublico) || 'Endereço ainda não gerado';
+  }
+
+  get slugPreviewHost(): string {
+    const slug = this.slugControl.value || this.presenca?.slugPublico || '';
+    return slug ? `${slug}.${this.dominioFixo}` : this.dominioFixo;
+  }
+
+  get slugAtual(): string {
+    return this.presenca?.slugPublico || '';
+  }
+
+  get slugAlterado(): boolean {
+    return (this.slugControl.value || '') !== this.slugAtual;
+  }
+
+  get slugDisponivelParaSalvar(): boolean {
+    const slug = this.slugControl.value || '';
+    return this.slugAlterado && !!this.slugConsultado?.disponivel && this.slugConsultado.slug === slug;
+  }
+
+  get podeSalvarSlug(): boolean {
+    return this.slugControl.valid && this.slugDisponivelParaSalvar && !this.consultandoSlug && !this.salvandoSlug;
   }
 
   get dominioNormalizado(): string {
@@ -75,6 +110,68 @@ export class PresencaPublicaComponent implements OnInit {
       error: (err) => {
         this.carregando = false;
         this.toastr.error(err?.userMessage || 'Erro ao carregar a presença pública.');
+      },
+    });
+  }
+
+  normalizarSlugDigitado(): void {
+    const atual = this.slugControl.value || '';
+    const normalizado = catalogoSlugify(atual);
+    if (atual !== normalizado) {
+      this.slugControl.setValue(normalizado, { emitEvent: false });
+      this.slugConsultado = null;
+    }
+  }
+
+  consultarSlug(): void {
+    this.normalizarSlugDigitado();
+    if (this.slugControl.invalid || this.consultandoSlug) {
+      this.slugControl.markAsTouched();
+      return;
+    }
+
+    const slug = this.slugControl.value || '';
+    if (!this.slugAlterado) {
+      this.slugConsultado = { slug, disponivel: true };
+      this.toastr.success('Este já é o endereço atual da empresa.');
+      return;
+    }
+
+    this.consultandoSlug = true;
+    this.service.consultarSlugDisponivel(slug).subscribe({
+      next: (resultado) => {
+        this.consultandoSlug = false;
+        this.slugControl.setValue(resultado.slug, { emitEvent: false });
+        this.slugConsultado = resultado;
+      },
+      error: (err) => {
+        this.consultandoSlug = false;
+        this.slugConsultado = null;
+        this.toastr.error(err?.userMessage || err?.error?.message || 'Erro ao consultar disponibilidade.');
+      },
+    });
+  }
+
+  salvarSlug(): void {
+    if (!this.podeSalvarSlug) {
+      this.slugControl.markAsTouched();
+      if (this.slugAlterado && !this.slugConsultado) {
+        this.toastr.warning('Consulte a disponibilidade antes de alterar o endereço.');
+      }
+      return;
+    }
+
+    const slug = this.slugControl.value || '';
+    this.salvandoSlug = true;
+    this.service.alterarSlug({ slug }).subscribe({
+      next: (presenca) => {
+        this.salvandoSlug = false;
+        this.aplicarPresenca(presenca);
+        this.toastr.success('Endereço ClickManager atualizado.');
+      },
+      error: (err) => {
+        this.salvandoSlug = false;
+        this.toastr.error(err?.userMessage || err?.error?.message || 'Erro ao alterar o endereço.');
       },
     });
   }
@@ -152,9 +249,11 @@ export class PresencaPublicaComponent implements OnInit {
   private aplicarPresenca(presenca: PresencaPublicaResponse): void {
     this.presenca = presenca;
     this.form.patchValue({
+      slug: presenca.slugPublico || '',
       dominio: presenca.dominioProprio || '',
       ativo: presenca.dominioProprioAtivo === true,
     }, { emitEvent: false });
+    this.slugConsultado = null;
     this.form.markAsPristine();
   }
 }

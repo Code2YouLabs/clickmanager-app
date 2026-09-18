@@ -1,6 +1,7 @@
 import { HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { EMPTY, Observable } from 'rxjs';
+import { expand, reduce } from 'rxjs/operators';
 import { ApiService } from 'src/app/services/api.service';
 import {
   CatalogoCaracteristica,
@@ -30,6 +31,16 @@ export class CatalogoCategoriaService {
     return this.api.get<CatalogoPaginaResponse<CatalogoCategoria>>(this.endpoint, buildCatalogoParams(params));
   }
 
+  listarTodas(params: CatalogoListParams = {}): Observable<CatalogoCategoria[]> {
+    const size = Math.min(params.size || 100, 100);
+    const baseParams = { ...params, page: 0, size };
+
+    return this.listar(baseParams).pipe(
+      expand((page) => page.last ? EMPTY : this.listar({ ...baseParams, page: page.pageNumber + 1 })),
+      reduce((items, page) => [...items, ...(page.content || [])], [] as CatalogoCategoria[]),
+    );
+  }
+
   options(ativo?: boolean | null): Observable<CatalogoCategoriaOption[]> {
     return this.api.get<CatalogoCategoriaOption[]>(`${this.endpoint}/options`, buildCatalogoParams({ ativo }));
   }
@@ -46,8 +57,12 @@ export class CatalogoCategoriaService {
     return this.api.put<CatalogoCategoria>(`${this.endpoint}/${id}`, body);
   }
 
-  inativar(id: number): Observable<void> {
+  excluir(id: number): Observable<void> {
     return this.api.delete<void>(`${this.endpoint}/${id}`);
+  }
+
+  inativar(id: number): Observable<void> {
+    return this.excluir(id);
   }
 
   listarCaracteristicas(categoriaId: number, params: CatalogoListParams = {}): Observable<CatalogoCaracteristica[]> {

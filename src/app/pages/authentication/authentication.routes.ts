@@ -11,6 +11,7 @@ import { AppSideRegisterComponent } from './side-register/side-register.componen
 import { AppSideTwoStepsComponent } from './side-two-steps/side-two-steps.component';
 import { AppBoxedResetPasswordComponent } from './boxed-reset-password/boxed-reset-password.component';
 import { AppCadastroConcluidoComponent } from './cadastro-concluido/cadastro-concluido.component';
+import { AppBoxedRegisterComponent } from './boxed-register/boxed-register.component';
 
 
 export const AuthenticationRoutes: Routes = [
@@ -31,8 +32,11 @@ export const AuthenticationRoutes: Routes = [
       },
       {
         path: 'registro-gestor',
-        redirectTo: '/onboarding-v2',
-        pathMatch: 'full',
+        component: AppBoxedRegisterComponent,
+      },
+      {
+        path: 'boxed-register',
+        component: AppBoxedRegisterComponent,
       },
       {
         path: 'cadastro-concluido',

@@ -42,8 +42,10 @@ export class FormServicoComponent implements OnInit {
 
   form!: FormGroup;
   isEditMode = false;
+  isCloneMode = false;
   servicoId!: number;
   isMobileView = false;
+  private cloneNomeOriginal?: string;
 
   constructor(
     private fb: FormBuilder,
@@ -78,16 +80,28 @@ export class FormServicoComponent implements OnInit {
       this.isEditMode = true;
       this.servicoId = +id;
       this.carregarServico(this.servicoId);
+      return;
+    }
+
+    const cloneFrom = Number(this.route.snapshot.queryParamMap.get('cloneFrom'));
+    if (Number.isFinite(cloneFrom) && cloneFrom > 0) {
+      this.isCloneMode = true;
+      this.carregarServico(cloneFrom, true);
     }
   }
 
-  carregarServico(id: number): void {
+  carregarServico(id: number, comoClone = false): void {
     this.servicoService.buscarPorId(id).subscribe({
-      next: (servico: ServicoResponse) => this.form.patchValue({
-        nome: servico.nome,
-        descricao: servico.descricao,
-        preco: servico.preco
-      }),
+      next: (servico: ServicoResponse) => {
+        if (comoClone) {
+          this.cloneNomeOriginal = servico.nome;
+        }
+        this.form.patchValue({
+          nome: comoClone ? this.nomeClone(servico.nome) : servico.nome,
+          descricao: servico.descricao,
+          preco: servico.preco
+        });
+      },
       error: () => {
         this.toastr.error('Erro ao carregar serviço.');
         this.router.navigate(['/page/cadastro-tecnico/servicos']);
@@ -98,6 +112,10 @@ export class FormServicoComponent implements OnInit {
   onSubmit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      return;
+    }
+    if (this.cloneNomeInvalido) {
+      this.toastr.warning('Altere o nome para salvar o clone.');
       return;
     }
 
@@ -130,11 +148,18 @@ export class FormServicoComponent implements OnInit {
   }
 
   get tituloPagina(): string {
+    if (this.isCloneMode) {
+      return 'Clonar Serviço';
+    }
     return this.isEditMode ? 'Editar Serviço' : 'Novo Serviço';
   }
 
   get textoAcaoPrincipal(): string {
     return this.isEditMode ? 'Atualizar' : 'Salvar';
+  }
+
+  get cloneNomeInvalido(): boolean {
+    return this.isCloneMode && this.nomeIgualAoOriginal(this.form?.get('nome')?.value);
   }
 
   voltar(): void {
@@ -147,6 +172,18 @@ export class FormServicoComponent implements OnInit {
     }
 
     this.isMobileView = window.innerWidth <= 768;
+  }
+
+  private nomeClone(nome: string): string {
+    return `${nome || 'Serviço'} Cópia`;
+  }
+
+  private nomeIgualAoOriginal(nome: string | null | undefined): boolean {
+    return this.normalizarNome(nome) === this.normalizarNome(this.cloneNomeOriginal);
+  }
+
+  private normalizarNome(nome: string | null | undefined): string {
+    return (nome || '').trim().toLocaleLowerCase('pt-BR');
   }
 
 }

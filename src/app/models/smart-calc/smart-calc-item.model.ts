@@ -6,6 +6,13 @@ export interface SmartCalcItem {
     valor: number;
     subTotal: number;
     produtoId: number;
+    produtoGraficoId?: number;
+    catalogoProdutoId?: number;
+    formatoId?: number;
+    tipoLinha?: string;
+    acabamentoCodigo?: string;
+    acabamentoId?: number;
     largura: number;
     altura: number;
+    snapshot?: Record<string, unknown>;
 }

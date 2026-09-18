@@ -1,0 +1,365 @@
+import { GraficaFormato, GraficaUnidadeDimensao } from '../shared/grafica.models';
+import { CommonModule } from '@angular/common';
+import { Component, Inject, OnDestroy } from '@angular/core';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { Subscription } from 'rxjs';
+import { MaterialModule } from 'src/app/material.module';
+import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
+import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
+import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
+import { UnitInputComponent } from 'src/app/components/inputs/unit-input/unit-input.component';
+import { PrecoSelectorComponent } from 'src/app/components/preco/preco-selector.component';
+import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
+
+export type ProdutoAcabamentoAplicacao = 'FOLHA' | 'PECA' | 'SERVICO' | 'METRO_QUADRADO' | 'METRO_LINEAR';
+export type ProdutoAcabamentoPrecoTipo = 'FIXO' | 'QUANTIDADE' | 'DEMANDA' | 'METRO';
+
+export interface ProdutoAcabamentoUx {
+  codigo?: string;
+  restricaoLarguraUtil?: number | null;
+  restricaoAlturaUtil?: number | null;
+  id: number;
+  nome: string;
+  descricao?: string | null;
+  aplicacao: ProdutoAcabamentoAplicacao;
+  preco: Record<string, any>;
+}
+
+@Component({
+  selector: 'app-grafica-produto-acabamento-dialog',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatDialogModule,
+    MaterialModule,
+    InputTextoRestritoComponent,
+    InputOptionsComponent,
+    InputTextareaComponent,
+    UnitInputComponent,
+    PrecoSelectorComponent,
+    SectionCardComponent,
+  ],
+  template: `
+    <h2 mat-dialog-title class="dialog-head">
+      <div class="dialog-head__copy">
+        <strong>{{ data.acabamento ? 'Editar acabamento' : 'Adicionar acabamento' }}</strong>
+        <span>Defina como este acabamento será aplicado e precificado no produto.</span>
+      </div>
+      <button type="button" mat-icon-button aria-label="Fechar" (click)="fechar()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </h2>
+
+    <mat-dialog-content class="dialog-content">
+      <form [formGroup]="form" class="acabamento-dialog-form">
+        <div class="dialog-grid">
+          <app-input-texto-restrito
+            class="dialog-grid__wide"
+            [control]="nomeControl"
+            label="Nome"
+            placeholder="Corte Máquina"
+            [maxlength]="140"
+            requiredError="Informe o nome do acabamento.">
+          </app-input-texto-restrito>
+
+          <app-input-options
+            [control]="aplicacaoControl"
+            label="Forma de aplicação"
+            placeholder="Forma de aplicação"
+            [options]="formasAplicacao"
+            labelKey="label"
+            valueKey="value"
+            [showNull]="false">
+          </app-input-options>
+
+          <app-input-textarea
+            class="dialog-grid__wide"
+            [control]="descricaoControl"
+            label="Descrição"
+            [rows]="3"
+            [maxlength]="500">
+          </app-input-textarea>
+        </div>
+
+        <app-section-card title="Área disponível para produção">
+          <p>Opcional. Escolha a unidade e preencha ambas as medidas. Elas serão salvas na unidade do formato do produto.
+            A restrição só é aplicada quando este acabamento é selecionado no cálculo e não pode exceder a área base da folha.</p>
+          <div class="dialog-grid">
+            <app-input-options
+              class="dialog-grid__wide"
+              [control]="unidadeControl"
+              label="Unidade"
+              placeholder="Unidade"
+              [options]="unidades"
+              labelKey="label"
+              valueKey="value"
+              [showNull]="false">
+            </app-input-options>
+            <app-unit-input
+              formControlName="restricaoLarguraUtil"
+              label="Largura disponível"
+              [unit]="unidadeSuffix"
+              [decimals]="6">
+            </app-unit-input>
+            <app-unit-input
+              formControlName="restricaoAlturaUtil"
+              label="Altura disponível"
+              [unit]="unidadeSuffix"
+              [decimals]="6">
+            </app-unit-input>
+          </div>
+          @if (form.touched && form.hasError('restricaoInvalida')) {
+            <p role="alert">Informe ambas as medidas positivas, sem ultrapassar a área base do formato. Se necessário, selecione um formato com dimensões no produto.</p>
+          }
+        </app-section-card>
+
+        <app-section-card title="Precificação">
+          <app-preco-selector
+            [formGroup]="precoForm"
+            [tiposDisponiveis]="tiposPrecoPermitidos">
+          </app-preco-selector>
+        </app-section-card>
+      </form>
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="dialog-actions">
+      <button mat-stroked-button type="button" (click)="fechar()">Cancelar</button>
+      <button mat-flat-button color="primary" type="button" (click)="salvar()">
+        <mat-icon>check</mat-icon>
+        <span>Salvar</span>
+      </button>
+    </mat-dialog-actions>
+  `,
+  styleUrls: ['../../../components/dialog/dialog-form-shell.scss'],
+  styles: [`
+    .dialog-head {
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+    }
+    .acabamento-dialog-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding-top: 4px;
+      width: min(700px, 100%);
+    }
+    .dialog-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      align-items: start;
+    }
+    .dialog-grid__wide {
+      grid-column: 1 / -1;
+    }
+    :host ::ng-deep app-preco-selector .price-selector-shell {
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      padding: 0;
+    }
+    :host ::ng-deep app-preco-selector .price-selector-mode {
+      border-top: 0;
+    }
+    :host ::ng-deep .mat-mdc-dialog-content {
+      max-height: min(68vh, 720px);
+    }
+    @media (max-width: 640px) {
+      .acabamento-dialog-form {
+        width: 100%;
+      }
+      .dialog-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  `],
+})
+export class GraficaProdutoAcabamentoDialogComponent implements OnDestroy {
+  readonly formasAplicacao = [
+    { value: 'FOLHA', label: 'Por folha' },
+    { value: 'PECA', label: 'Por peça' },
+    { value: 'SERVICO', label: 'Por serviço' },
+    { value: 'METRO_QUADRADO', label: 'Por metro quadrado' },
+    { value: 'METRO_LINEAR', label: 'Por metro linear' },
+  ];
+  readonly unidades = [
+    { value: 'CENTIMETRO', label: 'cm' },
+    { value: 'MILIMETRO', label: 'mm' },
+    { value: 'METRO', label: 'm' },
+  ];
+  private readonly metrosPorUnidade: Record<GraficaUnidadeDimensao, number> = {
+    METRO: 1,
+    CENTIMETRO: 0.01,
+    MILIMETRO: 0.001,
+  };
+  private readonly tiposPrecoPorAplicacao: Record<ProdutoAcabamentoAplicacao, ProdutoAcabamentoPrecoTipo[]> = {
+    FOLHA: ['FIXO', 'DEMANDA'],
+    PECA: ['FIXO', 'DEMANDA'],
+    SERVICO: ['FIXO', 'DEMANDA', 'QUANTIDADE'],
+    METRO_QUADRADO: ['METRO'],
+    METRO_LINEAR: ['METRO'],
+  };
+  private readonly aplicacaoSub: Subscription;
+  private readonly unidadeSub: Subscription;
+
+  form = this.fb.group({
+    restricaoLarguraUtil: this.fb.control<number | null>(null),
+    restricaoAlturaUtil: this.fb.control<number | null>(null),
+    nome: this.fb.control('', { nonNullable: true, validators: [Validators.required] }),
+    descricao: this.fb.control('', { nonNullable: true }),
+    aplicacao: this.fb.control<ProdutoAcabamentoAplicacao>('FOLHA', { nonNullable: true, validators: [Validators.required] }),
+    unidadeDimensao: this.fb.control<GraficaUnidadeDimensao>('CENTIMETRO', { nonNullable: true, validators: [Validators.required] }),
+  });
+  precoForm: FormGroup = this.criarPrecoForm(null);
+
+  get nomeControl() {
+    return this.form.controls.nome;
+  }
+
+  get descricaoControl() { return this.form.controls.descricao; }
+  get aplicacaoControl() { return this.form.controls.aplicacao; }
+  get unidadeControl() { return this.form.controls.unidadeDimensao; }
+
+  get unidadeSuffix(): string {
+    switch (this.unidadeControl.value) {
+      case 'METRO': return 'm';
+      case 'MILIMETRO': return 'mm';
+      default: return 'cm';
+    }
+  }
+
+  get tiposPrecoPermitidos(): ProdutoAcabamentoPrecoTipo[] {
+    return this.tiposPrecoPorAplicacao[this.form.controls.aplicacao.value] || this.tiposPrecoPorAplicacao.FOLHA;
+  }
+
+  constructor(
+    private readonly fb: FormBuilder,
+    private readonly dialogRef: MatDialogRef<GraficaProdutoAcabamentoDialogComponent, ProdutoAcabamentoUx | null>,
+    @Inject(MAT_DIALOG_DATA)
+    public readonly data: { acabamento?: ProdutoAcabamentoUx | null; nextId: number; formato?: GraficaFormato },
+  ) {
+    const acabamento = data?.acabamento;
+    this.form.reset({
+      restricaoLarguraUtil: acabamento?.restricaoLarguraUtil ?? null,
+      restricaoAlturaUtil: acabamento?.restricaoAlturaUtil ?? null,
+      nome: acabamento?.nome || '',
+      descricao: acabamento?.descricao || '',
+      aplicacao: acabamento?.aplicacao || 'FOLHA',
+      unidadeDimensao: data.formato?.unidadeDimensao ?? 'CENTIMETRO',
+    });
+    this.form.addValidators(control => {
+      const { restricaoLarguraUtil, restricaoAlturaUtil, unidadeDimensao } = control.value;
+      const formato = this.data.formato;
+      const largura = this.converterMedida(restricaoLarguraUtil, unidadeDimensao, formato?.unidadeDimensao);
+      const altura = this.converterMedida(restricaoAlturaUtil, unidadeDimensao, formato?.unidadeDimensao);
+      if (restricaoLarguraUtil == null && restricaoAlturaUtil == null) return null;
+      const baseLargura = formato?.larguraUtil ?? formato?.largura;
+      const baseAltura = formato?.alturaUtil ?? formato?.altura;
+      return largura != null && altura != null && largura > 0 && altura > 0 && formato?.unidadeDimensao && baseLargura != null && baseAltura != null
+        && largura <= baseLargura && altura <= baseAltura ? null : { restricaoInvalida: true };
+    });
+    this.precoForm = this.criarPrecoForm(acabamento?.preco);
+    this.garantirTipoPrecoPermitido();
+    this.aplicacaoSub = this.form.controls.aplicacao.valueChanges.subscribe(() => this.garantirTipoPrecoPermitido());
+    let unidadeAnterior = this.unidadeControl.value;
+    this.unidadeSub = this.unidadeControl.valueChanges.subscribe(unidadeAtual => {
+      if (unidadeAtual !== unidadeAnterior) {
+        for (const medida of [this.form.controls.restricaoLarguraUtil, this.form.controls.restricaoAlturaUtil]) {
+          medida.setValue(this.converterMedida(medida.value, unidadeAnterior, unidadeAtual));
+        }
+        unidadeAnterior = unidadeAtual;
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.aplicacaoSub.unsubscribe();
+    this.unidadeSub.unsubscribe();
+  }
+
+  fechar(): void {
+    this.dialogRef.close(null);
+  }
+
+  salvar(): void {
+    this.form.markAllAsTouched();
+    this.precoForm.markAllAsTouched();
+    this.form.updateValueAndValidity();
+    this.precoForm.updateValueAndValidity();
+
+    if (this.form.invalid || this.precoForm.invalid) return;
+
+    const raw = this.form.getRawValue();
+    this.dialogRef.close({
+      id: this.data?.acabamento?.id || this.data.nextId,
+      codigo: this.data?.acabamento?.codigo,
+      restricaoLarguraUtil: this.converterMedida(raw.restricaoLarguraUtil, raw.unidadeDimensao, this.data.formato?.unidadeDimensao),
+      restricaoAlturaUtil: this.converterMedida(raw.restricaoAlturaUtil, raw.unidadeDimensao, this.data.formato?.unidadeDimensao),
+      nome: raw.nome.trim(),
+      descricao: raw.descricao?.trim() || null,
+      aplicacao: raw.aplicacao,
+      preco: this.precoForm.getRawValue(),
+    });
+  }
+
+  private converterMedida(
+    valor: number | null | undefined,
+    origem: GraficaUnidadeDimensao | null | undefined,
+    destino: GraficaUnidadeDimensao | null | undefined,
+  ): number | null {
+    if (valor == null) return null;
+    if (!origem || !destino || !Number.isFinite(valor)) return null;
+    return Number((valor * this.metrosPorUnidade[origem] / this.metrosPorUnidade[destino]).toFixed(8));
+  }
+
+  private criarPrecoForm(preco: any): FormGroup {
+    const tipo = (preco?.tipo || 'FIXO') as ProdutoAcabamentoPrecoTipo;
+    switch (tipo) {
+      case 'FIXO':
+        return this.fb.group({
+          politicaId: [preco?.politicaId ?? null],
+          tipo: ['FIXO'],
+          valor: [preco?.valor ?? null],
+        });
+      case 'QUANTIDADE':
+        return this.fb.group({
+          politicaId: [preco?.politicaId ?? null],
+          tipo: ['QUANTIDADE'],
+          faixas: this.fb.array((preco?.faixas?.length ? preco.faixas : [{ quantidade: null, valor: null }]).map((faixa: any) => this.fb.group({
+            quantidade: [faixa.quantidade ?? null],
+            valor: [faixa.valor ?? null],
+          }))),
+        });
+      case 'DEMANDA':
+        return this.fb.group({
+          politicaId: [preco?.politicaId ?? null],
+          tipo: ['DEMANDA'],
+          faixas: this.fb.array((preco?.faixas?.length ? preco.faixas : [{ de: 1, ate: null, valorUnitario: null }]).map((faixa: any) => this.fb.group({
+            de: [faixa.de ?? null],
+            ate: [faixa.ate ?? null],
+            valorUnitario: [faixa.valorUnitario ?? null],
+          }))),
+        });
+      case 'METRO':
+        return this.fb.group({
+          politicaId: [preco?.politicaId ?? null],
+          tipo: ['METRO'],
+          precoMetro: [preco?.precoMetro ?? null],
+          precoMinimo: [preco?.precoMinimo ?? null],
+          alturaMaxima: [preco?.alturaMaxima ?? null],
+          larguraMaxima: [preco?.larguraMaxima ?? null],
+          modoCobranca: [preco?.modoCobranca ?? 'QUADRADO'],
+          unidadeDimensao: [preco?.unidadeDimensao ?? 'METRO'],
+          largurasLinearesPermitidas: [preco?.largurasLinearesPermitidas ?? ''],
+        });
+    }
+  }
+
+  private garantirTipoPrecoPermitido(): void {
+    const permitidos = this.tiposPrecoPermitidos;
+    const tipoAtual = this.precoForm.get('tipo')?.value as ProdutoAcabamentoPrecoTipo | null;
+    if (tipoAtual && permitidos.includes(tipoAtual)) return;
+    this.precoForm.get('tipo')?.setValue(permitidos[0]);
+  }
+}

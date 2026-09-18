@@ -65,11 +65,7 @@ export class AppNavItemComponent implements OnChanges {
   }
 
   isItemActive(item: NavItem): boolean {
-    if (item.route && this.router.isActive(item.route, false)) {
-      return true;
-    }
-
-    return this.hasActiveChild(item);
+    return !!item.route && !item.children?.length && this.router.isActive(item.route, false);
   }
 
   private hasActiveChild(item: NavItem | undefined): boolean {

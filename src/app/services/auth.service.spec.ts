@@ -3,6 +3,14 @@ import { AuthService } from './auth.service';
 import { TipoEmpresa } from '../models/empresa/tipo-empresa.enum';
 
 describe('AuthService permissions', () => {
+  function jwtComExp(exp: number): string {
+    const encode = (value: object) => btoa(JSON.stringify(value))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/g, '');
+    return `${encode({ alg: 'none', typ: 'JWT' })}.${encode({ exp })}.`;
+  }
+
   function criarService(
     proprietario: boolean,
     permissoes: string[] = [],
@@ -63,5 +71,19 @@ describe('AuthService permissions', () => {
   it('não direciona uma gráfica para rotas de depósito por permissão inconsistente', () => {
     const service = criarService(false, ['DEPOSITO_DASHBOARD_VER'], TipoEmpresa.GRAFICA);
     expect(service.getDefaultRouteForUsuario()).toBe('/dashboards/dashboard1');
+  });
+
+  it('considera expirado access token dentro da margem de renovação', () => {
+    const service = criarService(false);
+    const now = Math.floor(Date.now() / 1000);
+
+    expect(service.isAccessTokenExpired(jwtComExp(now + 20))).toBeTrue();
+  });
+
+  it('mantém válido access token fora da margem de renovação', () => {
+    const service = criarService(false);
+    const now = Math.floor(Date.now() / 1000);
+
+    expect(service.isAccessTokenExpired(jwtComExp(now + 60))).toBeFalse();
   });
 });

@@ -42,21 +42,15 @@ export class AuthInterceptor implements HttpInterceptor {
         if (error.status === 401) {
           const accessToken = this.tokenStorage.getToken();
           const refreshToken = this.tokenStorage.getRefreshToken();
-          const authAny = this.authService as any;
-          const isExpired =
-            accessToken && typeof authAny?.isAccessTokenExpired === 'function'
-              ? Boolean(authAny.isAccessTokenExpired(accessToken))
-              : true;
-
           // Sem token de acesso e sem refresh token, não existe sessão para expirar.
           // Em telas públicas isso deve apenas propagar o 401 sem forçar logout/toast.
           if (!accessToken && !refreshToken) {
             return throwError(() => error);
           }
 
-          // Se o token não está expirado, 401 não é por sessão expirada.
-          // Ex.: permissão/endpoint bloqueado. Não tentar refresh em loop.
-          if (accessToken && !isExpired) {
+          // 401 é falha de autenticação. Se existe refresh token, tente renovar
+          // mesmo quando o relógio do cliente ainda não marcou o access token como expirado.
+          if (!refreshToken) {
             return throwError(() => error);
           }
 

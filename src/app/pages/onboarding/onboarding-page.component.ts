@@ -184,6 +184,10 @@ export class OnboardingPageComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    if (!this.reabrindoOnboarding) {
+      this.router.navigateByUrl('/onboarding-v2', { replaceUrl: true });
+      return;
+    }
     const usuario = this.authService.getUsuario();
     const naoMostrarMaisDefault = usuario.onboardingIgnorado ?? usuario.empresa?.onboardingIgnorado ?? false;
     this.finalForm.get('naoMostrarMais')?.setValue(naoMostrarMaisDefault);

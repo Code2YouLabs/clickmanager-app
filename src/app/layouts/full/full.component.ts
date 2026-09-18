@@ -42,6 +42,7 @@ import {
 } from 'src/app/models/config/configuracao-aplicativos.model';
 import { ConfiguracaoAplicativosService } from 'src/app/services/configuracao-aplicativos.service';
 import { FeatureFlagService } from 'src/app/services/feature-flag.service';
+import { filtrarMenuPrincipal } from './vertical/sidebar/menu-filter';
 
 const MOBILE_VIEW = 'screen and (max-width: 768px)';
 const TABLET_VIEW = 'screen and (min-width: 769px) and (max-width: 1024px)';
@@ -295,40 +296,13 @@ export class FullComponent implements OnInit, OnDestroy {
     versaoCatalogo: CatalogoVersaoAdministrativa,
     usuario: Usuario
   ): NavItem[] {
-    const possuiPermissao = (requeridas?: string[]) => {
-      return usuario.proprietario === true
-        || !requeridas
-        || requeridas.some(p => permissoesUsuario.includes(p));
-    };
-
-    const aceitaTipoEmpresa = (tiposPermitidos?: TipoEmpresa[]) =>
-      !tiposPermitidos || tiposPermitidos.includes(tipoEmpresa);
-
-    const aceitaVersaoCatalogo = (modo?: CatalogoVersaoAdministrativa) =>
-      !modo || tipoEmpresa !== TipoEmpresa.DEPOSITO || modo === versaoCatalogo;
-
-    const aceitaProprietario = (proprietarioOnly?: boolean) =>
-      !proprietarioOnly || usuario.proprietario === true;
-
-    const aceitaFeature = (featureKey?: string) =>
-      !featureKey || this.featureFlagService.isEnabled(featureKey);
-  
-    const filtrar = (menus: NavItem[]): NavItem[] =>
-      menus
-        .filter(menu =>
-          aceitaTipoEmpresa(menu.allowedEmpresaTipos)
-          && aceitaVersaoCatalogo(menu.catalogoModo)
-          && aceitaProprietario(menu.proprietarioOnly)
-          && aceitaFeature(menu.featureKey)
-          && possuiPermissao(menu.requiredPermission)
-        )
-        .map(menu => ({
-          ...menu,
-          children: menu.children ? filtrar(menu.children) : undefined
-        }))
-        .filter(menu => !menu.children || menu.children.length > 0 || !!menu.route || !!menu.navCap);
-  
-    return filtrar(items);
+    return filtrarMenuPrincipal(items, {
+      permissoesUsuario,
+      tipoEmpresa,
+      versaoCatalogo,
+      usuario,
+      isFeatureEnabled: (featureKey) => this.featureFlagService.isEnabled(featureKey),
+    });
   }
   
 
@@ -710,23 +684,33 @@ export class FullComponent implements OnInit, OnDestroy {
           this.catalogoPrincipalRoute(),
           '/page/orcamentos'
         ])
-      : new Set(['/dashboards/dashboard1', '/page/pedido', '/smartcalc', '/page/cliente']);
+      : new Set(['/dashboards/dashboard1', '/page/grafica/comercial-beta/pedidos']);
     const secondaryItems = items.filter((item) => !item.navCap && !primaryRoutes.has(item.route || ''));
 
     const groupMap: Record<string, (item: NavItem) => boolean> = {
-      Administração: (item) =>
+      Operação: (item) =>
+        [
+          '/page/cliente'
+        ].some((route) => item.route?.startsWith(route)),
+      Catálogo: (item) =>
+        item.displayName === 'Catálogo',
+      Gestão: (item) =>
         [
           '/page/usuarios/listar',
           '/page/perfil',
-          '/page/empresa',
-          '/config',
-          '/page/calculadora/config/criar'
+          '/page/funcionarios'
         ].some((route) => item.route?.startsWith(route)),
-      'Cadastros técnicos': (item) =>
+      'Presença Digital': (item) =>
         [
-          '/cadastro-tecnico',
-          '/page/funcionarios',
-          '/page/deposito'
+          '/page/site',
+          '/page/links',
+          '/page/clicktv'
+        ].some((route) => item.route?.startsWith(route)),
+      Configurações: (item) =>
+        [
+          '/page/empresa',
+          '/billing/minha-assinatura',
+          '/config'
         ].some((route) => item.route?.startsWith(route)),
       Ajuda: (item) =>
         [
@@ -856,7 +840,9 @@ export class FullComponent implements OnInit, OnDestroy {
   private aplicarConfiguracaoPorTipoEmpresa(tipoEmpresa: TipoEmpresa): void {
     const catalogoNovoAtivo = tipoEmpresa === TipoEmpresa.DEPOSITO && this.versaoCatalogoAtual === 'CATALOGO_NOVO';
     const catalogoRoute = this.catalogoPrincipalRoute();
-    const catalogoStartsWith = catalogoNovoAtivo
+    const catalogoStartsWith = tipoEmpresa === TipoEmpresa.GRAFICA
+      ? ['/page/grafica']
+      : catalogoNovoAtivo
       ? ['/page/catalogo']
       : ['/page/deposito/itens', '/page/deposito/categorias', '/page/deposito/marcas'];
 
@@ -912,19 +898,19 @@ export class FullComponent implements OnInit, OnDestroy {
             action: 'apps',
           },
           {
-            key: 'smartcalc',
-            label: 'SmartCalc',
-            icon: 'calculator',
-            route: '/smartcalc',
-            startsWith: ['/smartcalc'],
+            key: 'catalogo',
+            label: 'Catálogo',
+            icon: 'package',
+            route: '/page/grafica/produtos',
+            startsWith: ['/page/grafica'],
             special: true,
           },
           {
             key: 'pedidos',
             label: 'Pedidos',
             icon: 'file-text',
-            route: '/page/pedido',
-            startsWith: ['/page/pedido'],
+            route: '/page/grafica/comercial-beta/pedidos',
+            startsWith: ['/page/grafica/comercial-beta/pedidos'],
           },
           {
             key: 'mais',
@@ -979,7 +965,11 @@ export class FullComponent implements OnInit, OnDestroy {
   }
 
   private catalogoPrincipalRoute(): string {
-    if (this.tipoEmpresaAtual !== TipoEmpresa.DEPOSITO || this.versaoCatalogoAtual === 'LEGADO_DEPOSITO') {
+    if (this.tipoEmpresaAtual === TipoEmpresa.GRAFICA) {
+      return '/page/grafica/produtos';
+    }
+
+    if (this.versaoCatalogoAtual === 'LEGADO_DEPOSITO') {
       return this.authService.temPermissao('DEPOSITO_ITENS_VER')
         ? '/page/deposito/itens'
         : this.authService.temPermissao('DEPOSITO_CATEGORIAS_VER')

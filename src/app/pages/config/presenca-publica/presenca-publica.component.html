@@ -18,58 +18,82 @@
             <mat-icon>public</mat-icon>
             <div>
               <h2>Endereço ClickManager</h2>
-              <p>Gerado automaticamente pelo sistema.</p>
+              <p>Escolha o subdomínio público da empresa. O final .clickmanager.com.br é fixo.</p>
             </div>
             <span class="presenca-badge presenca-badge--success">Ativo</span>
           </div>
 
-          <div class="presenca-host">
-            <strong>{{ enderecoClickManager }}</strong>
-            <button mat-stroked-button color="primary" type="button" (click)="copiarHost(enderecoClickManager)">
-              <mat-icon>content_copy</mat-icon>
-              Copiar
-            </button>
-          </div>
-        </section>
+          <form class="presenca-slug-form" [formGroup]="form" (ngSubmit)="salvarSlug()">
+            <div class="presenca-slug-grid">
+              <div class="presenca-slug-input-group">
+                <mat-form-field appearance="outline" class="presenca-slug-field">
+                  <mat-label>Subdomínio</mat-label>
+                  <input
+                    matInput
+                    formControlName="slug"
+                    maxlength="80"
+                    placeholder="minha-grafica"
+                    autocomplete="off"
+                    (input)="normalizarSlugDigitado()">
+                  <mat-error *ngIf="slugControl.hasError('required')">Informe o subdomínio.</mat-error>
+                  <mat-error *ngIf="slugControl.hasError('maxlength')">Use no máximo 80 caracteres.</mat-error>
+                  <mat-error *ngIf="slugControl.hasError('pattern')">Use letras, números e hífens, sem começar ou terminar com hífen.</mat-error>
+                </mat-form-field>
 
-        <section class="presenca-section">
-          <div class="presenca-section__header">
-            <mat-icon>language</mat-icon>
-            <div>
-              <h2>Domínio próprio</h2>
-              <p>Use seu próprio domínio para acessar os recursos públicos da empresa.</p>
+                <div class="presenca-domain-suffix" aria-hidden="true">.{{ dominioFixo }}</div>
+              </div>
+
+              <div class="presenca-slug-actions">
+                <button
+                  mat-stroked-button
+                  color="primary"
+                  type="button"
+                  (click)="consultarSlug()"
+                  [disabled]="consultandoSlug || slugControl.invalid">
+                  @if (consultandoSlug) {
+                    <mat-spinner diameter="18"></mat-spinner>
+                  } @else {
+                    <mat-icon>search</mat-icon>
+                  }
+                  Consultar
+                </button>
+
+                <button
+                  mat-flat-button
+                  color="primary"
+                  type="submit"
+                  [disabled]="!podeSalvarSlug">
+                  @if (salvandoSlug) {
+                    <mat-spinner diameter="18"></mat-spinner>
+                  } @else {
+                    <mat-icon>save</mat-icon>
+                  }
+                  Alterar
+                </button>
+
+                <button mat-stroked-button type="button" (click)="copiarHost(slugPreviewHost)">
+                  <mat-icon>content_copy</mat-icon>
+                  Copiar
+                </button>
+              </div>
             </div>
-            <span class="presenca-badge" [class.presenca-badge--success]="presenca?.dominioProprioAtivo" [class.presenca-badge--muted]="!presenca?.dominioProprioAtivo">
-              {{ statusDominio }}
-            </span>
-          </div>
 
-          <form [formGroup]="form" class="presenca-form" (ngSubmit)="salvarDominio()">
-            <mat-form-field appearance="outline">
-              <mat-label>Domínio próprio</mat-label>
-              <input matInput formControlName="dominio" placeholder="www.santaluzia.com.br" maxlength="255" />
-              <mat-hint>Um domínio próprio por empresa. Não há verificação DNS/SSL nesta tela.</mat-hint>
-            </mat-form-field>
-
-            <mat-slide-toggle color="primary" [formControl]="ativoControl">
-              Domínio ativo
-            </mat-slide-toggle>
-
-            <div class="presenca-actions">
-              <button mat-flat-button color="primary" type="submit" [disabled]="salvando">
-                <mat-icon>save</mat-icon>
-                {{ dominioConfigurado ? 'Alterar' : 'Configurar' }}
-              </button>
-
-              <button mat-stroked-button color="primary" type="button" (click)="alterarAtivo(!presenca?.dominioProprioAtivo)" [disabled]="!dominioConfigurado || salvando">
-                <mat-icon>{{ presenca?.dominioProprioAtivo ? 'toggle_off' : 'toggle_on' }}</mat-icon>
-                {{ presenca?.dominioProprioAtivo ? 'Desativar' : 'Ativar' }}
-              </button>
-
-              <button mat-button color="warn" type="button" (click)="removerDominio()" [disabled]="!dominioConfigurado || salvando">
-                Remover
-              </button>
+            <div class="presenca-preview">
+              <span>Endereço atual</span>
+              <strong>{{ slugPreviewHost }}</strong>
             </div>
+
+            @if (slugConsultado?.disponivel) {
+              <div class="presenca-feedback presenca-feedback--success">
+                <mat-icon>check_circle</mat-icon>
+                <span>{{ slugConsultado?.slug }}.{{ dominioFixo }} está disponível.</span>
+              </div>
+            } @else if (slugConsultado && !slugConsultado.disponivel) {
+              <div class="presenca-feedback presenca-feedback--error">
+                <mat-icon>cancel</mat-icon>
+                <span>{{ slugConsultado.slug }}.{{ dominioFixo }} não está disponível.</span>
+              </div>
+            }
           </form>
         </section>
       </div>
