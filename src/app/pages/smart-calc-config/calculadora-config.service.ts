@@ -35,11 +35,12 @@ export class CalculadoraConfigService {
     return this.getConfigCompleta().pipe(map(res => res.config ?? null));
   }
 
-  salvar(req: CalculadoraConfigRequest): Observable<CalculadoraConfigResponse | null> {
+  salvar(req: CalculadoraConfigRequest): Observable<SmartCalcConfigApiResponse> {
     return this.api.post<SmartCalcConfigApiResponse | CalculadoraConfigResponse>(this.baseUrl, {
       ativo: req.ativo,
+      produtoGraficoIds: req.produtoGraficoIds,
     }).pipe(
-      map(res => this.normalizarResponse(res as SmartCalcConfigApiResponse).config ?? null)
+      map(res => this.normalizarResponse(res as SmartCalcConfigApiResponse))
     );
   }
 

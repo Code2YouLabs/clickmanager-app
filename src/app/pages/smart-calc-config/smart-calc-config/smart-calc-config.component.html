@@ -11,13 +11,56 @@
       </div>
     </app-section-card>
 
-    <app-section-card titulo="Produtos disponíveis"
-      subtitulo="Os produtos disponíveis são definidos pela configuração produtiva de cada produto.">
+    <app-section-card titulo="Bases de produção"
+      subtitulo="Escolha os produtos que servirão de área para distribuir e calcular as peças.">
+      <app-input-pesquisa placeholder="Buscar produto, família ou formato" [showLabel]="false"
+        (valorAlterado)="pesquisa = $event"></app-input-pesquisa>
       @if (carregando()) {
         <mat-progress-spinner mode="indeterminate" diameter="28"></mat-progress-spinner>
       } @else {
+        @if (erroCarregamento) {
+          <p role="alert">Não foi possível carregar os produtos. Reabra a configuração para tentar novamente.</p>
+        }
         <p>{{ resumoProdutos }}</p>
-        <p>Configure o cálculo produtivo no cadastro do produto. A ativação inclui automaticamente todas as variantes suportadas.</p>
+        @if (!erroCarregamento && !produtoOptions.length) {
+          <p>Nenhum produto gráfico encontrado. Cadastre um produto para escolher uma base de produção.</p>
+        }
+        @for (estado of estados; track estado.codigo) {
+          @if (grupos(estado.codigo).length) {
+          <app-section-card [title]="estado.titulo" [divider]="false">
+            @for (grupo of grupos(estado.codigo); track grupo.familia) {
+              <div class="smartcalc-config__family">
+                <strong>{{ grupo.familia }}</strong>
+                @for (produto of grupo.produtos; track produto.id) {
+                  <div class="smartcalc-config__product">
+                    <div class="smartcalc-config__product-main">
+                      @if (produto.suportado) {
+                        <mat-checkbox [checked]="habilitados.has(produto.id)" [disabled]="salvando()"
+                          (change)="alternarProduto(produto, $event.checked)">
+                          {{ produto.nome }} @if (produto.formatoNome) { · {{ produto.formatoNome }} }
+                        </mat-checkbox>
+                      } @else {
+                        <span>{{ produto.nome }} @if (produto.formatoNome) { · {{ produto.formatoNome }} }</span>
+                      }
+                      <app-status-badge [status]="estado.codigo"></app-status-badge>
+                    </div>
+                    @if (!produto.suportado) {
+                      <ul class="smartcalc-config__motivos">
+                        @for (motivo of produto.motivos || []; track motivo) {
+                          <li>{{ motivoTexto(motivo) }}</li>
+                        }
+                      </ul>
+                      <a mat-stroked-button [routerLink]="['/page/grafica/produtos', produto.id, 'editar']">
+                        <mat-icon>edit</mat-icon> Editar produto
+                      </a>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </app-section-card>
+          }
+        }
       }
     </app-section-card>
 
@@ -26,7 +69,7 @@
         Voltar
       </button>
 
-      <button mat-flat-button color="primary" type="submit" [disabled]="salvando()">
+      <button mat-flat-button color="primary" type="submit" [disabled]="salvando() || carregando() || erroCarregamento">
         <mat-icon>save</mat-icon>
         <span>{{ textoAcaoPrincipal }}</span>
       </button>
@@ -38,7 +81,7 @@
 <app-page-card
   class="smartcalc-config-page"
   [titulo]="tituloPagina"
-  subtitulo="Controle a ativação do SmartCalc."
+  subtitulo="Ative o SmartCalc e escolha as bases de produção."
   botaoTexto="Voltar"
   botaoIcone="arrow_back"
   botaoCor="primary"
@@ -64,7 +107,7 @@
     </a>
 
     <div class="smartcalc-config-mobile__hero-title">SmartCalc</div>
-    <div class="smartcalc-config-mobile__hero-subtitle">Ativação e catálogo disponível.</div>
+    <div class="smartcalc-config-mobile__hero-subtitle">Ativação e bases de produção.</div>
   </section>
 
   <ng-container *ngTemplateOutlet="configForm"></ng-container>
@@ -79,7 +122,7 @@
   [expandable]="false"
   secondaryActionText="Voltar"
   [actionText]="textoAcaoPrincipal"
-  [actionDisabled]="salvando()"
+  [actionDisabled]="salvando() || carregando() || erroCarregamento"
   bottomOffset="58px"
   [attachedToBottomNav]="true"
   (secondaryAction)="voltar()"

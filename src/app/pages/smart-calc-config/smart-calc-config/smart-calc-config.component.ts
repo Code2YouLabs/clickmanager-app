@@ -19,6 +19,11 @@ import { ProdutoOption } from 'src/app/models/produto/produto-option.model';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
+import { InputPesquisaComponent } from 'src/app/components/inputs/input-pesquisa/input-pesquisa.component';
+import { StatusBadgeComponent } from 'src/app/components/status-badge/status-badge.component';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+
+type ProdutoGrupo = { familia: string; produtos: ProdutoOption[] };
 
 @Component({
     selector: 'app-calculadora-config',
@@ -33,7 +38,10 @@ import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mob
       RouterModule,
       PageCardComponent,
       SectionCardComponent,
-      MobileTotalBarComponent
+      MobileTotalBarComponent,
+      InputPesquisaComponent,
+      StatusBadgeComponent,
+      MatCheckboxModule
     ],
     templateUrl: './smart-calc-config.component.html',
     styleUrls: ['./smart-calc-config.component.scss']
@@ -47,10 +55,18 @@ export class CalculadoraConfigComponent implements OnInit {
 
     carregando = signal<boolean>(true);
     salvando = signal<boolean>(false);
+    erroCarregamento = false;
     isMobileView = false;
     isEditMode = false;
 
     produtoOptions: ProdutoOption[] = [];
+    habilitados = new Set<number>();
+    pesquisa = '';
+    readonly estados = [
+        { codigo: 'HABILITADO', titulo: 'Habilitados' },
+        { codigo: 'DISPONIVEL', titulo: 'Disponíveis' },
+        { codigo: 'PRECISA_AJUSTE', titulo: 'Precisam de ajuste' },
+    ] as const;
     configAtual?: CalculadoraConfigResponse;
 
     form = this.fb.nonNullable.group({
@@ -70,8 +86,6 @@ export class CalculadoraConfigComponent implements OnInit {
     }
 
     private loadConfig(): void {
-        const t0 = performance.now();
-
         this.calculadoraService.getConfigCompleta()
             .pipe(
                 takeUntilDestroyed(this.destroyRef),
@@ -79,48 +93,98 @@ export class CalculadoraConfigComponent implements OnInit {
             )
             .subscribe({
                 next: (res) => {
+                    this.erroCarregamento = false;
                     this.configAtual = res?.config ?? undefined;
                     this.produtoOptions = res?.produtosDisponiveis ?? [];
+                    this.habilitados = new Set(this.produtoOptions.filter(p => p.suportado && p.habilitado).map(p => p.id));
                     this.form.patchValue({
                         ativo: res?.config?.ativo ?? false,
                     });
 
                 },
                 error: (err) => {
+                    this.erroCarregamento = true;
                     const msg = extrairMensagemErro(err, 'Não foi possível carregar as configurações.');
                     this.toastr.error(msg, 'SmartCalc');
                     this.produtoOptions = [];
-                },
-                complete: () => {
-                    const t1 = performance.now();
                 }
             });
     }
 
 
     onSubmit(): void {
+        if (this.carregando() || this.erroCarregamento || this.salvando()) return;
         const formValue = this.form.getRawValue();
         if (this.form.invalid) {
             this.form.markAllAsTouched();
             return;
         }
 
-        const req: CalculadoraConfigRequest = formValue;
+        const req: CalculadoraConfigRequest = {
+            ativo: formValue.ativo,
+            produtoGraficoIds: [...this.habilitados],
+        };
         this.salvando.set(true);
 
         this.calculadoraService.salvar(req)
             .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.salvando.set(false)))
             .subscribe({
                 next: (res) => {
-                    this.configAtual = res ?? undefined;
+                    this.configAtual = res.config ?? undefined;
+                    this.produtoOptions = res.produtosDisponiveis;
+                    this.habilitados = new Set(this.produtoOptions.filter(p => p.suportado && p.habilitado).map(p => p.id));
                     this.toastr.success('Configurações salvas com sucesso!', 'SmartCalc');
                 },
                 error: (err) => {
                     const msg = extrairMensagemErro(err, 'Não foi possível salvar as configurações.');
                     this.toastr.error(msg, 'SmartCalc');
-                },
-                complete: () => this.salvando.set(false)
+                }
             });
+    }
+
+    alternarProduto(produto: ProdutoOption, selecionado: boolean): void {
+        if (!produto.suportado) return;
+        const proximos = new Set(this.habilitados);
+        if (selecionado) proximos.add(produto.id);
+        else proximos.delete(produto.id);
+        this.habilitados = proximos;
+    }
+
+    grupos(estado: 'HABILITADO' | 'DISPONIVEL' | 'PRECISA_AJUSTE'): ProdutoGrupo[] {
+        const termo = this.pesquisa.trim().toLocaleLowerCase('pt-BR');
+        const porFamilia = new Map<string, ProdutoOption[]>();
+        for (const produto of this.produtoOptions) {
+            if (this.estado(produto) !== estado) continue;
+            const texto = `${produto.familiaNome || ''} ${produto.nome} ${produto.formatoNome || ''} ${produto.codigo || ''}`
+                .toLocaleLowerCase('pt-BR');
+            if (termo && !texto.includes(termo)) continue;
+            const familia = produto.familiaNome || 'Sem família';
+            porFamilia.set(familia, [...(porFamilia.get(familia) || []), produto]);
+        }
+        return [...porFamilia].map(([familia, produtos]) => ({ familia, produtos }));
+    }
+
+    estado(produto: ProdutoOption): 'HABILITADO' | 'DISPONIVEL' | 'PRECISA_AJUSTE' {
+        if (!produto.suportado) return 'PRECISA_AJUSTE';
+        return this.habilitados.has(produto.id) ? 'HABILITADO' : 'DISPONIVEL';
+    }
+
+    motivoTexto(codigo: string): string {
+        const mensagens: Record<string, string> = {
+            EMPRESA_INVALIDA: 'Produto de outra empresa.',
+            PRODUTO_INATIVO: 'Produto inativo.',
+            FAMILIA_INVALIDA: 'Família do produto inválida.',
+            CATALOGO_INDISPONIVEL: 'Catálogo indisponível ou orçamento desativado.',
+            FORMATO_AUSENTE: 'Selecione um formato com dimensões físicas.',
+            FORMATO_INVALIDO: 'O formato não pertence à empresa.',
+            FORMATO_NAO_DIMENSIONAL: 'O formato não possui unidade dimensional.',
+            DIMENSOES_INVALIDAS: 'O formato não possui largura e altura produtivas válidas.',
+            PRECO_LOTE_NAO_SUPORTADO: 'Preço por lote ainda não é suportado no SmartCalc.',
+            PRECO_FAIXA_NAO_SUPORTADO: 'Preço por faixa de quantidade ainda não é suportado no SmartCalc.',
+            PRECO_AREA_NAO_SUPORTADO: 'Preço por metro quadrado ainda não é suportado no SmartCalc.',
+            PRECO_FIXO_INDISPONIVEL: 'Configure um preço fixo válido para uma unidade da base.',
+        };
+        return mensagens[codigo] || 'Produto ainda não compatível com o SmartCalc.';
     }
 
     trackById = (_: number, item: ProdutoOption) => item.id;
@@ -134,13 +198,13 @@ export class CalculadoraConfigComponent implements OnInit {
     }
 
     get resumoProdutos(): string {
-        const total = this.produtoOptions.length;
-        return total === 1 ? '1 família disponível para cálculo' : `${total} famílias disponíveis para cálculo`;
+        const total = this.habilitados.size;
+        return total === 1 ? '1 produto habilitado para cálculo' : `${total} produtos habilitados para cálculo`;
     }
 
     get resumoProdutosCurto(): string {
-        const total = this.produtoOptions.length;
-        return total === 1 ? '1 família' : `${total} famílias`;
+        const total = this.habilitados.size;
+        return total === 1 ? '1 produto' : `${total} produtos`;
     }
 
     voltar(): void {
