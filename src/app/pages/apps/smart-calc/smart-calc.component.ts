@@ -27,8 +27,6 @@ import { Subject, finalize, debounceTime, takeUntil } from 'rxjs';
 
 import { Router } from '@angular/router';
 
-import { CalculadoraConfigService } from 'src/app/pages/smart-calc-config/calculadora-config.service';
-import { CalculadoraConfigResponse } from 'src/app/models/calculadora/calculadora-config-response.model';
 import { extrairMensagemErro } from 'src/app/utils/mensagem.util';
 
 type Material = { id: number; nome: string; descricao?: string };
@@ -112,9 +110,8 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
   temResultado = computed<boolean>(() => !!this.resultado() && this.itens().length > 0);
 
   // =========================
-  // CONFIG (tela config antiga)
+  // Estado de ativação recebido no init
   // =========================
-  config?: CalculadoraConfigResponse | null;
   configAtiva = false;
 
   constructor(
@@ -123,7 +120,6 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
     private dataSvc: SmartCalcDataService, // ✅ por enquanto mantém cálculo + pedido aqui
     private toastr: ToastrService,
     private router: Router,
-    private calcCfgSvc: CalculadoraConfigService,
     private host: ElementRef<HTMLElement>
   ) { }
 
@@ -185,28 +181,7 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
       this.recalculo$.next();
     });
 
-    // 3) carrega ativação da ferramenta
-    this.calcCfgSvc.getConfig().subscribe({
-      next: (cfg) => {
-        this.config = cfg;
-        this.configAtiva = !!cfg?.ativo;
-        this.carregandoConfig = false;
-
-        if (!this.configAtiva) {
-          this.toastr.warning('O SmartCalc está desabilitado nas configurações.', 'SmartCalc');
-        }
-
-        // 4) carrega INIT (produtos + formatos + materiais/acabamentos)
-        this.carregarInit();
-      },
-      error: (err) => {
-        console.error('[SmartCalc] erro ao obter config', err);
-        // sem config -> não trava a tela
-        this.configAtiva = true;
-        this.carregandoConfig = false;
-        this.carregarInit();
-      },
-    });
+    this.carregarInit();
   }
 
   ngOnDestroy(): void {
@@ -231,9 +206,11 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
     this.initSvc.carregarInit$().subscribe({
       next: (init) => {
         this.init = init;
-        // se o init vier desativado, respeita também
-        // (mantém compatibilidade com sua configAtiva)
-        this.configAtiva = this.configAtiva && !!init?.ativo;
+        this.configAtiva = !!init?.ativo;
+        this.carregandoConfig = false;
+        if (!this.configAtiva) {
+          this.toastr.warning('O SmartCalc está desabilitado nas configurações.', 'SmartCalc');
+        }
 
         const arr = (init?.produtos ?? []).map(
           (p) => ({ id: p.id, nome: p.nome } as unknown as ProdutoListagem)
@@ -258,7 +235,10 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Erro ao carregar init', err);
         this.erroProdutos = 'Não foi possível carregar a SmartCalc (init).';
+        // Sem resposta de ativação, exibe apenas o erro de carregamento.
+        this.configAtiva = true;
         this.carregandoProdutos = false;
+        this.carregandoConfig = false;
       },
     });
   }
