@@ -3,6 +3,6 @@ export const environment = {
   apiUrl: '',
   publicSiteBaseUrl: '',
   publicBaseDomain: 'clickmanager.com.br',
-  googleClientId: ''
+  googleClientId: '202002250475-hlegpve8ugc38rqr4escr5rt85e7tdt7.apps.googleusercontent.com'
 };
   
