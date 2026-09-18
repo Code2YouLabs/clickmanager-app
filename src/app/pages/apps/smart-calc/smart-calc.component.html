@@ -53,7 +53,6 @@
               [disabled]="carregandoProdutos || !!erroProdutos"
               [nullLabel]="erroProdutos || (!produtos.length && !carregandoProdutos ? 'Nenhum produto disponível' : 'Selecione um produto')">
             </app-input-options>
-            <div class="field-hint">Escolha o item base.</div>
           </div>
 
           <div class="field-stack">
@@ -67,7 +66,6 @@
               [disabled]="carregandoProdutos || !!erroProdutos || !materiais.length"
               [nullLabel]="!materiais.length ? 'Nenhum material disponível' : 'Selecione um material'">
             </app-input-options>
-            <div class="field-hint">Material usado no cálculo.</div>
           </div>
         </div>
 
@@ -92,17 +90,14 @@
         <div class="form-grid form-grid--three">
           <div class="field-stack">
             <app-input-numerico [control]="form.controls.largura" label="Largura (cm)" placeholder="Ex: 9"></app-input-numerico>
-            <div class="field-hint">Largura final do item.</div>
           </div>
 
           <div class="field-stack">
             <app-input-numerico [control]="form.controls.altura" label="Altura (cm)" placeholder="Ex: 5"></app-input-numerico>
-            <div class="field-hint">Altura final do item.</div>
           </div>
 
           <div class="field-stack">
             <app-input-numerico [control]="form.controls.quantidade" label="Quantidade" placeholder="Ex: 500"></app-input-numerico>
-            <div class="field-hint">Quantidade solicitada.</div>
           </div>
         </div>
       </app-section-card>

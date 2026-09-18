@@ -5,7 +5,7 @@ import { HttpParams } from '@angular/common/http';
 
 /** DTOs de request e response alinhados ao backend */
 export interface DashboardComparativoRequest {
-    empresaId: number;
+    empresaId?: number;
     filtros: {
         ano: number;
         mesA: { index: number; label: string };
@@ -105,14 +105,12 @@ export class DashboardService {
     }
 
     obterComparativoSimples(
-        empresaId: number,
         ano: number,
         mesAIndex: number,
         mesBIndex: number,
         modo: 'quantidade' | 'receita'
     ): Observable<DashboardComparativoResponse> {
         const body: DashboardComparativoRequest = {
-            empresaId,
             filtros: {
                 ano,
                 mesA: { index: mesAIndex, label: this.nomeMes(mesAIndex) },

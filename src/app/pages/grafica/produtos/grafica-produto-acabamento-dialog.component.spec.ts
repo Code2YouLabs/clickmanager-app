@@ -60,6 +60,34 @@ describe('GraficaProdutoAcabamentoDialogComponent', () => {
     component.ngOnDestroy();
   });
 
+  it('converte medidas ao trocar a unidade e salva na unidade do formato', () => {
+    const component = new GraficaProdutoAcabamentoDialogComponent(new FormBuilder(), dialogRef, {
+      acabamento: { id: 2, nome: 'Verniz', aplicacao: 'FOLHA',
+        restricaoLarguraUtil: 19, restricaoAlturaUtil: 26, preco: { tipo: 'FIXO', valor: 2 } },
+      nextId: -1,
+      formato: { id: 1, codigo: 'A4', nome: 'A4', ativo: true, largura: 21, altura: 29.7,
+        larguraUtil: 20, alturaUtil: 28, unidadeDimensao: 'CENTIMETRO' },
+    });
+
+    expect(component.unidadeControl.value).toBe('CENTIMETRO');
+    component.unidadeControl.setValue('MILIMETRO');
+    expect(component.form.controls.restricaoLarguraUtil.value).toBe(190);
+    expect(component.form.controls.restricaoAlturaUtil.value).toBe(260);
+
+    component.form.controls.restricaoLarguraUtil.setValue(205);
+    component.salvar();
+    expect(component.form.hasError('restricaoInvalida')).toBeTrue();
+    expect(dialogRef.close).not.toHaveBeenCalled();
+
+    component.form.controls.restricaoLarguraUtil.setValue(195);
+    component.salvar();
+    expect(dialogRef.close).toHaveBeenCalledWith(jasmine.objectContaining({
+      restricaoLarguraUtil: 19.5,
+      restricaoAlturaUtil: 26,
+    }));
+    component.ngOnDestroy();
+  });
+
   function criarComponente(acabamento: ProdutoAcabamentoUx): GraficaProdutoAcabamentoDialogComponent {
     return new GraficaProdutoAcabamentoDialogComponent(
       new FormBuilder(),

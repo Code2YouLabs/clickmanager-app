@@ -20,6 +20,7 @@ import {
 } from '../dashboard.service';
 import { firstValueFrom } from 'rxjs';
 import { Router } from '@angular/router';
+import { SectionCardComponent } from '../../section-card/section-card.component';
 
 type DonutChart = {
   series: number[];
@@ -35,7 +36,7 @@ type DonutChart = {
 @Component({
   selector: 'app-receita-resumo',
   standalone: true,
-  imports: [MaterialModule, NgApexchartsModule, TablerIconsModule, CommonModule],
+  imports: [MaterialModule, NgApexchartsModule, TablerIconsModule, CommonModule, SectionCardComponent],
   templateUrl: './receita-resumo.component.html',
   styleUrls: ['./receita-resumo.component.scss'],
 })
@@ -80,7 +81,7 @@ export class AppReceitaResumoComponent implements OnInit {
     colors: [],
     chart: {
       type: 'donut',
-      height: 200,
+      height: 150,
       toolbar: { show: false },
       fontFamily: 'inherit',
       foreColor: '#adb0bb',

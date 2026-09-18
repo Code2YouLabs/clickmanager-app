@@ -1,42 +1,39 @@
-<mat-card class="cardWithShadow status-grid-card">
-  <mat-card-header class="status-grid-card__header">
-    <div>
-      <mat-card-title>Operação</mat-card-title>
-      <mat-card-subtitle>Pedidos e orçamentos por status</mat-card-subtitle>
+<div class="status-grid-stack">
+  <app-section-card
+    class="status-grid-card status-grid-card--pedidos"
+    title="Etapas dos pedidos"
+    subtitle="Pedidos por status"
+    [divider]="true">
+    <div class="status-grid">
+      @for (item of pedidoStats; track item.status) {
+      <button
+        type="button"
+        class="status-grid__item status-grid__item--{{ item.tone }}"
+        (click)="abrirStatus(item)">
+        <strong class="status-grid__value">{{ item.quantidade }}</strong>
+        <span class="status-grid__label">{{ item.label }}</span>
+        <small class="status-grid__amount">{{ formatBRL(item.valor) }}</small>
+      </button>
+      }
     </div>
-  </mat-card-header>
+  </app-section-card>
 
-  <mat-card-content class="status-grid-card__content">
-    <div class="status-grid-section">
-      <h4>Etapas dos pedidos</h4>
-      <div class="status-grid">
-        @for (item of pedidoStats; track item.status) {
-        <button
-          type="button"
-          class="status-grid__item status-grid__item--{{ item.tone }}"
-          (click)="abrirStatus(item)">
-          <strong class="status-grid__value">{{ item.quantidade }}</strong>
-          <span class="status-grid__label">{{ item.label }}</span>
-          <small class="status-grid__amount">{{ formatBRL(item.valor) }}</small>
-        </button>
-        }
-      </div>
+  <app-section-card
+    class="status-grid-card"
+    title="Status dos orçamentos"
+    subtitle="Orçamentos por status"
+    [divider]="true">
+    <div class="status-grid">
+      @for (item of orcamentoStats; track item.status) {
+      <button
+        type="button"
+        class="status-grid__item status-grid__item--{{ item.tone }}"
+        (click)="abrirStatus(item)">
+        <strong class="status-grid__value">{{ item.quantidade }}</strong>
+        <span class="status-grid__label">{{ item.label }}</span>
+        <small class="status-grid__amount">{{ formatBRL(item.valor) }}</small>
+      </button>
+      }
     </div>
-
-    <div class="status-grid-section">
-      <h4>Status dos orçamentos</h4>
-      <div class="status-grid">
-        @for (item of orcamentoStats; track item.status) {
-        <button
-          type="button"
-          class="status-grid__item status-grid__item--{{ item.tone }}"
-          (click)="abrirStatus(item)">
-          <strong class="status-grid__value">{{ item.quantidade }}</strong>
-          <span class="status-grid__label">{{ item.label }}</span>
-          <small class="status-grid__amount">{{ formatBRL(item.valor) }}</small>
-        </button>
-        }
-      </div>
-    </div>
-  </mat-card-content>
-</mat-card>
+  </app-section-card>
+</div>

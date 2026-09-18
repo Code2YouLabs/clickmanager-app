@@ -3,8 +3,8 @@ import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
-import { MaterialModule } from '../../../material.module';
 import { DashboardService, GraficaDashboardIndicador } from '../dashboard.service';
+import { SectionCardComponent } from '../../section-card/section-card.component';
 
 interface StatusGridItem {
   status: string;
@@ -18,7 +18,7 @@ interface StatusGridItem {
 @Component({
   selector: 'app-status-grid',
   standalone: true,
-  imports: [CommonModule, MaterialModule],
+  imports: [CommonModule, SectionCardComponent],
   templateUrl: './status-grid.component.html',
   styleUrls: ['./status-grid.component.scss'],
 })

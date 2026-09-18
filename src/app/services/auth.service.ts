@@ -304,8 +304,9 @@ export class AuthService {
       const payload = decodeToken(token);
       if (!payload?.exp) return true;
 
+      const refreshSkewSeconds = 30;
       const now = Math.floor(Date.now() / 1000);
-      return payload.exp < now;
+      return payload.exp <= now + refreshSkewSeconds;
     } catch {
       return true;
     }

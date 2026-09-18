@@ -34,6 +34,14 @@ import { GraficaProdutoAcabamentoDialogComponent, ProdutoAcabamentoUx } from './
 import { GraficaCadastroRapidoDialogComponent } from './grafica-cadastro-rapido-dialog.component';
 
 type TipoPrecoLegado = 'FIXO' | 'QUANTIDADE' | 'DEMANDA' | 'METRO';
+type CategoriaHierarquicaOption = CatalogoCategoriaOption & {
+  categoriaPaiId?: number | null;
+  categoriaPaiNome?: string | null;
+  nivel: number;
+  caminho: string;
+  caminhoPai: string;
+  busca: string;
+};
 type ProdutoFormSnapshot = {
   nome: string;
   descricao: string;
@@ -95,6 +103,13 @@ type ProdutoFormSnapshot = {
                 label="Categoria"
                 placeholder="Categoria"
                 [options]="categorias"
+                [hierarchical]="true"
+                [searchable]="true"
+                optionSubtitleKey="caminhoPai"
+                optionLevelKey="nivel"
+                optionPathKey="caminho"
+                selectedLabelKey="caminho"
+                [searchKeys]="['busca']"
                 [showNull]="true"
                 [clearable]="true"
                 nullLabel="Sem categoria"
@@ -495,7 +510,7 @@ export class GraficaProdutoFormComponent implements OnInit {
   salvando = false;
   uploading = false;
   graficaProduto?: GraficaProduto;
-  categorias: CatalogoCategoriaOption[] = [];
+  categorias: CategoriaHierarquicaOption[] = [];
   materiais: GraficaCadastro[] = [];
   formatos: GraficaFormato[] = [];
   cores: GraficaCadastro[] = [];
@@ -687,7 +702,7 @@ export class GraficaProdutoFormComponent implements OnInit {
 
   private carregarBase(id: number | null): void {
     forkJoin({
-      categorias: this.categoriaService.options(true).pipe(catchError(() => of([]))),
+      categorias: this.listarCategoriasHierarquicas().pipe(catchError(() => of([]))),
       materiais: this.graficaService.listarMateriais().pipe(catchError(() => of([]))),
       formatos: this.graficaService.listarFormatos().pipe(catchError(() => of([]))),
       cores: this.graficaService.listarCores().pipe(catchError(() => of([]))),
@@ -725,16 +740,16 @@ export class GraficaProdutoFormComponent implements OnInit {
     });
   }
 
-  private listarCadastroRapido(tipo: 'material' | 'formato' | 'cor' | 'categoria'): Observable<Array<GraficaCadastro | GraficaFormato | CatalogoCategoriaOption>> {
+  private listarCadastroRapido(tipo: 'material' | 'formato' | 'cor' | 'categoria'): Observable<Array<GraficaCadastro | GraficaFormato | CategoriaHierarquicaOption>> {
     switch (tipo) {
       case 'material': return this.graficaService.listarMateriais();
       case 'formato': return this.graficaService.listarFormatos();
       case 'cor': return this.graficaService.listarCores();
-      case 'categoria': return this.categoriaService.options(true);
+      case 'categoria': return this.listarCategoriasHierarquicas();
     }
   }
 
-  private aplicarListaCadastro(tipo: 'material' | 'formato' | 'cor' | 'categoria', itens: Array<GraficaCadastro | GraficaFormato | CatalogoCategoriaOption>): void {
+  private aplicarListaCadastro(tipo: 'material' | 'formato' | 'cor' | 'categoria', itens: Array<GraficaCadastro | GraficaFormato | CategoriaHierarquicaOption>): void {
     switch (tipo) {
       case 'material':
         this.materiais = itens as GraficaCadastro[];
@@ -746,7 +761,7 @@ export class GraficaProdutoFormComponent implements OnInit {
         this.cores = itens as GraficaCadastro[];
         break;
       case 'categoria':
-        this.categorias = itens as CatalogoCategoriaOption[];
+        this.categorias = itens as CategoriaHierarquicaOption[];
         break;
     }
   }
@@ -763,27 +778,72 @@ export class GraficaProdutoFormComponent implements OnInit {
     this.form.markAsDirty();
   }
 
-  private comItemCriado(tipo: 'material' | 'formato' | 'cor' | 'categoria', item: GraficaCadastro | GraficaFormato | CatalogoCategoria): Array<GraficaCadastro | GraficaFormato | CatalogoCategoriaOption> {
+  private comItemCriado(tipo: 'material' | 'formato' | 'cor' | 'categoria', item: GraficaCadastro | GraficaFormato | CatalogoCategoria): Array<GraficaCadastro | GraficaFormato | CategoriaHierarquicaOption> {
+    if (tipo === 'categoria') {
+      const itemCriado = this.toCategoriaHierarquicaOptions([...(this.categorias as any), item as CatalogoCategoria])
+        .find((opcao) => opcao.id === item.id) || this.toCategoriaHierarquicaOptions([item as CatalogoCategoria])[0];
+      return this.categorias.some((opcao) => opcao.id === itemCriado.id) ? this.categorias : [...this.categorias, itemCriado];
+    }
+
     const atual = {
       material: this.materiais,
       formato: this.formatos,
       cor: this.cores,
-      categoria: this.categorias,
-    }[tipo];
-    const itemCriado = tipo === 'categoria'
-      ? this.toCategoriaOption(item as CatalogoCategoria)
-      : item;
+    }[tipo] as Array<GraficaCadastro | GraficaFormato>;
+    const itemCriado = item as GraficaCadastro | GraficaFormato;
     return atual.some((opcao) => opcao.id === itemCriado.id) ? atual : [...atual, itemCriado];
   }
 
-  private toCategoriaOption(item: CatalogoCategoria): CatalogoCategoriaOption {
-    return {
-      id: item.id,
-      codigo: item.codigo,
-      nome: item.nome,
-      slug: item.slug,
-      ativo: item.ativo,
+  private listarCategoriasHierarquicas(): Observable<CategoriaHierarquicaOption[]> {
+    return this.categoriaService
+      .listarTodas({ ativo: true, sort: 'nome,asc' })
+      .pipe(map((categorias) => this.toCategoriaHierarquicaOptions(categorias || [])));
+  }
+
+  private toCategoriaHierarquicaOptions(categorias: CatalogoCategoria[]): CategoriaHierarquicaOption[] {
+    const porId = new Map<number, CatalogoCategoria>();
+    categorias.forEach((categoria) => porId.set(categoria.id, categoria));
+
+    const filhos = new Map<number | null, CatalogoCategoria[]>();
+    categorias.forEach((categoria) => {
+      const paiId = categoria.categoriaPaiId && porId.has(categoria.categoriaPaiId) ? categoria.categoriaPaiId : null;
+      const grupo = filhos.get(paiId) || [];
+      grupo.push(categoria);
+      filhos.set(paiId, grupo);
+    });
+
+    filhos.forEach((grupo) => {
+      grupo.sort((a, b) => {
+        const ordemA = a.ordemExibicao ?? Number.MAX_SAFE_INTEGER;
+        const ordemB = b.ordemExibicao ?? Number.MAX_SAFE_INTEGER;
+        if (ordemA !== ordemB) return ordemA - ordemB;
+        return a.nome.localeCompare(b.nome, 'pt-BR', { sensitivity: 'base' });
+      });
+    });
+
+    const resultado: CategoriaHierarquicaOption[] = [];
+    const visitar = (categoria: CatalogoCategoria, ancestrais: string[], nivel: number): void => {
+      const caminhoPartes = [...ancestrais, categoria.nome];
+      const caminho = caminhoPartes.join(' › ');
+      const caminhoPai = ancestrais.join(' › ');
+      resultado.push({
+        id: categoria.id,
+        codigo: categoria.codigo,
+        nome: categoria.nome,
+        slug: categoria.slug,
+        ativo: categoria.ativo,
+        categoriaPaiId: categoria.categoriaPaiId,
+        categoriaPaiNome: categoria.categoriaPaiNome,
+        nivel,
+        caminho,
+        caminhoPai,
+        busca: `${categoria.nome} ${caminho} ${caminhoPai}`,
+      });
+      (filhos.get(categoria.id) || []).forEach((filho) => visitar(filho, caminhoPartes, nivel + 1));
     };
+
+    (filhos.get(null) || []).forEach((categoria) => visitar(categoria, [], 0));
+    return resultado;
   }
 
   private aplicarProduto(produto: GraficaProduto): void {
