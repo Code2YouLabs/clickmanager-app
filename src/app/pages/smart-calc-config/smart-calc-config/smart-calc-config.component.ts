@@ -19,11 +19,7 @@ import { ProdutoOption } from 'src/app/models/produto/produto-option.model';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
-import { InputPesquisaComponent } from 'src/app/components/inputs/input-pesquisa/input-pesquisa.component';
-import { StatusBadgeComponent } from 'src/app/components/status-badge/status-badge.component';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-
-type ProdutoGrupo = { familia: string; produtos: ProdutoOption[] };
+import { DualListTransferComponent, DualListTransferItem } from 'src/app/components/dual-list-transfer/dual-list-transfer.component';
 
 @Component({
     selector: 'app-calculadora-config',
@@ -39,9 +35,7 @@ type ProdutoGrupo = { familia: string; produtos: ProdutoOption[] };
       PageCardComponent,
       SectionCardComponent,
       MobileTotalBarComponent,
-      InputPesquisaComponent,
-      StatusBadgeComponent,
-      MatCheckboxModule
+      DualListTransferComponent
     ],
     templateUrl: './smart-calc-config.component.html',
     styleUrls: ['./smart-calc-config.component.scss']
@@ -60,13 +54,7 @@ export class CalculadoraConfigComponent implements OnInit {
     isEditMode = false;
 
     produtoOptions: ProdutoOption[] = [];
-    habilitados = new Set<number>();
-    pesquisa = '';
-    readonly estados = [
-        { codigo: 'HABILITADO', titulo: 'Habilitados' },
-        { codigo: 'DISPONIVEL', titulo: 'Disponíveis' },
-        { codigo: 'PRECISA_AJUSTE', titulo: 'Precisam de ajuste' },
-    ] as const;
+    selecionados = new Set<number>();
     configAtual?: CalculadoraConfigResponse;
 
     form = this.fb.nonNullable.group({
@@ -96,7 +84,7 @@ export class CalculadoraConfigComponent implements OnInit {
                     this.erroCarregamento = false;
                     this.configAtual = res?.config ?? undefined;
                     this.produtoOptions = res?.produtosDisponiveis ?? [];
-                    this.habilitados = new Set(this.produtoOptions.filter(p => p.suportado && p.habilitado).map(p => p.id));
+                    this.selecionados = new Set(this.produtoOptions.filter(p => p.habilitado).map(p => p.id));
                     this.form.patchValue({
                         ativo: res?.config?.ativo ?? false,
                     });
@@ -122,7 +110,7 @@ export class CalculadoraConfigComponent implements OnInit {
 
         const req: CalculadoraConfigRequest = {
             ativo: formValue.ativo,
-            produtoGraficoIds: [...this.habilitados],
+            produtoGraficoIds: [...this.selecionados],
         };
         this.salvando.set(true);
 
@@ -132,7 +120,7 @@ export class CalculadoraConfigComponent implements OnInit {
                 next: (res) => {
                     this.configAtual = res.config ?? undefined;
                     this.produtoOptions = res.produtosDisponiveis;
-                    this.habilitados = new Set(this.produtoOptions.filter(p => p.suportado && p.habilitado).map(p => p.id));
+                    this.selecionados = new Set(this.produtoOptions.filter(p => p.habilitado).map(p => p.id));
                     this.toastr.success('Configurações salvas com sucesso!', 'SmartCalc');
                 },
                 error: (err) => {
@@ -142,31 +130,23 @@ export class CalculadoraConfigComponent implements OnInit {
             });
     }
 
-    alternarProduto(produto: ProdutoOption, selecionado: boolean): void {
-        if (!produto.suportado) return;
-        const proximos = new Set(this.habilitados);
-        if (selecionado) proximos.add(produto.id);
-        else proximos.delete(produto.id);
-        this.habilitados = proximos;
+    get transferItems(): DualListTransferItem[] {
+        return this.produtoOptions.map(produto => ({
+            id: produto.id,
+            label: `${produto.nome}${produto.formatoNome ? ' · ' + produto.formatoNome : ''}`,
+            group: produto.familiaNome || 'Sem família',
+            status: produto.suportado ? 'PRONTO' : 'PRECISA_AJUSTE',
+            details: produto.suportado ? [] : (produto.motivos || []).map(motivo => this.motivoTexto(motivo)),
+            editRoute: produto.suportado ? undefined : ['/page/grafica/produtos', produto.id, 'editar'],
+        }));
     }
 
-    grupos(estado: 'HABILITADO' | 'DISPONIVEL' | 'PRECISA_AJUSTE'): ProdutoGrupo[] {
-        const termo = this.pesquisa.trim().toLocaleLowerCase('pt-BR');
-        const porFamilia = new Map<string, ProdutoOption[]>();
-        for (const produto of this.produtoOptions) {
-            if (this.estado(produto) !== estado) continue;
-            const texto = `${produto.familiaNome || ''} ${produto.nome} ${produto.formatoNome || ''} ${produto.codigo || ''}`
-                .toLocaleLowerCase('pt-BR');
-            if (termo && !texto.includes(termo)) continue;
-            const familia = produto.familiaNome || 'Sem família';
-            porFamilia.set(familia, [...(porFamilia.get(familia) || []), produto]);
-        }
-        return [...porFamilia].map(([familia, produtos]) => ({ familia, produtos }));
+    get selectedIds(): number[] {
+        return [...this.selecionados];
     }
 
-    estado(produto: ProdutoOption): 'HABILITADO' | 'DISPONIVEL' | 'PRECISA_AJUSTE' {
-        if (!produto.suportado) return 'PRECISA_AJUSTE';
-        return this.habilitados.has(produto.id) ? 'HABILITADO' : 'DISPONIVEL';
+    atualizarSelecao(ids: number[]): void {
+        this.selecionados = new Set(ids);
     }
 
     motivoTexto(codigo: string): string {
@@ -187,8 +167,6 @@ export class CalculadoraConfigComponent implements OnInit {
         return mensagens[codigo] || 'Produto ainda não compatível com o SmartCalc.';
     }
 
-    trackById = (_: number, item: ProdutoOption) => item.id;
-
     get tituloPagina(): string {
         return this.isEditMode ? 'Editar SmartCalc' : 'Configuração SmartCalc';
     }
@@ -197,13 +175,8 @@ export class CalculadoraConfigComponent implements OnInit {
         return this.salvando() ? 'Salvando...' : 'Salvar';
     }
 
-    get resumoProdutos(): string {
-        const total = this.habilitados.size;
-        return total === 1 ? '1 produto habilitado para cálculo' : `${total} produtos habilitados para cálculo`;
-    }
-
     get resumoProdutosCurto(): string {
-        const total = this.habilitados.size;
+        const total = this.selecionados.size;
         return total === 1 ? '1 produto' : `${total} produtos`;
     }
 

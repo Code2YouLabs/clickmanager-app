@@ -13,53 +13,19 @@
 
     <app-section-card titulo="Bases de produção"
       subtitulo="Escolha os produtos que servirão de área para distribuir e calcular as peças.">
-      <app-input-pesquisa placeholder="Buscar produto, família ou formato" [showLabel]="false"
-        (valorAlterado)="pesquisa = $event"></app-input-pesquisa>
       @if (carregando()) {
         <mat-progress-spinner mode="indeterminate" diameter="28"></mat-progress-spinner>
       } @else {
         @if (erroCarregamento) {
           <p role="alert">Não foi possível carregar os produtos. Reabra a configuração para tentar novamente.</p>
         }
-        <p>{{ resumoProdutos }}</p>
         @if (!erroCarregamento && !produtoOptions.length) {
-          <p>Nenhum produto gráfico encontrado. Cadastre um produto para escolher uma base de produção.</p>
+          <p>Nenhuma base com preço fixo encontrada. Cadastre ou ajuste um produto para começar.</p>
         }
-        @for (estado of estados; track estado.codigo) {
-          @if (grupos(estado.codigo).length) {
-          <app-section-card [title]="estado.titulo" [divider]="false">
-            @for (grupo of grupos(estado.codigo); track grupo.familia) {
-              <div class="smartcalc-config__family">
-                <strong>{{ grupo.familia }}</strong>
-                @for (produto of grupo.produtos; track produto.id) {
-                  <div class="smartcalc-config__product">
-                    <div class="smartcalc-config__product-main">
-                      @if (produto.suportado) {
-                        <mat-checkbox [checked]="habilitados.has(produto.id)" [disabled]="salvando()"
-                          (change)="alternarProduto(produto, $event.checked)">
-                          {{ produto.nome }} @if (produto.formatoNome) { · {{ produto.formatoNome }} }
-                        </mat-checkbox>
-                      } @else {
-                        <span>{{ produto.nome }} @if (produto.formatoNome) { · {{ produto.formatoNome }} }</span>
-                      }
-                      <app-status-badge [status]="estado.codigo"></app-status-badge>
-                    </div>
-                    @if (!produto.suportado) {
-                      <ul class="smartcalc-config__motivos">
-                        @for (motivo of produto.motivos || []; track motivo) {
-                          <li>{{ motivoTexto(motivo) }}</li>
-                        }
-                      </ul>
-                      <a mat-stroked-button [routerLink]="['/page/grafica/produtos', produto.id, 'editar']">
-                        <mat-icon>edit</mat-icon> Editar produto
-                      </a>
-                    }
-                  </div>
-                }
-              </div>
-            }
-          </app-section-card>
-          }
+        @if (!erroCarregamento) {
+          <app-dual-list-transfer [items]="transferItems" [selectedIds]="selectedIds"
+            [disabled]="salvando()" leftTitle="Disponíveis" rightTitle="No SmartCalc" editActionLabel="Editar produto"
+            (selectedIdsChange)="atualizarSelecao($event)"></app-dual-list-transfer>
         }
       }
     </app-section-card>

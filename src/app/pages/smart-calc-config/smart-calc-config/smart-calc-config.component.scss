@@ -9,53 +9,6 @@
   line-height: 1.5;
 }
 
-.smartcalc-config__family {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.smartcalc-config__product {
-  padding: 10px 0;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.smartcalc-config__product-main {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.smartcalc-config__motivos {
-  margin: 6px 0 10px;
-  padding-left: 24px;
-  color: #92400e;
-}
-
-.smartcalc-config__product a mat-icon {
-  margin-right: 4px;
-}
-
-.smartcalc-config__summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-  color: #64748b;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.smartcalc-config__state {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 64px;
-  color: #64748b;
-}
-
 .smartcalc-config__actions {
   display: flex;
   justify-content: space-between;
@@ -109,9 +62,4 @@
     padding-bottom: 220px;
   }
 
-  .smartcalc-config__summary {
-    flex-direction: column;
-    align-items: flex-start;
-    margin-bottom: 10px;
-  }
 }

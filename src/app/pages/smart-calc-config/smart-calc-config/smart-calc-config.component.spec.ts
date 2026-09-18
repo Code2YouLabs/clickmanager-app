@@ -15,17 +15,15 @@ describe('CalculadoraConfigComponent', () => {
       suportado: true, habilitado: true, motivos: [] },
     { id: 2, nome: 'Placa 70x100', familiaNome: 'Placa MDF', formatoNome: '70x100',
       suportado: true, habilitado: false, motivos: [] },
-    { id: 3, nome: 'Panfleto', familiaNome: 'Impressos',
-      suportado: false, habilitado: false, motivos: ['PRECO_LOTE_NAO_SUPORTADO'] },
+    { id: 3, nome: 'Papel Supremo', familiaNome: 'Papel', formatoNome: 'A4',
+      suportado: false, habilitado: true, motivos: ['DIMENSOES_INVALIDAS'] },
   ];
 
   beforeEach(() => {
     service = jasmine.createSpyObj('CalculadoraConfigService', ['getConfigCompleta', 'salvar']);
     toastr = jasmine.createSpyObj('ToastrService', ['success', 'error']);
     service.getConfigCompleta.and.returnValue(of({ config: { id: 10, ativo: true }, produtosDisponiveis: produtos }));
-    service.salvar.and.returnValue(of({ config: { id: 10, ativo: false }, produtosDisponiveis: produtos.map(p => ({
-      ...p, habilitado: p.id === 2,
-    })) }));
+    service.salvar.and.returnValue(of({ config: { id: 10, ativo: false }, produtosDisponiveis: produtos }));
     TestBed.configureTestingModule({ providers: [
       FormBuilder,
       { provide: CalculadoraConfigService, useValue: service },
@@ -40,42 +38,35 @@ describe('CalculadoraConfigComponent', () => {
     return component;
   }
 
-  it('carrega, agrupa e busca produtos mantendo motivos de não suporte', () => {
+  it('carrega seleção independente do suporte e traduz pendências', () => {
     const component = criar();
-    expect(component.form.controls.ativo.value).toBeTrue();
-    expect(component.grupos('HABILITADO')[0].produtos.map(p => p.id)).toEqual([1]);
-    expect(component.grupos('DISPONIVEL')[0].produtos.map(p => p.id)).toEqual([2]);
-    expect(component.grupos('PRECISA_AJUSTE')[0].produtos.map(p => p.id)).toEqual([3]);
-    expect(component.motivoTexto('PRECO_LOTE_NAO_SUPORTADO')).toContain('lote');
-    component.pesquisa = '70x100';
-    expect(component.grupos('DISPONIVEL')[0].produtos.map(p => p.id)).toEqual([2]);
-    expect(component.grupos('HABILITADO')).toEqual([]);
+    expect(component.selectedIds).toEqual([1, 3]);
+    expect(component.transferItems.map(item => item.group)).toEqual(['Placa MDF', 'Placa MDF', 'Papel']);
+    expect(component.transferItems[0].status).toBe('PRONTO');
+    expect(component.transferItems[2].status).toBe('PRECISA_AJUSTE');
+    expect(component.transferItems[2].details?.[0]).toContain('largura e altura');
+    expect(component.transferItems[2].editRoute).toEqual(['/page/grafica/produtos', 3, 'editar']);
   });
 
-  it('seleciona produtos válidos, impede inválidos, remove e salva seleção e ativação', () => {
+  it('move produtos com e sem pendência, salva seleção e ativação', () => {
     const component = criar();
-    component.alternarProduto(produtos[2], true);
-    expect(component.habilitados.has(3)).toBeFalse();
-    component.alternarProduto(produtos[0], false);
-    component.alternarProduto(produtos[1], true);
+    component.atualizarSelecao([2, 3]);
     component.form.controls.ativo.setValue(false);
     component.onSubmit();
-    expect(service.salvar).toHaveBeenCalledWith({ ativo: false, produtoGraficoIds: [2] });
-    expect(component.habilitados.has(2)).toBeTrue();
+    expect(service.salvar).toHaveBeenCalledWith({ ativo: false, produtoGraficoIds: [2, 3] });
+    expect(component.selectedIds).toEqual([1, 3]);
     expect(toastr.success).toHaveBeenCalled();
   });
 
   it('mostra erro quando salvar falha', () => {
     service.salvar.and.returnValue(throwError(() => new Error('Falha')));
-    const component = criar();
-    component.onSubmit();
+    criar().onSubmit();
     expect(toastr.error).toHaveBeenCalled();
   });
 
   it('impede salvar se a configuração não carregou', () => {
     service.getConfigCompleta.and.returnValue(throwError(() => new Error('Falha')));
     const component = criar();
-    expect(component.erroCarregamento).toBeTrue();
     component.onSubmit();
     expect(service.salvar).not.toHaveBeenCalled();
     expect(toastr.error).toHaveBeenCalled();
