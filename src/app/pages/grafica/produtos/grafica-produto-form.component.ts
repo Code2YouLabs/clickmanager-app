@@ -1,3 +1,4 @@
+import { OperacaoProdutivaGrafica } from '../shared/grafica.models';
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -42,6 +43,7 @@ type ProdutoFormSnapshot = {
   materialId: number | null;
   formatoId: number | null;
   corId: number | null;
+  operacaoProdutiva: OperacaoProdutivaGrafica;
 };
 
 @Component({
@@ -168,6 +170,20 @@ type ProdutoFormSnapshot = {
               (createClick)="abrirCadastroRapido('cor')">
             </app-input-options>
           </div>
+        </app-section-card>
+
+        <app-section-card title="Produção">
+          <mat-form-field appearance="outline">
+            <mat-label>Cálculo produtivo</mat-label>
+            <mat-select formControlName="operacaoProdutiva">
+              <mat-option value="NENHUMA">Sem cálculo de aproveitamento</mat-option>
+              <mat-option value="APROVEITAMENTO_FOLHA">Aproveitamento em folha</mat-option>
+            </mat-select>
+          </mat-form-field>
+          @if (form.controls.operacaoProdutiva.value === 'APROVEITAMENTO_FOLHA') {
+            <p>Permite calcular quantas peças cabem na folha e escolher o melhor aproveitamento entre os formatos disponíveis.</p>
+            <p>Requer um formato com dimensões válidas e preço fixo por folha.</p>
+          }
         </app-section-card>
 
         <app-section-card title="Precificação">
@@ -516,6 +532,7 @@ export class GraficaProdutoFormComponent implements OnInit {
     materialId: this.fb.control<number | null>(null),
     formatoId: this.fb.control<number | null>(null),
     corId: this.fb.control<number | null>(null),
+    operacaoProdutiva: this.fb.control<OperacaoProdutivaGrafica>('NENHUMA', { nonNullable: true }),
   });
   precoForm: FormGroup = this.fb.group({ tipo: ['FIXO'] });
 
@@ -652,6 +669,7 @@ export class GraficaProdutoFormComponent implements OnInit {
       data: {
         acabamento: acabamento ? this.clone(acabamento) : null,
         nextId: this.proximoAcabamentoId(),
+        formato: this.formatos.find(item => item.id === this.form.controls.formatoId.value),
       },
       autoFocus: false,
     }).afterClosed().subscribe((resultado?: ProdutoAcabamentoUx | null) => {
@@ -795,6 +813,7 @@ export class GraficaProdutoFormComponent implements OnInit {
       materialId: produto.material?.id || null,
       formatoId: produto.formato?.id || null,
       corId: produto.cor?.id || null,
+      operacaoProdutiva: produto.operacaoProdutiva || 'NENHUMA',
     });
     const imagens = produto.imagens || [];
     this.imagemPrincipal = imagens.find((img) => img.principal && img.ativo !== false)?.arquivo || null;
@@ -872,12 +891,15 @@ export class GraficaProdutoFormComponent implements OnInit {
       materialId: raw.materialId,
       formatoId: raw.formatoId,
       corId: raw.corId,
+      operacaoProdutiva: raw.operacaoProdutiva,
       acabamentos: this.acabamentosProduto.map((item, index) => ({
         id: !this.isClone && item.id > 0 ? item.id : null,
-        codigo: this.codigo(item.nome).slice(0, 50),
+        codigo: item.codigo || this.codigo(item.nome).slice(0, 50),
         nome: item.nome,
         descricao: item.descricao || null,
         formaAplicacao: this.toFormaAplicacaoBackend(item.aplicacao),
+        restricaoLarguraUtil: item.restricaoLarguraUtil ?? null,
+        restricaoAlturaUtil: item.restricaoAlturaUtil ?? null,
         ativo: true,
         ordem: index + 1,
         politicas: [this.precoPayloadFromUx(item.preco, item.nome, this.isClone)],
@@ -1046,6 +1068,9 @@ export class GraficaProdutoFormComponent implements OnInit {
       nome: item.nome,
       descricao: item.descricao || null,
       aplicacao: this.toAplicacaoUx(item.formaAplicacao),
+      codigo: item.codigo,
+      restricaoLarguraUtil: item.restricaoLarguraUtil,
+      restricaoAlturaUtil: item.restricaoAlturaUtil,
       preco: this.precoUxFromPolitica((item.politicas || [])[0]),
     }));
   }

@@ -1,3 +1,4 @@
+import { GraficaFormato } from '../shared/grafica.models';
 import { CommonModule } from '@angular/common';
 import { Component, Inject, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -12,6 +13,9 @@ export type ProdutoAcabamentoAplicacao = 'FOLHA' | 'PECA' | 'SERVICO' | 'METRO_Q
 export type ProdutoAcabamentoPrecoTipo = 'FIXO' | 'QUANTIDADE' | 'DEMANDA' | 'METRO';
 
 export interface ProdutoAcabamentoUx {
+  codigo?: string;
+  restricaoLarguraUtil?: number | null;
+  restricaoAlturaUtil?: number | null;
   id: number;
   nome: string;
   descricao?: string | null;
@@ -70,6 +74,24 @@ export interface ProdutoAcabamentoUx {
             <textarea matInput formControlName="descricao" rows="3" maxlength="500"></textarea>
           </mat-form-field>
         </div>
+
+        <app-section-card title="Área disponível para produção">
+          <p>Opcional. Preencha ambas as medidas na unidade do formato do produto ({{ data.formato?.unidadeDimensao || 'selecione um formato no produto' }}).
+            A restrição só é aplicada quando este acabamento é selecionado no cálculo e não pode exceder a área base da folha.</p>
+          <div class="dialog-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Largura disponível</mat-label>
+              <input matInput type="number" formControlName="restricaoLarguraUtil" step="any">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Altura disponível</mat-label>
+              <input matInput type="number" formControlName="restricaoAlturaUtil" step="any">
+            </mat-form-field>
+          </div>
+          @if (form.touched && form.hasError('restricaoInvalida')) {
+            <p role="alert">Informe ambas as medidas positivas, sem ultrapassar a área base do formato.</p>
+          }
+        </app-section-card>
 
         <app-section-card title="Precificação">
           <app-preco-selector
@@ -142,6 +164,8 @@ export class GraficaProdutoAcabamentoDialogComponent implements OnDestroy {
   private readonly aplicacaoSub: Subscription;
 
   form = this.fb.group({
+    restricaoLarguraUtil: this.fb.control<number | null>(null),
+    restricaoAlturaUtil: this.fb.control<number | null>(null),
     nome: this.fb.control('', { nonNullable: true, validators: [Validators.required] }),
     descricao: this.fb.control('', { nonNullable: true }),
     aplicacao: this.fb.control<ProdutoAcabamentoAplicacao>('FOLHA', { nonNullable: true, validators: [Validators.required] }),
@@ -160,13 +184,24 @@ export class GraficaProdutoAcabamentoDialogComponent implements OnDestroy {
     private readonly fb: FormBuilder,
     private readonly dialogRef: MatDialogRef<GraficaProdutoAcabamentoDialogComponent, ProdutoAcabamentoUx | null>,
     @Inject(MAT_DIALOG_DATA)
-    public readonly data: { acabamento?: ProdutoAcabamentoUx | null; nextId: number },
+    public readonly data: { acabamento?: ProdutoAcabamentoUx | null; nextId: number; formato?: GraficaFormato },
   ) {
     const acabamento = data?.acabamento;
     this.form.reset({
+      restricaoLarguraUtil: acabamento?.restricaoLarguraUtil ?? null,
+      restricaoAlturaUtil: acabamento?.restricaoAlturaUtil ?? null,
       nome: acabamento?.nome || '',
       descricao: acabamento?.descricao || '',
       aplicacao: acabamento?.aplicacao || 'FOLHA',
+    });
+    this.form.addValidators(control => {
+      const { restricaoLarguraUtil: largura, restricaoAlturaUtil: altura } = control.value;
+      if (largura == null && altura == null) return null;
+      const formato = this.data.formato;
+      const baseLargura = formato?.larguraUtil ?? formato?.largura;
+      const baseAltura = formato?.alturaUtil ?? formato?.altura;
+      return largura > 0 && altura > 0 && formato?.unidadeDimensao && baseLargura != null && baseAltura != null
+        && largura <= baseLargura && altura <= baseAltura ? null : { restricaoInvalida: true };
     });
     this.precoForm = this.criarPrecoForm(acabamento?.preco);
     this.garantirTipoPrecoPermitido();
@@ -192,6 +227,9 @@ export class GraficaProdutoAcabamentoDialogComponent implements OnDestroy {
     const raw = this.form.getRawValue();
     this.dialogRef.close({
       id: this.data?.acabamento?.id || this.data.nextId,
+      codigo: this.data?.acabamento?.codigo,
+      restricaoLarguraUtil: raw.restricaoLarguraUtil,
+      restricaoAlturaUtil: raw.restricaoAlturaUtil,
       nome: raw.nome.trim(),
       descricao: raw.descricao?.trim() || null,
       aplicacao: raw.aplicacao,

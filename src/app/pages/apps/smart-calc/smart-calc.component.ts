@@ -115,7 +115,6 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
   // CONFIG (tela config antiga)
   // =========================
   config?: CalculadoraConfigResponse | null;
-  private allowedProductIds = new Set<number>();
   configAtiva = false;
 
   constructor(
@@ -186,17 +185,12 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
       this.recalculo$.next();
     });
 
-    // 3) carrega configuração (whitelist)
+    // 3) carrega ativação da ferramenta
     this.calcCfgSvc.getConfig().subscribe({
       next: (cfg) => {
         this.config = cfg;
         this.configAtiva = !!cfg?.ativo;
         this.carregandoConfig = false;
-
-        this.allowedProductIds.clear();
-        for (const p of (cfg?.produtos ?? [])) {
-          if (p?.id != null) this.allowedProductIds.add(p.id);
-        }
 
         if (!this.configAtiva) {
           this.toastr.warning('O SmartCalc está desabilitado nas configurações.', 'SmartCalc');
@@ -241,13 +235,9 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
         // (mantém compatibilidade com sua configAtiva)
         this.configAtiva = this.configAtiva && !!init?.ativo;
 
-        let arr = (init?.produtos ?? []).map(
+        const arr = (init?.produtos ?? []).map(
           (p) => ({ id: p.id, nome: p.nome } as unknown as ProdutoListagem)
         );
-
-        if (this.allowedProductIds.size > 0) {
-          arr = arr.filter((p) => this.allowedProductIds.has(p.id));
-        }
 
         this.produtos = arr;
 

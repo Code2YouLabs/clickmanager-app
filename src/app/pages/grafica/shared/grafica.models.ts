@@ -1,3 +1,4 @@
+export type OperacaoProdutivaGrafica = 'NENHUMA' | 'APROVEITAMENTO_FOLHA';
 import { CatalogoPaginaResponse, CatalogoProdutoImagem, CatalogoProdutoImagemRequest } from '../../catalogo/shared/models/catalogo.models';
 
 export type GraficaTipoParametro = 'SELECAO' | 'NUMERO_INTEIRO' | 'NUMERO_DECIMAL' | 'TEXTO';
@@ -8,6 +9,7 @@ export type GraficaModoCobrancaMetro = 'QUADRADO' | 'LINEAR';
 export type GraficaProdutoAcabamentoFormaAplicacao = 'POR_FOLHA' | 'POR_PECA' | 'POR_SERVICO' | 'POR_METRO_QUADRADO' | 'POR_METRO_LINEAR';
 
 export interface GraficaProduto {
+  operacaoProdutiva?: OperacaoProdutivaGrafica;
   id: number;
   catalogoProdutoId: number;
   familiaProdutoGraficoId?: number | null;
@@ -57,6 +59,7 @@ export interface GraficaOpcao {
 }
 
 export interface GraficaProdutoRequest {
+  operacaoProdutiva?: OperacaoProdutivaGrafica;
   catalogoProdutoId?: number | null;
   ativo?: boolean;
   produto?: GraficaCatalogoProdutoMinimoRequest | null;
@@ -216,6 +219,9 @@ export interface GraficaPrecoPoliticaRequest {
 }
 
 export interface GraficaProdutoAcabamento {
+  codigo?: string;
+  restricaoLarguraUtil?: number | null;
+  restricaoAlturaUtil?: number | null;
   id: number;
   nome: string;
   descricao?: string | null;
@@ -228,6 +234,8 @@ export interface GraficaProdutoAcabamento {
 }
 
 export interface GraficaProdutoAcabamentoRequest {
+  restricaoLarguraUtil?: number | null;
+  restricaoAlturaUtil?: number | null;
   id?: number | null;
   codigo?: string | null;
   nome: string;

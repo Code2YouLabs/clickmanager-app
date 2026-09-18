@@ -11,30 +11,13 @@
       </div>
     </app-section-card>
 
-    <app-section-card
-      [titulo]="isMobileView ? 'Produtos' : 'Produtos habilitados'"
-      [subtitulo]="isMobileView ? 'Escolha o catálogo disponível.' : 'Selecione quais produtos podem ser usados no SmartCalc.'">
-
+    <app-section-card titulo="Produtos disponíveis"
+      subtitulo="Os produtos disponíveis são definidos pela configuração produtiva de cada produto.">
       @if (carregando()) {
-      <div class="smartcalc-config__state">
         <mat-progress-spinner mode="indeterminate" diameter="28"></mat-progress-spinner>
-        <span>Carregando produtos...</span>
-      </div>
       } @else {
-      <div class="smartcalc-config__summary">
-        <span>{{ isMobileView ? resumoProdutosCurto : resumoProdutos }}</span>
-        <span *ngIf="!produtoOptions.length">{{ isMobileView ? 'Sem produtos' : 'Nenhum produto disponível' }}</span>
-      </div>
-
-      <app-input-multi-select
-        [control]="produtoIdsControl"
-        [label]="isMobileView ? 'Produtos ativos' : 'Produtos com SmartCalc habilitado'"
-        searchPlaceholder="Buscar produto"
-        [options]="produtoOptions"
-        visualStyle="subtle"
-        [cardMinHeight]="0"
-        [listHeight]="isMobileView ? 240 : 280">
-      </app-input-multi-select>
+        <p>{{ resumoProdutos }}</p>
+        <p>Configure o cálculo produtivo no cadastro do produto. A ativação inclui automaticamente todas as variantes suportadas.</p>
       }
     </app-section-card>
 
@@ -55,7 +38,7 @@
 <app-page-card
   class="smartcalc-config-page"
   [titulo]="tituloPagina"
-  subtitulo="Controle ativação e catálogo disponível no SmartCalc."
+  subtitulo="Controle a ativação do SmartCalc."
   botaoTexto="Voltar"
   botaoIcone="arrow_back"
   botaoCor="primary"

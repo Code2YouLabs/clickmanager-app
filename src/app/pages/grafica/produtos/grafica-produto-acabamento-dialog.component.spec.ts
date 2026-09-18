@@ -36,6 +36,30 @@ describe('GraficaProdutoAcabamentoDialogComponent', () => {
     component.ngOnDestroy();
   });
 
+  it('preserva restrições e código do acabamento na edição', () => {
+    const component = new GraficaProdutoAcabamentoDialogComponent(new FormBuilder(), dialogRef, {
+      acabamento: { id: 1, codigo: 'CORTE_EXISTENTE', nome: 'Corte eletrônico', aplicacao: 'FOLHA',
+        restricaoLarguraUtil: 19, restricaoAlturaUtil: 26, preco: { tipo: 'FIXO', valor: 2 } },
+      nextId: -1,
+      formato: { id: 1, codigo: 'A4', nome: 'A4', ativo: true, largura: 21, altura: 29.7,
+        larguraUtil: 20, alturaUtil: 28, unidadeDimensao: 'CENTIMETRO' },
+    });
+    component.salvar();
+    expect(dialogRef.close).toHaveBeenCalledWith(jasmine.objectContaining({ codigo: 'CORTE_EXISTENTE',
+      restricaoLarguraUtil: 19, restricaoAlturaUtil: 26 }));
+    dialogRef.close.calls.reset();
+    for (const [largura, altura] of [[19, null], [null, 26], [0, 26], [21, 26], [19, 29]]) {
+      component.form.patchValue({ restricaoLarguraUtil: largura, restricaoAlturaUtil: altura });
+      component.salvar();
+      expect(component.form.hasError('restricaoInvalida')).toBeTrue();
+      expect(dialogRef.close).not.toHaveBeenCalled();
+    }
+    component.form.patchValue({ restricaoLarguraUtil: null, restricaoAlturaUtil: null });
+    component.salvar();
+    expect(dialogRef.close).toHaveBeenCalled();
+    component.ngOnDestroy();
+  });
+
   function criarComponente(acabamento: ProdutoAcabamentoUx): GraficaProdutoAcabamentoDialogComponent {
     return new GraficaProdutoAcabamentoDialogComponent(
       new FormBuilder(),

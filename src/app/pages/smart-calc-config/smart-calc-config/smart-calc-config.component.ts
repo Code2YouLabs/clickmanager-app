@@ -1,6 +1,6 @@
 import { Component, HostListener, OnInit, DestroyRef, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
@@ -18,7 +18,6 @@ import { extrairMensagemErro } from 'src/app/utils/mensagem.util';
 import { ProdutoOption } from 'src/app/models/produto/produto-option.model';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
-import { InputMultiSelectComponent } from 'src/app/components/inputs/input-multi-select/input-multi-select-component';
 import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
 
 @Component({
@@ -34,7 +33,6 @@ import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mob
       RouterModule,
       PageCardComponent,
       SectionCardComponent,
-      InputMultiSelectComponent,
       MobileTotalBarComponent
     ],
     templateUrl: './smart-calc-config.component.html',
@@ -57,7 +55,6 @@ export class CalculadoraConfigComponent implements OnInit {
 
     form = this.fb.nonNullable.group({
         ativo: this.fb.nonNullable.control<boolean>(true),
-        produtoIds: this.fb.nonNullable.control<number[]>([]),
     });
 
     ngOnInit(): void {
@@ -84,16 +81,8 @@ export class CalculadoraConfigComponent implements OnInit {
                 next: (res) => {
                     this.configAtual = res?.config ?? undefined;
                     this.produtoOptions = res?.produtosDisponiveis ?? [];
-                    const idsDisponiveis = new Set(this.produtoOptions.map((produto) => produto.id));
-                    const produtos = res?.config?.produtos ?? [];
-
-                    const produtoIds = produtos
-                        .map(p => p?.id)
-                        .filter((id): id is number => typeof id === 'number' && idsDisponiveis.has(id));
-
                     this.form.patchValue({
                         ativo: res?.config?.ativo ?? false,
-                        produtoIds,
                     });
 
                 },
@@ -109,20 +98,8 @@ export class CalculadoraConfigComponent implements OnInit {
     }
 
 
-    private mapNomesToIds(nomes?: string[]): number[] {
-        if (!nomes?.length) return [];
-        const byName = new Map(this.produtoOptions.map(p => [p.nome, p.id]));
-        return nomes.map(n => byName.get(n)).filter((v): v is number => typeof v === 'number');
-    }
-
     onSubmit(): void {
         const formValue = this.form.getRawValue();
-        if (formValue.ativo && (!formValue.produtoIds || formValue.produtoIds.length === 0)) {
-            this.toastr.warning('Para habilitar o SmartCalc, selecione ao menos um produto.');
-            this.form.markAllAsTouched();
-            return;
-        }
-
         if (this.form.invalid) {
             this.form.markAllAsTouched();
             return;
@@ -132,7 +109,7 @@ export class CalculadoraConfigComponent implements OnInit {
         this.salvando.set(true);
 
         this.calculadoraService.salvar(req)
-            .pipe(takeUntilDestroyed(this.destroyRef))
+            .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.salvando.set(false)))
             .subscribe({
                 next: (res) => {
                     this.configAtual = res ?? undefined;
@@ -157,17 +134,13 @@ export class CalculadoraConfigComponent implements OnInit {
     }
 
     get resumoProdutos(): string {
-        const total = this.produtoIdsControl.value?.length ?? 0;
-        return total === 1 ? '1 produto habilitado' : `${total} produtos habilitados`;
+        const total = this.produtoOptions.length;
+        return total === 1 ? '1 família disponível para cálculo' : `${total} famílias disponíveis para cálculo`;
     }
 
     get resumoProdutosCurto(): string {
-        const total = this.produtoIdsControl.value?.length ?? 0;
-        return total === 1 ? '1 produto' : `${total} produtos`;
-    }
-
-    get produtoIdsControl(): FormControl<number[]> {
-        return this.form.get('produtoIds') as FormControl<number[]>;
+        const total = this.produtoOptions.length;
+        return total === 1 ? '1 família' : `${total} famílias`;
     }
 
     voltar(): void {
