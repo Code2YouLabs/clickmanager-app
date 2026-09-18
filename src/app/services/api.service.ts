@@ -1,4 +1,4 @@
-import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpParams, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
@@ -12,8 +12,8 @@ export class ApiService {
 
   constructor(private http: HttpClient) { }
 
-  get<T>(endpoint: string, params?: HttpParams): Observable<T> {
-    return this.http.get<T>(`${this.BASE_URL}/${endpoint}`, { params });
+  get<T>(endpoint: string, params?: HttpParams, context?: HttpContext): Observable<T> {
+    return this.http.get<T>(`${this.BASE_URL}/${endpoint}`, { params, context });
   }
 
   getBlobResponse(endpoint: string, params?: HttpParams): Observable<HttpResponse<Blob>> {

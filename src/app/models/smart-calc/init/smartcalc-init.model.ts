@@ -15,6 +15,8 @@ export interface SmartCalcInitResponse {
  */
 export interface ProdutoSmartCalcInitResponse {
   id: number;
+  familiaProdutoGraficoId?: number;
+  catalogoProdutoId?: number;
   nome: string;
   variacoes: ProdutoVariacaoSmartCalcInitResponse[];
 }
@@ -24,13 +26,14 @@ export interface ProdutoSmartCalcInitResponse {
  * Cada variação possui:
  * - 1 material
  * - N acabamentos
- * - N serviços
  */
 export interface ProdutoVariacaoSmartCalcInitResponse {
   id: number;
-  material: IdNomeResponse;
+  produtoGraficoId?: number;
+  material: IdNomeResponse | null;
+  formato?: IdNomeResponse | null;
+  cor?: IdNomeResponse | null;
   acabamentos: IdNomeResponse[];
-  servicos: IdNomeResponse[];
 }
 
 /**
@@ -39,6 +42,7 @@ export interface ProdutoVariacaoSmartCalcInitResponse {
  * Corresponde aos *ResumeResponse do backend
  */
 export interface IdNomeResponse {
-  id: number;
+  id: number | string;
+  codigo?: string;
   nome: string;
 }

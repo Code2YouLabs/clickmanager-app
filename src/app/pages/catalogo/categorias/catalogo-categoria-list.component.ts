@@ -65,6 +65,7 @@ import { CatalogoStatusChipComponent } from '../shared/components/catalogo-statu
               <td mat-cell *matCellDef="let item">
                 <button mat-icon-button matTooltip="Caracteristicas" *ngIf="podeVerCaracteristicas" (click)="caracteristicas(item)"><mat-icon>tune</mat-icon></button>
                 <button mat-icon-button matTooltip="Editar" *ngIf="podeEditar" (click)="editar(item)"><mat-icon>edit</mat-icon></button>
+                <button mat-icon-button matTooltip="Clonar" *ngIf="podeCriar" (click)="clonar(item)"><mat-icon>content_copy</mat-icon></button>
                 <button mat-icon-button matTooltip="Inativar" *ngIf="podeExcluir && item.ativo" (click)="inativar(item)"><mat-icon>block</mat-icon></button>
               </td>
             </ng-container>
@@ -156,6 +157,20 @@ export class CatalogoCategoriaListComponent implements OnInit {
 
   nova(): void { this.router.navigate(['/page/catalogo/categorias/nova']); }
   editar(item: CatalogoCategoria): void { this.router.navigate(['/page/catalogo/categorias', item.id, 'editar']); }
+  clonar(item: CatalogoCategoria): void {
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      width: '420px',
+      data: {
+        title: 'Clonar categoria',
+        message: `Deseja usar "${item.nome}" como base para criar uma nova categoria?`,
+        confirmText: 'Clonar',
+      },
+    });
+    ref.afterClosed().subscribe((ok) => {
+      if (!ok) return;
+      this.router.navigate(['/page/catalogo/categorias/nova'], { queryParams: { cloneFrom: item.id } });
+    });
+  }
   caracteristicas(item: CatalogoCategoria): void { this.router.navigate(['/page/catalogo/categorias', item.id, 'caracteristicas']); }
 
   inativar(item: CatalogoCategoria): void {

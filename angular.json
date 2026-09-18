@@ -79,7 +79,9 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "prebundle": false
+            "prebundle": false,
+            "host": "127.0.0.1",
+            "hmr": false
           },
           "configurations": {
             "production": {

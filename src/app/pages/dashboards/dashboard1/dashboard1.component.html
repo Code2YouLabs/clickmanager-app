@@ -1,57 +1,69 @@
-<section class="dashboard-mobile">
-  <div class="dashboard-mobile__summary">
-    @for(card of mobileSummaryCards; track card.key) {
-    <button type="button" class="dashboard-mobile__summary-card" (click)="abrirResumo(card)">
-      <span class="dashboard-mobile__summary-label">{{ card.label }}</span>
-      <strong class="dashboard-mobile__summary-value">{{ card.value }}</strong>
+<app-page-card
+  class="dashboard-page"
+  titulo="Dashboard"
+  subtitulo="Acompanhe receita, atendimento e operação da gráfica.">
+  <div page-header-actions class="dashboard-actions">
+    <button mat-stroked-button type="button" (click)="carregarResumo()" [disabled]="loading">
+      Atualizar
     </button>
+    <button mat-flat-button color="primary" type="button" (click)="navegar('/page/grafica/comercial-beta/pedidos/novo')">
+      Novo pedido
+    </button>
+  </div>
+
+  @if (erro) {
+    <div class="dashboard-feedback" role="alert">
+      {{ erro }}
+    </div>
+  }
+
+  <section class="dashboard-kpis" [class.dashboard-kpis--loading]="loading">
+    @for (card of summaryCards; track card.key) {
+      <button type="button" class="dashboard-kpi-button" (click)="abrirResumo(card)">
+        <app-metric-card
+          [label]="card.label"
+          [value]="card.value"
+          [detail]="card.amount || periodoReceita"
+          [icon]="card.icon"
+          [accent]="card.accent || 'neutral'"
+          [disabled]="loading">
+        </app-metric-card>
+      </button>
     }
-  </div>
-
-  <div class="dashboard-mobile__section dashboard-mobile__section--status">
-    <app-status-grid></app-status-grid>
-  </div>
-
-  <div class="dashboard-mobile__section dashboard-mobile__section--revenue">
-    <app-receita-resumo></app-receita-resumo>
-  </div>
-
-  <div class="dashboard-mobile__section dashboard-mobile__section--chart">
-    <app-comparativo-pedidos></app-comparativo-pedidos>
-  </div>
-</section>
-
-<section class="dashboard-desktop">
-  <section class="dashboard-desktop__hero">
-    <div class="dashboard-desktop__hero-main">
-      <span class="dashboard-desktop__hero-label">{{ heroReceita.label }}</span>
-      <strong class="dashboard-desktop__hero-value">{{ heroReceita.value }}</strong>
-      <p class="dashboard-desktop__hero-caption">Visão consolidada do período atual</p>
-    </div>
-
-    <div class="dashboard-desktop__hero-metrics">
-      @for(card of heroMetricas; track card.key) {
-      <div class="dashboard-desktop__hero-metric dashboard-desktop__hero-metric--{{ card.accent || 'neutral' }}">
-        <span>{{ card.label }}</span>
-        <strong>{{ card.value }}</strong>
-      </div>
-      }
-    </div>
   </section>
 
-  <div class="dashboard-desktop__analytics">
-    <div class="dashboard-desktop__graph">
+  <section class="dashboard-main-grid">
+    <app-section-card
+      class="dashboard-chart-section"
+      title="Evolução comercial"
+      subtitle="Compare pedidos e receita por período."
+      [divider]="true">
       <app-comparativo-pedidos></app-comparativo-pedidos>
-    </div>
+    </app-section-card>
 
-    <div class="dashboard-desktop__status">
-      <app-status-grid></app-status-grid>
-    </div>
-  </div>
+    <app-section-card
+      class="dashboard-quick-section"
+      title="Atalhos"
+      subtitle="Ações frequentes da operação."
+      [divider]="true">
+      <div class="quick-actions">
+        @for (action of quickActions; track action.route) {
+          <button type="button" class="quick-action" (click)="navegar(action.route)">
+            <span class="quick-action__icon">
+              <mat-icon>{{ action.icon }}</mat-icon>
+            </span>
+            <span class="quick-action__copy">
+              <strong>{{ action.label }}</strong>
+              <small>{{ action.description }}</small>
+            </span>
+          </button>
+        }
+      </div>
+    </app-section-card>
+  </section>
 
-  <div class="dashboard-desktop__details">
-    <div class="dashboard-desktop__revenue">
-      <app-receita-resumo></app-receita-resumo>
-    </div>
-  </div>
-</section>
+  <section class="dashboard-secondary-grid">
+    <app-status-grid></app-status-grid>
+    <app-receita-resumo></app-receita-resumo>
+  </section>
+</app-page-card>

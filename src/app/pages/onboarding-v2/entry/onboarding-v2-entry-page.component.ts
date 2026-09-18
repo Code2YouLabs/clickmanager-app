@@ -83,6 +83,7 @@ export class OnboardingV2EntryPageComponent implements OnInit {
     const tipoEmpresa = this.route.snapshot.queryParamMap.get('tipoEmpresa');
     this.selectedTipoEmpresa = tipoEmpresa ? resolveTipoEmpresa(tipoEmpresa) : null;
     if (!this.authService.isAuthenticated()) {
+      this.router.navigateByUrl('/authentication/registro-gestor');
       return;
     }
 

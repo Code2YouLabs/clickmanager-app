@@ -1,11 +1,14 @@
-<mat-card class="cardWithShadow dashboard-receita-card">
-  <mat-card-content class="dashboard-receita-card__content">
+<app-section-card
+  class="dashboard-receita-card"
+  title="Receita hoje"
+  subtitle="Receita por forma de pagamento"
+  [divider]="true">
+  <div class="dashboard-receita-card__content">
     <div class="dashboard-receita-card__top">
-      <div>
-        <span class="dashboard-receita-card__eyebrow">Receita hoje</span>
+      <div class="dashboard-receita-card__summary">
         <h2>{{ formatBRL(totalValor) }}</h2>
-        <p>{{ totalPedidos }} pedidos</p>
-        <small class="dashboard-receita-card__range">{{ selectedRangeLabel }}</small>
+        <span class="dashboard-receita-card__orders">{{ totalPedidos }} pedidos</span>
+        <span class="dashboard-receita-card__range">{{ selectedRangeLabel }}</span>
       </div>
     </div>
 
@@ -51,5 +54,5 @@
         Ver gráfico →
       </button>
     </div>
-  </mat-card-content>
-</mat-card>
+  </div>
+</app-section-card>

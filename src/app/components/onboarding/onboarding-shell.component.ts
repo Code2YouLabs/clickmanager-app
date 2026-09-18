@@ -17,6 +17,11 @@ export class OnboardingShellComponent {
   @Input() passoAtual = 1;
   @Input() totalPassos = 1;
   @Input() progressoPercentual = 0;
+  @Input() semanticSteps = false;
+  @Input() completed = false;
+  readonly steps = ['Sua empresa', 'Seu catálogo', 'Preparando'];
+  @Input() skipDisabled = false;
+  @Input() navigationInHeader = false;
   @Input() showExit = true;
   @Input() showFooter = true;
   @Input() showBack = true;

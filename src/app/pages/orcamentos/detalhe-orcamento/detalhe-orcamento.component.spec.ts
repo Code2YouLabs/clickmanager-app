@@ -8,14 +8,22 @@ describe('DetalheOrcamentoComponent', () => {
       { navigate: jasmine.createSpy('navigate') } as any,
       orcamentoService || {
         detalhar: jasmine.createSpy('detalhar').and.returnValue(of({ id: 1 })),
+        atualizarContato: jasmine.createSpy('atualizarContato').and.returnValue(of({ id: 1 })),
         cancelar: jasmine.createSpy('cancelar').and.returnValue(of({ id: 1 })),
+        alterarStatus: jasmine.createSpy('alterarStatus').and.returnValue(of({ id: 1 })),
         abrirImpressao: jasmine.createSpy('abrirImpressao').and.returnValue(of({ body: new Blob() })),
         baixarImpressao: jasmine.createSpy('baixarImpressao').and.returnValue(of({ body: new Blob(), headers: { get: () => null } })),
+      } as any,
+      { listar: jasmine.createSpy('listar').and.returnValue(of({ content: [] })) } as any,
+      {
+        buscarPorCatalogo: jasmine.createSpy('buscarPorCatalogo').and.returnValue(of({ id: 1, ativo: true, parametros: [] })),
+        precificar: jasmine.createSpy('precificar').and.returnValue(of({ status: 'PRECO_CALCULADO', valorTotal: 100 })),
+        adicionarAoOrcamento: jasmine.createSpy('adicionarAoOrcamento').and.returnValue(of({})),
       } as any,
       { temPermissao: (permissao: string) => permissoes.includes(permissao) } as any,
       { carregar: jasmine.createSpy('carregar').and.returnValue(of({ CLIENTES: true })) } as any,
       { open: jasmine.createSpy('open') } as any,
-      { error: jasmine.createSpy('error'), success: jasmine.createSpy('success'), warning: jasmine.createSpy('warning') } as any,
+      { error: jasmine.createSpy('error'), success: jasmine.createSpy('success'), warning: jasmine.createSpy('warning'), info: jasmine.createSpy('info') } as any,
     );
   }
 

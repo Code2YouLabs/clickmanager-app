@@ -55,6 +55,12 @@
   font-size: 13px;
 }
 
+.apps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .quicklinks-list {
   display: flex;
   flex-direction: column;

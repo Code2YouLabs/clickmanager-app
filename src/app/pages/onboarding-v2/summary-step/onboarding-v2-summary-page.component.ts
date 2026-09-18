@@ -2,6 +2,9 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
+import { forkJoin } from 'rxjs';
+import { BibliotecaService } from '../../grafica/biblioteca/biblioteca.service';
+import { SetupProgress, SetupProgressComponent } from 'src/app/components/setup-progress/setup-progress.component';
 import { finalize } from 'rxjs/operators';
 import { MaterialModule } from 'src/app/material.module';
 import { OnboardingShellComponent } from 'src/app/components/onboarding/onboarding-shell.component';
@@ -17,14 +20,17 @@ import { OnboardingV2StateService } from '../services/onboarding-v2-state.servic
 @Component({
   selector: 'app-onboarding-v2-summary-page',
   standalone: true,
-  imports: [CommonModule, MaterialModule, OnboardingShellComponent, SectionCardComponent],
+  imports: [CommonModule, MaterialModule, OnboardingShellComponent, SectionCardComponent, SetupProgressComponent],
   templateUrl: './onboarding-v2-summary-page.component.html',
   styleUrls: ['./onboarding-v2-summary-page.component.scss'],
 })
 export class OnboardingV2SummaryPageComponent implements OnInit {
+  job: SetupProgress | null = null;
   carregando = true;
+  erroCarregamento = false;
 
   constructor(
+    private readonly biblioteca: BibliotecaService,
     private readonly router: Router,
     private readonly toastr: ToastrService,
     private readonly authService: AuthService,
@@ -41,6 +47,7 @@ export class OnboardingV2SummaryPageComponent implements OnInit {
   }
 
   submit(): void {
+    if (this.carregando || this.erroCarregamento || this.onboardingV2State.saving()) return;
     this.onboardingV2State.finishOnboarding().subscribe({
       next: () => {
         this.toastr.success('Onboarding finalizado. Seu painel já está liberado.');
@@ -53,12 +60,13 @@ export class OnboardingV2SummaryPageComponent implements OnInit {
   }
 
   loadStep(): void {
+    this.erroCarregamento = false;
     this.carregando = true;
-    this.onboardingV2State
-      .loadResumo()
+    forkJoin({ resumo: this.onboardingV2State.loadResumo(), job: this.biblioteca.ultima() })
       .pipe(finalize(() => (this.carregando = false)))
       .subscribe({
-        next: (resumo) => {
+        next: ({ resumo, job }) => {
+          this.job = job;
           if (resumo.onboardingVersion !== 'v2') {
             this.router.navigateByUrl(this.authService.getOnboardingRouteForUsuario(resumo.onboardingConcluido));
             return;
@@ -74,6 +82,7 @@ export class OnboardingV2SummaryPageComponent implements OnInit {
           }
         },
         error: () => {
+          this.erroCarregamento = true;
           this.toastr.error(this.onboardingV2State.error() || 'Não foi possível carregar o resumo.');
         },
       });

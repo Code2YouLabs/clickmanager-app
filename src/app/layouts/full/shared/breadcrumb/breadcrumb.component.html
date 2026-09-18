@@ -7,7 +7,7 @@
   </h4>
   <div class="d-flex align-items-center overflow-hidden">
     <ul class="breadcrumb">
-      @for (url of pageInfo?.['urls']; track url.url;let index = $index,last =
+      @for (url of pageInfo?.['urls']; track $index;let index = $index,last =
       $last ) { @if(!last){
       <li class="breadcrumb-item" [routerLink]="url.url">
         <a [routerLink]="url.url">{{ url.title }}</a>

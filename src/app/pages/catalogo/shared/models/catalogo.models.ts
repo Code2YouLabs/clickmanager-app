@@ -179,6 +179,7 @@ export interface CatalogoProduto {
   ordemExibicao?: number | null;
   destaque?: boolean | null;
   ativo?: boolean | null;
+  exibirNoSite?: boolean | null;
   comercial?: CatalogoProdutoComercial | null;
   imagens?: CatalogoProdutoImagem[] | null;
   caracteristicas?: CatalogoProdutoCaracteristica[] | null;
@@ -198,6 +199,7 @@ export interface CatalogoProdutoRequest {
   ordemExibicao?: number | null;
   destaque?: boolean | null;
   ativo?: boolean | null;
+  exibirNoSite?: boolean | null;
   comercial?: CatalogoProdutoComercial | null;
   imagens?: CatalogoProdutoImagemRequest[];
   caracteristicas?: CatalogoProdutoCaracteristicaRequest[];

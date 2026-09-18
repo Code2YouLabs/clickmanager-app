@@ -1,4 +1,4 @@
-export type AplicativoSistema = 'CALCULADORA_REVESTIMENTO';
+export type AplicativoSistema = 'CALCULADORA_REVESTIMENTO' | 'SMARTCALC' | 'SMARTCALC_CONFIG';
 
 export interface AplicativoEmpresa {
   aplicativo: AplicativoSistema;
@@ -31,6 +31,26 @@ export interface AplicativoCatalogo {
 }
 
 export const APLICATIVOS_CATALOGO: readonly AplicativoCatalogo[] = [
+  {
+    aplicativo: 'SMARTCALC',
+    nome: 'SmartCalc',
+    descricao: 'Calculadora inteligente para gráfica.',
+    icone: 'calculator',
+    imagem: 'assets/images/svgs/icon-connect.svg',
+    rota: '/smartcalc',
+    modulo: 'SMARTCALC',
+    permissao: 'SMARTCALC_USAR',
+  },
+  {
+    aplicativo: 'SMARTCALC_CONFIG',
+    nome: 'Configuração SmartCalc',
+    descricao: 'Controle ativação e produtos habilitados.',
+    icone: 'settings-automation',
+    imagem: 'assets/images/svgs/icon-connect.svg',
+    rota: '/page/calculadora/config/criar',
+    modulo: 'SMARTCALC',
+    permissao: 'CONFIG_CALCULADORAS',
+  },
   {
     aplicativo: 'CALCULADORA_REVESTIMENTO',
     nome: 'Calculadora de revestimento',

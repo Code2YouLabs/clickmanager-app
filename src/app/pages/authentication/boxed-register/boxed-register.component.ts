@@ -1,5 +1,4 @@
 import { AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { CoreService } from 'src/app/services/core.service';
 import {
   FormGroup,
@@ -9,97 +8,112 @@ import {
   ReactiveFormsModule,
 } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { ActivatedRoute } from '@angular/router';
 import { MaterialModule } from '../../../material.module';
 import { BrandingComponent } from '../../../layouts/full/vertical/sidebar/branding.component';
 import { ToastrService } from 'ngx-toastr';
-import { OnboardingService } from '../side-register/side-register.service';
-import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
-import { InputTelefoneComponent } from 'src/app/components/inputs/input-telefone/input-telefone.component';
-import { InputEmailComponent } from 'src/app/components/inputs/input-email/input-custom.component';
 import { LandingEtapaFunil, LandingpagePublicService } from 'src/app/pages/theme-pages/landingpage/landingpage-public.service';
 import { AuthService } from 'src/app/services/auth.service';
-import { resolveTipoEmpresa, TipoEmpresa } from 'src/app/models/empresa/tipo-empresa.enum';
+import { TipoEmpresa } from 'src/app/models/empresa/tipo-empresa.enum';
+import { OnboardingV2RegisterResponse, resolveOnboardingV2RouteFromProgress } from 'src/app/pages/onboarding-v2/models/onboarding-v2.models';
+import { OnboardingV2Service } from 'src/app/pages/onboarding-v2/services/onboarding-v2.service';
+import { OnboardingV2StateService } from 'src/app/pages/onboarding-v2/services/onboarding-v2-state.service';
+import { switchMap } from 'rxjs/operators';
+import { environment } from 'src/environments/environment';
+
+declare global {
+  interface Window {
+    google?: {
+      accounts?: {
+        oauth2?: {
+          initTokenClient: (config: GoogleTokenClientConfig) => GoogleTokenClient;
+        };
+      };
+    };
+  }
+}
+
+type GoogleTokenClient = {
+  requestAccessToken: () => void;
+};
+
+type GoogleTokenClientConfig = {
+  client_id: string;
+  scope: string;
+  callback: (response: GoogleTokenResponse) => void;
+  prompt?: '' | 'consent' | 'select_account';
+};
+
+type GoogleTokenResponse = {
+  access_token?: string;
+  error?: string;
+  error_description?: string;
+};
 
 @Component({
   selector: 'app-boxed-register',
   standalone: true,
   imports: [
-    CommonModule,
     RouterModule,
     MaterialModule,
     FormsModule,
     ReactiveFormsModule,
     BrandingComponent,
-    InputTextoRestritoComponent,
-    InputTelefoneComponent,
-    InputEmailComponent,
   ],
   templateUrl: './boxed-register.component.html',
   styleUrl: './boxed-register.component.scss',
 })
 export class AppBoxedRegisterComponent implements OnInit, AfterViewInit {
-  private readonly cadastroConcluidoStorageKey = 'clickmanager:onboarding:cadastro-concluido';
   private readonly landingSessionStorageKey = 'clickmanager:landing:session-id';
   private readonly landingStageStoragePrefix = 'clickmanager:landing:stage';
   private readonly pageTitle = 'Cadastro de Empresa';
   private sessionId = '';
-  private tipoEmpresa: TipoEmpresa = TipoEmpresa.GRAFICA;
+  private readonly tipoEmpresa = TipoEmpresa.GRAFICA;
+  private googleTokenClient?: GoogleTokenClient;
   submitting = false;
+  googleLoading = false;
   showPassword = false;
   showConfirmPassword = false;
 
-  @ViewChild('registerCard') registerCard?: ElementRef<HTMLElement>;
+  @ViewChild('registerCard', { read: ElementRef }) registerCard?: ElementRef<HTMLElement>;
 
   options = this.settings.getOptions();
 
   constructor(
     private settings: CoreService,
-    private route: ActivatedRoute,
     private router: Router,
     private toastr: ToastrService,
-    private onboardingService: OnboardingService,
+    private onboardingV2Service: OnboardingV2Service,
+    private onboardingV2State: OnboardingV2StateService,
     private landingpagePublicService: LandingpagePublicService,
     private authService: AuthService
   ) { }
 
-  // Formulário aninhado: empresa + usuario
   form = new FormGroup({
-    empresa: new FormGroup({
-      nome: new FormControl<string | null>('', [Validators.required]),
-    }),
     usuario: new FormGroup({
       nome: new FormControl<string | null>('', [Validators.required, Validators.minLength(6)]),
       email: new FormControl<string | null>('', [Validators.required, Validators.email]),
-      telefone: new FormControl<string | null>(''),
       senha: new FormControl<string | null>('', [Validators.required, Validators.minLength(6)]),
       confirmarSenha: new FormControl<string | null>('', [Validators.required]),
     }),
   });
 
   ngOnInit(): void {
-    this.tipoEmpresa = resolveTipoEmpresa(this.route.snapshot.queryParamMap.get('tipoEmpresa'));
     this.sessionId = this.ensureSessionId();
     this.registrarEtapaFunil('FORMULARIO_VISUALIZADO');
   }
 
   ngAfterViewInit(): void {
-    queueMicrotask(() => {
-      this.registerCard?.nativeElement.querySelector<HTMLInputElement>('input')?.focus();
-    });
-  }
+    if (!environment.googleClientId) {
+      return;
+    }
 
-  // getters para facilitar o template
-  get empresa(): FormGroup {
-    return this.form.get('empresa') as FormGroup;
+    this.carregarGoogleScript()
+      .then(() => this.inicializarGoogleClient())
+      .catch(() => undefined);
   }
 
   get usuario(): FormGroup {
     return this.form.get('usuario') as FormGroup;
-  }
-
-  get empresaNomeControl(): FormControl {
-    return this.empresa.get('nome') as FormControl;
   }
 
   get usuarioNomeControl(): FormControl {
@@ -108,10 +122,6 @@ export class AppBoxedRegisterComponent implements OnInit, AfterViewInit {
 
   get usuarioEmailControl(): FormControl {
     return this.usuario.get('email') as FormControl;
-  }
-
-  get usuarioTelefoneControl(): FormControl {
-    return this.usuario.get('telefone') as FormControl;
   }
 
   get usuarioSenhaControl(): FormControl {
@@ -123,9 +133,9 @@ export class AppBoxedRegisterComponent implements OnInit, AfterViewInit {
   }
 
   get senhaDivergente(): boolean {
-    const senha = this.usuario.get('senha')?.value;
-    const confirmar = this.usuario.get('confirmarSenha')?.value;
-    return !!senha && !!confirmar && senha !== confirmar;
+    const senha = this.usuarioSenhaControl.value;
+    const confirmarSenha = this.usuarioConfirmarSenhaControl.value;
+    return !!senha && !!confirmarSenha && senha !== confirmarSenha;
   }
 
   get formPronto(): boolean {
@@ -134,60 +144,6 @@ export class AppBoxedRegisterComponent implements OnInit, AfterViewInit {
 
   get ctaLabel(): string {
     return this.submitting ? 'Criando sua conta...' : 'Começar agora';
-  }
-
-  get senhaStrengthLabel(): string {
-    const senha = this.usuarioSenhaControl.value ?? '';
-    if (!senha) {
-      return '';
-    }
-
-    if (senha.length < 8) {
-      return 'Senha básica';
-    }
-
-    const hasLetter = /[A-Za-z]/.test(senha);
-    const hasNumber = /\d/.test(senha);
-    const hasSymbol = /[^A-Za-z0-9]/.test(senha);
-
-    if (hasLetter && hasNumber && hasSymbol) {
-      return 'Senha forte';
-    }
-
-    if (hasLetter && hasNumber) {
-      return 'Senha boa';
-    }
-
-    return 'Senha básica';
-  }
-
-  get senhaStrengthClass(): string {
-    const senha = this.usuarioSenhaControl.value ?? '';
-    if (!senha || senha.length < 8) {
-      return 'strength-basic';
-    }
-
-    const hasLetter = /[A-Za-z]/.test(senha);
-    const hasNumber = /\d/.test(senha);
-    const hasSymbol = /[^A-Za-z0-9]/.test(senha);
-
-    if (hasLetter && hasNumber && hasSymbol) {
-      return 'strength-strong';
-    }
-
-    if (hasLetter && hasNumber) {
-      return 'strength-good';
-    }
-
-    return 'strength-basic';
-  }
-
-  get confirmarSenhaHint(): string {
-    if (!this.usuarioConfirmarSenhaControl.value) {
-      return '';
-    }
-
-    return this.senhaDivergente ? 'As senhas não coincidem' : 'Senhas coincidem';
   }
 
   handleEnter(event: Event): void {
@@ -229,70 +185,195 @@ export class AppBoxedRegisterComponent implements OnInit, AfterViewInit {
 
     const raw = this.form.value;
 
-    const empresa = raw.empresa!;
     const usuario = raw.usuario!;
-    const telefone = usuario.telefone?.trim() || undefined;
+    const nomeUsuario = String(usuario.nome || '').trim();
+    const emailUsuario = String(usuario.email || '').trim();
 
     const payload = {
       empresa: {
-        nome: empresa.nome!,
+        nome: this.nomeEmpresaProvisorio(nomeUsuario, emailUsuario),
         tipoEmpresa: this.tipoEmpresa,
-        ...(telefone ? { telefone } : {})
+        email: emailUsuario,
       },
       usuario: {
-        nome: usuario.nome!,
-        username: usuario.email!,
-        email: usuario.email!,
-        ...(telefone ? { telefone } : {}),
+        nome: nomeUsuario,
+        username: emailUsuario,
         senha: usuario.senha!,
-        proprietario: true
       },
     };
 
     this.submitting = true;
 
-    this.onboardingService.registrarEmpresaComGestor(payload).subscribe({
+    this.onboardingV2Service.registerEmpresa(payload).pipe(
+      switchMap((response) => this.autenticarAposCadastro(response, emailUsuario, usuario.senha!)),
+      switchMap(() => this.onboardingV2State.refreshProgress())
+    ).subscribe({
       next: response => {
-        const finalizarFluxo = () => {
-          sessionStorage.setItem(this.cadastroConcluidoStorageKey, JSON.stringify(response));
-          this.resetFunilSession();
-          this.toastr.success('Empresa e gestor cadastrados com sucesso!');
-          this.submitting = false;
-          this.router.navigate(['authentication/cadastro-concluido'], {
-            state: {
-              cadastro: response
-            }
-          });
-        };
-
-        const autenticar = () => {
-          if (!response.autenticado || !response.accessToken || !response.refreshToken) {
-            finalizarFluxo();
-            return;
-          }
-
-          this.authService.autenticarComTokens({
-            accessToken: response.accessToken,
-            refreshToken: response.refreshToken,
-            tokenType: response.tokenType,
-          }).subscribe({
-            next: () => finalizarFluxo(),
-            error: err => {
-              this.submitting = false;
-              const msg = err?.error?.message || err?.message || 'Erro ao autenticar após o cadastro';
-              this.toastr.error(msg);
-            }
-          });
-        };
-
-        this.registrarEtapaFunil('FORMULARIO_CONCLUIDO', autenticar);
+        this.registrarEtapaFunil('FORMULARIO_CONCLUIDO');
+        this.resetFunilSession();
+        this.toastr.success('Conta criada. Complete a configuração inicial.');
+        this.submitting = false;
+        this.router.navigateByUrl(resolveOnboardingV2RouteFromProgress(response));
       },
       error: err => {
         this.submitting = false;
-        const msg = err?.error?.message || 'Erro desconhecido';
+        const msg = err?.error?.message || err?.message || 'Erro desconhecido';
         this.toastr.error('Erro ao concluir cadastro: ' + msg);
       }
     });
+  }
+
+  handleGoogleClick(): void {
+    if (this.submitting || this.googleLoading) {
+      return;
+    }
+
+    if (!environment.googleClientId) {
+      this.toastr.warning('Configure o Google Client ID para habilitar esse cadastro.');
+      return;
+    }
+
+    this.googleLoading = true;
+
+    this.carregarGoogleScript()
+      .then(() => {
+        this.inicializarGoogleClient();
+
+        if (!this.googleTokenClient) {
+          throw new Error('Google Identity Services não carregou.');
+        }
+
+        this.googleTokenClient.requestAccessToken();
+        this.googleLoading = false;
+      })
+      .catch(() => {
+        this.googleLoading = false;
+        this.toastr.error('Não foi possível abrir o login do Google.');
+      });
+  }
+
+  private inicializarGoogleClient(): void {
+    if (!environment.googleClientId || !window.google?.accounts?.oauth2 || this.googleTokenClient) {
+      return;
+    }
+
+    this.googleTokenClient = window.google.accounts.oauth2.initTokenClient({
+      client_id: environment.googleClientId,
+      scope: 'openid email profile',
+      prompt: 'select_account',
+      callback: (response) => this.handleGoogleTokenResponse(response),
+    });
+  }
+
+  private carregarGoogleScript(): Promise<void> {
+    if (window.google?.accounts?.oauth2) {
+      return Promise.resolve();
+    }
+
+    const existingScript = document.getElementById('google-identity-services');
+    if (existingScript) {
+      return new Promise((resolve, reject) => {
+        const timeout = window.setTimeout(() => reject(), 5000);
+        const resolveWhenReady = () => {
+          window.clearTimeout(timeout);
+          resolve();
+        };
+
+        if (window.google?.accounts?.oauth2) {
+          resolveWhenReady();
+          return;
+        }
+
+        existingScript.addEventListener('load', resolveWhenReady, { once: true });
+        existingScript.addEventListener('error', () => {
+          window.clearTimeout(timeout);
+          reject();
+        }, { once: true });
+      });
+    }
+
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.id = 'google-identity-services';
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject();
+      document.head.appendChild(script);
+    });
+  }
+
+  private handleGoogleTokenResponse(response: GoogleTokenResponse): void {
+    const accessToken = response?.access_token;
+
+    if (response?.error || !accessToken || this.submitting) {
+      this.googleLoading = false;
+      if (response?.error) {
+        this.toastr.error('Não foi possível entrar com Google.');
+      }
+      return;
+    }
+
+    this.submitting = true;
+    this.googleLoading = true;
+
+    this.onboardingV2Service.registerEmpresaGoogle({ accessToken }).pipe(
+      switchMap((registerResponse) => this.autenticarAposCadastroGoogle(registerResponse)),
+      switchMap(() => this.onboardingV2State.refreshProgress())
+    ).subscribe({
+      next: progress => {
+        this.registrarEtapaFunil('FORMULARIO_CONCLUIDO');
+        this.resetFunilSession();
+        this.toastr.success('Conta criada. Complete a configuração inicial.');
+        this.submitting = false;
+        this.googleLoading = false;
+        this.router.navigateByUrl(resolveOnboardingV2RouteFromProgress(progress));
+      },
+      error: err => {
+        this.submitting = false;
+        this.googleLoading = false;
+        const msg = err?.error?.message || err?.message || 'Erro desconhecido';
+        this.toastr.error('Erro ao entrar com Google: ' + msg);
+      }
+    });
+  }
+
+  private autenticarAposCadastro(
+    response: OnboardingV2RegisterResponse,
+    username: string,
+    senha: string
+  ) {
+    if (response?.accessToken && response?.refreshToken) {
+      return this.authService.autenticarComTokens({
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        tokenType: response.tokenType ?? undefined,
+      });
+    }
+
+    return this.authService.login(username, senha);
+  }
+
+  private autenticarAposCadastroGoogle(response: OnboardingV2RegisterResponse) {
+    if (response?.accessToken && response?.refreshToken) {
+      return this.authService.autenticarComTokens({
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        tokenType: response.tokenType ?? undefined,
+      });
+    }
+
+    throw new Error('O backend não retornou os tokens de acesso do Google.');
+  }
+
+  private nomeEmpresaProvisorio(nomeUsuario: string, emailUsuario: string): string {
+    if (nomeUsuario) {
+      return `Empresa de ${nomeUsuario}`;
+    }
+
+    const emailPrefix = emailUsuario.split('@')[0]?.trim();
+    return emailPrefix ? `Empresa de ${emailPrefix}` : 'Minha empresa';
   }
 
   private registrarEtapaFunil(etapaFunil: LandingEtapaFunil, onComplete?: () => void): void {

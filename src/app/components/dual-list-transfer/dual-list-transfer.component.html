@@ -1,0 +1,76 @@
+<div class="dual-list-transfer" [class.dual-list-transfer--left-expanded]="layout === 'LEFT_EXPANDED'"
+  [class.dual-list-transfer--right-expanded]="layout === 'RIGHT_EXPANDED'"
+  [class.dual-list-transfer--mobile-right]="mobilePane === 'right'">
+  <mat-button-toggle-group class="dual-list-transfer__tabs" [value]="mobilePane"
+    (change)="mobilePane = $event.value" aria-label="Lista exibida">
+    <mat-button-toggle value="left">{{ leftTitle }} · {{ availableCount }}</mat-button-toggle>
+    <mat-button-toggle value="right">{{ rightTitle }} · {{ selectedCount }}</mat-button-toggle>
+  </mat-button-toggle-group>
+
+  <app-section-card class="dual-list-transfer__pane dual-list-transfer__pane--left"
+    [title]="leftTitle + ' · ' + availableCount" [subtitle]="leftSubtitle" [fixedHeight]="true">
+    <button section-card-actions mat-icon-button type="button" (click)="toggleExpanded('left')"
+      [attr.aria-label]="layout === 'LEFT_EXPANDED' ? 'Restaurar duas listas' : 'Expandir ' + leftTitle">
+      <mat-icon>{{ layout === 'LEFT_EXPANDED' ? 'close_fullscreen' : 'open_in_full' }}</mat-icon>
+    </button>
+    <app-input-pesquisa [showLabel]="false" [value]="leftSearch" placeholder="Buscar disponível..."
+      (valorAlterado)="leftSearch = $event"></app-input-pesquisa>
+    <div class="dual-list-transfer__scroll">
+      @for (group of groups('left'); track group.name) {
+        <div class="dual-list-transfer__group">
+          <strong>{{ group.name }}</strong>
+          @for (item of group.items; track item.id) {
+            <div class="dual-list-transfer__item">
+              <div class="dual-list-transfer__identity">
+                @if (itemTemplate) {
+                  <ng-container *ngTemplateOutlet="itemTemplate; context: { $implicit: item }"></ng-container>
+                } @else { <span>{{ item.label }}</span> }
+              </div>
+              <button mat-icon-button color="primary" type="button" [disabled]="disabled"
+                (click)="move(item, 'left')" [attr.aria-label]="'Adicionar ' + item.label + ' a ' + rightTitle">
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+      } @empty { <p class="dual-list-transfer__empty">Nenhum item encontrado.</p> }
+    </div>
+  </app-section-card>
+
+  <app-section-card class="dual-list-transfer__pane dual-list-transfer__pane--right"
+    [title]="rightTitle + ' · ' + selectedCount" [subtitle]="rightSubtitle" [fixedHeight]="true">
+    <button section-card-actions mat-icon-button type="button" (click)="toggleExpanded('right')"
+      [attr.aria-label]="layout === 'RIGHT_EXPANDED' ? 'Restaurar duas listas' : 'Expandir ' + rightTitle">
+      <mat-icon>{{ layout === 'RIGHT_EXPANDED' ? 'close_fullscreen' : 'open_in_full' }}</mat-icon>
+    </button>
+    <app-input-pesquisa [showLabel]="false" [value]="rightSearch" placeholder="Buscar selecionado..."
+      (valorAlterado)="rightSearch = $event"></app-input-pesquisa>
+    <div class="dual-list-transfer__scroll">
+      @for (group of groups('right'); track group.name) {
+        <div class="dual-list-transfer__group">
+          <strong>{{ group.name }}</strong>
+          @for (item of group.items; track item.id) {
+            <div class="dual-list-transfer__item dual-list-transfer__item--selected">
+              <div class="dual-list-transfer__item-content">
+                @if (itemTemplate) {
+                  <ng-container *ngTemplateOutlet="itemTemplate; context: { $implicit: item }"></ng-container>
+                } @else { <span>{{ item.label }}</span> }
+                @if (item.status) { <app-status-badge [status]="item.status" [compact]="item.status === 'PRONTO'"></app-status-badge> }
+                @if (item.details?.length) {
+                  <ul>@for (detail of item.details; track detail) { <li>{{ detail }}</li> }</ul>
+                }
+                @if (item.editRoute?.length) {
+                  <a mat-stroked-button [routerLink]="item.editRoute"><mat-icon>edit</mat-icon> {{ editActionLabel }}</a>
+                }
+              </div>
+              <button mat-icon-button color="primary" type="button" [disabled]="disabled"
+                (click)="move(item, 'right')" [attr.aria-label]="'Remover ' + item.label + ' de ' + rightTitle">
+                <mat-icon>arrow_back</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+      } @empty { <p class="dual-list-transfer__empty">Nenhum item encontrado.</p> }
+    </div>
+  </app-section-card>
+</div>

@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { permissionGuard } from 'src/app/guards/permission.guard';
-import { DEPOSITO_ROUTE_DATA } from 'src/app/guards/empresa-tipo-route-data';
+import { DEPOSITO_ROUTE_DATA, SHARED_ROUTE_DATA } from 'src/app/guards/empresa-tipo-route-data';
 import { pendingChangesGuard } from './shared/guards/pending-changes.guard';
 import { catalogoNovoGuard } from './shared/guards/catalogo-versao.guard';
 
@@ -36,27 +36,27 @@ export const CatalogoRoutes: Routes = [
     path: 'categorias',
     loadComponent: () => import('./categorias/catalogo-categoria-list.component').then((m) => m.CatalogoCategoriaListComponent),
     canActivate: [catalogoNovoGuard, permissionGuard],
-    data: { ...DEPOSITO_ROUTE_DATA, requiredPermission: ['CATALOGO_CATEGORIAS_VER'], title: 'Categorias do Catalogo', urls: [{ title: 'Catalogo' }, { title: 'Categorias' }] },
+    data: { ...SHARED_ROUTE_DATA, requiredPermission: ['CATALOGO_CATEGORIAS_VER', 'GRAFICA_PRODUTOS_VER'], title: 'Categorias do Catalogo', urls: [{ title: 'Catalogo' }, { title: 'Categorias' }] },
   },
   {
     path: 'categorias/nova',
     loadComponent: () => import('./categorias/catalogo-categoria-form.component').then((m) => m.CatalogoCategoriaFormComponent),
     canActivate: [catalogoNovoGuard, permissionGuard],
     canDeactivate: [pendingChangesGuard],
-    data: { ...DEPOSITO_ROUTE_DATA, requiredPermission: ['CATALOGO_CATEGORIAS_CADASTRAR'], title: 'Nova categoria', urls: [{ title: 'Categorias', url: '/page/catalogo/categorias' }, { title: 'Nova categoria' }] },
+    data: { ...SHARED_ROUTE_DATA, requiredPermission: ['CATALOGO_CATEGORIAS_CADASTRAR', 'GRAFICA_PRODUTOS_EDITAR'], title: 'Nova categoria', urls: [{ title: 'Categorias', url: '/page/catalogo/categorias' }, { title: 'Nova categoria' }] },
   },
   {
     path: 'categorias/:id/editar',
     loadComponent: () => import('./categorias/catalogo-categoria-form.component').then((m) => m.CatalogoCategoriaFormComponent),
     canActivate: [catalogoNovoGuard, permissionGuard],
     canDeactivate: [pendingChangesGuard],
-    data: { ...DEPOSITO_ROUTE_DATA, requiredPermission: ['CATALOGO_CATEGORIAS_EDITAR'], title: 'Editar categoria', urls: [{ title: 'Categorias', url: '/page/catalogo/categorias' }, { title: 'Editar categoria' }] },
+    data: { ...SHARED_ROUTE_DATA, requiredPermission: ['CATALOGO_CATEGORIAS_EDITAR', 'GRAFICA_PRODUTOS_EDITAR'], title: 'Editar categoria', urls: [{ title: 'Categorias', url: '/page/catalogo/categorias' }, { title: 'Editar categoria' }] },
   },
   {
     path: 'categorias/:id/caracteristicas',
     loadComponent: () => import('./categorias/catalogo-caracteristicas.component').then((m) => m.CatalogoCaracteristicasComponent),
     canActivate: [catalogoNovoGuard, permissionGuard],
-    data: { ...DEPOSITO_ROUTE_DATA, requiredPermission: ['CATALOGO_CARACTERISTICAS_VER'], title: 'Caracteristicas da categoria', urls: [{ title: 'Categorias', url: '/page/catalogo/categorias' }, { title: 'Caracteristicas' }] },
+    data: { ...SHARED_ROUTE_DATA, requiredPermission: ['CATALOGO_CARACTERISTICAS_VER', 'GRAFICA_PRODUTOS_VER'], title: 'Caracteristicas da categoria', urls: [{ title: 'Categorias', url: '/page/catalogo/categorias' }, { title: 'Caracteristicas' }] },
   },
   {
     path: 'marcas',

@@ -5,7 +5,7 @@ import { HttpParams } from '@angular/common/http';
 
 /** DTOs de request e response alinhados ao backend */
 export interface DashboardComparativoRequest {
-    empresaId: number;
+    empresaId?: number;
     filtros: {
         ano: number;
         mesA: { index: number; label: string };
@@ -43,6 +43,30 @@ export interface ReceitaResumoResponse {
     porForma: { forma: FormaPagamento; valor: number }[]; // donut
 }
 
+export interface GraficaDashboardIndicador {
+    codigo: string;
+    label: string;
+    quantidade: number;
+    valor: number;
+}
+
+export interface GraficaDashboardResumoResponse {
+    indicadores: GraficaDashboardIndicador[];
+    pedidoStatus: GraficaDashboardIndicador[];
+    orcamentoStatus: GraficaDashboardIndicador[];
+}
+
+export interface GraficaDashboardVisaoGeralResponse extends GraficaDashboardResumoResponse {
+    receita: {
+        inicio: string;
+        fim: string;
+        label: string;
+        valorTotal: number;
+        totalPedidos: number;
+        porForma: { forma: string; valor: number }[];
+    };
+}
+
 export interface DashboardComparativoResponse {
     empresa: {
         nome: string;
@@ -68,8 +92,10 @@ export interface DashboardComparativoResponse {
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
 
-    private readonly endpointComparativo = 'api/dashboard/comparativo';
-    private readonly endpointReceita = 'api/dashboard/receita-resumo';
+    private readonly endpointComparativo = 'api/grafica/dashboard/comparativo';
+    private readonly endpointReceita = 'api/grafica/dashboard/receita-resumo';
+    private readonly endpointResumo = 'api/grafica/dashboard/resumo';
+    private readonly endpointVisaoGeral = 'api/grafica/dashboard/visao-geral';
 
     constructor(private api: ApiService) { }
 
@@ -79,14 +105,12 @@ export class DashboardService {
     }
 
     obterComparativoSimples(
-        empresaId: number,
         ano: number,
         mesAIndex: number,
         mesBIndex: number,
         modo: 'quantidade' | 'receita'
     ): Observable<DashboardComparativoResponse> {
         const body: DashboardComparativoRequest = {
-            empresaId,
             filtros: {
                 ano,
                 mesA: { index: mesAIndex, label: this.nomeMes(mesAIndex) },
@@ -99,6 +123,14 @@ export class DashboardService {
 
     obterReceitaResumo(req: ReceitaResumoRequest): Observable<ReceitaResumoResponse> {
         return this.api.post<ReceitaResumoResponse>(this.endpointReceita, req);
+    }
+
+    obterResumoGrafica(): Observable<GraficaDashboardResumoResponse> {
+        return this.api.get<GraficaDashboardResumoResponse>(this.endpointResumo);
+    }
+
+    obterVisaoGeralGrafica(): Observable<GraficaDashboardVisaoGeralResponse> {
+        return this.api.get<GraficaDashboardVisaoGeralResponse>(this.endpointVisaoGeral);
     }
 
     private nomeMes(index: number): string {

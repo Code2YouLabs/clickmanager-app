@@ -1,0 +1,260 @@
+@if (search.enabled || filters.length) {
+<app-section-card
+  class="data-table-toolbar-card"
+  [class.data-table-toolbar-card--compact]="!hasActiveFilters && !filtersExpanded"
+  [class.data-table-toolbar-card--collapsed]="!filtersExpanded"
+  [class.data-table-toolbar-card--has-active]="hasActiveFilters"
+  [title]="toolbarTitle">
+  <div class="data-table-toolbar">
+    @if (search.enabled) {
+    <div class="data-table-toolbar__section data-table-toolbar__section--search">
+      <mat-form-field appearance="outline" class="data-table-toolbar__search hide-hint">
+        <mat-label>{{ search.placeholder || 'Pesquisar' }}</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput type="search" [formControl]="searchControl" />
+      </mat-form-field>
+
+      <div class="data-table-toolbar__actions">
+        <ng-content select="[data-table-toolbar-actions]"></ng-content>
+      </div>
+    </div>
+    }
+
+    @if (filters.length) {
+    <div class="data-table-toolbar__section">
+      <div class="data-table-toolbar__filters-header">
+        <button
+          mat-button
+          type="button"
+          class="data-table-toolbar__filter-toggle f-w-700"
+          [attr.aria-expanded]="filtersExpanded"
+          (click)="toggleFilters()">
+          <mat-icon>{{ filtersExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+          {{ filtersLabel }}{{ activeFilterCount ? ' (' + activeFilterCount + ')' : '' }}
+        </button>
+
+        @if (hasActiveFilters) {
+          <button mat-button type="button" color="primary" class="data-table-toolbar__clear" (click)="onClearFilters()">
+            <mat-icon>filter_alt_off</mat-icon>
+            {{ clearFiltersLabel }}
+          </button>
+        }
+      </div>
+
+      @if (activeFilterChips.length) {
+      <mat-chip-set class="data-table-toolbar__chips" aria-label="Filtros aplicados">
+        @for (chip of activeFilterChips; track chip.filterKey + '-' + chip.value) {
+        <mat-chip-row class="bg-light" (removed)="onRemoveFilterChip(chip)">
+          <span class="data-table-toolbar__chip-label">{{ chip.filterLabel }}:</span>
+          {{ chip.optionLabel }}
+          <button matChipRemove type="button" [attr.aria-label]="'Remover filtro ' + chip.filterLabel + ': ' + chip.optionLabel">
+            <mat-icon>cancel</mat-icon>
+          </button>
+        </mat-chip-row>
+        }
+      </mat-chip-set>
+      }
+
+      <mat-accordion class="data-table-toolbar__accordion">
+        <mat-expansion-panel
+          class="data-table-toolbar__panel"
+          hideToggle
+          [expanded]="filtersExpanded">
+          <div class="data-table-toolbar__filters" [attr.aria-label]="filtersLabel">
+            @for (filter of filters; track filter.key) {
+              <mat-form-field appearance="outline" class="data-table-toolbar__filter" [style.flex-basis]="filterWidth(filter)">
+                <mat-label>{{ filter.label }}</mat-label>
+                <mat-select
+                  [multiple]="isMultiSelectFilter(filter)"
+                  [value]="selectedFilterValue(filter)"
+                  (selectionChange)="onFilterValueChange(filter.key, $event.value)">
+                  @if (filter.type === 'select') {
+                    <mat-option [value]="null">Todos</mat-option>
+                  }
+                  @for (option of filter.options; track option.value) {
+                    <mat-option [value]="option.value" [disabled]="option.disabled">{{ option.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            }
+          </div>
+        </mat-expansion-panel>
+      </mat-accordion>
+    </div>
+    }
+  </div>
+</app-section-card>
+}
+
+@if (showTable) {
+<div class="data-table-container">
+  @if (loading) {
+    <div class="data-table-loading" aria-live="polite">
+      <mat-spinner diameter="36"></mat-spinner>
+    </div>
+  }
+
+  <div class="table-responsive">
+    <table
+      mat-table
+      [dataSource]="data"
+      [trackBy]="trackByRow"
+      multiTemplateDataRows
+      matSort
+      [matSortActive]="sort.active"
+      [matSortDirection]="sort.direction"
+      (matSortChange)="onSortChange($event)"
+      class="w-100">
+
+      @for (column of columns; track column.key) {
+        <ng-container [matColumnDef]="column.key">
+          <th
+            mat-header-cell
+            *matHeaderCellDef
+            [mat-sort-header]="column.sortKey || column.key"
+            [disabled]="!column.sortable"
+            class="f-w-600 f-s-14"
+            [ngClass]="columnAlignClass(column)"
+            [style.width]="column.width || null">
+            {{ column.label }}
+          </th>
+          <td mat-cell *matCellDef="let row" class="f-s-14" [ngClass]="columnAlignClass(column)">
+            @if (cellTemplate(column.key); as customTemplate) {
+              <ng-container
+                [ngTemplateOutlet]="customTemplate.template"
+                [ngTemplateOutletContext]="{ $implicit: row, row: row }">
+              </ng-container>
+            } @else {
+              {{ cellValue(row, column) || '-' }}
+            }
+          </td>
+        </ng-container>
+      }
+
+      @if (actions.length || expandable) {
+        <ng-container matColumnDef="__actions">
+          <th mat-header-cell *matHeaderCellDef class="f-w-600 f-s-14 text-right">Ações</th>
+          <td mat-cell *matCellDef="let row" class="text-right">
+            @if (actionsMode === 'buttons') {
+              <div class="data-table__inline-actions">
+                @for (tableAction of visibleActions(row); track tableAction.id) {
+                  <button
+                    mat-icon-button
+                    type="button"
+                    [disabled]="isActionDisabled(row, tableAction)"
+                    (click)="emitAction(row, tableAction); $event.stopPropagation()"
+                    [matTooltip]="tableAction.label"
+                    [attr.aria-label]="tableAction.label">
+                    @if (tableAction.icon) {
+                      <mat-icon [color]="tableAction.color || null">{{ tableAction.icon }}</mat-icon>
+                    }
+                  </button>
+                }
+                @if (expandable) {
+                  <button
+                    mat-icon-button
+                    type="button"
+                    (click)="toggleRow(row, $event)"
+                    [matTooltip]="isExpanded(row) ? 'Recolher' : 'Expandir'"
+                    [attr.aria-label]="expandAriaLabel"
+                    [attr.aria-expanded]="isExpanded(row)">
+                    <mat-icon>{{ isExpanded(row) ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
+                  </button>
+                }
+              </div>
+            } @else {
+              <div class="data-table__menu-actions">
+                <button
+                  mat-icon-button
+                  type="button"
+                  [matMenuTriggerFor]="actionsMenu"
+                  [matMenuTriggerData]="{ row: row }"
+                  [disabled]="!visibleActions(row).length"
+                  aria-label="Ações da linha"
+                  (click)="$event.stopPropagation()">
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+                @if (expandable) {
+                  <button
+                    mat-icon-button
+                    type="button"
+                    (click)="toggleRow(row, $event)"
+                    [matTooltip]="isExpanded(row) ? 'Recolher' : 'Expandir'"
+                    [attr.aria-label]="expandAriaLabel"
+                    [attr.aria-expanded]="isExpanded(row)">
+                    <mat-icon>{{ isExpanded(row) ? 'keyboard_arrow_up' : 'keyboard_arrow_down' }}</mat-icon>
+                  </button>
+                }
+              </div>
+            }
+          </td>
+        </ng-container>
+      }
+
+      @if (expandable) {
+        <ng-container matColumnDef="__expandedDetail">
+          <td mat-cell *matCellDef="let row" class="data-table__detail-cell" [attr.colspan]="displayedColumns.length">
+            <div class="data-table__detail" [@detailExpand]="isExpanded(row) ? 'expanded' : 'collapsed'">
+              @if (expandedTemplate) {
+                <ng-container
+                  [ngTemplateOutlet]="expandedTemplate.template"
+                  [ngTemplateOutletContext]="{ $implicit: row, row: row }">
+                </ng-container>
+              }
+            </div>
+          </td>
+        </ng-container>
+      }
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns" class="data-table__header-row"></tr>
+      <tr
+        mat-row
+        *matRowDef="let row; columns: displayedColumns"
+        class="data-table__row"
+        [class.data-table__row--expanded]="isExpanded(row)"
+        (click)="onRowClick(row)">
+      </tr>
+      @if (expandable) {
+        <tr mat-row *matRowDef="let row; columns: ['__expandedDetail']" class="data-table__detail-row"></tr>
+      }
+
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell data-table-empty" [attr.colspan]="displayedColumns.length || 1">
+          @if (!loading) {
+            <strong>{{ isFilteredEmpty ? (emptyState.filteredTitle || emptyState.title || 'Nenhum resultado encontrado') : (emptyState.title || 'Nenhum registro encontrado') }}</strong>
+            <span>{{ isFilteredEmpty ? (emptyState.filteredDescription || emptyState.description || 'Altere a busca ou os filtros.') : (emptyState.description || '') }}</span>
+          }
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  @if (pagination) {
+    <mat-paginator
+      [length]="pagination.totalItems"
+      [pageIndex]="pagination.pageIndex"
+      [pageSize]="pagination.pageSize"
+      [pageSizeOptions]="pagination.pageSizeOptions || [10, 20, 50]"
+      showFirstLastButtons
+      (page)="onPageChange($event)">
+    </mat-paginator>
+  }
+</div>
+}
+
+<mat-menu #actionsMenu="matMenu">
+  <ng-template matMenuContent let-row="row">
+    @for (tableAction of visibleActions(row); track tableAction.id) {
+      <button
+        mat-menu-item
+        type="button"
+        [disabled]="isActionDisabled(row, tableAction)"
+        (click)="emitAction(row, tableAction)">
+        @if (tableAction.icon) {
+          <mat-icon [color]="tableAction.color || null">{{ tableAction.icon }}</mat-icon>
+        }
+        <span>{{ tableAction.label }}</span>
+      </button>
+    }
+  </ng-template>
+</mat-menu>

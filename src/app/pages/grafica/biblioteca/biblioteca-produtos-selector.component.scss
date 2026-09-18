@@ -1,0 +1,14 @@
+:host { display: block; }
+p { color: var(--mat-sys-on-surface-variant, #526075); }
+.biblioteca-toolbar { display: flex; gap: 16px; flex-wrap: wrap; mat-form-field { flex: 1 1 260px; } }
+.biblioteca-acoes { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 12px 0 20px; button { margin-left: auto; } }
+.biblioteca-lista { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; }
+article { border: 1px solid var(--mat-sys-outline-variant, #dde3ec); border-radius: 12px; padding: 16px; background: var(--mat-sys-surface, white); }
+.biblioteca-item-corpo { padding-left: 12px; p { margin: 10px 0; } small { display: block; } }
+.biblioteca-config { font-weight: 600; }
+.biblioteca-existente { display: block; color: #536577; font-size: .8rem; margin-top: 8px; }
+details { margin-top: 12px; summary { cursor: pointer; } }
+.biblioteca-resultado { display: grid; gap: 6px; padding: 16px; border-left: 4px solid #238057; background: #f0f8f4; border-radius: 8px; }
+.biblioteca-erro { padding: 12px; color: #9b2525; }
+
+.biblioteca-toolbar mat-button-toggle-group { align-self: flex-start; flex-shrink: 0; }

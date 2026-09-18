@@ -1,157 +1,100 @@
-<div class="blank-layout-container justify-content-center register-page">
-  <div class="auth-wrapper">
-    <div class="position-relative shaper-wrapper">
-      <div #registerCard class="w-100 position-relative rounded bg-white auth-card register-card">
-        <div class="auth-body register-body">
-          <div class="m-t-8 text-center register-branding">
+<div class="blank-layout-container justify-content-center align-items-center register-page">
+  <div class="position-relative row w-100 h-100vh bg-gredient justify-content-center">
+    <div class="col-12 col-sm-10 col-md-7 col-lg-4 d-flex align-items-center justify-content-center">
+      <mat-card #registerCard class="cardWithShadow boxed-auth register-card">
+        <mat-card-content class="register-body">
+          <div class="text-center register-branding">
             <app-branding></app-branding>
           </div>
 
-          <div class="register-hero text-center m-t-12">
-            <span class="register-kicker">Teste grátis • Sem burocracia</span>
-            <h1 class="register-title m-t-12">
-              Orçamentos inteligentes para sua gráfica,
-              <span class="register-title-break">em poucos cliques</span>
-            </h1>
-            <p class="register-subtitle m-t-12">
-              Organize seus pedidos, calcule preços e ganhe agilidade no dia a dia.
-            </p>
-
-            <div class="register-benefits m-t-16" aria-label="Benefícios do cadastro">
-              <span class="register-benefit-chip">Orçamentos em segundos</span>
-              <span class="register-benefit-chip">Sem complicação</span>
-              <span class="register-benefit-chip">Comece grátis</span>
-            </div>
-
-            <p class="register-benefits-inline m-t-12">Rápido • Sem complicação • Comece grátis</p>
+          <div class="register-social-row">
+            <button
+              type="button"
+              mat-stroked-button
+              class="google-register-btn"
+              [disabled]="submitting || googleLoading"
+              (click)="handleGoogleClick()">
+              <span class="google-register-btn__icon">
+                <img src="assets/images/svgs/google-icon.svg" alt="" width="20" height="20" />
+              </span>
+              {{ googleLoading ? 'Entrando...' : 'Google' }}
+            </button>
           </div>
 
-          <form class="m-t-20 register-form" [formGroup]="form" (ngSubmit)="submit()" (keydown.enter)="handleEnter($event)">
-            <div class="register-section" formGroupName="empresa">
-              <div class="register-section-header">
-                <div>
-                  <h5 class="register-section-title">Sua empresa</h5>
-                  <p class="register-section-copy">Você pode ajustar tudo depois.</p>
-                </div>
-              </div>
+          <div class="register-divider m-t-30"><span>ou</span></div>
 
-              <div class="m-b-8">
-                <app-input-texto-restrito
-                  [control]="empresaNomeControl"
-                  label="Nome da empresa *"
-                  placeholder="Ex: Gráfica Central"
-                  autocomplete="organization"
-                  requiredError="Informe o nome da empresa">
-                </app-input-texto-restrito>
-              </div>
+          <form class="m-t-30 register-form" [formGroup]="form" (ngSubmit)="submit()" (keydown.enter)="handleEnter($event)">
+            <div class="register-section" formGroupName="usuario">
+              <mat-label class="f-s-14 f-w-600 m-b-12 d-block">Nome</mat-label>
+              <mat-form-field appearance="outline" class="w-100" color="primary">
+                <input matInput formControlName="nome" autocomplete="name" />
+                @if (usuarioNomeControl.touched && usuarioNomeControl.invalid) {
+                  <mat-hint class="m-b-16 error-msg">
+                    <div class="text-error">Informe seu nome.</div>
+                  </mat-hint>
+                }
+              </mat-form-field>
+
+              <mat-label class="f-s-14 f-w-600 m-b-12 d-block">E-mail</mat-label>
+              <mat-form-field appearance="outline" class="w-100" color="primary">
+                <input matInput type="email" formControlName="email" autocomplete="email" />
+                @if (usuarioEmailControl.touched && usuarioEmailControl.invalid) {
+                  <mat-hint class="m-b-16 error-msg">
+                    <div class="text-error">Informe um e-mail válido.</div>
+                  </mat-hint>
+                }
+              </mat-form-field>
+
+              <mat-label class="f-s-14 f-w-600 m-b-12 d-block">Senha</mat-label>
+              <mat-form-field appearance="outline" class="w-100" color="primary">
+                <input
+                  matInput
+                  [type]="showPassword ? 'text' : 'password'"
+                  formControlName="senha"
+                  autocomplete="new-password" />
+                <button
+                  type="button"
+                  mat-icon-button
+                  matSuffix
+                  [attr.aria-label]="showPassword ? 'Ocultar senha' : 'Mostrar senha'"
+                  (click)="showPassword = !showPassword">
+                  <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
+                @if (usuarioSenhaControl.touched && usuarioSenhaControl.invalid) {
+                  <mat-hint class="m-b-16 error-msg">
+                    <div class="text-error">A senha deve ter no mínimo 6 caracteres.</div>
+                  </mat-hint>
+                }
+              </mat-form-field>
+
+              <mat-label class="f-s-14 f-w-600 m-b-12 d-block">Repetir senha</mat-label>
+              <mat-form-field appearance="outline" class="w-100" color="primary">
+                <input
+                  matInput
+                  [type]="showConfirmPassword ? 'text' : 'password'"
+                  formControlName="confirmarSenha"
+                  autocomplete="new-password" />
+                <button
+                  type="button"
+                  mat-icon-button
+                  matSuffix
+                  [attr.aria-label]="showConfirmPassword ? 'Ocultar confirmação de senha' : 'Mostrar confirmação de senha'"
+                  (click)="showConfirmPassword = !showConfirmPassword">
+                  <mat-icon>{{ showConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+                </button>
+                @if (usuarioConfirmarSenhaControl.touched && usuarioConfirmarSenhaControl.invalid) {
+                  <mat-hint class="m-b-16 error-msg">
+                    <div class="text-error">Repita a senha.</div>
+                  </mat-hint>
+                } @else if ((usuarioConfirmarSenhaControl.touched || usuarioConfirmarSenhaControl.dirty) && senhaDivergente) {
+                  <mat-hint class="m-b-16 error-msg">
+                    <div class="text-error">As senhas não coincidem.</div>
+                  </mat-hint>
+                }
+              </mat-form-field>
             </div>
 
-            <div class="register-section m-t-24" formGroupName="usuario">
-              <div class="register-section-header">
-                <div>
-                  <h5 class="register-section-title">Seu acesso</h5>
-                  <p class="register-section-copy">Use esses dados para entrar no sistema.</p>
-                </div>
-              </div>
-
-              <div class="row">
-                <div class="col-12 col-md-6 m-b-8 register-field-col">
-                  <app-input-texto-restrito
-                    [control]="usuarioNomeControl"
-                    label="Seu nome *"
-                    placeholder="Ex: João Silva"
-                    autocomplete="name"
-                    requiredError="Informe seu nome">
-                  </app-input-texto-restrito>
-                </div>
-
-                <div class="col-12 col-md-6 m-b-8 register-field-col">
-                  <app-input-email
-                    [control]="usuarioEmailControl"
-                    label="E-mail *"
-                    placeholder="Ex: contato@suaempresa.com"
-                    autocomplete="email"
-                    requiredError="Informe um e-mail válido"
-                    emailError="Informe um e-mail válido">
-                  </app-input-email>
-                </div>
-
-                <div class="col-12 m-b-8 register-field-col">
-                  <app-input-telefone
-                    [control]="usuarioTelefoneControl"
-                    [required]="false"
-                    label="WhatsApp (opcional)"
-                    autocomplete="tel"
-                    placeholder="Ex: (11) 99999-9999">
-                  </app-input-telefone>
-                </div>
-
-                <div class="col-12 col-md-6 m-b-8 register-field-col">
-                  <div class="password-field">
-                    <div class="password-label-row">
-                      <mat-label class="f-s-14 f-w-600 d-block">Senha *</mat-label>
-                      @if (senhaStrengthLabel) {
-                        <span class="password-strength" [ngClass]="senhaStrengthClass">{{ senhaStrengthLabel }}</span>
-                      }
-                    </div>
-
-                    <mat-form-field appearance="outline" class="w-100">
-                      <input
-                        matInput
-                        [type]="showPassword ? 'text' : 'password'"
-                        formControlName="senha"
-                        placeholder="Crie uma senha segura"
-                        autocomplete="new-password" />
-                      <button
-                        type="button"
-                        mat-icon-button
-                        matSuffix
-                        [attr.aria-label]="showPassword ? 'Ocultar senha' : 'Mostrar senha'"
-                        (click)="showPassword = !showPassword">
-                        <mat-icon>{{ showPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
-                      </button>
-                      @if (usuarioSenhaControl.invalid && (usuarioSenhaControl.touched || usuarioSenhaControl.dirty)) {
-                        <mat-error>A senha deve ter no mínimo 6 caracteres</mat-error>
-                      } @else {
-                        <mat-hint>Use pelo menos 6 caracteres</mat-hint>
-                      }
-                    </mat-form-field>
-                  </div>
-                </div>
-
-                <div class="col-12 col-md-6 m-b-8 register-field-col">
-                  <div class="password-field">
-                    <div class="password-label-row">
-                      <mat-label class="f-s-14 f-w-600 d-block">Confirmar senha *</mat-label>
-                    </div>
-
-                    <mat-form-field appearance="outline" class="w-100">
-                      <input
-                        matInput
-                        [type]="showConfirmPassword ? 'text' : 'password'"
-                        formControlName="confirmarSenha"
-                        placeholder="Repita a senha"
-                        autocomplete="new-password" />
-                      <button
-                        type="button"
-                        mat-icon-button
-                        matSuffix
-                        [attr.aria-label]="showConfirmPassword ? 'Ocultar confirmação de senha' : 'Mostrar confirmação de senha'"
-                        (click)="showConfirmPassword = !showConfirmPassword">
-                        <mat-icon>{{ showConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
-                      </button>
-                      @if ((usuarioConfirmarSenhaControl.touched || usuarioConfirmarSenhaControl.dirty) && senhaDivergente) {
-                        <mat-error>As senhas não coincidem</mat-error>
-                      } @else if (usuarioConfirmarSenhaControl.value && !senhaDivergente) {
-                        <mat-hint class="text-success">Senhas coincidem</mat-hint>
-                      }
-                    </mat-form-field>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="register-cta m-t-32">
+            <div class="register-cta m-t-10">
               <button
                 type="submit"
                 mat-flat-button
@@ -169,8 +112,8 @@
               Entrar
             </a>
           </div>
-        </div>
-      </div>
+        </mat-card-content>
+      </mat-card>
     </div>
   </div>
 </div>

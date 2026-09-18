@@ -9,6 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { Router, RouterModule } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { ToastrService } from 'ngx-toastr';
 import { MatButtonModule } from '@angular/material/button';
@@ -32,6 +33,7 @@ import { MobileFabActionComponent } from 'src/app/components/mobile-fab-action/m
     MatIconModule,
     MatButtonModule,
     MatMenuModule,
+    MatTooltipModule,
     MatRippleModule,
     TablerIconsModule,
     RouterModule,
@@ -108,6 +110,23 @@ export class ListarFormatoComponent implements OnInit {
 
   editar(formato: Formato): void {
     this.router.navigate(['page/cadastro-tecnico/formatos/editar', formato.id]);
+  }
+
+  clonar(formato: Formato): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Clonar formato',
+        message: `Deseja usar "${formato.nome}" como base para criar um novo formato?`,
+        confirmText: 'Clonar'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.router.navigate(['/page/cadastro-tecnico/formatos/criar'], { queryParams: { cloneFrom: formato.id } });
+      }
+    });
   }
 
   excluir(formato: Formato): void {

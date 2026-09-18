@@ -1,6 +1,10 @@
 import { NavItem } from './nav-item/nav-item';
 import { TipoEmpresa } from 'src/app/models/empresa/tipo-empresa.enum';
 
+const grafica = [TipoEmpresa.GRAFICA];
+const deposito = [TipoEmpresa.DEPOSITO];
+const todosSegmentos = [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO];
+
 export const navItems: NavItem[] = [
     {
         navCap: 'Menu'
@@ -10,133 +14,7 @@ export const navItems: NavItem[] = [
         iconName: 'layout-dashboard',
         bgcolor: 'primary',
         route: '/dashboards/dashboard1',
-        allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
-    },
-    {
-        displayName: 'SmartCalc',
-        iconName: 'calculator',
-        bgcolor: 'primary',
-        route: '/smartcalc',
-        allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
-    },
-    {
-        displayName: 'Gerenciar Pedidos',
-        iconName: 'file-text',
-        bgcolor: 'primary',
-        route: '/page/pedido',
-        requiredPermission: ['PEDIDOS_VER', 'PEDIDOS_CADASTRAR'],
-        allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
-    },
-    {
-        displayName: 'Configuração SmartCalc',
-        iconName: 'calculator',
-        bgcolor: 'primary',
-        route: '/page/calculadora/config/criar',
-        requiredPermission: ['CONFIG_CALCULADORAS'],
-        allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
-    },
-    {
-        displayName: 'Usuários',
-        iconName: 'user-circle',
-        bgcolor: 'primary',
-        route: '/page/usuarios/listar',
-        requiredPermission: ['USUARIOS_VER', 'USUARIO_CADASTRAR', 'USUARIO_EDITAR', 'USUARIO_EXCLUIR'],
-        allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
-    },
-    {
-        displayName: 'Gestão de Pessoas',
-        iconName: 'briefcase',
-        bgcolor: 'primary',
-        route: '/page/funcionarios',
-        requiredPermission: ['FUNCIONARIO_VER', 'FOLHA_VER'],
-        allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
-        children: [
-            {
-                displayName: 'Funcionários',
-                iconName: 'point',
-                bgcolor: 'transparent',
-                route: '/page/funcionarios',
-                requiredPermission: ['FUNCIONARIO_VER'],
-                allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
-            },
-            {
-                displayName: 'Folha de Pagamento',
-                iconName: 'point',
-                bgcolor: 'transparent',
-                route: '/page/folha-pagamento',
-                requiredPermission: ['FOLHA_VER'],
-                allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
-            }
-        ]
-    },
-    {
-        displayName: 'Perfis e Permissões',
-        iconName: 'users-group',
-        bgcolor: 'primary',
-        route: '/page/perfil',
-        requiredPermission: ['PERFIS_PERMISSOES_VER', 'PERFIS_PERMISSOES_CADASTRAR', 'PERFIS_PERMISSOES_EDITAR', 'PERFIS_PERMISSOES_EXCLUIR'],
-        allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
-    },
-    {
-        displayName: 'Gerenciar Produtos',
-        iconName: 'settings',
-        bgcolor: 'primary',
-        route: '/cadastro-tecnico',
-        requiredPermission: [
-            'PRODUTOS_VER', 'PRODUTOS_CADASTRAR', 'PRODUTOS_EDITAR', 'PRODUTOS_EXCLUIR',
-            'SERVICOS_VER', 'SERVICOS_CADASTRAR', 'SERVICOS_EDITAR', 'SERVICOS_EXCLUIR'
-        ],
-        allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
-        children: [
-            {
-                displayName: 'Acabamentos',
-                iconName: 'point',
-                bgcolor: 'transparent',
-                route: '/page/cadastro-tecnico/acabamentos',
-                requiredPermission: ['PRODUTOS_VER', 'PRODUTOS_CADASTRAR', 'PRODUTOS_EDITAR', 'PRODUTOS_EXCLUIR'],
-                allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
-            },
-            {
-                displayName: 'Cores',
-                iconName: 'point',
-                bgcolor: 'transparent',
-                route: '/page/cadastro-tecnico/cores',
-                requiredPermission: ['PRODUTOS_VER', 'PRODUTOS_CADASTRAR', 'PRODUTOS_EDITAR', 'PRODUTOS_EXCLUIR'],
-                allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
-            },
-            {
-                displayName: 'Formatos',
-                iconName: 'point',
-                bgcolor: 'transparent',
-                route: '/page/cadastro-tecnico/formatos',
-                requiredPermission: ['PRODUTOS_VER', 'PRODUTOS_CADASTRAR', 'PRODUTOS_EDITAR', 'PRODUTOS_EXCLUIR'],
-                allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
-            },
-            {
-                displayName: 'Materiais',
-                iconName: 'point',
-                bgcolor: 'transparent',
-                route: '/page/cadastro-tecnico/materiais',
-                requiredPermission: ['PRODUTOS_VER', 'PRODUTOS_CADASTRAR', 'PRODUTOS_EDITAR', 'PRODUTOS_EXCLUIR'],
-                allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
-            },
-            {
-                displayName: 'Serviços',
-                iconName: 'point',
-                bgcolor: 'transparent',
-                route: '/page/cadastro-tecnico/servico',
-                requiredPermission: ['SERVICOS_VER', 'SERVICOS_CADASTRAR', 'SERVICOS_EDITAR', 'SERVICOS_EXCLUIR'],
-                allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
-            },
-            {
-                displayName: 'Produtos',
-                iconName: 'point',
-                bgcolor: 'transparent',
-                route: '/page/cadastro-tecnico/produtos',
-                requiredPermission: ['PRODUTOS_VER', 'PRODUTOS_CADASTRAR', 'PRODUTOS_EDITAR', 'PRODUTOS_EXCLUIR'],
-                allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
-            }
-        ]
+        allowedEmpresaTipos: grafica,
     },
     {
         displayName: 'Dashboard',
@@ -144,61 +22,94 @@ export const navItems: NavItem[] = [
         bgcolor: 'primary',
         route: '/page/deposito',
         requiredPermission: ['DEPOSITO_DASHBOARD_VER'],
-        allowedEmpresaTipos: [TipoEmpresa.DEPOSITO],
+        allowedEmpresaTipos: deposito,
     },
     {
-        displayName: 'Central de Orçamentos',
+        navCap: 'Operação',
+        allowedEmpresaTipos: todosSegmentos,
+    },
+    {
+        displayName: 'Orçamentos',
         iconName: 'file-text',
         bgcolor: 'primary',
         route: '/page/orcamentos',
         requiredPermission: ['ORCAMENTOS_VER'],
-        allowedEmpresaTipos: [TipoEmpresa.DEPOSITO],
+        allowedEmpresaTipos: deposito,
     },
     {
-        displayName: 'Usuários',
-        iconName: 'user-circle',
-        bgcolor: 'primary',
-        route: '/page/usuarios/listar',
-        requiredPermission: ['USUARIOS_VER', 'USUARIO_CADASTRAR', 'USUARIO_EDITAR', 'USUARIO_EXCLUIR'],
-        allowedEmpresaTipos: [TipoEmpresa.DEPOSITO],
-    },
-    {
-        displayName: 'Perfis e Permissões',
-        iconName: 'users-group',
-        bgcolor: 'primary',
-        route: '/page/perfil',
-        requiredPermission: ['PERFIS_PERMISSOES_VER', 'PERFIS_PERMISSOES_CADASTRAR', 'PERFIS_PERMISSOES_EDITAR', 'PERFIS_PERMISSOES_EXCLUIR'],
-        allowedEmpresaTipos: [TipoEmpresa.DEPOSITO],
-    },
-    {
-        displayName: 'Gerenciar Clientes',
+        displayName: 'Clientes',
         iconName: 'users',
         bgcolor: 'primary',
         route: '/page/cliente',
         requiredPermission: ['CLIENTE_VER', 'CLIENTE_CADASTRAR', 'CLIENTE_EDITAR', 'CLIENTE_EXCLUIR'],
-        allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
+        allowedEmpresaTipos: todosSegmentos,
     },
     {
-        displayName: 'Gerenciar Produtos',
-        iconName: 'settings',
+        navCap: 'Comercial',
+        allowedEmpresaTipos: grafica,
+    },
+    {
+        displayName: 'Pedidos',
+        iconName: 'shopping-cart',
         bgcolor: 'primary',
-        route: '/page/deposito/itens',
-        catalogoModo: 'LEGADO_DEPOSITO',
+        route: '/page/grafica/comercial-beta/pedidos',
+        requiredPermission: ['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER'],
+        allowedEmpresaTipos: grafica,
+    },
+    {
+        displayName: 'Orçamentos',
+        iconName: 'file-invoice',
+        bgcolor: 'primary',
+        route: '/page/grafica/comercial-beta/orcamentos',
+        requiredPermission: ['ORCAMENTOS_VER', 'GRAFICA_PRODUTOS_VER'],
+        allowedEmpresaTipos: grafica,
+    },
+    {
+        displayName: 'SmartCalc',
+        iconName: 'calculator',
+        bgcolor: 'primary',
+        route: '/smartcalc',
+        featureKey: 'SMARTCALC',
+        requiredPermission: ['SMARTCALC_USAR'],
+        allowedEmpresaTipos: grafica,
+    },
+    {
+        navCap: 'Catálogo',
+        allowedEmpresaTipos: todosSegmentos,
+    },
+    {
+        displayName: 'Catálogo',
+        iconName: 'package',
+        bgcolor: 'primary',
+        route: '/page/grafica/produtos',
         requiredPermission: [
+            'GRAFICA_PRODUTOS_VER',
+            'GRAFICA_PRODUTOS_EDITAR',
+            'ORCAMENTOS_VER',
+            'PEDIDOS_VER',
             'DEPOSITO_ITENS_VER',
             'DEPOSITO_CATEGORIAS_VER',
-            'DEPOSITO_MARCAS_VER'
+            'DEPOSITO_MARCAS_VER',
+            'CATALOGO_PRODUTOS_VER',
+            'CATALOGO_CATEGORIAS_VER',
+            'CATALOGO_MARCAS_VER',
         ],
-        allowedEmpresaTipos: [TipoEmpresa.DEPOSITO],
+        allowedEmpresaTipos: todosSegmentos,
         children: [
+            { displayName: 'Produtos', iconName: 'point', bgcolor: 'transparent', route: '/page/grafica/produtos', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: grafica },
+            { displayName: 'Categorias', iconName: 'point', bgcolor: 'transparent', route: '/page/grafica/categorias', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: grafica },
+            { displayName: 'Materiais', iconName: 'point', bgcolor: 'transparent', route: '/page/grafica/materiais', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: grafica },
+            { displayName: 'Formatos', iconName: 'point', bgcolor: 'transparent', route: '/page/grafica/formatos', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: grafica },
+            { displayName: 'Cores', iconName: 'point', bgcolor: 'transparent', route: '/page/grafica/cores', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: grafica },
+            { displayName: 'Serviços', iconName: 'point', bgcolor: 'transparent', route: '/page/grafica/servicos', requiredPermission: ['GRAFICA_PRODUTOS_VER'], allowedEmpresaTipos: grafica },
             {
-                displayName: 'Itens',
+                displayName: 'Produtos',
                 iconName: 'point',
                 bgcolor: 'transparent',
                 route: '/page/deposito/itens',
                 catalogoModo: 'LEGADO_DEPOSITO',
                 requiredPermission: ['DEPOSITO_ITENS_VER'],
-                allowedEmpresaTipos: [TipoEmpresa.DEPOSITO],
+                allowedEmpresaTipos: deposito,
             },
             {
                 displayName: 'Categorias',
@@ -207,7 +118,7 @@ export const navItems: NavItem[] = [
                 route: '/page/deposito/categorias',
                 catalogoModo: 'LEGADO_DEPOSITO',
                 requiredPermission: ['DEPOSITO_CATEGORIAS_VER'],
-                allowedEmpresaTipos: [TipoEmpresa.DEPOSITO],
+                allowedEmpresaTipos: deposito,
             },
             {
                 displayName: 'Marcas',
@@ -216,23 +127,8 @@ export const navItems: NavItem[] = [
                 route: '/page/deposito/marcas',
                 catalogoModo: 'LEGADO_DEPOSITO',
                 requiredPermission: ['DEPOSITO_MARCAS_VER'],
-                allowedEmpresaTipos: [TipoEmpresa.DEPOSITO],
+                allowedEmpresaTipos: deposito,
             },
-        ]
-    },
-    {
-        displayName: 'Catálogo',
-        iconName: 'package',
-        bgcolor: 'primary',
-        route: '/page/catalogo/produtos',
-        catalogoModo: 'CATALOGO_NOVO',
-        requiredPermission: [
-            'CATALOGO_PRODUTOS_VER',
-            'CATALOGO_CATEGORIAS_VER',
-            'CATALOGO_MARCAS_VER'
-        ],
-        allowedEmpresaTipos: [TipoEmpresa.DEPOSITO],
-        children: [
             {
                 displayName: 'Produtos',
                 iconName: 'point',
@@ -240,7 +136,7 @@ export const navItems: NavItem[] = [
                 route: '/page/catalogo/produtos',
                 catalogoModo: 'CATALOGO_NOVO',
                 requiredPermission: ['CATALOGO_PRODUTOS_VER'],
-                allowedEmpresaTipos: [TipoEmpresa.DEPOSITO],
+                allowedEmpresaTipos: deposito,
             },
             {
                 displayName: 'Categorias',
@@ -249,7 +145,7 @@ export const navItems: NavItem[] = [
                 route: '/page/catalogo/categorias',
                 catalogoModo: 'CATALOGO_NOVO',
                 requiredPermission: ['CATALOGO_CATEGORIAS_VER'],
-                allowedEmpresaTipos: [TipoEmpresa.DEPOSITO],
+                allowedEmpresaTipos: deposito,
             },
             {
                 displayName: 'Marcas',
@@ -258,24 +154,48 @@ export const navItems: NavItem[] = [
                 route: '/page/catalogo/marcas',
                 catalogoModo: 'CATALOGO_NOVO',
                 requiredPermission: ['CATALOGO_MARCAS_VER'],
-                allowedEmpresaTipos: [TipoEmpresa.DEPOSITO],
+                allowedEmpresaTipos: deposito,
             },
-        ]
+        ],
     },
     {
-	        displayName: 'Meu Site',
-	        iconName: 'world',
-	        bgcolor: 'primary',
-	        requiredPermission: ['SITE_BANNERS_VER', 'SITE_PAGINAS_VER', 'SITE_CONFIG_VER'],
-	        allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
-	        children: [
+        navCap: 'Gestão',
+        allowedEmpresaTipos: todosSegmentos,
+    },
+    {
+        displayName: 'Usuários',
+        iconName: 'user-circle',
+        bgcolor: 'primary',
+        route: '/page/usuarios/listar',
+        requiredPermission: ['USUARIOS_VER', 'USUARIO_CADASTRAR', 'USUARIO_EDITAR', 'USUARIO_EXCLUIR'],
+        allowedEmpresaTipos: todosSegmentos,
+    },
+    {
+        displayName: 'Perfis e Permissões',
+        iconName: 'users-group',
+        bgcolor: 'primary',
+        route: '/page/perfil',
+        requiredPermission: ['PERFIS_PERMISSOES_VER', 'PERFIS_PERMISSOES_CADASTRAR', 'PERFIS_PERMISSOES_EDITAR', 'PERFIS_PERMISSOES_EXCLUIR'],
+        allowedEmpresaTipos: todosSegmentos,
+    },
+    {
+        navCap: 'Presença Digital',
+        allowedEmpresaTipos: todosSegmentos,
+    },
+    {
+        displayName: 'Meu Site',
+        iconName: 'world',
+        bgcolor: 'primary',
+        requiredPermission: ['SITE_BANNERS_VER', 'SITE_PAGINAS_VER', 'SITE_CONFIG_VER'],
+        allowedEmpresaTipos: todosSegmentos,
+        children: [
             {
                 displayName: 'Banners',
                 iconName: 'point',
                 bgcolor: 'transparent',
                 route: '/page/site/banners',
                 requiredPermission: ['SITE_BANNERS_VER'],
-                allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
+                allowedEmpresaTipos: todosSegmentos,
             },
             {
                 displayName: 'Páginas',
@@ -283,25 +203,25 @@ export const navItems: NavItem[] = [
                 bgcolor: 'transparent',
                 route: '/page/site/paginas',
                 requiredPermission: ['SITE_PAGINAS_VER'],
-                allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
+                allowedEmpresaTipos: todosSegmentos,
             },
             {
                 displayName: 'Configurações',
                 iconName: 'point',
                 bgcolor: 'transparent',
-	                route: '/page/site/configuracoes',
-	                requiredPermission: ['SITE_CONFIG_VER'],
-	                allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
-	            }
-	        ]
-	    },
+                route: '/page/site/configuracoes',
+                requiredPermission: ['SITE_CONFIG_VER'],
+                allowedEmpresaTipos: todosSegmentos,
+            }
+        ]
+    },
     {
         displayName: 'ClickLink',
         iconName: 'link',
         bgcolor: 'primary',
         featureKey: 'LINKS',
         requiredPermission: ['LINKS_VER'],
-        allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
+        allowedEmpresaTipos: todosSegmentos,
         children: [
             {
                 displayName: 'Páginas',
@@ -310,7 +230,7 @@ export const navItems: NavItem[] = [
                 route: '/page/links/paginas',
                 featureKey: 'LINKS',
                 requiredPermission: ['LINKS_VER'],
-                allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
+                allowedEmpresaTipos: todosSegmentos,
             },
             {
                 displayName: 'Analytics',
@@ -319,9 +239,47 @@ export const navItems: NavItem[] = [
                 route: '/page/links/analytics',
                 featureKey: 'LINKS',
                 requiredPermission: ['LINKS_VER'],
-                allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
+                allowedEmpresaTipos: todosSegmentos,
             },
         ],
+    },
+    {
+        displayName: 'ClickTV',
+        iconName: 'device-tv',
+        bgcolor: 'primary',
+        route: '/page/clicktv/midias',
+        requiredPermission: ['CLICKTV_VER', 'CLICKTV_MIDIAS_GERENCIAR', 'CLICKTV_PLAYLISTS_GERENCIAR', 'CLICKTV_TELAS_GERENCIAR'],
+        allowedEmpresaTipos: todosSegmentos,
+        children: [
+            {
+                displayName: 'Mídias',
+                iconName: 'point',
+                bgcolor: 'transparent',
+                route: '/page/clicktv/midias',
+                requiredPermission: ['CLICKTV_VER', 'CLICKTV_MIDIAS_GERENCIAR'],
+                allowedEmpresaTipos: todosSegmentos,
+            },
+            {
+                displayName: 'Playlists',
+                iconName: 'point',
+                bgcolor: 'transparent',
+                route: '/page/clicktv/playlists',
+                requiredPermission: ['CLICKTV_VER', 'CLICKTV_PLAYLISTS_GERENCIAR'],
+                allowedEmpresaTipos: todosSegmentos,
+            },
+            {
+                displayName: 'Telas',
+                iconName: 'point',
+                bgcolor: 'transparent',
+                route: '/page/clicktv/telas',
+                requiredPermission: ['CLICKTV_VER', 'CLICKTV_TELAS_GERENCIAR'],
+                allowedEmpresaTipos: todosSegmentos,
+            },
+        ]
+    },
+    {
+        navCap: 'Configurações',
+        allowedEmpresaTipos: todosSegmentos,
     },
     {
         displayName: 'Dados da empresa',
@@ -329,30 +287,30 @@ export const navItems: NavItem[] = [
         bgcolor: 'primary',
         route: '/page/empresa',
         requiredPermission: ['DADOS_EMPRESA'],
-        allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
+        allowedEmpresaTipos: todosSegmentos,
+    },
+    {
+        displayName: 'Minha assinatura',
+        iconName: 'credit-card',
+        bgcolor: 'primary',
+        route: '/billing/minha-assinatura',
+        allowedEmpresaTipos: todosSegmentos,
+        proprietarioOnly: true,
     },
     {
         displayName: 'Configurações',
         iconName: 'settings-automation',
         bgcolor: 'primary',
         route: '/config',
-        allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
+        allowedEmpresaTipos: todosSegmentos,
         children: [
-            {
-                displayName: 'Minha assinatura',
-                iconName: 'point',
-                bgcolor: 'transparent',
-                route: '/billing/minha-assinatura',
-                allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
-                proprietarioOnly: true,
-            },
             {
                 displayName: 'Presença Pública',
                 iconName: 'point',
                 bgcolor: 'transparent',
                 route: '/page/config/presenca-publica',
                 requiredPermission: ['DADOS_EMPRESA'],
-                allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
+                allowedEmpresaTipos: todosSegmentos,
             },
             {
                 displayName: 'Aplicativos e atalhos',
@@ -360,7 +318,7 @@ export const navItems: NavItem[] = [
                 bgcolor: 'transparent',
                 route: '/page/config/aplicativos-atalhos',
                 requiredPermission: ['CONFIGURACOES_APLICATIVOS_ATALHOS_VER', 'CONFIGURACOES_APLICATIVOS_ATALHOS_EDITAR'],
-                allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
+                allowedEmpresaTipos: todosSegmentos,
             },
             {
                 displayName: 'Calculadora de Materiais',
@@ -369,7 +327,16 @@ export const navItems: NavItem[] = [
                 route: '/page/calculadora-materiais',
                 featureKey: 'CALCULADORA_MATERIAIS',
                 requiredPermission: ['CALCULADORA_MATERIAIS_CONFIGURAR'],
-                allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
+                allowedEmpresaTipos: todosSegmentos,
+            },
+            {
+                displayName: 'Configuração SmartCalc',
+                iconName: 'point',
+                bgcolor: 'transparent',
+                route: '/page/calculadora/config/criar',
+                featureKey: 'SMARTCALC',
+                requiredPermission: ['CONFIG_CALCULADORAS'],
+                allowedEmpresaTipos: grafica,
             },
             {
                 displayName: 'Servidor de E-mail',
@@ -377,68 +344,26 @@ export const navItems: NavItem[] = [
                 bgcolor: 'transparent',
                 route: '/page/config/email-servidor',
                 requiredPermission: ['CONFIG_EMAIL'],
-                allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
-            },
-            {
-                displayName: 'Folha (Gestão de Pessoas)',
-                iconName: 'point',
-                bgcolor: 'transparent',
-                route: '/page/config/folha-pagamento',
-                requiredPermission: ['FOLHA_CONFIGURAR'],
-                allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
-            }
-        ]
-    },
-    {
-        displayName: 'ClickTV',
-        iconName: 'device-tv',
-        bgcolor: 'primary',
-        route: '/page/clicktv/midias',
-        requiredPermission: ['CLICKTV_VER', 'CLICKTV_MIDIAS_GERENCIAR', 'CLICKTV_PLAYLISTS_GERENCIAR', 'CLICKTV_TELAS_GERENCIAR'],
-        allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
-        children: [
-            {
-                displayName: 'Mídias',
-                iconName: 'point',
-                bgcolor: 'transparent',
-                route: '/page/clicktv/midias',
-                requiredPermission: ['CLICKTV_VER', 'CLICKTV_MIDIAS_GERENCIAR'],
-                allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
-            },
-            {
-                displayName: 'Playlists',
-                iconName: 'point',
-                bgcolor: 'transparent',
-                route: '/page/clicktv/playlists',
-                requiredPermission: ['CLICKTV_VER', 'CLICKTV_PLAYLISTS_GERENCIAR'],
-                allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
-            },
-            {
-                displayName: 'Telas',
-                iconName: 'point',
-                bgcolor: 'transparent',
-                route: '/page/clicktv/telas',
-                requiredPermission: ['CLICKTV_VER', 'CLICKTV_TELAS_GERENCIAR'],
-                allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
+                allowedEmpresaTipos: grafica,
             },
         ]
     },
     {
         navCap: 'Ajuda',
-        allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
+        allowedEmpresaTipos: todosSegmentos,
     },
     {
         displayName: 'Suporte',
         iconName: 'lifebuoy',
         bgcolor: 'primary',
         route: '/page/suporte',
-        allowedEmpresaTipos: [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO],
+        allowedEmpresaTipos: todosSegmentos,
     },
     {
         displayName: 'Central de ajuda',
         iconName: 'help',
         bgcolor: 'primary',
         route: '/page/ajuda',
-        allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
+        allowedEmpresaTipos: todosSegmentos,
     },
 ];

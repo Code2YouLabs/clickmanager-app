@@ -194,6 +194,92 @@
       </app-section-card>
     </div>
 
+    <app-section-card titulo="Adicionar item gráfico" subtitulo="Configuração gráfica e preço calculado" class="d-block m-t-20" [divider]="true" *ngIf="podeAdicionarItemGrafico">
+      <div class="grafica-config">
+        <mat-form-field appearance="outline" class="grafica-config__wide">
+          <mat-label>Produto do Catálogo</mat-label>
+          <input matInput [formControl]="produtoGraficoBusca" [matAutocomplete]="autoProdutoGrafico" placeholder="Buscar panfleto, banner, xerox..." />
+          <mat-progress-spinner matSuffix *ngIf="carregandoProdutoGrafico" mode="indeterminate" diameter="20"></mat-progress-spinner>
+          <mat-autocomplete #autoProdutoGrafico="matAutocomplete" [displayWith]="displayProdutoGrafico" (optionSelected)="selecionarProdutoGrafico($event.option.value)">
+            <mat-option *ngFor="let produto of produtosGrafica$ | async" [value]="produto">
+              <div class="produto-option">
+                <strong>{{ produto.nome }}</strong>
+                <span>{{ produto.codigo || 'Sem SKU' }} • {{ produto.marcaNome || 'Sem marca' }}</span>
+              </div>
+            </mat-option>
+          </mat-autocomplete>
+        </mat-form-field>
+
+        <div class="grafica-config__wide grafica-status" *ngIf="buscandoProdutoGrafico">
+          <mat-spinner diameter="22"></mat-spinner>
+          <span>Verificando configuração gráfica...</span>
+        </div>
+
+        <ng-container *ngIf="graficaProdutoVenda">
+          <mat-form-field appearance="outline" *ngFor="let parametro of parametrosSelecaoGrafica()">
+            <mat-label>{{ parametro.nome }}</mat-label>
+            <mat-select [(ngModel)]="selecoesGrafica[parametro.codigo]" [ngModelOptions]="{ standalone: true }">
+              <mat-option *ngFor="let opcao of parametro.opcoes" [value]="opcao.codigo" [disabled]="!opcao.ativo">{{ opcao.nome }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Quantidade</mat-label>
+            <input matInput type="number" min="1" [formControl]="quantidadeGraficaControl" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Largura</mat-label>
+            <input matInput type="number" min="0" step="0.01" [formControl]="larguraGraficaControl" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Altura</mat-label>
+            <input matInput type="number" min="0" step="0.01" [formControl]="alturaGraficaControl" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Unidade das medidas</mat-label>
+            <mat-select [formControl]="unidadeGraficaControl">
+              <mat-option value="METRO">Metro</mat-option>
+              <mat-option value="CENTIMETRO">Centímetro</mat-option>
+              <mat-option value="MILIMETRO">Milímetro</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Desconto</mat-label>
+            <input matInput type="number" min="0" step="0.01" [formControl]="descontoGraficaControl" />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="grafica-config__wide">
+            <mat-label>Observação do item</mat-label>
+            <textarea matInput rows="2" [formControl]="observacaoGraficaControl"></textarea>
+          </mat-form-field>
+
+          <div class="grafica-result grafica-config__wide">
+            <div>
+              <span>Preço gráfico</span>
+              <strong *ngIf="resultadoGrafica?.status === 'PRECO_CALCULADO'">{{ resultadoGrafica?.valorTotal | currency:'BRL':'symbol':'1.2-2' }}</strong>
+              <strong *ngIf="resultadoGrafica?.status !== 'PRECO_CALCULADO'">{{ resultadoGraficaLabel() }}</strong>
+            </div>
+            <div class="grafica-result__actions">
+              <button mat-stroked-button type="button" (click)="calcularGrafica()" [disabled]="calculandoGrafica">
+                <mat-spinner *ngIf="calculandoGrafica" diameter="18"></mat-spinner>
+                <mat-icon *ngIf="!calculandoGrafica">calculate</mat-icon>
+                Calcular
+              </button>
+              <button mat-flat-button color="primary" type="button" (click)="adicionarGraficaAoOrcamento()" [disabled]="adicionandoGrafica || resultadoGrafica?.status !== 'PRECO_CALCULADO'">
+                <mat-spinner *ngIf="adicionandoGrafica" diameter="18"></mat-spinner>
+                <mat-icon *ngIf="!adicionandoGrafica">playlist_add</mat-icon>
+                Adicionar
+              </button>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </app-section-card>
+
     <app-section-card titulo="Itens solicitados" subtitulo="Os valores são estimativos e podem ser revisados durante o atendimento." class="d-block m-t-20" [divider]="true">
       <div actions class="detail-total">
         {{ totalEstimado() !== null ? (totalEstimado() | currency:'BRL':'symbol':'1.2-2') : 'Sob consulta' }}
@@ -210,6 +296,7 @@
               <div class="detail-item-desc">
                 <strong>{{ itemDescricao(item) }}</strong>
                 <span *ngIf="item.produtoNome && item.descricao">{{ item.produtoNome }}</span>
+                <span class="detail-item-desc__snapshot" *ngIf="itemResumoGrafico(item) as resumo">{{ resumo }}</span>
               </div>
             </td>
           </ng-container>

@@ -1,0 +1,201 @@
+.hierarchy-tree-card {
+  display: block;
+}
+
+.hierarchy-tree-shell {
+  position: relative;
+  min-height: 180px;
+}
+
+.hierarchy-tree {
+  display: block;
+  background: transparent;
+}
+
+.hierarchy-tree__node,
+.hierarchy-tree__nested-node {
+  display: block;
+}
+
+.hierarchy-tree__row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 40px;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.hierarchy-tree__row:hover {
+  background: var(--mat-sys-surface-bright);
+}
+
+.hierarchy-tree__row--leaf {
+  min-height: 44px;
+}
+
+.hierarchy-tree__toggle {
+  width: 36px;
+  height: 36px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.hierarchy-tree__toggle--hidden {
+  visibility: hidden;
+}
+
+.hierarchy-tree__drag-handle {
+  width: 32px;
+  height: 32px;
+  color: var(--mat-sys-on-surface-variant);
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.hierarchy-tree__row:hover .hierarchy-tree__drag-handle,
+.hierarchy-tree__row:focus-within .hierarchy-tree__drag-handle {
+  opacity: 1;
+}
+
+.hierarchy-tree__content {
+  min-width: 0;
+}
+
+.hierarchy-tree__title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.hierarchy-tree__label {
+  overflow: hidden;
+  color: var(--mat-sys-on-surface);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hierarchy-tree__row--parent > .hierarchy-tree__content .hierarchy-tree__label {
+  font-weight: 700;
+}
+
+.hierarchy-tree__description {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 12px;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.hierarchy-tree__meta {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.hierarchy-tree__actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  min-width: 40px;
+}
+
+.hierarchy-tree__actions-trigger {
+  opacity: 0;
+  transition: opacity 150ms ease, background-color 150ms ease;
+}
+
+.hierarchy-tree__row:hover .hierarchy-tree__actions-trigger,
+.hierarchy-tree__row:focus-within .hierarchy-tree__actions-trigger {
+  opacity: 1;
+}
+
+.hierarchy-tree__children {
+  margin-left: 32px;
+  padding-left: 22px;
+  border-left: 1px solid color-mix(in srgb, var(--mat-sys-outline-variant) 64%, transparent);
+}
+
+.hierarchy-tree__children--collapsed {
+  display: none;
+}
+
+.hierarchy-tree-empty {
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.hierarchy-tree-empty strong,
+.hierarchy-tree-empty span {
+  display: block;
+}
+
+.hierarchy-tree-empty strong {
+  margin-bottom: 4px;
+  color: var(--mat-sys-on-surface);
+}
+
+.hierarchy-tree-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+@media (max-width: 760px) {
+  .hierarchy-tree__row {
+    grid-template-columns: 32px minmax(0, 1fr) 36px;
+    gap: 6px;
+    padding: 6px 2px;
+  }
+
+  .hierarchy-tree__toggle {
+    width: 32px;
+    height: 32px;
+  }
+
+  .hierarchy-tree__meta {
+    width: 100%;
+  }
+
+  .hierarchy-tree__actions {
+    min-width: 36px;
+  }
+
+  .hierarchy-tree__actions-trigger {
+    width: 32px;
+    height: 32px;
+    opacity: 1;
+  }
+
+  .hierarchy-tree__children {
+    margin-left: 16px;
+    padding-left: 14px;
+  }
+}
+
+.hierarchy-tree__row--selectable {
+  grid-template-columns: 32px 40px minmax(0, 1fr);
+  gap: 4px;
+}
+.hierarchy-tree-shell--compact {
+  min-height: 0;
+  .hierarchy-tree__row { min-height: 40px; padding: 0 2px; }
+  .hierarchy-tree__label { white-space: normal; overflow-wrap: anywhere; font-weight: 400; }
+  .hierarchy-tree__children { margin-left: 16px; padding-left: 8px; }
+  .hierarchy-tree__meta { width: auto; }
+}

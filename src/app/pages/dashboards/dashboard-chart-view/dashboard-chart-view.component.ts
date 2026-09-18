@@ -337,7 +337,7 @@ export class AppDashboardChartViewComponent implements OnInit, AfterViewInit {
     this.loading = true;
     try {
       const resp: DashboardComparativoResponse = await firstValueFrom(
-        this.dashboardService.obterComparativoSimples(1, this.ano, this.mesA, this.mesB, this.comparativoModo)
+        this.dashboardService.obterComparativoSimples(this.ano, this.mesA, this.mesB, this.comparativoModo)
       );
 
       const nomeA = resp.comparativo.mesA?.label ?? this.mesLabel(this.mesA);

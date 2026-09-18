@@ -23,5 +23,6 @@ export interface SmartCalcResultado {
         valorFolha?: number;
         custoUnitario?: number;
     };
+    avisos?: string[];
     total: number;
 }

@@ -9,6 +9,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { Router, RouterModule } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ToastrService } from 'ngx-toastr';
 import { MatRippleModule } from '@angular/material/core';
 import { TablerIconsModule } from 'angular-tabler-icons';
@@ -32,6 +33,7 @@ import { MobileFabActionComponent } from 'src/app/components/mobile-fab-action/m
     MatIconModule,
     MatButtonModule,
     MatMenuModule,
+    MatTooltipModule,
     MatRippleModule,
     TablerIconsModule,
     RouterModule,
@@ -107,6 +109,23 @@ export class ListarMaterialComponent implements OnInit {
 
   editar(material: Material): void {
     this.router.navigate(['page/cadastro-tecnico/materiais/editar', material.id]);
+  }
+
+  clonar(material: Material): void {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Clonar material',
+        message: `Deseja usar "${material.nome}" como base para criar um novo material?`,
+        confirmText: 'Clonar'
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.router.navigate(['/page/cadastro-tecnico/materiais/nova'], { queryParams: { cloneFrom: material.id } });
+      }
+    });
   }
 
   excluir(material: Material): void {
