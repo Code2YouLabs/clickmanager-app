@@ -14,6 +14,7 @@ type StatusConfig = { icon: string; label: string; className: string };
 })
 export class StatusBadgeComponent {
   @Input() status: string | null | undefined;
+  @Input() compact = false;
 
   private readonly map: Record<string, StatusConfig> = {
     ATIVO: { icon: 'check_circle', label: 'Ativo', className: 'chip-pronto' },

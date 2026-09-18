@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, DestroyRef, inject, signal } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -9,7 +9,7 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
-import { ActivatedRoute, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
 import { CalculadoraConfigService } from '../calculadora-config.service';
 import { CalculadoraConfigResponse } from 'src/app/models/calculadora/calculadora-config-response.model';
@@ -18,8 +18,8 @@ import { extrairMensagemErro } from 'src/app/utils/mensagem.util';
 import { ProdutoOption } from 'src/app/models/produto/produto-option.model';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
-import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
 import { DualListTransferComponent, DualListTransferItem } from 'src/app/components/dual-list-transfer/dual-list-transfer.component';
+import { ProductIdentityComponent } from 'src/app/components/product-identity/product-identity.component';
 
 @Component({
     selector: 'app-calculadora-config',
@@ -34,8 +34,8 @@ import { DualListTransferComponent, DualListTransferItem } from 'src/app/compone
       RouterModule,
       PageCardComponent,
       SectionCardComponent,
-      MobileTotalBarComponent,
-      DualListTransferComponent
+      DualListTransferComponent,
+      ProductIdentityComponent
     ],
     templateUrl: './smart-calc-config.component.html',
     styleUrls: ['./smart-calc-config.component.scss']
@@ -46,11 +46,11 @@ export class CalculadoraConfigComponent implements OnInit {
     private calculadoraService = inject(CalculadoraConfigService);
     private toastr = inject(ToastrService);
     private route = inject(ActivatedRoute);
+    private router = inject(Router);
 
     carregando = signal<boolean>(true);
     salvando = signal<boolean>(false);
     erroCarregamento = false;
-    isMobileView = false;
     isEditMode = false;
 
     produtoOptions: ProdutoOption[] = [];
@@ -62,15 +62,9 @@ export class CalculadoraConfigComponent implements OnInit {
     });
 
     ngOnInit(): void {
-        this.atualizarViewport();
         this.isEditMode = this.route.snapshot.routeConfig?.path?.includes('editar') ?? false;
         this.carregando.set(true);
         this.loadConfig();
-    }
-
-    @HostListener('window:resize')
-    onWindowResize(): void {
-        this.atualizarViewport();
     }
 
     private loadConfig(): void {
@@ -133,7 +127,9 @@ export class CalculadoraConfigComponent implements OnInit {
     get transferItems(): DualListTransferItem[] {
         return this.produtoOptions.map(produto => ({
             id: produto.id,
-            label: `${produto.nome}${produto.formatoNome ? ' · ' + produto.formatoNome : ''}`,
+            label: produto.nome,
+            searchText: [produto.materialNome, produto.formatoNome, produto.corNome, produto.codigo]
+                .filter(Boolean).join(' '),
             group: produto.familiaNome || 'Sem família',
             status: produto.suportado ? 'PRONTO' : 'PRECISA_AJUSTE',
             details: produto.suportado ? [] : (produto.motivos || []).map(motivo => this.motivoTexto(motivo)),
@@ -147,6 +143,10 @@ export class CalculadoraConfigComponent implements OnInit {
 
     atualizarSelecao(ids: number[]): void {
         this.selecionados = new Set(ids);
+    }
+
+    produtoPorId(id: number): ProdutoOption | undefined {
+        return this.produtoOptions.find(produto => produto.id === id);
     }
 
     motivoTexto(codigo: string): string {
@@ -181,17 +181,7 @@ export class CalculadoraConfigComponent implements OnInit {
     }
 
     voltar(): void {
-        if (typeof window !== 'undefined' && window.history.length > 1) {
-            window.history.back();
-            return;
-        }
+        this.router.navigate(['/smartcalc']);
     }
 
-    private atualizarViewport(): void {
-        if (typeof window === 'undefined') {
-            return;
-        }
-
-        this.isMobileView = window.innerWidth <= 768;
-    }
 }

@@ -57,4 +57,14 @@ describe('DualListTransferComponent', () => {
     component.move(items[2], 'left');
     expect(emit).not.toHaveBeenCalled();
   });
+
+  it('busca também pelos atributos secundários sem alterar contadores', () => {
+    const component = criar();
+    component.items = [{ id: 4, label: 'Adesivo Vinil', group: 'Adesivos',
+      searchText: 'Vinil Transparente SRA3 4x0' }, ...items];
+    component.leftSearch = 'transparente';
+    expect(component.groups('left')[0].items.map(item => item.id)).toEqual([4]);
+    expect(component.availableCount).toBe(2);
+    expect(component.selectedCount).toBe(2);
+  });
 });

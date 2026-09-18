@@ -1,15 +1,17 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatIconModule } from '@angular/material/icon';
 import { InputPesquisaComponent } from '../inputs/input-pesquisa/input-pesquisa.component';
 import { StatusBadgeComponent } from '../status-badge/status-badge.component';
+import { SectionCardComponent } from '../section-card/section-card.component';
 
 export interface DualListTransferItem {
   id: number;
   label: string;
+  searchText?: string;
   group?: string;
   status?: string;
   details?: string[];
@@ -23,7 +25,7 @@ export type DualListLayout = 'SPLIT' | 'LEFT_EXPANDED' | 'RIGHT_EXPANDED';
   selector: 'app-dual-list-transfer',
   standalone: true,
   imports: [CommonModule, RouterModule, MatButtonModule, MatButtonToggleModule,
-    MatIconModule, InputPesquisaComponent, StatusBadgeComponent],
+    MatIconModule, InputPesquisaComponent, StatusBadgeComponent, SectionCardComponent],
   templateUrl: './dual-list-transfer.component.html',
   styleUrls: ['./dual-list-transfer.component.scss'],
 })
@@ -34,6 +36,9 @@ export class DualListTransferComponent {
   @Input() leftTitle = 'Disponíveis';
   @Input() rightTitle = 'Selecionados';
   @Input() editActionLabel = 'Editar item';
+  @Input() leftSubtitle = '';
+  @Input() rightSubtitle = '';
+  @Input() itemTemplate?: TemplateRef<{ $implicit: DualListTransferItem }>;
   @Output() selectedIdsChange = new EventEmitter<number[]>();
 
   leftSearch = '';
@@ -56,7 +61,7 @@ export class DualListTransferComponent {
     for (const item of this.items) {
       if (this.selectedIds.includes(item.id) !== selected) continue;
       const group = item.group || 'Outros';
-      if (term && !`${group} ${item.label}`.toLocaleLowerCase('pt-BR').includes(term)) continue;
+      if (term && !`${group} ${item.label} ${item.searchText || ''}`.toLocaleLowerCase('pt-BR').includes(term)) continue;
       groups.set(group, [...(groups.get(group) || []), item]);
     }
     return [...groups].map(([name, items]) => ({ name, items }));

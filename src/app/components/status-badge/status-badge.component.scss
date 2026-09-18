@@ -23,6 +23,13 @@
   width: 16px;
 }
 
+.status-chip--compact {
+  min-height: 24px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
 .status-chip .text {
   display: block;
   overflow: hidden;

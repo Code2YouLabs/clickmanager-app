@@ -1,13 +1,23 @@
-<ng-template #configForm>
-  <form [formGroup]="form" (ngSubmit)="onSubmit()">
-    <app-section-card
-      titulo="Ativação"
-      [subtitulo]="isMobileView ? 'Disponibilidade do cálculo.' : 'Defina se o SmartCalc fica disponível para esta empresa.'">
+<app-page-card
+  [titulo]="tituloPagina"
+  subtitulo="Ative o SmartCalc e escolha as bases de produção."
+  [mostrarDivisor]="true"
+  [showFooter]="true"
+  [helpRota]="['/page/ajuda']"
+  helpFragment="smartcalc"
+  helpTexto="Manual do SmartCalc"
+  helpIcone="help_outline">
+  <div page-header-actions>
+    <button mat-stroked-button type="button" (click)="voltar()">
+      <mat-icon>arrow_back</mat-icon> Voltar
+    </button>
+  </div>
+
+  <form id="smartcalc-config-form" [formGroup]="form" class="smartcalc-config__form" (ngSubmit)="onSubmit()">
+    <app-section-card titulo="Ativação" subtitulo="Defina se o SmartCalc fica disponível para esta empresa.">
       <div class="smartcalc-config__toggle">
-        <mat-slide-toggle formControlName="ativo">
-          SmartCalc ativo
-        </mat-slide-toggle>
-        <small>{{ isMobileView ? 'Desative para ocultar o cálculo.' : 'Quando desativado, o cálculo não aparece nos fluxos de orçamento e pedido.' }}</small>
+        <mat-slide-toggle formControlName="ativo">SmartCalc ativo</mat-slide-toggle>
+        <small>Quando desativado, o cálculo não aparece nos fluxos de orçamento e pedido.</small>
       </div>
     </app-section-card>
 
@@ -23,74 +33,26 @@
           <p>Nenhuma base com preço fixo encontrada. Cadastre ou ajuste um produto para começar.</p>
         }
         @if (!erroCarregamento) {
+          <ng-template #identity let-item>
+            @if (produtoPorId(item.id); as produto) {
+              <app-product-identity [name]="produto.nome" [material]="produto.materialNome"
+                [format]="produto.formatoNome" [color]="produto.corNome"></app-product-identity>
+            }
+          </ng-template>
           <app-dual-list-transfer [items]="transferItems" [selectedIds]="selectedIds"
-            [disabled]="salvando()" leftTitle="Disponíveis" rightTitle="No SmartCalc" editActionLabel="Editar produto"
+            [itemTemplate]="identity" [disabled]="salvando()"
+            leftTitle="Disponíveis" leftSubtitle="Produtos que podem ser adicionados."
+            rightTitle="No SmartCalc" rightSubtitle="Produtos selecionados como bases de produção."
+            editActionLabel="Editar produto"
             (selectedIdsChange)="atualizarSelecao($event)"></app-dual-list-transfer>
         }
       }
     </app-section-card>
-
-    <div class="smartcalc-config__actions" *ngIf="!isMobileView">
-      <button mat-stroked-button color="primary" type="button" [routerLink]="['/smartcalc']">
-        Voltar
-      </button>
-
-      <button mat-flat-button color="primary" type="submit" [disabled]="salvando() || carregando() || erroCarregamento">
-        <mat-icon>save</mat-icon>
-        <span>{{ textoAcaoPrincipal }}</span>
-      </button>
-    </div>
   </form>
-</ng-template>
 
-@if (!isMobileView) {
-<app-page-card
-  class="smartcalc-config-page"
-  [titulo]="tituloPagina"
-  subtitulo="Ative o SmartCalc e escolha as bases de produção."
-  botaoTexto="Voltar"
-  botaoIcone="arrow_back"
-  botaoCor="primary"
-  [botaoRota]="['/smartcalc']"
-  [mostrarDivisor]="true"
-  [helpRota]="['/page/ajuda']"
-  helpFragment="smartcalc"
-  helpTexto="Manual do SmartCalc"
-  helpIcone="help_outline">
-  <ng-container *ngTemplateOutlet="configForm"></ng-container>
+  <button page-footer-right mat-stroked-button type="button" (click)="voltar()">Cancelar</button>
+  <button page-footer-right mat-flat-button color="primary" type="submit" form="smartcalc-config-form"
+    [disabled]="salvando() || carregando() || erroCarregamento">
+    <mat-icon>save</mat-icon> {{ textoAcaoPrincipal }}
+  </button>
 </app-page-card>
-} @else {
-<section class="smartcalc-config-mobile">
-  <section class="smartcalc-config-mobile__hero cardWithShadow">
-    <a
-      mat-icon-button
-      class="smartcalc-config-mobile__help"
-      type="button"
-      [routerLink]="['/page/ajuda']"
-      fragment="smartcalc"
-      aria-label="Abrir ajuda do SmartCalc">
-      <mat-icon>help_outline</mat-icon>
-    </a>
-
-    <div class="smartcalc-config-mobile__hero-title">SmartCalc</div>
-    <div class="smartcalc-config-mobile__hero-subtitle">Ativação e bases de produção.</div>
-  </section>
-
-  <ng-container *ngTemplateOutlet="configForm"></ng-container>
-</section>
-}
-
-<app-mobile-total-bar
-  *ngIf="isMobileView"
-  label="SmartCalc"
-  valueText="Salvar configuração"
-  [detailText]="resumoProdutosCurto"
-  [expandable]="false"
-  secondaryActionText="Voltar"
-  [actionText]="textoAcaoPrincipal"
-  [actionDisabled]="salvando() || carregando() || erroCarregamento"
-  bottomOffset="58px"
-  [attachedToBottomNav]="true"
-  (secondaryAction)="voltar()"
-  (action)="onSubmit()">
-</app-mobile-total-bar>
