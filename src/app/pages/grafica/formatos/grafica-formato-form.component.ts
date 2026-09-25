@@ -7,7 +7,8 @@ import { InputOptionsComponent } from 'src/app/components/inputs/input-options/i
 import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
 import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
 import { UnitInputComponent } from 'src/app/components/inputs/unit-input/unit-input.component';
-import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { PageFormState } from 'src/app/components/page-card/page-form-state';
+import { PageCardAction, PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { MaterialModule } from 'src/app/material.module';
 import { ToastrService } from 'ngx-toastr';
@@ -17,15 +18,6 @@ import { GraficaProdutoService } from '../shared/grafica.service';
 
 type UnidadeGrafica = 'METRO' | 'CENTIMETRO' | 'MILIMETRO';
 
-type FormatoFormSnapshot = {
-  nome: string;
-  descricao: string;
-  largura: number | null;
-  altura: number | null;
-  larguraUtil: number | null;
-  alturaUtil: number | null;
-  unidadeDimensao: UnidadeGrafica | null;
-};
 
 @Component({
   selector: 'app-grafica-formato-form',
@@ -43,7 +35,7 @@ type FormatoFormSnapshot = {
     UnitInputComponent,
   ],
   template: `
-    <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [showFooter]="true">
+    <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [formState]="formState" [footerActions]="footerActions" [saving]="salvando" [actionsDisabled]="carregando">
       <div page-header-actions>
         <button mat-stroked-button type="button" (click)="voltar()">
           <mat-icon>arrow_back</mat-icon>
@@ -133,11 +125,6 @@ type FormatoFormSnapshot = {
         </app-section-card>
       </form>
 
-      <button page-footer-right mat-stroked-button class="cancel-button" type="button" (click)="cancelar()">Cancelar</button>
-      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-formato-form" [disabled]="form.invalid || salvando">
-        <mat-icon>save</mat-icon>
-        Salvar
-      </button>
     </app-page-card>
   `,
   styles: [`
@@ -173,15 +160,7 @@ type FormatoFormSnapshot = {
       line-height: 1.35;
     }
 
-    .cancel-button {
-      border-color: #fecaca;
-      color: #b91c1c;
-      background: #fef2f2;
-    }
 
-    .cancel-button:hover {
-      background: #fee2e2;
-    }
 
     @media (max-width: 700px) {
       .form-grid {
@@ -195,7 +174,6 @@ export class GraficaFormatoFormComponent implements OnInit {
   cloneFromId?: number;
   salvando = false;
   carregando = false;
-  snapshot?: FormatoFormSnapshot;
 
   readonly unidades = [
     { value: 'CENTIMETRO', label: 'cm' },
@@ -212,6 +190,13 @@ export class GraficaFormatoFormComponent implements OnInit {
     alturaUtil: this.fb.control<number | null>(null, [Validators.min(0.01)]),
     unidadeDimensao: this.fb.control<UnidadeGrafica | null>(null),
   }, { validators: formatoDimensionalValidator() });
+
+  readonly formState = new PageFormState(() => this.form);
+  private readonly emptyForm = this.form.getRawValue();
+  get footerActions(): PageCardAction[] {
+    return [{ id: 'salvar', label: 'Salvar', icon: 'save', type: 'submit', form: 'grafica-formato-form', primary: true,
+      disabled: this.form.invalid }];
+  }
 
   get titulo(): string {
     if (this.cloneFromId) return 'Clonar formato';
@@ -275,10 +260,13 @@ export class GraficaFormatoFormComponent implements OnInit {
     this.carregando = true;
     this.route.paramMap.pipe(
       switchMap((params) => {
+        this.carregando = true;
         const id = Number(params.get('id'));
         this.formatoId = Number.isFinite(id) && id > 0 ? id : undefined;
         const cloneFrom = Number(this.route.snapshot.queryParamMap.get('cloneFrom'));
         this.cloneFromId = !this.formatoId && Number.isFinite(cloneFrom) && cloneFrom > 0 ? cloneFrom : undefined;
+        this.form.reset(this.emptyForm);
+        this.formState.begin(this.formatoId ? 'edit' : 'create');
         const origemId = this.formatoId || this.cloneFromId;
         if (!origemId) return of(null);
         return this.service.listarFormatos().pipe(
@@ -288,6 +276,7 @@ export class GraficaFormatoFormComponent implements OnInit {
       finalize(() => this.carregando = false),
     ).subscribe({
       next: (formato) => {
+        this.carregando = false;
         if ((this.formatoId || this.cloneFromId) && !formato) {
           this.toastr.error('Formato não encontrado.');
           this.voltar();
@@ -299,7 +288,7 @@ export class GraficaFormatoFormComponent implements OnInit {
           this.registrarSnapshot();
         }
       },
-      error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível carregar o formato.')),
+      error: (error) => { this.carregando = false; this.toastr.error(catalogoErrorMessage(error, 'Não foi possível carregar o formato.')); },
     });
   }
 
@@ -318,15 +307,7 @@ export class GraficaFormatoFormComponent implements OnInit {
     });
   }
 
-  cancelar(): void {
-    if (!this.snapshot) {
-      this.voltar();
-      return;
-    }
-    this.form.reset(this.snapshot);
-    this.form.markAsPristine();
-    this.form.markAsUntouched();
-  }
+
 
   voltar(): void {
     this.router.navigate(['/page/grafica/formatos']);
@@ -345,9 +326,7 @@ export class GraficaFormatoFormComponent implements OnInit {
     this.registrarSnapshot();
   }
 
-  private registrarSnapshot(): void {
-    this.snapshot = this.form.getRawValue();
-  }
+  private registrarSnapshot(): void { this.formState.loaded(); }
 
   private toRequest(): GraficaFormatoRequest {
     const raw = this.form.getRawValue();

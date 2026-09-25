@@ -6,7 +6,8 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { catchError, forkJoin, map, Observable, of, switchMap } from 'rxjs';
 import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
 import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
-import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { PageFormState } from 'src/app/components/page-card/page-form-state';
+import { PageCardAction, PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { PrecoSelectorComponent } from 'src/app/components/preco/preco-selector.component';
 import { RichTextEditorComponent } from 'src/app/components/rich-text-editor/rich-text-editor.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
@@ -42,16 +43,6 @@ type CategoriaHierarquicaOption = CatalogoCategoriaOption & {
   caminhoPai: string;
   busca: string;
 };
-type ProdutoFormSnapshot = {
-  nome: string;
-  descricao: string;
-  categoriaId: number | null;
-  exibirNoSite: boolean;
-  materialId: number | null;
-  formatoId: number | null;
-  corId: number | null;
-};
-
 @Component({
   selector: 'app-grafica-produto-form',
   standalone: true,
@@ -69,9 +60,9 @@ type ProdutoFormSnapshot = {
     InputOptionsComponent,
   ],
   template: `
-    <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [showFooter]="true">
+    <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [footerActions]="footerActions" [formState]="formState" [saving]="salvando" [actionsDisabled]="uploading || carregandoFormulario">
       <div page-header-actions>
-        <button mat-stroked-button type="button" (click)="voltar()">
+        <button mat-stroked-button type="button" [disabled]="salvando || uploading" (click)="voltar()">
           <mat-icon>arrow_back</mat-icon>
           Voltar
         </button>
@@ -237,10 +228,6 @@ type ProdutoFormSnapshot = {
         </app-section-card>
       </form>
 
-      <button page-footer-right mat-stroked-button class="cancel-button" type="button" (click)="cancelar()">Cancelar</button>
-      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-produto-form" [disabled]="salvarDesabilitado">
-        <mat-icon>save</mat-icon>Salvar
-      </button>
     </app-page-card>
   `,
   styles: [`
@@ -473,14 +460,6 @@ type ProdutoFormSnapshot = {
     :host ::ng-deep app-preco-selector .price-selector-mode {
       border-top: 0;
     }
-    .cancel-button {
-      border-color: #fecaca;
-      color: #b91c1c;
-      background: #fef2f2;
-    }
-    .cancel-button:hover {
-      background: #fee2e2;
-    }
     @media (max-width: 768px) {
       .form-grid,
       .grafica-grid { grid-template-columns: 1fr; }
@@ -505,6 +484,7 @@ type ProdutoFormSnapshot = {
   `],
 })
 export class GraficaProdutoFormComponent implements OnInit {
+  carregandoFormulario = false;
   isEdit = false;
   isClone = false;
   salvando = false;
@@ -517,12 +497,6 @@ export class GraficaProdutoFormComponent implements OnInit {
   acabamentosProduto: ProdutoAcabamentoUx[] = [];
   imagemPrincipal: any = null;
   galeria: any[] = [];
-  private produtoSnapshot?: ProdutoFormSnapshot;
-  private precoSnapshot?: any;
-  private acabamentosProdutoSnapshot: ProdutoAcabamentoUx[] = [];
-  private imagemPrincipalSnapshot: any = null;
-  private galeriaSnapshot: any[] = [];
-
   form = this.fb.group({
     nome: this.fb.control<string>('', { nonNullable: true, validators: [Validators.required] }),
     descricao: this.fb.control<string>('', { nonNullable: true }),
@@ -533,6 +507,26 @@ export class GraficaProdutoFormComponent implements OnInit {
     corId: this.fb.control<number | null>(null),
   });
   precoForm: FormGroup = this.fb.group({ tipo: ['FIXO'] });
+
+  readonly formState = new PageFormState(() => this.form, {
+    read: () => ({
+      preco: this.precoForm.getRawValue(), imagemPrincipal: this.imagemPrincipal,
+      galeria: this.galeria, acabamentos: this.acabamentosProduto,
+    }),
+    write: value => {
+      // Estrutura dinâmica de preço e dados fora do FormGroup pertencem ao domínio.
+      this.precoForm = this.criarPrecoForm(value.preco);
+      this.imagemPrincipal = value.imagemPrincipal;
+      this.galeria = value.galeria;
+      this.acabamentosProduto = value.acabamentos;
+    },
+  });
+
+  get footerActions(): PageCardAction[] {
+    return [
+      { id: 'salvar', label: 'Salvar', icon: 'save', type: 'submit', form: 'grafica-produto-form', primary: true, disabled: this.salvarDesabilitado },
+    ];
+  }
 
   get nomeControl(): FormControl<string> {
     return this.form.controls.nome;
@@ -591,11 +585,12 @@ export class GraficaProdutoFormComponent implements OnInit {
     const cloneFrom = Number(this.route.snapshot.queryParamMap?.get('cloneFrom'));
     this.isEdit = !!id;
     this.isClone = !this.isEdit && !!cloneFrom;
+    this.formState.begin(this.isEdit ? 'edit' : 'create');
     this.carregarBase(id || (this.isClone ? cloneFrom : null));
   }
 
   salvar(): void {
-    if (this.form.invalid || this.uploading || !this.validarProduto()) return;
+    if (this.salvando || this.form.invalid || this.uploading || !this.validarProduto()) return;
     this.precoForm.markAllAsTouched();
     this.precoForm.updateValueAndValidity();
     if (this.precoForm.invalid) {
@@ -629,22 +624,6 @@ export class GraficaProdutoFormComponent implements OnInit {
 
   voltar(): void {
     this.router.navigate(['/page/grafica/produtos']);
-  }
-
-  cancelar(): void {
-    if (this.produtoSnapshot) {
-      this.form.reset(this.clone(this.produtoSnapshot));
-    }
-    if (this.precoSnapshot) {
-      this.precoForm = this.criarPrecoForm(this.clone(this.precoSnapshot));
-    }
-    this.imagemPrincipal = this.clone(this.imagemPrincipalSnapshot);
-    this.galeria = this.clone(this.galeriaSnapshot);
-    this.acabamentosProduto = this.clone(this.acabamentosProdutoSnapshot);
-    this.form.markAsPristine();
-    this.form.markAsUntouched();
-    this.precoForm.markAsPristine();
-    this.precoForm.markAsUntouched();
   }
 
   abrirCadastroRapido(tipo: 'material' | 'formato' | 'cor' | 'categoria'): void {
@@ -701,6 +680,7 @@ export class GraficaProdutoFormComponent implements OnInit {
   }
 
   private carregarBase(id: number | null): void {
+    this.carregandoFormulario = true;
     forkJoin({
       categorias: this.listarCategoriasHierarquicas().pipe(catchError(() => of([]))),
       materiais: this.graficaService.listarMateriais().pipe(catchError(() => of([]))),
@@ -722,7 +702,7 @@ export class GraficaProdutoFormComponent implements OnInit {
         }
         this.registrarSnapshot();
       },
-      error: (error) => this.toastr.error(this.graficaErrorMessage(error, 'Não foi possível carregar o cadastro.')),
+      error: (error) => { this.carregandoFormulario = false; this.toastr.error(this.graficaErrorMessage(error, 'Não foi possível carregar o cadastro.')); },
     });
   }
 
@@ -1029,11 +1009,8 @@ export class GraficaProdutoFormComponent implements OnInit {
   }
 
   private registrarSnapshot(): void {
-    this.produtoSnapshot = this.clone(this.form.getRawValue());
-    this.precoSnapshot = this.clone(this.precoForm.getRawValue());
-    this.imagemPrincipalSnapshot = this.clone(this.imagemPrincipal);
-    this.galeriaSnapshot = this.clone(this.galeria);
-    this.acabamentosProdutoSnapshot = this.clone(this.acabamentosProduto);
+    this.carregandoFormulario = false;
+    this.formState.loaded();
   }
 
   private catalogoProdutoIdPayload(): number | null {

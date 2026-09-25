@@ -38,7 +38,8 @@
     margin-left: auto;
   }
 
-  &__footer ::ng-deep .cancel-button {
+  // Cancelamento declarativo e botões projetados compartilham o mesmo padrão.
+  &__footer ::ng-deep .cancel-button:not(:disabled) {
     border-color: #fecaca;
     color: #b91c1c;
     background: #fef2f2;

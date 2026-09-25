@@ -43,7 +43,7 @@ describe('GraficaProdutoFormComponent', () => {
         { provide: Router, useValue: router },
         { provide: ToastrService, useValue: jasmine.createSpyObj('ToastrService', ['success', 'error', 'warning']) },
         { provide: GraficaProdutoService, useValue: graficaService },
-        { provide: CatalogoCategoriaService, useValue: { options: () => of([]) } },
+        { provide: CatalogoCategoriaService, useValue: { options: () => of([]), listarTodas: () => of([]) } },
         { provide: DepositoImagemService, useValue: {} },
       ],
     });
@@ -65,6 +65,7 @@ describe('GraficaProdutoFormComponent', () => {
   });
 
   it('restaura o snapshot local ao cancelar sem navegar', () => {
+    component.formState.begin('edit');
     component.form.patchValue({
       nome: 'Panfleto',
       descricao: 'Panfleto promocional',
@@ -83,7 +84,7 @@ describe('GraficaProdutoFormComponent', () => {
     });
     component.precoForm.patchValue({ valor: 80 });
 
-    component.cancelar();
+    component.formState.reset();
 
     expect(component.form.getRawValue()).toEqual(jasmine.objectContaining({
       nome: 'Panfleto',
@@ -200,21 +201,21 @@ describe('GraficaProdutoFormComponent', () => {
     expect((component as any).produtoPayload().familiaProdutoGraficoId).toBeUndefined();
   });
 
-  it('restaura snapshot original ao cancelar clone', () => {
+  it('limpa criação ao cancelar clone', () => {
     routeSnapshot.queryParamMap = { get: (key: string) => key === 'cloneFrom' ? '1' : null };
     component.ngOnInit();
     component.form.patchValue({ nome: 'Panfleto Premium', materialId: null });
 
-    component.cancelar();
+    component.formState.reset();
 
     expect(component.form.getRawValue()).toEqual(jasmine.objectContaining({
-      nome: 'Panfleto',
-      materialId: 1,
-      formatoId: 2,
-      corId: 3,
+      nome: '',
+      materialId: null,
+      formatoId: null,
+      corId: null,
     }));
     expect(router.navigate).not.toHaveBeenCalled();
-    expect(component.salvarDesabilitado).toBeFalse();
+    expect(component.salvarDesabilitado).toBeTrue();
   });
 });
 

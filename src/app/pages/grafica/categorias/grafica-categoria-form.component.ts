@@ -7,7 +7,8 @@ import { catchError } from 'rxjs/operators';
 import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
 import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
 import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
-import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { PageFormState } from 'src/app/components/page-card/page-form-state';
+import { PageCardAction, PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { RichTextPreviewFieldComponent } from 'src/app/components/rich-text-preview-field/rich-text-preview-field.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { MaterialModule } from 'src/app/material.module';
@@ -16,12 +17,6 @@ import { CatalogoCategoria, CatalogoCategoriaOption, CatalogoCategoriaRequest } 
 import { CatalogoCategoriaService } from '../../catalogo/shared/services/catalogo.service';
 import { catalogoErrorMessage, catalogoSlugify } from '../../catalogo/shared/utils/catalogo-utils';
 
-type CategoriaFormSnapshot = {
-  nome: string;
-  categoriaPaiId: number | null;
-  descricaoCurta: string;
-  descricaoCompleta: string;
-};
 
 @Component({
   selector: 'app-grafica-categoria-form',
@@ -39,7 +34,7 @@ type CategoriaFormSnapshot = {
     InputOptionsComponent,
   ],
   template: `
-    <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [showFooter]="true">
+    <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [formState]="formState" [footerActions]="footerActions" [saving]="salvando" [actionsDisabled]="carregando">
       <div page-header-actions>
         <button mat-stroked-button type="button" (click)="voltar()">
           <mat-icon>arrow_back</mat-icon>
@@ -88,11 +83,6 @@ type CategoriaFormSnapshot = {
         </app-section-card>
       </form>
 
-      <button page-footer-right mat-stroked-button class="cancel-button" type="button" (click)="cancelar()">Cancelar</button>
-      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-categoria-form" [disabled]="form.invalid || salvando">
-        <mat-icon>save</mat-icon>
-        Salvar
-      </button>
     </app-page-card>
   `,
   styles: [`
@@ -113,15 +103,7 @@ type CategoriaFormSnapshot = {
       grid-column: 1 / -1;
     }
 
-    .cancel-button {
-      border-color: #fecaca;
-      color: #b91c1c;
-      background: #fef2f2;
-    }
 
-    .cancel-button:hover {
-      background: #fee2e2;
-    }
 
     @media (max-width: 900px) {
       .form-grid {
@@ -136,7 +118,6 @@ export class GraficaCategoriaFormComponent implements OnInit {
   categoriasPai: CatalogoCategoriaOption[] = [];
   salvando = false;
   carregando = false;
-  snapshot?: CategoriaFormSnapshot;
 
   form = this.fb.group({
     nome: this.fb.control('', { nonNullable: true, validators: [Validators.required] }),
@@ -144,6 +125,13 @@ export class GraficaCategoriaFormComponent implements OnInit {
     descricaoCurta: this.fb.control('', { nonNullable: true }),
     descricaoCompleta: this.fb.control('', { nonNullable: true }),
   });
+
+  readonly formState = new PageFormState(() => this.form);
+  private readonly emptyForm = this.form.getRawValue();
+  get footerActions(): PageCardAction[] {
+    return [{ id: 'salvar', label: 'Salvar', icon: 'save', type: 'submit', form: 'grafica-categoria-form', primary: true,
+      disabled: this.form.invalid }];
+  }
 
   get titulo(): string {
     if (this.cloneFromId) {
@@ -180,10 +168,13 @@ export class GraficaCategoriaFormComponent implements OnInit {
     this.carregando = true;
     this.route.paramMap.pipe(
       switchMap((params) => {
+        this.carregando = true;
         const id = Number(params.get('id'));
         this.categoriaId = Number.isFinite(id) && id > 0 ? id : undefined;
         const cloneFrom = Number(this.route.snapshot.queryParamMap.get('cloneFrom'));
         this.cloneFromId = !this.categoriaId && Number.isFinite(cloneFrom) && cloneFrom > 0 ? cloneFrom : undefined;
+        this.form.reset(this.emptyForm);
+        this.formState.begin(this.categoriaId ? 'edit' : 'create');
         return forkJoin({
           categoriasPai: this.service.options(true).pipe(catchError(() => of([]))),
           categoria: this.categoriaId || this.cloneFromId ? this.service.detalhar(this.categoriaId || this.cloneFromId!) : of(null),
@@ -192,6 +183,7 @@ export class GraficaCategoriaFormComponent implements OnInit {
       finalize(() => this.carregando = false),
     ).subscribe({
       next: ({ categoriasPai, categoria }) => {
+        this.carregando = false;
         this.categoriasPai = categoriasPai || [];
         if (categoria) {
           this.aplicarCategoria(categoria);
@@ -199,7 +191,7 @@ export class GraficaCategoriaFormComponent implements OnInit {
           this.registrarSnapshot();
         }
       },
-      error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível carregar a categoria.')),
+      error: (error) => { this.carregando = false; this.toastr.error(catalogoErrorMessage(error, 'Não foi possível carregar a categoria.')); },
     });
   }
 
@@ -223,15 +215,7 @@ export class GraficaCategoriaFormComponent implements OnInit {
     });
   }
 
-  cancelar(): void {
-    if (!this.snapshot) {
-      this.voltar();
-      return;
-    }
-    this.form.reset(this.snapshot);
-    this.form.markAsPristine();
-    this.form.markAsUntouched();
-  }
+
 
   voltar(): void {
     this.router.navigate(['/page/grafica/categorias']);
@@ -247,9 +231,7 @@ export class GraficaCategoriaFormComponent implements OnInit {
     this.registrarSnapshot();
   }
 
-  private registrarSnapshot(): void {
-    this.snapshot = this.form.getRawValue();
-  }
+  private registrarSnapshot(): void { this.formState.loaded(); }
 
   private toRequest(): CatalogoCategoriaRequest {
     const raw = this.form.getRawValue();

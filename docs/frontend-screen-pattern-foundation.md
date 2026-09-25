@@ -10,7 +10,13 @@ Aplicada a [skill anthropics/frontend-design](https://www.ui-skills.com/skills/a
 
 `page-card` e `card-header` continuam sendo o shell. Slots de conteúdo, header e footer, rotas, ajuda e permissões existentes permanecem disponíveis. `section-card` continua compondo seções de formulário.
 
-`PageCardAction` acrescenta ações declarativas ao footer: `id`, `label`, `disabled`, `pendingLabel`, `color`, `primary` e `type`. Uma ação `type: 'submit'` exige `form`, associado ao ID real do formulário. O submit nativo aciona apenas o handler do formulário; `footerAction` emite somente comandos `type: 'button'`. A feature continua responsável por salvar, cancelar, validar e navegar.
+`PageCardAction` acrescenta ações declarativas ao footer: `id`, `label`, `disabled`, `pendingLabel`, `color`, `primary` e `type`. Uma ação `type: 'submit'` exige `form`, associado ao ID real do formulário. O submit nativo aciona apenas o handler do formulário; `footerAction` emite somente comandos `type: 'button'`. A feature continua responsável por salvar, validar e pelo destino do Voltar. Cancelar é tratado pelo PageCard e não emite comando para a tela.
+
+Padrão de cancelamento do footer: botão contornado, texto vermelho e fundo vermelho suave, seguindo Produtos. O PageCard gera automaticamente o botão Cancelar quando recebe `formState`; a tela não declara essa ação, seu texto, cor ou handler. Intenções `cancel` antigas são normalizadas para o botão padrão, sem duplicação. A ação gerada é sempre `type: 'button'`, nunca submit. O CSS fica centralizado no PageCard. Todos os 11 pontos de descarte de formulário identificados no levantamento adotam o botão gerado, sem Cancelar projetado ou handler local. Ações desabilitadas usam o estado disabled do Material.
+
+Comportamento de Cancelar: `formState` aceita a classe compartilhada `PageFormState`, e não um callback ou objeto com reset arbitrário. As telas fornecem apenas o formulário, o modo e o momento de carregamento; a decisão de descarte pertence ao componente. Na criação, `begin('create')` captura os defaults vazios antes de qualquer preenchimento; cancelar os restaura. Na edição, `begin('edit')` bloqueia o cancelamento até `loaded()` registrar os dados recebidos do backend. O reset usa uma cópia isolada dessa base, sem nova consulta, sem salvar e sem navegar; também limpa dirty/touched/submitted e recompõe a estrutura de FormArrays, removendo linhas adicionadas e restaurando as removidas com seus validators. A intenção `cancel` nunca é encaminhada a `footerAction`. Durante saving ou bloqueio das ações, não executa reset. Sem base registrada, o botão permanece desabilitado.
+
+Formulários compostos podem registrar um adaptador de dados extras (`read`/`write`), como preço dinâmico, imagens e acabamentos de Produtos; a decisão entre limpar/restaurar e a cópia do snapshot permanecem no shared. Clonar é criação: o cancelamento limpa o cadastro, não reaplica os dados do produto de origem. Navegação de saída fica no Voltar do header; navegação após salvar continua conforme o fluxo de cada módulo.
 
 `saving`, `savingText` e `actionsDisabled` representam processamento e bloqueiam as ações declarativas. Botões projetados continuam sob controle do consumidor, que deve vincular seu próprio `disabled`. O header oferece `actionDisabled`, `actionPending` e `actionPendingText`; o PageCard encaminha `headerActionDisabled`. O título ganhou semântica de heading sem trocar tipografia; ações podem quebrar linha em viewports menores.
 
@@ -66,3 +72,30 @@ Status: **#86 pronta para revisão final**.
 Nenhum candidato foi removido: tabela-generica, tabela antiga, tabs-section-card, textarea duplicado, mobile-page-header, filtro-pesquisa-card e status-filter. A auditoria permanece como inventário; remoção exige migração de dependentes ou comprovação de ausência de consumidores. MobilePageHeader não foi promovido.
 
 A #87 deve migrar Pedidos, Orçamentos e Rascunhos gradualmente, escolhendo tabela apenas para dados tabulares e mantendo composição e regras comerciais nas features. Filtros de período/hierarquia podem ser projetados. Cadastros devem escolher entre footer projetado existente e ações declarativas, mantendo um único caminho de submit. A iniciativa mobile posterior definirá apresentação dos itens projetados e sua UX; esta fundação não decide layout comercial nem cálculos financeiros.
+
+
+## Cobertura global do Cancelar do PageCard
+
+Levantamento de todos os usos de `app-page-card` na branch. Todos os pontos que ofereciam **descarte de formulário** foram migrados:
+
+| Consumidor | Base de criação | Base de edição / dados adicionais |
+|---|---|---|
+| Clientes | Campos/endereço vazios | Cliente recebido do backend |
+| Produtos gráficos | Defaults vazios, inclusive clone | Produto, preço, imagens, galeria e acabamentos |
+| Cores gráficas | Defaults vazios, inclusive clone | Cor carregada |
+| Materiais gráficos | Defaults vazios, inclusive clone | Material carregado |
+| Formatos gráficos | Defaults vazios, inclusive clone | Formato e dimensões carregados |
+| Categorias gráficas | Defaults vazios, inclusive clone | Categoria carregada |
+| Serviços gráficos | Defaults vazios, inclusive clone | Serviço e preço dinâmico |
+| Cadastros gráficos genéricos | Estado de Novo antes do clone | Registro selecionado e preço |
+| Configuração SmartCalc | Configuração única existente | Ativação e conjunto de produtos carregados, atualizados após salvar |
+| Pedido legado | Cliente, itens e pagamentos vazios; ajustes iniciais | Não oferece edição nesta tela |
+| Editor Comercial (Pedidos/Orçamentos/Rascunhos) | Dados vazios da composição | Dados carregados e campos locais, sem desfazer operações financeiras persistidas |
+
+Não restam botões locais de descarte rotulados Cancelar nesses consumidores. As ocorrências remanescentes são ações de negócio (cancelamento de pedido, orçamento, recebimento ou documento fiscal) e fechamento de diálogos. Elas não podem ser convertidas em reset de formulário. Listagens, consultas e ferramentas sem ação de descarte continuam usando PageCard como shell, sem receber uma ação sem contexto de formulário.
+
+Para novos cadastros, fornecer `formState`, registrar `begin('create' | 'edit')` e `loaded()` quando os dados de edição chegarem. O footer e seu Cancelar aparecem por padrão; `footerActions` contém somente Salvar e demais comandos. Não criar handler `cancelar`, link de saída rotulado Cancelar ou CSS local. Voltar permanece no header.
+
+A mesma regra é coberta por testes do PageCard/PageFormState e por testes dos consumidores: criação, edição, clone, carregamento, bloqueio, cópia profunda, FormArrays, estado externo, reset sem navegação e preservação de recebimentos persistidos.
+
+Validação da ampliação global nesta branch: `npm test -- --watch=false --browsers=ChromeHeadless` — **440/440**, exit 0; `npm run build` — **exit 0**. Evidências atuais em [suíte completa](validation/clientes/full-tests.log) e [build](validation/clientes/build.log). Os números históricos da #86 acima permanecem como registro daquela entrega.
