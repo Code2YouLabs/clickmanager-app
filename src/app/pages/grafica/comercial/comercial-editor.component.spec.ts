@@ -1,13 +1,58 @@
 import { fakeAsync, tick } from '@angular/core/testing';
 import { FormBuilder } from '@angular/forms';
-import { of } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import {
-  ComercialBetaEditorComponent,
+  ComercialEditorComponent,
   GraficaProdutoWizardDialogComponent,
-} from './comercial-beta-editor.component';
+} from './comercial-editor.component';
 import { GraficaProdutoBuscaRapidaDialogComponent } from './grafica-produto-busca-rapida-dialog.component';
 
-describe('ComercialBetaEditorComponent', () => {
+describe('ComercialEditorComponent', () => {
+  it('define submit associado ao form e comandos distintos para conversão', () => {
+    const editor = criarEditor('orcamentos'); editor.ngOnInit();
+    expect(editor.footerActions.find(action => action.id === 'salvar')).toEqual(jasmine.objectContaining({ type: 'submit', form: 'comercial-editor-form', disabled: true }));
+    const salvar = spyOn(editor, 'salvar'); editor.salvarFormulario(); expect(salvar).toHaveBeenCalledTimes(1);
+    editor.salvando = true; editor.salvarFormulario(); expect(salvar).toHaveBeenCalledTimes(1);
+    editor.tipo = 'rascunhos'; editor.salvando = false; editor.salvarFormulario(); expect(salvar).toHaveBeenCalledTimes(1);
+    expect(editor.footerActions.map(action => action.id)).toEqual(['cancelar', 'orcamentos', 'pedidos']);
+    expect(editor.footerActions.every(action => action.type !== 'submit')).toBeTrue(); editor.ngOnDestroy();
+  });
+
+  it('mantém destinos definitivos de impressão, duas vias, etiqueta e WhatsApp', () => {
+    const editor = criarEditor(); editor.pedidoId = 22;
+    const router = (editor as any).router;
+    editor.abrirImpressaoPedido('completo'); expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial/pedidos', 22, 'impressao']);
+    editor.abrirImpressaoPedido('duas-vias'); expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial/pedidos', 22, 'impressao', 'duas-vias']);
+    editor.abrirImpressaoPedido('etiqueta'); expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial/pedidos', 22, 'impressao', 'etiqueta']);
+    editor.abrirWhatsAppPedido(); expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial/pedidos', 22, 'whatsapp']);
+    editor.abrirImpressaoOrcamento(); expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial/orcamentos', 22, 'impressao']);
+    editor.abrirWhatsAppOrcamento(); expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial/orcamentos', 22, 'whatsapp']);
+  });
+
+  it('mantém erro e retry do detalhe separados do formulário de criação', () => {
+    const editor = criarEditor('orcamentos'); editor.tipo = 'orcamentos'; editor.pedidoId = 14;
+    const service = (editor as any).graficaService;
+    service.buscarOrcamentoComercial = jasmine.createSpy().and.returnValue(throwError(() => ({ status: 500 })));
+    editor.recarregar(); expect(editor.erroCarregamento).toBeTruthy(); expect(editor.temRegistroCarregado).toBeFalse();
+    expect(editor.footerActions).toEqual([]);
+    service.buscarOrcamentoComercial.and.returnValue(of({ id: 14, status: 'ABERTO', itens: [] }));
+    editor.recarregar(); expect(editor.temRegistroCarregado).toBeTrue(); expect(editor.erroCarregamento).toBeNull();
+    service.buscarOrcamentoComercial.and.returnValue(throwError(() => ({ status: 403 })));
+    editor.recarregar(); expect(editor.acessoNegado).toBeTrue(); expect(editor.erroCarregamento).toBeNull();
+  });
+
+  it('converte rascunho para pedido uma única vez enquanto pendente', () => {
+    const editor = criarEditor('rascunhos'); editor.tipo = 'rascunhos'; editor.pedidoId = 9;
+    editor.rascunho = { id: 9, status: 'ABERTO', itens: [] } as any; editor.itens = [{ valorTotal: 100 }] as any;
+    const response = new Subject<any>(); const service = (editor as any).graficaService;
+    service.converterRascunhoParaPedido.and.returnValue(response);
+    editor.onFooterAction('pedidos'); editor.onFooterAction('pedidos');
+    expect(service.converterRascunhoParaPedido).toHaveBeenCalledOnceWith(9);
+    response.next({ id: 22 }); response.complete();
+    expect((editor as any).router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial', 'pedidos', 22]);
+    expect(editor.salvando).toBeFalse();
+  });
+
   it('usa linguagem comercial de orcamento na rota de novo orcamento', () => {
     const component = criarEditor('orcamentos');
 
@@ -236,7 +281,7 @@ describe('ComercialBetaEditorComponent', () => {
     component.concluirRascunho('orcamentos');
 
     expect((component as any).graficaService.converterRascunhoParaOrcamento).toHaveBeenCalledWith(9);
-    expect((component as any).router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial-beta', 'orcamentos', 22]);
+    expect((component as any).router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial', 'orcamentos', 22]);
   });
 
   it('cria pedido quando o primeiro item e um servico grafico', () => {
@@ -267,7 +312,7 @@ describe('ComercialBetaEditorComponent', () => {
       clienteId: 7,
       precificacao: jasmine.objectContaining({ quantidade: 1 }),
     }));
-    expect((component as any).router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial-beta', 'pedidos', 22]);
+    expect((component as any).router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial', 'pedidos', 22]);
   });
 
   it('cria pedido reconhecendo snapshot legado de servico', () => {
@@ -460,7 +505,7 @@ describe('ComercialBetaEditorComponent', () => {
       return { afterClosed: () => of(composicao) };
     });
 
-    const component = new ComercialBetaEditorComponent(
+    const component = new ComercialEditorComponent(
       { data: of({ tipo: 'pedidos' }) } as any,
       jasmine.createSpyObj('Router', ['navigate']) as any,
       dialog,
@@ -481,7 +526,7 @@ describe('ComercialBetaEditorComponent', () => {
   });
 });
 
-function criarEditor(tipo = 'pedidos'): ComercialBetaEditorComponent {
+function criarEditor(tipo = 'pedidos'): ComercialEditorComponent {
   const graficaService = jasmine.createSpyObj('GraficaProdutoService', [
     'listarFormasPagamento',
     'cancelarRecebimento',
@@ -521,7 +566,7 @@ function criarEditor(tipo = 'pedidos'): ComercialBetaEditorComponent {
     },
   }));
   clienteService.buscarPorNome.and.returnValue(of({ content: [] }));
-  return new ComercialBetaEditorComponent(
+  return new ComercialEditorComponent(
     { data: of({ tipo }), paramMap: of(new Map()) } as any,
     jasmine.createSpyObj('Router', ['navigate']) as any,
     jasmine.createSpyObj('MatDialog', ['open']) as any,

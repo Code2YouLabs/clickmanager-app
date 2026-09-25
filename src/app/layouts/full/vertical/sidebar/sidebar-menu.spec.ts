@@ -118,10 +118,11 @@ describe('menu principal do ClickManager', () => {
     expect(labels(menu)).not.toContain('Gerenciar Produtos');
     expect(labels(menu)).not.toContain('Gerenciar Pedidos');
     expect(labels(menu)).not.toContain('Gerenciar Clientes');
-    expect(comercial.map((item) => item.displayName)).toEqual(['Pedidos', 'Orçamentos', 'SmartCalc']);
+    expect(comercial.map((item) => item.displayName)).toEqual(['Pedidos', 'Orçamentos', 'Rascunhos', 'SmartCalc']);
     expect(comercial.map((item) => item.route)).toEqual([
-      '/page/grafica/comercial-beta/pedidos',
-      '/page/grafica/comercial-beta/orcamentos',
+      '/page/grafica/comercial/pedidos',
+      '/page/grafica/comercial/orcamentos',
+      '/page/grafica/comercial/rascunhos',
       '/smartcalc',
     ]);
     expect(filhos(catalogo)).toEqual(['Produtos', 'Categorias', 'Materiais', 'Formatos', 'Cores', 'Serviços']);
@@ -134,7 +135,7 @@ describe('menu principal do ClickManager', () => {
     const comercial = itensDaSecao(menu, 'Comercial');
 
     expect(labels(menu)).toContain('Comercial');
-    expect(comercial.map((item) => item.displayName)).toEqual(['Pedidos', 'Orçamentos', 'SmartCalc']);
+    expect(comercial.map((item) => item.displayName)).toEqual(['Pedidos', 'Orçamentos', 'Rascunhos', 'SmartCalc']);
   });
 
   it('mostra Catálogo do depósito novo com produtos, categorias e marcas', () => {
@@ -173,6 +174,13 @@ describe('menu principal do ClickManager', () => {
     expect(itemPorNome(menu, 'Catálogo')).toBeFalsy();
     expect(encontrarItem(menu, 'Produtos')).toBeFalsy();
     expect(itemPorNome(menu, 'Usuários')).toBeFalsy();
+  });
+
+  it('restaura Rascunhos apenas para gráfica com a permissão já exigida pela rota', () => {
+    expect(itemPorNome(filtrar(TipoEmpresa.GRAFICA, ['GRAFICA_PRODUTOS_VER'], 'CATALOGO_NOVO', [], false), 'Rascunhos')?.route)
+      .toBe('/page/grafica/comercial/rascunhos');
+    expect(itemPorNome(filtrar(TipoEmpresa.GRAFICA, [], 'CATALOGO_NOVO', [], false), 'Rascunhos')).toBeUndefined();
+    expect(itemPorNome(filtrar(TipoEmpresa.DEPOSITO), 'Rascunhos')).toBeUndefined();
   });
 
   it('remove módulos protegidos por featureKey quando a feature está desativada', () => {

@@ -1,0 +1,533 @@
+
+> clickmanager-app@4.0.0 build
+> ng build
+
+❯ Building...
+✔ Building...
+Initial chunk files   | Names                       |  Raw size | Estimated transfer size
+main-OUHWQ6PD.js      | main                        |   2.31 MB |               261.30 kB
+chunk-CISJDLDU.js     | -                           | 404.81 kB |                67.02 kB
+chunk-NBIORBRD.js     | -                           | 176.41 kB |                51.17 kB
+chunk-65GMWEI4.js     | -                           | 167.06 kB |                25.35 kB
+styles-L4K6LRE5.css   | styles                      | 137.25 kB |                18.23 kB
+chunk-TR5WFJHJ.js     | -                           | 124.84 kB |                26.89 kB
+chunk-O3WPNXGN.js     | -                           | 108.22 kB |                18.68 kB
+chunk-5RTNEGKY.js     | -                           |  90.91 kB |                20.28 kB
+chunk-6NCCS7WX.js     | -                           |  76.74 kB |                19.17 kB
+chunk-PBXAUG4P.js     | -                           |  71.85 kB |                13.05 kB
+chunk-EILL3HGD.js     | -                           |  71.82 kB |                 9.87 kB
+chunk-NKMI5YG5.js     | -                           |  57.95 kB |                 8.91 kB
+chunk-AUMFHVWB.js     | -                           |  50.92 kB |                 7.87 kB
+chunk-KLR2P3HQ.js     | -                           |  47.09 kB |                10.82 kB
+chunk-YXM7V45L.js     | -                           |  46.06 kB |                12.76 kB
+chunk-4V7SLUWF.js     | -                           |  42.87 kB |                 9.01 kB
+polyfills-FFHMD2TL.js | polyfills                   |  34.52 kB |                11.28 kB
+chunk-HDH5B66V.js     | -                           |  29.85 kB |                 8.71 kB
+chunk-KXWQ6XDF.js     | -                           |  28.90 kB |                 6.79 kB
+chunk-ZOKF6ONN.js     | -                           |  25.27 kB |                 4.62 kB
+chunk-VCMTASLZ.js     | -                           |  25.17 kB |                 6.81 kB
+chunk-JJ4FG5Q2.js     | -                           |  21.33 kB |                 5.67 kB
+chunk-H2P4WTOM.js     | -                           |  19.89 kB |                 4.29 kB
+chunk-VQZXAJUT.js     | -                           |  19.15 kB |                 4.46 kB
+chunk-ECIARZUV.js     | -                           |  18.93 kB |                 3.89 kB
+chunk-AQXOUQKN.js     | -                           |  18.88 kB |                 5.03 kB
+chunk-LG2KZUYW.js     | -                           |  11.04 kB |                 3.54 kB
+chunk-HEKPPO5L.js     | -                           |  10.75 kB |                 2.96 kB
+chunk-63Q6DSHF.js     | -                           |   9.69 kB |                 2.80 kB
+chunk-2Y7WXCUM.js     | -                           |   7.22 kB |                 2.12 kB
+chunk-YV6VDZVG.js     | -                           |   7.16 kB |                 1.82 kB
+chunk-4Y5PVY2B.js     | -                           |   4.86 kB |                 1.57 kB
+chunk-27NP7QR4.js     | -                           |   4.25 kB |                 1.10 kB
+chunk-ASUKMIYQ.js     | -                           |   3.83 kB |                 1.35 kB
+chunk-GYP2RP3F.js     | -                           |   3.79 kB |                 1.18 kB
+chunk-CKIF444I.js     | -                           |   3.69 kB |                 1.50 kB
+chunk-CZND63QY.js     | -                           |   3.15 kB |                 1.00 kB
+chunk-J376ZPGM.js     | -                           |   2.64 kB |                 1.14 kB
+chunk-FWDJL7DE.js     | -                           |   2.50 kB |               889 bytes
+chunk-PX4NOXSO.js     | -                           |   2.29 kB |                 1.01 kB
+chunk-HHOKKXO2.js     | -                           |   2.09 kB |               754 bytes
+chunk-Z5JOZROF.js     | -                           |   2.08 kB |                 1.01 kB
+chunk-OA54JMCH.js     | -                           |   2.06 kB |               861 bytes
+chunk-YQLVMCWZ.js     | -                           |   1.94 kB |               786 bytes
+chunk-Q53BLLA2.js     | -                           |   1.86 kB |               623 bytes
+chunk-AAAMZEHQ.js     | -                           |   1.66 kB |               811 bytes
+chunk-YVUNCA2U.js     | -                           |   1.64 kB |               664 bytes
+chunk-SXY3TAW7.js     | -                           |   1.45 kB |               634 bytes
+chunk-DMBUPFST.js     | -                           |   1.37 kB |               636 bytes
+chunk-GAL4ENT6.js     | -                           |   1.34 kB |               576 bytes
+chunk-PKEYOMY5.js     | -                           |   1.18 kB |               577 bytes
+chunk-G22BAO7V.js     | -                           | 849 bytes |               849 bytes
+chunk-7WIEAC5Q.js     | -                           | 679 bytes |               679 bytes
+chunk-7WTCMS5W.js     | -                           | 455 bytes |               455 bytes
+chunk-WC3YAFCP.js     | -                           | 280 bytes |               280 bytes
+chunk-574AOJ6Y.js     | -                           | 194 bytes |               194 bytes
+chunk-GGQ7LRWG.js     | -                           |   0 bytes |                 0 bytes
+
+                      | Initial total               |   4.33 MB |               676.29 kB
+
+Lazy chunk files      | Names                       |  Raw size | Estimated transfer size
+chunk-ZRLENATD.js     | pages-routes                |   1.20 MB |               178.51 kB
+chunk-I6LAPATP.js     | apps-routes                 | 675.46 kB |               126.32 kB
+chunk-DMVS6U54.js     | apexcharts-common           | 513.98 kB |               110.86 kB
+chunk-2N5OBVNH.js     | -                           | 289.53 kB |                75.74 kB
+chunk-6BTLAB3G.js     | forms-routes                | 267.58 kB |                26.91 kB
+chunk-IH66XDOH.js     | ui-components-routes        | 211.60 kB |                27.87 kB
+chunk-CXUYG3EU.js     | tables-routes               | 190.76 kB |                20.32 kB
+chunk-MPSCB2PG.js     | comercial-editor-component  | 169.16 kB |                30.97 kB
+chunk-ATVNXP36.js     | demo-routes                 | 150.65 kB |                27.54 kB
+chunk-XKHYNCHJ.js     | dashboards-routes           |  94.87 kB |                17.26 kB
+chunk-6ZWDG2WC.js     | links-editor-component      |  73.59 kB |                15.56 kB
+chunk-XT2SBZ4N.js     | browser                     |  64.00 kB |                17.12 kB
+chunk-OBSIY4VR.js     | authentication-routes       |  60.11 kB |                10.85 kB
+chunk-5AFMG7UF.js     | charts-routes               |  58.49 kB |                 6.99 kB
+chunk-ODDSNCCL.js     | calculadora-pisos-component |  57.64 kB |                12.95 kB
+...and 114 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [26.299 seconds]
+
+▲ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator. [plugin angular-compiler]
+
+    src/app/components/pricing-card/pricing-card.component.html:24:16:
+      24 │       {{ plano?.nome || 'Plano' }}
+         ╵                 ~~~~
+
+  Error occurs in the template of component PricingCardComponent.
+
+    src/app/components/pricing-card/pricing-card.component.ts:12:15:
+      12 │   templateUrl: './pricing-card.component.html',
+         ╵                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] TS-998113: NgForOf is not used within the template of PricingCardComponent [plugin angular-compiler]
+
+    src/app/components/pricing-card/pricing-card.component.ts:11:97:
+      11 │ ...e, MatButtonModule, TablerIconsModule, CurrencyPipe, NgIf, NgFor],
+         ╵                                                               ~~~~~
+
+
+▲ [WARNING] TS-998113: StatusLabelPipe is not used within the template of StatusBadgeComponent [plugin angular-compiler]
+
+    src/app/components/status-badge/status-badge.component.ts:11:41:
+      11 │   imports: [CommonModule, MatIconModule, StatusLabelPipe],
+         ╵                                          ~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] TS-998113: CardHeaderComponent is not used within the template of FormCoresComponent [plugin angular-compiler]
+
+    src/app/pages/cadastro-tecnico/cores/form-cores/form-cores.component.ts:26:4:
+      26 │     CardHeaderComponent,
+         ╵     ~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] TS-998113: CardHeaderComponent is not used within the template of FormFormatoComponent [plugin angular-compiler]
+
+    src/app/pages/cadastro-tecnico/formatos/form-formato/form-formato.component.ts:30:4:
+      30 │     CardHeaderComponent,
+         ╵     ~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] TS-998113: CardHeaderComponent is not used within the template of FormMaterialComponent [plugin angular-compiler]
+
+    src/app/pages/cadastro-tecnico/materiais/form-material/form-material.component.ts:25:4:
+      25 │     CardHeaderComponent,
+         ╵     ~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator. [plugin angular-compiler]
+
+    src/app/pages/cadastro-tecnico/produtos/listar-produtos/listar-produtos.component.html:120:73:
+      120 │ ...o-mobile-card__count">{{ produto.variacoes?.length || 0 }}</span>
+          ╵                                                ~~~~~~
+
+  Error occurs in the template of component ListarProdutosComponent.
+
+    src/app/pages/cadastro-tecnico/produtos/listar-produtos/listar-produtos.component.ts:45:15:
+      45 │   templateUrl: './listar-produtos.component.html',
+         ╵                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] TS-998113: CardHeaderComponent is not used within the template of FormServicoComponent [plugin angular-compiler]
+
+    src/app/pages/cadastro-tecnico/servicos/form-servico/form-servico.component.ts:35:4:
+      35 │     CardHeaderComponent,
+         ╵     ~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] TS-998113: TemPermissaoDirective is not used within the template of ListarClienteComponent [plugin angular-compiler]
+
+    src/app/pages/cliente/listar-cliente/listar-cliente.component.ts:34:4:
+      34 │     TemPermissaoDirective,
+         ╵     ~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator. [plugin angular-compiler]
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.html:22:45:
+      22 │         [temPagamentos]="(pedido.pagamentos?.length || 0) > 0"
+         ╵                                              ~~~~~~
+
+  Error occurs in the template of component DetalhesPedidoComponent.
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.ts:96:17:
+      96 │     templateUrl: './detalhes-pedido.component.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed. [plugin angular-compiler]
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.html:46:17:
+      46 │         [total]="pedido.total ?? 0"
+         ╵                  ~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component DetalhesPedidoComponent.
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.ts:96:17:
+      96 │     templateUrl: './detalhes-pedido.component.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed. [plugin angular-compiler]
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.html:47:20:
+      47 │         [subtotal]="pedido.subTotal ?? 0"
+         ╵                     ~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component DetalhesPedidoComponent.
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.ts:96:17:
+      96 │     templateUrl: './detalhes-pedido.component.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed. [plugin angular-compiler]
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.html:48:16:
+      48 │         [pago]="pedido.valorTotalPago ?? 0"
+         ╵                 ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component DetalhesPedidoComponent.
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.ts:96:17:
+      96 │     templateUrl: './detalhes-pedido.component.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed. [plugin angular-compiler]
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.html:50:22:
+      50 │         [restaPagar]="pedido.restaPagar ?? 0"
+         ╵                       ~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component DetalhesPedidoComponent.
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.ts:96:17:
+      96 │     templateUrl: './detalhes-pedido.component.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed. [plugin angular-compiler]
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.html:51:20:
+      51 │         [desconto]="pedido.desconto ?? 0"
+         ╵                     ~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component DetalhesPedidoComponent.
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.ts:96:17:
+      96 │     templateUrl: './detalhes-pedido.component.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed. [plugin angular-compiler]
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.html:81:25:
+      81 │                 [itens]="pedido.itens ?? []"
+         ╵                          ~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component DetalhesPedidoComponent.
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.ts:96:17:
+      96 │     templateUrl: './detalhes-pedido.component.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed. [plugin angular-compiler]
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.html:82:28:
+      82 │                 [subtotal]="pedido.subTotal ?? 0"
+         ╵                             ~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component DetalhesPedidoComponent.
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.ts:96:17:
+      96 │     templateUrl: './detalhes-pedido.component.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed. [plugin angular-compiler]
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.html:242:78:
+      242 │ ...cimo</span><strong>{{ pedido.acrescimo ?? 0 | currency:'BRL':'...
+          ╵                         ~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component DetalhesPedidoComponent.
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.ts:96:17:
+      96 │     templateUrl: './detalhes-pedido.component.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8102: The left side of this nullish coalescing operation does not include 'null' or 'undefined' in its type, therefore the '??' operator can be safely removed. [plugin angular-compiler]
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.html:243:77:
+      243 │ ...nto</span><strong>{{ pedido.desconto ?? 0 | currency:'BRL':'sy...
+          ╵                         ~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component DetalhesPedidoComponent.
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.ts:96:17:
+      96 │     templateUrl: './detalhes-pedido.component.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] TS-998113: TelefonePipe is not used within the template of DetalhesPedidoComponent [plugin angular-compiler]
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.ts:76:8:
+      76 │         TelefonePipe,
+         ╵         ~~~~~~~~~~~~
+
+
+▲ [WARNING] TS-998113: DialogDescreverItemComponent is not used within the template of DetalhesPedidoComponent [plugin angular-compiler]
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.ts:80:8:
+      80 │         DialogDescreverItemComponent,
+         ╵         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] TS-998113: ConfirmDialogComponent is not used within the template of DetalhesPedidoComponent [plugin angular-compiler]
+
+    src/app/pages/pedido/detalhes-pedido/detalhes-pedido.component.ts:91:8:
+      91 │         ConfirmDialogComponent,
+         ╵         ~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator. [plugin angular-compiler]
+
+    src/app/pages/pedido/dialog-adicionar-produto/dialog-adicionar-produto-mobile.component.html:54:49:
+      54 │ ...<small>{{ produto.variacoes?.length || 0 }} variações dispon�...
+         ╵                                 ~~~~~~
+
+  Error occurs in the template of component DialogAdicionarProdutoMobileComponent.
+
+    src/app/pages/pedido/dialog-adicionar-produto/dialog-adicionar-produto-mobile.component.ts:35:15:
+      35 │   templateUrl: './dialog-adicionar-produto-mobile.component.html',
+         ╵                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be safely removed. [plugin angular-compiler]
+
+    src/app/pages/pedido/dialog-adicionar-produto/steps/escolher-variacao-step/escolher-variacao-step.component.html:81:63:
+      81 │ ...bamentoToggle.emit({ id: a.id, checked: !isSelectedFn?.(a.id) })">
+         ╵                                             ~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component EscolherVariacaoStepComponent.
+
+    src/app/pages/pedido/dialog-adicionar-produto/steps/escolher-variacao-step/escolher-variacao-step.component.ts:29:17:
+      29 │     templateUrl: './escolher-variacao-step.component.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be safely removed. [plugin angular-compiler]
+
+    src/app/pages/pedido/dialog-adicionar-produto/steps/escolher-variacao-step/escolher-variacao-step.component.html:83:53:
+      83 │ ...  <mat-checkbox class="opt-check" [checked]="isSelectedFn?.(a.id)"
+         ╵                                                 ~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component EscolherVariacaoStepComponent.
+
+    src/app/pages/pedido/dialog-adicionar-produto/steps/escolher-variacao-step/escolher-variacao-step.component.ts:29:17:
+      29 │     templateUrl: './escolher-variacao-step.component.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be safely removed. [plugin angular-compiler]
+
+    src/app/pages/pedido/dialog-adicionar-produto/steps/escolher-variacao-step/escolher-variacao-step.component.html:93:46:
+      93 │ ...    <div class="opt-pill" [matTooltip]="precoResumoFn?.(a.preco)">
+         ╵                                            ~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component EscolherVariacaoStepComponent.
+
+    src/app/pages/pedido/dialog-adicionar-produto/steps/escolher-variacao-step/escolher-variacao-step.component.ts:29:17:
+      29 │     templateUrl: './escolher-variacao-step.component.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be safely removed. [plugin angular-compiler]
+
+    src/app/pages/pedido/dialog-adicionar-produto/steps/escolher-variacao-step/escolher-variacao-step.component.html:94:15:
+      94 │             {{ precoResumoFn?.(a.preco) }}
+         ╵                ~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component EscolherVariacaoStepComponent.
+
+    src/app/pages/pedido/dialog-adicionar-produto/steps/escolher-variacao-step/escolher-variacao-step.component.ts:29:17:
+      29 │     templateUrl: './escolher-variacao-step.component.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be safely removed. [plugin angular-compiler]
+
+    src/app/pages/pedido/dialog-adicionar-produto/steps/servicos-step/servicos-step.component.html:17:43:
+      17 │       <div class="opt-price" [matTooltip]="precoResumoFn?.(s.preco)">
+         ╵                                            ~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ServicosStepComponent.
+
+    src/app/pages/pedido/dialog-adicionar-produto/steps/servicos-step/servicos-step.component.ts:14:17:
+      14 │     templateUrl: './servicos-step.component.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be safely removed. [plugin angular-compiler]
+
+    src/app/pages/pedido/dialog-adicionar-produto/steps/servicos-step/servicos-step.component.html:18:11:
+      18 │         {{ precoResumoFn?.(s.preco) }}
+         ╵            ~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ServicosStepComponent.
+
+    src/app/pages/pedido/dialog-adicionar-produto/steps/servicos-step/servicos-step.component.ts:14:17:
+      14 │     templateUrl: './servicos-step.component.html',
+         ╵                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] NG8107: The left side of this optional chain operation does not include 'null' or 'undefined' in its type, therefore the '?.' operator can be replaced with the '.' operator. [plugin angular-compiler]
+
+    src/app/pages/pedido/pedido-imprimir-whatsapp/imprimir-whatsapp.component.ts:60:32:
+      60 │                     ({{ pedido?.cliente?.telefone }})
+         ╵                                 ~~~~~~~
+
+
+▲ [WARNING] TS-998113: NgIf is not used within the template of AppPricingComponent [plugin angular-compiler]
+
+    src/app/pages/theme-pages/pricing/pricing.component.ts:14:123:
+      14 │ ...MatButtonModule, MatSlideToggleModule, CurrencyPipe, NgIf, NgFor],
+         ╵                                                         ~~~~
+
+
+▲ [WARNING] TS-998113: NgForOf is not used within the template of AppPricingComponent [plugin angular-compiler]
+
+    src/app/pages/theme-pages/pricing/pricing.component.ts:14:129:
+      14 │ ...MatButtonModule, MatSlideToggleModule, CurrencyPipe, NgIf, NgFor],
+         ╵                                                               ~~~~~
+
+
+▲ [WARNING] TS-998113: TemPermissaoDirective is not used within the template of ListarUsuariosComponent [plugin angular-compiler]
+
+    src/app/pages/usuarios/listar-usuarios/listar-usuarios.component.ts:43:4:
+      43 │     TemPermissaoDirective,
+         ╵     ~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] Deprecation [plugin angular-sass]
+
+    src/assets/scss/override-component/_button.scss:28:12:
+      28 │     @return unquote("color-mix(in srgb, #{$c} #{$alpha-pct}%, tran...
+         ╵             ^
+
+
+  Global built-in functions are deprecated and will be removed in Dart Sass 3.0.0.
+  Use string.unquote instead.
+  
+  More info and automated migrator: https://sass-lang.com/d/import
+
+  The plugin "angular-sass" was triggered by this import
+
+    angular:styles/global:styles:2:8:
+      2 │ @import 'src/assets/scss/style.scss';
+        ╵         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] You probably don't mean to use the color value orange in interpolation here.
+It may end up represented as orange, which will likely produce invalid CSS.
+Always quote color names when using them as strings or map keys (for example, "orange").
+If you really want to use the color value here, use '"" + $name'. [plugin angular-sass]
+
+    src/assets/scss/override-component/_button.scss:48:12:
+      48 │     .text-#{$name} {
+         ╵             ^
+
+
+  The plugin "angular-sass" was triggered by this import
+
+    angular:styles/global:styles:2:8:
+      2 │ @import 'src/assets/scss/style.scss';
+        ╵         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] You probably don't mean to use the color value teal in interpolation here.
+It may end up represented as teal, which will likely produce invalid CSS.
+Always quote color names when using them as strings or map keys (for example, "teal").
+If you really want to use the color value here, use '"" + $name'. [plugin angular-sass]
+
+    src/assets/scss/override-component/_button.scss:48:12:
+      48 │     .text-#{$name} {
+         ╵             ^
+
+
+  The plugin "angular-sass" was triggered by this import
+
+    angular:styles/global:styles:2:8:
+      2 │ @import 'src/assets/scss/style.scss';
+        ╵         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] You probably don't mean to use the color value orange in interpolation here.
+It may end up represented as orange, which will likely produce invalid CSS.
+Always quote color names when using them as strings or map keys (for example, "orange").
+If you really want to use the color value here, use '"" + $name'. [plugin angular-sass]
+
+    src/assets/scss/override-component/_button.scss:52:16:
+      52 │     .bg-light-#{$name} {
+         ╵                 ^
+
+
+  The plugin "angular-sass" was triggered by this import
+
+    angular:styles/global:styles:2:8:
+      2 │ @import 'src/assets/scss/style.scss';
+        ╵         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] You probably don't mean to use the color value teal in interpolation here.
+It may end up represented as teal, which will likely produce invalid CSS.
+Always quote color names when using them as strings or map keys (for example, "teal").
+If you really want to use the color value here, use '"" + $name'. [plugin angular-sass]
+
+    src/assets/scss/override-component/_button.scss:52:16:
+      52 │     .bg-light-#{$name} {
+         ╵                 ^
+
+
+  The plugin "angular-sass" was triggered by this import
+
+    angular:styles/global:styles:2:8:
+      2 │ @import 'src/assets/scss/style.scss';
+        ╵         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+▲ [WARNING] Module 'qrcode' used by 'src/app/pages/links/components/share-panel/links-share-panel.component.ts' is not ESM
+
+  CommonJS or AMD dependencies can cause optimization bailouts.
+  For more information see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+
+▲ [WARNING] Module 'chance' used by 'src/app/pages/apps/contact-list/contactlistData.ts' is not ESM
+
+  CommonJS or AMD dependencies can cause optimization bailouts.
+  For more information see: https://angular.dev/tools/cli/build#configuring-commonjs-dependencies
+
+
+Output location: /Users/leonardo.barros/dev/ClickManager/clickmanager-app/dist/clickmanager-app
+

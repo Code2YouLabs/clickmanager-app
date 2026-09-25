@@ -684,7 +684,7 @@ export class FullComponent implements OnInit, OnDestroy {
           this.catalogoPrincipalRoute(),
           '/page/orcamentos'
         ])
-      : new Set(['/dashboards/dashboard1', '/page/grafica/comercial-beta/pedidos']);
+      : new Set(['/dashboards/dashboard1', '/page/grafica/comercial/pedidos']);
     const secondaryItems = items.filter((item) => !item.navCap && !primaryRoutes.has(item.route || ''));
 
     const groupMap: Record<string, (item: NavItem) => boolean> = {
@@ -909,8 +909,8 @@ export class FullComponent implements OnInit, OnDestroy {
             key: 'pedidos',
             label: 'Pedidos',
             icon: 'file-text',
-            route: '/page/grafica/comercial-beta/pedidos',
-            startsWith: ['/page/grafica/comercial-beta/pedidos'],
+            route: '/page/grafica/comercial/pedidos',
+            startsWith: ['/page/grafica/comercial/pedidos'],
           },
           {
             key: 'mais',

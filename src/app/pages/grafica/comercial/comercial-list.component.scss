@@ -1,0 +1,9 @@
+.status-pill { display: inline-flex; align-items: center; min-height: 24px; padding: 0 8px; border-radius: 999px; background: #eef2ff; color: #3730a3; font-size: 12px; font-weight: 600; }
+    .expanded-detail { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0 18px 16px; padding: 16px 18px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; }
+    .expanded-detail span, .expanded-detail strong { display: block; }
+    .expanded-detail span { margin-bottom: 4px; color: #64748b; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+    .expanded-detail strong { color: #0f172a; font-size: 14px; }
+    @media (max-width: 640px) {
+      [page-header-actions] { width: 100%; }
+      .expanded-detail { grid-template-columns: 1fr; }
+    }
