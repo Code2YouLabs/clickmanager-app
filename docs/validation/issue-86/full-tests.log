@@ -1,0 +1,213 @@
+
+> clickmanager-app@4.0.0 test
+> ng test --watch=false --browsers=ChromeHeadless
+
+- Generating browser application bundles (phase: setup)...
+✔ Browser application bundle generation complete.
+24 09 2026 20:46:34.922:INFO [karma-server]: Karma v6.4.4 server started at http://localhost:9876/
+24 09 2026 20:46:34.924:INFO [launcher]: Launching browsers ChromeHeadless with concurrency unlimited
+24 09 2026 20:46:34.927:INFO [launcher]: Starting browser ChromeHeadless
+24 09 2026 20:46:35.963:INFO [Chrome Headless 153.0.0.0 (Mac OS 10.15.7)]: Connected on socket piBMk5Ni1sYem0fdAAAB with id 89964560
+WARN: 'Tree is using conflicting node types which can cause unexpected behavior. Please use tree nodes of the same type (e.g. only flat or only nested). Current node type: "nested", new node type "flat".'
+WARN: 'Tree is using conflicting node types which can cause unexpected behavior. Please use tree nodes of the same type (e.g. only flat or only nested). Current node type: "nested", new node type "flat".'
+WARN: 'Tree is using conflicting node types which can cause unexpected behavior. Please use tree nodes of the same type (e.g. only flat or only nested). Current node type: "nested", new node type "flat".'
+WARN: 'Tree is using conflicting node types which can cause unexpected behavior. Please use tree nodes of the same type (e.g. only flat or only nested). Current node type: "nested", new node type "flat".'
+Chrome Headless 153.0.0.0 (Mac OS 10.15.7) GraficaProdutoFormComponent carrega clone com valores do produto original sem reaproveitar ids internos FAILED
+	TypeError: this.categoriaService.listarTodas is not a function
+	    at GraficaProdutoFormComponent.listarCategoriasHierarquicas (src/app/pages/grafica/produtos/grafica-produto-form.component.ts:799:8)
+	    at GraficaProdutoFormComponent.carregarBase (src/app/pages/grafica/produtos/grafica-produto-form.component.ts:705:24)
+	    at GraficaProdutoFormComponent.ngOnInit (src/app/pages/grafica/produtos/grafica-produto-form.component.ts:594:10)
+	    at UserContext.apply (src/app/pages/grafica/produtos/grafica-produto-form.component.spec.ts:130:15)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:369:28)
+	    at ProxyZoneSpec.onInvoke (node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:368:34)
+	    at ZoneImpl.run (node_modules/zone.js/fesm2015/zone.js:111:43)
+	    at runInTestZone (node_modules/zone.js/fesm2015/zone-testing.js:216:38)
+	    at UserContext.<anonymous> (node_modules/zone.js/fesm2015/zone-testing.js:234:32)
+Chrome Headless 153.0.0.0 (Mac OS 10.15.7) GraficaProdutoFormComponent clone mantendo nome original deixa familia ser resolvida pelo backend FAILED
+	TypeError: this.categoriaService.listarTodas is not a function
+	    at GraficaProdutoFormComponent.listarCategoriasHierarquicas (src/app/pages/grafica/produtos/grafica-produto-form.component.ts:799:8)
+	    at GraficaProdutoFormComponent.carregarBase (src/app/pages/grafica/produtos/grafica-produto-form.component.ts:705:24)
+	    at GraficaProdutoFormComponent.ngOnInit (src/app/pages/grafica/produtos/grafica-produto-form.component.ts:594:10)
+	    at UserContext.apply (src/app/pages/grafica/produtos/grafica-produto-form.component.spec.ts:196:15)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:369:28)
+	    at ProxyZoneSpec.onInvoke (node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:368:34)
+	    at ZoneImpl.run (node_modules/zone.js/fesm2015/zone.js:111:43)
+	    at runInTestZone (node_modules/zone.js/fesm2015/zone-testing.js:216:38)
+	    at UserContext.<anonymous> (node_modules/zone.js/fesm2015/zone-testing.js:234:32)
+Chrome Headless 153.0.0.0 (Mac OS 10.15.7) GraficaProdutoFormComponent restaura snapshot original ao cancelar clone FAILED
+	TypeError: this.categoriaService.listarTodas is not a function
+	    at GraficaProdutoFormComponent.listarCategoriasHierarquicas (src/app/pages/grafica/produtos/grafica-produto-form.component.ts:799:8)
+	    at GraficaProdutoFormComponent.carregarBase (src/app/pages/grafica/produtos/grafica-produto-form.component.ts:705:24)
+	    at GraficaProdutoFormComponent.ngOnInit (src/app/pages/grafica/produtos/grafica-produto-form.component.ts:594:10)
+	    at UserContext.apply (src/app/pages/grafica/produtos/grafica-produto-form.component.spec.ts:205:15)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:369:28)
+	    at ProxyZoneSpec.onInvoke (node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:368:34)
+	    at ZoneImpl.run (node_modules/zone.js/fesm2015/zone.js:111:43)
+	    at runInTestZone (node_modules/zone.js/fesm2015/zone-testing.js:216:38)
+	    at UserContext.<anonymous> (node_modules/zone.js/fesm2015/zone-testing.js:234:32)
+Chrome Headless 153.0.0.0 (Mac OS 10.15.7) GraficaProdutoFormComponent clone mudando apenas cor cria novo catalogoProduto FAILED
+	TypeError: this.categoriaService.listarTodas is not a function
+	    at GraficaProdutoFormComponent.listarCategoriasHierarquicas (src/app/pages/grafica/produtos/grafica-produto-form.component.ts:799:8)
+	    at GraficaProdutoFormComponent.carregarBase (src/app/pages/grafica/produtos/grafica-produto-form.component.ts:705:24)
+	    at GraficaProdutoFormComponent.ngOnInit (src/app/pages/grafica/produtos/grafica-produto-form.component.ts:594:10)
+	    at UserContext.apply (src/app/pages/grafica/produtos/grafica-produto-form.component.spec.ts:187:15)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:369:28)
+	    at ProxyZoneSpec.onInvoke (node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:368:34)
+	    at ZoneImpl.run (node_modules/zone.js/fesm2015/zone.js:111:43)
+	    at runInTestZone (node_modules/zone.js/fesm2015/zone-testing.js:216:38)
+	    at UserContext.<anonymous> (node_modules/zone.js/fesm2015/zone-testing.js:234:32)
+Chrome Headless 153.0.0.0 (Mac OS 10.15.7) GraficaProdutoFormComponent cria payload de clone sem reaproveitar ids de acabamento e politica FAILED
+	TypeError: this.categoriaService.listarTodas is not a function
+	    at GraficaProdutoFormComponent.listarCategoriasHierarquicas (src/app/pages/grafica/produtos/grafica-produto-form.component.ts:799:8)
+	    at GraficaProdutoFormComponent.carregarBase (src/app/pages/grafica/produtos/grafica-produto-form.component.ts:705:24)
+	    at GraficaProdutoFormComponent.ngOnInit (src/app/pages/grafica/produtos/grafica-produto-form.component.ts:594:10)
+	    at UserContext.apply (src/app/pages/grafica/produtos/grafica-produto-form.component.spec.ts:149:15)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:369:28)
+	    at ProxyZoneSpec.onInvoke (node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:368:34)
+	    at ZoneImpl.run (node_modules/zone.js/fesm2015/zone.js:111:43)
+	    at runInTestZone (node_modules/zone.js/fesm2015/zone-testing.js:216:38)
+	    at UserContext.<anonymous> (node_modules/zone.js/fesm2015/zone-testing.js:234:32)
+Chrome Headless 153.0.0.0 (Mac OS 10.15.7) GraficaProdutoFormComponent clone mudando apenas material cria novo catalogoProduto FAILED
+	TypeError: this.categoriaService.listarTodas is not a function
+	    at GraficaProdutoFormComponent.listarCategoriasHierarquicas (src/app/pages/grafica/produtos/grafica-produto-form.component.ts:799:8)
+	    at GraficaProdutoFormComponent.carregarBase (src/app/pages/grafica/produtos/grafica-produto-form.component.ts:705:24)
+	    at GraficaProdutoFormComponent.ngOnInit (src/app/pages/grafica/produtos/grafica-produto-form.component.ts:594:10)
+	    at UserContext.apply (src/app/pages/grafica/produtos/grafica-produto-form.component.spec.ts:178:15)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:369:28)
+	    at ProxyZoneSpec.onInvoke (node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:368:34)
+	    at ZoneImpl.run (node_modules/zone.js/fesm2015/zone.js:111:43)
+	    at runInTestZone (node_modules/zone.js/fesm2015/zone-testing.js:216:38)
+	    at UserContext.<anonymous> (node_modules/zone.js/fesm2015/zone-testing.js:234:32)
+Chrome Headless 153.0.0.0 (Mac OS 10.15.7) GraficaProdutoFormComponent clone mudando apenas formato cria novo catalogoProduto FAILED
+	TypeError: this.categoriaService.listarTodas is not a function
+	    at GraficaProdutoFormComponent.listarCategoriasHierarquicas (src/app/pages/grafica/produtos/grafica-produto-form.component.ts:799:8)
+	    at GraficaProdutoFormComponent.carregarBase (src/app/pages/grafica/produtos/grafica-produto-form.component.ts:705:24)
+	    at GraficaProdutoFormComponent.ngOnInit (src/app/pages/grafica/produtos/grafica-produto-form.component.ts:594:10)
+	    at UserContext.apply (src/app/pages/grafica/produtos/grafica-produto-form.component.spec.ts:169:15)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:369:28)
+	    at ProxyZoneSpec.onInvoke (node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:368:34)
+	    at ZoneImpl.run (node_modules/zone.js/fesm2015/zone.js:111:43)
+	    at runInTestZone (node_modules/zone.js/fesm2015/zone-testing.js:216:38)
+	    at UserContext.<anonymous> (node_modules/zone.js/fesm2015/zone-testing.js:234:32)
+WARN: '
+  It looks like you're using the disabled attribute with a reactive form directive. If you set disabled to true
+  when you set up this control in your component class, the disabled attribute will actually be set in the DOM for
+  you. We recommend using this approach to avoid 'changed after checked' errors.
+
+  Example:
+  // Specify the `disabled` property at control creation time:
+  form = new FormGroup({
+    first: new FormControl({value: 'Nancy', disabled: true}, Validators.required),
+    last: new FormControl('Drew', Validators.required)
+  });
+
+  // Controls can also be enabled/disabled after creation:
+  form.get('first')?.enable();
+  form.get('last')?.disable();
+'
+WARN: '
+  It looks like you're using the disabled attribute with a reactive form directive. If you set disabled to true
+  when you set up this control in your component class, the disabled attribute will actually be set in the DOM for
+  you. We recommend using this approach to avoid 'changed after checked' errors.
+
+  Example:
+  // Specify the `disabled` property at control creation time:
+  form = new FormGroup({
+    first: new FormControl({value: 'Nancy', disabled: true}, Validators.required),
+    last: new FormControl('Drew', Validators.required)
+  });
+
+  // Controls can also be enabled/disabled after creation:
+  form.get('first')?.enable();
+  form.get('last')?.disable();
+'
+WARN: '
+  It looks like you're using the disabled attribute with a reactive form directive. If you set disabled to true
+  when you set up this control in your component class, the disabled attribute will actually be set in the DOM for
+  you. We recommend using this approach to avoid 'changed after checked' errors.
+
+  Example:
+  // Specify the `disabled` property at control creation time:
+  form = new FormGroup({
+    first: new FormControl({value: 'Nancy', disabled: true}, Validators.required),
+    last: new FormControl('Drew', Validators.required)
+  });
+
+  // Controls can also be enabled/disabled after creation:
+  form.get('first')?.enable();
+  form.get('last')?.disable();
+'
+WARN: '
+  It looks like you're using the disabled attribute with a reactive form directive. If you set disabled to true
+  when you set up this control in your component class, the disabled attribute will actually be set in the DOM for
+  you. We recommend using this approach to avoid 'changed after checked' errors.
+
+  Example:
+  // Specify the `disabled` property at control creation time:
+  form = new FormGroup({
+    first: new FormControl({value: 'Nancy', disabled: true}, Validators.required),
+    last: new FormControl('Drew', Validators.required)
+  });
+
+  // Controls can also be enabled/disabled after creation:
+  form.get('first')?.enable();
+  form.get('last')?.disable();
+'
+WARN: 'Tree is using conflicting node types which can cause unexpected behavior. Please use tree nodes of the same type (e.g. only flat or only nested). Current node type: "nested", new node type "flat".'
+WARN: 'Tree is using conflicting node types which can cause unexpected behavior. Please use tree nodes of the same type (e.g. only flat or only nested). Current node type: "nested", new node type "flat".'
+WARN: 'Tree is using conflicting node types which can cause unexpected behavior. Please use tree nodes of the same type (e.g. only flat or only nested). Current node type: "nested", new node type "flat".'
+WARN: 'Tree is using conflicting node types which can cause unexpected behavior. Please use tree nodes of the same type (e.g. only flat or only nested). Current node type: "nested", new node type "flat".'
+WARN: 'Tree is using conflicting node types which can cause unexpected behavior. Please use tree nodes of the same type (e.g. only flat or only nested). Current node type: "nested", new node type "flat".'
+WARN: 'Tree is using conflicting node types which can cause unexpected behavior. Please use tree nodes of the same type (e.g. only flat or only nested). Current node type: "nested", new node type "flat".'
+WARN: 'Tree is using conflicting node types which can cause unexpected behavior. Please use tree nodes of the same type (e.g. only flat or only nested). Current node type: "nested", new node type "flat".'
+WARN: 'Tree is using conflicting node types which can cause unexpected behavior. Please use tree nodes of the same type (e.g. only flat or only nested). Current node type: "nested", new node type "flat".'
+WARN: 'Tree is using conflicting node types which can cause unexpected behavior. Please use tree nodes of the same type (e.g. only flat or only nested). Current node type: "nested", new node type "flat".'
+WARN: 'Tree is using conflicting node types which can cause unexpected behavior. Please use tree nodes of the same type (e.g. only flat or only nested). Current node type: "nested", new node type "flat".'
+WARN: 'Tree is using conflicting node types which can cause unexpected behavior. Please use tree nodes of the same type (e.g. only flat or only nested). Current node type: "nested", new node type "flat".'
+WARN: 'Tree is using conflicting node types which can cause unexpected behavior. Please use tree nodes of the same type (e.g. only flat or only nested). Current node type: "nested", new node type "flat".'
+WARN: 'Tree is using conflicting node types which can cause unexpected behavior. Please use tree nodes of the same type (e.g. only flat or only nested). Current node type: "nested", new node type "flat".'
+WARN: 'Tree is using conflicting node types which can cause unexpected behavior. Please use tree nodes of the same type (e.g. only flat or only nested). Current node type: "nested", new node type "flat".'
+WARN: 'Tree is using conflicting node types which can cause unexpected behavior. Please use tree nodes of the same type (e.g. only flat or only nested). Current node type: "nested", new node type "flat".'
+WARN: 'Tree is using conflicting node types which can cause unexpected behavior. Please use tree nodes of the same type (e.g. only flat or only nested). Current node type: "nested", new node type "flat".'
+WARN: '
+  It looks like you're using the disabled attribute with a reactive form directive. If you set disabled to true
+  when you set up this control in your component class, the disabled attribute will actually be set in the DOM for
+  you. We recommend using this approach to avoid 'changed after checked' errors.
+
+  Example:
+  // Specify the `disabled` property at control creation time:
+  form = new FormGroup({
+    first: new FormControl({value: 'Nancy', disabled: true}, Validators.required),
+    last: new FormControl('Drew', Validators.required)
+  });
+
+  // Controls can also be enabled/disabled after creation:
+  form.get('first')?.enable();
+  form.get('last')?.disable();
+'
+WARN: '
+  It looks like you're using the disabled attribute with a reactive form directive. If you set disabled to true
+  when you set up this control in your component class, the disabled attribute will actually be set in the DOM for
+  you. We recommend using this approach to avoid 'changed after checked' errors.
+
+  Example:
+  // Specify the `disabled` property at control creation time:
+  form = new FormGroup({
+    first: new FormControl({value: 'Nancy', disabled: true}, Validators.required),
+    last: new FormControl('Drew', Validators.required)
+  });
+
+  // Controls can also be enabled/disabled after creation:
+  form.get('first')?.enable();
+  form.get('last')?.disable();
+'
+TOTAL: 7 FAILED, 371 SUCCESS
+✔ Browser application bundle generation complete.
+✔ Browser application bundle generation complete.

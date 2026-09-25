@@ -52,229 +52,8 @@ type CategoriaResumoLinha = {
     DataTableComponent,
     DataTableCellDirective,
   ],
-  template: `
-    <app-page-card titulo="Produtos gráficos" subtitulo="Configuração de venda para produtos do Catálogo">
-      <div page-header-actions>
-        <button mat-icon-button type="button" matTooltip="Ajuda" aria-label="Ajuda" (click)="abrirAjuda()">
-          <mat-icon>help_outline</mat-icon>
-        </button>
-        <button mat-flat-button color="primary" (click)="novo()">
-          <mat-icon>add</mat-icon>
-          Novo produto
-        </button>
-      </div>
-
-      <app-data-table
-        [columns]="columns"
-        [data]="produtos"
-        [filters]="tableFilters"
-        [filterState]="filterState"
-        [search]="searchConfig"
-        [pagination]="pagination"
-        [loading]="carregando"
-        [sort]="sort"
-        filtersLabel="Filtros"
-        clearFiltersLabel="Limpar filtros"
-        [emptyState]="{
-          title: 'Nenhum produto gráfico encontrado',
-          description: 'Cadastre um produto gráfico para configurar vendas.',
-          filteredTitle: 'Nenhum produto gráfico encontrado',
-          filteredDescription: 'Altere a busca ou limpe os filtros.'
-        }"
-        rowKey="id"
-        (searchChange)="onSearch($event)"
-        (filterChange)="onFilterChange($event)"
-        (pageChange)="onPageChange($event)"
-        (sortChange)="onSortChange($event)">
-
-        <div data-table-toolbar-actions>
-          <button mat-stroked-button color="primary" (click)="abrirBiblioteca()"><mat-icon>library_books</mat-icon>Biblioteca de produtos</button>
-        </div>
-
-        <ng-template appDataTableCell="imagem" let-row>
-          <img class="produto-thumb" [src]="imagemProduto(row)" [alt]="row.catalogoProdutoNome || 'Produto'" loading="lazy" decoding="async" />
-        </ng-template>
-
-        <ng-template appDataTableCell="produto" let-row>
-          <strong class="produto-nome">{{ row.catalogoProdutoNome || '-' }}</strong>
-          @if (configuracaoLinha(row)) {
-            <small>{{ configuracaoLinha(row) }}</small>
-          }
-        </ng-template>
-
-        <ng-template appDataTableCell="categoria" let-row>
-          <div class="categoria-cell">
-            @for (linha of categoriaResumo(row); track $index) {
-              <span class="categoria-path" [attr.title]="categoriaTitulo(linha)">
-                @if (linha.truncada) {
-                  <span class="categoria-path__ellipsis">...</span>
-                }
-                @for (parte of linha.partes; track $index) {
-                  <span class="categoria-path__parte" [class.categoria-path__parte--final]="$last">{{ parte }}</span>
-                  @if (!$last) {
-                    <span class="categoria-path__separator">-&gt;</span>
-                  }
-                }
-              </span>
-            }
-            @if (categoriaExcedente(row) > 0) {
-              <span class="categoria-path categoria-path--extra">+{{ categoriaExcedente(row) }}</span>
-            }
-          </div>
-        </ng-template>
-
-        <ng-template appDataTableCell="descricao" let-row>
-          <span class="descricao-cell">{{ row.catalogoProdutoDescricao || '-' }}</span>
-        </ng-template>
-
-        <ng-template appDataTableCell="preco" let-row>
-          <div class="preco-cell">
-            @for (linha of precoResumo(row); track linha) {
-              <span>{{ linha }}</span>
-            }
-          </div>
-        </ng-template>
-
-        <ng-template appDataTableCell="publicacao" let-row>
-          <span class="publicacao-chip" [class.publicacao-chip--publicado]="row.catalogoProdutoExibirNoSite">
-            <mat-icon>{{ row.catalogoProdutoExibirNoSite ? 'public' : 'lock' }}</mat-icon>
-            {{ row.catalogoProdutoExibirNoSite ? 'Publicado' : 'Interno' }}
-          </span>
-        </ng-template>
-
-        <ng-template appDataTableCell="acoes" let-row>
-          <div class="acoes-cell">
-            <button mat-icon-button type="button" matTooltip="Editar" [attr.aria-label]="'Editar ' + (row.catalogoProdutoNome || 'produto')" (click)="configurar(row)">
-              <mat-icon>edit</mat-icon>
-            </button>
-            <button mat-icon-button type="button" matTooltip="Clonar" [attr.aria-label]="'Clonar ' + (row.catalogoProdutoNome || 'produto')" (click)="clonar(row)">
-              <mat-icon>content_copy</mat-icon>
-            </button>
-            <button mat-icon-button type="button" color="warn" matTooltip="Excluir" [attr.aria-label]="'Excluir ' + (row.catalogoProdutoNome || 'produto')" (click)="excluir(row)">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </div>
-        </ng-template>
-      </app-data-table>
-    </app-page-card>
-  `,
-  styles: [`
-    .produto-thumb {
-      display: block;
-      width: 40px;
-      height: 40px;
-      border-radius: 8px;
-      border: 1px solid #e5e7eb;
-      background: #f8fafc;
-      object-fit: cover;
-    }
-
-    .produto-nome {
-      display: block;
-      color: #111827;
-      line-height: 1.25;
-    }
-
-    small {
-      display: block;
-      color: #6b7280;
-      margin-top: 2px;
-      line-height: 1.25;
-    }
-
-    .descricao-cell {
-      display: -webkit-box;
-      max-width: 340px;
-      overflow: hidden;
-      color: #374151;
-      line-height: 1.35;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
-    }
-
-    .categoria-cell {
-      display: grid;
-      max-width: 300px;
-      gap: 2px;
-      color: #4b5563;
-      font-size: 0.82rem;
-      line-height: 1.3;
-    }
-
-    .categoria-path {
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .categoria-path__ellipsis,
-    .categoria-path__separator {
-      color: #9ca3af;
-    }
-
-    .categoria-path__separator {
-      margin: 0 4px;
-    }
-
-    .categoria-path__parte--final {
-      color: #111827;
-      font-weight: 700;
-    }
-
-    .categoria-path--extra {
-      color: #6b7280;
-      font-weight: 700;
-    }
-
-    .preco-cell {
-      display: grid;
-      gap: 2px;
-      color: #111827;
-      font-size: 0.86rem;
-      line-height: 1.3;
-      white-space: nowrap;
-    }
-
-    .preco-cell span:first-child {
-      font-weight: 700;
-    }
-
-    .publicacao-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      min-height: 28px;
-      padding: 0 10px;
-      border-radius: 999px;
-      background: #f3f4f6;
-      color: #4b5563;
-      font-size: 0.82rem;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    .publicacao-chip--publicado {
-      background: #ecfdf5;
-      color: #047857;
-    }
-
-    .publicacao-chip mat-icon {
-      width: 16px;
-      height: 16px;
-      font-size: 16px;
-    }
-
-    .acoes-cell {
-      display: inline-flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 4px;
-      min-width: 132px;
-      white-space: nowrap;
-    }
-
-  `],
+  templateUrl: './grafica-produtos.component.html',
+  styleUrl: './grafica-produtos.component.scss',
 })
 export class GraficaProdutosComponent implements OnInit {
   produtos: GraficaProduto[] = [];
@@ -283,6 +62,9 @@ export class GraficaProdutosComponent implements OnInit {
   tamanho = 10;
   termo = '';
   carregando = false;
+  erroCarregamento: string | null = null;
+  acessoNegado = false;
+  private loadVersion = 0;
   carregandoPrecos = false;
   carregandoFiltros = false;
   sort: Sort = { active: 'nome', direction: 'asc' };
@@ -290,6 +72,7 @@ export class GraficaProdutosComponent implements OnInit {
   precosPorProduto: Record<number, GraficaPrecoPolitica[]> = {};
   readonly searchConfig = {
     enabled: true,
+    value: '',
     label: 'Buscar produtos',
     placeholder: 'Buscar por nome, descrição ou código',
     debounceMs: 300,
@@ -339,23 +122,30 @@ export class GraficaProdutosComponent implements OnInit {
   }
 
   carregar(): void {
+    const version = ++this.loadVersion;
     this.carregando = true;
+    this.erroCarregamento = null;
+    this.acessoNegado = false;
     this.graficaService.listar(this.listParams()).subscribe({
       next: (page) => {
+        if (version !== this.loadVersion) return;
         this.produtos = page.content || [];
         this.total = page.totalElements || 0;
         this.carregando = false;
         this.carregarPrecos();
       },
       error: (error) => {
+        if (version !== this.loadVersion) return;
         this.carregando = false;
-        this.toastr.error(catalogoErrorMessage(error, 'Não foi possível carregar produtos gráficos.'));
+        this.acessoNegado = error?.status === 403;
+        this.erroCarregamento = this.acessoNegado ? null : catalogoErrorMessage(error, 'Verifique a conexão e tente novamente.');
       },
     });
   }
 
   onSearch(value: string): void {
     this.termo = value;
+    this.searchConfig.value = value;
     this.pagina = 0;
     this.carregar();
   }
