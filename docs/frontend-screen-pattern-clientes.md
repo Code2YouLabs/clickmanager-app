@@ -8,7 +8,7 @@ Branch `feature/padronizar-clientes`, criada após checkout de `develop` e pull 
 
 Referências: épico #79, auditoria #85, fundação #86, Comercial #87, `frontend-screen-pattern-audit.md` e `frontend-screen-pattern-foundation.md`. Aplicada a [skill anthropics/frontend-design](https://www.ui-skills.com/skills/anthropics/frontend-design) para consistência, estados, hierarquia e acessibilidade, preservando identidade do App.
 
-Escopo inicial restrito a Clientes e documentação. Por solicitação posterior do usuário, o padrão de Cancelar foi centralizado no PageCard, com intenção declarativa `cancel`, e o CSS duplicado de Produtos foi removido. Não houve commit, push nem PR nesta tarefa. Backend, serviços de produção, rotas, demais componentes globais e módulos permanecem inalterados.
+A evolução de `PageCard` e `page-form-state` é uma decisão **intencional de padronização transversal solicitada pelo usuário**, além da migração de Clientes. Os consumidores migrados devem permanecer no contrato compartilhado; essa ampliação não é uma regressão de escopo a reverter. Backend, serviços de produção e rotas não foram alterados. A implementação foi commitada e publicada, mediante autorização anterior, em `a6621302a9087e20dd1cfabbfbb0dbdeb3ffecf1`. Esta rodada apenas confirma arquitetura e validação técnica, sem nova alteração arquitetural, commit, push ou PR.
 
 ## Estrutura e contratos
 
@@ -78,4 +78,48 @@ A migração foi ampliada aos 11 pontos de descarte encontrados nos consumidores
 
 A implementação compartilhada também restaura a estrutura dos FormArrays, mantendo validators ao recompor linhas. Cadastros bloqueiam Cancelar enquanto carregam ou salvam. Adicionados testes parametrizados de cores/materiais/formatos/categorias/serviços (criação, edição e clone), cadastro genérico, Pedido legado e editor Comercial.
 
-Validação final após ampliação: suíte completa **440/440**, exit 0; build oficial **exit 0**; TypeScript dos specs e `git diff --check` passaram. Novas falhas: **0**. Sem validação visual, commit, push ou PR.
+Validação final após ampliação: suíte completa **440/440**, exit 0; build oficial **exit 0**; TypeScript dos specs e `git diff --check` passaram. Novas falhas: **0**. Sem validação visual. O commit e push posteriores foram explicitamente autorizados; nesta rodada de validação não houve nova publicação.
+
+
+## Confirmação arquitetural da padronização transversal
+
+Inspeção do código da branch `feature/padronizar-clientes`, commit `a6621302a9087e20dd1cfabbfbb0dbdeb3ffecf1`:
+
+- `PageCard` e `page-form-state` não conhecem Produto, Cliente, Pedido ou outras entidades; não importam modelos nem serviços das features.
+- Não há chamadas diretas ao backend. `PageFormState` depende apenas dos controles do Angular Forms; `PageCard` compõe Angular/Material, CardHeader e o estado compartilhado.
+- A infraestrutura trabalha com estado/snapshot genérico, estrutura de controles, validators e cópias isoladas. NOVO descarta alterações e restaura o estado inicial registrado; EDIÇÃO descarta alterações locais e restaura o estado carregado registrado.
+- O PageCard gera e executa Cancelar sem handler de descarte em cada tela. As features informam modo, formulário e conclusão do carregamento; adaptadores `read`/`write` apenas conectam seus dados complementares ao snapshot genérico.
+- Regras de negócio, HTTP, persistência, cálculo, permissões e transformações específicas continuam nas features. O shared não implementa cancelamento de pedido, pagamento ou documento fiscal. Validators e adaptadores fornecidos pelas features continuam sob responsabilidade delas; o reset não adiciona uma operação de backend.
+
+Consumidores migrados, preservados nesta validação:
+
+1. Clientes.
+2. Produtos gráficos.
+3. Cores gráficas.
+4. Materiais gráficos.
+5. Formatos gráficos.
+6. Categorias gráficas.
+7. Serviços gráficos.
+8. Cadastros gráficos genéricos.
+9. Configuração SmartCalc.
+10. Formulário de Pedido legado.
+11. Editor Comercial da Gráfica (Pedidos, Orçamentos e Rascunhos, na pasta `comercial-beta` presente nesta develop).
+
+Nenhuma implementação individual de infraestrutura de cancelamento foi reintroduzida, e nenhuma migração de consumidor foi revertida.
+
+
+## Revalidação técnica solicitada — 25/09/2026
+
+Executados novamente os três comandos na branch atual, sem alterar código funcional, testes ou arquitetura nesta rodada:
+
+| Verificação | Comando | Resultado desta execução |
+|---|---|---|
+| Focados exclusivamente em Clientes | `npm test -- --watch=false --browsers=ChromeHeadless --include='src/app/pages/cliente/**/*.spec.ts'` | **34 executados, 34 passaram, 0 falharam; exit 0** |
+| Suíte completa real Karma/ChromeHeadless | `npm test -- --watch=false --browsers=ChromeHeadless` | **440 executados, 440 passaram, 0 falharam; exit 0** |
+| Build oficial | `npm run build` | **exit 0**, produção gerada em `dist/clickmanager-app` |
+
+Comparação com a baseline registrada: **378 executados, 371 passaram, 7 falhas preexistentes**. A suíte atual tem 62 testes adicionais. **Falhas preexistentes remanescentes: 0. Novas falhas: 0.** A correção do mock `listarTodas` já estava no commit validado, assim como a atualização do cenário de cancelar clone para o contrato de criação; não foi feita correção adicional nesta rodada. Os sete nomes da baseline estão preservados acima. O resultado focado desta rodada é 34/34 somente em Clientes, separado dos 56 testes focados de escopo maior registrados anteriormente.
+
+Logs desta execução mantidos localmente em `/tmp/clientes-requested-focused.log`, `/tmp/clientes-requested-full.log` e `/tmp/clientes-requested-build.log`. Os logs versionados das execuções anteriores foram preservados. `git diff --check` passou; apenas este documento foi alterado nesta rodada. Não houve commit nem push.
+
+Validação visual: pendente de revisão manual pelo responsável do produto.
