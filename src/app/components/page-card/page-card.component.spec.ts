@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MaterialModule } from 'src/app/material.module';
-import { PageCardComponent } from './page-card.component';
+import { PageCardComponent, PageCardAction } from './page-card.component';
 
 @Component({
   standalone: true,
@@ -72,5 +72,39 @@ describe('PageCardComponent', () => {
 
     expect(fixture.debugElement.query(By.css('app-card-header mat-divider'))).toBeNull();
     expect(fixture.debugElement.query(By.css('.page-card__footer-divider'))).toBeNull();
+  });
+});
+
+@Component({ standalone: true, imports: [PageCardComponent], template: `
+  <app-page-card titulo="Cadastro" [footerActions]="actions" [saving]="saving" [actionsDisabled]="disabled" (footerAction)="commands.push($event)">
+    <form id="contract-form" (submit)="submits = submits + 1; $event.preventDefault()"><input name="name" value="Produto" /></form>
+  </app-page-card>` })
+class ActionsHost {
+  saving = false; disabled = false; submits = 0; commands: string[] = [];
+  actions: PageCardAction[] = [
+    { id: 'cancel', label: 'Voltar' },
+    { id: 'save', label: 'Salvar', type: 'submit', form: 'contract-form', primary: true, pendingLabel: 'Salvando...' },
+  ];
+}
+describe('PageCard footer action contract', () => {
+  beforeEach(() => TestBed.configureTestingModule({ imports: [ActionsHost, NoopAnimationsModule] }));
+  afterEach(() => TestBed.resetTestingModule());
+  it('associa submit nativo ao form e nao emite comando duplicado de click', () => {
+    const f = TestBed.createComponent(ActionsHost); f.detectChanges();
+    // Native form association requires the fixture to be connected to the document.
+    document.body.appendChild(f.nativeElement);
+    const save: HTMLButtonElement = f.nativeElement.querySelector('button[type=submit]');
+    expect(save.form?.id).toBe('contract-form'); save.click();
+    expect(f.componentInstance.submits).toBe(1); expect(f.componentInstance.commands).toEqual([]);
+    f.nativeElement.querySelector('button[type=button]').click(); expect(f.componentInstance.commands).toEqual(['cancel']);
+    f.nativeElement.remove();
+  });
+  it('bloqueia acoes durante saving e informa processamento acessivel', () => {
+    const f = TestBed.createComponent(ActionsHost); f.componentInstance.saving = true; f.detectChanges();
+    expect([...f.nativeElement.querySelectorAll('button')].every((button: any) => button.disabled)).toBeTrue();
+    expect(f.nativeElement.querySelector('mat-card').getAttribute('aria-busy')).toBe('true');
+    expect(f.nativeElement.querySelector('[role=status]').textContent).toContain('Salvando');
+    f.componentInstance.saving = false; f.componentInstance.disabled = true; f.detectChanges();
+    expect(f.nativeElement.querySelector('button[type=submit]').disabled).toBeTrue();
   });
 });

@@ -13,7 +13,7 @@ import { InputDataComponent } from 'src/app/components/inputs/input-data/input-d
 import { InputMoedaComponent } from 'src/app/components/inputs/input-moeda/input-moeda.component';
 import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
 import { ObservacoesCardComponent } from 'src/app/components/observacoes-card/observacoes-card.component';
-import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { PageCardAction, PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { PedidoFluxoControlesComponent } from 'src/app/components/pedido-fluxo-controles/pedido-fluxo-controles.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { StatusBadgeComponent } from 'src/app/components/status-badge/status-badge.component';
@@ -26,7 +26,7 @@ import { GraficaProdutoService } from '../shared/grafica.service';
 import { GraficaBuscaRapidaItem, GraficaProdutoBuscaRapidaDialogComponent } from './grafica-produto-busca-rapida-dialog.component';
 import { PedidoDocumentosAcoesComponent } from './pedido-documentos-acoes.component';
 
-type ComercialBetaTipo = 'rascunhos' | 'orcamentos' | 'pedidos';
+import { ComercialTipo } from './comercial.models';
 type FunilColuna = 'produto' | 'material' | 'formato' | 'cor';
 
 interface FunilOpcao {
@@ -64,194 +64,8 @@ interface GraficaServicoWizardData {
     ReactiveFormsModule,
     InputNumericoComponent,
   ],
-  template: `
-    <div class="service-wizard">
-      <div class="service-wizard__header">
-        <div>
-          <span class="service-wizard__eyebrow">Serviço</span>
-          <h2 mat-dialog-title>{{ data.servico.nome }}</h2>
-        </div>
-        <button mat-icon-button type="button" mat-dialog-close aria-label="Fechar">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-      <mat-divider></mat-divider>
-
-      <mat-dialog-content class="service-wizard__content">
-        <p class="service-wizard__description" *ngIf="data.servico.descricao">{{ data.servico.descricao }}</p>
-
-        <div class="state-row state-row--error" *ngIf="!politica">
-          <mat-icon>warning</mat-icon>
-          <span>Este serviço ainda não possui preço configurado.</span>
-        </div>
-
-        <form [formGroup]="form" class="service-wizard__form" *ngIf="politica">
-          <div class="service-wizard__policy">
-            <span>Precificação</span>
-            <strong>{{ tipoPrecoLabel }}</strong>
-          </div>
-
-          <app-input-numerico
-            [control]="quantidadeControl"
-            label="Quantidade">
-          </app-input-numerico>
-
-          <ng-container *ngIf="politica.tipo === 'POR_METRO_QUADRADO'">
-            <div class="service-wizard__grid">
-              <app-input-numerico
-                [control]="larguraControl"
-                label="Largura">
-              </app-input-numerico>
-              <app-input-numerico
-                [control]="alturaControl"
-                label="Altura">
-              </app-input-numerico>
-            </div>
-            <mat-form-field appearance="outline">
-              <mat-label>Unidade</mat-label>
-              <mat-select formControlName="unidadeDimensao">
-                <mat-option value="METRO">Metro (m)</mat-option>
-                <mat-option value="CENTIMETRO">Centímetro (cm)</mat-option>
-                <mat-option value="MILIMETRO">Milímetro (mm)</mat-option>
-              </mat-select>
-            </mat-form-field>
-          </ng-container>
-        </form>
-
-        <div class="service-wizard__price" *ngIf="preco">
-          <span>Total</span>
-          <strong>{{ preco.valorTotal | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
-          <small *ngIf="preco.valorUnitario">Unitário: {{ preco.valorUnitario | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</small>
-        </div>
-      </mat-dialog-content>
-
-      <mat-dialog-actions align="end" class="service-wizard__actions">
-        <button mat-stroked-button type="button" mat-dialog-close>Cancelar</button>
-        <button mat-stroked-button type="button" [disabled]="!politica || form.invalid || precificando" (click)="calcular()">
-          Calcular
-        </button>
-        <button mat-flat-button color="primary" type="button" [disabled]="!preco || precificando" (click)="adicionar()">
-          Adicionar
-        </button>
-      </mat-dialog-actions>
-    </div>
-  `,
-  styles: [`
-    .service-wizard {
-      display: flex;
-      flex-direction: column;
-      width: min(520px, calc(100vw - 32px));
-      max-height: min(82vh, 720px);
-      background: #fff;
-    }
-
-    .service-wizard__header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 16px;
-      padding: 18px 22px 14px;
-    }
-
-    .service-wizard__header h2 {
-      margin: 2px 0 0;
-      padding: 0;
-      font-size: 1.25rem;
-      line-height: 1.3;
-      font-weight: 700;
-    }
-
-    .service-wizard__eyebrow {
-      color: #64748b;
-      font-size: 0.76rem;
-      font-weight: 800;
-      text-transform: uppercase;
-    }
-
-    .service-wizard__content {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      padding: 18px 22px !important;
-      overflow: auto;
-    }
-
-    .service-wizard__description {
-      margin: 0;
-      color: #475569;
-    }
-
-    .service-wizard__form,
-    .service-wizard__grid {
-      display: grid;
-      gap: 14px;
-    }
-
-    .service-wizard__grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .service-wizard__policy,
-    .service-wizard__price,
-    .state-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 12px 14px;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
-      background: #f8fafc;
-    }
-
-    .service-wizard__policy span,
-    .service-wizard__price span,
-    .service-wizard__price small {
-      color: #64748b;
-      font-size: 0.84rem;
-      font-weight: 700;
-    }
-
-    .service-wizard__price {
-      align-items: flex-start;
-      flex-direction: column;
-      background: #ecfdf5;
-      border-color: #bbf7d0;
-    }
-
-    .service-wizard__price strong {
-      color: #166534;
-      font-size: 1.4rem;
-      line-height: 1.2;
-    }
-
-    .state-row--error {
-      justify-content: flex-start;
-      border-color: #fecaca;
-      color: #991b1b;
-      background: #fef2f2;
-    }
-
-    .service-wizard__actions {
-      padding: 10px 22px 18px;
-    }
-
-    @media (max-width: 620px) {
-      .service-wizard {
-        width: calc(100vw - 16px);
-        max-height: calc(100dvh - 16px);
-      }
-
-      .service-wizard__grid {
-        grid-template-columns: 1fr;
-      }
-
-      .service-wizard__actions {
-        align-items: stretch;
-        flex-direction: column;
-      }
-    }
-  `],
+  templateUrl: './grafica-servico-wizard-dialog.component.html',
+  styleUrl: './grafica-servico-wizard-dialog.component.scss',
 })
 export class GraficaServicoWizardDialogComponent {
   readonly politica = (this.data.servico.politicas || []).find((item) => item.ativo !== false) || null;
@@ -331,7 +145,7 @@ export class GraficaServicoWizardDialogComponent {
 }
 
 @Component({
-  selector: 'app-grafica-comercial-beta-editor',
+  selector: 'app-grafica-comercial-editor',
   standalone: true,
   imports: [
     CommonModule,
@@ -349,438 +163,17 @@ export class GraficaServicoWizardDialogComponent {
     PedidoDocumentosAcoesComponent,
     StatusBadgeComponent,
   ],
-  template: `
-    <app-page-card
-      [titulo]="titulo"
-      [subtitulo]="subtitulo"
-      botaoTexto="Voltar"
-      botaoIcone="arrow_back"
-      botaoCor="primary"
-      [botaoRota]="['/page/grafica/comercial-beta', tipo]"
-      [mostrarDivisor]="true">
-
-      <form [formGroup]="form">
-        <div class="pedido-layout">
-          <div class="main-column">
-            <app-pedido-fluxo-controles
-              *ngIf="mostrarFluxoPedido && fluxoPedido"
-              [titulo]="'Fluxo do pedido'"
-              [statusAtual]="fluxoPedido.statusAtual"
-              [statusControl]="statusControl"
-              [statusOptions]="statusOptionsFluxo"
-              [transicoes]="transicoesFluxo"
-              [fluxoSteps]="fluxoPedido.fluxo"
-              [descricaoStatus]="fluxoPedido.descricao"
-              [hints]="hintsFluxo"
-              [isReadOnly]="!permissoesFluxo.alterarStatus"
-              [inativo]="carregandoStatus"
-              [restaPagar]="resumoFinanceiroView.saldoAberto"
-              [totalPago]="resumoFinanceiroView.totalRecebido"
-              [temPagamentos]="pagamentosView.length > 0"
-              (salvarStatus)="alterarStatusSelecionado()"
-              (trocarStatusSelecionado)="statusControl.setValue($event)"
-              (cancelarPedido)="alterarStatus('CANCELADO')"
-              (finalizarPedido)="alterarStatus('PRONTO')">
-            </app-pedido-fluxo-controles>
-
-            <app-section-card *ngIf="mostrarFluxoOrcamento && orcamento" titulo="Fluxo do orçamento" [divider]="true">
-              <div class="orcamento-flow">
-                <div class="orcamento-meta-grid">
-                  <div class="orcamento-meta orcamento-meta--status">
-                    <span>Status</span>
-                    <app-status-badge [status]="orcamento.status"></app-status-badge>
-                  </div>
-                  <div class="orcamento-meta">
-                    <span>Criado em</span>
-                    <strong>{{ orcamento.createdAt | date:'dd/MM/yyyy' }}</strong>
-                  </div>
-                  <div class="orcamento-meta">
-                    <span>Validade</span>
-                    <strong>5 dias úteis</strong>
-                  </div>
-                </div>
-                <div class="orcamento-validade">
-                  <app-input-data [control]="validadeControl" label="Válido até"></app-input-data>
-                  <button class="btn-save-validade" mat-stroked-button color="primary" type="button" [disabled]="!validadeControl.value || validadeControl.pristine || salvandoValidade" (click)="salvarValidadeOrcamento()">
-                    Salvar validade
-                  </button>
-                </div>
-                <div class="orcamento-actions">
-                  <button mat-stroked-button class="status-action status-action--sent" type="button" *ngIf="orcamento.status === 'ABERTO'" [disabled]="carregandoStatus" (click)="alterarStatusOrcamento('ENVIADO')">Marcar enviado</button>
-                  <button mat-stroked-button class="status-action status-action--approve" type="button" *ngIf="orcamentoEditavel" [disabled]="carregandoStatus" (click)="aprovarOrcamentoECriarPedido()">Aprovar e criar pedido</button>
-                  <button mat-stroked-button class="status-action status-action--refuse" type="button" *ngIf="orcamentoEditavel" [disabled]="carregandoStatus" (click)="alterarStatusOrcamento('RECUSADO')">Recusar</button>
-                  <button mat-stroked-button class="status-action status-action--cancel" type="button" *ngIf="orcamentoEditavel" [disabled]="carregandoStatus" (click)="alterarStatusOrcamento('CANCELADO')">Cancelar</button>
-                </div>
-              </div>
-            </app-section-card>
-
-            <app-cliente-selector-card
-              [cliente]="clienteConfirmado"
-              [editando]="trocandoCliente || !clienteConfirmado"
-              [inativo]="somenteLeitura || !permissoesFluxo.editarCliente"
-              [showEmptyAlert]="true"
-              [control]="clienteControl"
-              [displayWith]="mostrarCliente"
-              [buscarFn]="buscarClientes"
-              [minimoCaracteres]="3"
-              emptyMessage="Nenhum cliente definido para este atendimento."
-              (salvarCliente)="confirmarClienteSelecionado()"
-              (editarCliente)="iniciarTrocaCliente()"
-              (cancelarEdicao)="cancelarTrocaCliente()"
-              (criarCliente)="onCriarCliente()">
-            </app-cliente-selector-card>
-
-            <app-itens-pedido-section
-              [titulo]="itensTitulo"
-              [itemContextoLabel]="itemContextoLabel"
-              [itens]="itensView"
-              [subtotal]="total"
-              [permitirAlterarQuantidade]="false"
-              [mostrarAcoes]="podeEditarItens"
-              [mostrarDescreverItens]="false"
-              [mostrarBuscaRapida]="true"
-              buscarProdutosLabel="Adicionar produto"
-              buscaRapidaLabel="Busca rápida"
-              (buscarProdutos)="abrirWizard()"
-              (buscaRapida)="abrirBuscaRapida()"
-              (removerItem)="remover($event)">
-            </app-itens-pedido-section>
-
-            <app-observacoes-card
-              class="observacoes-compact"
-              titulo="Observação para o cliente"
-              [control]="observacaoClienteControl"
-              [textoSalvo]="observacaoClienteSalva"
-              [salvando]="false"
-              [salvo]="observacaoClienteSalvaFlag"
-              [inativo]="somenteLeitura || !permissoesFluxo.observacoes"
-              placeholder="Texto que pode aparecer no PDF e no WhatsApp..."
-              (salvar)="confirmarObservacaoCliente()">
-            </app-observacoes-card>
-
-            <app-observacoes-card
-              class="observacoes-compact"
-              titulo="Observação interna"
-              [control]="observacaoInternaControl"
-              [textoSalvo]="observacaoInternaSalva"
-              [salvando]="false"
-              [salvo]="observacaoInternaSalvaFlag"
-              [inativo]="somenteLeitura || !permissoesFluxo.observacoes"
-              placeholder="Anotação visível somente dentro do ClickManager..."
-              (salvar)="confirmarObservacaoInterna()">
-            </app-observacoes-card>
-          </div>
-
-          <div class="summary-column">
-            <div class="summary-sticky">
-              <app-section-card [titulo]="resumoTitulo" [divider]="true" class="summary-card">
-                <div class="summary-row">
-                  <span>Subtotal</span>
-                  <strong class="value align-right">{{ resumoFinanceiroView.subtotal | currency:'BRL':'symbol':'1.2-2' }}</strong>
-                </div>
-                <form class="financial-adjustments" [formGroup]="ajustesFinanceirosForm" *ngIf="podeEditarAjustesFinanceiros; else ajustesFinanceirosLeitura">
-                  <app-input-moeda [control]="acrescimoControl" label="Acréscimos"></app-input-moeda>
-                  <app-input-moeda [control]="freteControl" label="Frete"></app-input-moeda>
-                  <app-input-moeda [control]="descontoControl" label="Descontos"></app-input-moeda>
-                  <button
-                    *ngIf="pedidoId"
-                    mat-stroked-button
-                    color="primary"
-                    type="button"
-                    class="btn-save-adjustments"
-                    [disabled]="ajustesFinanceirosForm.invalid || !ajustesFinanceirosForm.dirty || salvandoAjustesFinanceiros"
-                    (click)="salvarAjustesFinanceiros()">
-                    Salvar ajustes
-                  </button>
-                </form>
-                <ng-template #ajustesFinanceirosLeitura>
-                  <div class="summary-row">
-                    <span>Acréscimos</span>
-                    <strong class="value align-right">{{ resumoFinanceiroView.acrescimo | currency:'BRL':'symbol':'1.2-2' }}</strong>
-                  </div>
-                  <div class="summary-row">
-                    <span>Frete</span>
-                    <strong class="value align-right">{{ resumoFinanceiroView.frete | currency:'BRL':'symbol':'1.2-2' }}</strong>
-                  </div>
-                  <div class="summary-row">
-                    <span>Descontos</span>
-                    <strong class="value align-right">{{ resumoFinanceiroView.desconto | currency:'BRL':'symbol':'1.2-2' }}</strong>
-                  </div>
-                </ng-template>
-                <mat-divider class="m-t-8 m-b-8"></mat-divider>
-                <div class="summary-row total">
-                  <span>Total</span>
-                  <strong class="value highlight">{{ resumoFinanceiroView.total | currency:'BRL':'symbol':'1.2-2' }}</strong>
-                </div>
-                <div class="summary-row pago" *ngIf="tipo === 'pedidos'">
-                  <span>Pago</span>
-                  <strong class="value success">{{ resumoFinanceiroView.totalRecebido | currency:'BRL':'symbol':'1.2-2' }}</strong>
-                </div>
-                <div class="summary-row resta" *ngIf="tipo === 'pedidos'">
-                  <span>Saldo</span>
-                  <strong class="value highlight">{{ resumoFinanceiroView.saldoAberto | currency:'BRL':'symbol':'1.2-2' }}</strong>
-                </div>
-                <mat-progress-bar *ngIf="tipo === 'pedidos'" mode="determinate" [value]="percentualPagoView"></mat-progress-bar>
-                <div class="percentual" *ngIf="tipo === 'pedidos'">{{ percentualPagoView | number:'1.0-2' }}% pago</div>
-              </app-section-card>
-
-              <app-section-card titulo="Responsável" [divider]="true" class="responsavel-card">
-                <div class="responsavel-content">
-                  <mat-icon>person</mat-icon>
-                  <div>
-                    <span>Atendente</span>
-                    <strong>{{ responsavelNome }}</strong>
-                  </div>
-                </div>
-              </app-section-card>
-
-              <app-pedido-documentos-acoes
-                *ngIf="mostrarDocumentosPedido"
-                contexto="pedido"
-                (pedidoCompleto)="abrirImpressaoPedido('completo')"
-                (duasVias)="abrirImpressaoPedido('duas-vias')"
-                (etiqueta)="abrirImpressaoPedido('etiqueta')"
-                (whatsapp)="abrirWhatsAppPedido()">
-              </app-pedido-documentos-acoes>
-
-              <app-pedido-documentos-acoes
-                *ngIf="mostrarDocumentosOrcamento"
-                contexto="orcamento"
-                (pedidoCompleto)="abrirImpressaoOrcamento()"
-                (whatsapp)="abrirWhatsAppOrcamento()">
-              </app-pedido-documentos-acoes>
-
-              <app-section-card *ngIf="mostrarPagamentos" titulo="Pagamentos" [divider]="true" class="payments-card">
-                <div class="payment-entry">
-                  <form class="payment-form" [formGroup]="pagamentoForm">
-                    <app-input-options
-                      [control]="pagamentoFormaControl"
-                      label="Forma"
-                      placeholder="Selecione"
-                      [options]="formasPagamento"
-                      [showNull]="true"
-                      nullLabel="Selecione">
-                    </app-input-options>
-                    <app-input-moeda [control]="pagamentoValorControl" label="Valor"></app-input-moeda>
-                    <button mat-flat-button color="primary" type="button" [disabled]="pagamentoForm.invalid || pagamentoExcedeSaldo || salvandoPagamento || !permissoesFluxo.pagamentos" (click)="adicionarPagamento()">
-                      <mat-icon>add</mat-icon>
-                      Adicionar pagamento
-                    </button>
-                  </form>
-
-                  <div class="payment-error" *ngIf="pagamentoExcedeSaldo">
-                    Valor não pode exceder o saldo em aberto.
-                  </div>
-                </div>
-
-                <div class="payment-history">
-                  <div class="payment-context">
-                    <div>
-                      <span>Pago</span>
-                      <strong class="success">{{ resumoFinanceiroView.totalRecebido | currency:'BRL':'symbol':'1.2-2' }}</strong>
-                    </div>
-                    <div>
-                      <span>Saldo</span>
-                      <strong class="highlight">{{ resumoFinanceiroView.saldoAberto | currency:'BRL':'symbol':'1.2-2' }}</strong>
-                    </div>
-                  </div>
-
-                  <div class="payment-list" *ngIf="pagamentosView.length; else semPagamentos">
-                    <div class="payment-item" *ngFor="let pagamento of pagamentosView; let i = index" [class.cancelado]="pagamento.status === 'CANCELADO'">
-                      <div class="payment-main">
-                        <strong>{{ formaPagamentoLabel(pagamento.formaPagamento) }}</strong>
-                        <app-status-badge class="payment-status" [status]="pagamento.status"></app-status-badge>
-                      </div>
-                      <div class="payment-value">{{ pagamento.valor | currency:'BRL':'symbol':'1.2-2' }}</div>
-                      <button class="payment-cancel" mat-icon-button color="warn" type="button" matTooltip="Cancelar pagamento"
-                        *ngIf="pagamento.status !== 'CANCELADO' && permissoesFluxo.pagamentos"
-                        aria-label="Cancelar pagamento"
-                        (click)="cancelarPagamento(pagamento, i)">
-                        <mat-icon>block</mat-icon>
-                      </button>
-                    </div>
-                  </div>
-                  <ng-template #semPagamentos>
-                    <div class="empty-payments">Nenhum pagamento informado.</div>
-                  </ng-template>
-                </div>
-              </app-section-card>
-
-              <app-section-card class="submit-card" *ngIf="mostrarAcoesCriacao">
-                <div class="actions-final">
-                  <div class="required-alert" *ngIf="pendenciasSalvar.length; else prontoSalvar">
-                    <mat-icon>error_outline</mat-icon>
-                    <div>
-                        <strong>Campos obrigatórios</strong>
-                      <span>Preencha o que falta para concluir este atendimento comercial.</span>
-                    </div>
-                  </div>
-                  <ng-template #prontoSalvar>
-                    <div class="ready-alert">
-                      <mat-icon>check_circle</mat-icon>
-                      <div>
-                        <strong>{{ prontoSalvarTitulo }}</strong>
-                        <span>{{ prontoSalvarDescricao }}</span>
-                      </div>
-                    </div>
-                  </ng-template>
-
-                  <div class="checklist" *ngIf="pendenciasSalvar.length">
-                    <div class="check-item" *ngFor="let pendencia of pendenciasSalvar">
-                      <mat-icon>radio_button_unchecked</mat-icon>
-                      <span>{{ pendencia }}</span>
-                    </div>
-                  </div>
-
-                  <div class="d-flex gap-8 flex-wrap action-buttons">
-                    <button mat-stroked-button color="warn" type="button" (click)="voltar()">
-                      Cancelar
-                    </button>
-                    <ng-container *ngIf="tipo === 'rascunhos'; else acaoPrincipalUnica">
-                      <button mat-stroked-button color="primary" type="button" [disabled]="!podeConcluirRascunho || salvando" (click)="concluirRascunho('orcamentos')">
-                        Criar orçamento
-                      </button>
-                      <button mat-flat-button color="primary" type="button" [disabled]="!podeConcluirRascunho || salvando" (click)="concluirRascunho('pedidos')">
-                        Criar pedido
-                      </button>
-                    </ng-container>
-                    <ng-template #acaoPrincipalUnica>
-                      <button mat-flat-button color="primary" type="button" [disabled]="!podeSalvar || salvando" (click)="salvar()">
-                        {{ acaoSalvar }}
-                      </button>
-                    </ng-template>
-                  </div>
-                </div>
-              </app-section-card>
-            </div>
-          </div>
-        </div>
-      </form>
-    </app-page-card>
-  `,
-  styles: [`
-    .pedido-layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; align-items: start; }
-    .main-column { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
-    .summary-column { min-width: 0; }
-    .summary-sticky { position: sticky; top: 88px; display: flex; flex-direction: column; gap: 18px; }
-    .summary-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; color: #334155; }
-    .summary-row.total { font-size: 16px; }
-    .summary-row .value { white-space: nowrap; }
-    .summary-row .highlight { color: #1e40af; font-size: 18px; }
-	    .summary-row .success { color: #15803d; font-size: 18px; }
-    .orcamento-flow { display: grid; gap: 16px; }
-    .orcamento-meta-grid { display: grid; grid-template-columns: 180px repeat(2, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
-    .orcamento-meta { display: flex; min-height: 58px; flex-direction: column; justify-content: center; gap: 5px; padding: 10px 12px; border: 1px solid #dbe5f1; border-radius: 10px; background: #f8fafc; }
-    .orcamento-meta--status { align-items: flex-start; }
-    .orcamento-meta span { color: #64748b; font-size: 12px; font-weight: 700; }
-    .orcamento-meta strong { color: #0f172a; font-size: 14px; font-weight: 800; }
-    .orcamento-validade { display: grid; grid-template-columns: 220px 180px; gap: 12px; align-items: start; padding-top: 2px; }
-    .btn-save-validade { align-self: start; min-height: 40px; margin-top: 28px; border-radius: 999px; }
-    .orcamento-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 2px; }
-    .status-action { min-height: 36px; border-radius: 999px; }
-    .status-action--sent { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
-    .status-action--approve { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
-    .status-action--refuse { background: #fff7ed; border-color: #fed7aa; color: #c2410c; }
-    .status-action--cancel { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
-	    .financial-adjustments { display: grid; gap: 8px; margin: 10px 0 12px; }
-	    .btn-save-adjustments { width: 100%; min-height: 36px; border-radius: 999px; }
-	    .percentual { margin-top: 8px; color: #64748b; font-size: 12px; font-weight: 700; text-align: right; }
-	    .payment-entry { padding-bottom: 14px; border-bottom: 1px solid #e2e8f0; }
-	    .payment-form { display: grid; grid-template-columns: minmax(0, 1fr) 130px; gap: 10px; align-items: start; }
-	    .payment-form button { grid-column: 1 / -1; width: 100%; min-height: 38px; border-radius: 999px; }
-	    .payment-error { margin: 8px 0 0; color: #b91c1c; font-size: 12px; font-weight: 700; }
-	    .payment-history { padding-top: 12px; }
-	    .payment-context { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-bottom: 10px; }
-	    .payment-context div { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
-	    .payment-context span { color: #64748b; font-size: 12px; font-weight: 700; }
-	    .payment-context strong { font-size: 13px; white-space: nowrap; }
-	    .payment-context .success { color: #15803d; }
-	    .payment-context .highlight { color: #1e40af; }
-	    .payment-list { display: flex; flex-direction: column; margin-top: 0; }
-	    .payment-item { display: grid; grid-template-columns: minmax(0, 1fr) auto 32px; gap: 10px; align-items: center; min-height: 62px; padding: 10px 0; }
-	    .payment-item + .payment-item { border-top: 1px solid #e2e8f0; }
-	    .payment-main { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; min-width: 0; }
-	    .payment-main strong { display: block; color: #0f172a; font-size: 13px; font-weight: 800; line-height: 1.2; }
-	    .payment-item.cancelado { opacity: .58; }
-	    .payment-value { color: #0f172a; font-size: 15px; font-weight: 800; text-align: right; white-space: nowrap; }
-	    .payment-cancel { width: 32px; height: 32px; line-height: 32px; }
-	    .payment-cancel mat-icon { width: 18px; height: 18px; font-size: 18px; }
-	    .empty-payments { padding: 12px; border: 1px dashed #cbd5e1; border-radius: 8px; color: #64748b; font-size: 13px; text-align: center; }
-    .actions-final { display: flex; flex-direction: column; gap: 16px; }
-    .required-alert, .ready-alert { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; padding: 14px; border-radius: 10px; font-size: 13px; }
-    .required-alert { border: 1px solid #fed7aa; background: #fff7ed; color: #9a3412; }
-    .ready-alert { border: 1px solid #bbf7d0; background: #f0fdf4; color: #166534; }
-    .required-alert mat-icon, .ready-alert mat-icon { width: 20px; height: 20px; font-size: 20px; }
-    .required-alert strong, .required-alert span, .ready-alert strong, .ready-alert span { display: block; }
-    .required-alert strong, .ready-alert strong { font-weight: 800; }
-    .required-alert span, .ready-alert span { margin-top: 2px; line-height: 1.35; }
-    .checklist { display: flex; flex-direction: column; gap: 10px; color: #64748b; }
-    .check-item { display: flex; align-items: center; gap: 8px; font-size: 14px; }
-    .check-item mat-icon { width: 16px; height: 16px; font-size: 16px; color: #94a3b8; }
-    .action-buttons { justify-content: flex-end; gap: 10px; }
-    .action-buttons button { min-height: 42px; border-radius: 999px; padding: 0 20px; }
-    :host ::ng-deep .summary-card .section-card,
-    :host ::ng-deep .responsavel-card .section-card,
-    :host ::ng-deep .documents-card .section-card,
-    :host ::ng-deep .payments-card .section-card,
-    :host ::ng-deep .submit-card .section-card,
-    :host ::ng-deep app-cliente-selector-card .section-card,
-    :host ::ng-deep app-itens-pedido-section .section-card,
-	    :host ::ng-deep app-observacoes-card .section-card {
-	      border: 1px solid #e2e8f0;
-	      border-radius: 16px;
-	      box-shadow: 0 10px 30px rgba(15, 23, 42, .08);
-	    }
-	    :host ::ng-deep .payments-card app-input-options .mat-mdc-form-field,
-	    :host ::ng-deep .payments-card app-input-moeda .mat-mdc-form-field,
-	    :host ::ng-deep .summary-card app-input-moeda .mat-mdc-form-field {
-	      margin-bottom: 0;
-	    }
-	    :host ::ng-deep .payments-card app-input-options .mat-mdc-text-field-wrapper,
-	    :host ::ng-deep .payments-card app-input-moeda .mat-mdc-text-field-wrapper,
-	    :host ::ng-deep .summary-card app-input-moeda .mat-mdc-text-field-wrapper {
-	      min-height: 44px;
-	    }
-	    :host ::ng-deep .payments-card app-input-options .mat-mdc-form-field-infix,
-	    :host ::ng-deep .payments-card app-input-moeda .mat-mdc-form-field-infix,
-	    :host ::ng-deep .summary-card app-input-moeda .mat-mdc-form-field-infix {
-	      min-height: 44px;
-	      padding-top: 10px;
-	      padding-bottom: 10px;
-	    }
-	    :host ::ng-deep .payment-status .status-chip {
-	      min-height: 22px;
-	      padding: 4px 8px;
-	      gap: 4px;
-	      font-size: 10px;
-	    }
-	    :host ::ng-deep .payment-status .status-chip mat-icon {
-	      width: 13px;
-	      height: 13px;
-	      font-size: 13px;
-	    }
-	    .responsavel-content { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 10px; align-items: center; }
-	    .responsavel-content mat-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 999px; background: #eff6ff; color: #2563eb; font-size: 20px; }
-	    .responsavel-content span,
-	    .responsavel-content strong { display: block; }
-	    .responsavel-content span { color: #64748b; font-size: 12px; font-weight: 700; }
-	    .responsavel-content strong { margin-top: 2px; color: #0f172a; font-size: 14px; font-weight: 800; line-height: 1.25; }
-	    @media (max-width: 980px) {
-	      .pedido-layout { grid-template-columns: 1fr; }
-	      .summary-sticky { position: static; }
-	      .payment-form { grid-template-columns: 1fr; }
-	      .payment-context { grid-template-columns: 1fr; }
-	      .orcamento-meta-grid,
-	      .orcamento-validade { grid-template-columns: 1fr; }
-	    }
-  `],
+  templateUrl: './comercial-editor.component.html',
+  styleUrl: './comercial-editor.component.scss',
 })
-export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
-  tipo: ComercialBetaTipo = 'rascunhos';
+export class ComercialEditorComponent implements OnInit, OnDestroy {
+  tipo: ComercialTipo = 'rascunhos';
   pedidoId: number | null = null;
   itens: ComposicaoComercialResolvida['itens'] = [];
   salvando = false;
   carregando = false;
+  erroCarregamento: string | null = null;
+  acessoNegado = false;
   carregandoStatus = false;
   salvandoPagamento = false;
   salvandoAjustesFinanceiros = false;
@@ -892,7 +285,7 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
   }
 
   get contextoEditor(): {
-    contexto: ComercialBetaTipo;
+    contexto: ComercialTipo;
     modo: 'novo' | 'detalhe';
     mostrarFinanceiro: boolean;
     mostrarValidade: boolean;
@@ -927,6 +320,40 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
 
   get mostrarPagamentos(): boolean {
     return this.contextoEditor.mostrarFinanceiro;
+  }
+
+  get temRegistroCarregado(): boolean { return !!(this.pedido || this.orcamento || this.rascunho); }
+  get footerActions(): PageCardAction[] {
+    if (!this.mostrarAcoesCriacao || this.acessoNegado || this.carregando || (this.pedidoId && !this.temRegistroCarregado)) return [];
+    const cancelar: PageCardAction = { id: 'cancelar', label: 'Cancelar' };
+    if (this.tipo === 'rascunhos') return [cancelar,
+      { id: 'orcamentos', label: 'Criar orçamento', disabled: !this.podeConcluirRascunho },
+      { id: 'pedidos', label: 'Criar pedido', primary: true, disabled: !this.podeConcluirRascunho },
+    ];
+    return [cancelar, { id: 'salvar', label: this.acaoSalvar, pendingLabel: 'Salvando...', primary: true,
+      type: 'submit', form: 'comercial-editor-form', disabled: !this.podeSalvar }];
+  }
+  onFooterAction(action: string): void {
+    if (this.salvando) return;
+    if (action === 'cancelar') this.voltar();
+    else if (action === 'pedidos' || action === 'orcamentos') this.concluirRascunho(action);
+  }
+  evitarSubmitDaSecao(event: Event): void {
+    // Returning false from an Angular template handler would also cancel button activation.
+    if ((event.target as HTMLElement | null)?.tagName === 'INPUT') event.preventDefault();
+  }
+  salvarFormulario(): void {
+    if (this.tipo !== 'rascunhos' && this.mostrarAcoesCriacao && !this.salvando) this.salvar();
+  }
+  recarregar(): void {
+    if (!this.pedidoId) return;
+    if (this.tipo === 'pedidos') this.carregarPedido(this.pedidoId);
+    else if (this.tipo === 'orcamentos') this.carregarOrcamento(this.pedidoId);
+    else this.carregarRascunho(this.pedidoId);
+  }
+  private falhaCarregamento(error: any): void {
+    this.acessoNegado = error?.status === 403;
+    this.erroCarregamento = this.acessoNegado ? null : this.errorMessage(error, 'Não foi possível carregar o registro. Tente novamente.');
   }
 
   get mostrarAcoesCriacao(): boolean {
@@ -1221,6 +648,8 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
   }
 
   carregarPedido(id: number): void {
+    this.erroCarregamento = null;
+    this.acessoNegado = false;
     this.carregando = true;
     forkJoin({
       pedido: this.graficaService.buscarPedidoComercial(id),
@@ -1234,7 +663,7 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
         this.recebimentos = recebimentos?.content || [];
         this.aplicarFluxo(fluxo);
       },
-      error: (error) => this.toastr.error(this.errorMessage(error, 'Não foi possível carregar o pedido.')),
+      error: (error) => this.falhaCarregamento(error),
     });
   }
 
@@ -1264,22 +693,26 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
   }
 
   carregarOrcamento(id: number): void {
+    this.erroCarregamento = null;
+    this.acessoNegado = false;
     this.carregando = true;
     this.graficaService.buscarOrcamentoComercial(id)
       .pipe(finalize(() => this.carregando = false))
       .subscribe({
         next: (orcamento) => this.aplicarOrcamento(orcamento),
-        error: (error) => this.toastr.error(this.errorMessage(error, 'Não foi possível carregar o orçamento.')),
+        error: (error) => this.falhaCarregamento(error),
       });
   }
 
   carregarRascunho(id: number): void {
+    this.erroCarregamento = null;
+    this.acessoNegado = false;
     this.carregando = true;
     this.graficaService.buscarRascunhoComercial(id)
       .pipe(finalize(() => this.carregando = false))
       .subscribe({
         next: (rascunho) => this.aplicarRascunho(rascunho),
-        error: (error) => this.toastr.error(this.errorMessage(error, 'Não foi possível carregar o rascunho.')),
+        error: (error) => this.falhaCarregamento(error),
       });
   }
 
@@ -1507,8 +940,8 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
     this.salvarComo(this.tipo);
   }
 
-  salvarComo(destino: ComercialBetaTipo): void {
-    if (!this.podeSalvar) return;
+  salvarComo(destino: ComercialTipo): void {
+    if (!this.podeSalvar || this.salvando) return;
     const composicao = this.comercialComposicaoRequest(destino);
     if (!composicao) return;
     const { origemId, origemTipo, body } = composicao;
@@ -1531,7 +964,7 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
   }
 
   concluirRascunho(destino: 'pedidos' | 'orcamentos'): void {
-    if (this.tipo !== 'rascunhos') return;
+    if (this.tipo !== 'rascunhos' || this.salvando) return;
     if (!this.pedidoId) {
       this.salvarComo(destino);
       return;
@@ -1547,7 +980,7 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
     });
   }
 
-  private comercialComposicaoRequest(destino: ComercialBetaTipo): { origemTipo: 'PRODUTO' | 'SERVICO'; origemId: number; body: GraficaComercialComposicaoRequest } | null {
+  private comercialComposicaoRequest(destino: ComercialTipo): { origemTipo: 'PRODUTO' | 'SERVICO'; origemId: number; body: GraficaComercialComposicaoRequest } | null {
     const principalIndex = this.indiceItemPrincipalComercial();
     const primeiro = this.itens[principalIndex >= 0 ? principalIndex : 0];
     const snapshot = this.safeJson(primeiro?.snapshotComercial);
@@ -1598,12 +1031,12 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
     };
   }
 
-  private navegarAposCriacao(destino: ComercialBetaTipo, response: GraficaComercialDestinoResponse): void {
+  private navegarAposCriacao(destino: ComercialTipo, response: GraficaComercialDestinoResponse): void {
     if (response?.id && destino !== 'rascunhos') {
-      this.router.navigate(['/page/grafica/comercial-beta', destino, response.id]);
+      this.router.navigate(['/page/grafica/comercial', destino, response.id]);
       return;
     }
-    this.router.navigate(['/page/grafica/comercial-beta', destino]);
+    this.router.navigate(['/page/grafica/comercial', destino]);
   }
 
   salvarAjustesFinanceiros(): void {
@@ -1683,7 +1116,7 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
   }
 
   voltar(): void {
-    this.router.navigate(['/page/grafica/comercial-beta', this.tipo]);
+    this.router.navigate(['/page/grafica/comercial', this.tipo]);
   }
 
   buscarClientes = (termo: string): Observable<any[]> =>
@@ -1764,7 +1197,7 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
 
   onCriarCliente(): void {
     this.router.navigate(['/page/cliente/criar'], {
-      queryParams: { retorno: `/page/grafica/comercial-beta/${this.tipo}/novo` },
+      queryParams: { retorno: `/page/grafica/comercial/${this.tipo}/novo` },
     });
   }
 
@@ -1849,7 +1282,7 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (pedido) => {
           this.toastr.success('Pedido criado a partir do orçamento.');
-          this.router.navigate(['/page/grafica/comercial-beta/pedidos', pedido.pedidoId]);
+          this.router.navigate(['/page/grafica/comercial/pedidos', pedido.pedidoId]);
         },
         error: (error) => this.toastr.error(this.errorMessage(error, 'Não foi possível aprovar o orçamento.')),
       });
@@ -1869,24 +1302,24 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
   abrirImpressaoPedido(formato: 'completo' | 'duas-vias' | 'etiqueta'): void {
     if (!this.pedidoId) return;
     const comandos = formato === 'completo'
-      ? ['/page/grafica/comercial-beta/pedidos', this.pedidoId, 'impressao']
-      : ['/page/grafica/comercial-beta/pedidos', this.pedidoId, 'impressao', formato];
+      ? ['/page/grafica/comercial/pedidos', this.pedidoId, 'impressao']
+      : ['/page/grafica/comercial/pedidos', this.pedidoId, 'impressao', formato];
     this.router.navigate(comandos);
   }
 
   abrirWhatsAppPedido(): void {
     if (!this.pedidoId) return;
-    this.router.navigate(['/page/grafica/comercial-beta/pedidos', this.pedidoId, 'whatsapp']);
+    this.router.navigate(['/page/grafica/comercial/pedidos', this.pedidoId, 'whatsapp']);
   }
 
   abrirImpressaoOrcamento(): void {
     if (!this.pedidoId) return;
-    this.router.navigate(['/page/grafica/comercial-beta/orcamentos', this.pedidoId, 'impressao']);
+    this.router.navigate(['/page/grafica/comercial/orcamentos', this.pedidoId, 'impressao']);
   }
 
   abrirWhatsAppOrcamento(): void {
     if (!this.pedidoId) return;
-    this.router.navigate(['/page/grafica/comercial-beta/orcamentos', this.pedidoId, 'whatsapp']);
+    this.router.navigate(['/page/grafica/comercial/orcamentos', this.pedidoId, 'whatsapp']);
   }
 
   private safeJson(value?: string | null): any {
@@ -2126,794 +1559,8 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
   selector: 'app-grafica-produto-wizard-dialog',
   standalone: true,
   imports: [CommonModule, MaterialModule, FormsModule, ReactiveFormsModule, InputNumericoComponent],
-  template: `
-    <div class="wizard-shell">
-      <div class="dialog-header">
-        <div class="title-stack">
-          <h2 mat-dialog-title class="m-b-0">
-            <span class="title-main">Adicionar item</span>
-            <span class="title-divider">-</span>
-            <span class="title-step" aria-live="polite">{{ currentStepLabel }}</span>
-          </h2>
-        </div>
-        <button mat-icon-button mat-dialog-close aria-label="Fechar">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-      <mat-divider></mat-divider>
-
-      <mat-dialog-content class="wizard-body">
-        <mat-horizontal-stepper [linear]="true" #stepper class="wizard-stepper" (selectionChange)="onStepSelectionChange($event)">
-          <mat-step [stepControl]="produtoForm" label="Produto/Serviço e Variação">
-            <form [formGroup]="produtoForm" class="step-inner step-full produto-step">
-                    <div class="funnel-grid">
-                      <section class="funnel-column">
-                        <div class="funnel-header">
-                          <div class="rev-title">Produto ou serviço</div>
-                          <mat-form-field appearance="outline" class="funnel-search" subscriptSizing="dynamic">
-                            <input
-                              matInput
-                              type="search"
-                              placeholder="Buscar"
-                              [(ngModel)]="filtrosFunil.produto"
-                              [ngModelOptions]="{ standalone: true }"
-                              (ngModelChange)="buscarNaColunaFunil('produto', $event)" />
-                            <mat-icon matSuffix>search</mat-icon>
-                          </mat-form-field>
-                        </div>
-                        <div class="funnel-separator"></div>
-                        <div class="funnel-list">
-                          <button
-                            mat-button
-                            type="button"
-                            class="funnel-option"
-                            *ngFor="let opcao of opcoesPaginadas('produto')"
-                            [class.active]="opcao.servico ? servicoAtual?.id === opcao.servico.id : produtoNomeSelecionado === opcao.label"
-                            (click)="selecionarProdutoFunil(opcao)">
-                            <span class="funnel-option-label">
-                              <span>{{ opcao.label }}</span>
-                              <small *ngIf="opcao.servico">Serviço</small>
-                            </span>
-                            <mat-icon>chevron_right</mat-icon>
-                          </button>
-                          <div class="empty-state compact" *ngIf="carregandoFunil">
-                            <mat-icon>hourglass_empty</mat-icon>
-                            <span>Carregando itens...</span>
-                          </div>
-                          <div class="empty-state compact" *ngIf="!carregandoFunil && !opcoesFunil('produto').length">
-                            <span>Nenhum item encontrado.</span>
-                          </div>
-                        </div>
-                        <div class="funnel-separator"></div>
-                        <div class="funnel-pager">
-                          <button mat-icon-button type="button" [disabled]="!podePaginarAnterior('produto')" (click)="paginaAnteriorFunil('produto')" aria-label="Página anterior de itens">
-                            <mat-icon>chevron_left</mat-icon>
-                          </button>
-                          <span>{{ paginaAtualFunil('produto') }} / {{ totalPaginasFunil('produto') }}</span>
-                          <button mat-icon-button type="button" [disabled]="!podePaginarProxima('produto')" (click)="proximaPaginaFunil('produto')" aria-label="Próxima página de itens">
-                            <mat-icon>chevron_right</mat-icon>
-                          </button>
-                        </div>
-                      </section>
-
-                      <section class="funnel-column" *ngIf="exibeColunaMaterial">
-                        <div class="funnel-header">
-                          <div class="rev-title">Material</div>
-                          <mat-form-field appearance="outline" class="funnel-search" subscriptSizing="dynamic">
-                            <input
-                              matInput
-                              type="search"
-                              placeholder="Buscar"
-                              [(ngModel)]="filtrosFunil.material"
-                              [ngModelOptions]="{ standalone: true }"
-                              (ngModelChange)="buscarNaColunaFunil('material', $event)" />
-                            <mat-icon matSuffix>search</mat-icon>
-                          </mat-form-field>
-                        </div>
-                        <div class="funnel-separator"></div>
-                        <div class="funnel-list">
-                          <button
-                            mat-button
-                            type="button"
-                            class="funnel-option"
-                            *ngFor="let opcao of opcoesPaginadas('material')"
-                            [class.active]="materialSelecionadoId === +opcao.key"
-                            (click)="selecionarMaterialFunil(opcao)">
-                            <span>{{ opcao.label }}</span>
-                            <mat-icon>chevron_right</mat-icon>
-                          </button>
-                          <div class="empty-state compact" *ngIf="!opcoesFunil('material').length">
-                            <span>Nenhum material encontrado.</span>
-                          </div>
-                        </div>
-                        <div class="funnel-separator"></div>
-                        <div class="funnel-pager">
-                          <button mat-icon-button type="button" [disabled]="!podePaginarAnterior('material')" (click)="paginaAnteriorFunil('material')" aria-label="Página anterior de materiais">
-                            <mat-icon>chevron_left</mat-icon>
-                          </button>
-                          <span>{{ paginaAtualFunil('material') }} / {{ totalPaginasFunil('material') }}</span>
-                          <button mat-icon-button type="button" [disabled]="!podePaginarProxima('material')" (click)="proximaPaginaFunil('material')" aria-label="Próxima página de materiais">
-                            <mat-icon>chevron_right</mat-icon>
-                          </button>
-                        </div>
-                      </section>
-
-                      <section class="funnel-column" *ngIf="exibeColunaFormato">
-                        <div class="funnel-header">
-                          <div class="rev-title">Formato</div>
-                          <mat-form-field appearance="outline" class="funnel-search" subscriptSizing="dynamic">
-                            <input
-                              matInput
-                              type="search"
-                              placeholder="Buscar"
-                              [(ngModel)]="filtrosFunil.formato"
-                              [ngModelOptions]="{ standalone: true }"
-                              (ngModelChange)="buscarNaColunaFunil('formato', $event)" />
-                            <mat-icon matSuffix>search</mat-icon>
-                          </mat-form-field>
-                        </div>
-                        <div class="funnel-separator"></div>
-                        <div class="funnel-list">
-                          <button
-                            mat-button
-                            type="button"
-                            class="funnel-option"
-                            *ngFor="let opcao of opcoesPaginadas('formato')"
-                            [class.active]="formatoSelecionadoId === +opcao.key"
-                            (click)="selecionarFormatoFunil(opcao)">
-                            <span>{{ opcao.label }}</span>
-                            <mat-icon>chevron_right</mat-icon>
-                          </button>
-                          <div class="empty-state compact" *ngIf="!opcoesFunil('formato').length">
-                            <span>Nenhum formato encontrado.</span>
-                          </div>
-                        </div>
-                        <div class="funnel-separator"></div>
-                        <div class="funnel-pager">
-                          <button mat-icon-button type="button" [disabled]="!podePaginarAnterior('formato')" (click)="paginaAnteriorFunil('formato')" aria-label="Página anterior de formatos">
-                            <mat-icon>chevron_left</mat-icon>
-                          </button>
-                          <span>{{ paginaAtualFunil('formato') }} / {{ totalPaginasFunil('formato') }}</span>
-                          <button mat-icon-button type="button" [disabled]="!podePaginarProxima('formato')" (click)="proximaPaginaFunil('formato')" aria-label="Próxima página de formatos">
-                            <mat-icon>chevron_right</mat-icon>
-                          </button>
-                        </div>
-                      </section>
-
-                      <section class="funnel-column" *ngIf="exibeColunaCor">
-                        <div class="funnel-header">
-                          <div class="rev-title">Cor</div>
-                          <mat-form-field appearance="outline" class="funnel-search" subscriptSizing="dynamic">
-                            <input
-                              matInput
-                              type="search"
-                              placeholder="Buscar"
-                              [(ngModel)]="filtrosFunil.cor"
-                              [ngModelOptions]="{ standalone: true }"
-                              (ngModelChange)="buscarNaColunaFunil('cor', $event)" />
-                            <mat-icon matSuffix>search</mat-icon>
-                          </mat-form-field>
-                        </div>
-                        <div class="funnel-separator"></div>
-                        <div class="funnel-list">
-                          <button
-                            mat-button
-                            type="button"
-                            class="funnel-option"
-                            *ngFor="let opcao of opcoesPaginadas('cor')"
-                            [class.active]="corSelecionadaId === +opcao.key"
-                            (click)="selecionarCorFunil(opcao)">
-                            <span>{{ opcao.label }}</span>
-                            <mat-icon>chevron_right</mat-icon>
-                          </button>
-                          <div class="empty-state compact" *ngIf="!opcoesFunil('cor').length">
-                            <span>Nenhuma cor encontrada.</span>
-                          </div>
-                        </div>
-                        <div class="funnel-separator"></div>
-                        <div class="funnel-pager">
-                          <button mat-icon-button type="button" [disabled]="!podePaginarAnterior('cor')" (click)="paginaAnteriorFunil('cor')" aria-label="Página anterior de cores">
-                            <mat-icon>chevron_left</mat-icon>
-                          </button>
-                          <span>{{ paginaAtualFunil('cor') }} / {{ totalPaginasFunil('cor') }}</span>
-                          <button mat-icon-button type="button" [disabled]="!podePaginarProxima('cor')" (click)="proximaPaginaFunil('cor')" aria-label="Próxima página de cores">
-                            <mat-icon>chevron_right</mat-icon>
-                          </button>
-                        </div>
-                      </section>
-                    </div>
-            </form>
-          </mat-step>
-
-          <mat-step [stepControl]="quantidadeForm" label="Configurar Preço">
-            <form [formGroup]="quantidadeForm" class="step-inner step-wide price-step">
-              <div class="price-shell">
-                <section class="price-product-card">
-                  <div>
-                    <div class="rev-title">Item selecionado</div>
-                    <h3>{{ itemSelecionadoNome }}</h3>
-                    <div class="price-variation">{{ itemSelecionadoResumo }}</div>
-                  </div>
-                  <span class="price-type">{{ tipoPrecoLabel }}</span>
-                </section>
-
-                <div class="price-config-grid">
-                  <section class="price-config-card">
-                    <ng-container *ngIf="tipoPrecoAtual === 'POR_LOTE'">
-                      <h3>Escolha a quantidade</h3>
-                      <div class="lot-grid">
-                        <button
-                          type="button"
-                          class="lot-card"
-                          *ngFor="let lote of lotesPreco"
-                          [class.active]="loteSelecionado?.quantidade === lote.quantidade"
-                          (click)="selecionarLotePreco(lote)">
-                          <strong>{{ lote.quantidade | number:'1.0-0':'pt-BR' }} un</strong>
-                          <span>{{ lote.valorLote | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
-                        </button>
-                      </div>
-                      <div class="price-hint">
-                        <mat-icon>info</mat-icon>
-                        <span>Selecione um lote para continuar.</span>
-                      </div>
-                    </ng-container>
-
-                    <ng-container *ngIf="tipoPrecoAtual === 'FIXO'">
-                      <h3>Confirme a quantidade</h3>
-                      <div class="price-fixed">
-                        Valor definido: <strong>{{ politicaPrecoAtual?.valorFixo | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
-                      </div>
-                      <mat-form-field appearance="outline" *ngIf="mostraQuantidadePreco">
-                        <mat-label>Quantidade</mat-label>
-                        <input matInput type="number" min="1" formControlName="quantidade" />
-                      </mat-form-field>
-                      <button mat-flat-button color="primary" type="button" [disabled]="quantidadeForm.invalid || precificando" (click)="precificar()">
-                        {{ precificando ? 'Calculando...' : 'Confirmar preço' }}
-                      </button>
-                    </ng-container>
-
-                    <ng-container *ngIf="tipoPrecoAtual === 'POR_FAIXA_QUANTIDADE'">
-                      <div class="quantity-range-layout">
-                        <div class="quantity-entry-panel" #quantidadeWizardInputContainer>
-                          <h3>Informe a quantidade</h3>
-                          <div class="quantity-entry-row">
-                            <app-input-numerico
-                              class="quantity-input"
-                              [control]="quantidadeForm.controls.quantidade"
-                              label="Quantidade">
-                            </app-input-numerico>
-                            <button mat-flat-button color="primary" type="button" [disabled]="quantidadeForm.invalid || precificando" (click)="precificar()">
-                              {{ precificando ? 'Calculando...' : 'Calcular' }}
-                            </button>
-                          </div>
-                          <div class="quantity-keypad" aria-label="Teclado numérico da quantidade">
-                            <button type="button" *ngFor="let tecla of tecladoQuantidade" (click)="acionarTecladoQuantidade(tecla)">
-                              <mat-icon *ngIf="tecla === 'backspace'">backspace</mat-icon>
-                              <mat-icon *ngIf="tecla === 'clear'">close</mat-icon>
-                              <span *ngIf="tecla !== 'backspace' && tecla !== 'clear'">{{ tecla }}</span>
-                            </button>
-                          </div>
-                        </div>
-
-                        <div class="quantity-ranges-panel">
-                          <div class="quantity-ranges-title">
-                            <div>
-                              <strong>Faixas de preço</strong>
-                              <span>Confira a faixa aplicada pela quantidade.</span>
-                            </div>
-                            <mat-icon>table_rows</mat-icon>
-                          </div>
-                          <div class="price-ranges-panel" *ngIf="faixasPreco.length; else semFaixasPreco">
-                            <div class="price-ranges-head">
-                              <span>Faixa</span>
-                              <span>Valor unitário</span>
-                            </div>
-                            <div class="price-ranges-list">
-                              <div
-                                class="price-range-row"
-                                *ngFor="let faixa of faixasPreco"
-                                [class.active]="faixaPrecoAplicada(faixa)">
-                                <span>
-                                  {{ faixaPrecoLabel(faixa) }}
-                                  <small *ngIf="faixaPrecoAplicada(faixa)">Faixa atual</small>
-                                </span>
-                                <strong>{{ faixa.valorUnitario | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
-                              </div>
-                            </div>
-                          </div>
-                          <ng-template #semFaixasPreco>
-                            <div class="empty-state compact">
-                              <span>Nenhuma faixa cadastrada.</span>
-                            </div>
-                          </ng-template>
-                        </div>
-                      </div>
-                    </ng-container>
-
-		                    <ng-container *ngIf="tipoPrecoAtual === 'POR_METRO_QUADRADO'">
-		                      <div class="measure-layout">
-		                        <div class="measure-entry-panel">
-		                          <h3>Informe as medidas</h3>
-		                          <div class="form-grid price-inputs">
-		                            <app-input-numerico [control]="quantidadeForm.controls.largura" [label]="'Largura (' + unidadeDimensaoAtualSimbolo + ')'"></app-input-numerico>
-		                            <app-input-numerico [control]="quantidadeForm.controls.altura" [label]="'Altura (' + unidadeDimensaoAtualSimbolo + ')'"></app-input-numerico>
-		                            <app-input-numerico [control]="quantidadeForm.controls.quantidade" label="Quantidade"></app-input-numerico>
-		                          </div>
-		                          <button mat-flat-button color="primary" type="button" [disabled]="quantidadeForm.invalid || precificando" (click)="precificar()">
-		                            {{ precificando ? 'Calculando...' : 'Calcular' }}
-		                          </button>
-		                        </div>
-		                        <div class="measure-rules-panel">
-		                          <div class="measure-rules-title">
-		                            <div>
-		                              <strong>Regras da medida</strong>
-		                              <span>Valores e limites desta política.</span>
-		                            </div>
-		                            <mat-icon>straighten</mat-icon>
-		                          </div>
-		                          <div class="price-ranges-panel measure-rules-table">
-		                            <div class="price-ranges-head">
-		                              <span>Regra</span>
-		                              <span>Valor</span>
-		                            </div>
-		                            <div class="price-ranges-list">
-		                            <div class="price-range-row" *ngFor="let regra of regrasMedida">
-		                              <span>{{ regra.label }}</span>
-		                              <strong>{{ regra.value }}</strong>
-		                            </div>
-		                            </div>
-		                          </div>
-		                        </div>
-		                      </div>
-	                    </ng-container>
-
-		                    <ng-container *ngIf="tipoPrecoAtual === 'POR_METRO_LINEAR' || tipoPrecoAtual === 'METRO_LINEAR'">
-		                      <div class="measure-layout">
-		                        <div class="measure-entry-panel">
-		                          <h3>Informe a medida linear</h3>
-		                          <div class="linear-width-selector" *ngIf="largurasLinearesOptions.length">
-		                            <span>Largura ({{ unidadeDimensaoAtualSimbolo }}) *</span>
-		                            <mat-button-toggle-group
-		                              [value]="quantidadeForm.controls.largura.value"
-		                              (change)="selecionarLarguraLinear($event.value)"
-		                              aria-label="Largura linear">
-		                              <mat-button-toggle *ngFor="let largura of largurasLinearesOptions" [value]="largura">
-		                                {{ formatarMedida(largura) }} {{ unidadeDimensaoAtualSimbolo }}
-		                              </mat-button-toggle>
-		                            </mat-button-toggle-group>
-		                            <small *ngIf="quantidadeForm.controls.largura.invalid && quantidadeForm.controls.largura.touched">
-		                              {{ erroMedida('largura') }}
-		                            </small>
-		                          </div>
-		                          <div class="form-grid price-inputs">
-		                            <app-input-numerico [control]="quantidadeForm.controls.altura" [label]="'Altura (' + unidadeDimensaoAtualSimbolo + ')'"></app-input-numerico>
-		                            <app-input-numerico [control]="quantidadeForm.controls.quantidade" label="Quantidade"></app-input-numerico>
-		                          </div>
-		                          <button mat-flat-button color="primary" type="button" [disabled]="quantidadeForm.invalid || precificando" (click)="precificar()">
-		                            {{ precificando ? 'Calculando...' : 'Calcular' }}
-		                          </button>
-		                        </div>
-		                        <div class="measure-rules-panel">
-		                          <div class="measure-rules-title">
-		                            <div>
-		                              <strong>Regras da medida</strong>
-		                              <span>Valores e limites desta política.</span>
-		                            </div>
-		                            <mat-icon>straighten</mat-icon>
-		                          </div>
-		                          <div class="price-ranges-panel measure-rules-table">
-		                            <div class="price-ranges-head">
-		                              <span>Regra</span>
-		                              <span>Valor</span>
-		                            </div>
-		                            <div class="price-ranges-list">
-		                            <div class="price-range-row" *ngFor="let regra of regrasMedida">
-		                              <span>{{ regra.label }}</span>
-		                              <strong>{{ regra.value }}</strong>
-		                            </div>
-		                            </div>
-		                          </div>
-		                        </div>
-		                      </div>
-	                    </ng-container>
-
-                    <ng-container *ngIf="!tipoPrecoAtual">
-                      <div class="empty-state compact">
-                        <span>Forma de precificação não configurada.</span>
-                      </div>
-                    </ng-container>
-                  </section>
-
-                  <aside class="price-summary-card">
-                    <h3>Resumo da precificação</h3>
-                    <div class="summary-price-row">
-                      <span>Tipo</span>
-                      <strong>{{ tipoPrecoLabel }}</strong>
-                    </div>
-                    <div class="summary-price-row" *ngIf="preco?.quantidadeSolicitada">
-                      <span>Quantidade</span>
-                      <strong>{{ preco?.quantidadeSolicitada | number:'1.0-3':'pt-BR' }}</strong>
-                    </div>
-                    <div class="summary-price-row" *ngIf="preco?.valorUnitario !== null && preco?.valorUnitario !== undefined">
-                      <span>Valor unitário</span>
-                      <strong>{{ preco?.valorUnitario | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
-                    </div>
-                    <div class="summary-price-row" *ngIf="preco?.areaFaturada">
-                      <span>{{ medidaFaturadaLabel }}</span>
-                      <strong>{{ preco?.areaFaturada | number:'1.2-2':'pt-BR' }} {{ medidaFaturadaUnidade }}</strong>
-                    </div>
-                    <div class="summary-price-total" *ngIf="preco?.valorTotal !== null && preco?.valorTotal !== undefined">
-                      <span>Total</span>
-                      <strong>{{ preco?.valorTotal | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
-                    </div>
-                    <div class="summary-rule" *ngIf="preco?.regraAplicadaNome">
-                      <mat-icon>verified_user</mat-icon>
-                      <span>Regra aplicada: {{ preco?.regraAplicadaNome }}</span>
-                    </div>
-                  </aside>
-                </div>
-              </div>
-            </form>
-          </mat-step>
-
-          <mat-step label="Acabamentos" [optional]="!possuiAdicionaisDisponiveis" [completed]="!possuiAdicionaisDisponiveis">
-            <div class="step-inner step-wide services-step">
-              <div class="services-shell">
-                <section class="price-product-card">
-                  <div>
-                    <div class="rev-title">Item selecionado</div>
-                    <h3>{{ itemSelecionadoNome }}</h3>
-                    <div class="price-variation">{{ itemSelecionadoResumo }}</div>
-                  </div>
-                  <span class="price-type">{{ tipoPrecoLabel }}</span>
-                </section>
-
-                <div class="services-grid">
-                  <section class="services-card">
-                    <div class="services-card-head">
-                      <h3>Acabamentos disponíveis</h3>
-                      <span>{{ produtoSelecionado?.acabamentos?.length || 0 }}</span>
-                    </div>
-                    <div class="services-list" *ngIf="produtoSelecionado?.acabamentos?.length; else semAcabamentosServicos">
-                      <label class="opt-card service-option" *ngFor="let acabamento of produtoSelecionado?.acabamentos">
-                        <mat-checkbox
-                          class="opt-check"
-                          [checked]="acabamentoSelecionado(acabamento.id)"
-                          (change)="alternarAcabamento(acabamento.id, $event.checked)">
-                        </mat-checkbox>
-                        <span>
-                          <span class="opt-name">{{ acabamento.nome }}</span>
-                          <span class="opt-desc">{{ acabamento.descricao || 'Acabamento gráfico' }}</span>
-                        </span>
-                        <span class="opt-price">{{ precoResumoAdicional(acabamento) }}</span>
-                      </label>
-                    </div>
-                    <ng-template #semAcabamentosServicos>
-                      <div class="empty-state compact">
-                        <span>Sem acabamentos disponíveis.</span>
-                      </div>
-                    </ng-template>
-                  </section>
-
-                </div>
-              </div>
-            </div>
-          </mat-step>
-
-          <mat-step label="Revisão">
-            <div class="step-inner step-wide review-step">
-              <div class="review-shell" *ngIf="composicao; else semComposicao">
-                <section class="price-product-card">
-                  <div>
-                    <div class="rev-title">Item selecionado</div>
-                    <h3>{{ itemSelecionadoNome }}</h3>
-                    <div class="price-variation">{{ itemSelecionadoResumo }}</div>
-                  </div>
-                  <span class="price-type">{{ tipoPrecoLabel }}</span>
-                </section>
-
-                <div class="review-grid">
-                  <section class="review-card review-items-card">
-                    <h3>Itens da composição</h3>
-                    <div class="rev-table">
-                      <div class="rev-row rev-head">
-                        <span>Item</span>
-                        <span class="text-center">Qtd</span>
-                        <span class="text-right">Total</span>
-                      </div>
-                      <div class="rev-row" *ngFor="let item of itensRevisao">
-                        <span>
-                          <strong class="rev-item">{{ item.nomeProduto }}</strong>
-                          <small>{{ item.unidadeVenda || 'un' }}</small>
-                        </span>
-                        <span class="text-center">{{ item.quantidade | number:'1.0-3':'pt-BR' }}</span>
-                        <span class="text-right">{{ item.valorTotal | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
-                      </div>
-                    </div>
-                    <div class="review-actions">
-                      <button mat-stroked-button color="primary" type="button" (click)="adicionarMaisItens()">
-                        <mat-icon>add</mat-icon>
-                        <span>Adicionar mais itens</span>
-                      </button>
-                    </div>
-
-                  </section>
-
-                  <aside class="price-summary-card">
-                    <h3>Resumo</h3>
-                    <div class="summary-price-row">
-                      <span>Quantidade</span>
-                      <strong>{{ preco?.quantidadeSolicitada || quantidadeForm.value.quantidade || 1 }}</strong>
-                    </div>
-                    <div class="summary-price-row" *ngIf="preco?.valorUnitario !== null && preco?.valorUnitario !== undefined">
-                      <span>Valor unitário</span>
-                      <strong>{{ preco?.valorUnitario | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
-                    </div>
-                    <div class="summary-price-total">
-                      <span>Total</span>
-                      <strong>{{ totalComposicao | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
-                    </div>
-                  </aside>
-                </div>
-              </div>
-              <ng-template #semComposicao>
-                <div class="empty-state">
-                  <mat-icon>{{ precificando ? 'hourglass_empty' : 'receipt_long' }}</mat-icon>
-                  <span>{{ precificando ? 'Gerando revisão...' : 'Não foi possível gerar a revisão.' }}</span>
-                </div>
-              </ng-template>
-            </div>
-          </mat-step>
-        </mat-horizontal-stepper>
-      </mat-dialog-content>
-
-      <div class="wizard-footer">
-        <button mat-flat-button color="accent" type="button" [disabled]="isFirstStep" (click)="voltarStep()">
-          Voltar
-        </button>
-        <div class="right">
-          <button mat-stroked-button color="primary" type="button" mat-dialog-close>Cancelar</button>
-          <button mat-flat-button color="primary" class="primary-action" type="button" [disabled]="nextDisabled" (click)="avancarStep()">
-            <span>{{ nextLabel }}</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  `,
-  styles: [`
-    :host { display: block; height: 100%; min-height: 0; }
-    :host ::ng-deep .mat-mdc-dialog-content { max-height: initial !important; padding: 0 !important; }
-    .wizard-shell { display: flex; flex-direction: column; height: 100%; min-height: 0; background: #fff; }
-    .dialog-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px 8px; gap: 12px; }
-    .title-stack h2 { font-size: 20px; line-height: 1.3; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .title-main { font-weight: 600; }
-    .title-divider { color: #6b7280; font-weight: 500; }
-    .title-step { font-weight: 700; color: var(--mdc-theme-primary, #1976d2); }
-    .wizard-body { flex: 1 1 auto; min-height: 0; overflow: auto; background: #fff; }
-    .wizard-stepper { display: flex; flex-direction: column; height: 100%; min-height: 0; background: #fff; }
-    .wizard-stepper ::ng-deep .mat-horizontal-stepper-wrapper { flex: 1 1 auto; width: 100%; height: 100%; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-    .wizard-stepper ::ng-deep .mat-horizontal-stepper-header-container { position: sticky; top: 0; z-index: 2; background: #fff; padding: 18px 40px 14px; }
-    .wizard-stepper ::ng-deep .mat-horizontal-stepper-header { height: 56px; }
-    .wizard-stepper ::ng-deep .mat-horizontal-content-container { flex: 1 1 auto; width: 100%; min-height: 0; display: flex; padding: 0; }
-    .wizard-stepper ::ng-deep .mat-horizontal-stepper-content[aria-expanded='true'] { flex: 1 1 auto; width: 100%; min-width: 0; min-height: 0; display: flex; }
-    .wizard-footer { position: sticky; bottom: 0; z-index: 3; background: #fff; border-top: 1px solid rgba(0, 0, 0, .06); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-    .wizard-footer .right { display: flex; gap: 10px; }
-    .primary-action { display: inline-flex; align-items: center; gap: 8px; }
-    .step-inner { width: 100%; max-width: 1200px; box-sizing: border-box; margin: 0 auto; padding: 12px 40px 16px; }
-    .step-wide { max-width: 1400px; }
-    .step-full { max-width: none; }
-    .produto-step { flex: 1 1 auto; width: 100%; max-width: none; min-height: 0; display: flex; flex-direction: column; }
-    .compact-list, .option-list { display: flex; flex-direction: column; gap: 8px; }
-    .sku-result, .option-button { width: 100%; justify-content: space-between; min-height: 50px; text-align: left; border-radius: 8px; color: #0f172a; border: 1px solid rgba(0, 0, 0, .06); padding: 6px 12px; }
-    .sku-result span, .sku-result strong, .sku-result small { display: block; min-width: 0; }
-    .sku-result strong, .option-button { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .sku-result small { color: #6b7280; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .sku-result.active, .option-button.active { background: #e8f2ff; color: var(--mdc-theme-primary, #1976d2); font-weight: 700; }
-    .select-action { color: var(--mdc-theme-primary, #1976d2); font-weight: 700; flex: 0 0 auto; }
-    .breadcrumb-line { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-bottom: 16px; }
-    .breadcrumb-line button { min-width: 0; padding: 0 8px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .breadcrumb-line button::after { content: '>'; color: #94a3b8; margin-left: 10px; }
-    .breadcrumb-line button:last-child::after { content: ''; margin: 0; }
-    .section-intro { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
-    .section-intro h3, .resolved-product h3 { margin: 4px 0 0; font-size: 20px; overflow-wrap: anywhere; }
-    .resolved-product { display: grid; grid-template-columns: auto 1fr; gap: 12px; padding: 18px; border: 1px solid #bfdbfe; border-radius: 10px; background: #eff6ff; }
-    .resolved-product mat-icon { color: #0f766e; }
-    .resolved-product p { margin: 4px 0; color: #475569; overflow-wrap: anywhere; }
-    .resolved-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
-    .funnel-grid { flex: 0 0 auto; width: min(1640px, calc(100vw - 184px)); max-width: 100%; min-width: 0; height: clamp(560px, calc(100dvh - 360px), 640px); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px; align-items: stretch; }
-    .funnel-column { width: 100%; height: 100%; min-width: 0; min-height: 0; overflow: hidden; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto auto; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
-    .funnel-header { min-width: 0; padding: 12px 14px 10px; }
-    .funnel-search { width: 100%; max-width: 100%; margin-top: 10px; font-size: 13px; }
-    .funnel-search ::ng-deep .mat-mdc-form-field-infix { min-height: 36px; padding-top: 7px; padding-bottom: 7px; }
-    .funnel-search ::ng-deep .mat-mdc-form-field-flex { min-width: 0; }
-    .funnel-search ::ng-deep .mat-mdc-text-field-wrapper { background: #fff; }
-    .funnel-search ::ng-deep .mat-mdc-form-field-icon-suffix { color: #64748b; }
-    .funnel-separator { height: 1px; background: #e2e8f0; }
-    .funnel-list { min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 10px; }
-    .funnel-option { width: 100%; min-height: 38px; justify-content: space-between; text-align: left; border-radius: 6px; border: 1px solid transparent; color: #0f172a; cursor: pointer; }
-    .funnel-option ::ng-deep .mdc-button__label { width: 100%; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-    .funnel-option span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .funnel-option-label { display: inline-flex; align-items: center; gap: 8px; }
-    .funnel-option-label small { flex: 0 0 auto; padding: 2px 7px; border-radius: 999px; background: #eef2ff; color: #475569; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-    .funnel-option.active .funnel-option-label small { background: #dbeafe; color: var(--mdc-theme-primary, #1976d2); }
-    .funnel-option mat-icon { order: 2; flex: 0 0 auto; width: 18px; height: 18px; font-size: 18px; color: #94a3b8; }
-    .funnel-option:hover { background: #f8fafc; border-color: #cbd5e1; }
-    .funnel-option.active { background: #e8f2ff; border-color: #93c5fd; color: var(--mdc-theme-primary, #1976d2); font-weight: 700; }
-    .funnel-option.active mat-icon { color: var(--mdc-theme-primary, #1976d2); }
-    .funnel-pager { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 4px 8px; color: #475569; font-weight: 700; }
-    .funnel-pager button { width: 32px; height: 32px; padding: 0; }
-    .funnel-pager span { min-width: 46px; text-align: center; font-size: 13px; }
-    .wizard-search { width: 100%; }
-    .produto-table-card, .selected-panel, .review-card, .price-card, .price-box, .var-card { border: 1px solid rgba(0, 0, 0, .08); border-radius: 10px; background: #fff; }
-    .produto-table-card { overflow: hidden; }
-    .produto-table { width: 100%; border-collapse: collapse; }
-    .produto-table th { text-align: left; font-weight: 700; background: #f8fafc; padding: 14px 18px; border-bottom: 1px solid rgba(0, 0, 0, .06); }
-    .produto-table td { padding: 14px 18px; border-bottom: 1px solid rgba(0, 0, 0, .06); vertical-align: middle; }
-    .produto-table tr { cursor: pointer; }
-    .produto-table tr.selected, .produto-table tr:hover { background: #f8fafc; }
-    .produto-table td span { color: #6b7280; margin-left: 4px; }
-    .select-col { width: 120px; text-align: center !important; }
-    .empty-cell { text-align: center; color: #6b7280; cursor: default; }
-    .selected-panel { padding: 28px 32px; box-shadow: 0 8px 20px rgba(15, 23, 42, .04); }
-    .selected-panel h3 { margin: 8px 0; font-size: 18px; }
-    .selected-panel p { color: #6b7280; margin: 8px 0 18px; }
-    .summary-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
-    .var-grid { display: grid; gap: 16px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .sec-title { font-weight: 700; margin-bottom: 8px; font-size: 13px; text-transform: uppercase; color: #64748b; }
-    .radio-col { display: flex; flex-direction: column; gap: 10px; }
-    .selected-variation { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid #bfdbfe; border-radius: 10px; background: #eff6ff; margin-top: 16px; }
-    .selected-variation span, .selected-variation strong { display: block; }
-    .opt-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
-    .opt-card { display: grid; align-items: start; grid-template-columns: auto 1fr auto; gap: 12px; padding: 12px 14px; border: 1px solid rgba(0, 0, 0, .08); border-radius: 10px; cursor: pointer; background: #fff; }
-    .opt-card:hover { border-color: #cfd8dc; box-shadow: 0 2px 10px rgba(0, 0, 0, .06); }
-    .opt-check { margin-top: 2px; }
-    .opt-name { display: block; font-weight: 700; line-height: 1.2; }
-    .opt-desc { display: block; font-size: 12px; color: #6b7280; margin-top: 2px; }
-    .opt-price { font-weight: 700; white-space: nowrap; align-self: center; }
-    .price-step, .services-step, .review-step { max-width: none; padding: 20px 40px 12px; }
-    .price-shell, .services-shell, .review-shell { width: min(1640px, calc(100vw - 184px)); max-width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
-    .price-product-card { display: flex; align-items: center; justify-content: space-between; gap: 18px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 18px 28px; background: #fff; }
-    .price-product-card h3 { margin: 4px 0; font-size: 21px; line-height: 1.2; }
-    .price-variation { color: #64748b; font-size: 13px; }
-    .price-type { flex: 0 0 auto; border-radius: 999px; background: #e8f2ff; color: var(--mdc-theme-primary, #1976d2); padding: 7px 12px; font-size: 12px; font-weight: 700; text-transform: uppercase; }
-    .price-config-grid { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 430px; gap: 16px; align-items: stretch; }
-    .price-config-card, .price-summary-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; background: #fff; }
-    .price-config-card { min-height: 330px; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; overflow: hidden; }
-    .price-config-card h3, .price-summary-card h3 { margin: 0 0 10px; font-size: 18px; line-height: 1.3; }
-    .price-inputs { align-items: start; }
-    .lot-grid { width: 100%; display: grid; grid-template-columns: repeat(4, minmax(170px, 1fr)); gap: 18px; }
-    .lot-card { min-height: 104px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; color: #0f172a; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; font: inherit; }
-    .lot-card strong { font-size: 18px; }
-    .lot-card span { font-size: 20px; font-weight: 700; }
-    .lot-card:hover, .lot-card.active { background: #e8f2ff; border-color: #93c5fd; color: var(--mdc-theme-primary, #1976d2); }
-	    .price-hint { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 13px; }
-	    .price-hint mat-icon { width: 18px; height: 18px; font-size: 18px; }
-			    .measure-layout { width: 100%; display: grid; grid-template-columns: minmax(390px, 480px) minmax(0, 1fr); gap: 24px; align-items: stretch; }
-			    .measure-entry-panel { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
-			    .measure-rules-panel { min-width: 0; border-left: 1px solid #edf2f7; padding-left: 24px; display: flex; flex-direction: column; gap: 10px; }
-			    .measure-rules-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-			    .measure-rules-title strong, .measure-rules-title span { display: block; }
-			    .measure-rules-title strong { color: #0f172a; font-size: 16px; line-height: 1.3; }
-			    .measure-rules-title span { color: #64748b; font-size: 12px; margin-top: 3px; }
-			    .measure-rules-title mat-icon { flex: 0 0 auto; width: 20px; height: 20px; font-size: 20px; color: #64748b; }
-			    .measure-rules-table .price-ranges-list { max-height: none; }
-			    .measure-rules-table .price-range-row strong { white-space: normal; text-align: right; overflow-wrap: anywhere; }
-          .linear-width-selector { width: 100%; display: flex; flex-direction: column; gap: 8px; }
-          .linear-width-selector > span { color: #0f172a; font-size: 14px; font-weight: 600; }
-          .linear-width-selector small { color: #c2410c; font-size: 12px; font-weight: 600; }
-          .linear-width-selector mat-button-toggle-group { width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); border: 1px solid #dbe5f0; border-radius: 8px; overflow: hidden; }
-          .linear-width-selector mat-button-toggle { min-height: 42px; border-left: 1px solid #dbe5f0; color: #334155; font-weight: 600; }
-          .linear-width-selector mat-button-toggle:first-child { border-left: 0; }
-          .linear-width-selector ::ng-deep .mat-button-toggle-checked { background: #e8f2ff; color: var(--mdc-theme-primary, #1976d2); }
-          .linear-width-selector ::ng-deep .mat-button-toggle-button { height: 100%; }
-	    .price-fixed { font-size: 16px; }
-    .quantity-range-layout { width: 100%; display: grid; grid-template-columns: minmax(390px, 480px) minmax(0, 1fr); gap: 24px; align-items: stretch; }
-    .quantity-entry-panel { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
-    .quantity-entry-row { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: end; }
-    .quantity-input { min-width: 0; }
-    .quantity-input ::ng-deep .mat-mdc-form-field-subscript-wrapper { display: none; }
-    .quantity-entry-row button { min-height: 48px; padding: 0 24px; border-radius: 999px; }
-    .quantity-keypad { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 2px; }
-    .quantity-keypad button { min-height: 44px; border: 1px solid #dbe5f0; border-radius: 8px; background: #f8fafc; color: #0f172a; font: inherit; font-size: 18px; font-weight: 700; cursor: pointer; }
-    .quantity-keypad button:hover { border-color: #93c5fd; background: #e8f2ff; color: var(--mdc-theme-primary, #1976d2); }
-    .quantity-keypad mat-icon { width: 22px; height: 22px; font-size: 22px; }
-    .quantity-ranges-panel { min-height: 220px; border-left: 1px solid #edf2f7; padding-left: 24px; display: flex; flex-direction: column; gap: 10px; }
-    .quantity-ranges-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-    .quantity-ranges-title strong, .quantity-ranges-title span { display: block; }
-    .quantity-ranges-title strong { color: #0f172a; font-size: 16px; line-height: 1.3; }
-    .quantity-ranges-title span { color: #64748b; font-size: 12px; margin-top: 3px; }
-    .quantity-ranges-title mat-icon { flex: 0 0 auto; width: 20px; height: 20px; font-size: 20px; color: #64748b; }
-    .price-ranges-panel { width: 100%; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background: #fff; }
-    .price-ranges-head, .price-range-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; }
-    .price-ranges-head { padding: 9px 14px; background: #f8fafc; color: #64748b; font-size: 12px; font-weight: 700; text-transform: uppercase; }
-    .price-ranges-list { max-height: 196px; overflow: auto; }
-    .price-range-row { min-height: 39px; padding: 8px 14px; border-top: 1px solid #edf2f7; color: #334155; }
-    .price-range-row strong { color: #0f172a; white-space: nowrap; }
-    .price-range-row small { display: inline-flex; margin-left: 8px; padding: 3px 8px; border-radius: 999px; background: #e8f2ff; color: var(--mdc-theme-primary, #1976d2); font-size: 11px; font-weight: 700; }
-    .price-range-row.active { background: #f4f8ff; }
-    .price-summary-card { display: flex; flex-direction: column; gap: 16px; }
-    .summary-price-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; color: #475569; }
-    .summary-price-row strong { color: #0f172a; }
-    .summary-price-total { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 4px; padding: 16px; border-radius: 6px; background: #e8f2ff; color: var(--mdc-theme-primary, #1976d2); font-size: 18px; font-weight: 700; }
-    .summary-rule { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 13px; }
-    .summary-rule mat-icon { width: 20px; height: 20px; font-size: 20px; }
-    .services-grid { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
-    .services-card { min-height: 430px; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px; background: #fff; }
-    .services-card-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
-    .services-card-head h3 { margin: 0; font-size: 18px; line-height: 1.3; }
-    .services-card-head span { flex: 0 0 auto; min-width: 34px; height: 26px; padding: 0 10px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: #e8f2ff; color: var(--mdc-theme-primary, #1976d2); font-size: 12px; font-weight: 700; }
-    .services-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
-    .service-option { min-height: 86px; align-items: center; }
-    .service-option .opt-desc { font-size: 13px; line-height: 1.35; }
-    .review-grid { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 430px; gap: 16px; align-items: start; }
-    .review-items-card { min-height: 330px; padding: 28px; }
-    .review-items-card h3 { margin: 0 0 16px; font-size: 18px; line-height: 1.3; }
-    .review-actions { display: flex; justify-content: flex-end; margin-top: 16px; }
-    .review-actions button { display: inline-flex; align-items: center; gap: 8px; }
-    .review-actions mat-icon { width: 18px; height: 18px; font-size: 18px; }
-    .review-addons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 18px; }
-    .review-addons h4 { margin: 0 0 10px; font-size: 15px; line-height: 1.3; }
-    .addon-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 58px; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; }
-    .addon-row span, .addon-row strong, .addon-row small { min-width: 0; }
-    .addon-row span { display: block; }
-    .addon-row > strong { flex: 0 0 auto; white-space: nowrap; color: #0f172a; }
-    .addon-row small { display: block; color: #64748b; font-size: 12px; margin-top: 2px; overflow-wrap: anywhere; }
-    .price-layout { display: grid; grid-template-columns: minmax(0, 1fr) 520px; gap: 16px; align-items: start; }
-    .price-card mat-card-content { display: flex; flex-direction: column; gap: 12px; }
-    .price-card h3, .review h3 { margin: 0; font-size: 20px; }
-    .price-card p { margin: 0 0 12px; color: #475569; }
-    .form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-    .price-box { display: grid; grid-template-columns: auto 1fr; gap: 12px; padding: 28px; border-color: #dbeafe; }
-    .price-box mat-icon { border-radius: 8px; background: #eef2ff; color: #0f172a; padding: 10px; width: 44px; height: 44px; }
-    .price-box.ready mat-icon { color: #0f172a; }
-    .price-box strong, .price-box span { display: block; }
-    .price-box > div > span { color: #6b7280; margin-top: 4px; }
-    .price-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 28px; margin-top: 24px; text-transform: uppercase; }
-    .price-summary span { color: #6b7280; font-size: 12px; }
-    .price-summary strong { text-transform: none; }
-    .empty-state { display: flex; align-items: center; gap: 12px; min-height: 66px; padding: 20px; border: 1px dashed #cbd5e1; border-radius: 10px; color: #6b7280; background: #fff; }
-    .empty-state.compact { min-height: auto; padding: 12px 16px; }
-    .review { display: flex; flex-direction: column; gap: 16px; }
-    .review-card { padding: 14px 16px; }
-    .rev-header { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .rev-title { font-size: 12px; text-transform: uppercase; color: #64748b; font-weight: 700; }
-    .rev-value { font-weight: 700; }
-    .rev-subtle { font-size: 12px; color: #6b7280; margin-top: 2px; }
-    .rev-chipline { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
-    .rev-chip { padding: 4px 10px; border-radius: 999px; background: #f1f5f9; font-size: 12px; font-weight: 700; }
-    .rev-table { width: 100%; border: 1px solid rgba(0, 0, 0, .06); border-radius: 10px; overflow: hidden; margin-top: 12px; }
-    .rev-row { display: grid; grid-template-columns: 1fr 140px 160px; gap: 12px; padding: 10px 12px; border-top: 1px solid rgba(0, 0, 0, .06); }
-    .rev-row:first-child { border-top: 0; }
-    .rev-head { background: #f8fafc; font-weight: 700; }
-    .rev-item { display: block; font-weight: 700; }
-    .text-center { text-align: center; }
-    .text-right { text-align: right; }
-	    @media (max-width: 1100px) {
-	      .price-layout { grid-template-columns: 1fr; }
-	      .price-config-grid, .services-grid, .review-grid { grid-template-columns: 1fr; }
-	      .measure-layout { grid-template-columns: 1fr; }
-	      .measure-rules-panel { border-left: 0; border-top: 1px solid #edf2f7; padding-left: 0; padding-top: 18px; }
-	      .review-addons { grid-template-columns: 1fr; }
-	      .var-grid { grid-template-columns: 1fr; }
-	      .funnel-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-    @media (max-width: 720px) {
-      .form-grid, .rev-header { grid-template-columns: 1fr; }
-      .step-inner { padding: 16px; }
-      .wizard-stepper ::ng-deep .mat-horizontal-stepper-header-container { padding: 8px 16px 0; }
-      .price-step, .services-step, .review-step { padding: 16px; }
-      .price-product-card { align-items: flex-start; flex-direction: column; padding: 18px; }
-      .quantity-range-layout { grid-template-columns: 1fr; }
-      .quantity-entry-row { grid-template-columns: 1fr; }
-      .quantity-ranges-panel { border-left: 0; border-top: 1px solid #edf2f7; padding-left: 0; padding-top: 18px; }
-      .lot-grid, .services-list { grid-template-columns: 1fr; }
-      .funnel-grid { grid-template-columns: 1fr; }
-      .funnel-column { min-height: 360px; grid-template-rows: auto auto minmax(0, 1fr) auto auto; }
-      .wizard-footer { align-items: stretch; }
-      .wizard-footer .right { flex: 1; justify-content: flex-end; }
-      .resolved-actions button { flex: 1 1 180px; }
-    }
-  `],
+  templateUrl: './grafica-produto-wizard-dialog.component.html',
+  styleUrl: './grafica-produto-wizard-dialog.component.scss',
 })
 export class GraficaProdutoWizardDialogComponent implements OnInit {
   @ViewChild('stepper') stepper?: MatStepper;

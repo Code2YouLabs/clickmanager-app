@@ -210,8 +210,10 @@ export class GraficaProdutoService {
     return this.api.post<GraficaComercialDestinoResponse>(`${this.graficaEndpoint}/comercial-beta/servicos/${servicoId}/orcamentos`, body);
   }
 
-  listarRascunhosComerciais(page = 0, size = 20): Observable<GraficaPagina<RascunhoComercialResponse>> {
-    return this.api.get<GraficaPagina<RascunhoComercialResponse>>('api/comercial/rascunhos', new HttpParams().set('page', page).set('size', size));
+  listarRascunhosComerciais(page = 0, size = 20, status?: string | null): Observable<GraficaPagina<RascunhoComercialResponse>> {
+    let params = new HttpParams().set('page', page).set('size', size);
+    if (status) params = params.set('status', status);
+    return this.api.get<GraficaPagina<RascunhoComercialResponse>>('api/comercial/rascunhos', params);
   }
 
   buscarRascunhoComercial(id: number): Observable<RascunhoComercialResponse> {

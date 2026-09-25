@@ -1,24 +1,112 @@
+@if (presentation === "section") {
+@if (search.enabled || filters.length || hasCustomFilters) {
+<app-section-card
+  class="data-table-toolbar-card"
+  [class.data-table-toolbar-card--compact]="!hasActiveFilters && !filtersExpanded"
+  [class.data-table-toolbar-card--collapsed]="!filtersExpanded"
+  [class.data-table-toolbar-card--has-active]="hasActiveFilters"
+  [title]="toolbarTitle">
+  <div class="data-table-toolbar">
+    @if (search.enabled) {
+    <div class="data-table-toolbar__section data-table-toolbar__section--search">
+      <app-input-pesquisa class="data-table-toolbar__search"
+        [compact]="true" [showLabel]="false" [trim]="true"
+        [placeholder]="search.placeholder || 'Pesquisar'" [value]="search.value || ''"
+        [pesquisaControl]="searchControl" [debounceMs]="search.debounceMs ?? 300"
+        (valorAlterado)="onSearchChange($event)"></app-input-pesquisa>
+
+      <div class="data-table-toolbar__actions">
+        <ng-content select="[list-filter-actions]"></ng-content>
+      </div>
+    </div>
+    }
+
+    @if (filters.length || hasCustomFilters) {
+    <div class="data-table-toolbar__section">
+      <div class="data-table-toolbar__filters-header">
+        <button
+          mat-button
+          type="button"
+          class="data-table-toolbar__filter-toggle f-w-700"
+          [attr.aria-expanded]="filtersExpanded"
+          (click)="toggleFilters()">
+          <mat-icon>{{ filtersExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+          {{ filtersLabel }}{{ activeFilterCount ? ' (' + activeFilterCount + ')' : '' }}
+        </button>
+
+        @if (hasActiveFilters) {
+          <button mat-button type="button" color="primary" class="data-table-toolbar__clear" (click)="onClearFilters()">
+            <mat-icon>filter_alt_off</mat-icon>
+            {{ clearFiltersLabel }}
+          </button>
+        }
+      </div>
+
+      @if (activeFilterChips.length) {
+      <mat-chip-set class="data-table-toolbar__chips" aria-label="Filtros aplicados">
+        @for (chip of activeFilterChips; track chip.filterKey + '-' + chip.value) {
+        <mat-chip-row class="bg-light" (removed)="onRemoveFilterChip(chip)">
+          <span class="data-table-toolbar__chip-label">{{ chip.filterLabel }}:</span>
+          {{ chip.optionLabel }}
+          <button matChipRemove type="button" [attr.aria-label]="'Remover filtro ' + chip.filterLabel + ': ' + chip.optionLabel">
+            <mat-icon>cancel</mat-icon>
+          </button>
+        </mat-chip-row>
+        }
+      </mat-chip-set>
+      }
+
+      <mat-accordion class="data-table-toolbar__accordion">
+        <mat-expansion-panel
+          class="data-table-toolbar__panel"
+          hideToggle
+          [expanded]="filtersExpanded">
+          <div class="data-table-toolbar__filters" [attr.aria-label]="filtersLabel">
+            <ng-container [ngTemplateOutlet]="customFilters"></ng-container>
+            @for (filter of definitions; track filter.key) {
+              <mat-form-field appearance="outline" class="data-table-toolbar__filter" [style.flex-basis]="filterWidth(filter)">
+                <mat-label>{{ filter.label }}</mat-label>
+                <mat-select
+                  [multiple]="isMultiSelectFilter(filter)"
+                  [value]="selectedFilterValue(filter)"
+                  (selectionChange)="onFilterValueChange(filter.key, $event.value)">
+                  @if (filter.type === 'select') {
+                    <mat-option [value]="null">Todos</mat-option>
+                  }
+                  @for (option of filter.options; track option.value) {
+                    <mat-option [value]="option.value" [disabled]="option.disabled">{{ option.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            }
+          </div>
+        </mat-expansion-panel>
+      </mat-accordion>
+    </div>
+    }
+  </div>
+</app-section-card>
+}
+
+} @else {
 <div class="list-filter-bar">
   <div class="list-filter-bar__search">
-    <app-input-pesquisa
-      [placeholder]="placeholder"
-      [value]="searchValue"
-      [showLabel]="showSearchLabel"
-      (valorAlterado)="onSearchChange($event)">
-    </app-input-pesquisa>
+    <app-input-pesquisa [placeholder]="placeholder" [value]="searchValue" [showLabel]="showSearchLabel"
+      [debounceMs]="search.debounceMs ?? 400" (valorAlterado)="onSearchChange($event)"></app-input-pesquisa>
   </div>
-
-  <mat-form-field appearance="outline" *ngFor="let filter of filters; trackBy: trackByFilter">
-    <mat-label>{{ filter.label }}</mat-label>
-    <mat-select [value]="filter.value" (selectionChange)="onFilterChange(filter.key, $event.value)">
-      <mat-option *ngFor="let option of filter.options; trackBy: trackByOption" [value]="option.value">
-        {{ option.label }}
-      </mat-option>
-    </mat-select>
-  </mat-form-field>
-
-  <button mat-stroked-button type="button" (click)="clear.emit()" *ngIf="showClear">
-    <mat-icon>filter_alt_off</mat-icon>
-    Limpar
-  </button>
+  @for (filter of definitions; track filter.key) {
+    <mat-form-field appearance="outline">
+      <mat-label>{{ filter.label }}</mat-label>
+      <mat-select [multiple]="isMultiSelectFilter(filter)" [value]="selectedFilterValue(filter)"
+        (selectionChange)="onFilterChange(filter.key, $event.value)">
+        @for (option of filter.options; track option.value) {
+          <mat-option [value]="option.value" [disabled]="option.disabled">{{ option.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  }
+  <ng-container [ngTemplateOutlet]="customFilters"></ng-container>
+  <button mat-stroked-button type="button" (click)="onClearFilters()" *ngIf="showClear"><mat-icon>filter_alt_off</mat-icon>Limpar</button>
 </div>
+}
+<ng-template #customFilters><ng-content select="[list-filter-custom]"></ng-content></ng-template>

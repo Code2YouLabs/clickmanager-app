@@ -70,3 +70,6 @@
     }
   }
 }
+
+:host { display: block; min-width: 0; }
+.page-card__saving { display: block; padding: 8px 16px; color: var(--mat-sys-on-surface-variant); }

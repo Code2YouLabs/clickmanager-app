@@ -1,102 +1,44 @@
-@if (search.enabled || filters.length) {
-<app-section-card
-  class="data-table-toolbar-card"
-  [class.data-table-toolbar-card--compact]="!hasActiveFilters && !filtersExpanded"
-  [class.data-table-toolbar-card--collapsed]="!filtersExpanded"
-  [class.data-table-toolbar-card--has-active]="hasActiveFilters"
-  [title]="toolbarTitle">
-  <div class="data-table-toolbar">
-    @if (search.enabled) {
-    <div class="data-table-toolbar__section data-table-toolbar__section--search">
-      <mat-form-field appearance="outline" class="data-table-toolbar__search hide-hint">
-        <mat-label>{{ search.placeholder || 'Pesquisar' }}</mat-label>
-        <mat-icon matPrefix>search</mat-icon>
-        <input matInput type="search" [formControl]="searchControl" />
-      </mat-form-field>
-
-      <div class="data-table-toolbar__actions">
-        <ng-content select="[data-table-toolbar-actions]"></ng-content>
-      </div>
-    </div>
-    }
-
-    @if (filters.length) {
-    <div class="data-table-toolbar__section">
-      <div class="data-table-toolbar__filters-header">
-        <button
-          mat-button
-          type="button"
-          class="data-table-toolbar__filter-toggle f-w-700"
-          [attr.aria-expanded]="filtersExpanded"
-          (click)="toggleFilters()">
-          <mat-icon>{{ filtersExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
-          {{ filtersLabel }}{{ activeFilterCount ? ' (' + activeFilterCount + ')' : '' }}
-        </button>
-
-        @if (hasActiveFilters) {
-          <button mat-button type="button" color="primary" class="data-table-toolbar__clear" (click)="onClearFilters()">
-            <mat-icon>filter_alt_off</mat-icon>
-            {{ clearFiltersLabel }}
-          </button>
-        }
-      </div>
-
-      @if (activeFilterChips.length) {
-      <mat-chip-set class="data-table-toolbar__chips" aria-label="Filtros aplicados">
-        @for (chip of activeFilterChips; track chip.filterKey + '-' + chip.value) {
-        <mat-chip-row class="bg-light" (removed)="onRemoveFilterChip(chip)">
-          <span class="data-table-toolbar__chip-label">{{ chip.filterLabel }}:</span>
-          {{ chip.optionLabel }}
-          <button matChipRemove type="button" [attr.aria-label]="'Remover filtro ' + chip.filterLabel + ': ' + chip.optionLabel">
-            <mat-icon>cancel</mat-icon>
-          </button>
-        </mat-chip-row>
-        }
-      </mat-chip-set>
-      }
-
-      <mat-accordion class="data-table-toolbar__accordion">
-        <mat-expansion-panel
-          class="data-table-toolbar__panel"
-          hideToggle
-          [expanded]="filtersExpanded">
-          <div class="data-table-toolbar__filters" [attr.aria-label]="filtersLabel">
-            @for (filter of filters; track filter.key) {
-              <mat-form-field appearance="outline" class="data-table-toolbar__filter" [style.flex-basis]="filterWidth(filter)">
-                <mat-label>{{ filter.label }}</mat-label>
-                <mat-select
-                  [multiple]="isMultiSelectFilter(filter)"
-                  [value]="selectedFilterValue(filter)"
-                  (selectionChange)="onFilterValueChange(filter.key, $event.value)">
-                  @if (filter.type === 'select') {
-                    <mat-option [value]="null">Todos</mat-option>
-                  }
-                  @for (option of filter.options; track option.value) {
-                    <mat-option [value]="option.value" [disabled]="option.disabled">{{ option.label }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
-            }
-          </div>
-        </mat-expansion-panel>
-      </mat-accordion>
-    </div>
-    }
-  </div>
-</app-section-card>
-}
+<app-list-filter-bar presentation="section"
+  [filters]="filters" [filterState]="filterState" [search]="search" [searchControl]="searchControl"
+  [filtersLabel]="filtersLabel" [clearFiltersLabel]="clearFiltersLabel" [hasCustomFilters]="hasCustomFilters"
+  (searchChange)="onSearch($event)" (stateChange)="onFilterStateChange($event)" (clear)="clearFilters.emit()">
+  <ng-content select="[data-table-toolbar-actions]" ngProjectAs="[list-filter-actions]"></ng-content>
+  <ng-content select="[data-table-custom-filters]" ngProjectAs="[list-filter-custom]"></ng-content>
+</app-list-filter-bar>
 
 @if (showTable) {
-<div class="data-table-container">
-  @if (loading) {
-    <div class="data-table-loading" aria-live="polite">
-      <mat-spinner diameter="36"></mat-spinner>
-    </div>
+<div [@.disabled]="reducedMotion" class="data-table-container" [attr.aria-busy]="!forbidden && busy">
+  @if (forbidden) {
+    <div class="data-table-state" role="status"><strong>Acesso restrito</strong><p>{{ forbiddenMessage }}</p></div>
+  } @else if (initialLoading) {
+    <div class="data-table-loading" role="status"><mat-spinner diameter="36"></mat-spinner><span>Carregando registros...</span></div>
+  } @else if (hasBlockingError) {
+    <ng-container [ngTemplateOutlet]="errorNotice"></ng-container>
+  } @else {
+    @if (busy) {
+      <div class="data-table-refreshing data-table-loading" role="status"><mat-progress-bar mode="indeterminate"></mat-progress-bar><span>Atualizando registros...</span></div>
+    } @else if (error) {
+      <ng-container [ngTemplateOutlet]="errorNotice"></ng-container>
+    }
   }
 
+  @if (canShowContent) {
+  @if (useMobileItems) {
+    <div class="data-table-items" role="list" [attr.aria-label]="tableLabel">
+      @for (row of data; track trackByRow($index, row)) {
+        <div role="listitem">
+          <ng-container [ngTemplateOutlet]="mobileTemplate!.template"
+            [ngTemplateOutletContext]="{ $implicit: row, row: row, actions: visibleActions(row), emitAction: emitItemAction, expanded: isExpanded(row), toggle: toggleItem }"></ng-container>
+        </div>
+      } @empty {
+        <ng-container [ngTemplateOutlet]="emptyNotice"></ng-container>
+      }
+    </div>
+  } @else {
   <div class="table-responsive">
     <table
       mat-table
+      [attr.aria-label]="tableLabel"
       [dataSource]="data"
       [trackBy]="trackByRow"
       multiTemplateDataRows
@@ -125,7 +67,7 @@
                 [ngTemplateOutletContext]="{ $implicit: row, row: row }">
               </ng-container>
             } @else {
-              {{ cellValue(row, column) || '-' }}
+              {{ cellValue(row, column) ?? '-' }}
             }
           </td>
         </ng-container>
@@ -219,28 +161,43 @@
       }
 
       <tr class="mat-row" *matNoDataRow>
-        <td class="mat-cell data-table-empty" [attr.colspan]="displayedColumns.length || 1">
-          @if (!loading) {
-            <strong>{{ isFilteredEmpty ? (emptyState.filteredTitle || emptyState.title || 'Nenhum resultado encontrado') : (emptyState.title || 'Nenhum registro encontrado') }}</strong>
-            <span>{{ isFilteredEmpty ? (emptyState.filteredDescription || emptyState.description || 'Altere a busca ou os filtros.') : (emptyState.description || '') }}</span>
-          }
+        <td class="mat-cell" [attr.colspan]="displayedColumns.length || 1">
+          <ng-container [ngTemplateOutlet]="emptyNotice"></ng-container>
         </td>
       </tr>
     </table>
   </div>
 
+  }
   @if (pagination) {
     <mat-paginator
       [length]="pagination.totalItems"
       [pageIndex]="pagination.pageIndex"
       [pageSize]="pagination.pageSize"
       [pageSizeOptions]="pagination.pageSizeOptions || [10, 20, 50]"
+      [disabled]="busy"
+      aria-label="Paginação dos resultados"
       showFirstLastButtons
       (page)="onPageChange($event)">
     </mat-paginator>
   }
+  }
 </div>
 }
+
+<ng-template #errorNotice>
+  <div class="data-table-state data-table-state--error" role="alert">
+    <strong>{{ data.length ? 'Não foi possível atualizar os registros' : 'Não foi possível carregar os registros' }}</strong>
+    <p>{{ error }}</p>
+    <button mat-stroked-button type="button" *ngIf="retryEnabled" [disabled]="busy" (click)="retry.emit()">Tentar novamente</button>
+  </div>
+</ng-template>
+<ng-template #emptyNotice>
+  <div class="data-table-empty" role="status">
+    <strong>{{ isFilteredEmpty ? (emptyState.filteredTitle || emptyState.title || 'Nenhum resultado encontrado') : (emptyState.title || 'Nenhum registro encontrado') }}</strong>
+    <span>{{ isFilteredEmpty ? (emptyState.filteredDescription || emptyState.description || 'Altere a busca ou os filtros.') : (emptyState.description || 'Os registros aparecerão aqui quando forem adicionados.') }}</span>
+  </div>
+</ng-template>
 
 <mat-menu #actionsMenu="matMenu">
   <ng-template matMenuContent let-row="row">

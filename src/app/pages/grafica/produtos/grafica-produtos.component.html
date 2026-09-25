@@ -1,0 +1,109 @@
+<app-page-card titulo="Produtos gráficos" subtitulo="Configuração de venda para produtos do Catálogo">
+      <div page-header-actions>
+        <button mat-icon-button type="button" matTooltip="Ajuda" aria-label="Ajuda" (click)="abrirAjuda()">
+          <mat-icon>help_outline</mat-icon>
+        </button>
+        <button mat-flat-button color="primary" (click)="novo()">
+          <mat-icon>add</mat-icon>
+          Novo produto
+        </button>
+      </div>
+
+      <app-data-table
+        [columns]="columns"
+        [data]="produtos"
+        [filters]="tableFilters"
+        [filterState]="filterState"
+        [search]="searchConfig"
+        [pagination]="pagination"
+        [loading]="carregando && !produtos.length"
+        [refreshing]="carregando && !!produtos.length"
+        [error]="erroCarregamento"
+        [forbidden]="acessoNegado"
+        tableLabel="Produtos gráficos"
+        (retry)="carregar()"
+        [sort]="sort"
+        filtersLabel="Filtros"
+        clearFiltersLabel="Limpar filtros"
+        [emptyState]="{
+          title: 'Nenhum produto gráfico encontrado',
+          description: 'Cadastre um produto gráfico para configurar vendas.',
+          filteredTitle: 'Nenhum produto gráfico encontrado',
+          filteredDescription: 'Altere a busca ou limpe os filtros.'
+        }"
+        rowKey="id"
+        (searchChange)="onSearch($event)"
+        (filterChange)="onFilterChange($event)"
+        (pageChange)="onPageChange($event)"
+        (sortChange)="onSortChange($event)">
+
+        <div data-table-toolbar-actions>
+          <button mat-stroked-button color="primary" (click)="abrirBiblioteca()"><mat-icon>library_books</mat-icon>Biblioteca de produtos</button>
+        </div>
+
+        <ng-template appDataTableCell="imagem" let-row>
+          <img class="produto-thumb" [src]="imagemProduto(row)" [alt]="row.catalogoProdutoNome || 'Produto'" loading="lazy" decoding="async" />
+        </ng-template>
+
+        <ng-template appDataTableCell="produto" let-row>
+          <strong class="produto-nome">{{ row.catalogoProdutoNome || '-' }}</strong>
+          @if (configuracaoLinha(row)) {
+            <small>{{ configuracaoLinha(row) }}</small>
+          }
+        </ng-template>
+
+        <ng-template appDataTableCell="categoria" let-row>
+          <div class="categoria-cell">
+            @for (linha of categoriaResumo(row); track $index) {
+              <span class="categoria-path" [attr.title]="categoriaTitulo(linha)">
+                @if (linha.truncada) {
+                  <span class="categoria-path__ellipsis">...</span>
+                }
+                @for (parte of linha.partes; track $index) {
+                  <span class="categoria-path__parte" [class.categoria-path__parte--final]="$last">{{ parte }}</span>
+                  @if (!$last) {
+                    <span class="categoria-path__separator">-&gt;</span>
+                  }
+                }
+              </span>
+            }
+            @if (categoriaExcedente(row) > 0) {
+              <span class="categoria-path categoria-path--extra">+{{ categoriaExcedente(row) }}</span>
+            }
+          </div>
+        </ng-template>
+
+        <ng-template appDataTableCell="descricao" let-row>
+          <span class="descricao-cell">{{ row.catalogoProdutoDescricao || '-' }}</span>
+        </ng-template>
+
+        <ng-template appDataTableCell="preco" let-row>
+          <div class="preco-cell">
+            @for (linha of precoResumo(row); track linha) {
+              <span>{{ linha }}</span>
+            }
+          </div>
+        </ng-template>
+
+        <ng-template appDataTableCell="publicacao" let-row>
+          <span class="publicacao-chip" [class.publicacao-chip--publicado]="row.catalogoProdutoExibirNoSite">
+            <mat-icon>{{ row.catalogoProdutoExibirNoSite ? 'public' : 'lock' }}</mat-icon>
+            {{ row.catalogoProdutoExibirNoSite ? 'Publicado' : 'Interno' }}
+          </span>
+        </ng-template>
+
+        <ng-template appDataTableCell="acoes" let-row>
+          <div class="acoes-cell">
+            <button mat-icon-button type="button" matTooltip="Editar" [attr.aria-label]="'Editar ' + (row.catalogoProdutoNome || 'produto')" (click)="configurar(row)">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button type="button" matTooltip="Clonar" [attr.aria-label]="'Clonar ' + (row.catalogoProdutoNome || 'produto')" (click)="clonar(row)">
+              <mat-icon>content_copy</mat-icon>
+            </button>
+            <button mat-icon-button type="button" color="warn" matTooltip="Excluir" [attr.aria-label]="'Excluir ' + (row.catalogoProdutoNome || 'produto')" (click)="excluir(row)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        </ng-template>
+      </app-data-table>
+    </app-page-card>

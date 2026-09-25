@@ -203,7 +203,7 @@ export class OrcamentoComercialImpressaoPageComponent implements OnInit, OnDestr
 
   get voltarLink(): any[] {
     const id = this.route.snapshot.paramMap.get('id');
-    return id ? ['/page/grafica/comercial-beta/orcamentos', id] : ['/page/grafica/comercial-beta/orcamentos'];
+    return id ? ['/page/grafica/comercial/orcamentos', id] : ['/page/grafica/comercial/orcamentos'];
   }
 
   carregarDados(): void {

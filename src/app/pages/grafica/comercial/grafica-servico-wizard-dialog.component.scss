@@ -1,0 +1,114 @@
+.service-wizard {
+      display: flex;
+      flex-direction: column;
+      width: min(520px, calc(100vw - 32px));
+      max-height: min(82vh, 720px);
+      background: #fff;
+    }
+
+    .service-wizard__header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 22px 14px;
+    }
+
+    .service-wizard__header h2 {
+      margin: 2px 0 0;
+      padding: 0;
+      font-size: 1.25rem;
+      line-height: 1.3;
+      font-weight: 700;
+    }
+
+    .service-wizard__eyebrow {
+      color: #64748b;
+      font-size: 0.76rem;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .service-wizard__content {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 18px 22px !important;
+      overflow: auto;
+    }
+
+    .service-wizard__description {
+      margin: 0;
+      color: #475569;
+    }
+
+    .service-wizard__form,
+    .service-wizard__grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .service-wizard__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .service-wizard__policy,
+    .service-wizard__price,
+    .state-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .service-wizard__policy span,
+    .service-wizard__price span,
+    .service-wizard__price small {
+      color: #64748b;
+      font-size: 0.84rem;
+      font-weight: 700;
+    }
+
+    .service-wizard__price {
+      align-items: flex-start;
+      flex-direction: column;
+      background: #ecfdf5;
+      border-color: #bbf7d0;
+    }
+
+    .service-wizard__price strong {
+      color: #166534;
+      font-size: 1.4rem;
+      line-height: 1.2;
+    }
+
+    .state-row--error {
+      justify-content: flex-start;
+      border-color: #fecaca;
+      color: #991b1b;
+      background: #fef2f2;
+    }
+
+    .service-wizard__actions {
+      padding: 10px 22px 18px;
+    }
+
+    @media (max-width: 620px) {
+      .service-wizard {
+        width: calc(100vw - 16px);
+        max-height: calc(100dvh - 16px);
+      }
+
+      .service-wizard__grid {
+        grid-template-columns: 1fr;
+      }
+
+      .service-wizard__actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+    }

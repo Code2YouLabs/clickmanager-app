@@ -60,13 +60,13 @@ export class AppDashboard1Component implements OnInit {
       label: 'Novo pedido',
       description: 'Abrir fluxo comercial',
       icon: 'add',
-      route: '/page/grafica/comercial-beta/pedidos/novo',
+      route: '/page/grafica/comercial/pedidos/novo',
     },
     {
       label: 'Rascunhos',
       description: 'Continuar atendimentos',
       icon: 'draft',
-      route: '/page/grafica/comercial-beta/rascunhos',
+      route: '/page/grafica/comercial/rascunhos',
     },
     {
       label: 'SmartCalc',
@@ -88,9 +88,9 @@ export class AppDashboard1Component implements OnInit {
   abrirResumo(card: DashboardSummaryCard): void {
     const routes: Record<DashboardSummaryCard['key'], string> = {
       receita: '/dashboards/dashboard1/grafico',
-      pedidos: '/page/grafica/comercial-beta/pedidos',
-      orcamentos: '/page/grafica/comercial-beta/orcamentos',
-      rascunhos: '/page/grafica/comercial-beta/rascunhos',
+      pedidos: '/page/grafica/comercial/pedidos',
+      orcamentos: '/page/grafica/comercial/orcamentos',
+      rascunhos: '/page/grafica/comercial/rascunhos',
     };
     this.router.navigate([routes[card.key]], {
       queryParams: card.key === 'receita'

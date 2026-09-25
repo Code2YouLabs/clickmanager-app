@@ -1,0 +1,301 @@
+<app-page-card
+      [titulo]="titulo"
+      [subtitulo]="subtitulo"
+      botaoTexto="Voltar"
+      botaoIcone="arrow_back"
+      botaoCor="primary"
+      [botaoRota]="['/page/grafica/comercial', tipo]"
+      [mostrarDivisor]="true" [saving]="salvando" [footerActions]="footerActions"
+      (footerAction)="onFooterAction($event)">
+
+      <div class="editor-state" role="status" *ngIf="acessoNegado">Você não possui permissão para visualizar este registro.</div>
+      <div class="editor-state" role="status" *ngIf="carregando && !acessoNegado">
+        <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+        {{ temRegistroCarregado ? 'Atualizando registro...' : 'Carregando registro...' }}
+      </div>
+      <div class="editor-state" role="alert" *ngIf="erroCarregamento && !acessoNegado">
+        <p>{{ erroCarregamento }}</p>
+        <button mat-stroked-button type="button" [disabled]="carregando" (click)="recarregar()">Tentar novamente</button>
+      </div>
+      <form id="comercial-editor-form" [formGroup]="form" (ngSubmit)="salvarFormulario()"
+        *ngIf="!acessoNegado && (!pedidoId || temRegistroCarregado)" [attr.aria-busy]="carregando">
+        <div class="pedido-layout">
+          <div class="main-column">
+            <app-pedido-fluxo-controles
+              *ngIf="mostrarFluxoPedido && fluxoPedido"
+              [titulo]="'Fluxo do pedido'"
+              [statusAtual]="fluxoPedido.statusAtual"
+              [statusControl]="statusControl"
+              [statusOptions]="statusOptionsFluxo"
+              [transicoes]="transicoesFluxo"
+              [fluxoSteps]="fluxoPedido.fluxo"
+              [descricaoStatus]="fluxoPedido.descricao"
+              [hints]="hintsFluxo"
+              [isReadOnly]="!permissoesFluxo.alterarStatus"
+              [inativo]="carregandoStatus"
+              [restaPagar]="resumoFinanceiroView.saldoAberto"
+              [totalPago]="resumoFinanceiroView.totalRecebido"
+              [temPagamentos]="pagamentosView.length > 0"
+              (salvarStatus)="alterarStatusSelecionado()"
+              (trocarStatusSelecionado)="statusControl.setValue($event)"
+              (cancelarPedido)="alterarStatus('CANCELADO')"
+              (finalizarPedido)="alterarStatus('PRONTO')">
+            </app-pedido-fluxo-controles>
+
+            <app-section-card *ngIf="mostrarFluxoOrcamento && orcamento" titulo="Fluxo do orçamento" [divider]="true">
+              <div class="orcamento-flow">
+                <div class="orcamento-meta-grid">
+                  <div class="orcamento-meta orcamento-meta--status">
+                    <span>Status</span>
+                    <app-status-badge [status]="orcamento.status"></app-status-badge>
+                  </div>
+                  <div class="orcamento-meta">
+                    <span>Criado em</span>
+                    <strong>{{ orcamento.createdAt | date:'dd/MM/yyyy' }}</strong>
+                  </div>
+                  <div class="orcamento-meta">
+                    <span>Validade</span>
+                    <strong>5 dias úteis</strong>
+                  </div>
+                </div>
+                <div class="orcamento-validade">
+                  <app-input-data [control]="validadeControl" label="Válido até"></app-input-data>
+                  <button class="btn-save-validade" mat-stroked-button color="primary" type="button" [disabled]="!validadeControl.value || validadeControl.pristine || salvandoValidade" (click)="salvarValidadeOrcamento()">
+                    Salvar validade
+                  </button>
+                </div>
+                <div class="orcamento-actions">
+                  <button mat-stroked-button class="status-action status-action--sent" type="button" *ngIf="orcamento.status === 'ABERTO'" [disabled]="carregandoStatus" (click)="alterarStatusOrcamento('ENVIADO')">Marcar enviado</button>
+                  <button mat-stroked-button class="status-action status-action--approve" type="button" *ngIf="orcamentoEditavel" [disabled]="carregandoStatus" (click)="aprovarOrcamentoECriarPedido()">Aprovar e criar pedido</button>
+                  <button mat-stroked-button class="status-action status-action--refuse" type="button" *ngIf="orcamentoEditavel" [disabled]="carregandoStatus" (click)="alterarStatusOrcamento('RECUSADO')">Recusar</button>
+                  <button mat-stroked-button class="status-action status-action--cancel" type="button" *ngIf="orcamentoEditavel" [disabled]="carregandoStatus" (click)="alterarStatusOrcamento('CANCELADO')">Cancelar</button>
+                </div>
+              </div>
+            </app-section-card>
+
+            <app-cliente-selector-card
+              [cliente]="clienteConfirmado"
+              [editando]="trocandoCliente || !clienteConfirmado"
+              [inativo]="somenteLeitura || !permissoesFluxo.editarCliente"
+              [showEmptyAlert]="true"
+              [control]="clienteControl"
+              [displayWith]="mostrarCliente"
+              [buscarFn]="buscarClientes"
+              [minimoCaracteres]="3"
+              emptyMessage="Nenhum cliente definido para este atendimento."
+              (salvarCliente)="confirmarClienteSelecionado()"
+              (editarCliente)="iniciarTrocaCliente()"
+              (cancelarEdicao)="cancelarTrocaCliente()"
+              (criarCliente)="onCriarCliente()">
+            </app-cliente-selector-card>
+
+            <app-itens-pedido-section
+              [titulo]="itensTitulo"
+              [itemContextoLabel]="itemContextoLabel"
+              [itens]="itensView"
+              [subtotal]="total"
+              [permitirAlterarQuantidade]="false"
+              [mostrarAcoes]="podeEditarItens"
+              [mostrarDescreverItens]="false"
+              [mostrarBuscaRapida]="true"
+              buscarProdutosLabel="Adicionar produto"
+              buscaRapidaLabel="Busca rápida"
+              (buscarProdutos)="abrirWizard()"
+              (buscaRapida)="abrirBuscaRapida()"
+              (removerItem)="remover($event)">
+            </app-itens-pedido-section>
+
+            <app-observacoes-card
+              class="observacoes-compact"
+              titulo="Observação para o cliente"
+              [control]="observacaoClienteControl"
+              [textoSalvo]="observacaoClienteSalva"
+              [salvando]="false"
+              [salvo]="observacaoClienteSalvaFlag"
+              [inativo]="somenteLeitura || !permissoesFluxo.observacoes"
+              placeholder="Texto que pode aparecer no PDF e no WhatsApp..."
+              (salvar)="confirmarObservacaoCliente()">
+            </app-observacoes-card>
+
+            <app-observacoes-card
+              class="observacoes-compact"
+              titulo="Observação interna"
+              [control]="observacaoInternaControl"
+              [textoSalvo]="observacaoInternaSalva"
+              [salvando]="false"
+              [salvo]="observacaoInternaSalvaFlag"
+              [inativo]="somenteLeitura || !permissoesFluxo.observacoes"
+              placeholder="Anotação visível somente dentro do ClickManager..."
+              (salvar)="confirmarObservacaoInterna()">
+            </app-observacoes-card>
+          </div>
+
+          <div class="summary-column">
+            <div class="summary-sticky">
+              <app-section-card [titulo]="resumoTitulo" [divider]="true" class="summary-card">
+                <div class="summary-row">
+                  <span>Subtotal</span>
+                  <strong class="value align-right">{{ resumoFinanceiroView.subtotal | currency:'BRL':'symbol':'1.2-2' }}</strong>
+                </div>
+                <div class="financial-adjustments" (keydown.enter)="evitarSubmitDaSecao($event)" [formGroup]="ajustesFinanceirosForm" *ngIf="podeEditarAjustesFinanceiros; else ajustesFinanceirosLeitura">
+                  <app-input-moeda [control]="acrescimoControl" label="Acréscimos"></app-input-moeda>
+                  <app-input-moeda [control]="freteControl" label="Frete"></app-input-moeda>
+                  <app-input-moeda [control]="descontoControl" label="Descontos"></app-input-moeda>
+                  <button
+                    *ngIf="pedidoId"
+                    mat-stroked-button
+                    color="primary"
+                    type="button"
+                    class="btn-save-adjustments"
+                    [disabled]="ajustesFinanceirosForm.invalid || !ajustesFinanceirosForm.dirty || salvandoAjustesFinanceiros"
+                    (click)="salvarAjustesFinanceiros()">
+                    Salvar ajustes
+                  </button>
+                </div>
+                <ng-template #ajustesFinanceirosLeitura>
+                  <div class="summary-row">
+                    <span>Acréscimos</span>
+                    <strong class="value align-right">{{ resumoFinanceiroView.acrescimo | currency:'BRL':'symbol':'1.2-2' }}</strong>
+                  </div>
+                  <div class="summary-row">
+                    <span>Frete</span>
+                    <strong class="value align-right">{{ resumoFinanceiroView.frete | currency:'BRL':'symbol':'1.2-2' }}</strong>
+                  </div>
+                  <div class="summary-row">
+                    <span>Descontos</span>
+                    <strong class="value align-right">{{ resumoFinanceiroView.desconto | currency:'BRL':'symbol':'1.2-2' }}</strong>
+                  </div>
+                </ng-template>
+                <mat-divider class="m-t-8 m-b-8"></mat-divider>
+                <div class="summary-row total">
+                  <span>Total</span>
+                  <strong class="value highlight">{{ resumoFinanceiroView.total | currency:'BRL':'symbol':'1.2-2' }}</strong>
+                </div>
+                <div class="summary-row pago" *ngIf="tipo === 'pedidos'">
+                  <span>Pago</span>
+                  <strong class="value success">{{ resumoFinanceiroView.totalRecebido | currency:'BRL':'symbol':'1.2-2' }}</strong>
+                </div>
+                <div class="summary-row resta" *ngIf="tipo === 'pedidos'">
+                  <span>Saldo</span>
+                  <strong class="value highlight">{{ resumoFinanceiroView.saldoAberto | currency:'BRL':'symbol':'1.2-2' }}</strong>
+                </div>
+                <mat-progress-bar *ngIf="tipo === 'pedidos'" mode="determinate" [value]="percentualPagoView"></mat-progress-bar>
+                <div class="percentual" *ngIf="tipo === 'pedidos'">{{ percentualPagoView | number:'1.0-2' }}% pago</div>
+              </app-section-card>
+
+              <app-section-card titulo="Responsável" [divider]="true" class="responsavel-card">
+                <div class="responsavel-content">
+                  <mat-icon>person</mat-icon>
+                  <div>
+                    <span>Atendente</span>
+                    <strong>{{ responsavelNome }}</strong>
+                  </div>
+                </div>
+              </app-section-card>
+
+              <app-pedido-documentos-acoes
+                *ngIf="mostrarDocumentosPedido"
+                contexto="pedido"
+                (pedidoCompleto)="abrirImpressaoPedido('completo')"
+                (duasVias)="abrirImpressaoPedido('duas-vias')"
+                (etiqueta)="abrirImpressaoPedido('etiqueta')"
+                (whatsapp)="abrirWhatsAppPedido()">
+              </app-pedido-documentos-acoes>
+
+              <app-pedido-documentos-acoes
+                *ngIf="mostrarDocumentosOrcamento"
+                contexto="orcamento"
+                (pedidoCompleto)="abrirImpressaoOrcamento()"
+                (whatsapp)="abrirWhatsAppOrcamento()">
+              </app-pedido-documentos-acoes>
+
+              <app-section-card *ngIf="mostrarPagamentos" titulo="Pagamentos" [divider]="true" class="payments-card">
+                <div class="payment-entry">
+                  <div class="payment-form" (keydown.enter)="evitarSubmitDaSecao($event)" [formGroup]="pagamentoForm">
+                    <app-input-options
+                      [control]="pagamentoFormaControl"
+                      label="Forma"
+                      placeholder="Selecione"
+                      [options]="formasPagamento"
+                      [showNull]="true"
+                      nullLabel="Selecione">
+                    </app-input-options>
+                    <app-input-moeda [control]="pagamentoValorControl" label="Valor"></app-input-moeda>
+                    <button mat-flat-button color="primary" type="button" [disabled]="pagamentoForm.invalid || pagamentoExcedeSaldo || salvandoPagamento || !permissoesFluxo.pagamentos" (click)="adicionarPagamento()">
+                      <mat-icon>add</mat-icon>
+                      Adicionar pagamento
+                    </button>
+                  </div>
+
+                  <div class="payment-error" *ngIf="pagamentoExcedeSaldo">
+                    Valor não pode exceder o saldo em aberto.
+                  </div>
+                </div>
+
+                <div class="payment-history">
+                  <div class="payment-context">
+                    <div>
+                      <span>Pago</span>
+                      <strong class="success">{{ resumoFinanceiroView.totalRecebido | currency:'BRL':'symbol':'1.2-2' }}</strong>
+                    </div>
+                    <div>
+                      <span>Saldo</span>
+                      <strong class="highlight">{{ resumoFinanceiroView.saldoAberto | currency:'BRL':'symbol':'1.2-2' }}</strong>
+                    </div>
+                  </div>
+
+                  <div class="payment-list" *ngIf="pagamentosView.length; else semPagamentos">
+                    <div class="payment-item" *ngFor="let pagamento of pagamentosView; let i = index" [class.cancelado]="pagamento.status === 'CANCELADO'">
+                      <div class="payment-main">
+                        <strong>{{ formaPagamentoLabel(pagamento.formaPagamento) }}</strong>
+                        <app-status-badge class="payment-status" [status]="pagamento.status"></app-status-badge>
+                      </div>
+                      <div class="payment-value">{{ pagamento.valor | currency:'BRL':'symbol':'1.2-2' }}</div>
+                      <button class="payment-cancel" mat-icon-button color="warn" type="button" matTooltip="Cancelar pagamento"
+                        *ngIf="pagamento.status !== 'CANCELADO' && permissoesFluxo.pagamentos"
+                        aria-label="Cancelar pagamento"
+                        (click)="cancelarPagamento(pagamento, i)">
+                        <mat-icon>block</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+                  <ng-template #semPagamentos>
+                    <div class="empty-payments">Nenhum pagamento informado.</div>
+                  </ng-template>
+                </div>
+              </app-section-card>
+
+              <app-section-card class="submit-card" *ngIf="mostrarAcoesCriacao">
+                <div class="actions-final">
+                  <div class="required-alert" *ngIf="pendenciasSalvar.length; else prontoSalvar">
+                    <mat-icon>error_outline</mat-icon>
+                    <div>
+                        <strong>Campos obrigatórios</strong>
+                      <span>Preencha o que falta para concluir este atendimento comercial.</span>
+                    </div>
+                  </div>
+                  <ng-template #prontoSalvar>
+                    <div class="ready-alert">
+                      <mat-icon>check_circle</mat-icon>
+                      <div>
+                        <strong>{{ prontoSalvarTitulo }}</strong>
+                        <span>{{ prontoSalvarDescricao }}</span>
+                      </div>
+                    </div>
+                  </ng-template>
+
+                  <div class="checklist" *ngIf="pendenciasSalvar.length">
+                    <div class="check-item" *ngFor="let pendencia of pendenciasSalvar">
+                      <mat-icon>radio_button_unchecked</mat-icon>
+                      <span>{{ pendencia }}</span>
+                    </div>
+                  </div>
+
+
+                </div>
+              </app-section-card>
+            </div>
+          </div>
+        </div>
+      </form>
+    </app-page-card>

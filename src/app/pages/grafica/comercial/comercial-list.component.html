@@ -1,0 +1,65 @@
+<app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [mostrarDivisor]="true">
+      <button page-header-actions mat-flat-button color="primary" type="button" (click)="novo()">
+        <mat-icon>add</mat-icon>
+        {{ configuracao.novo }}
+      </button>
+
+      <p class="search-scope">A busca por texto considera os registros da página atual. O filtro de status consulta todos os registros.</p>
+      <app-data-table
+        [columns]="columns"
+        [data]="itensFiltrados"
+        [search]="{ enabled: true, label: 'Buscar nesta página', placeholder: 'Referência, cliente ou status nesta página', debounceMs: 250, value: busca }"
+        [pagination]="pagination"
+        [loading]="carregando && !itens.length"
+        [refreshing]="carregando && !!itens.length"
+        [error]="erro" [forbidden]="acessoNegado"
+        [tableLabel]="titulo" [filters]="filters" [filterState]="filterState"
+        (filterChange)="filtrar($event)" (retry)="carregar()"
+        [actions]="actions"
+        actionsMode="buttons"
+        [expandable]="true"
+        expandAriaLabel="Expandir detalhes"
+        [emptyState]="emptyState"
+        [rowKey]="rowKey"
+        (searchChange)="buscar($event)"
+        (pageChange)="paginar($event)"
+        (action)="onAction($event)">
+
+        <ng-template appDataTableCell="referencia" let-item>
+          <strong>{{ referencia(item) }}</strong>
+        </ng-template>
+
+        <ng-template appDataTableCell="createdAt" let-item>
+          {{ dataCriacao(item) | date:'dd/MM/yyyy HH:mm' }}
+        </ng-template>
+
+        <ng-template appDataTableCell="cliente" let-item>
+          {{ cliente(item) || 'Balcão' }}
+        </ng-template>
+
+        <ng-template appDataTableCell="status" let-item>
+          <span class="status-pill">{{ item.status || '-' }}</span>
+        </ng-template>
+
+        <ng-template appDataTableCell="total" let-item>
+          {{ total(item) | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
+        </ng-template>
+
+        <ng-template appDataTableCell="__expandedDetail" let-item>
+          <div class="expanded-detail">
+            <div>
+              <span>Responsável</span>
+              <strong>{{ responsavel(item) }}</strong>
+            </div>
+            <div>
+              <span>Total Pago</span>
+              <strong>{{ totalPago(item) | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
+            </div>
+            <div>
+              <span>Resta Pagar</span>
+              <strong>{{ restaPagar(item) | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
+            </div>
+          </div>
+        </ng-template>
+      </app-data-table>
+    </app-page-card>

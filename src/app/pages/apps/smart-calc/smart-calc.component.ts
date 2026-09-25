@@ -397,7 +397,7 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
         next: (rascunho) => {
           const num = rascunho?.referencia ? ` #${rascunho.referencia}` : '';
           this.toastr.success(`Rascunho criado${num}.`, 'SmartCalc');
-          this.router.navigate(rascunho?.id ? ['/page/grafica/comercial-beta/rascunhos', rascunho.id] : ['/page/grafica/comercial-beta/rascunhos']);
+          this.router.navigate(rascunho?.id ? ['/page/grafica/comercial/rascunhos', rascunho.id] : ['/page/grafica/comercial/rascunhos']);
         },
         error: (err) =>
           this.toastr.error(extrairMensagemErro(err, 'Falha ao criar rascunho.'), 'SmartCalc'),
