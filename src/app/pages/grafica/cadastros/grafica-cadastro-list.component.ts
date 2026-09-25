@@ -13,7 +13,8 @@ import { InputOptionsComponent } from 'src/app/components/inputs/input-options/i
 import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
 import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
 import { PrecoSelectorComponent } from 'src/app/components/preco/preco-selector.component';
-import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { PageFormState } from 'src/app/components/page-card/page-form-state';
+import { PageCardAction, PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { MaterialModule } from 'src/app/material.module';
 import { ToastrService } from 'ngx-toastr';
@@ -44,7 +45,7 @@ type UnidadeGrafica = 'METRO' | 'CENTIMETRO' | 'MILIMETRO';
     PrecoSelectorComponent,
   ],
   template: `
-    <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" botaoTexto="Produtos" [botaoRota]="['/page/grafica/produtos']" botaoIcone="arrow_back" [showFooter]="true">
+    <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" botaoTexto="Produtos" [botaoRota]="['/page/grafica/produtos']" botaoIcone="arrow_back" [formState]="formState" [footerActions]="footerActions" [saving]="salvando">
       <div page-header-actions>
         <button mat-flat-button color="primary" type="button" (click)="novo()">
           <mat-icon>add</mat-icon>
@@ -185,11 +186,6 @@ type UnidadeGrafica = 'METRO' | 'CENTIMETRO' | 'MILIMETRO';
         </app-data-table>
       </div>
 
-      <button page-footer-right mat-stroked-button class="cancel-button" type="button" (click)="cancelar()">Cancelar</button>
-      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-cadastro-form" [disabled]="form.invalid || salvando">
-        <mat-icon>save</mat-icon>
-        Salvar
-      </button>
     </app-page-card>
   `,
   styles: [`
@@ -206,8 +202,6 @@ type UnidadeGrafica = 'METRO' | 'CENTIMETRO' | 'MILIMETRO';
     .acoes-cell { display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; min-width: 132px; white-space: nowrap; }
     :host ::ng-deep app-preco-selector .price-selector-shell { border: 0; border-radius: 0; background: transparent; padding: 0; }
     :host ::ng-deep app-preco-selector .price-selector-mode { border-top: 0; }
-    .cancel-button { border-color: #fecaca; color: #b91c1c; background: #fef2f2; }
-    .cancel-button:hover { background: #fee2e2; }
     @media (max-width: 900px) {
       .cadastro-grid,
       .cadastro-grid--three { grid-template-columns: 1fr; }
@@ -223,7 +217,6 @@ export class GraficaCadastroListComponent implements OnInit {
   editandoId?: number;
   salvando = false;
   carregando = false;
-  snapshot?: any;
   categoriasPai: CatalogoCategoria[] = [];
   materiais: GraficaCadastro[] = [];
   formatos: GraficaFormato[] = [];
@@ -340,6 +333,13 @@ export class GraficaCadastroListComponent implements OnInit {
     private readonly dialog: MatDialog,
   ) {}
 
+  readonly formState = new PageFormState(() => this.form, {
+    read: () => this.precoForm.getRawValue(), write: value => this.precoForm = this.fb.group(value),
+  });
+  get footerActions(): PageCardAction[] {
+    return [{ id: 'salvar', label: 'Salvar', icon: 'save', type: 'submit', form: 'grafica-cadastro-form', primary: true, disabled: this.form.invalid }];
+  }
+
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
       this.tipo = this.normalizarTipo(params.get('tipo'));
@@ -379,10 +379,12 @@ export class GraficaCadastroListComponent implements OnInit {
     });
     this.precoForm = this.fb.group({ tipo: ['FIXO'], valor: [null] });
     this.aplicarValidadores();
-    this.registrarSnapshot();
+    this.formState.begin('create');
   }
 
   editar(item: Item): void {
+    this.novo();
+    this.formState.begin('edit');
     this.editandoId = item.id;
     this.form.patchValue({
       nome: item.nome || '',
@@ -412,7 +414,7 @@ export class GraficaCadastroListComponent implements OnInit {
 
     ref.afterClosed().subscribe((confirmado) => {
       if (!confirmado) return;
-      this.editandoId = undefined;
+      this.novo();
       this.form.patchValue({
         nome: `${item.nome || 'Cadastro'} Cópia`,
         descricao: this.descricaoLinha(item) === '-' ? '' : this.descricaoLinha(item),
@@ -430,14 +432,7 @@ export class GraficaCadastroListComponent implements OnInit {
     });
   }
 
-  cancelar(): void {
-    if (this.snapshot) {
-      this.form.reset(this.snapshot.form);
-      this.precoForm = this.fb.group(this.snapshot.preco);
-    }
-    this.form.markAsPristine();
-    this.form.markAsUntouched();
-  }
+
 
   salvar(): void {
     if (this.form.invalid || this.salvando) {
@@ -604,12 +599,7 @@ export class GraficaCadastroListComponent implements OnInit {
     this.form.controls.unidadeDimensao.updateValueAndValidity({ emitEvent: false });
   }
 
-  private registrarSnapshot(): void {
-    this.snapshot = {
-      form: this.form.getRawValue(),
-      preco: this.precoForm.getRawValue(),
-    };
-  }
+  private registrarSnapshot(): void { this.formState.loaded(); }
 
   private normalizarTipo(tipo: string | null): CadastroTipo {
     return (['categorias', 'materiais', 'formatos', 'cores', 'servicos'].includes(tipo || '') ? tipo : 'materiais') as CadastroTipo;

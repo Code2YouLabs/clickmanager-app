@@ -147,3 +147,12 @@
 :host ::ng-deep app-mobile-total-bar .mobile-total-bar__summary .value {
   font-size: clamp(1.55rem, 6vw, 1.9rem);
 }
+
+.cliente-form-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+}

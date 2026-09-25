@@ -1,3 +1,4 @@
+import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { fakeAsync, tick } from '@angular/core/testing';
 import { FormBuilder } from '@angular/forms';
 import { of } from 'rxjs';
@@ -8,6 +9,35 @@ import {
 import { GraficaProdutoBuscaRapidaDialogComponent } from './grafica-produto-busca-rapida-dialog.component';
 
 describe('ComercialBetaEditorComponent', () => {
+  it('cancelar criação limpa itens, cliente, ajustes e pagamentos pretendidos sem navegar', () => {
+    const component = criarEditor('pedidos'); component.ngOnInit();
+    component.form.patchValue({ observacaoCliente: 'Rascunho', clienteId: { id: 7 } });
+    component.clienteConfirmado = { id: 7, nome: 'Cliente' };
+    component.itens = [{ valorTotal: 100 } as any];
+    component.pagamentosPretendidos = [{ formaPagamento: 'PIX', valor: 50 } as any];
+    component.ajustesFinanceirosForm.patchValue({ frete: 12 });
+    const card = new PageCardComponent(); card.formState = component.formState;
+    card.onFooterAction(card.resolvedFooterActions[0]);
+    expect(component.itens).toEqual([]); expect(component.clienteConfirmado).toBeNull();
+    expect(component.pagamentosPretendidos).toEqual([]); expect(component.ajustesFinanceirosForm.getRawValue().frete).toBe(0);
+    expect(component.form.getRawValue().observacaoCliente).toBe('');
+    expect((component as any).router.navigate).not.toHaveBeenCalled(); component.ngOnDestroy();
+  });
+
+  it('cancelar edição restaura dados locais sem cancelar recebimentos persistidos', () => {
+    const component = criarEditor('pedidos'); component.ngOnInit(); component.formState.begin('edit');
+    (component as any).aplicarPedido({ ...pedidoDetalhe(), observacaoCliente: 'Backend', clienteId: 7 });
+    const before = component.form.getRawValue(); const items = structuredClone(component.itens);
+    component.recebimentos = [{ id: 9, valor: 50, status: 'CONFIRMADO' } as any];
+    component.form.patchValue({ observacaoCliente: 'Alterado' }); component.itens = [];
+    const card = new PageCardComponent(); card.formState = component.formState;
+    card.onFooterAction(card.resolvedFooterActions[0]);
+    expect(component.form.getRawValue()).toEqual(before); expect(component.itens).toEqual(items);
+    expect(component.recebimentos[0].id).toBe(9);
+    expect((component as any).graficaService.cancelarRecebimento).not.toHaveBeenCalled();
+    expect((component as any).router.navigate).not.toHaveBeenCalled(); component.ngOnDestroy();
+  });
+
   it('usa linguagem comercial de orcamento na rota de novo orcamento', () => {
     const component = criarEditor('orcamentos');
 

@@ -1,0 +1,84 @@
+
+> clickmanager-app@4.0.0 test
+> ng test --watch=false --browsers=ChromeHeadless --include=src/app/pages/cliente/**/*.spec.ts
+
+- Generating browser application bundles (phase: setup)...
+✔ Browser application bundle generation complete.
+25 09 2026 08:09:38.776:INFO [karma-server]: Karma v6.4.4 server started at http://localhost:9876/
+25 09 2026 08:09:38.777:INFO [launcher]: Launching browsers ChromeHeadless with concurrency unlimited
+25 09 2026 08:09:38.780:INFO [launcher]: Starting browser ChromeHeadless
+25 09 2026 08:09:40.085:INFO [Chrome Headless 153.0.0.0 (Mac OS 10.15.7)]: Connected on socket BYJldYlUVgzjVPOzAAAB with id 92519777
+Chrome Headless 153.0.0.0 (Mac OS 10.15.7) Clientes — formulário e fluxo mobile mobile mantém foco por etapa, busca explícita de CEP e salva uma única vez FAILED
+	Expected <body>...</body> to be <input matinput type="text" class="mat-mdc-input-element ng-tns-c594611921-0 mat-mdc-form-field-input-control mdc-text-field__input ng-untouched ng-pristine ng-invalid cdk-text-field-autofill-monitored" ng-reflect-type="text" ng-reflect-placeholder="Digite o nome do cliente" ng-reflect-maxlength="200" ng-reflect-form="[object Object]" autocomplete="name" placeholder="Digite o nome do cliente" id="mat-input-a15" required aria-required="true" maxlength="200">. Tip: To check for deep equality, use .toEqual() instead of .toBe().
+	    at <Jasmine>
+	    at UserContext.apply (src/app/pages/cliente/form-cliente/form-cliente.component.spec.ts:145:36)
+	    at UserContext.apply (node_modules/zone.js/fesm2015/zone-testing.js:1703:26)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:369:28)
+	    at ProxyZoneSpec.onInvoke (node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+	Expected <body>...</body> to be <input matinput type="text" class="mat-mdc-input-element ng-tns-c594611921-4 ng-untouched ng-pristine ng-valid mat-mdc-form-field-input-control mdc-text-field__input cdk-text-field-autofill-monitored" ng-reflect-type="text" ng-reflect-placeholder="00000-000" ng-reflect-form="[object Object]" placeholder="00000-000" id="mat-input-a19" aria-invalid="false" aria-required="false">. Tip: To check for deep equality, use .toEqual() instead of .toBe().
+	    at <Jasmine>
+	    at UserContext.apply (src/app/pages/cliente/form-cliente/form-cliente.component.spec.ts:148:36)
+	    at UserContext.apply (node_modules/zone.js/fesm2015/zone-testing.js:1703:26)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:369:28)
+	    at ProxyZoneSpec.onInvoke (node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+ERROR: 'ERROR', TypeError: Cannot read properties of undefined (reading 'push')
+TypeError: Cannot read properties of undefined (reading 'push')
+    at MatDialog.open (http://localhost:9876/_karma_webpack_/webpack:/node_modules/@angular/material/fesm2022/dialog.mjs:635:26)
+    at ListarClienteComponent.excluir (http://localhost:9876/_karma_webpack_/webpack:/src/app/pages/cliente/listar-cliente/listar-cliente.component.ts:102:17)
+    at ListarClienteComponent.onAcao (http://localhost:9876/_karma_webpack_/webpack:/src/app/pages/cliente/listar-cliente/listar-cliente.component.ts:97:12)
+    at listenerFn (ng:///ListarClienteComponent.js:35:22)
+    at executeListenerWithErrorHandling (http://localhost:9876/_karma_webpack_/webpack:/node_modules/@angular/core/fesm2022/core.mjs:30095:16)
+    at Object.next (http://localhost:9876/_karma_webpack_/webpack:/node_modules/@angular/core/fesm2022/core.mjs:30078:22)
+    at ConsumerObserver.next (http://localhost:9876/_karma_webpack_/webpack:/node_modules/rxjs/dist/esm/internal/Subscriber.js:91:33)
+    at SafeSubscriber._next (http://localhost:9876/_karma_webpack_/webpack:/node_modules/rxjs/dist/esm/internal/Subscriber.js:60:26)
+    at SafeSubscriber.next (http://localhost:9876/_karma_webpack_/webpack:/node_modules/rxjs/dist/esm/internal/Subscriber.js:31:18)
+    at http://localhost:9876/_karma_webpack_/webpack:/node_modules/rxjs/dist/esm/internal/Subject.js:34:30
+ERROR: 'ERROR', TypeError: Cannot read properties of undefined (reading 'push')
+TypeError: Cannot read properties of undefined (reading 'push')
+    at MatDialog.open (http://localhost:9876/_karma_webpack_/webpack:/node_modules/@angular/material/fesm2022/dialog.mjs:635:26)
+    at ListarClienteComponent.excluir (http://localhost:9876/_karma_webpack_/webpack:/src/app/pages/cliente/listar-cliente/listar-cliente.component.ts:102:17)
+    at ListarClienteComponent.onAcao (http://localhost:9876/_karma_webpack_/webpack:/src/app/pages/cliente/listar-cliente/listar-cliente.component.ts:97:12)
+    at listenerFn (ng:///ListarClienteComponent.js:35:22)
+    at executeListenerWithErrorHandling (http://localhost:9876/_karma_webpack_/webpack:/node_modules/@angular/core/fesm2022/core.mjs:30095:16)
+    at Object.next (http://localhost:9876/_karma_webpack_/webpack:/node_modules/@angular/core/fesm2022/core.mjs:30078:22)
+    at ConsumerObserver.next (http://localhost:9876/_karma_webpack_/webpack:/node_modules/rxjs/dist/esm/internal/Subscriber.js:91:33)
+    at SafeSubscriber._next (http://localhost:9876/_karma_webpack_/webpack:/node_modules/rxjs/dist/esm/internal/Subscriber.js:60:26)
+    at SafeSubscriber.next (http://localhost:9876/_karma_webpack_/webpack:/node_modules/rxjs/dist/esm/internal/Subscriber.js:31:18)
+    at http://localhost:9876/_karma_webpack_/webpack:/node_modules/rxjs/dist/esm/internal/Subject.js:34:30
+Chrome Headless 153.0.0.0 (Mac OS 10.15.7) Clientes — listagem compartilhada excluir confirma o cliente e atualiza após sucesso FAILED
+	TypeError: Cannot read properties of undefined (reading 'args')
+	    at UserContext.apply (src/app/pages/cliente/listar-cliente/listar-cliente.component.spec.ts:104:42)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:369:28)
+	    at ProxyZoneSpec.onInvoke (node_modules/zone.js/fesm2015/zone-testing.js:2082:39)
+	    at _ZoneDelegate.invoke (node_modules/zone.js/fesm2015/zone.js:368:34)
+	    at ZoneImpl.run (node_modules/zone.js/fesm2015/zone.js:111:43)
+	    at runInTestZone (node_modules/zone.js/fesm2015/zone-testing.js:216:38)
+	    at UserContext.<anonymous> (node_modules/zone.js/fesm2015/zone-testing.js:234:32)
+	    at <Jasmine>
+ERROR: 'ERROR', TypeError: Cannot read properties of undefined (reading 'push')
+TypeError: Cannot read properties of undefined (reading 'push')
+    at MatDialog.open (http://localhost:9876/_karma_webpack_/webpack:/node_modules/@angular/material/fesm2022/dialog.mjs:635:26)
+    at ListarClienteComponent.excluir (http://localhost:9876/_karma_webpack_/webpack:/src/app/pages/cliente/listar-cliente/listar-cliente.component.ts:102:17)
+    at ListarClienteComponent.onAcao (http://localhost:9876/_karma_webpack_/webpack:/src/app/pages/cliente/listar-cliente/listar-cliente.component.ts:97:12)
+    at listenerFn (ng:///ListarClienteComponent.js:35:22)
+    at executeListenerWithErrorHandling (http://localhost:9876/_karma_webpack_/webpack:/node_modules/@angular/core/fesm2022/core.mjs:30095:16)
+    at Object.next (http://localhost:9876/_karma_webpack_/webpack:/node_modules/@angular/core/fesm2022/core.mjs:30078:22)
+    at ConsumerObserver.next (http://localhost:9876/_karma_webpack_/webpack:/node_modules/rxjs/dist/esm/internal/Subscriber.js:91:33)
+    at SafeSubscriber._next (http://localhost:9876/_karma_webpack_/webpack:/node_modules/rxjs/dist/esm/internal/Subscriber.js:60:26)
+    at SafeSubscriber.next (http://localhost:9876/_karma_webpack_/webpack:/node_modules/rxjs/dist/esm/internal/Subscriber.js:31:18)
+    at http://localhost:9876/_karma_webpack_/webpack:/node_modules/rxjs/dist/esm/internal/Subject.js:34:30
+ERROR: 'ERROR', TypeError: Cannot read properties of undefined (reading 'push')
+TypeError: Cannot read properties of undefined (reading 'push')
+    at MatDialog.open (http://localhost:9876/_karma_webpack_/webpack:/node_modules/@angular/material/fesm2022/dialog.mjs:635:26)
+    at ListarClienteComponent.excluir (http://localhost:9876/_karma_webpack_/webpack:/src/app/pages/cliente/listar-cliente/listar-cliente.component.ts:102:17)
+    at ListarClienteComponent.onAcao (http://localhost:9876/_karma_webpack_/webpack:/src/app/pages/cliente/listar-cliente/listar-cliente.component.ts:97:12)
+    at listenerFn (ng:///ListarClienteComponent.js:35:22)
+    at executeListenerWithErrorHandling (http://localhost:9876/_karma_webpack_/webpack:/node_modules/@angular/core/fesm2022/core.mjs:30095:16)
+    at Object.next (http://localhost:9876/_karma_webpack_/webpack:/node_modules/@angular/core/fesm2022/core.mjs:30078:22)
+    at ConsumerObserver.next (http://localhost:9876/_karma_webpack_/webpack:/node_modules/rxjs/dist/esm/internal/Subscriber.js:91:33)
+    at SafeSubscriber._next (http://localhost:9876/_karma_webpack_/webpack:/node_modules/rxjs/dist/esm/internal/Subscriber.js:60:26)
+    at SafeSubscriber.next (http://localhost:9876/_karma_webpack_/webpack:/node_modules/rxjs/dist/esm/internal/Subscriber.js:31:18)
+    at http://localhost:9876/_karma_webpack_/webpack:/node_modules/rxjs/dist/esm/internal/Subject.js:34:30
+TOTAL: 2 FAILED, 31 SUCCESS
+✔ Browser application bundle generation complete.
+✔ Browser application bundle generation complete.

@@ -1,6 +1,6 @@
 @if (!isMobileView()) {
 <app-page-card titulo="Novo Pedido" botaoTexto="Voltar" botaoIcone="arrow_back" botaoCor="primary"
-  [botaoRota]="['/page/pedido']" [mostrarDivisor]="true">
+  [botaoRota]="['/page/pedido']" [mostrarDivisor]="true" [formState]="formState" [saving]="salvando">
 
   <form [formGroup]="addForm">
     <div class="pedido-layout">
@@ -131,9 +131,6 @@
               </div>
 
               <div class="d-flex gap-8 flex-wrap action-buttons">
-                <a routerLink="/page/pedido" mat-stroked-button color="warn">
-                  Cancelar
-                </a>
                 <button mat-flat-button color="primary" (click)="saveDetail($event)"
                   [disabled]="addForm.invalid || !pedidoItens.length || !addForm.get('clienteId')?.value || (orcamentoControl.value && (!nomeOrcamentoControl.value || !vencimentoOrcamentoControl.value))">
                   Salvar pedido

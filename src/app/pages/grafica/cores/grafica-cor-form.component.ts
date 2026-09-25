@@ -5,7 +5,8 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { finalize, map, of, switchMap } from 'rxjs';
 import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
 import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
-import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { PageFormState } from 'src/app/components/page-card/page-form-state';
+import { PageCardAction, PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { MaterialModule } from 'src/app/material.module';
 import { ToastrService } from 'ngx-toastr';
@@ -13,10 +14,6 @@ import { catalogoErrorMessage, catalogoSlugify } from '../../catalogo/shared/uti
 import { GraficaCadastro, GraficaCadastroRequest } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
 
-type CorFormSnapshot = {
-  nome: string;
-  descricao: string;
-};
 
 @Component({
   selector: 'app-grafica-cor-form',
@@ -32,7 +29,7 @@ type CorFormSnapshot = {
     InputTextareaComponent,
   ],
   template: `
-    <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [showFooter]="true">
+    <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [formState]="formState" [footerActions]="footerActions" [saving]="salvando" [actionsDisabled]="carregando">
       <div page-header-actions>
         <button mat-stroked-button type="button" (click)="voltar()">
           <mat-icon>arrow_back</mat-icon>
@@ -62,11 +59,6 @@ type CorFormSnapshot = {
         </app-section-card>
       </form>
 
-      <button page-footer-right mat-stroked-button class="cancel-button" type="button" (click)="cancelar()">Cancelar</button>
-      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-cor-form" [disabled]="form.invalid || salvando">
-        <mat-icon>save</mat-icon>
-        Salvar
-      </button>
     </app-page-card>
   `,
   styles: [`
@@ -87,15 +79,7 @@ type CorFormSnapshot = {
       grid-column: 1 / -1;
     }
 
-    .cancel-button {
-      border-color: #fecaca;
-      color: #b91c1c;
-      background: #fef2f2;
-    }
 
-    .cancel-button:hover {
-      background: #fee2e2;
-    }
 
     @media (max-width: 900px) {
       .form-grid {
@@ -109,12 +93,18 @@ export class GraficaCorFormComponent implements OnInit {
   cloneFromId?: number;
   salvando = false;
   carregando = false;
-  snapshot?: CorFormSnapshot;
 
   form = this.fb.group({
     nome: this.fb.control('', { nonNullable: true, validators: [Validators.required] }),
     descricao: this.fb.control('', { nonNullable: true }),
   });
+
+  readonly formState = new PageFormState(() => this.form);
+  private readonly emptyForm = this.form.getRawValue();
+  get footerActions(): PageCardAction[] {
+    return [{ id: 'salvar', label: 'Salvar', icon: 'save', type: 'submit', form: 'grafica-cor-form', primary: true,
+      disabled: this.form.invalid }];
+  }
 
   get titulo(): string {
     if (this.cloneFromId) return 'Clonar cor';
@@ -141,10 +131,13 @@ export class GraficaCorFormComponent implements OnInit {
     this.carregando = true;
     this.route.paramMap.pipe(
       switchMap((params) => {
+        this.carregando = true;
         const id = Number(params.get('id'));
         this.corId = Number.isFinite(id) && id > 0 ? id : undefined;
         const cloneFrom = Number(this.route.snapshot.queryParamMap.get('cloneFrom'));
         this.cloneFromId = !this.corId && Number.isFinite(cloneFrom) && cloneFrom > 0 ? cloneFrom : undefined;
+        this.form.reset(this.emptyForm);
+        this.formState.begin(this.corId ? 'edit' : 'create');
         const origemId = this.corId || this.cloneFromId;
         if (!origemId) return of(null);
         return this.service.listarCores().pipe(
@@ -154,6 +147,7 @@ export class GraficaCorFormComponent implements OnInit {
       finalize(() => this.carregando = false),
     ).subscribe({
       next: (cor) => {
+        this.carregando = false;
         if ((this.corId || this.cloneFromId) && !cor) {
           this.toastr.error('Cor não encontrada.');
           this.voltar();
@@ -165,7 +159,7 @@ export class GraficaCorFormComponent implements OnInit {
           this.registrarSnapshot();
         }
       },
-      error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível carregar a cor.')),
+      error: (error) => { this.carregando = false; this.toastr.error(catalogoErrorMessage(error, 'Não foi possível carregar a cor.')); },
     });
   }
 
@@ -184,15 +178,7 @@ export class GraficaCorFormComponent implements OnInit {
     });
   }
 
-  cancelar(): void {
-    if (!this.snapshot) {
-      this.voltar();
-      return;
-    }
-    this.form.reset(this.snapshot);
-    this.form.markAsPristine();
-    this.form.markAsUntouched();
-  }
+
 
   voltar(): void {
     this.router.navigate(['/page/grafica/cores']);
@@ -206,9 +192,7 @@ export class GraficaCorFormComponent implements OnInit {
     this.registrarSnapshot();
   }
 
-  private registrarSnapshot(): void {
-    this.snapshot = this.form.getRawValue();
-  }
+  private registrarSnapshot(): void { this.formState.loaded(); }
 
   private toRequest(): GraficaCadastroRequest {
     const raw = this.form.getRawValue();

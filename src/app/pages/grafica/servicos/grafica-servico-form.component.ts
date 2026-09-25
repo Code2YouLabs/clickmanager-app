@@ -5,7 +5,8 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { finalize, map, of, switchMap } from 'rxjs';
 import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
 import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
-import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { PageFormState } from 'src/app/components/page-card/page-form-state';
+import { PageCardAction, PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { PrecoSelectorComponent } from 'src/app/components/preco/preco-selector.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { MaterialModule } from 'src/app/material.module';
@@ -14,13 +15,6 @@ import { catalogoErrorMessage, catalogoSlugify } from '../../catalogo/shared/uti
 import { GraficaPrecoPolitica, GraficaPrecoPoliticaRequest, GraficaServico, GraficaServicoRequest } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
 
-type ServicoFormSnapshot = {
-  form: {
-    nome: string;
-    descricao: string;
-  };
-  preco: any;
-};
 
 @Component({
   selector: 'app-grafica-servico-form',
@@ -37,7 +31,7 @@ type ServicoFormSnapshot = {
     PrecoSelectorComponent,
   ],
   template: `
-    <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [showFooter]="true">
+    <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [formState]="formState" [footerActions]="footerActions" [saving]="salvando" [actionsDisabled]="carregando">
       <div page-header-actions>
         <button mat-stroked-button type="button" (click)="voltar()">
           <mat-icon>arrow_back</mat-icon>
@@ -74,11 +68,6 @@ type ServicoFormSnapshot = {
         </app-section-card>
       </form>
 
-      <button page-footer-right mat-stroked-button class="cancel-button" type="button" (click)="cancelar()">Cancelar</button>
-      <button page-footer-right mat-flat-button color="primary" type="submit" form="grafica-servico-form" [disabled]="form.invalid || precoForm.invalid || salvando">
-        <mat-icon>save</mat-icon>
-        Salvar
-      </button>
     </app-page-card>
   `,
   styles: [`
@@ -117,15 +106,7 @@ type ServicoFormSnapshot = {
       border-top: 0;
     }
 
-    .cancel-button {
-      border-color: #fecaca;
-      color: #b91c1c;
-      background: #fef2f2;
-    }
 
-    .cancel-button:hover {
-      background: #fee2e2;
-    }
 
     @media (max-width: 900px) {
       .form-grid {
@@ -139,13 +120,19 @@ export class GraficaServicoFormComponent implements OnInit {
   cloneFromId?: number;
   salvando = false;
   carregando = false;
-  snapshot?: ServicoFormSnapshot;
 
   form = this.fb.group({
     nome: this.fb.control('', { nonNullable: true, validators: [Validators.required] }),
     descricao: this.fb.control('', { nonNullable: true }),
   });
   precoForm: FormGroup = this.criarPrecoForm();
+
+  readonly formState = new PageFormState(() => this.form, { read: () => this.precoForm.getRawValue(), write: value => this.precoForm = this.criarPrecoForm(value) });
+  private readonly emptyForm = this.form.getRawValue();
+  get footerActions(): PageCardAction[] {
+    return [{ id: 'salvar', label: 'Salvar', icon: 'save', type: 'submit', form: 'grafica-servico-form', primary: true,
+      disabled: this.form.invalid || this.precoForm.invalid }];
+  }
 
   get titulo(): string {
     if (this.cloneFromId) return 'Clonar serviço';
@@ -172,10 +159,14 @@ export class GraficaServicoFormComponent implements OnInit {
     this.carregando = true;
     this.route.paramMap.pipe(
       switchMap((params) => {
+        this.carregando = true;
         const id = Number(params.get('id'));
         this.servicoId = Number.isFinite(id) && id > 0 ? id : undefined;
         const cloneFrom = Number(this.route.snapshot.queryParamMap.get('cloneFrom'));
         this.cloneFromId = !this.servicoId && Number.isFinite(cloneFrom) && cloneFrom > 0 ? cloneFrom : undefined;
+        this.form.reset(this.emptyForm);
+        this.precoForm = this.criarPrecoForm();
+        this.formState.begin(this.servicoId ? 'edit' : 'create');
         const origemId = this.servicoId || this.cloneFromId;
         if (!origemId) return of(null);
         return this.service.listarServicos().pipe(
@@ -185,6 +176,7 @@ export class GraficaServicoFormComponent implements OnInit {
       finalize(() => this.carregando = false),
     ).subscribe({
       next: (servico) => {
+        this.carregando = false;
         if ((this.servicoId || this.cloneFromId) && !servico) {
           this.toastr.error('Serviço não encontrado.');
           this.voltar();
@@ -196,7 +188,7 @@ export class GraficaServicoFormComponent implements OnInit {
           this.registrarSnapshot();
         }
       },
-      error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível carregar o serviço.')),
+      error: (error) => { this.carregando = false; this.toastr.error(catalogoErrorMessage(error, 'Não foi possível carregar o serviço.')); },
     });
   }
 
@@ -223,18 +215,7 @@ export class GraficaServicoFormComponent implements OnInit {
     });
   }
 
-  cancelar(): void {
-    if (!this.snapshot) {
-      this.voltar();
-      return;
-    }
-    this.form.reset(this.snapshot.form);
-    this.precoForm = this.criarPrecoForm(this.snapshot.preco);
-    this.form.markAsPristine();
-    this.form.markAsUntouched();
-    this.precoForm.markAsPristine();
-    this.precoForm.markAsUntouched();
-  }
+
 
   voltar(): void {
     this.router.navigate(['/page/grafica/servicos']);
@@ -249,12 +230,7 @@ export class GraficaServicoFormComponent implements OnInit {
     this.registrarSnapshot();
   }
 
-  private registrarSnapshot(): void {
-    this.snapshot = {
-      form: this.form.getRawValue(),
-      preco: this.precoForm.getRawValue(),
-    };
-  }
+  private registrarSnapshot(): void { this.formState.loaded(); }
 
   private toRequest(): GraficaServicoRequest {
     const raw = this.form.getRawValue();

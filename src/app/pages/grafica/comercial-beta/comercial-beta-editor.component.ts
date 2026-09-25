@@ -13,6 +13,7 @@ import { InputDataComponent } from 'src/app/components/inputs/input-data/input-d
 import { InputMoedaComponent } from 'src/app/components/inputs/input-moeda/input-moeda.component';
 import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
 import { ObservacoesCardComponent } from 'src/app/components/observacoes-card/observacoes-card.component';
+import { PageFormState } from 'src/app/components/page-card/page-form-state';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { PedidoFluxoControlesComponent } from 'src/app/components/pedido-fluxo-controles/pedido-fluxo-controles.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
@@ -357,7 +358,8 @@ export class GraficaServicoWizardDialogComponent {
       botaoIcone="arrow_back"
       botaoCor="primary"
       [botaoRota]="['/page/grafica/comercial-beta', tipo]"
-      [mostrarDivisor]="true">
+      [mostrarDivisor]="true" [formState]="formState" [saving]="salvando"
+      [actionsDisabled]="carregando || carregandoStatus || salvandoPagamento || salvandoAjustesFinanceiros || salvandoValidade">
 
       <form [formGroup]="form">
         <div class="pedido-layout">
@@ -633,9 +635,6 @@ export class GraficaServicoWizardDialogComponent {
                   </div>
 
                   <div class="d-flex gap-8 flex-wrap action-buttons">
-                    <button mat-stroked-button color="warn" type="button" (click)="voltar()">
-                      Cancelar
-                    </button>
                     <ng-container *ngIf="tipo === 'rascunhos'; else acaoPrincipalUnica">
                       <button mat-stroked-button color="primary" type="button" [disabled]="!podeConcluirRascunho || salvando" (click)="concluirRascunho('orcamentos')">
                         Criar orçamento
@@ -816,6 +815,27 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
     acrescimo: [0, [Validators.min(0)]],
     frete: [0, [Validators.min(0)]],
     desconto: [0, [Validators.min(0)]],
+  });
+
+  readonly formState = new PageFormState(() => this.form, {
+    read: () => ({
+      itens: this.itens, cliente: this.clienteConfirmado, pagamentos: this.pagamentosPretendidos,
+      pagamento: this.pagamentoForm.getRawValue(), ajustes: this.ajustesFinanceirosForm.getRawValue(),
+      validade: this.validadeControl.value,
+    }),
+    write: value => {
+      this.itens = value.itens;
+      this.clienteConfirmado = value.cliente;
+      this.trocandoCliente = !value.cliente;
+      this.pagamentosPretendidos = value.pagamentos;
+      this.pagamentoForm.reset(value.pagamento);
+      this.ajustesFinanceirosForm.reset(value.ajustes);
+      this.validadeControl.reset(value.validade);
+      this.observacaoClienteSalva = this.observacaoClienteControl.value || '';
+      this.observacaoInternaSalva = this.observacaoInternaControl.value || '';
+      this.observacaoClienteSalvaFlag = false;
+      this.observacaoInternaSalvaFlag = false;
+    },
   });
 
   constructor(
@@ -1197,6 +1217,7 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
       const rawId = params.get('id');
       const id = rawId ? Number(rawId) : null;
       this.pedidoId = id && !Number.isNaN(id) ? id : null;
+      this.formState.begin(this.pedidoId ? 'edit' : 'create');
       if (this.tipo === 'pedidos' && this.pedidoId) {
         this.carregarPedido(this.pedidoId);
       } else if (this.tipo === 'orcamentos' && this.pedidoId) {
@@ -1307,6 +1328,7 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
       frete: pedido.frete,
     });
     this.trocandoCliente = false;
+    this.formState.loaded();
   }
 
   private aplicarOrcamento(orcamento: OrcamentoComercialDetalhe): void {
@@ -1341,6 +1363,7 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
       this.ajustesFinanceirosForm.disable({ emitEvent: false });
       this.validadeControl.disable({ emitEvent: false });
     }
+    this.formState.loaded();
   }
 
   private aplicarRascunho(rascunho: RascunhoComercialResponse): void {
@@ -1364,6 +1387,7 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
       frete: rascunho.frete,
     });
     this.trocandoCliente = false;
+    this.formState.loaded();
   }
 
   private itemComercialResolvido(item: ComercialItemResponse): ComposicaoComercialResolvida['itens'][number] {

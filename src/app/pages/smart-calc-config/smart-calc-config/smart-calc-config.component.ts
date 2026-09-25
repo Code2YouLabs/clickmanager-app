@@ -16,7 +16,8 @@ import { CalculadoraConfigResponse } from 'src/app/models/calculadora/calculador
 import { CalculadoraConfigRequest } from 'src/app/models/calculadora/calculadora-config-request.model';
 import { extrairMensagemErro } from 'src/app/utils/mensagem.util';
 import { ProdutoOption } from 'src/app/models/produto/produto-option.model';
-import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { PageFormState } from 'src/app/components/page-card/page-form-state';
+import { PageCardAction, PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { DualListTransferComponent, DualListTransferItem } from 'src/app/components/dual-list-transfer/dual-list-transfer.component';
 import { ProductIdentityComponent } from 'src/app/components/product-identity/product-identity.component';
@@ -62,7 +63,15 @@ export class CalculadoraConfigComponent implements OnInit {
         ativo: this.fb.nonNullable.control<boolean>(true),
     });
 
+    readonly formState = new PageFormState(() => this.form, {
+        read: () => this.selecionados, write: value => this.selecionados = value,
+    });
+    get footerActions(): PageCardAction[] {
+        return [{ id: 'salvar', label: 'Salvar', icon: 'save', type: 'submit', form: 'smartcalc-config-form', primary: true, disabled: this.salvarDesabilitado }];
+    }
+
     ngOnInit(): void {
+        this.formState.begin('edit');
         this.isEditMode = this.route.snapshot.routeConfig?.path?.includes('editar') ?? false;
         this.carregando.set(true);
         this.loadConfig();
@@ -154,15 +163,8 @@ export class CalculadoraConfigComponent implements OnInit {
             && [...this.selecionados].every(id => this.snapshot!.selecionados.has(id));
     }
 
-    cancelar(): void {
-        if (!this.snapshot) return;
-        this.form.reset({ ativo: this.snapshot.ativo });
-        this.selecionados = new Set(this.snapshot.selecionados);
-        this.form.markAsPristine();
-        this.form.markAsUntouched();
-    }
-
     private registrarSnapshot(): void {
+        this.formState.loaded();
         this.snapshot = {
             ativo: this.form.controls.ativo.value,
             selecionados: new Set(this.selecionados),

@@ -1,20 +1,22 @@
-import { AfterViewInit, Component, HostListener, OnInit } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
+import { Subject, Subscription, finalize, takeUntil } from 'rxjs';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { PageFormState } from 'src/app/components/page-card/page-form-state';
+import { PageCardComponent, PageCardAction } from 'src/app/components/page-card/page-card.component';
+import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ToastrService } from 'ngx-toastr';
 import { ClienteRequest } from 'src/app/models/cliente/cliente-request.model';
 import { ClienteService } from '../cliente.service';
-import { MatTabsModule } from '@angular/material/tabs';
 import { InputTextoRestritoComponent } from "../../../components/inputs/input-texto/input-texto-restrito.component";
 import { InputTelefoneComponent } from "../../../components/inputs/input-telefone/input-telefone.component";
 import { InputEmailComponent } from "../../../components/inputs/input-email/input-custom.component";
 import { InputDocumentoComponent } from "../../../components/inputs/input-documento/input-documento.component";
 import { EnderecoFormComponent } from 'src/app/components/endereco-form/endereco-form.component';
-import { CardHeaderComponent } from "src/app/components/card-header/card-header.component";
 import { extrairMensagemErro } from 'src/app/utils/mensagem.util';
 import { InputCepComponent } from "../../../components/inputs/input-cep/input-cep.component";
 import { EnderecoViaCep } from 'src/app/models/endereco/endereco.viacep.model';
@@ -27,15 +29,15 @@ import { MobileTotalBarComponent } from "../../../components/mobile-total-bar/mo
     CommonModule,
     RouterModule,
     ReactiveFormsModule,
-    MatCardModule,
+    PageCardComponent,
+    SectionCardComponent,
+    MatProgressSpinnerModule,
     MatButtonModule,
-    MatTabsModule,
     InputTextoRestritoComponent,
     InputTelefoneComponent,
     InputEmailComponent,
     EnderecoFormComponent,
     InputDocumentoComponent,
-    CardHeaderComponent,
     InputCepComponent,
     MatIconModule,
     MobileTotalBarComponent
@@ -43,20 +45,46 @@ import { MobileTotalBarComponent } from "../../../components/mobile-total-bar/mo
   templateUrl: './form-cliente.component.html',
   styleUrls: ['./form-cliente.component.scss']
 })
-export class FormClienteComponent implements OnInit, AfterViewInit {
+export class FormClienteComponent implements OnInit, AfterViewInit, OnDestroy {
   form!: FormGroup;
+  readonly formState = new PageFormState(() => this.form);
   isEditMode = false;
   clienteId?: number;
   retorno: string | null = null;
   isMobileView = false;
   mobileStep = 0;
+  carregando = false;
+  erro: string | null = null;
+  semPermissao = false;
+  saving = false;
+  private consulta?: Subscription;
+  private focusTimer?: ReturnType<typeof setTimeout>;
+  private readonly destroy$ = new Subject<void>();
+
+  get pronto(): boolean { return !this.carregando && !this.erro && !this.semPermissao; }
+
+  get footerActions(): PageCardAction[] {
+    if (!this.pronto) return [];
+    return [
+      { id: 'salvar', label: this.isEditMode ? 'Atualizar' : 'Salvar', type: 'submit', form: 'cliente-form', primary: true, disabled: this.form.invalid, pendingLabel: 'Salvando...' }
+    ];
+  }
+
+  ngOnDestroy(): void {
+    this.consulta?.unsubscribe();
+    clearTimeout(this.focusTimer);
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
 
   constructor(
     private fb: FormBuilder,
     private clienteService: ClienteService,
     private toastr: ToastrService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private host: ElementRef<HTMLElement>
   ) { }
 
   ngOnInit(): void {
@@ -64,7 +92,7 @@ export class FormClienteComponent implements OnInit, AfterViewInit {
     this.inicializarFormulario();
     this.verificarModoEdicao();
 
-    this.route.queryParamMap.subscribe(params => {
+    this.route.queryParamMap.pipe(takeUntil(this.destroy$)).subscribe(params => {
       this.retorno = params.get('retorno');
     });
     
@@ -76,7 +104,9 @@ export class FormClienteComponent implements OnInit, AfterViewInit {
 
   @HostListener('window:resize')
   onWindowResize(): void {
+    const wasMobile = this.isMobileView;
     this.atualizarViewport();
+    if (wasMobile !== this.isMobileView) this.focusCampoAtualMobile();
   }
 
   private inicializarFormulario(): void {
@@ -102,71 +132,83 @@ export class FormClienteComponent implements OnInit, AfterViewInit {
   }
 
   private verificarModoEdicao(): void {
-    this.route.paramMap.subscribe(params => {
+    this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe(params => {
+      this.consulta?.unsubscribe();
       const id = params.get('id');
-      if (id) {
-        this.isEditMode = true;
-        this.clienteId = +id;
-        this.carregarCliente(this.clienteId);
-      }
+      this.isEditMode = !!id;
+      this.clienteId = id ? Number(id) : undefined;
+      this.mobileStep = 0;
+      this.erro = null;
+      this.semPermissao = false;
+      this.carregando = false;
+      this.form.reset({ nome: '', email: '', telefone: '', documento: '',
+        endereco: { cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' } });
+      this.formState.begin(this.isEditMode ? 'edit' : 'create');
+      if (this.isEditMode) this.carregarCliente();
     });
   }
 
-  private carregarCliente(id: number): void {
-    this.clienteService.buscarPorId(id).subscribe({
-      next: cliente => this.form.patchValue(cliente),
-      error: (err) => this.toastr.error(extrairMensagemErro(err, 'Erro ao carregar cliente.'))
+  carregarCliente(): void {
+    this.consulta?.unsubscribe();
+    this.erro = null;
+    this.semPermissao = false;
+    if (!this.clienteId || !Number.isFinite(this.clienteId)) {
+      this.erro = 'ID do cliente inválido.';
+      return;
+    }
+    this.carregando = true;
+    this.consulta = this.clienteService.buscarPorId(this.clienteId).subscribe({
+      next: cliente => {
+        this.form.patchValue(cliente);
+        this.formState.loaded();
+        this.carregando = false;
+        this.focusCampoAtualMobile();
+      },
+      error: err => {
+        this.carregando = false;
+        this.semPermissao = err.status === 403;
+        this.erro = this.semPermissao ? null : extrairMensagemErro(err, 'Erro ao carregar cliente.');
+      }
     });
   }
 
   onSubmit(): void {
+    if (this.saving || !this.pronto) return;
     if (this.isMobileView && this.mobileStep === 0) {
       this.avancarMobile();
       return;
     }
-
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
-  
+    if (this.isEditMode && !this.clienteId) {
+      this.toastr.error('ID do cliente inválido.');
+      return;
+    }
     const cliente: ClienteRequest = this.form.value;
     const destino = this.retorno ?? '/page/cliente';
-  
-  
-    if (this.isEditMode) {
-      const idParam = this.route.snapshot.paramMap.get('id');
-      const id = idParam ? Number(idParam) : null;
-  
-      if (!id) {
-        this.toastr.error('ID do cliente inválido.');
-        return;
-      }
-  
-      this.clienteService.atualizar(id, cliente).subscribe({
-        next: () => {
-          this.toastr.success('Cliente atualizado com sucesso!');
-          this.router.navigate([destino]);
-        },
-        error: (err) => this.toastr.error(extrairMensagemErro(err, 'Erro ao atualizar cliente.'))
-      });
-    } else {
-      this.clienteService.salvar(cliente).subscribe({
-        next: () => {
-          this.toastr.success('Cliente cadastrado com sucesso!');
-          this.router.navigate([destino]);
-        },
-        error: (err) => this.toastr.error(extrairMensagemErro(err, 'Erro ao cadastrar cliente.'))
-      });
-    }
-  } 
+    this.saving = true;
+    const request = this.isEditMode
+      ? this.clienteService.atualizar(this.clienteId!, cliente)
+      : this.clienteService.salvar(cliente);
+    request.pipe(takeUntil(this.destroy$), finalize(() => this.saving = false)).subscribe({
+      next: () => {
+        this.toastr.success(this.isEditMode ? 'Cliente atualizado com sucesso!' : 'Cliente cadastrado com sucesso!');
+        this.router.navigate([destino]);
+      },
+      error: err => this.toastr.error(extrairMensagemErro(err,
+        this.isEditMode ? 'Erro ao atualizar cliente.' : 'Erro ao cadastrar cliente.'))
+    });
+  }
 
   setEnderecoGroup(group: FormGroup): void {
+    group.patchValue(this.enderecoGroup.value, { emitEvent: false });
     this.form.setControl('endereco', group);
   }
 
   avancarMobile(): void {
-    if (!this.isMobileView) return;
+    if (!this.isMobileView || !this.pronto || this.saving) return;
 
     if (this.mobileStep === 0) {
       if (this.dadosBasicosInvalidos()) {
@@ -183,7 +225,7 @@ export class FormClienteComponent implements OnInit, AfterViewInit {
   }
 
   voltarMobile(): void {
-    if (!this.isMobileView || this.mobileStep === 0) return;
+    if (!this.isMobileView || this.mobileStep === 0 || this.saving) return;
     this.mobileStep = 0;
     this.focusCampoAtualMobile();
   }
@@ -207,6 +249,7 @@ export class FormClienteComponent implements OnInit, AfterViewInit {
   }
 
   get mobileFooterLabel(): string {
+    if (this.saving) return 'Salvando...';
     return this.mobileStep === 0 ? 'Continuar →' : (this.isEditMode ? 'Salvar alterações' : 'Salvar cliente');
   }
 
@@ -242,13 +285,14 @@ export class FormClienteComponent implements OnInit, AfterViewInit {
   }
 
   private focusCampoAtualMobile(): void {
-    if (!this.isMobileView) return;
+    if (!this.isMobileView || !this.pronto || this.saving) return;
 
-    setTimeout(() => {
+    clearTimeout(this.focusTimer);
+    this.focusTimer = setTimeout(() => {
       const selector = this.mobileStep === 0
-        ? 'app-form-cliente .cliente-mobile-form app-input-texto-restrito input'
-        : 'app-form-cliente .cliente-mobile-form app-input-cep input';
-      const el = document.querySelector<HTMLInputElement>(selector);
+        ? '.cliente-mobile-form app-input-texto-restrito input'
+        : '.cliente-mobile-form app-input-cep input';
+      const el = this.host.nativeElement.querySelector<HTMLInputElement>(selector);
       el?.focus();
     }, 80);
   }

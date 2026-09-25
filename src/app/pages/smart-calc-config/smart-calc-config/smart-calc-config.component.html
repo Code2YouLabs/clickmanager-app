@@ -2,7 +2,7 @@
   [titulo]="tituloPagina"
   subtitulo="Ative o SmartCalc e escolha as bases de produção."
   [mostrarDivisor]="true"
-  [showFooter]="true"
+  [formState]="formState" [footerActions]="footerActions" [saving]="salvando()" [actionsDisabled]="carregando() || erroCarregamento"
   [helpRota]="['/page/ajuda']"
   helpFragment="smartcalc"
   helpTexto="Manual do SmartCalc"
@@ -50,9 +50,4 @@
     </app-section-card>
   </form>
 
-  <button page-footer-right mat-stroked-button class="cancel-button" type="button" (click)="cancelar()">Cancelar</button>
-  <button page-footer-right mat-flat-button color="primary" type="submit" form="smartcalc-config-form"
-    [disabled]="salvarDesabilitado">
-    <mat-icon>save</mat-icon> {{ textoAcaoPrincipal }}
-  </button>
 </app-page-card>
