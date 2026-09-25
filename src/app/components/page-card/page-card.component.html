@@ -1,6 +1,7 @@
-<mat-card class="cardWithShadow page-card">
+<mat-card class="cardWithShadow page-card" [attr.aria-busy]="saving">
   <app-card-header
     [titulo]="titulo"
+    [actionDisabled]="headerActionDisabled"
     [subtitulo]="subtitulo"
     [botaoTexto]="botaoTexto"
     [botaoIcone]="botaoIcone"
@@ -20,7 +21,8 @@
     <ng-content></ng-content>
   </mat-card-content>
 
-  <ng-container *ngIf="showFooter">
+  <span class="page-card__saving" role="status" *ngIf="saving">{{ savingText }}</span>
+  <ng-container *ngIf="showFooter || footerActions.length">
     <mat-divider *ngIf="footerDivider" class="page-card__footer-divider"></mat-divider>
     <mat-card-actions class="page-card__footer">
       <div class="page-card__footer-left">
@@ -28,6 +30,17 @@
       </div>
       <div class="page-card__footer-right">
         <ng-content select="[page-footer-right]"></ng-content>
+        @for (action of footerActions; track action.id) {
+          @if (action.primary) {
+            <button mat-flat-button [color]="action.color || 'primary'" [type]="action.type || 'button'"
+              [attr.form]="action.form || null" [disabled]="saving || actionsDisabled || action.disabled"
+              (click)="onFooterAction(action)">{{ saving && action.pendingLabel ? action.pendingLabel : action.label }}</button>
+          } @else {
+            <button mat-stroked-button [color]="action.color || null" [type]="action.type || 'button'"
+              [attr.form]="action.form || null" [disabled]="saving || actionsDisabled || action.disabled"
+              (click)="onFooterAction(action)">{{ saving && action.pendingLabel ? action.pendingLabel : action.label }}</button>
+          }
+        }
       </div>
     </mat-card-actions>
   </ng-container>

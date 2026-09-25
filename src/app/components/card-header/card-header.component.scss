@@ -18,3 +18,12 @@
 .help-icon-btn {
   color: #475569;
 }
+
+.card-header { gap: 8px 16px; }
+.card-header__context { min-width: 0; overflow-wrap: anywhere; }
+.card-header__actions { min-width: 0; }
+@media (max-width: 768px) {
+  .card-header__context { flex: 1 1 100%; }
+  .card-header__actions { max-width: 100%; }
+  .card-header__actions ::ng-deep [page-header-actions] { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+}

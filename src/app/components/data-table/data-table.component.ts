@@ -11,13 +11,17 @@ import {
   Output,
   QueryList,
   SimpleChanges,
+  ViewChild,
+  inject,
 } from '@angular/core';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { PageEvent } from '@angular/material/paginator';
 import { Sort } from '@angular/material/sort';
-import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+import { Subject, takeUntil } from 'rxjs';
 import { MaterialModule } from 'src/app/material.module';
-import { SectionCardComponent } from '../section-card/section-card.component';
+import { ListFilterBarComponent, ListFilterChip } from '../list-filter-bar/list-filter-bar.component';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { DataTableItemDirective } from './data-table-item.directive';
 import { DataTableCellDirective } from './data-table-cell.directive';
 import {
   DataTableAction,
@@ -33,17 +37,10 @@ import {
   DataTableSort,
 } from './data-table.models';
 
-interface DataTableFilterChip {
-  filterKey: string;
-  filterLabel: string;
-  value: string | number | boolean;
-  optionLabel: string;
-}
-
 @Component({
   selector: 'app-data-table',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MaterialModule, SectionCardComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, MaterialModule, ListFilterBarComponent],
   templateUrl: './data-table.component.html',
   styleUrl: './data-table.component.scss',
   animations: [
@@ -65,6 +62,15 @@ export class DataTableComponent<T = unknown>
   @Input() pagination: DataTablePagination | null = null;
   @Input() loading = false;
   @Input() showTable = true;
+  @Input() refreshing = false;
+  @Input() error: string | null = null;
+  @Input() forbidden = false;
+  @Input() forbiddenMessage = 'Você não possui permissão para visualizar este conteúdo.';
+  @Input() retryEnabled = true;
+  @Input() hasCustomFilters = false;
+  @Input() filtered = false;
+  @Input() tableLabel = 'Resultados';
+  @Output() retry = new EventEmitter<void>();
   @Input() actions: DataTableAction<T>[] = [];
   @Input() actionsMode: DataTableActionsMode = 'menu';
   @Input() expandable = false;
@@ -83,18 +89,58 @@ export class DataTableComponent<T = unknown>
   @Output() sortChange = new EventEmitter<Sort>();
   @Output() action = new EventEmitter<DataTableActionEvent<T>>();
 
+  @ViewChild(ListFilterBarComponent) filterBar?: ListFilterBarComponent;
+  @ContentChildren(DataTableItemDirective) itemTemplates?: QueryList<DataTableItemDirective<T>>;
+  private readonly breakpoints = inject(BreakpointObserver);
+  isMobile = false;
+  reducedMotion = false;
+
   @ContentChildren(DataTableCellDirective) cellTemplates?: QueryList<DataTableCellDirective<T>>;
 
   readonly searchControl = new FormControl('', { nonNullable: true });
   displayedColumns: string[] = [];
   templateMap = new Map<string, DataTableCellDirective<T>>();
-  internalFilters: DataTableFilterState = {};
-  filtersExpanded = false;
   expandedRow: T | null = null;
+  private currentFilters: DataTableFilterState = {};
 
   private readonly destroy$ = new Subject<void>();
-  private searchChanges$ = new Subject<string>();
-  private searchInitialized = false;
+  constructor() {
+    this.breakpoints.observe(['(max-width: 760px)', '(prefers-reduced-motion: reduce)']).pipe(takeUntil(this.destroy$))
+      .subscribe(result => {
+        this.isMobile = result.breakpoints['(max-width: 760px)'] ?? result.matches;
+        this.reducedMotion = result.breakpoints['(prefers-reduced-motion: reduce)'] ?? false;
+      });
+  }
+  get mobileTemplate(): DataTableItemDirective<T> | undefined { return this.itemTemplates?.first; }
+  get useMobileItems(): boolean { return this.isMobile && !!this.mobileTemplate; }
+  get busy(): boolean { return this.loading || this.refreshing; }
+  get initialLoading(): boolean { return this.busy && !this.data.length; }
+  get hasBlockingError(): boolean { return !!this.error && !this.data.length; }
+  get canShowContent(): boolean { return !this.forbidden && !this.initialLoading && !this.hasBlockingError; }
+  get internalFilters(): DataTableFilterState { return this.filterBar?.internalFilters || this.filterState; }
+  get filtersExpanded(): boolean { return this.filterBar?.filtersExpanded || false; }
+  get activeFilterChips(): ListFilterChip[] { return this.filterBar?.activeFilterChips || []; }
+  get hasActiveFilters(): boolean {
+    return Object.values(this.currentFilters).some(value => value !== null && value !== undefined && value !== '' && (!Array.isArray(value) || value.length > 0));
+  }
+  get isFilteredEmpty(): boolean { return this.filtered || this.searchControl.value.trim().length > 0 || this.hasActiveFilters; }
+  onSearch(value: string): void { this.searchChange.emit(value); }
+  onFilterStateChange(value: DataTableFilterState): void {
+    // Preserve the existing DataTable contract: null/empty clear a filter; false and zero survive.
+    this.currentFilters = { ...value };
+    this.filterChange.emit(Object.fromEntries(Object.entries(value).filter(([, item]) =>
+      item !== null && item !== undefined && item !== '' && (!Array.isArray(item) || item.length > 0))));
+  }
+  onFilterValueChange(key: string, value: DataTableFilterValue): void { this.filterBar?.onFilterValueChange(key, value); }
+  onClearFilters(): void { this.filterBar?.onClearFilters(); }
+  onRemoveFilterChip(chip: ListFilterChip): void { this.filterBar?.onRemoveFilterChip(chip); }
+  toggleFilters(): void { this.filterBar?.toggleFilters(); }
+  selectedFilterValue(filter: DataTableFilter): DataTableFilterValue { return this.filterBar?.selectedFilterValue(filter) ?? null; }
+  readonly emitItemAction = (row: T, actionId: string): void => {
+    const action = this.actions.find(item => item.id === actionId);
+    if (action) this.emitAction(row, action);
+  };
+  readonly toggleItem = (row: T): void => this.toggleRow(row);
 
   ngAfterContentInit(): void {
     this.rebuildTemplateMap();
@@ -102,6 +148,7 @@ export class DataTableComponent<T = unknown>
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    if (changes['filterState']) this.currentFilters = { ...this.filterState };
     if (changes['columns'] || changes['actions'] || changes['expandable']) {
       this.displayedColumns = [
         ...this.columns.map((column) => column.key),
@@ -109,12 +156,7 @@ export class DataTableComponent<T = unknown>
       ];
     }
 
-    if (changes['filterState']) {
-      this.internalFilters = { ...(this.filterState || {}) };
-    }
-
-    if (changes['search']) {
-      this.setupSearchDebounce(this.search?.debounceMs ?? 300);
+    if (changes['search'] && changes['search'].currentValue?.value !== changes['search'].previousValue?.value) {
       this.searchControl.setValue(this.search?.value ?? '', { emitEvent: false });
     }
   }
@@ -122,43 +164,6 @@ export class DataTableComponent<T = unknown>
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  onFilterValueChange(key: string, value: DataTableFilterValue): void {
-    this.internalFilters = {
-      ...this.internalFilters,
-      [key]: this.normalizeFilterValue(value),
-    };
-    this.filterChange.emit(this.withoutEmptyFilters(this.internalFilters));
-  }
-
-  onClearFilters(): void {
-    this.internalFilters = {};
-    this.clearFilters.emit();
-    this.filterChange.emit({});
-  }
-
-  onRemoveFilterChip(chip: DataTableFilterChip): void {
-    const value = this.internalFilters[chip.filterKey];
-    const nextFilters = { ...this.internalFilters };
-
-    if (Array.isArray(value)) {
-      const values = value.filter((item) => item !== chip.value);
-      if (values.length) {
-        nextFilters[chip.filterKey] = values;
-      } else {
-        delete nextFilters[chip.filterKey];
-      }
-    } else {
-      delete nextFilters[chip.filterKey];
-    }
-
-    this.internalFilters = nextFilters;
-    this.filterChange.emit(this.withoutEmptyFilters(this.internalFilters));
-  }
-
-  toggleFilters(): void {
-    this.filtersExpanded = !this.filtersExpanded;
   }
 
   onPageChange(event: PageEvent): void {
@@ -170,7 +175,7 @@ export class DataTableComponent<T = unknown>
   }
 
   emitAction(row: T, tableAction: DataTableAction<T>): void {
-    if (this.isActionDisabled(row, tableAction)) {
+    if (this.forbidden || this.isActionDisabled(row, tableAction) || (tableAction.visible && !tableAction.visible(row))) {
       return;
     }
     this.action.emit({ action: tableAction.id, row });
@@ -219,75 +224,9 @@ export class DataTableComponent<T = unknown>
     return column.align ? `data-table__cell--${column.align}` : '';
   }
 
-  filterWidth(filter: DataTableFilter): string | null {
-    return filter.width || null;
-  }
-
-  isMultiSelectFilter(filter: DataTableFilter): boolean {
-    return filter.type === 'multi-select';
-  }
-
-  selectedFilterValue(filter: DataTableFilter): DataTableFilterValue {
-    const value = this.internalFilters[filter.key];
-    if (this.isMultiSelectFilter(filter)) {
-      if (Array.isArray(value)) {
-        return value;
-      }
-      return value === null || value === undefined || value === '' ? [] : [value];
-    }
-    return value ?? null;
-  }
-
   trackByRow = (_index: number, row: T): unknown => {
     return typeof this.rowKey === 'function' ? this.rowKey(row) : (row as Record<string, unknown>)[this.rowKey as string];
   };
-
-  get hasActiveFilters(): boolean {
-    return Object.keys(this.withoutEmptyFilters(this.internalFilters)).length > 0;
-  }
-
-  get activeFilterCount(): number {
-    return Object.values(this.withoutEmptyFilters(this.internalFilters)).reduce<number>((count, value) => {
-      return count + (Array.isArray(value) ? value.length : 1);
-    }, 0);
-  }
-
-  get activeFilterChips(): DataTableFilterChip[] {
-    const normalized = this.withoutEmptyFilters(this.internalFilters);
-    return this.filters.flatMap((filter) => {
-      const value = normalized[filter.key];
-      if (Array.isArray(value)) {
-        return value.map((item) => this.toFilterChip(filter, item));
-      }
-      if (value === null || value === undefined || value === '') {
-        return [];
-      }
-      return [this.toFilterChip(filter, value)];
-    });
-  }
-
-  get hasSearchValue(): boolean {
-    return this.searchControl.value.trim().length > 0;
-  }
-
-  get isFilteredEmpty(): boolean {
-    return this.hasSearchValue || this.hasActiveFilters;
-  }
-
-  get toolbarTitle(): string {
-    return this.search.enabled ? (this.search.label || 'Buscar') : this.filtersLabel;
-  }
-
-  private setupSearchDebounce(debounceMs: number): void {
-    if (this.searchInitialized) {
-      return;
-    }
-    this.searchInitialized = true;
-    this.searchControl.valueChanges.pipe(takeUntil(this.destroy$)).subscribe((value) => this.searchChanges$.next(value));
-    this.searchChanges$
-      .pipe(debounceTime(debounceMs), distinctUntilChanged(), takeUntil(this.destroy$))
-      .subscribe((value) => this.searchChange.emit(value.trim()));
-  }
 
   private rebuildTemplateMap(): void {
     this.templateMap.clear();
@@ -298,32 +237,4 @@ export class DataTableComponent<T = unknown>
     });
   }
 
-  private normalizeFilterValue(value: DataTableFilterValue): DataTableFilterValue {
-    if (Array.isArray(value)) {
-      return value;
-    }
-    return value === undefined ? null : value;
-  }
-
-  private withoutEmptyFilters(filters: DataTableFilterState): DataTableFilterState {
-    return Object.entries(filters || {}).reduce<DataTableFilterState>((acc, [key, value]) => {
-      if (value === null || value === undefined || value === '') {
-        return acc;
-      }
-      if (Array.isArray(value) && value.length === 0) {
-        return acc;
-      }
-      acc[key] = value;
-      return acc;
-    }, {});
-  }
-
-  private toFilterChip(filter: DataTableFilter, value: string | number | boolean): DataTableFilterChip {
-    return {
-      filterKey: filter.key,
-      filterLabel: filter.label,
-      value,
-      optionLabel: filter.options.find((option) => option.value === value)?.label || String(value),
-    };
-  }
 }

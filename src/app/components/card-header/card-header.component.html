@@ -1,6 +1,6 @@
-<div class="d-flex justify-content-between align-items-center flex-wrap p-16 w-100">
-    <div>
-        <div class="f-s-20 f-w-600 text-primary-dark">
+<div class="card-header d-flex justify-content-between align-items-center flex-wrap p-16 w-100">
+    <div class="card-header__context">
+        <div role="heading" aria-level="2" class="f-s-20 f-w-600 text-primary-dark">
             {{ titulo }}
         </div>
         <div class="f-s-13 text-muted" *ngIf="subtitulo">
@@ -8,7 +8,7 @@
         </div>
     </div>
 
-    <div class="d-flex align-items-center gap-8 flex-wrap">
+    <div class="card-header__actions d-flex align-items-center gap-8 flex-wrap">
         <!-- Botão de ajuda -->
         <ng-container *ngIf="helpRota">
             <ng-container *ngIf="helpExterno; else helpInterno">
@@ -42,16 +42,16 @@
         <!-- Botão de ação -->
         <ng-container *ngIf="botaoTexto && botaoRota">
             <ng-container *ngIf="!permissao; else botaoComPermissao">
-                <button mat-stroked-button [color]="botaoCor" [routerLink]="botaoRota">
+                <button type="button" [disabled]="actionDisabled || actionPending" [attr.aria-busy]="actionPending" mat-stroked-button [color]="botaoCor" [routerLink]="botaoRota">
                     <mat-icon class="m-r-4">{{ botaoIcone }}</mat-icon>
-                    {{ botaoTexto }}
+                    {{ actionPending ? actionPendingText : botaoTexto }}
                 </button>
             </ng-container>
 
             <ng-template #botaoComPermissao>
-                <button mat-stroked-button [color]="botaoCor" [routerLink]="botaoRota" *temPermissao="permissao">
+                <button type="button" [disabled]="actionDisabled || actionPending" [attr.aria-busy]="actionPending" mat-stroked-button [color]="botaoCor" [routerLink]="botaoRota" *temPermissao="permissao">
                     <mat-icon class="m-r-4">{{ botaoIcone }}</mat-icon>
-                    {{ botaoTexto }}
+                    {{ actionPending ? actionPendingText : botaoTexto }}
                 </button>
             </ng-template>
         </ng-container>

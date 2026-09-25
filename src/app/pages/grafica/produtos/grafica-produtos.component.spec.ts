@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Router } from '@angular/router';
-import { of } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { GraficaProdutoService } from '../shared/grafica.service';
 import { GraficaProdutosComponent } from './grafica-produtos.component';
@@ -187,4 +187,35 @@ describe('GraficaProdutosComponent', () => {
 
     expect(component.categoriaResumo(row)).toEqual([{ partes: ['Impressão'], truncada: false }]);
   });
+  it('mostra erro inicial com retry em vez de vazio', () => {
+    service.listar.and.returnValue(throwError(() => ({ status: 500 })));
+    fixture.detectChanges();
+    expect(component.erroCarregamento).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[role=alert]')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).not.toContain('Nenhum produto gráfico encontrado');
+    service.listar.and.returnValue(of({ content: [], pageNumber: 0, pageSize: 10, totalElements: 0, totalPages: 0, last: true }));
+    fixture.nativeElement.querySelector('[role=alert] button').click(); fixture.detectChanges();
+    expect(component.erroCarregamento).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Nenhum produto gráfico encontrado');
+  });
+  it('preserva dados e totais se uma atualizacao falhar', () => {
+    component.produtos = [{ id: 1, catalogoProdutoId: 10, catalogoProdutoNome: 'Panfleto', ativo: true, acabamentos: [], parametros: [] }];
+    component.total = 25;
+    const response = new Subject<any>(); service.listar.and.returnValue(response);
+    component.carregar(); expect(component.carregando).toBeTrue(); expect(component.produtos.length).toBe(1);
+    response.error({ status: 500 });
+    expect(component.produtos.length).toBe(1); expect(component.total).toBe(25); expect(component.erroCarregamento).toBeTruthy();
+  });
+  it('apresenta 403 como acesso restrito sem tabela nem retry', () => {
+    service.listar.and.returnValue(throwError(() => ({ status: 403 }))); fixture.detectChanges();
+    expect(component.acessoNegado).toBeTrue(); expect(fixture.nativeElement.textContent).toContain('Acesso restrito');
+    expect(fixture.nativeElement.querySelector('table')).toBeNull(); expect(fixture.nativeElement.querySelector('[role=alert] button')).toBeNull();
+  });
+  it('ignora respostas obsoletas de busca sem alterar endpoints', () => {
+    const old = new Subject<any>(); service.listar.and.returnValue(old); component.onSearch('primeira');
+    const current = new Subject<any>(); service.listar.and.returnValue(current); component.onSearch('segunda');
+    current.next({ content: [], totalElements: 2 }); old.next({ content: [], totalElements: 99 });
+    expect(component.total).toBe(2); expect(component.searchConfig.value).toBe('segunda');
+  });
+
 });

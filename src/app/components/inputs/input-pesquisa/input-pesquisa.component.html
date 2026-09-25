@@ -1,9 +1,8 @@
 <div class="w-100">
-
-    <mat-label *ngIf="showLabel" class="f-s-14 f-w-600 d-block m-b-8 m-t-16">Pesquisar:</mat-label>
-
-    <mat-form-field appearance="outline" class="w-100">
-        <input matInput [placeholder]="placeholder" [formControl]="pesquisaControl" />
-    </mat-form-field>
-
+  <mat-label *ngIf="showLabel && !compact" class="f-s-14 f-w-600 d-block m-b-8 m-t-16">Pesquisar:</mat-label>
+  <mat-form-field appearance="outline" class="w-100" [class.hide-hint]="compact">
+    <mat-label *ngIf="compact">{{ placeholder }}</mat-label>
+    <mat-icon *ngIf="compact" matPrefix>search</mat-icon>
+    <input matInput type="search" [placeholder]="placeholder" [attr.aria-label]="placeholder" [formControl]="pesquisaControl" />
+  </mat-form-field>
 </div>
