@@ -8,7 +8,6 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
 import { CardHeaderComponent } from '../card-header/card-header.component';
 
-/** O submit de formulário tem apresentação fixa definida pelo PageCard. */
 export type PageCardAction = { id: string; disabled?: boolean } & (
   { type: 'submit'; form: string; intent?: never;
     label?: never; icon?: never; pendingLabel?: never; color?: never; primary?: never } |
