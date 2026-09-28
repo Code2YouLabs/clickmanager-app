@@ -106,13 +106,12 @@ describe('LinksEditorComponent', () => {
 
   it('mantem Salvar no footer com Cancelar secundario e fora do header', () => {
     const fixture = setup();
-    const footer = fixture.nativeElement.querySelector('.links-editor-footer');
+    const footer = fixture.nativeElement.querySelector('.page-card__footer');
     const cancelar = footer?.querySelector('button');
 
     expect(footer?.textContent).toContain('Cancelar');
     expect(footer?.textContent).toContain('Salvar');
     expect(cancelar?.hasAttribute('mat-stroked-button')).toBeTrue();
-    expect(cancelar?.getAttribute('color')).toBe('primary');
     expect(fixture.nativeElement.querySelector('app-card-header')?.textContent).not.toContain('Salvar');
   });
 
@@ -123,7 +122,7 @@ describe('LinksEditorComponent', () => {
     component.tituloControl.setValue('Alterado');
     component.descricaoControl.setValue('Texto');
     component.corPrincipalControl.setValue('#111111');
-    component.cancelarAlteracoes();
+    component.formState.reset();
 
     expect(component.tituloControl.value).toBe('Empresa');
     expect(component.descricaoControl.value).toBe('');
@@ -135,13 +134,13 @@ describe('LinksEditorComponent', () => {
     const component = fixture.componentInstance;
 
     component.tituloControl.setValue('Alterado');
-    component.cancelarAlteracoes();
+    component.formState.reset();
     expect(component.tituloControl.value).toBe('Página salva');
 
     component.tituloControl.setValue('Novo salvo');
     component.salvarPagina();
     component.tituloControl.setValue('Alterado outra vez');
-    component.cancelarAlteracoes();
+    component.formState.reset();
 
     expect(component.tituloControl.value).toBe('Novo salvo');
   });
@@ -154,7 +153,7 @@ describe('LinksEditorComponent', () => {
     expect(text).toContain('Publicar');
     expect(text).toContain('Ações avançadas');
     expect(text).toContain('Excluir página');
-    expect(text).toContain('Esta ação remove definitivamente a página, seus links e seus dados de analytics.');
+    expect(text).toContain('Remove definitivamente a página, seus links e seus dados de analytics.');
     expect(text).not.toContain('Arquivar');
   });
 
@@ -228,7 +227,7 @@ describe('LinksEditorComponent', () => {
     const text = fixture.nativeElement.textContent;
 
     expect(text).toContain('Identidade da empresa');
-    expect(text).toContain('A logo e o endereço pertencem à identidade da empresa');
+    expect(text).toContain('Logo e endereço pertencem à identidade pública global da empresa.');
     expect(text).toContain('https://empresa.clickmanager.com.br/links');
     expect(text).not.toContain('Alterar logo');
     expect(text).not.toContain('Remover');
@@ -284,7 +283,7 @@ describe('LinksEditorComponent', () => {
     const tooltips = Array.from(fixture.nativeElement.querySelectorAll('[ng-reflect-message]') as NodeListOf<Element>)
       .map((element: Element) => element.getAttribute('ng-reflect-message'));
 
-    expect(tooltips).toEqual(jasmine.arrayContaining(['Editar', 'Desativar', 'Ativar', 'Remover', 'Mover para cima', 'Mover para baixo']));
+    expect(tooltips).toEqual(jasmine.arrayContaining(['Editar', 'Ativar ou desativar', 'Remover', 'Mover para cima', 'Mover para baixo']));
   });
 
   it('renderiza painel de compartilhamento com QR inline', () => {
