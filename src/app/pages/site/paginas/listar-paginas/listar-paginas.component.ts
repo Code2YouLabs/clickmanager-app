@@ -1,22 +1,24 @@
-import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
-import { MatIconModule } from '@angular/material/icon';
-import { MatMenuModule } from '@angular/material/menu';
-import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatRippleModule } from '@angular/material/core';
-import { MatTableModule } from '@angular/material/table';
-import { Router, RouterModule } from '@angular/router';
-import { TablerIconsModule } from 'angular-tabler-icons';
+import { PageEvent } from '@angular/material/paginator';
+import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
-import { CardHeaderComponent } from 'src/app/components/card-header/card-header.component';
+import { Subject, Subscription, takeUntil } from 'rxjs';
+import { DataTableCellDirective } from 'src/app/components/data-table/data-table-cell.directive';
+import { DataTableItemDirective } from 'src/app/components/data-table/data-table-item.directive';
+import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
+import {
+  DataTableAction,
+  DataTableActionEvent,
+  DataTableColumn,
+  DataTablePagination,
+  DataTableSearchConfig,
+} from 'src/app/components/data-table/data-table.models';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
-import { InputPesquisaComponent } from 'src/app/components/inputs/input-pesquisa/input-pesquisa.component';
-import { MobileFabActionComponent } from 'src/app/components/mobile-fab-action/mobile-fab-action.component';
-import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
+import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { StatusBadgeComponent } from 'src/app/components/status-badge/status-badge.component';
+import { MaterialModule } from 'src/app/material.module';
+import { AuthService } from 'src/app/services/auth.service';
 import { SitePaginaCodigo, SitePaginaResponse, SitePaginaTipo } from '../../models/site-pagina.models';
 import { SitePaginaService } from '../../services/site-pagina.service';
 
@@ -24,64 +26,141 @@ import { SitePaginaService } from '../../services/site-pagina.service';
   selector: 'app-listar-paginas',
   standalone: true,
   imports: [
-    CommonModule,
-    MatButtonModule,
-    MatCardModule,
-    MatIconModule,
-    MatMenuModule,
-    MatPaginatorModule,
-    MatProgressSpinnerModule,
-    MatRippleModule,
-    MatTableModule,
-    RouterModule,
-    TablerIconsModule,
-    CardHeaderComponent,
-    InputPesquisaComponent,
-    MobileFabActionComponent,
-    TemPermissaoDirective,
+    DataTableCellDirective,
+    DataTableComponent,
+    DataTableItemDirective,
+    MaterialModule,
+    PageCardComponent,
+    StatusBadgeComponent,
   ],
   templateUrl: './listar-paginas.component.html',
   styleUrl: './listar-paginas.component.scss',
 })
-export class ListarPaginasComponent implements OnInit {
+export class ListarPaginasComponent implements OnInit, OnDestroy {
   paginas: SitePaginaResponse[] = [];
   totalPaginas = 0;
   carregando = false;
+  erro: string | null = null;
+  semPermissao = false;
   pagina = 0;
   tamanhoPagina = 10;
   termoPesquisa = '';
-  isMobileView = false;
-  mobileFabCompact = false;
-  paginaSelecionadaMenu: SitePaginaResponse | null = null;
-  readonly colunasExibidas = ['titulo', 'tipo', 'slug', 'ativa', 'menu', 'home', 'ordemMenu', 'ordemHome', 'acoes'];
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  readonly colunas: DataTableColumn<SitePaginaResponse>[] = [
+    { key: 'titulo', label: 'Título', width: '22%' },
+    { key: 'tipo', label: 'Tipo', width: '120px' },
+    { key: 'slug', label: 'Slug/Rota', width: '140px' },
+    { key: 'ativa', label: 'Ativa', width: '110px' },
+    { key: 'menu', label: 'Menu', width: '110px' },
+    { key: 'home', label: 'Home', width: '110px' },
+    { key: 'ordemMenu', label: 'Ordem menu', width: '120px', align: 'center' },
+    { key: 'ordemHome', label: 'Ordem Home', width: '120px', align: 'center' },
+  ];
+
+  readonly acoes: DataTableAction<SitePaginaResponse>[] = [
+    {
+      id: 'menu-up',
+      label: 'Subir no menu',
+      icon: 'keyboard_double_arrow_up',
+      visible: (pagina) => this.authService.temPermissao('SITE_PAGINAS_EDITAR') && pagina.exibirNoMenu,
+      disabled: (pagina) => !this.podeMoverMenu(pagina, -1),
+    },
+    {
+      id: 'menu-down',
+      label: 'Descer no menu',
+      icon: 'keyboard_double_arrow_down',
+      visible: (pagina) => this.authService.temPermissao('SITE_PAGINAS_EDITAR') && pagina.exibirNoMenu,
+      disabled: (pagina) => !this.podeMoverMenu(pagina, 1),
+    },
+    {
+      id: 'home-up',
+      label: 'Subir na Home',
+      icon: 'vertical_align_top',
+      visible: (pagina) => this.authService.temPermissao('SITE_PAGINAS_EDITAR') && pagina.exibirNaHome,
+      disabled: (pagina) => !this.podeMoverHome(pagina, -1),
+    },
+    {
+      id: 'home-down',
+      label: 'Descer na Home',
+      icon: 'vertical_align_bottom',
+      visible: (pagina) => this.authService.temPermissao('SITE_PAGINAS_EDITAR') && pagina.exibirNaHome,
+      disabled: (pagina) => !this.podeMoverHome(pagina, 1),
+    },
+    { id: 'editar', label: 'Editar página', icon: 'edit', visible: () => this.authService.temPermissao('SITE_PAGINAS_EDITAR') },
+    {
+      id: 'status',
+      label: 'Ativar/desativar',
+      icon: 'toggle_on',
+      visible: () => this.authService.temPermissao('SITE_PAGINAS_EDITAR'),
+      disabled: (pagina) => this.isHome(pagina),
+    },
+    { id: 'menu', label: 'Mostrar/ocultar no menu', icon: 'menu', visible: () => this.authService.temPermissao('SITE_PAGINAS_EDITAR') },
+    { id: 'home', label: 'Mostrar/ocultar na Home', icon: 'home', visible: () => this.authService.temPermissao('SITE_PAGINAS_EDITAR') },
+    {
+      id: 'excluir',
+      label: 'Excluir página',
+      icon: 'delete',
+      color: 'warn',
+      visible: (pagina) => this.authService.temPermissao('SITE_PAGINAS_EXCLUIR') && this.podeExcluir(pagina),
+    },
+  ];
+
+  private consulta?: Subscription;
+  private requestSeq = 0;
+  private readonly destroy$ = new Subject<void>();
 
   constructor(
     private readonly sitePaginaService: SitePaginaService,
     private readonly router: Router,
     private readonly dialog: MatDialog,
-    private readonly toastr: ToastrService
+    private readonly toastr: ToastrService,
+    private readonly authService: AuthService
   ) {}
 
   ngOnInit(): void {
-    this.atualizarViewport();
     this.carregarPaginas();
   }
 
-  @HostListener('window:resize')
-  onWindowResize(): void {
-    this.atualizarViewport();
+  ngOnDestroy(): void {
+    this.consulta?.unsubscribe();
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
-  @HostListener('window:scroll')
-  onWindowScroll(): void {
-    this.mobileFabCompact = (window.scrollY || document.documentElement.scrollTop || 0) > 96;
+  get searchConfig(): DataTableSearchConfig {
+    return {
+      enabled: true,
+      placeholder: 'Ex: home, contato, produtos',
+      debounceMs: 300,
+      value: this.termoPesquisa,
+    };
   }
 
-  carregarPaginas(): void {
+  get pagination(): DataTablePagination {
+    return {
+      pageIndex: this.pagina,
+      pageSize: this.tamanhoPagina,
+      totalItems: this.totalPaginas,
+      pageSizeOptions: [10, 20, 50],
+    };
+  }
+
+  get buscando(): boolean {
+    return !!this.termoPesquisa.trim();
+  }
+
+  carregarPaginas(preservarDados = false): void {
+    this.consulta?.unsubscribe();
+    const requestId = ++this.requestSeq;
     this.carregando = true;
-    this.sitePaginaService
+    this.erro = null;
+    this.semPermissao = false;
+
+    if (!preservarDados) {
+      this.paginas = [];
+    }
+
+    this.consulta = this.sitePaginaService
       .listar({
         page: this.pagina,
         size: this.tamanhoPagina,
@@ -90,6 +169,10 @@ export class ListarPaginasComponent implements OnInit {
       })
       .subscribe({
         next: (response) => {
+          if (requestId !== this.requestSeq) {
+            return;
+          }
+
           if (Array.isArray(response)) {
             this.paginas = response;
             this.totalPaginas = response.length;
@@ -100,9 +183,14 @@ export class ListarPaginasComponent implements OnInit {
 
           this.carregando = false;
         },
-        error: () => {
+        error: (err) => {
+          if (requestId !== this.requestSeq) {
+            return;
+          }
+
           this.carregando = false;
-          this.toastr.error('Não foi possível carregar as páginas do site.');
+          this.semPermissao = err?.status === 403;
+          this.erro = this.semPermissao ? null : 'Não foi possível carregar as páginas do site.';
         },
       });
   }
@@ -110,13 +198,46 @@ export class ListarPaginasComponent implements OnInit {
   onPaginaAlterada(event: PageEvent): void {
     this.pagina = event.pageIndex;
     this.tamanhoPagina = event.pageSize;
-    this.carregarPaginas();
+    this.carregarPaginas(!!this.paginas.length);
   }
 
   onPesquisar(valor: string): void {
     this.termoPesquisa = valor || '';
     this.pagina = 0;
-    this.carregarPaginas();
+    this.carregarPaginas(!!this.paginas.length);
+  }
+
+  onAcao(event: DataTableActionEvent<SitePaginaResponse>): void {
+    const pagina = event.row;
+    switch (event.action) {
+      case 'menu-up':
+        this.moverMenu(pagina, -1);
+        break;
+      case 'menu-down':
+        this.moverMenu(pagina, 1);
+        break;
+      case 'home-up':
+        this.moverHome(pagina, -1);
+        break;
+      case 'home-down':
+        this.moverHome(pagina, 1);
+        break;
+      case 'editar':
+        this.editar(pagina);
+        break;
+      case 'status':
+        this.alterarStatus(pagina);
+        break;
+      case 'menu':
+        this.alterarMenu(pagina);
+        break;
+      case 'home':
+        this.alterarHome(pagina);
+        break;
+      case 'excluir':
+        this.excluir(pagina);
+        break;
+    }
   }
 
   editar(pagina: SitePaginaResponse): void {
@@ -130,14 +251,12 @@ export class ListarPaginasComponent implements OnInit {
     }
 
     const novoStatus = !pagina.ativa;
-    this.sitePaginaService.alterarStatus(pagina.id, novoStatus).subscribe({
+    this.sitePaginaService.alterarStatus(pagina.id, novoStatus).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         this.toastr.success(novoStatus ? 'Página ativada com sucesso!' : 'Página desativada com sucesso!');
-        this.carregarPaginas();
+        this.carregarPaginas(true);
       },
-      error: () => {
-        this.toastr.error('Não foi possível alterar o status da página.');
-      },
+      error: () => this.toastr.error('Não foi possível alterar o status da página.'),
     });
   }
 
@@ -147,14 +266,13 @@ export class ListarPaginasComponent implements OnInit {
         exibirNoMenu: !pagina.exibirNoMenu,
         ordemMenu: pagina.ordemMenu,
       })
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
           this.toastr.success(!pagina.exibirNoMenu ? 'Página exibida no menu.' : 'Página ocultada do menu.');
-          this.carregarPaginas();
+          this.carregarPaginas(true);
         },
-        error: () => {
-          this.toastr.error('Não foi possível alterar a exibição no menu.');
-        },
+        error: () => this.toastr.error('Não foi possível alterar a exibição no menu.'),
       });
   }
 
@@ -169,14 +287,13 @@ export class ListarPaginasComponent implements OnInit {
         layoutHome: pagina.layoutHome || 'GRID',
         textoBotaoHome: pagina.textoBotaoHome,
       })
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
           this.toastr.success(!pagina.exibirNaHome ? 'Página exibida na Home.' : 'Página ocultada da Home.');
-          this.carregarPaginas();
+          this.carregarPaginas(true);
         },
-        error: () => {
-          this.toastr.error('Não foi possível alterar a exibição na Home.');
-        },
+        error: () => this.toastr.error('Não foi possível alterar a exibição na Home.'),
       });
   }
 
@@ -186,7 +303,7 @@ export class ListarPaginasComponent implements OnInit {
       return;
     }
 
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+    this.dialog.open(ConfirmDialogComponent, {
       width: '400px',
       data: {
         title: 'Excluir página',
@@ -194,21 +311,17 @@ export class ListarPaginasComponent implements OnInit {
         confirmText: 'Excluir',
         confirmColor: 'warn',
       },
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
+    }).afterClosed().pipe(takeUntil(this.destroy$)).subscribe((result) => {
       if (!result) {
         return;
       }
 
-      this.sitePaginaService.excluir(pagina.id).subscribe({
+      this.sitePaginaService.excluir(pagina.id).pipe(takeUntil(this.destroy$)).subscribe({
         next: () => {
           this.toastr.success('Página excluída com sucesso!');
-          this.carregarPaginas();
+          this.carregarPaginas(true);
         },
-        error: () => {
-          this.toastr.error('Erro ao excluir a página.');
-        },
+        error: () => this.toastr.error('Erro ao excluir a página.'),
       });
     });
   }
@@ -223,11 +336,6 @@ export class ListarPaginasComponent implements OnInit {
 
   navegarCriacao(): void {
     this.router.navigate(['/page/site/paginas/nova']);
-  }
-
-  selecionarPaginaMenu(pagina: SitePaginaResponse, event: Event): void {
-    event.stopPropagation();
-    this.paginaSelecionadaMenu = pagina;
   }
 
   tipoLabel(tipo: SitePaginaTipo): string {
@@ -266,8 +374,8 @@ export class ListarPaginasComponent implements OnInit {
     return slug ? `/${slug.replace(/^\/+/, '')}` : '-';
   }
 
-  statusLabel(ativa: boolean): string {
-    return ativa ? 'Ativa' : 'Inativa';
+  statusKey(ativa: boolean): 'ATIVO' | 'INATIVO' {
+    return ativa ? 'ATIVO' : 'INATIVO';
   }
 
   efeitoLabel(pagina: SitePaginaResponse, campo: 'menu' | 'home'): string {
@@ -287,16 +395,14 @@ export class ListarPaginasComponent implements OnInit {
     return pagina?.tipo === 'PERSONALIZADA' && !pagina.paginaSistema;
   }
 
-  podeMoverMenu(index: number, direcao: -1 | 1): boolean {
+  podeMoverMenu(pagina: SitePaginaResponse, direcao: -1 | 1): boolean {
     const paginasMenu = this.paginasComMenu();
-    const pagina = this.paginas[index];
     const posicao = paginasMenu.findIndex((item) => item.id === pagina.id);
     return posicao >= 0 && posicao + direcao >= 0 && posicao + direcao < paginasMenu.length;
   }
 
-  podeMoverHome(index: number, direcao: -1 | 1): boolean {
+  podeMoverHome(pagina: SitePaginaResponse, direcao: -1 | 1): boolean {
     const paginasHome = this.paginasComHome();
-    const pagina = this.paginas[index];
     const posicao = paginasHome.findIndex((item) => item.id === pagina.id);
     return posicao >= 0 && posicao + direcao >= 0 && posicao + direcao < paginasHome.length;
   }
@@ -322,10 +428,10 @@ export class ListarPaginasComponent implements OnInit {
             paginas: novaLista.map((item, idx) => ({ id: item.id, ordemHome: idx + 1 })),
           });
 
-    request$.subscribe({
+    request$.pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         this.toastr.success(tipo === 'menu' ? 'Ordem do menu atualizada.' : 'Ordem da Home atualizada.');
-        this.carregarPaginas();
+        this.carregarPaginas(true);
       },
       error: () => {
         this.toastr.error(tipo === 'menu' ? 'Não foi possível atualizar a ordem do menu.' : 'Não foi possível atualizar a ordem da Home.');
@@ -343,14 +449,5 @@ export class ListarPaginasComponent implements OnInit {
     return this.paginas
       .filter((pagina) => pagina.exibirNaHome)
       .sort((a, b) => Number(a.ordemHome || 0) - Number(b.ordemHome || 0));
-  }
-
-  private atualizarViewport(): void {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    this.isMobileView = window.innerWidth <= 768;
-    this.tamanhoPagina = this.isMobileView ? 20 : 10;
   }
 }

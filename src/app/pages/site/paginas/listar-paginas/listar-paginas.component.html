@@ -1,164 +1,76 @@
-@if (!isMobileView) {
-<mat-card class="cardWithShadow">
-  <app-card-header
-    titulo="Páginas do site"
-    subtitulo="Gerencie as páginas, o menu e os resumos exibidos na Home."
-    botaoTexto="Nova página"
-    botaoIcone="add"
-    [botaoRota]="['/page/site/paginas/nova']"
-    permissao="SITE_PAGINAS_CADASTRAR"
-    [mostrarDivisor]="true">
-  </app-card-header>
+<app-page-card
+  titulo="Páginas do site"
+  subtitulo="Gerencie as páginas, o menu e os resumos exibidos na Home."
+  botaoTexto="Nova página"
+  botaoIcone="add"
+  [botaoRota]="['/page/site/paginas/nova']"
+  permissao="SITE_PAGINAS_CADASTRAR">
+  <app-data-table
+    [columns]="colunas"
+    [data]="paginas"
+    [actions]="acoes"
+    actionsMode="menu"
+    tableLabel="Páginas do site"
+    [search]="searchConfig"
+    [filtered]="buscando"
+    [pagination]="pagination"
+    [loading]="carregando && !paginas.length"
+    [refreshing]="carregando && !!paginas.length"
+    [error]="erro"
+    [forbidden]="semPermissao"
+    [emptyState]="{
+      title: 'Nenhuma página cadastrada',
+      description: 'Crie páginas personalizadas para organizar o site.',
+      filteredTitle: 'Nenhuma página encontrada',
+      filteredDescription: 'Altere a busca para localizar outras páginas.'
+    }"
+    (searchChange)="onPesquisar($event)"
+    (pageChange)="onPaginaAlterada($event)"
+    (retry)="carregarPaginas(!!paginas.length)"
+    (action)="onAcao($event)">
+    <ng-template appDataTableCell="titulo" let-pagina>
+      <div class="pagina-title-cell">
+        <strong>{{ pagina.titulo || 'Sem título' }}</strong>
+        <span>{{ codigoLabel(pagina.codigo) || pagina.resumo || 'Página personalizada' }}</span>
+      </div>
+    </ng-template>
 
-  <mat-card-content>
-    <app-input-pesquisa placeholder="Ex: home, contato, produtos" (valorAlterado)="onPesquisar($event)">
-    </app-input-pesquisa>
+    <ng-template appDataTableCell="tipo" let-pagina>
+      <span class="site-pill site-pill--secondary">{{ tipoLabel(pagina.tipo) }}</span>
+    </ng-template>
 
-    @if (carregando) {
-    <div class="site-pagina-state">
-      <mat-spinner diameter="32"></mat-spinner>
-      <span>Carregando páginas...</span>
-    </div>
-    } @else if (!paginas.length) {
-    <div class="site-pagina-state site-pagina-state--empty">
-      <strong>Nenhuma página encontrada</strong>
-      <span>Crie páginas personalizadas para organizar o site.</span>
-    </div>
-    } @else {
-    <div class="table-responsive">
-      <table mat-table [dataSource]="paginas" class="mat-elevation-z1 no-wrap m-t-0 v-middle w-100">
-        <ng-container matColumnDef="titulo">
-          <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Título</th>
-          <td mat-cell *matCellDef="let pagina" class="f-s-14">
-            <div class="pagina-title-cell">
-              <strong>{{ pagina.titulo || 'Sem título' }}</strong>
-              <span>{{ codigoLabel(pagina.codigo) || pagina.resumo || 'Página personalizada' }}</span>
-            </div>
-          </td>
-        </ng-container>
+    <ng-template appDataTableCell="slug" let-pagina>
+      <span class="rota-cell">{{ rotaLabel(pagina) }}</span>
+    </ng-template>
 
-        <ng-container matColumnDef="tipo">
-          <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Tipo</th>
-          <td mat-cell *matCellDef="let pagina" class="f-s-14">
-            <span class="status-pill status-pill--secondary">{{ tipoLabel(pagina.tipo) }}</span>
-          </td>
-        </ng-container>
+    <ng-template appDataTableCell="ativa" let-pagina>
+      <app-status-badge [status]="statusKey(pagina.ativa)" [compact]="true"></app-status-badge>
+    </ng-template>
 
-        <ng-container matColumnDef="slug">
-          <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Slug/Rota</th>
-          <td mat-cell *matCellDef="let pagina" class="f-s-14">{{ rotaLabel(pagina) }}</td>
-        </ng-container>
+    <ng-template appDataTableCell="menu" let-pagina>
+      <span class="site-pill" [class.site-pill--inactive]="!pagina.exibirNoMenu || !pagina.ativa">
+        {{ efeitoLabel(pagina, 'menu') }}
+      </span>
+    </ng-template>
 
-        <ng-container matColumnDef="ativa">
-          <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Ativa</th>
-          <td mat-cell *matCellDef="let pagina" class="f-s-14">
-            <span class="status-pill" [class.status-pill--inactive]="!pagina.ativa">{{ statusLabel(pagina.ativa) }}</span>
-          </td>
-        </ng-container>
+    <ng-template appDataTableCell="home" let-pagina>
+      <span class="site-pill" [class.site-pill--inactive]="!pagina.exibirNaHome || !pagina.ativa">
+        {{ efeitoLabel(pagina, 'home') }}
+      </span>
+    </ng-template>
 
-        <ng-container matColumnDef="menu">
-          <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Menu</th>
-          <td mat-cell *matCellDef="let pagina" class="f-s-14">
-            <span class="status-pill" [class.status-pill--inactive]="!pagina.exibirNoMenu || !pagina.ativa">
-              {{ efeitoLabel(pagina, 'menu') }}
-            </span>
-          </td>
-        </ng-container>
+    <ng-template appDataTableCell="ordemMenu" let-pagina>
+      {{ pagina.ordemMenu || '-' }}
+    </ng-template>
 
-        <ng-container matColumnDef="home">
-          <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Home</th>
-          <td mat-cell *matCellDef="let pagina" class="f-s-14">
-            <span class="status-pill" [class.status-pill--inactive]="!pagina.exibirNaHome || !pagina.ativa">
-              {{ efeitoLabel(pagina, 'home') }}
-            </span>
-          </td>
-        </ng-container>
+    <ng-template appDataTableCell="ordemHome" let-pagina>
+      {{ pagina.ordemHome || '-' }}
+    </ng-template>
 
-        <ng-container matColumnDef="ordemMenu">
-          <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Ordem menu</th>
-          <td mat-cell *matCellDef="let pagina" class="f-s-14">{{ pagina.ordemMenu || '-' }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="ordemHome">
-          <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Ordem Home</th>
-          <td mat-cell *matCellDef="let pagina" class="f-s-14">{{ pagina.ordemHome || '-' }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="acoes">
-          <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Ações</th>
-          <td mat-cell *matCellDef="let pagina; let i = index" class="action-link">
-            <button mat-icon-button type="button" (click)="moverMenu(pagina, -1)" [disabled]="!podeMoverMenu(i, -1)" *temPermissao="'SITE_PAGINAS_EDITAR'" aria-label="Subir página no menu">
-              <mat-icon>keyboard_double_arrow_up</mat-icon>
-            </button>
-            <button mat-icon-button type="button" (click)="moverMenu(pagina, 1)" [disabled]="!podeMoverMenu(i, 1)" *temPermissao="'SITE_PAGINAS_EDITAR'" aria-label="Descer página no menu">
-              <mat-icon>keyboard_double_arrow_down</mat-icon>
-            </button>
-            <button mat-icon-button type="button" (click)="moverHome(pagina, -1)" [disabled]="!podeMoverHome(i, -1)" *temPermissao="'SITE_PAGINAS_EDITAR'" aria-label="Subir página na Home">
-              <mat-icon>vertical_align_top</mat-icon>
-            </button>
-            <button mat-icon-button type="button" (click)="moverHome(pagina, 1)" [disabled]="!podeMoverHome(i, 1)" *temPermissao="'SITE_PAGINAS_EDITAR'" aria-label="Descer página na Home">
-              <mat-icon>vertical_align_bottom</mat-icon>
-            </button>
-            <a (click)="editar(pagina)" class="m-r-10 cursor-pointer" *temPermissao="'SITE_PAGINAS_EDITAR'">
-              <i-tabler name="edit" class="icon-18"></i-tabler>
-            </a>
-            <a (click)="alterarStatus(pagina)" class="m-r-10 cursor-pointer" [class.action-link--disabled]="isHome(pagina)" *temPermissao="'SITE_PAGINAS_EDITAR'">
-              <i-tabler [name]="pagina.ativa ? 'toggle-right' : 'toggle-left'" class="icon-18"></i-tabler>
-            </a>
-            <a (click)="alterarMenu(pagina)" class="m-r-10 cursor-pointer" *temPermissao="'SITE_PAGINAS_EDITAR'">
-              <i-tabler name="menu-2" class="icon-18"></i-tabler>
-            </a>
-            <a (click)="alterarHome(pagina)" class="m-r-10 cursor-pointer" *temPermissao="'SITE_PAGINAS_EDITAR'">
-              <i-tabler name="home" class="icon-18"></i-tabler>
-            </a>
-            @if (podeExcluir(pagina)) {
-            <a (click)="excluir(pagina)" class="cursor-pointer" *temPermissao="'SITE_PAGINAS_EXCLUIR'">
-              <i-tabler name="trash" class="icon-18"></i-tabler>
-            </a>
-            }
-          </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="colunasExibidas"></tr>
-        <tr mat-row *matRowDef="let row; columns: colunasExibidas" [class.pagina-row--inactive]="!row.ativa"></tr>
-      </table>
-
-      <mat-paginator
-        [length]="totalPaginas"
-        [pageIndex]="pagina"
-        [pageSize]="tamanhoPagina"
-        (page)="onPaginaAlterada($event)"
-        showFirstLastButtons>
-      </mat-paginator>
-    </div>
-    }
-  </mat-card-content>
-</mat-card>
-} @else {
-<section class="cadastro-mobile">
-  <div class="cadastro-mobile__sticky">
-    <div class="cadastro-mobile__search">
-      <mat-icon>search</mat-icon>
-      <input type="search" placeholder="Buscar página..." (input)="onPesquisar($any($event.target).value)" />
-    </div>
-  </div>
-
-  <div class="cadastro-mobile__list">
-    @if (carregando) {
-    <div class="cadastro-mobile__state">
-      <mat-spinner diameter="28"></mat-spinner>
-      <span>Carregando páginas...</span>
-    </div>
-    } @else if (!paginas.length) {
-    <div class="cadastro-mobile__state cadastro-mobile__state--empty">
-      <strong>Nenhuma página encontrada</strong>
-      <span>Crie páginas personalizadas para organizar o site.</span>
-    </div>
-    } @else {
-      @for (pagina of paginas; track pagina.id) {
-      <article class="cadastro-mobile-card" matRipple (click)="editar(pagina)" [class.cadastro-mobile-card--inactive]="!pagina.ativa">
-        <div class="cadastro-mobile-card__head">
-          <div class="cadastro-mobile-card__identity">
+    <ng-template [appDataTableItem]="paginas" let-pagina let-actions="actions" let-emitAction="emitAction">
+      <article class="pagina-mobile-card" [class.pagina-mobile-card--inactive]="!pagina.ativa">
+        <div class="pagina-mobile-card__head">
+          <div class="pagina-title-cell">
             <strong>{{ pagina.titulo || 'Sem título' }}</strong>
             <span>{{ rotaLabel(pagina) }} · {{ tipoLabel(pagina.tipo) }}</span>
           </div>
@@ -166,54 +78,43 @@
           <button
             mat-icon-button
             type="button"
-            class="cadastro-mobile-card__menu"
-            [matMenuTriggerFor]="paginaMenu"
-            (click)="selecionarPaginaMenu(pagina, $event)"
+            [matMenuTriggerFor]="paginaMobileMenu"
+            [matMenuTriggerData]="{ pagina: pagina, actions: actions, emitAction: emitAction }"
+            [disabled]="!actions.length"
             aria-label="Abrir ações da página">
             <mat-icon>more_vert</mat-icon>
           </button>
         </div>
 
-        <div class="cadastro-mobile-card__footer">
-          <span class="status-pill" [class.status-pill--inactive]="!pagina.ativa">{{ statusLabel(pagina.ativa) }}</span>
-          <span class="status-pill" [class.status-pill--inactive]="!pagina.exibirNoMenu || !pagina.ativa">Menu {{ efeitoLabel(pagina, 'menu') }}</span>
-          <span class="status-pill" [class.status-pill--inactive]="!pagina.exibirNaHome || !pagina.ativa">Home {{ efeitoLabel(pagina, 'home') }}</span>
+        <div class="pagina-mobile-card__body">
+          @if (codigoLabel(pagina.codigo) || pagina.resumo) {
+          <span>{{ codigoLabel(pagina.codigo) || pagina.resumo }}</span>
+          }
+        </div>
+
+        <div class="pagina-mobile-card__footer">
+          <app-status-badge [status]="statusKey(pagina.ativa)" [compact]="true"></app-status-badge>
+          <span class="site-pill" [class.site-pill--inactive]="!pagina.exibirNoMenu || !pagina.ativa">
+            Menu {{ efeitoLabel(pagina, 'menu') }}
+          </span>
+          <span class="site-pill" [class.site-pill--inactive]="!pagina.exibirNaHome || !pagina.ativa">
+            Home {{ efeitoLabel(pagina, 'home') }}
+          </span>
         </div>
       </article>
-      }
+    </ng-template>
+  </app-data-table>
+</app-page-card>
+
+<mat-menu #paginaMobileMenu="matMenu">
+  <ng-template matMenuContent let-pagina="pagina" let-actions="actions" let-emitAction="emitAction">
+    @for (action of actions; track action.id) {
+      <button mat-menu-item type="button" [disabled]="action.disabled?.(pagina)" (click)="emitAction(pagina, action.id)">
+        @if (action.icon) {
+          <mat-icon [color]="action.color || null">{{ action.icon }}</mat-icon>
+        }
+        <span>{{ action.label }}</span>
+      </button>
     }
-  </div>
-
-  <app-mobile-fab-action
-    *temPermissao="'SITE_PAGINAS_CADASTRAR'"
-    label="Nova página"
-    icon="add"
-    [compact]="mobileFabCompact"
-    ariaLabel="Criar nova página"
-    (action)="navegarCriacao()">
-  </app-mobile-fab-action>
-</section>
-
-<mat-menu #paginaMenu="matMenu">
-  <button mat-menu-item type="button" (click)="editar(paginaSelecionadaMenu!)" [disabled]="!paginaSelecionadaMenu" *temPermissao="'SITE_PAGINAS_EDITAR'">
-    <mat-icon>edit</mat-icon>
-    <span>Editar</span>
-  </button>
-  <button mat-menu-item type="button" (click)="alterarStatus(paginaSelecionadaMenu!)" [disabled]="!paginaSelecionadaMenu || isHome(paginaSelecionadaMenu)" *temPermissao="'SITE_PAGINAS_EDITAR'">
-    <mat-icon>{{ paginaSelecionadaMenu?.ativa ? 'toggle_off' : 'toggle_on' }}</mat-icon>
-    <span>{{ paginaSelecionadaMenu?.ativa ? 'Desativar' : 'Ativar' }}</span>
-  </button>
-  <button mat-menu-item type="button" (click)="alterarMenu(paginaSelecionadaMenu!)" [disabled]="!paginaSelecionadaMenu" *temPermissao="'SITE_PAGINAS_EDITAR'">
-    <mat-icon>menu</mat-icon>
-    <span>{{ paginaSelecionadaMenu?.exibirNoMenu ? 'Ocultar no menu' : 'Mostrar no menu' }}</span>
-  </button>
-  <button mat-menu-item type="button" (click)="alterarHome(paginaSelecionadaMenu!)" [disabled]="!paginaSelecionadaMenu" *temPermissao="'SITE_PAGINAS_EDITAR'">
-    <mat-icon>home</mat-icon>
-    <span>{{ paginaSelecionadaMenu?.exibirNaHome ? 'Ocultar na Home' : 'Mostrar na Home' }}</span>
-  </button>
-  <button mat-menu-item type="button" (click)="excluir(paginaSelecionadaMenu!)" [disabled]="!podeExcluir(paginaSelecionadaMenu)" *temPermissao="'SITE_PAGINAS_EXCLUIR'">
-    <mat-icon>delete</mat-icon>
-    <span>Excluir</span>
-  </button>
+  </ng-template>
 </mat-menu>
-}
