@@ -62,6 +62,17 @@ export class SiteBannerImageUploadComponent implements OnChanges {
     this.previewChange.emit(this.previewUrl || null);
   }
 
+  restaurarSelecao(imagemAtual: string | null | undefined = this.imagemAtual): void {
+    this.arquivoSelecionado = null;
+    this.imagemAtual = imagemAtual || '';
+    this.previewUrl = this.imagemAtual || '';
+    this.arquivoNome = '';
+    this.arquivoTamanho = '';
+    this.erro = '';
+    this.fileChange.emit(null);
+    this.previewChange.emit(this.previewUrl || null);
+  }
+
   limparTudo(): void {
     this.arquivoSelecionado = null;
     this.previewUrl = '';
