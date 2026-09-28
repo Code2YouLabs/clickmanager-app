@@ -6,7 +6,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { ToastrService } from 'ngx-toastr';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatIconModule } from '@angular/material/icon';
 import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
+import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
 import { TablerIconsModule } from 'angular-tabler-icons';
 import { PermissaoCatalogo } from 'src/app/models/permissao.model';
 
@@ -37,7 +39,9 @@ interface ModuloPermissaoView {
         MatButtonModule,
         MatSlideToggleModule,
         MatCheckboxModule,
+        MatIconModule,
         InputTextoRestritoComponent,
+        InputTextareaComponent,
         TablerIconsModule
       ]
 })
@@ -113,6 +117,10 @@ export class PerfilDialogComponent implements OnInit {
 
     get descricaoControl(): FormControl {
       return this.form.get('descricao') as FormControl;
+    }
+
+    get tituloDialog(): string {
+      return this.data?.action === 'Add' ? 'Novo perfil' : 'Editar perfil';
     }
 
     get todasSelecionadas(): boolean {
@@ -223,7 +231,7 @@ export class PerfilDialogComponent implements OnInit {
     }
 
     textoDisponiveis(): string {
-      return this.totalPermissoes === 1 ? '1 disponivel' : `${this.totalPermissoes} disponiveis`;
+      return this.totalPermissoes === 1 ? '1 disponível' : `${this.totalPermissoes} disponíveis`;
     }
 
     trackModulo(_: number, modulo: ModuloPermissaoView): string {

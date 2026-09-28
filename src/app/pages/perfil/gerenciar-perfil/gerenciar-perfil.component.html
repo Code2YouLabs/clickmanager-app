@@ -1,128 +1,86 @@
-<mat-card class="cardWithShadow">
+<app-page-card titulo="Perfis e Permissões" subtitulo="Defina os acessos e veja quem utiliza cada perfil">
+  @if (podeCadastrar) {
+    <button page-header-actions mat-flat-button color="primary" type="button" (click)="openDialogPerfil('Add')">
+      <mat-icon>add</mat-icon> Novo perfil
+    </button>
+  }
 
-  <!-- Cabeçalho padrão sem botão -->
-  <app-card-header titulo="Perfis e Permissões" [mostrarDivisor]="true">
-  </app-card-header>
-
-  <mat-card-content>
-
-    <div class="layout-container">
-      <!-- Sidebar -->
-      <div class="sidebar" #sidebar [style.width.px]="sidebarWidth">
-        <mat-toolbar class="bg-white d-flex justify-content-between align-items-center sidebar-toolbar">
-          <h4 class="f-w-500 f-s-18 m-0">Perfis</h4>
-
-          <button mat-mini-fab class="bg-primary text-white" (click)="openDialogPerfil('Add')"
-            aria-label="Adicionar perfil de permissões">
-            <i-tabler name="plus" class="icon-20 d-flex"></i-tabler>
-          </button>
-        </mat-toolbar>
-
-        <div class="m-x-12 overflow-auto">
-          <mat-nav-list>
-            <mat-list-item *ngFor="let perfil of perfis">
-              <div class="d-flex justify-content-between align-items-center w-100">
-                <span class="perfil-nome" (click)="listarUsuariosDoPerfil(perfil)">
-                  {{ perfil.nome }}
-                </span>
-
-                <div class="acoes">
-                  <button mat-icon-button color="primary" class="icon-button" (click)="editar(perfil)">
-                    <i-tabler name="edit" class="icon-18"></i-tabler>
-                  </button>
-
-                  <button mat-icon-button color="warn" class="icon-button" *ngIf="perfil.id !== undefined" (click)="excluir(perfil.id!)">
-                    <i-tabler name="trash" class="icon-18"></i-tabler>
-                  </button>
-                </div>
-              </div>
-            </mat-list-item>
-          </mat-nav-list>
-        </div>
-      </div>
-
-      <!-- Conteúdo principal -->
-      <div class="content">
-        <mat-toolbar class="bg-white content-toolbar">
-          <!--<button mat-icon-button (click)="sidebarCollapsed = !sidebarCollapsed">
-            <i-tabler name="align-left" class="icon-20"></i-tabler>
-          </button> -->
-
-          <h4 class="m-l-16 m-b-0">
-            Usuários do Perfil: {{ perfilSelecionado?.nome || 'Nenhum Selecionado' }}
-          </h4>
-        </mat-toolbar>
-
-        <mat-divider></mat-divider>
-
-        <div class="p-16">
-          <mat-card *ngIf="usuarios.length > 0; else nenhumUsuario">
-            <div class="table-responsive">
-              <table mat-table [dataSource]="usuarios" class="mat-elevation-z1 w-100">
-
-                <!-- Avatar + Nome + Email -->
-                <ng-container matColumnDef="usuario">
-                  <th mat-header-cell *matHeaderCellDef class="f-w-600 f-s-14">
-                    Usuário
-                  </th>
-                  <td mat-cell *matCellDef="let usuario">
-                    <div class="d-flex align-items-center">
-                      <img [src]="imagemUtil.montarUrlImagemPerfil(usuario.fotoPerfil)"
-                        (error)="usarImagemPadrao($event)" class="rounded-circle object-cover" width="40" />
-
-                      <div class="m-l-16">
-                        <h6 class="f-s-14 f-w-600 m-b-0">
-                          {{ usuario.nome }}
-                        </h6>
-                        <span class="f-s-12 text-muted">
-                          {{ usuario.email }}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
-                </ng-container>
-
-                <!-- Perfil -->
-                <ng-container matColumnDef="perfil">
-                  <th mat-header-cell *matHeaderCellDef class="f-w-600 f-s-14">
-                    Perfil
-                  </th>
-                  <td mat-cell *matCellDef="let usuario">
-                    <span class="bg-light-primary text-primary rounded f-w-600 p-6 p-y-4 f-s-12">
-                      {{ perfilSelecionado?.nome }}
-                    </span>
-                  </td>
-                </ng-container>
-
-                <!-- Ações -->
-                <ng-container matColumnDef="acoes">
-                  <th mat-header-cell *matHeaderCellDef class="f-w-600 f-s-14 text-center">
-                    Trocar
-                  </th>
-                  <td mat-cell *matCellDef="let usuario" class="text-center">
-                    <div class="d-flex flex-sm-row flex-col align-items-center justify-content-center gap-8">
-                      <button mat-mini-fab class="bg-primary text-white" aria-label="Trocar perfil"
-                        (click)="openDialogTrocarPerfil(usuario)">
-                        <i-tabler class="icon-20 d-flex" name="repeat"></i-tabler>
-                      </button>
-                    </div>
-                  </td>
-                </ng-container>
-
-                <tr mat-header-row *matHeaderRowDef="displayedColumns1; sticky: true"></tr>
-                <tr mat-row *matRowDef="let row; columns: displayedColumns1;"></tr>
-              </table>
-            </div>
-          </mat-card>
-
-          <ng-template #nenhumUsuario>
-            <p class="f-s-14 text-muted m-t-8">
-              Nenhum usuário vinculado a este perfil.
-            </p>
-          </ng-template>
-        </div>
-      </div>
+  @if (!podeVer) {
+    <div class="page-state" role="status">
+      <mat-icon>lock</mat-icon><strong>Acesso restrito</strong>
+      <span>Você não possui permissão para visualizar perfis e permissões.</span>
     </div>
+  } @else {
+    <div class="perfil-layout">
+      <app-section-card title="Perfis" subtitle="Selecione um perfil para ver os usuários vinculados">
+        @if (carregandoPerfis) {
+          <div class="section-state" role="status" aria-live="polite">
+            <mat-spinner diameter="32"></mat-spinner><span>Carregando perfis...</span>
+          </div>
+        } @else if (erroPerfis) {
+          <div class="section-state section-state--error" role="alert">
+            <strong>Não foi possível carregar os perfis</strong><span>{{ erroPerfis }}</span>
+            <button mat-stroked-button type="button" (click)="carregarPerfis(false)">Tentar novamente</button>
+          </div>
+        } @else if (perfis.length === 0) {
+          <div class="section-state" role="status">
+            <mat-icon>group_off</mat-icon><strong>Nenhum perfil cadastrado</strong>
+            <span>Crie um perfil para organizar as permissões dos usuários.</span>
+          </div>
+        } @else {
+          <mat-nav-list class="perfil-list" aria-label="Perfis disponíveis">
+            @for (perfil of perfis; track perfil.id) {
+              <mat-list-item class="perfil-list__item"
+                [class.perfil-list__item--selected]="perfilSelecionado?.id === perfil.id"
+                [attr.aria-current]="perfilSelecionado?.id === perfil.id ? 'true' : null">
+                <button class="perfil-list__select" type="button" (click)="selecionarPerfil(perfil)">
+                  <span class="perfil-list__title">{{ perfil.nome }}</span>
+                  <span class="perfil-list__description">{{ perfil.descricao || 'Sem descrição' }}</span>
+                </button>
+                <span matListItemMeta class="perfil-list__actions">
+                  @if (podeEditar) {
+                    <button mat-icon-button type="button" aria-label="Editar perfil"
+                      (click)="editar(perfil); $event.stopPropagation()"><mat-icon>edit</mat-icon></button>
+                  }
+                  @if (podeExcluir) {
+                    <button mat-icon-button color="warn" type="button" aria-label="Excluir perfil"
+                      (click)="excluir(perfil.id); $event.stopPropagation()"><mat-icon>delete</mat-icon></button>
+                  }
+                </span>
+              </mat-list-item>
+            }
+          </mat-nav-list>
+        }
+      </app-section-card>
 
-  </mat-card-content>
-</mat-card>
+      <app-section-card
+        [title]="perfilSelecionado ? 'Usuários de ' + perfilSelecionado.nome : 'Usuários do perfil'"
+        subtitle="Consulte os usuários vinculados e altere seu perfil quando necessário">
+        @if (!perfilSelecionado) {
+          <div class="section-state" role="status">
+            <mat-icon>touch_app</mat-icon><strong>Nenhum perfil selecionado</strong>
+            <span>Selecione um perfil para carregar os usuários vinculados.</span>
+          </div>
+        } @else {
+          <app-data-table [columns]="colunasUsuarios" [data]="usuarios" [actions]="acoesUsuarios"
+            actionsMode="buttons" [loading]="carregandoUsuarios" [error]="erroUsuarios"
+            [showTable]="true" [search]="{ enabled: false }" [pagination]="null"
+            tableLabel="Usuários vinculados ao perfil"
+            [emptyState]="{ title: 'Nenhum usuário vinculado', description: 'Este perfil ainda não está associado a nenhum usuário.' }"
+            (retry)="repetirUsuarios()" (action)="onAcaoUsuario($event)">
+            <ng-template appDataTableCell="usuario" let-usuario>
+              <div class="usuario-identidade">
+                <img [src]="imagemUtil.montarUrlImagemPerfil(usuario.fotoPerfil)"
+                  (error)="usarImagemPadrao($event)" class="usuario-avatar" width="40" height="40" alt="" />
+                <div><strong>{{ usuario.nome }}</strong><span>{{ usuario.email }}</span></div>
+              </div>
+            </ng-template>
+            <ng-template appDataTableCell="perfil">
+              <span class="perfil-badge">{{ perfilSelecionado.nome }}</span>
+            </ng-template>
+          </app-data-table>
+        }
+      </app-section-card>
+    </div>
+  }
+</app-page-card>
