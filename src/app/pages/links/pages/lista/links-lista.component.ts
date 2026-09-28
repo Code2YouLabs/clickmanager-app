@@ -5,9 +5,12 @@ import { MatDialog } from '@angular/material/dialog';
 import { Router, RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { take } from 'rxjs';
-import { CardHeaderComponent } from 'src/app/components/card-header/card-header.component';
+import { DataTableCellDirective } from 'src/app/components/data-table/data-table-cell.directive';
+import { DataTableItemDirective } from 'src/app/components/data-table/data-table-item.directive';
+import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
+import { DataTableAction, DataTableActionEvent, DataTableColumn } from 'src/app/components/data-table/data-table.models';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
-import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
+import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { MaterialModule } from 'src/app/material.module';
 import { PresencaPublicaResponse } from 'src/app/pages/config/presenca-publica/presenca-publica.models';
 import { PresencaPublicaService } from 'src/app/pages/config/presenca-publica/presenca-publica.service';
@@ -21,20 +24,41 @@ import { buildClickLinkPublicUrl } from '../../utils/links-url.util';
 @Component({
   selector: 'app-links-lista',
   standalone: true,
-  imports: [CommonModule, RouterModule, MaterialModule, CardHeaderComponent, TemPermissaoDirective],
+  imports: [
+    CommonModule,
+    RouterModule,
+    MaterialModule,
+    PageCardComponent,
+    DataTableComponent,
+    DataTableCellDirective,
+    DataTableItemDirective,
+  ],
   templateUrl: './links-lista.component.html',
   styleUrls: ['../../links.scss', './links-lista.component.scss'],
 })
 export class LinksListaComponent implements OnInit {
   paginas: PaginaLinksResumo[] = [];
-  paginaMenu: PaginaLinksResumo | null = null;
   identidade: LinksIdentidadePublica | null = null;
   presenca: PresencaPublicaResponse | null = null;
   empresaId: number | null = null;
-  carregando = true;
+  carregando = false;
+  erro: string | null = null;
+  semPermissao = false;
   executandoId: number | null = null;
   readonly permissoes = LINKS_PERMISSOES;
-  readonly colunasExibidas = ['titulo', 'endereco', 'status', 'principal', 'links', 'acoes'];
+  private requisicaoAtual = 0;
+
+  readonly colunas: DataTableColumn<PaginaLinksResumo>[] = [
+    { key: 'titulo', label: 'Título' },
+    { key: 'endereco', label: 'Endereço' },
+    { key: 'status', label: 'Status', width: '132px' },
+    { key: 'principal', label: 'Principal', width: '128px' },
+    { key: 'links', label: 'Links', width: '90px', align: 'center', value: (pagina) => pagina.quantidadeItens },
+  ];
+  readonly emptyState = {
+    title: 'Crie sua página de links',
+    description: 'Reúna suas redes, contatos e canais em um único endereço.',
+  };
 
   constructor(
     private readonly linksService: LinksService,
@@ -47,6 +71,10 @@ export class LinksListaComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    if (!this.podeVer) {
+      this.semPermissao = true;
+      return;
+    }
     this.authService.usuario$
       .pipe(take(1))
       .subscribe((usuario) => {
@@ -56,14 +84,87 @@ export class LinksListaComponent implements OnInit {
   }
 
   carregar(): void {
+    const requisicao = ++this.requisicaoAtual;
     this.carregando = true;
+    this.erro = null;
+    this.semPermissao = false;
     this.linksService.listarPaginas().subscribe({
       next: (paginas) => {
+        if (requisicao !== this.requisicaoAtual) return;
         this.paginas = (paginas || []).filter((pagina) => pagina.ativa);
+        this.carregando = false;
         this.carregarIdentidade();
       },
-      error: (error) => this.tratarErro(error, 'Não foi possível carregar suas páginas ClickLink.'),
+      error: (error) => {
+        if (requisicao !== this.requisicaoAtual) return;
+        this.tratarErroCarregamento(error, 'Não foi possível carregar suas páginas ClickLink.');
+      },
     });
+  }
+
+  get podeVer(): boolean {
+    return this.authService.temPermissao(this.permissoes.ver);
+  }
+
+  get carregandoInicial(): boolean {
+    return this.carregando && !this.paginas.length;
+  }
+
+  get atualizando(): boolean {
+    return this.carregando && !!this.paginas.length;
+  }
+
+  get acoesTabela(): DataTableAction<PaginaLinksResumo>[] {
+    return [
+      {
+        id: 'editar',
+        label: 'Editar',
+        icon: 'edit',
+        visible: () => this.authService.temPermissao(this.permissoes.editar),
+        disabled: (pagina) => this.executandoId === pagina.id,
+      },
+      {
+        id: 'compartilhar',
+        label: 'Compartilhar',
+        icon: 'ios_share',
+        disabled: (pagina) => this.executandoId === pagina.id || !this.urlPublica(pagina),
+      },
+      {
+        id: 'abrir',
+        label: 'Abrir',
+        icon: 'open_in_new',
+        disabled: (pagina) => this.executandoId === pagina.id || !pagina.publicada || !this.urlPublica(pagina),
+      },
+      {
+        id: 'publicar',
+        label: 'Publicar',
+        icon: 'publish',
+        visible: (pagina) => !pagina.publicada && this.authService.temPermissao(this.permissoes.publicar),
+        disabled: (pagina) => this.executandoId === pagina.id || !this.urlPublica(pagina),
+      },
+      {
+        id: 'principal',
+        label: 'Tornar principal',
+        icon: 'star',
+        visible: (pagina) => pagina.publicada && !pagina.principal && this.authService.temPermissao(this.permissoes.publicar),
+        disabled: (pagina) => this.executandoId === pagina.id || !pagina.publicada,
+      },
+      {
+        id: 'despublicar',
+        label: 'Despublicar',
+        icon: 'visibility_off',
+        visible: (pagina) => pagina.publicada && this.authService.temPermissao(this.permissoes.publicar),
+        disabled: (pagina) => this.executandoId === pagina.id,
+      },
+      {
+        id: 'excluir',
+        label: 'Excluir',
+        icon: 'delete',
+        color: 'warn',
+        visible: () => this.authService.temPermissao(this.permissoes.excluir),
+        disabled: (pagina) => this.executandoId === pagina.id,
+      },
+    ];
   }
 
   criar(): void {
@@ -77,6 +178,7 @@ export class LinksListaComponent implements OnInit {
 
   publicar(pagina: PaginaLinksResumo | null, publicada: boolean): void {
     if (!pagina) return;
+    if (this.executandoId === pagina.id) return;
     if (publicada && !this.identidade?.slug) {
       this.toastr.warning('Defina primeiro um endereço público para publicar sua página.');
       return;
@@ -94,6 +196,7 @@ export class LinksListaComponent implements OnInit {
 
   tornarPrincipal(pagina: PaginaLinksResumo | null): void {
     if (!pagina) return;
+    if (this.executandoId === pagina.id) return;
     if (!pagina.publicada) {
       this.toastr.info('Publique a página antes de torná-la principal.');
       return;
@@ -143,6 +246,7 @@ export class LinksListaComponent implements OnInit {
 
   excluir(pagina: PaginaLinksResumo | null): void {
     if (!pagina) return;
+    if (this.executandoId === pagina.id) return;
     this.dialog.open(ConfirmDialogComponent, {
       width: '420px',
       data: {
@@ -153,6 +257,7 @@ export class LinksListaComponent implements OnInit {
       },
     }).afterClosed().subscribe((ok) => {
       if (!ok) return;
+      if (this.executandoId === pagina.id) return;
       this.executandoId = pagina.id;
       this.linksService.excluirPagina(pagina.id).subscribe({
         next: () => {
@@ -163,6 +268,17 @@ export class LinksListaComponent implements OnInit {
         error: (error) => this.tratarErro(error, 'Não foi possível excluir a página.'),
       });
     });
+  }
+
+  onTableAction(event: DataTableActionEvent<PaginaLinksResumo>): void {
+    const pagina = event.row;
+    if (event.action === 'editar') this.editar(pagina);
+    if (event.action === 'compartilhar') this.compartilhar(pagina);
+    if (event.action === 'abrir') this.abrir(pagina);
+    if (event.action === 'publicar') this.publicar(pagina, true);
+    if (event.action === 'principal') this.tornarPrincipal(pagina);
+    if (event.action === 'despublicar') this.publicar(pagina, false);
+    if (event.action === 'excluir') this.excluir(pagina);
   }
 
   urlPublica(pagina?: PaginaLinksResumo): string {
@@ -200,11 +316,9 @@ export class LinksListaComponent implements OnInit {
     this.presencaService.buscar().subscribe({
       next: (presenca) => {
         this.presenca = presenca;
-        this.carregando = false;
       },
       error: () => {
         this.presenca = null;
-        this.carregando = false;
       },
     });
   }
@@ -213,7 +327,6 @@ export class LinksListaComponent implements OnInit {
     const primeiraPagina = this.paginas[0];
     if (!primeiraPagina) {
       this.identidade = null;
-      this.carregando = false;
       return;
     }
     this.linksService.buscarPagina(primeiraPagina.id).subscribe({
@@ -223,7 +336,6 @@ export class LinksListaComponent implements OnInit {
       },
       error: () => {
         this.identidade = null;
-        this.carregando = false;
       },
     });
   }
@@ -235,12 +347,22 @@ export class LinksListaComponent implements OnInit {
   }
 
   private tratarErro(error: HttpErrorResponse, fallback: string): void {
-    this.carregando = false;
     this.executandoId = null;
     if (error.status === 403) {
       this.toastr.warning('Você não possui permissão para esta ação.');
       return;
     }
     this.toastr.error(error.error?.message || fallback);
+  }
+
+  private tratarErroCarregamento(error: HttpErrorResponse, fallback: string): void {
+    this.carregando = false;
+    this.executandoId = null;
+    if (error.status === 403) {
+      this.semPermissao = true;
+      this.erro = null;
+      return;
+    }
+    this.erro = error.error?.message || fallback;
   }
 }

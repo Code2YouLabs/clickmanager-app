@@ -6,8 +6,16 @@ import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { filter, take } from 'rxjs';
-import { CardHeaderComponent } from 'src/app/components/card-header/card-header.component';
+import { DataTableAction, DataTableActionEvent, DataTableColumn, DataTableEmptyState } from 'src/app/components/data-table/data-table.models';
+import { DataTableCellDirective } from 'src/app/components/data-table/data-table-cell.directive';
+import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
+import { DataTableItemDirective } from 'src/app/components/data-table/data-table-item.directive';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
+import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
+import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
+import { PageCardAction, PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { PageFormState } from 'src/app/components/page-card/page-form-state';
+import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
 import { Empresa } from 'src/app/models/empresa/empresa.model';
 import { MaterialModule } from 'src/app/material.module';
@@ -50,7 +58,13 @@ interface LinkEmpresaSugestao extends PaginaLinksItemRequest {
     ReactiveFormsModule,
     RouterModule,
     MaterialModule,
-    CardHeaderComponent,
+    PageCardComponent,
+    SectionCardComponent,
+    DataTableComponent,
+    DataTableCellDirective,
+    DataTableItemDirective,
+    InputTextoRestritoComponent,
+    InputTextareaComponent,
     TemPermissaoDirective,
     LinksPublicPreviewComponent,
     LinksSharePanelComponent,
@@ -65,12 +79,15 @@ export class LinksEditorComponent implements OnInit {
   empresaId: number | null = null;
   empresa: Empresa | null = null;
   carregando = true;
+  erro: string | null = null;
+  semPermissao = false;
   salvandoPagina = false;
   salvandoItem = false;
   publicando = false;
   excluindo = false;
   abaSelecionada = 0;
 
+  readonly formId = 'clicklink-page-form';
   readonly isNova = this.route.snapshot.routeConfig?.path === 'nova';
   readonly paginaId = Number(this.route.snapshot.paramMap.get('id'));
   readonly permissoes = LINKS_PERMISSOES;
@@ -84,7 +101,18 @@ export class LinksEditorComponent implements OnInit {
     { value: 'SUAVE', label: 'Suave' },
     { value: 'QUADRADO', label: 'Quadrado' },
   ];
-  readonly colunasItens = ['tipo', 'titulo', 'subtitulo', 'status', 'ordem', 'acoes'];
+  readonly formState = new PageFormState(() => this.form);
+  readonly colunasItens: DataTableColumn<PaginaLinksItem>[] = [
+    { key: 'tipo', label: 'Tipo', width: '150px' },
+    { key: 'titulo', label: 'Título' },
+    { key: 'subtitulo', label: 'Subtítulo' },
+    { key: 'status', label: 'Status', width: '120px' },
+    { key: 'ordem', label: 'Ordem', width: '116px', align: 'center' },
+  ];
+  readonly emptyStateItens: DataTableEmptyState = {
+    title: 'Adicione o primeiro link',
+    description: 'Comece por WhatsApp, Instagram, telefone ou outro canal.',
+  };
 
   readonly form = this.fb.group({
     titulo: ['', [Validators.required, Validators.maxLength(120)]],
@@ -95,7 +123,7 @@ export class LinksEditorComponent implements OnInit {
     formatoBotao: [LINKS_APARENCIA_PADRAO.formatoBotao as FormatoBotaoLinks, [Validators.required]],
   });
 
-  private estadoPersistido: PaginaLinksRequest | null = null;
+  private payloadPersistido: PaginaLinksRequest | null = null;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -111,6 +139,12 @@ export class LinksEditorComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    if (!this.podeVer()) {
+      this.carregando = false;
+      this.semPermissao = true;
+      return;
+    }
+
     this.carregarDadosEmpresa();
     this.carregarPresenca();
     this.carregarIdentidade(() => {
@@ -122,7 +156,75 @@ export class LinksEditorComponent implements OnInit {
     });
   }
 
+  get tituloPagina(): string {
+    return this.isNova ? 'Nova página ClickLink' : 'Editar página ClickLink';
+  }
+
+  get subtituloPagina(): string {
+    return this.isNova ? 'ClickLink • Páginas • Nova' : 'ClickLink • Páginas • Editar';
+  }
+
+  get savingText(): string {
+    return this.isNova ? 'Salvando...' : 'Atualizando...';
+  }
+
+  get footerActions(): PageCardAction[] {
+    if (this.carregando || this.erro || this.semPermissao) {
+      return [];
+    }
+
+    return [{
+      id: 'salvar',
+      type: 'submit',
+      form: this.formId,
+      disabled: this.salvandoPagina || !this.podeEditarPagina(),
+    }];
+  }
+
+  get itens(): PaginaLinksItem[] {
+    return this.itensOrdenados();
+  }
+
+  get acoesItens(): DataTableAction<PaginaLinksItem>[] {
+    return [
+      {
+        id: 'subir',
+        label: 'Mover para cima',
+        icon: 'arrow_upward',
+        disabled: (item) => this.salvandoItem || this.isPrimeiroItem(item) || !this.podeEditarPagina(),
+      },
+      {
+        id: 'descer',
+        label: 'Mover para baixo',
+        icon: 'arrow_downward',
+        disabled: (item) => this.salvandoItem || this.isUltimoItem(item) || !this.podeEditarPagina(),
+      },
+      {
+        id: 'editar',
+        label: 'Editar',
+        icon: 'edit',
+        disabled: () => this.salvandoItem || !this.podeEditarPagina(),
+      },
+      {
+        id: 'status',
+        label: 'Ativar ou desativar',
+        icon: 'toggle_on',
+        disabled: () => this.salvandoItem || !this.podeEditarPagina(),
+      },
+      {
+        id: 'excluir',
+        label: 'Remover',
+        icon: 'delete',
+        color: 'warn',
+        disabled: () => this.salvandoItem || !this.podeEditarPagina(),
+      },
+    ];
+  }
+
   salvarOuCriar(): void {
+    if (this.salvandoPagina || this.semPermissao || this.erro || !this.podeEditarPagina()) {
+      return;
+    }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       this.toastr.warning('Informe um título válido para a página.');
@@ -132,7 +234,7 @@ export class LinksEditorComponent implements OnInit {
   }
 
   salvarPagina(): void {
-    if (!this.pagina) return;
+    if (!this.pagina || this.salvandoPagina) return;
     this.salvandoPagina = true;
     this.linksService.editarPagina(this.pagina.id, this.payloadPagina()).subscribe({
       next: (pagina) => {
@@ -145,6 +247,7 @@ export class LinksEditorComponent implements OnInit {
   }
 
   criarPagina(): void {
+    if (this.salvandoPagina) return;
     this.salvandoPagina = true;
     this.linksService.criarPagina(this.payloadPagina()).subscribe({
       next: (pagina) => {
@@ -156,16 +259,8 @@ export class LinksEditorComponent implements OnInit {
     });
   }
 
-  cancelarAlteracoes(): void {
-    if (!this.estadoPersistido) return;
-    this.aplicarEstadoFormulario(this.estadoPersistido);
-    this.form.markAsPristine();
-    this.form.markAsUntouched();
-    this.toastr.info('Alterações do formulário descartadas.');
-  }
-
   alterarPublicacao(publicada: boolean): void {
-    if (!this.pagina) return;
+    if (!this.pagina || this.publicando || !this.podePublicar()) return;
     if (publicada && !this.identidade?.slug) {
       this.toastr.warning('Configure os dados da empresa antes de publicar.');
       return;
@@ -191,7 +286,7 @@ export class LinksEditorComponent implements OnInit {
   }
 
   tornarPrincipal(): void {
-    if (!this.pagina) return;
+    if (!this.pagina || this.publicando || !this.podePublicar()) return;
     if (!this.pagina.publicada) {
       this.toastr.info('Publique a página antes de torná-la principal.');
       return;
@@ -209,7 +304,7 @@ export class LinksEditorComponent implements OnInit {
 
 
   abrirItem(item?: PaginaLinksItem): void {
-    if (!this.pagina) return;
+    if (!this.pagina || this.salvandoItem || !this.podeEditarPagina()) return;
     const dialogRef = this.dialog.open(LinksItemDialogComponent, {
       width: window.innerWidth <= 640 ? '100vw' : '620px',
       maxWidth: window.innerWidth <= 640 ? '100vw' : '90vw',
@@ -224,7 +319,7 @@ export class LinksEditorComponent implements OnInit {
   }
 
   alterarStatusItem(item: PaginaLinksItem): void {
-    if (!this.pagina) return;
+    if (!this.pagina || this.salvandoItem || !this.podeEditarPagina()) return;
     this.salvandoItem = true;
     this.linksService.alterarStatusItem(this.pagina.id, item.id, !item.ativo).subscribe({
       next: (pagina) => {
@@ -237,7 +332,7 @@ export class LinksEditorComponent implements OnInit {
   }
 
   removerItem(item: PaginaLinksItem): void {
-    if (!this.pagina) return;
+    if (!this.pagina || this.salvandoItem || !this.podeEditarPagina()) return;
     this.dialog.open(ConfirmDialogComponent, {
       width: '420px',
       data: {
@@ -264,7 +359,7 @@ export class LinksEditorComponent implements OnInit {
   }
 
   moverItem(item: PaginaLinksItem, direcao: -1 | 1): void {
-    if (!this.pagina) return;
+    if (!this.pagina || this.salvandoItem || !this.podeEditarPagina()) return;
     const itens = this.itensOrdenados();
     const atual = itens.findIndex((value) => value.id === item.id);
     const destino = atual + direcao;
@@ -284,7 +379,7 @@ export class LinksEditorComponent implements OnInit {
   }
 
   excluirPagina(): void {
-    if (!this.pagina) return;
+    if (!this.pagina || this.excluindo || !this.podeExcluir()) return;
     this.dialog.open(ConfirmDialogComponent, {
       width: '420px',
       data: {
@@ -368,7 +463,7 @@ export class LinksEditorComponent implements OnInit {
   }
 
   importarSugestao(sugestao: LinkEmpresaSugestao): void {
-    if (!this.pagina) return;
+    if (!this.pagina || this.salvandoItem || !this.podeEditarPagina()) return;
     this.adicionarItem({
       tipo: sugestao.tipo,
       titulo: sugestao.titulo,
@@ -422,6 +517,35 @@ export class LinksEditorComponent implements OnInit {
     return [...(this.pagina?.itens || [])].sort((a, b) => a.ordem - b.ordem);
   }
 
+  onItemAction(event: DataTableActionEvent<PaginaLinksItem>): void {
+    switch (event.action) {
+      case 'subir':
+        this.moverItem(event.row, -1);
+        break;
+      case 'descer':
+        this.moverItem(event.row, 1);
+        break;
+      case 'editar':
+        this.abrirItem(event.row);
+        break;
+      case 'status':
+        this.alterarStatusItem(event.row);
+        break;
+      case 'excluir':
+        this.removerItem(event.row);
+        break;
+    }
+  }
+
+  isPrimeiroItem(item: PaginaLinksItem): boolean {
+    return this.itensOrdenados()[0]?.id === item.id;
+  }
+
+  isUltimoItem(item: PaginaLinksItem): boolean {
+    const itens = this.itensOrdenados();
+    return itens[itens.length - 1]?.id === item.id;
+  }
+
   tipoLabel(tipo: TipoItemLinks): string {
     return this.tipos.find((item) => item.tipo === tipo)?.label || tipo;
   }
@@ -431,12 +555,16 @@ export class LinksEditorComponent implements OnInit {
   }
 
   temAlteracoesFormulario(): boolean {
-    if (!this.estadoPersistido) return false;
-    return JSON.stringify(this.normalizarPayload(this.payloadPagina())) !== JSON.stringify(this.normalizarPayload(this.estadoPersistido));
+    if (!this.payloadPersistido) return this.form.dirty;
+    return JSON.stringify(this.normalizarPayload(this.payloadPagina())) !== JSON.stringify(this.normalizarPayload(this.payloadPersistido));
+  }
+
+  tentarNovamente(): void {
+    this.isNova ? this.prepararNovaPagina() : this.carregarPagina();
   }
 
   private adicionarItem(payload: PaginaLinksItemRequest): void {
-    if (!this.pagina) return;
+    if (!this.pagina || this.salvandoItem || !this.podeEditarPagina()) return;
     this.salvandoItem = true;
     this.linksService.adicionarItem(this.pagina.id, payload).subscribe({
       next: (pagina) => {
@@ -449,7 +577,7 @@ export class LinksEditorComponent implements OnInit {
   }
 
   private salvarEAlterarPublicacao(publicada: boolean): void {
-    if (!this.pagina) return;
+    if (!this.pagina || this.publicando || !this.podePublicar()) return;
     this.publicando = true;
     this.salvandoPagina = true;
     this.linksService.editarPagina(this.pagina.id, this.payloadPagina()).subscribe({
@@ -576,6 +704,8 @@ export class LinksEditorComponent implements OnInit {
 
   private prepararNovaPagina(): void {
     this.carregando = false;
+    this.erro = null;
+    this.semPermissao = false;
     this.aplicarEstadoFormulario({
       titulo: this.identidade?.nome || '',
       descricao: '',
@@ -584,12 +714,17 @@ export class LinksEditorComponent implements OnInit {
       corFundo: LINKS_APARENCIA_PADRAO.corFundo,
       formatoBotao: LINKS_APARENCIA_PADRAO.formatoBotao,
     });
-    this.estadoPersistido = this.payloadPagina();
+    this.payloadPersistido = this.payloadPagina();
+    this.formState.begin('create');
     this.form.markAsPristine();
+    this.form.markAsUntouched();
   }
 
   private carregarPagina(atualizarSnapshot = true): void {
     this.carregando = true;
+    this.erro = null;
+    this.semPermissao = false;
+    this.formState.begin('edit');
     this.linksService.buscarPagina(this.paginaId).subscribe({
       next: (pagina) => {
         this.carregando = false;
@@ -606,8 +741,10 @@ export class LinksEditorComponent implements OnInit {
       this.aplicarEstadoFormulario(estado);
     }
     if (atualizarSnapshot) {
-      this.estadoPersistido = { ...estado };
+      this.payloadPersistido = { ...estado };
+      this.formState.loaded();
       this.form.markAsPristine();
+      this.form.markAsUntouched();
     }
     if (pagina.identidade) {
       this.atualizarIdentidade(pagina.identidade);
@@ -661,6 +798,22 @@ export class LinksEditorComponent implements OnInit {
     };
   }
 
+  podeVer(): boolean {
+    return this.authService.temPermissao(LINKS_PERMISSOES.ver);
+  }
+
+  podeEditarPagina(): boolean {
+    return this.authService.temPermissao(this.isNova ? LINKS_PERMISSOES.criar : LINKS_PERMISSOES.editar);
+  }
+
+  podePublicar(): boolean {
+    return this.authService.temPermissao(LINKS_PERMISSOES.publicar);
+  }
+
+  podeExcluir(): boolean {
+    return this.authService.temPermissao(LINKS_PERMISSOES.excluir);
+  }
+
   private tratarErro(error: HttpErrorResponse, fallback: string): void {
     this.carregando = false;
     this.salvandoPagina = false;
@@ -669,10 +822,16 @@ export class LinksEditorComponent implements OnInit {
     this.excluindo = false;
 
     if (error.status === 403) {
+      if (!this.pagina && !this.isNova) {
+        this.semPermissao = true;
+      }
       this.toastr.warning('Você não possui permissão para esta ação.');
       return;
     }
     if (error.status === 404) {
+      if (!this.pagina && !this.isNova) {
+        this.erro = 'A página solicitada não foi encontrada.';
+      }
       this.toastr.warning('Registro não encontrado.');
       return;
     }
@@ -686,7 +845,11 @@ export class LinksEditorComponent implements OnInit {
       this.toastr.warning('Configure os dados da empresa antes de publicar.');
       return;
     }
-    this.toastr.error(message || fallback);
+    const texto = message || fallback;
+    if (!this.pagina && !this.isNova) {
+      this.erro = texto;
+    }
+    this.toastr.error(texto);
   }
 
   get tituloControl(): FormControl<string | null> {
