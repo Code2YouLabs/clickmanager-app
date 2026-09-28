@@ -1,9 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
+import { Subject, takeUntil } from 'rxjs';
+import { DataTableAction, DataTableActionEvent, DataTableColumn } from 'src/app/components/data-table/data-table.models';
+import { DataTableCellDirective } from 'src/app/components/data-table/data-table-cell.directive';
+import { DataTableItemDirective } from 'src/app/components/data-table/data-table-item.directive';
+import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
+import { StatusBadgeComponent } from 'src/app/components/status-badge/status-badge.component';
 import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
 import { MaterialModule } from 'src/app/material.module';
 import { AuthService } from 'src/app/services/auth.service';
@@ -21,16 +27,56 @@ import { FormBlocoComponent } from '../form-bloco/form-bloco.component';
     SectionCardComponent,
     TemPermissaoDirective,
     BlocoPreviewComponent,
+    DataTableCellDirective,
+    DataTableComponent,
+    DataTableItemDirective,
+    StatusBadgeComponent,
   ],
   templateUrl: './listar-blocos.component.html',
   styleUrl: './listar-blocos.component.scss',
 })
-export class ListarBlocosComponent implements OnChanges {
+export class ListarBlocosComponent implements OnChanges, OnDestroy {
   @Input() paginaId!: number;
 
   blocos: SitePaginaBlocoResponse[] = [];
   carregando = false;
-  readonly colunasExibidas = ['ordem', 'preview', 'status', 'acoes'];
+  erro: string | null = null;
+  semPermissao = false;
+
+  readonly colunas: DataTableColumn<SitePaginaBlocoResponse>[] = [
+    { key: 'ordem', label: 'Ordem', width: '96px', align: 'center' },
+    { key: 'preview', label: 'Bloco' },
+    { key: 'status', label: 'Status', width: '120px' },
+  ];
+
+  readonly acoes: DataTableAction<SitePaginaBlocoResponse>[] = [
+    {
+      id: 'subir',
+      label: 'Subir bloco',
+      icon: 'keyboard_arrow_up',
+      visible: () => this.authService.temPermissao('SITE_PAGINA_BLOCOS_EDITAR'),
+      disabled: (bloco) => !this.podeMover(bloco, -1),
+    },
+    {
+      id: 'descer',
+      label: 'Descer bloco',
+      icon: 'keyboard_arrow_down',
+      visible: () => this.authService.temPermissao('SITE_PAGINA_BLOCOS_EDITAR'),
+      disabled: (bloco) => !this.podeMover(bloco, 1),
+    },
+    { id: 'editar', label: 'Editar bloco', icon: 'edit', visible: () => this.authService.temPermissao('SITE_PAGINA_BLOCOS_EDITAR') },
+    { id: 'status', label: 'Ativar/desativar', icon: 'toggle_on', visible: () => this.authService.temPermissao('SITE_PAGINA_BLOCOS_EDITAR') },
+    {
+      id: 'excluir',
+      label: 'Excluir bloco',
+      icon: 'delete',
+      color: 'warn',
+      visible: () => this.authService.temPermissao('SITE_PAGINA_BLOCOS_EXCLUIR'),
+    },
+  ];
+
+  private requestSeq = 0;
+  private readonly destroy$ = new Subject<void>();
 
   constructor(
     private readonly blocoService: SitePaginaBlocoService,
@@ -45,6 +91,11 @@ export class ListarBlocosComponent implements OnChanges {
     }
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   get podeVerBlocos(): boolean {
     return this.authService.temPermissao('SITE_PAGINA_BLOCOS_VER');
   }
@@ -55,18 +106,31 @@ export class ListarBlocosComponent implements OnChanges {
   }
 
   carregarBlocos(mensagemSucesso?: string): void {
+    const requestId = ++this.requestSeq;
     this.carregando = true;
-    this.blocoService.listar(this.paginaId).subscribe({
+    this.erro = null;
+    this.semPermissao = false;
+
+    this.blocoService.listar(this.paginaId).pipe(takeUntil(this.destroy$)).subscribe({
       next: (blocos) => {
+        if (requestId !== this.requestSeq) {
+          return;
+        }
+
         this.blocos = [...(blocos || [])].sort((a, b) => Number(a.ordem || 0) - Number(b.ordem || 0));
         this.carregando = false;
         if (mensagemSucesso) {
           this.toastr.success(mensagemSucesso);
         }
       },
-      error: () => {
+      error: (err) => {
+        if (requestId !== this.requestSeq) {
+          return;
+        }
+
         this.carregando = false;
-        this.toastr.error('Não foi possível carregar os blocos da página.');
+        this.semPermissao = err?.status === 403;
+        this.erro = this.semPermissao ? null : 'Não foi possível carregar os blocos da página.';
       },
     });
   }
@@ -75,8 +139,28 @@ export class ListarBlocosComponent implements OnChanges {
     this.abrirDialog();
   }
 
+  onAcao(event: DataTableActionEvent<SitePaginaBlocoResponse>): void {
+    switch (event.action) {
+      case 'subir':
+        this.mover(event.row, -1);
+        break;
+      case 'descer':
+        this.mover(event.row, 1);
+        break;
+      case 'editar':
+        this.editar(event.row);
+        break;
+      case 'status':
+        this.alterarStatus(event.row);
+        break;
+      case 'excluir':
+        this.excluir(event.row);
+        break;
+    }
+  }
+
   editar(bloco: SitePaginaBlocoResponse): void {
-    this.blocoService.buscarPorId(this.paginaId, bloco.id).subscribe({
+    this.blocoService.buscarPorId(this.paginaId, bloco.id).pipe(takeUntil(this.destroy$)).subscribe({
       next: (detalhe) => this.abrirDialog(detalhe),
       error: () => this.toastr.error('Não foi possível carregar o bloco.'),
     });
@@ -84,7 +168,7 @@ export class ListarBlocosComponent implements OnChanges {
 
   alterarStatus(bloco: SitePaginaBlocoResponse): void {
     const novoStatus = !bloco.ativo;
-    this.blocoService.alterarStatus(this.paginaId, bloco.id, novoStatus).subscribe({
+    this.blocoService.alterarStatus(this.paginaId, bloco.id, novoStatus).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         this.toastr.success(novoStatus ? 'Bloco ativado com sucesso!' : 'Bloco desativado com sucesso!');
         this.carregarBlocos();
@@ -94,7 +178,7 @@ export class ListarBlocosComponent implements OnChanges {
   }
 
   excluir(bloco: SitePaginaBlocoResponse): void {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+    this.dialog.open(ConfirmDialogComponent, {
       width: '400px',
       data: {
         title: 'Excluir bloco',
@@ -102,14 +186,12 @@ export class ListarBlocosComponent implements OnChanges {
         confirmText: 'Excluir',
         confirmColor: 'warn',
       },
-    });
-
-    dialogRef.afterClosed().subscribe((result) => {
+    }).afterClosed().pipe(takeUntil(this.destroy$)).subscribe((result) => {
       if (!result) {
         return;
       }
 
-      this.blocoService.excluir(this.paginaId, bloco.id).subscribe({
+      this.blocoService.excluir(this.paginaId, bloco.id).pipe(takeUntil(this.destroy$)).subscribe({
         next: () => {
           this.toastr.success('Bloco excluído com sucesso!');
           this.carregarBlocos();
@@ -137,7 +219,7 @@ export class ListarBlocosComponent implements OnChanges {
       })),
     };
 
-    this.blocoService.reordenar(this.paginaId, payload).subscribe({
+    this.blocoService.reordenar(this.paginaId, payload).pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         this.toastr.success('Ordem dos blocos atualizada.');
         this.carregarBlocos();
@@ -146,8 +228,13 @@ export class ListarBlocosComponent implements OnChanges {
     });
   }
 
-  statusLabel(ativo: boolean): string {
-    return ativo ? 'Ativo' : 'Inativo';
+  podeMover(bloco: SitePaginaBlocoResponse, direcao: -1 | 1): boolean {
+    const index = this.blocos.findIndex((item) => item.id === bloco.id);
+    return index >= 0 && index + direcao >= 0 && index + direcao < this.blocos.length;
+  }
+
+  statusKey(ativo: boolean): 'ATIVO' | 'INATIVO' {
+    return ativo ? 'ATIVO' : 'INATIVO';
   }
 
   labelTipo(tipo: SitePaginaBlocoTipo): string {
@@ -168,10 +255,6 @@ export class ListarBlocosComponent implements OnChanges {
     return labels[tipo] || tipo;
   }
 
-  trackByBloco(index: number, bloco: SitePaginaBlocoResponse): number {
-    return bloco.id ?? index;
-  }
-
   private abrirDialog(bloco?: SitePaginaBlocoResponse): void {
     const dialogRef = this.dialog.open(FormBlocoComponent, {
       width: '820px',
@@ -183,7 +266,7 @@ export class ListarBlocosComponent implements OnChanges {
       },
     });
 
-    dialogRef.afterClosed().subscribe((resultado) => {
+    dialogRef.afterClosed().pipe(takeUntil(this.destroy$)).subscribe((resultado) => {
       if (resultado?.salvou) {
         const mensagem = resultado.acao === 'atualizado'
           ? 'Bloco atualizado com sucesso!'

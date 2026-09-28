@@ -1,12 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
+import { finalize } from 'rxjs';
 import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
 import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
-import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
-import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { PageCardAction, PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { PageFormState } from 'src/app/components/page-card/page-form-state';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
 import { MaterialModule } from 'src/app/material.module';
@@ -24,7 +25,6 @@ import { ListarBlocosComponent } from '../blocos/listar-blocos/listar-blocos.com
     MaterialModule,
     PageCardComponent,
     SectionCardComponent,
-    MobileTotalBarComponent,
     InputTextoRestritoComponent,
     InputTextareaComponent,
     TemPermissaoDirective,
@@ -34,6 +34,7 @@ import { ListarBlocosComponent } from '../blocos/listar-blocos/listar-blocos.com
   styleUrl: './form-pagina.component.scss',
 })
 export class FormPaginaComponent implements OnInit {
+  readonly formId = 'site-pagina-form';
   readonly layouts: Array<{ value: SitePaginaLayoutHome; label: string }> = [
     { value: 'GRID', label: 'Grid' },
     { value: 'LISTA', label: 'Lista' },
@@ -42,11 +43,13 @@ export class FormPaginaComponent implements OnInit {
   ];
 
   form!: FormGroup;
+  formState!: PageFormState;
   isEditMode = false;
   paginaId!: number;
-  isMobileView = false;
   carregando = false;
   salvando = false;
+  erro: string | null = null;
+  semPermissao = false;
   paginaAtual: SitePaginaResponse | null = null;
 
   constructor(
@@ -58,23 +61,10 @@ export class FormPaginaComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.atualizarViewport();
-    this.form = this.fb.group({
-      titulo: ['', Validators.required],
-      slug: [''],
-      resumo: [''],
-      ativa: [true],
-      exibirNoMenu: [true],
-      ordemMenu: [1],
-      exibirNaHome: [false],
-      ordemHome: [null],
-      tituloHome: [''],
-      subtituloHome: [''],
-      limiteItensHome: [6],
-      layoutHome: ['GRID'],
-      textoBotaoHome: [''],
-      seoTitulo: [''],
-      seoDescricao: [''],
+    this.form = this.criarFormulario();
+    this.formState = new PageFormState(() => this.form, {
+      read: () => undefined,
+      write: () => this.aplicarEstadosCondicionais(),
     });
 
     this.exibirNaHomeControl.valueChanges.subscribe((exibir) => this.atualizarCamposHome(!!exibir));
@@ -87,21 +77,8 @@ export class FormPaginaComponent implements OnInit {
 
     this.route.paramMap.subscribe((params) => {
       const id = params.get('id');
-      if (!id) {
-        this.carregarProximasOrdens();
-        this.atualizarCamposHome(false);
-        return;
-      }
-
-      this.isEditMode = true;
-      this.paginaId = +id;
-      this.carregarPagina(this.paginaId);
+      this.prepararFormulario(id ? +id : null);
     });
-  }
-
-  @HostListener('window:resize')
-  onWindowResize(): void {
-    this.atualizarViewport();
   }
 
   get tituloControl(): FormControl {
@@ -168,16 +145,23 @@ export class FormPaginaComponent implements OnInit {
     return this.isEditMode ? 'Editar página' : 'Nova página';
   }
 
-  get textoAcaoPrincipal(): string {
-    if (this.salvando) {
-      return this.isEditMode ? 'Atualizando...' : 'Salvando...';
-    }
-
-    return this.isEditMode ? 'Atualizar' : 'Salvar';
+  get savingText(): string {
+    return this.isEditMode ? 'Atualizando...' : 'Salvando...';
   }
 
-  get podeSalvar(): boolean {
-    return !this.salvando && !this.carregando;
+  get footerActions(): PageCardAction[] {
+    if (this.carregando || this.erro || this.semPermissao) {
+      return [];
+    }
+
+    return [{
+      id: 'salvar',
+      type: 'submit',
+      form: this.formId,
+      label: this.isEditMode ? 'Atualizar' : 'Salvar',
+      pendingLabel: this.savingText,
+      disabled: this.salvando,
+    }];
   }
 
   get isHome(): boolean {
@@ -201,7 +185,7 @@ export class FormPaginaComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.form.invalid || this.salvando) {
+    if (this.carregando || this.semPermissao || this.erro || this.form.invalid || this.salvando) {
       this.form.markAllAsTouched();
       return;
     }
@@ -213,21 +197,56 @@ export class FormPaginaComponent implements OnInit {
       ? this.sitePaginaService.atualizar(this.paginaId, payload)
       : this.sitePaginaService.criar(payload);
 
-    request$.subscribe({
+    request$.pipe(finalize(() => this.salvando = false)).subscribe({
       next: () => {
-        this.salvando = false;
         this.toastr.success(this.isEditMode ? 'Página atualizada com sucesso!' : 'Página criada com sucesso!');
         this.router.navigate(['/page/site/paginas']);
       },
       error: (err) => {
-        this.salvando = false;
         this.toastr.error(err?.userMessage || (this.isEditMode ? 'Erro ao atualizar a página.' : 'Erro ao criar a página.'));
       },
     });
   }
 
-  voltar(): void {
-    this.router.navigate(['/page/site/paginas']);
+  tentarNovamente(): void {
+    this.prepararFormulario(this.isEditMode ? this.paginaId : null);
+  }
+
+  private criarFormulario(): FormGroup {
+    return this.fb.group({
+      titulo: ['', Validators.required],
+      slug: [''],
+      resumo: [''],
+      ativa: [true],
+      exibirNoMenu: [true],
+      ordemMenu: [1],
+      exibirNaHome: [false],
+      ordemHome: [1],
+      tituloHome: [''],
+      subtituloHome: [''],
+      limiteItensHome: [6],
+      layoutHome: ['GRID'],
+      textoBotaoHome: [''],
+      seoTitulo: [''],
+      seoDescricao: [''],
+    });
+  }
+
+  private prepararFormulario(id: number | null): void {
+    this.isEditMode = !!id;
+    this.paginaId = id || 0;
+    this.paginaAtual = null;
+    this.erro = null;
+    this.semPermissao = false;
+    this.restaurarDefaults();
+
+    if (id) {
+      this.formState.begin('edit');
+      this.carregarPagina(id);
+      return;
+    }
+
+    this.carregarProximasOrdens();
   }
 
   private carregarPagina(id: number): void {
@@ -237,16 +256,18 @@ export class FormPaginaComponent implements OnInit {
         this.carregando = false;
         this.paginaAtual = pagina;
         this.preencherFormulario(pagina);
+        this.formState.loaded();
       },
-      error: () => {
+      error: (err) => {
         this.carregando = false;
-        this.toastr.error('Erro ao carregar a página.');
-        this.router.navigate(['/page/site/paginas']);
+        this.semPermissao = err?.status === 403;
+        this.erro = this.semPermissao ? null : (err?.userMessage || 'Erro ao carregar a página.');
       },
     });
   }
 
   private carregarProximasOrdens(): void {
+    this.carregando = true;
     this.sitePaginaService.listar({ page: 0, size: 200, sort: 'ordemMenu,asc' }).subscribe({
       next: (response) => {
         const paginas = Array.isArray(response) ? response : response.content || [];
@@ -254,15 +275,47 @@ export class FormPaginaComponent implements OnInit {
         const maiorOrdemHome = paginas.reduce((maior, pagina) => Math.max(maior, Number(pagina.ordemHome || 0)), 0);
         this.ordemMenuControl.setValue(maiorOrdemMenu + 1 || 1);
         this.ordemHomeControl.setValue(maiorOrdemHome + 1 || 1);
+        this.atualizarCamposHome(false);
+        this.formState.begin('create');
+        this.carregando = false;
       },
-      error: () => {
+      error: (err) => {
         this.ordemMenuControl.setValue(1);
         this.ordemHomeControl.setValue(1);
+        this.atualizarCamposHome(false);
+        this.formState.begin('create');
+        this.carregando = false;
+        if (err?.status === 403) {
+          this.semPermissao = true;
+        }
       },
     });
   }
 
+  private restaurarDefaults(): void {
+    this.form.reset({
+      titulo: '',
+      slug: '',
+      resumo: '',
+      ativa: true,
+      exibirNoMenu: true,
+      ordemMenu: 1,
+      exibirNaHome: false,
+      ordemHome: 1,
+      tituloHome: '',
+      subtituloHome: '',
+      limiteItensHome: 6,
+      layoutHome: 'GRID',
+      textoBotaoHome: '',
+      seoTitulo: '',
+      seoDescricao: '',
+    }, { emitEvent: false });
+    this.form.enable({ emitEvent: false });
+    this.atualizarCamposHome(false);
+  }
+
   private preencherFormulario(pagina: SitePaginaResponse): void {
+    this.form.enable({ emitEvent: false });
     this.form.patchValue(
       {
         titulo: pagina.titulo || '',
@@ -284,15 +337,24 @@ export class FormPaginaComponent implements OnInit {
       { emitEvent: false }
     );
 
+    this.aplicarEstadosCondicionais();
+  }
+
+  private aplicarEstadosCondicionais(): void {
     if (this.isHome) {
+      this.ativaControl.setValue(true, { emitEvent: false });
       this.ativaControl.disable({ emitEvent: false });
+    } else {
+      this.ativaControl.enable({ emitEvent: false });
     }
 
     if (this.isSistema) {
       this.slugControl.disable({ emitEvent: false });
+    } else {
+      this.slugControl.enable({ emitEvent: false });
     }
 
-    this.atualizarCamposHome(!!pagina.exibirNaHome);
+    this.atualizarCamposHome(!!this.exibirNaHomeControl.value);
   }
 
   private atualizarCamposHome(exibirNaHome: boolean): void {
@@ -375,13 +437,5 @@ export class FormPaginaComponent implements OnInit {
     };
 
     return labels[codigo] || codigo;
-  }
-
-  private atualizarViewport(): void {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    this.isMobileView = window.innerWidth <= 768;
   }
 }

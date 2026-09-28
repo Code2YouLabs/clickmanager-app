@@ -2,70 +2,76 @@
   *temPermissao="'SITE_PAGINA_BLOCOS_VER'"
   titulo="Conteúdo da página"
   subtitulo="Gerencie os blocos exibidos nesta página personalizada.">
-  <div class="blocos-toolbar">
-    <button mat-flat-button color="primary" type="button" (click)="adicionar()" *temPermissao="'SITE_PAGINA_BLOCOS_CADASTRAR'">
-      <mat-icon>add</mat-icon>
-      Adicionar bloco
-    </button>
-  </div>
+  <app-data-table
+    [columns]="colunas"
+    [data]="blocos"
+    [actions]="acoes"
+    actionsMode="buttons"
+    tableLabel="Blocos da página"
+    [search]="{ enabled: false }"
+    [loading]="carregando && !blocos.length"
+    [refreshing]="carregando && !!blocos.length"
+    [error]="erro"
+    [forbidden]="semPermissao"
+    [emptyState]="{
+      title: 'Nenhum conteúdo cadastrado nesta página',
+      description: 'Adicione blocos para compor a página personalizada.'
+    }"
+    (retry)="carregarBlocos()"
+    (action)="onAcao($event)">
+    <div data-table-toolbar-actions>
+      <button mat-flat-button color="primary" type="button" (click)="adicionar()" *temPermissao="'SITE_PAGINA_BLOCOS_CADASTRAR'">
+        <mat-icon>add</mat-icon>
+        Adicionar bloco
+      </button>
+    </div>
 
-  @if (carregando) {
-  <div class="blocos-state">
-    <mat-spinner diameter="32"></mat-spinner>
-    <span>Carregando blocos...</span>
-  </div>
-  } @else if (!blocos.length) {
-  <div class="blocos-state blocos-state--empty">
-    <strong>Nenhum conteúdo cadastrado nesta página.</strong>
-  </div>
-  } @else {
-  <div class="table-responsive">
-    <table mat-table [dataSource]="blocos" class="mat-elevation-z1 no-wrap m-t-0 v-middle w-100">
-      <ng-container matColumnDef="ordem">
-        <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Ordem</th>
-        <td mat-cell *matCellDef="let bloco" class="f-s-14">{{ bloco.ordem || '-' }}</td>
-      </ng-container>
+    <ng-template appDataTableCell="ordem" let-bloco>
+      {{ bloco.ordem || '-' }}
+    </ng-template>
 
-      <ng-container matColumnDef="preview">
-        <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Bloco</th>
-        <td mat-cell *matCellDef="let bloco" class="f-s-14">
+    <ng-template appDataTableCell="preview" let-bloco>
+      <app-bloco-preview [bloco]="bloco"></app-bloco-preview>
+    </ng-template>
+
+    <ng-template appDataTableCell="status" let-bloco>
+      <app-status-badge [status]="statusKey(bloco.ativo)" [compact]="true"></app-status-badge>
+    </ng-template>
+
+    <ng-template [appDataTableItem]="blocos" let-bloco let-actions="actions" let-emitAction="emitAction">
+      <article class="bloco-mobile-card">
+        <div class="bloco-mobile-card__head">
           <app-bloco-preview [bloco]="bloco"></app-bloco-preview>
-        </td>
-      </ng-container>
 
-      <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Status</th>
-        <td mat-cell *matCellDef="let bloco" class="f-s-14">
-          <span class="status-pill" [class.status-pill--inactive]="!bloco.ativo">
-            {{ statusLabel(bloco.ativo) }}
-          </span>
-        </td>
-      </ng-container>
+          <button
+            mat-icon-button
+            type="button"
+            [matMenuTriggerFor]="blocoMobileMenu"
+            [matMenuTriggerData]="{ bloco: bloco, actions: actions, emitAction: emitAction }"
+            [disabled]="!actions.length"
+            aria-label="Abrir ações do bloco">
+            <mat-icon>more_vert</mat-icon>
+          </button>
+        </div>
 
-      <ng-container matColumnDef="acoes">
-        <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Ações</th>
-        <td mat-cell *matCellDef="let bloco; let i = index" class="blocos-actions">
-          <button mat-icon-button type="button" (click)="mover(bloco, -1)" [disabled]="i === 0" *temPermissao="'SITE_PAGINA_BLOCOS_EDITAR'" aria-label="Subir bloco">
-            <mat-icon>keyboard_arrow_up</mat-icon>
-          </button>
-          <button mat-icon-button type="button" (click)="mover(bloco, 1)" [disabled]="i === blocos.length - 1" *temPermissao="'SITE_PAGINA_BLOCOS_EDITAR'" aria-label="Descer bloco">
-            <mat-icon>keyboard_arrow_down</mat-icon>
-          </button>
-          <button mat-icon-button type="button" (click)="editar(bloco)" *temPermissao="'SITE_PAGINA_BLOCOS_EDITAR'" aria-label="Editar bloco">
-            <mat-icon>edit</mat-icon>
-          </button>
-          <button mat-icon-button type="button" (click)="alterarStatus(bloco)" *temPermissao="'SITE_PAGINA_BLOCOS_EDITAR'" [attr.aria-label]="bloco.ativo ? 'Desativar bloco' : 'Ativar bloco'">
-            <mat-icon>{{ bloco.ativo ? 'toggle_off' : 'toggle_on' }}</mat-icon>
-          </button>
-          <button mat-icon-button color="warn" type="button" (click)="excluir(bloco)" *temPermissao="'SITE_PAGINA_BLOCOS_EXCLUIR'" aria-label="Excluir bloco">
-            <mat-icon>delete</mat-icon>
-          </button>
-        </td>
-      </ng-container>
-
-      <tr mat-header-row *matHeaderRowDef="colunasExibidas"></tr>
-      <tr mat-row *matRowDef="let row; columns: colunasExibidas; trackBy: trackByBloco"></tr>
-    </table>
-  </div>
-  }
+        <div class="bloco-mobile-card__footer">
+          <span class="bloco-pill">Ordem {{ bloco.ordem || '-' }}</span>
+          <app-status-badge [status]="statusKey(bloco.ativo)" [compact]="true"></app-status-badge>
+        </div>
+      </article>
+    </ng-template>
+  </app-data-table>
 </app-section-card>
+
+<mat-menu #blocoMobileMenu="matMenu">
+  <ng-template matMenuContent let-bloco="bloco" let-actions="actions" let-emitAction="emitAction">
+    @for (action of actions; track action.id) {
+      <button mat-menu-item type="button" [disabled]="action.disabled?.(bloco)" (click)="emitAction(bloco, action.id)">
+        @if (action.icon) {
+          <mat-icon [color]="action.color || null">{{ action.icon }}</mat-icon>
+        }
+        <span>{{ action.label }}</span>
+      </button>
+    }
+  </ng-template>
+</mat-menu>

@@ -12,13 +12,6 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.cadastro-form-actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 20px;
-}
-
 .cadastro-form-toggle-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -77,13 +70,14 @@
   text-align: center;
 }
 
+.site-pagina-form-state--error strong {
+  color: #0f172a;
+  font-size: 1rem;
+}
+
 @media (max-width: 768px) {
   .cadastro-form-grid--double,
   .cadastro-form-toggle-grid {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  :host ::ng-deep .site-pagina-form-page .mat-mdc-card-content {
-    padding-bottom: 220px;
   }
 }
