@@ -158,8 +158,6 @@ export class FormPaginaComponent implements OnInit {
       id: 'salvar',
       type: 'submit',
       form: this.formId,
-      label: this.isEditMode ? 'Atualizar' : 'Salvar',
-      pendingLabel: this.savingText,
       disabled: this.salvando,
     }];
   }

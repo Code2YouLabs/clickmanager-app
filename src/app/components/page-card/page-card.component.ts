@@ -10,7 +10,7 @@ import { CardHeaderComponent } from '../card-header/card-header.component';
 
 export type PageCardAction = { id: string; disabled?: boolean } & (
   { type: 'submit'; form: string; intent?: never;
-    label?: string; icon?: string; pendingLabel?: string; color?: 'primary' | 'accent' | 'warn'; primary?: boolean } |
+    label?: never; icon?: never; pendingLabel?: never; color?: never; primary?: never } |
   { type?: 'button'; form?: never; intent?: 'cancel'; label: string; icon?: string;
     pendingLabel?: string; color?: 'primary' | 'accent' | 'warn'; primary?: boolean }
 );
@@ -44,8 +44,7 @@ export class PageCardComponent {
       .filter(action => action.intent !== 'cancel')
       .map(action => action.type === 'submit'
         ? { id: action.id, type: 'submit', form: action.form, disabled: action.disabled,
-            label: action.label || 'Salvar', icon: action.icon || 'save', pendingLabel: action.pendingLabel,
-            primary: action.primary ?? true, color: action.color || 'primary' }
+            label: 'Salvar', icon: 'save', primary: true, color: 'primary' }
         : action);
     return this.formState
       ? [{ id: 'cancel', label: 'Cancelar', intent: 'cancel' }, ...actions]
