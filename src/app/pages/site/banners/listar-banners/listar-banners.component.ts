@@ -1,21 +1,21 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 import { MatRippleModule } from '@angular/material/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatTableModule } from '@angular/material/table';
+import { PageEvent } from '@angular/material/paginator';
 import { Router, RouterModule } from '@angular/router';
 import { TablerIconsModule } from 'angular-tabler-icons';
 import { ToastrService } from 'ngx-toastr';
-import { CardHeaderComponent } from 'src/app/components/card-header/card-header.component';
+import { DataTableCellDirective } from 'src/app/components/data-table/data-table-cell.directive';
+import { DataTableItemDirective } from 'src/app/components/data-table/data-table-item.directive';
+import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
+import { DataTableColumn, DataTablePagination, DataTableSearchConfig } from 'src/app/components/data-table/data-table.models';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
-import { InputPesquisaComponent } from 'src/app/components/inputs/input-pesquisa/input-pesquisa.component';
-import { MobileFabActionComponent } from 'src/app/components/mobile-fab-action/mobile-fab-action.component';
+import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { StatusBadgeComponent } from 'src/app/components/status-badge/status-badge.component';
 import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
 import { resolveStorageImageUrl } from 'src/app/pages/storage/utils/storage-media-url.util';
 import { SiteBannerResponse } from '../../models/site-banner.models';
@@ -27,18 +27,16 @@ import { SiteBannerService } from '../../services/site-banner.service';
   imports: [
     CommonModule,
     MatButtonModule,
-    MatCardModule,
     MatIconModule,
     MatMenuModule,
-    MatPaginatorModule,
-    MatProgressSpinnerModule,
     MatRippleModule,
-    MatTableModule,
     RouterModule,
     TablerIconsModule,
-    CardHeaderComponent,
-    InputPesquisaComponent,
-    MobileFabActionComponent,
+    DataTableComponent,
+    DataTableCellDirective,
+    DataTableItemDirective,
+    PageCardComponent,
+    StatusBadgeComponent,
     TemPermissaoDirective,
   ],
   templateUrl: './listar-banners.component.html',
@@ -48,15 +46,23 @@ export class ListarBannersComponent implements OnInit {
   banners: SiteBannerResponse[] = [];
   totalBanners = 0;
   carregando = false;
+  refreshing = false;
+  erro: string | null = null;
+  semPermissao = false;
   pagina = 0;
   tamanhoPagina = 10;
   termoPesquisa = '';
-  isMobileView = false;
-  mobileFabCompact = false;
   bannerSelecionadoMenu: SiteBannerResponse | null = null;
-  readonly colunasExibidas = ['imagem', 'titulo', 'ordem', 'status', 'vigencia', 'acoes'];
+  private requestSeq = 0;
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  readonly columns: DataTableColumn<SiteBannerResponse>[] = [
+    { key: 'imagem', label: 'Imagem', width: '132px' },
+    { key: 'titulo', label: 'Título' },
+    { key: 'ordem', label: 'Ordem', width: '96px', align: 'center' },
+    { key: 'status', label: 'Status', width: '120px' },
+    { key: 'vigencia', label: 'Vigência', width: '190px' },
+    { key: 'acoes', label: 'Ações', width: '180px', align: 'end' },
+  ];
 
   constructor(
     private readonly siteBannerService: SiteBannerService,
@@ -66,22 +72,37 @@ export class ListarBannersComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.atualizarViewport();
     this.carregarBanners();
   }
 
-  @HostListener('window:resize')
-  onWindowResize(): void {
-    this.atualizarViewport();
+  get searchConfig(): DataTableSearchConfig {
+    return {
+      enabled: true,
+      placeholder: 'Ex: promoção, lançamento, fachada',
+      debounceMs: 400,
+      value: this.termoPesquisa,
+    };
   }
 
-  @HostListener('window:scroll')
-  onWindowScroll(): void {
-    this.mobileFabCompact = (window.scrollY || document.documentElement.scrollTop || 0) > 96;
+  get pagination(): DataTablePagination {
+    return {
+      pageIndex: this.pagina,
+      pageSize: this.tamanhoPagina,
+      totalItems: this.totalBanners,
+      pageSizeOptions: [10, 20, 50],
+    };
   }
 
-  carregarBanners(): void {
-    this.carregando = true;
+  get filtered(): boolean {
+    return this.termoPesquisa.trim().length > 0;
+  }
+
+  carregarBanners(preserveData = false): void {
+    const requestId = ++this.requestSeq;
+    this.erro = null;
+    this.semPermissao = false;
+    this.carregando = !preserveData;
+    this.refreshing = preserveData;
     this.siteBannerService
       .listar({
         page: this.pagina,
@@ -91,6 +112,9 @@ export class ListarBannersComponent implements OnInit {
       })
       .subscribe({
         next: (response) => {
+          if (requestId !== this.requestSeq) {
+            return;
+          }
           if (Array.isArray(response)) {
             this.banners = response;
             this.totalBanners = response.length;
@@ -100,10 +124,16 @@ export class ListarBannersComponent implements OnInit {
           }
 
           this.carregando = false;
+          this.refreshing = false;
         },
-        error: () => {
+        error: (err) => {
+          if (requestId !== this.requestSeq) {
+            return;
+          }
           this.carregando = false;
-          this.toastr.error('Não foi possível carregar os banners do site.');
+          this.refreshing = false;
+          this.semPermissao = err?.status === 403;
+          this.erro = this.semPermissao ? null : (err?.userMessage || 'Não foi possível carregar os banners do site.');
         },
       });
   }
@@ -111,13 +141,17 @@ export class ListarBannersComponent implements OnInit {
   onPaginaAlterada(event: PageEvent): void {
     this.pagina = event.pageIndex;
     this.tamanhoPagina = event.pageSize;
-    this.carregarBanners();
+    this.carregarBanners(this.banners.length > 0);
   }
 
   onPesquisar(valor: string): void {
     this.termoPesquisa = valor || '';
     this.pagina = 0;
     this.carregarBanners();
+  }
+
+  tentarNovamente(): void {
+    this.carregarBanners(this.banners.length > 0);
   }
 
   editar(banner: SiteBannerResponse): void {
@@ -211,6 +245,10 @@ export class ListarBannersComponent implements OnInit {
     return ativo ? 'Ativo' : 'Inativo';
   }
 
+  statusKey(ativo: boolean): string {
+    return ativo ? 'ATIVO' : 'INATIVO';
+  }
+
   bannerImagemUrl(banner: SiteBannerResponse): string {
     return resolveStorageImageUrl(banner, 'CARD', '');
   }
@@ -245,14 +283,5 @@ export class ListarBannersComponent implements OnInit {
     }
 
     return date.toLocaleDateString('pt-BR');
-  }
-
-  private atualizarViewport(): void {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    this.isMobileView = window.innerWidth <= 768;
-    this.tamanhoPagina = this.isMobileView ? 20 : 10;
   }
 }

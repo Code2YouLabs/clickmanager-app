@@ -1,4 +1,4 @@
-.mat-mdc-table .mat-mdc-row .mat-mdc-cell {
+:host ::ng-deep .mat-mdc-table .mat-mdc-row .mat-mdc-cell {
   white-space: normal;
 }
 
@@ -21,6 +21,13 @@
 .status-pill--secondary {
   background: rgba(37, 99, 235, 0.12);
   color: #1d4ed8;
+}
+
+.banner-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
 }
 
 .banner-thumb {
@@ -60,99 +67,7 @@
   line-height: 1.4;
 }
 
-.site-banner-state {
-  min-height: 220px;
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: 10px;
-  color: #64748b;
-  text-align: center;
-}
-
-.site-banner-state--empty {
-  margin-top: 16px;
-  border-radius: 24px;
-  border: 1px dashed rgba(191, 219, 254, 0.9);
-  background: rgba(248, 250, 252, 0.72);
-}
-
-.site-banner-state strong {
-  color: #0f172a;
-  font-size: 1rem;
-}
-
 @media (max-width: 768px) {
-  .cadastro-mobile {
-    position: relative;
-    display: grid;
-    gap: 18px;
-    padding: 4px 0 96px;
-  }
-
-  .cadastro-mobile__sticky {
-    position: sticky;
-    top: 52px;
-    z-index: 4;
-    display: grid;
-    gap: 10px;
-    padding: 4px 0 6px;
-    background: linear-gradient(180deg, #f8fbff 0%, rgba(248, 251, 255, 0.96) 78%, rgba(248, 251, 255, 0));
-    backdrop-filter: blur(12px);
-  }
-
-  .cadastro-mobile__search {
-    min-height: 52px;
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    gap: 10px;
-    padding: 0 16px;
-    border-radius: 18px;
-    border: 1px solid rgba(203, 213, 225, 0.8);
-    background: rgba(255, 255, 255, 0.98);
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
-  }
-
-  .cadastro-mobile__search mat-icon {
-    color: #64748b;
-  }
-
-  .cadastro-mobile__search input {
-    width: 100%;
-    border: 0;
-    outline: 0;
-    background: transparent;
-    color: #0f172a;
-    font-size: 0.96rem;
-  }
-
-  .cadastro-mobile__list {
-    display: grid;
-    gap: 18px;
-  }
-
-  .cadastro-mobile__state {
-    display: grid;
-    justify-items: center;
-    gap: 10px;
-    padding: 28px 16px;
-    color: #64748b;
-    text-align: center;
-  }
-
-  .cadastro-mobile__state--empty {
-    padding: 36px 16px;
-    border-radius: 24px;
-    border: 1px dashed rgba(191, 219, 254, 0.9);
-    background: rgba(255, 255, 255, 0.76);
-  }
-
-  .cadastro-mobile__state strong {
-    color: #0f172a;
-    font-size: 1rem;
-  }
-
   .cadastro-mobile-card {
     display: grid;
     gap: 14px;

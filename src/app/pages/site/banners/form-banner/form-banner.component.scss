@@ -33,13 +33,6 @@
   align-items: center;
 }
 
-.cadastro-form-actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 20px;
-}
-
 .cadastro-form-toggle-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -115,9 +108,5 @@
   .cadastro-form-grid--triple,
   .cadastro-form-toggle-grid {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  :host ::ng-deep .site-banner-form-page .mat-mdc-card-content {
-    padding-bottom: 220px;
   }
 }

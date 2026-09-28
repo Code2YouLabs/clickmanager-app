@@ -1,132 +1,84 @@
-@if (!isMobileView) {
-<mat-card class="cardWithShadow">
-  <app-card-header
-    titulo="Banners do site"
-    subtitulo="Gerencie as imagens e chamadas principais da página inicial."
-    botaoTexto="Novo banner"
-    botaoIcone="add"
-    [botaoRota]="['/page/site/banners/novo']"
-    permissao="SITE_BANNERS_CADASTRAR"
-    [mostrarDivisor]="true">
-  </app-card-header>
+<app-page-card
+  titulo="Banners do site"
+  subtitulo="Gerencie as imagens e chamadas principais da página inicial."
+  botaoTexto="Novo banner"
+  botaoIcone="add"
+  [botaoRota]="['/page/site/banners/novo']"
+  permissao="SITE_BANNERS_CADASTRAR"
+  [mostrarDivisor]="true">
 
-  <mat-card-content>
-    <app-input-pesquisa placeholder="Ex: promoção, lançamento, fachada" (valorAlterado)="onPesquisar($event)">
-    </app-input-pesquisa>
+  <app-data-table
+    tableLabel="Banners do site"
+    [columns]="columns"
+    [data]="banners"
+    [search]="searchConfig"
+    [pagination]="pagination"
+    [loading]="carregando"
+    [refreshing]="refreshing"
+    [error]="erro"
+    [forbidden]="semPermissao"
+    [filtered]="filtered"
+    [rowKey]="'id'"
+    [emptyState]="{
+      title: 'Nenhum banner encontrado',
+      description: 'Crie o primeiro banner para começar a montar a página inicial do site.',
+      filteredTitle: 'Nenhum banner encontrado',
+      filteredDescription: 'Altere a busca para localizar outros banners.'
+    }"
+    (searchChange)="onPesquisar($event)"
+    (pageChange)="onPaginaAlterada($event)"
+    (retry)="tentarNovamente()">
 
-    @if (carregando) {
-    <div class="site-banner-state">
-      <mat-spinner diameter="32"></mat-spinner>
-      <span>Carregando banners...</span>
-    </div>
-    } @else if (!banners.length) {
-    <div class="site-banner-state site-banner-state--empty">
-      <strong>Nenhum banner encontrado</strong>
-      <span>Crie o primeiro banner para começar a montar a página inicial do site.</span>
-    </div>
-    } @else {
-    <div class="table-responsive">
-      <table mat-table [dataSource]="banners" class="mat-elevation-z1 no-wrap m-t-0 v-middle w-100">
-        <ng-container matColumnDef="imagem">
-          <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Imagem</th>
-          <td mat-cell *matCellDef="let banner" class="f-s-14">
-            <div class="banner-thumb">
-              @if (bannerImagemUrl(banner)) {
-              <img [src]="bannerImagemUrl(banner)" [alt]="banner.altText || banner.titulo || 'Banner do site'" loading="lazy" decoding="async" />
-              } @else {
-              <mat-icon>image</mat-icon>
-              }
-            </div>
-          </td>
-        </ng-container>
+    <ng-template appDataTableCell="imagem" let-banner>
+      <div class="banner-thumb">
+        @if (bannerImagemUrl(banner)) {
+        <img [src]="bannerImagemUrl(banner)" [alt]="banner.altText || banner.titulo || 'Banner do site'" loading="lazy" decoding="async" />
+        } @else {
+        <mat-icon>image</mat-icon>
+        }
+      </div>
+    </ng-template>
 
-        <ng-container matColumnDef="titulo">
-          <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Título</th>
-          <td mat-cell *matCellDef="let banner" class="f-s-14">
-            <div class="banner-title-cell">
-              <strong>{{ banner.titulo || 'Sem título' }}</strong>
-              <span>{{ banner.subtitulo || banner.descricao || 'Sem chamada complementar' }}</span>
-            </div>
-          </td>
-        </ng-container>
+    <ng-template appDataTableCell="titulo" let-banner>
+      <div class="banner-title-cell">
+        <strong>{{ banner.titulo || 'Sem título' }}</strong>
+        <span>{{ banner.subtitulo || banner.descricao || 'Sem chamada complementar' }}</span>
+      </div>
+    </ng-template>
 
-        <ng-container matColumnDef="ordem">
-          <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Ordem</th>
-          <td mat-cell *matCellDef="let banner" class="f-s-14">{{ banner.ordem || '-' }}</td>
-        </ng-container>
+    <ng-template appDataTableCell="ordem" let-banner>
+      {{ banner.ordem || '-' }}
+    </ng-template>
 
-        <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Status</th>
-          <td mat-cell *matCellDef="let banner" class="f-s-14">
-            <span class="status-pill" [class.status-pill--inactive]="!banner.ativo">
-              {{ statusLabel(banner.ativo) }}
-            </span>
-          </td>
-        </ng-container>
+    <ng-template appDataTableCell="status" let-banner>
+      <app-status-badge [status]="statusKey(banner.ativo)" [compact]="true"></app-status-badge>
+    </ng-template>
 
-        <ng-container matColumnDef="vigencia">
-          <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Vigência</th>
-          <td mat-cell *matCellDef="let banner" class="f-s-14">{{ vigenciaLabel(banner) }}</td>
-        </ng-container>
+    <ng-template appDataTableCell="vigencia" let-banner>
+      {{ vigenciaLabel(banner) }}
+    </ng-template>
 
-        <ng-container matColumnDef="acoes">
-          <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Ações</th>
-          <td mat-cell *matCellDef="let banner; let i = index" class="action-link">
-            <button mat-icon-button type="button" (click)="mover(banner, -1)" [disabled]="i === 0" *temPermissao="'SITE_BANNERS_EDITAR'" aria-label="Mover banner para cima">
-              <mat-icon>keyboard_arrow_up</mat-icon>
-            </button>
-            <button mat-icon-button type="button" (click)="mover(banner, 1)" [disabled]="i === banners.length - 1" *temPermissao="'SITE_BANNERS_EDITAR'" aria-label="Mover banner para baixo">
-              <mat-icon>keyboard_arrow_down</mat-icon>
-            </button>
-            <a (click)="editar(banner)" class="m-r-10 cursor-pointer" *temPermissao="'SITE_BANNERS_EDITAR'">
-              <i-tabler name="edit" class="icon-18"></i-tabler>
-            </a>
-            <a (click)="alterarStatus(banner)" class="m-r-10 cursor-pointer" *temPermissao="'SITE_BANNERS_EDITAR'">
-              <i-tabler [name]="banner.ativo ? 'toggle-right' : 'toggle-left'" class="icon-18"></i-tabler>
-            </a>
-            <a (click)="excluir(banner)" class="cursor-pointer" *temPermissao="'SITE_BANNERS_EXCLUIR'">
-              <i-tabler name="trash" class="icon-18"></i-tabler>
-            </a>
-          </td>
-        </ng-container>
+    <ng-template appDataTableCell="acoes" let-banner>
+      <div class="banner-actions">
+        <button mat-icon-button type="button" (click)="mover(banner, -1)" [disabled]="banners.indexOf(banner) === 0" *temPermissao="'SITE_BANNERS_EDITAR'" aria-label="Mover banner para cima">
+          <mat-icon>keyboard_arrow_up</mat-icon>
+        </button>
+        <button mat-icon-button type="button" (click)="mover(banner, 1)" [disabled]="banners.indexOf(banner) === banners.length - 1" *temPermissao="'SITE_BANNERS_EDITAR'" aria-label="Mover banner para baixo">
+          <mat-icon>keyboard_arrow_down</mat-icon>
+        </button>
+        <button mat-icon-button type="button" (click)="editar(banner)" *temPermissao="'SITE_BANNERS_EDITAR'" aria-label="Editar banner">
+          <i-tabler name="edit" class="icon-18"></i-tabler>
+        </button>
+        <button mat-icon-button type="button" (click)="alterarStatus(banner)" *temPermissao="'SITE_BANNERS_EDITAR'" [attr.aria-label]="banner.ativo ? 'Desativar banner' : 'Ativar banner'">
+          <i-tabler [name]="banner.ativo ? 'toggle-right' : 'toggle-left'" class="icon-18"></i-tabler>
+        </button>
+        <button mat-icon-button type="button" (click)="excluir(banner)" *temPermissao="'SITE_BANNERS_EXCLUIR'" aria-label="Excluir banner">
+          <i-tabler name="trash" class="icon-18"></i-tabler>
+        </button>
+      </div>
+    </ng-template>
 
-        <tr mat-header-row *matHeaderRowDef="colunasExibidas"></tr>
-        <tr mat-row *matRowDef="let row; columns: colunasExibidas"></tr>
-      </table>
-
-      <mat-paginator
-        [length]="totalBanners"
-        [pageIndex]="pagina"
-        [pageSize]="tamanhoPagina"
-        (page)="onPaginaAlterada($event)"
-        showFirstLastButtons>
-      </mat-paginator>
-    </div>
-    }
-  </mat-card-content>
-</mat-card>
-} @else {
-<section class="cadastro-mobile">
-  <div class="cadastro-mobile__sticky">
-    <div class="cadastro-mobile__search">
-      <mat-icon>search</mat-icon>
-      <input type="search" placeholder="Buscar banner..." (input)="onPesquisar($any($event.target).value)" />
-    </div>
-  </div>
-
-  <div class="cadastro-mobile__list">
-    @if (carregando) {
-    <div class="cadastro-mobile__state">
-      <mat-spinner diameter="28"></mat-spinner>
-      <span>Carregando banners...</span>
-    </div>
-    } @else if (!banners.length) {
-    <div class="cadastro-mobile__state cadastro-mobile__state--empty">
-      <strong>Nenhum banner encontrado</strong>
-      <span>Crie o primeiro banner para a página inicial do site.</span>
-    </div>
-    } @else {
-      @for (banner of banners; track banner.id) {
+    <ng-template [appDataTableItem]="banners" let-banner>
       <article class="cadastro-mobile-card" matRipple (click)="editar(banner)">
         <div class="cadastro-mobile-card__image">
           @if (bannerImagemUrl(banner)) {
@@ -155,24 +107,12 @@
 
         <div class="cadastro-mobile-card__footer">
           <span class="status-pill status-pill--secondary">Ordem {{ banner.ordem || '-' }}</span>
-          <span class="status-pill" [class.status-pill--inactive]="!banner.ativo">
-            {{ statusLabel(banner.ativo) }}
-          </span>
+          <app-status-badge [status]="statusKey(banner.ativo)" [compact]="true"></app-status-badge>
         </div>
       </article>
-      }
-    }
-  </div>
-
-  <app-mobile-fab-action
-    *temPermissao="'SITE_BANNERS_CADASTRAR'"
-    label="Novo banner"
-    icon="add"
-    [compact]="mobileFabCompact"
-    ariaLabel="Criar novo banner"
-    (action)="navegarCriacao()">
-  </app-mobile-fab-action>
-</section>
+    </ng-template>
+  </app-data-table>
+</app-page-card>
 
 <mat-menu #bannerMenu="matMenu">
   <button mat-menu-item type="button" (click)="editar(bannerSelecionadoMenu!)" [disabled]="!bannerSelecionadoMenu" *temPermissao="'SITE_BANNERS_EDITAR'">
@@ -188,4 +128,3 @@
     <span>Excluir</span>
   </button>
 </mat-menu>
-}
