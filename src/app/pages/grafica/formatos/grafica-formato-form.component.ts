@@ -194,7 +194,7 @@ export class GraficaFormatoFormComponent implements OnInit {
   readonly formState = new PageFormState(() => this.form);
   private readonly emptyForm = this.form.getRawValue();
   get footerActions(): PageCardAction[] {
-    return [{ id: 'salvar', label: 'Salvar', icon: 'save', type: 'submit', form: 'grafica-formato-form', primary: true,
+    return [{ id: 'salvar', type: 'submit', form: 'grafica-formato-form',
       disabled: this.form.invalid }];
   }
 

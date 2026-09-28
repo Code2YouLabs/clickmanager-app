@@ -89,7 +89,7 @@ class ActionsHost {
   saving = false; disabled = false; submits = 0; commands: string[] = [];
   actions: PageCardAction[] = [
     { id: 'cancel', label: 'Voltar', intent: 'cancel' },
-    { id: 'save', label: 'Salvar', type: 'submit', form: 'contract-form', primary: true, pendingLabel: 'Salvando...' },
+    { id: 'save', type: 'submit', form: 'contract-form' },
   ];
 }
 describe('PageCard footer action contract', () => {
@@ -103,6 +103,20 @@ describe('PageCard footer action contract', () => {
     expect(buttons.length).toBe(1); expect(buttons[0].textContent.trim()).toBe('Cancelar');
     buttons[0].click(); expect(f.componentInstance.form.getRawValue()).toEqual({ name: '' });
     expect(f.componentInstance.commands).toEqual([]);
+  });
+  it('define texto e ícone de Salvar sem configuração da página, inclusive durante saving', () => {
+    const f = TestBed.createComponent(ActionsHost); f.detectChanges();
+    const save: HTMLButtonElement = f.nativeElement.querySelector('button[type=submit]');
+    expect(save.querySelector('mat-icon')?.textContent?.trim()).toBe('save');
+    expect(save.textContent?.replace('save', '').trim()).toBe('Salvar');
+    // Mesmo consumidores não tipados não podem sobrescrever a apresentação.
+    f.componentInstance.actions = [{ id: 'save', type: 'submit', form: 'contract-form',
+      label: 'Atualizar usuário', icon: 'person', pendingLabel: 'Enviando', primary: false, color: 'warn' } as any];
+    f.componentInstance.saving = true; f.detectChanges();
+    expect(save.querySelector('mat-icon')?.textContent?.trim()).toBe('save');
+    expect(save.textContent?.replace('save', '').trim()).toBe('Salvar');
+    expect(save.hasAttribute('mat-flat-button')).toBeTrue();
+    expect(save.disabled).toBeTrue();
   });
   it('associa submit nativo ao form e nao emite comando duplicado de click', () => {
     const f = TestBed.createComponent(ActionsHost); f.detectChanges();

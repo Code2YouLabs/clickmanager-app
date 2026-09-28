@@ -67,7 +67,7 @@ export class CalculadoraConfigComponent implements OnInit {
         read: () => this.selecionados, write: value => this.selecionados = value,
     });
     get footerActions(): PageCardAction[] {
-        return [{ id: 'salvar', label: 'Salvar', icon: 'save', type: 'submit', form: 'smartcalc-config-form', primary: true, disabled: this.salvarDesabilitado }];
+        return [{ id: 'salvar', type: 'submit', form: 'smartcalc-config-form', disabled: this.salvarDesabilitado }];
     }
 
     ngOnInit(): void {

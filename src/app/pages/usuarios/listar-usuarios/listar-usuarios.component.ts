@@ -1,77 +1,82 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
-import { Usuario } from 'src/app/models/usuario/usuario.model';
-import { UsuarioService } from '../services/usuario.service';
-import { MatCardModule } from '@angular/material/card';
-import { MatTableModule } from '@angular/material/table';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { CommonModule } from '@angular/common';
-import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatIconModule } from '@angular/material/icon';
-import { ImagemUtil } from 'src/app/utils/imagem-util';
-import { TablerIconsModule } from 'angular-tabler-icons';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatButtonModule } from '@angular/material/button';
-import { Router, RouterModule } from '@angular/router';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { PageEvent } from '@angular/material/paginator';
+import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
-import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
+import { Subject, Subscription, takeUntil } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
-import { CardHeaderComponent } from "src/app/components/card-header/card-header.component";
+import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
+import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
+import { DataTableCellDirective } from 'src/app/components/data-table/data-table-cell.directive';
+import { DataTableAction, DataTableActionEvent, DataTableColumn, DataTableFilter, DataTableFilterState } from 'src/app/components/data-table/data-table.models';
+import { Usuario } from 'src/app/models/usuario/usuario.model';
+import { AuthService } from 'src/app/services/auth.service';
+import { StatusBadgeComponent } from 'src/app/components/status-badge/status-badge.component';
+import { ImagemUtil } from 'src/app/utils/imagem-util';
+import { UsuarioService } from '../services/usuario.service';
 
 @Component({
   selector: 'app-listar-usuarios',
   standalone: true,
-  templateUrl: './listar-usuarios.component.html',
-  styleUrls: ['./listar-usuarios.component.scss'],
-  imports: [
-    CommonModule,
-    MatCardModule,
-    MatPaginatorModule,
-    MatTableModule,
-    MatTooltipModule,
-    MatButtonModule,
-    MatIconModule,
-    TablerIconsModule,
-    MatChipsModule,
-    MatProgressSpinnerModule,
-    MatFormFieldModule,
-    MatInputModule,
-    RouterModule,
-    TemPermissaoDirective,
-    CardHeaderComponent
-]
+  imports: [PageCardComponent, DataTableComponent, DataTableCellDirective, StatusBadgeComponent],
+  templateUrl: './listar-usuarios.component.html'
 })
-export class ListarUsuariosComponent implements OnInit {
+export class ListarUsuariosComponent implements OnInit, OnDestroy {
   usuarios: Usuario[] = [];
   totalUsuarios = 0;
   carregando = false;
+  erro: string | null = null;
+  semPermissao = false;
   pagina = 0;
   tamanhoPagina = 10;
-  imagemUtil = ImagemUtil;
   filtroStatus: boolean | null = true;
-  colunasExibidas = ['foto', 'nome', 'username', 'perfil', 'status', 'acoes'];
+  readonly imagemUtil = ImagemUtil;
+  readonly filtros: DataTableFilter[] = [{ key: 'ativo', label: 'Status', type: 'select', options: [
+    { value: true, label: 'Ativos' }, { value: false, label: 'Inativos' },
+  ] }];
+  readonly colunas: DataTableColumn<Usuario>[] = [
+    { key: 'foto', label: 'Foto' }, { key: 'nome', label: 'Nome' },
+    { key: 'username', label: 'E-mail' }, { key: 'perfil', label: 'Perfil', value: row => row.perfil?.nome || '-' },
+    { key: 'status', label: 'Status' },
+  ];
+  readonly acoes: DataTableAction<Usuario>[] = [
+    { id: 'editar', label: 'Editar usuário', icon: 'edit', visible: () => this.auth.temPermissao('USUARIO_EDITAR') },
+    { id: 'excluir', label: 'Excluir usuário', icon: 'delete', color: 'warn', visible: () => this.auth.temPermissao('USUARIO_EXCLUIR') },
+  ];
+  private consulta?: Subscription;
+  private readonly destroy$ = new Subject<void>();
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  constructor(
+    private usuarioService: UsuarioService,
+    private router: Router,
+    private dialog: MatDialog,
+    private toastr: ToastrService,
+    private auth: AuthService
+  ) {}
 
-  constructor(private usuarioService: UsuarioService, private router: Router, private dialog: MatDialog, private toastrService: ToastrService) {}
+  ngOnInit(): void { this.carregarUsuarios(); }
 
-  ngOnInit(): void {
-    this.carregarUsuarios();
+  ngOnDestroy(): void {
+    this.consulta?.unsubscribe();
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   carregarUsuarios(): void {
+    this.consulta?.unsubscribe();
     this.carregando = true;
-    this.usuarioService.listar(this.pagina, this.tamanhoPagina, this.filtroStatus).subscribe({
-      next: (res) => {
+    this.erro = null;
+    this.semPermissao = false;
+    this.consulta = this.usuarioService.listar(this.pagina, this.tamanhoPagina, this.filtroStatus).subscribe({
+      next: res => {
         this.usuarios = res.content || [];
         this.totalUsuarios = res.totalElements;
         this.carregando = false;
       },
-      error: () => {
+      error: err => {
         this.carregando = false;
+        this.semPermissao = err.status === 403;
+        this.erro = this.semPermissao ? null : 'Erro ao carregar usuários.';
       }
     });
   }
@@ -82,55 +87,47 @@ export class ListarUsuariosComponent implements OnInit {
     this.carregarUsuarios();
   }
 
-  editar(usuario: Usuario): void {
-    this.router.navigate(['page/usuarios/editar', usuario.id]);
+  onFiltros(state: DataTableFilterState): void {
+    const ativo = state['ativo'];
+    this.filtroStatus = typeof ativo === 'boolean' ? ativo : null;
+    this.pagina = 0;
+    this.carregarUsuarios();
   }
-
-  excluir(usuario: Usuario): void {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      width: '400px',
-      data: {
-        title: 'Excluir usuário',
-        message: `Tem certeza que deseja excluir o usuário "${usuario.nome}"?`,
-        confirmText: 'Excluir',
-        confirmColor: 'warn'
-      }
-    });
-  
-    dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.usuarioService.excluir(usuario.id!).subscribe({
-          next: () => {
-            this.toastrService.success('Usuário excluído com sucesso!');
-            this.carregarUsuarios();
-          },
-          error: () => {
-            this.toastrService.error('Erro ao excluir o usuário.');
-          }
-        });
-      }
-    });
-  }
-  
 
   usarImagemPadrao(event: Event): void {
     const imagem = event.target as HTMLImageElement | null;
-    if (!imagem || imagem.dataset['fallbackApplied'] === 'true') {
-      return;
-    }
-
+    if (!imagem || imagem.dataset['fallbackApplied'] === 'true') return;
     imagem.dataset['fallbackApplied'] = 'true';
     imagem.onerror = null;
     imagem.src = 'assets/images/profile/user-1.jpg';
   }
 
-  aplicarFiltro(status: boolean): void {
-    this.filtroStatus = status;
-    this.carregarUsuarios();
+  onAcao(event: DataTableActionEvent<Usuario>): void {
+    if (this.semPermissao) return;
+    if (event.action === 'editar' && this.auth.temPermissao('USUARIO_EDITAR')) {
+      this.router.navigate(['/page/usuarios/editar', event.row.id]);
+    } else if (event.action === 'excluir' && this.auth.temPermissao('USUARIO_EXCLUIR')) {
+      this.excluir(event.row);
+    }
   }
-  
-  removerFiltro(): void {
-    this.filtroStatus = null;
-    this.carregarUsuarios();
+
+  private excluir(usuario: Usuario): void {
+    this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Excluir usuário',
+        message: `Tem certeza que deseja excluir o usuário "${usuario.nome}"?`,
+        confirmText: 'Excluir', confirmColor: 'warn'
+      }
+    }).afterClosed().pipe(takeUntil(this.destroy$)).subscribe(result => {
+      if (!result) return;
+      this.usuarioService.excluir(usuario.id!).pipe(takeUntil(this.destroy$)).subscribe({
+        next: () => {
+          this.toastr.success('Usuário excluído com sucesso!');
+          this.carregarUsuarios();
+        },
+        error: () => this.toastr.error('Erro ao excluir o usuário.')
+      });
+    });
   }
 }

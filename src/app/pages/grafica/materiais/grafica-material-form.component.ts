@@ -102,7 +102,7 @@ export class GraficaMaterialFormComponent implements OnInit {
   readonly formState = new PageFormState(() => this.form);
   private readonly emptyForm = this.form.getRawValue();
   get footerActions(): PageCardAction[] {
-    return [{ id: 'salvar', label: 'Salvar', icon: 'save', type: 'submit', form: 'grafica-material-form', primary: true,
+    return [{ id: 'salvar', type: 'submit', form: 'grafica-material-form',
       disabled: this.form.invalid }];
   }
 

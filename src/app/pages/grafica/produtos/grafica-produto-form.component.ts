@@ -524,7 +524,7 @@ export class GraficaProdutoFormComponent implements OnInit {
 
   get footerActions(): PageCardAction[] {
     return [
-      { id: 'salvar', label: 'Salvar', icon: 'save', type: 'submit', form: 'grafica-produto-form', primary: true, disabled: this.salvarDesabilitado },
+      { id: 'salvar', type: 'submit', form: 'grafica-produto-form', disabled: this.salvarDesabilitado },
     ];
   }
 

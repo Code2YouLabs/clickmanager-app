@@ -66,7 +66,7 @@ export class FormClienteComponent implements OnInit, AfterViewInit, OnDestroy {
   get footerActions(): PageCardAction[] {
     if (!this.pronto) return [];
     return [
-      { id: 'salvar', label: this.isEditMode ? 'Atualizar' : 'Salvar', type: 'submit', form: 'cliente-form', primary: true, disabled: this.form.invalid, pendingLabel: 'Salvando...' }
+      { id: 'salvar', type: 'submit', form: 'cliente-form', disabled: this.form.invalid }
     ];
   }
 
