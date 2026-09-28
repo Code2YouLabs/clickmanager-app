@@ -1,25 +1,22 @@
-<h2 mat-dialog-title class="f-s-20 f-w-600 m-b-8">Alterar Perfil</h2>
-
-<mat-dialog-content>
-  <div>
-    <div class="f-s-16 f-w-500 text-muted m-b-12">
-      {{ data.usuario.nome }}
-    </div>
-
-    <form [formGroup]="form">
-      <mat-form-field appearance="outline" class="w-100">
-        <mat-label>Selecione o novo perfil</mat-label>
-        <mat-select formControlName="perfilId">
-          <mat-option *ngFor="let perfil of perfis" [value]="perfil.id">
-            {{ perfil.nome }}
-          </mat-option>
-        </mat-select>
-      </mat-form-field>
-    </form>
+<div mat-dialog-title class="dialog-head">
+  <div class="dialog-head__copy">
+    <strong>Alterar perfil</strong>
+    <span>Escolha o novo perfil de {{ data.usuario.nome }}.</span>
   </div>
+  <button mat-icon-button type="button" aria-label="Fechar" (click)="cancelar()">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content class="dialog-content">
+  <form [formGroup]="form">
+    <app-input-options [control]="perfilControl" label="Novo perfil" placeholder="Selecione o perfil"
+      [options]="perfis" labelKey="nome" valueKey="id" [showNull]="true" nullLabel="Selecione o perfil">
+    </app-input-options>
+  </form>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end">
-  <button mat-button (click)="cancelar()">Cancelar</button>
-  <button mat-flat-button color="primary" (click)="salvar()">Salvar</button>
+<mat-dialog-actions align="end" class="dialog-actions">
+  <button mat-stroked-button type="button" (click)="cancelar()">Cancelar</button>
+  <button mat-flat-button color="primary" type="button" (click)="salvar()">Salvar</button>
 </mat-dialog-actions>

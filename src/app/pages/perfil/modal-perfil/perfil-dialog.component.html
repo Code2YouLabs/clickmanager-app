@@ -1,6 +1,14 @@
-<h2 mat-dialog-title class="m-0 f-w-600">Perfil</h2>
+<div mat-dialog-title class="dialog-head">
+  <div class="dialog-head__copy">
+    <strong>{{ tituloDialog }}</strong>
+    <span>Defina os dados do perfil e as permissões disponíveis.</span>
+  </div>
+  <button mat-icon-button type="button" aria-label="Fechar" (click)="cancelar()">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
 
-<mat-dialog-content class="perfil-dialog-content">
+<mat-dialog-content class="dialog-content perfil-dialog-content">
   <form [formGroup]="form" class="perfil-form">
     <div class="row g-3">
       <div class="col-12 col-md-6">
@@ -11,13 +19,14 @@
           [maxlength]="100">
         </app-input-texto-restrito>
       </div>
-      <div class="col-12 col-md-6">
-        <app-input-texto-restrito
+      <div class="col-12">
+        <app-input-textarea
           [control]="descricaoControl"
           label="Descrição"
           placeholder="Descreva o perfil"
+          [rows]="3"
           [maxlength]="200">
-        </app-input-texto-restrito>
+        </app-input-textarea>
       </div>
     </div>
 
@@ -143,7 +152,7 @@
   </form>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end" class="actions-row">
-  <button mat-stroked-button color="warn" (click)="cancelar()">Cancelar</button>
-  <button mat-flat-button color="primary" (click)="salvar()" [disabled]="form.invalid">Salvar</button>
+<mat-dialog-actions align="end" class="dialog-actions">
+  <button mat-stroked-button type="button" (click)="cancelar()">Cancelar</button>
+  <button mat-flat-button color="primary" type="button" (click)="salvar()" [disabled]="form.invalid">Salvar</button>
 </mat-dialog-actions>
