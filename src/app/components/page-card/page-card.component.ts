@@ -8,10 +8,19 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
 import { CardHeaderComponent } from '../card-header/card-header.component';
 
-export type PageCardAction = {
+/** O submit de formulário tem apresentação fixa definida pelo PageCard. */
+export type PageCardAction = { id: string; disabled?: boolean } & (
+  { type: 'submit'; form: string; intent?: never;
+    label?: never; icon?: never; pendingLabel?: never; color?: never; primary?: never } |
+  { type?: 'button'; form?: never; intent?: 'cancel'; label: string; icon?: string;
+    pendingLabel?: string; color?: 'primary' | 'accent' | 'warn'; primary?: boolean }
+);
+
+type ResolvedPageCardAction = {
   id: string; label: string; icon?: string; disabled?: boolean; pendingLabel?: string;
   color?: 'primary' | 'accent' | 'warn'; primary?: boolean;
-} & ({ type: 'submit'; form: string; intent?: never } | { type?: 'button'; form?: never; intent?: 'cancel' });
+  type?: 'submit' | 'button'; form?: string; intent?: 'cancel';
+};
 
 @Component({
   selector: 'app-page-card',
@@ -30,20 +39,25 @@ export class PageCardComponent {
   @ContentChildren(FormGroupDirective, { descendants: true }) private forms?: QueryList<FormGroupDirective>;
   @Output() footerAction = new EventEmitter<string>();
 
-  /** Cancelar é gerado pelo componente; consumidores só declaram ações de domínio. */
-  get resolvedFooterActions(): PageCardAction[] {
-    const actions = this.footerActions.filter(action => action.intent !== 'cancel');
+  /** Cancelar e a apresentação de Salvar pertencem ao componente compartilhado. */
+  get resolvedFooterActions(): ResolvedPageCardAction[] {
+    const actions: ResolvedPageCardAction[] = this.footerActions
+      .filter(action => action.intent !== 'cancel')
+      .map(action => action.type === 'submit'
+        ? { id: action.id, type: 'submit', form: action.form, disabled: action.disabled,
+            label: 'Salvar', icon: 'save', primary: true, color: 'primary' }
+        : action);
     return this.formState
       ? [{ id: 'cancel', label: 'Cancelar', intent: 'cancel' }, ...actions]
       : actions;
   }
 
-  actionDisabled(action: PageCardAction): boolean {
+  actionDisabled(action: ResolvedPageCardAction): boolean {
     return this.saving || this.actionsDisabled || !!action.disabled ||
       (action.intent === 'cancel' && !this.formState?.ready);
   }
 
-  onFooterAction(action: PageCardAction): void {
+  onFooterAction(action: ResolvedPageCardAction): void {
     if (this.actionDisabled(action) || action.type === 'submit') return;
     if (action.intent === 'cancel') {
       this.formState!.reset();

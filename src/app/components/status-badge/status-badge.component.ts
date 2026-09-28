@@ -17,6 +17,7 @@ export class StatusBadgeComponent {
   @Input() compact = false;
 
   private readonly map: Record<string, StatusConfig> = {
+    INATIVO: { icon: 'block', label: 'Inativo', className: 'chip-cancelado' },
     ATIVO: { icon: 'check_circle', label: 'Ativo', className: 'chip-pronto' },
     HABILITADO: { icon: 'check_circle', label: 'Habilitado', className: 'chip-pronto' },
     DISPONIVEL: { icon: 'add_circle', label: 'Disponível', className: 'chip-orcamento' },

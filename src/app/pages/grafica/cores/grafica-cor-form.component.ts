@@ -102,7 +102,7 @@ export class GraficaCorFormComponent implements OnInit {
   readonly formState = new PageFormState(() => this.form);
   private readonly emptyForm = this.form.getRawValue();
   get footerActions(): PageCardAction[] {
-    return [{ id: 'salvar', label: 'Salvar', icon: 'save', type: 'submit', form: 'grafica-cor-form', primary: true,
+    return [{ id: 'salvar', type: 'submit', form: 'grafica-cor-form',
       disabled: this.form.invalid }];
   }
 

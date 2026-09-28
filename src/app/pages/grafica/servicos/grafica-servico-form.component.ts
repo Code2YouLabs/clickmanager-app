@@ -130,7 +130,7 @@ export class GraficaServicoFormComponent implements OnInit {
   readonly formState = new PageFormState(() => this.form, { read: () => this.precoForm.getRawValue(), write: value => this.precoForm = this.criarPrecoForm(value) });
   private readonly emptyForm = this.form.getRawValue();
   get footerActions(): PageCardAction[] {
-    return [{ id: 'salvar', label: 'Salvar', icon: 'save', type: 'submit', form: 'grafica-servico-form', primary: true,
+    return [{ id: 'salvar', type: 'submit', form: 'grafica-servico-form',
       disabled: this.form.invalid || this.precoForm.invalid }];
   }
 

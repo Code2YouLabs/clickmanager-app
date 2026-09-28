@@ -337,7 +337,7 @@ export class GraficaCadastroListComponent implements OnInit {
     read: () => this.precoForm.getRawValue(), write: value => this.precoForm = this.fb.group(value),
   });
   get footerActions(): PageCardAction[] {
-    return [{ id: 'salvar', label: 'Salvar', icon: 'save', type: 'submit', form: 'grafica-cadastro-form', primary: true, disabled: this.form.invalid }];
+    return [{ id: 'salvar', type: 'submit', form: 'grafica-cadastro-form', disabled: this.form.invalid }];
   }
 
   ngOnInit(): void {

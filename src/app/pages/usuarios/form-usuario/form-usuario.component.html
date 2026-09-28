@@ -1,80 +1,34 @@
-<mat-card class="cardWithShadow">
-  <app-card-header
-    [titulo]="isEditMode ? 'Editar Usuário' : 'Novo Usuário'"
-    botaoTexto="Voltar"
-    botaoIcone="arrow_back"
-    botaoCor="primary"
-    [botaoRota]="['/page/usuarios/listar']"
-    [mostrarDivisor]="true">
-  </app-card-header>
-
-  <mat-card-content>
-    <form [formGroup]="form" (ngSubmit)="onSubmit()">
-      <div class="row g-3">
-        <div class="col-12">
-          <mat-label class="f-s-14 f-w-600 m-b-8 d-block">Nome</mat-label>
-          <mat-form-field appearance="outline" class="w-100">
-            <input matInput formControlName="nome" placeholder="Digite o nome completo" />
-            @if (form.get('nome')?.invalid && form.get('nome')?.touched) {
-              <mat-error>{{ getErrorMessage('nome') }}</mat-error>
-            }
-          </mat-form-field>
+<app-page-card [titulo]="isEditMode ? 'Editar Usuário' : 'Novo Usuário'" botaoTexto="Voltar"
+  botaoIcone="arrow_back" [botaoRota]="['/page/usuarios/listar']" [headerActionDisabled]="saving"
+  [formState]="pronto ? formState : undefined" [footerActions]="footerActions"
+  [saving]="saving" savingText="Salvando usuário..." [actionsDisabled]="!pronto">
+  @if (carregando) {
+    <div class="d-flex align-items-center justify-content-center gap-16 p-24" role="status" aria-busy="true">
+      <mat-spinner diameter="36"></mat-spinner><span>Carregando usuário e perfis...</span>
+    </div>
+  } @else if (semPermissao) {
+    <div class="p-24 text-center" role="status"><strong>Acesso restrito</strong><p>Você não possui permissão para acessar estes dados.</p></div>
+  } @else if (erro) {
+    <div class="p-24 text-center" role="alert"><p>{{ erro }}</p>
+      <button mat-stroked-button type="button" (click)="carregarDados()">Tentar novamente</button>
+    </div>
+  } @else {
+    <form id="usuario-form" [formGroup]="form" (ngSubmit)="onSubmit()">
+      <app-section-card title="Dados do usuário">
+        <div class="row g-3">
+          <div class="col-12"><app-input-texto-restrito [control]="nomeControl" label="Nome" [maxlength]="100"></app-input-texto-restrito></div>
+          <div class="col-md-6"><app-input-email [control]="emailControl" label="E-mail" [maxlength]="50"></app-input-email></div>
+          @if (!isEditMode) {
+            <div class="col-md-6"><app-input-password [control]="senhaControl" label="Senha"></app-input-password></div>
+          }
+          <div class="col-md-6"><app-input-options [control]="perfilControl" [options]="perfis" label="Perfil"></app-input-options></div>
+          @if (isEditMode) {
+            <div class="col-md-6 d-flex align-items-center">
+              <mat-slide-toggle formControlName="ativo">{{ form.get('ativo')?.value ? 'Usuário Ativo' : 'Usuário Inativo' }}</mat-slide-toggle>
+            </div>
+          }
         </div>
-
-        <div class="col-md-6">
-          <mat-label class="f-s-14 f-w-600 m-b-8 d-block">E-mail</mat-label>
-          <mat-form-field appearance="outline" class="w-100">
-            <input matInput type="email" formControlName="username" placeholder="exemplo@email.com" />
-            @if (form.get('username')?.invalid && form.get('username')?.touched) {
-              <mat-error>{{ getErrorMessage('username') }}</mat-error>
-            }
-          </mat-form-field>
-        </div>
-
-        @if (!isEditMode) {
-          <div class="col-md-6">
-            <mat-label class="f-s-14 f-w-600 m-b-8 d-block">Senha</mat-label>
-            <mat-form-field appearance="outline" class="w-100">
-              <input matInput type="password" formControlName="senha" placeholder="Digite a senha" />
-              @if (form.get('senha')?.invalid && form.get('senha')?.touched) {
-                <mat-error>{{ getErrorMessage('senha') }}</mat-error>
-              }
-            </mat-form-field>
-          </div>
-        }
-
-        <div class="col-md-6">
-          <mat-label class="f-s-14 f-w-600 m-b-8 d-block">Perfil</mat-label>
-          <mat-form-field appearance="outline" class="w-100">
-            <mat-select formControlName="perfilId">
-              <mat-option *ngFor="let perfil of perfis" [value]="perfil.id">
-                {{ perfil.nome }}
-              </mat-option>
-            </mat-select>
-            @if (form.get('perfilId')?.invalid && form.get('perfilId')?.touched) {
-              <mat-error>{{ getErrorMessage('perfilId') }}</mat-error>
-            }
-          </mat-form-field>
-        </div>
-
-        @if (isEditMode) {
-          <div class="col-md-6 d-flex align-items-center">
-            <mat-slide-toggle formControlName="ativo">
-              {{ form.get('ativo')?.value ? 'Usuário Ativo' : 'Usuário Inativo' }}
-            </mat-slide-toggle>
-          </div>
-        }
-      </div>
-
-      <div class="m-t-30 d-flex gap-2 flex-wrap">
-        <a mat-flat-button class="bg-error text-white" [routerLink]="['/page/usuarios/listar']">
-          Cancelar
-        </a>
-
-        <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid">
-          {{ isEditMode ? 'Atualizar Usuário' : 'Salvar Usuário' }}
-        </button>
-      </div>
+      </app-section-card>
     </form>
-  </mat-card-content>
-</mat-card>
+  }
+</app-page-card>
