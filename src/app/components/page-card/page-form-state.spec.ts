@@ -41,5 +41,59 @@ describe('PageFormState', () => {
     rows.clear(); state.reset(); expect(form.getRawValue()).toEqual({ rows: [{ nome: 'Backend' }] });
     rows.at(0).get('nome')!.setValue(''); expect(rows.invalid).toBeTrue();
   });
+  it('restaura apenas controles escopados sem alterar outros campos do mesmo formulário', () => {
+    const form = new FormGroup({
+      empresa: new FormControl('Backend'),
+      redes: new FormControl('@original'),
+      endereco: new FormGroup({ cidade: new FormControl('BH') }),
+    });
+    const state = new PageFormState(() => form, { paths: ['empresa', 'endereco'] });
+    state.begin('edit'); state.loaded();
+
+    form.patchValue({ empresa: 'Alterada', redes: '@alterado', endereco: { cidade: 'SP' } });
+    state.reset();
+
+    expect(form.getRawValue()).toEqual({
+      empresa: 'Backend',
+      redes: '@alterado',
+      endereco: { cidade: 'BH' },
+    });
+  });
+  it('preserva FormArray, disabled e estado externo em snapshots escopados', () => {
+    const rows = new FormArray<FormGroup>([
+      new FormGroup({ nome: new FormControl({ value: 'Backend', disabled: true }) }),
+    ]);
+    const form = new FormGroup({ rows, outro: new FormControl('fora') });
+    let media = { preview: 'original' };
+    const state = new PageFormState(() => form, {
+      paths: ['rows'],
+      read: () => media,
+      write: value => media = value,
+    });
+
+    state.begin('edit'); state.loaded();
+    rows.push(new FormGroup({ nome: new FormControl('Novo') }));
+    form.get('outro')!.setValue('alterado');
+    media.preview = 'temporario';
+    state.reset();
+
+    expect(rows.length).toBe(1);
+    expect(rows.at(0).get('nome')!.disabled).toBeTrue();
+    expect(form.get('outro')!.value).toBe('alterado');
+    expect(media).toEqual({ preview: 'original' });
+  });
+  it('permite que o consumidor defina quando o cancelar escopado está disponível', () => {
+    let changed = false;
+    const form = new FormGroup({ nome: new FormControl('Backend') });
+    const state = new PageFormState(() => form, { canReset: () => changed });
+
+    state.begin('edit');
+    state.loaded();
+
+    expect(state.ready).toBeTrue();
+    expect(state.canReset).toBeFalse();
+    changed = true;
+    expect(state.canReset).toBeTrue();
+  });
 
 });
