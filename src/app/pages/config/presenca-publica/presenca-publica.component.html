@@ -1,102 +1,107 @@
-<mat-card class="cardWithShadow presenca-card">
-  <app-card-header
-    titulo="Presença Pública"
-    subtitulo="Gerencie os endereços usados para acessar os recursos públicos da empresa."
-    [mostrarDivisor]="true">
-  </app-card-header>
+<app-page-card
+  titulo="Presença Pública"
+  subtitulo="Gerencie os endereços usados para acessar os recursos públicos da empresa."
+  [formState]="pageFormState"
+  [footerActions]="footerActions"
+  [saving]="salvandoSlug"
+  savingText="Salvando..."
+  [actionsDisabled]="carregando || !!erro || semPermissao || consultandoSlug"
+  [mostrarDivisor]="true">
+  @if (carregando) {
+    <div class="presenca-state" role="status" aria-busy="true">
+      <mat-spinner diameter="32"></mat-spinner>
+      <span>Carregando presença pública...</span>
+    </div>
+  } @else if (semPermissao) {
+    <div class="presenca-state presenca-state--error" role="status">
+      <mat-icon>lock</mat-icon>
+      <strong>Acesso restrito</strong>
+      <span>Você não possui permissão para visualizar a presença pública.</span>
+    </div>
+  } @else if (erro) {
+    <div class="presenca-state presenca-state--error" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <strong>Não foi possível carregar a presença pública</strong>
+      <span>{{ erro }}</span>
+      <button mat-stroked-button color="primary" type="button" (click)="carregar()">
+        Tentar novamente
+      </button>
+    </div>
+  } @else {
+    <form
+      id="presenca-publica-form"
+      [formGroup]="form"
+      (ngSubmit)="salvarSlug()"
+      class="presenca-form">
+      <app-section-card
+        titulo="Endereço ClickManager"
+        subtitulo="Escolha o subdomínio público da empresa. O final .clickmanager.com.br é fixo.">
+        <app-status-badge section-card-actions status="ATIVO" [compact]="true"></app-status-badge>
 
-  <mat-card-content>
-    @if (carregando) {
-      <div class="presenca-state">
-        <mat-spinner diameter="32"></mat-spinner>
-        <span>Carregando presença pública...</span>
-      </div>
-    } @else {
-      <div class="presenca-layout">
-        <section class="presenca-section">
-          <div class="presenca-section__header">
-            <mat-icon>public</mat-icon>
-            <div>
-              <h2>Endereço ClickManager</h2>
-              <p>Escolha o subdomínio público da empresa. O final .clickmanager.com.br é fixo.</p>
-            </div>
-            <span class="presenca-badge presenca-badge--success">Ativo</span>
+        <div class="presenca-slug-grid">
+          <div class="presenca-slug-input-group">
+            <mat-form-field appearance="outline" class="presenca-slug-field">
+              <mat-label>Subdomínio</mat-label>
+              <input
+                matInput
+                formControlName="slug"
+                maxlength="80"
+                placeholder="minha-grafica"
+                autocomplete="off"
+                (input)="normalizarSlugDigitado()">
+              <mat-error *ngIf="slugControl.hasError('required')">Informe o subdomínio.</mat-error>
+              <mat-error *ngIf="slugControl.hasError('maxlength')">Use no máximo 80 caracteres.</mat-error>
+              <mat-error *ngIf="slugControl.hasError('pattern')">Use letras, números e hífens, sem começar ou terminar com hífen.</mat-error>
+            </mat-form-field>
+
+            <div class="presenca-domain-suffix" aria-hidden="true">.{{ dominioFixo }}</div>
           </div>
 
-          <form class="presenca-slug-form" [formGroup]="form" (ngSubmit)="salvarSlug()">
-            <div class="presenca-slug-grid">
-              <div class="presenca-slug-input-group">
-                <mat-form-field appearance="outline" class="presenca-slug-field">
-                  <mat-label>Subdomínio</mat-label>
-                  <input
-                    matInput
-                    formControlName="slug"
-                    maxlength="80"
-                    placeholder="minha-grafica"
-                    autocomplete="off"
-                    (input)="normalizarSlugDigitado()">
-                  <mat-error *ngIf="slugControl.hasError('required')">Informe o subdomínio.</mat-error>
-                  <mat-error *ngIf="slugControl.hasError('maxlength')">Use no máximo 80 caracteres.</mat-error>
-                  <mat-error *ngIf="slugControl.hasError('pattern')">Use letras, números e hífens, sem começar ou terminar com hífen.</mat-error>
-                </mat-form-field>
+          <div class="presenca-slug-actions">
+            <button
+              mat-stroked-button
+              color="primary"
+              type="button"
+              (click)="consultarSlug()"
+              [disabled]="consultandoSlug || slugControl.invalid">
+              @if (consultandoSlug) {
+                <mat-spinner diameter="18"></mat-spinner>
+              } @else {
+                <mat-icon>search</mat-icon>
+              }
+              Consultar
+            </button>
 
-                <div class="presenca-domain-suffix" aria-hidden="true">.{{ dominioFixo }}</div>
-              </div>
+            <button mat-stroked-button color="primary" type="button" (click)="copiarHost(slugPreviewHost)">
+              <mat-icon>content_copy</mat-icon>
+              Copiar
+            </button>
+          </div>
+        </div>
 
-              <div class="presenca-slug-actions">
-                <button
-                  mat-stroked-button
-                  color="primary"
-                  type="button"
-                  (click)="consultarSlug()"
-                  [disabled]="consultandoSlug || slugControl.invalid">
-                  @if (consultandoSlug) {
-                    <mat-spinner diameter="18"></mat-spinner>
-                  } @else {
-                    <mat-icon>search</mat-icon>
-                  }
-                  Consultar
-                </button>
+        <div class="presenca-preview">
+          <span>Prévia do endereço</span>
+          <strong>{{ slugPreviewHost }}</strong>
+        </div>
 
-                <button
-                  mat-flat-button
-                  color="primary"
-                  type="submit"
-                  [disabled]="!podeSalvarSlug">
-                  @if (salvandoSlug) {
-                    <mat-spinner diameter="18"></mat-spinner>
-                  } @else {
-                    <mat-icon>save</mat-icon>
-                  }
-                  Alterar
-                </button>
-
-                <button mat-stroked-button type="button" (click)="copiarHost(slugPreviewHost)">
-                  <mat-icon>content_copy</mat-icon>
-                  Copiar
-                </button>
-              </div>
-            </div>
-
-            <div class="presenca-preview">
-              <span>Endereço atual</span>
-              <strong>{{ slugPreviewHost }}</strong>
-            </div>
-
-            @if (slugConsultado?.disponivel) {
-              <div class="presenca-feedback presenca-feedback--success">
-                <mat-icon>check_circle</mat-icon>
-                <span>{{ slugConsultado?.slug }}.{{ dominioFixo }} está disponível.</span>
-              </div>
-            } @else if (slugConsultado && !slugConsultado.disponivel) {
-              <div class="presenca-feedback presenca-feedback--error">
-                <mat-icon>cancel</mat-icon>
-                <span>{{ slugConsultado.slug }}.{{ dominioFixo }} não está disponível.</span>
-              </div>
-            }
-          </form>
-        </section>
-      </div>
-    }
-  </mat-card-content>
-</mat-card>
+        @if (slugConsultado?.disponivel) {
+          <div class="presenca-feedback presenca-feedback--success" role="status">
+            <mat-icon>check_circle</mat-icon>
+            <span>
+              @if (slugConsultado?.slug === slugAtual) {
+                Este já é o endereço atual da empresa.
+              } @else {
+                {{ slugConsultado?.slug }}.{{ dominioFixo }} está disponível.
+              }
+            </span>
+          </div>
+        } @else if (slugConsultado && !slugConsultado.disponivel) {
+          <div class="presenca-feedback presenca-feedback--error" role="status">
+            <mat-icon>cancel</mat-icon>
+            <span>{{ slugConsultado.slug }}.{{ dominioFixo }} não está disponível.</span>
+          </div>
+        }
+      </app-section-card>
+    </form>
+  }
+</app-page-card>
