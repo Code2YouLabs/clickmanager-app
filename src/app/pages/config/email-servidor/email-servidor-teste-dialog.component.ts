@@ -3,8 +3,7 @@ import { CommonModule } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { InputEmailComponent } from 'src/app/components/inputs/input-email/input-custom.component';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
+import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
 import { MatButtonModule } from '@angular/material/button';
 
 export interface EmailTesteDialogData {
@@ -22,8 +21,7 @@ export interface EmailTesteDialogData {
     ReactiveFormsModule,
     MatDialogModule,
     InputEmailComponent,
-    MatFormFieldModule,
-    MatInputModule,
+    InputTextareaComponent,
     MatButtonModule
   ]
 })

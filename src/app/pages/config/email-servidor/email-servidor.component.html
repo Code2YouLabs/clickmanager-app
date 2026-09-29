@@ -1,53 +1,80 @@
-<mat-card class="cardWithShadow">
-  <app-card-header titulo="Servidor de E-mail" botaoTexto="Voltar" botaoIcone="arrow_back"
-    [botaoRota]="['/dashboards/dashboard1']" [mostrarDivisor]="true">
-  </app-card-header>
-
-  <mat-card-content>
-    <form [formGroup]="form" (ngSubmit)="salvar()" class="email-form">
-      <div class="row g-3 email-row">
-        <div class="col-md-6">
-          <app-input-texto-restrito [control]="hostControl" label="Host" placeholder="smtp.seudominio.com"
+<app-page-card
+  titulo="Servidor de E-mail"
+  subtitulo="Configure o servidor SMTP usado pelo ClickManager para envio de e-mails."
+  [formState]="pageFormState"
+  [footerActions]="footerActions"
+  [saving]="salvando"
+  savingText="Salvando..."
+  [actionsDisabled]="carregando || !!erro || semPermissao || testando"
+  [mostrarDivisor]="true">
+  @if (carregando) {
+    <div class="email-state" role="status" aria-busy="true">
+      <mat-spinner diameter="32"></mat-spinner>
+      <span>Carregando configuração de e-mail...</span>
+    </div>
+  } @else if (semPermissao) {
+    <div class="email-state email-state--error" role="status">
+      <mat-icon>lock</mat-icon>
+      <strong>Acesso restrito</strong>
+      <span>Você não possui permissão para visualizar a configuração de e-mail.</span>
+    </div>
+  } @else if (erro) {
+    <div class="email-state email-state--error" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <strong>Não foi possível carregar a configuração de e-mail</strong>
+      <span>{{ erro }}</span>
+      <button mat-stroked-button color="primary" type="button" (click)="carregar()">
+        Tentar novamente
+      </button>
+    </div>
+  } @else {
+    <form [id]="formId" [formGroup]="form" (ngSubmit)="salvar()" class="email-form">
+      <app-section-card titulo="Servidor SMTP">
+        <div class="email-grid email-grid--smtp">
+          <app-input-texto-restrito
+            [control]="hostControl"
+            label="Host"
+            placeholder="smtp.seudominio.com"
             [maxlength]="200">
           </app-input-texto-restrito>
-        </div>
-        <div class="col-md-3">
+
           <app-input-numerico [control]="portaControl" label="Porta"></app-input-numerico>
-        </div>
-        <div class="col-md-3 ssl-col">
-          <mat-checkbox formControlName="usarSsl">Usar SSL/TLS</mat-checkbox>
-        </div>
 
-        <div class="col-md-6">
-          <app-input-email [control]="usuarioControl" label="Usuário (e-mail)" placeholder="email@seudominio.com">
+          <div class="ssl-col">
+            <mat-checkbox formControlName="usarSsl">Usar SSL/TLS</mat-checkbox>
+          </div>
+        </div>
+      </app-section-card>
+
+      <app-section-card titulo="Credenciais e remetente">
+        <button actions mat-stroked-button color="primary" type="button" (click)="testar()" [disabled]="testando || carregando || salvando">
+          @if (testando) {
+            <mat-spinner diameter="18"></mat-spinner>
+          }
+          Testar configuração
+        </button>
+
+        <div class="email-grid email-grid--credentials">
+          <app-input-email
+            [control]="usuarioControl"
+            label="Usuário (e-mail)"
+            placeholder="email@seudominio.com">
           </app-input-email>
-        </div>
-        <div class="col-md-6">
-          <app-input-texto-restrito [control]="senhaControl" label="Senha" [maxlength]="200">
-          </app-input-texto-restrito>
-        </div>
 
-        <div class="col-md-6">
-          <app-input-email [control]="remetenteControl" label="Remetente padrão"
+          <app-input-password
+            [control]="senhaControl"
+            label="Senha"
+            placeholder="Digite a senha"
+            autocomplete="current-password">
+          </app-input-password>
+
+          <app-input-email
+            [control]="remetenteControl"
+            label="Remetente padrão"
             placeholder="nome@seudominio.com">
           </app-input-email>
         </div>
-
-        <div class="col-md-6 d-flex align-items-end">
-          <button mat-stroked-button color="primary" type="button" (click)="testar()" [disabled]="form.invalid">
-            Testar configuração
-          </button>
-        </div>
-      </div>
-
-      <div class="actions-row m-t-16">
-        <button mat-flat-button class="bg-error text-white" type="button" (click)="cancelar()">
-          Cancelar
-        </button>
-        <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid">
-          Salvar
-        </button>
-      </div>
+      </app-section-card>
     </form>
-  </mat-card-content>
-</mat-card>
+  }
+</app-page-card>

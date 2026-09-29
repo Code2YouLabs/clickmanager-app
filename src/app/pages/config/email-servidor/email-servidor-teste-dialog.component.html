@@ -1,22 +1,25 @@
-<h2 mat-dialog-title class="m-0 f-w-600">Enviar e-mail de teste</h2>
+<h2 mat-dialog-title class="dialog-title">Enviar e-mail de teste</h2>
 
-<mat-dialog-content class="p-t-4">
-  <form [formGroup]="form" class="teste-form">
+<mat-dialog-content class="dialog-content">
+  <form id="email-servidor-teste-form" [formGroup]="form" (ngSubmit)="enviar()" class="teste-form">
     <app-input-email
       [control]="emailControl"
       label="Destinatário"
       placeholder="email@exemplo.com">
     </app-input-email>
 
-    <mat-form-field appearance="outline" class="w-100">
-      <mat-label>Mensagem</mat-label>
-      <textarea matInput rows="4" formControlName="mensagem"></textarea>
-      <mat-error *ngIf="mensagemControl?.hasError('required')">Mensagem obrigatória</mat-error>
-    </mat-form-field>
+    <app-input-textarea
+      [control]="mensagemControl"
+      label="Mensagem"
+      [rows]="4"
+      [maxlength]="500">
+    </app-input-textarea>
   </form>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end" class="gap-8 p-x-16 p-b-12">
-  <button mat-stroked-button color="warn" (click)="cancelar()">Cancelar</button>
-  <button mat-flat-button color="primary" (click)="enviar()" [disabled]="form.invalid">Enviar</button>
+<mat-dialog-actions align="end" class="dialog-actions">
+  <button mat-stroked-button color="warn" type="button" (click)="cancelar()">Cancelar</button>
+  <button mat-flat-button color="primary" type="submit" form="email-servidor-teste-form" [disabled]="form.invalid">
+    Enviar
+  </button>
 </mat-dialog-actions>
