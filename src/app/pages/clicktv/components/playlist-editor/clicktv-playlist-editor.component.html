@@ -1,63 +1,146 @@
 <section class="clicktv-page">
-  <div class="editor-heading">
-    <a mat-icon-button routerLink="/page/clicktv/playlists" aria-label="Voltar"><mat-icon>arrow_back</mat-icon></a>
-    <div><h2>{{ playlist?.nome || 'Editor de playlist' }}</h2>
-      <span class="clicktv-meta">{{ playlist?.orientacao }} · versão {{ playlist?.versao }} · duração configurada {{ duracaoTotal() }}s</span></div>
-    @if (salvando) { <mat-spinner diameter="24"></mat-spinner> }
-  </div>
+  <app-page-card
+    [titulo]="titulo"
+    [subtitulo]="subtitulo"
+    botaoTexto="Voltar"
+    botaoIcone="arrow_back"
+    [botaoRota]="['/page/clicktv/playlists']"
+    [saving]="salvando || refreshingPlaylist"
+    savingText="Atualizando playlist..."
+    [mostrarDivisor]="true">
 
-  @if (carregando) {
-    <div class="clicktv-state"><mat-spinner diameter="36"></mat-spinner><span>Carregando editor…</span></div>
-  } @else {
-    <div class="editor-layout">
-      <mat-card class="cardWithShadow library">
-        <mat-card-header><mat-card-title>Biblioteca</mat-card-title></mat-card-header>
-        <mat-card-content>
-          <mat-form-field appearance="outline" class="w-100"><mat-label>Buscar mídia</mat-label>
-            <input matInput [(ngModel)]="busca" (keyup.enter)="carregarBiblioteca()" />
-            <button mat-icon-button matSuffix (click)="carregarBiblioteca()"><mat-icon>search</mat-icon></button>
-          </mat-form-field>
-          <div class="library-list">
-            @for (midia of biblioteca; track midia.id) {
-              <button class="library-item" type="button" (click)="adicionar(midia)" *temPermissao="'CLICKTV_PLAYLISTS_GERENCIAR'">
-                <mat-icon>{{ midia.tipo === 'VIDEO' ? 'movie' : 'image' }}</mat-icon>
-                <span><strong>{{ midia.nome }}</strong><small>{{ midia.tipo }} · {{ midia.orientacao }}</small></span>
-                <mat-icon>add_circle</mat-icon>
-              </button>
-            } @empty {
-              <div class="clicktv-state compact">Nenhuma mídia disponível.</div>
-            }
+    @if (carregandoPlaylist) {
+      <div class="clicktv-state">
+        <mat-spinner diameter="36"></mat-spinner>
+        <span>Carregando editor...</span>
+      </div>
+    } @else if (semPermissaoPlaylist) {
+      <div class="clicktv-state">
+        <mat-icon>lock</mat-icon>
+        <strong>Acesso restrito</strong>
+        <span>Você não possui permissão para visualizar esta playlist.</span>
+      </div>
+    } @else if (playlistNaoEncontrada) {
+      <div class="clicktv-state">
+        <mat-icon>search_off</mat-icon>
+        <strong>Playlist não encontrada</strong>
+        <span>Verifique se a playlist ainda existe ou volte para a listagem.</span>
+      </div>
+    } @else if (erroPlaylist) {
+      <div class="clicktv-state clicktv-state--error">
+        <mat-icon>error_outline</mat-icon>
+        <strong>Não foi possível carregar a playlist</strong>
+        <span>{{ erroPlaylist }}</span>
+        <button mat-stroked-button type="button" (click)="carregarPlaylist()">Tentar novamente</button>
+      </div>
+    } @else if (podeExibirEditor) {
+      <div class="editor-layout">
+        <app-section-card title="Biblioteca de mídias" subtitle="Adicione mídias disponíveis à sequência." class="library">
+          <div class="library-search">
+            <app-input-pesquisa
+              placeholder="Buscar mídia"
+              [showLabel]="true"
+              [value]="busca"
+              [debounceMs]="300"
+              [trim]="true"
+              (valorAlterado)="pesquisarBiblioteca($event)">
+            </app-input-pesquisa>
           </div>
-        </mat-card-content>
-      </mat-card>
 
-      <mat-card class="cardWithShadow sequence">
-        <mat-card-header><mat-card-title>Sequência de reprodução</mat-card-title></mat-card-header>
-        <mat-card-content>
-          @for (item of playlist?.itens || []; track item.id; let i = $index) {
+          @if (carregandoBiblioteca) {
+            <div class="clicktv-state compact">
+              <mat-spinner diameter="30"></mat-spinner>
+              <span>Carregando biblioteca...</span>
+            </div>
+          } @else {
+            @if (refreshingBiblioteca) {
+              <div class="clicktv-refreshing">
+                <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+                <span>Atualizando biblioteca...</span>
+              </div>
+            }
+            @if (erroBiblioteca) {
+              <div class="clicktv-inline-error" role="alert">
+                <mat-icon>error_outline</mat-icon>
+                <span>{{ erroBiblioteca }}</span>
+                <button mat-stroked-button type="button" (click)="carregarBiblioteca()">Tentar novamente</button>
+              </div>
+            }
+            <div class="library-list">
+              @for (midia of biblioteca; track midia.id) {
+                <button
+                  class="library-item"
+                  type="button"
+                  (click)="adicionar(midia)"
+                  [disabled]="salvando"
+                  *temPermissao="'CLICKTV_PLAYLISTS_GERENCIAR'">
+                  <mat-icon>{{ midia.tipo === 'VIDEO' ? 'movie' : 'image' }}</mat-icon>
+                  <span>
+                    <strong>{{ midia.nome }}</strong>
+                    <small>{{ midia.tipo }} · {{ midia.orientacao }}</small>
+                  </span>
+                  <mat-icon>add_circle</mat-icon>
+                </button>
+              } @empty {
+                <div class="clicktv-state compact">
+                  <mat-icon>perm_media</mat-icon>
+                  <strong>Nenhuma mídia disponível.</strong>
+                  <span>Envie uma mídia disponível ou ajuste a busca.</span>
+                </div>
+              }
+            </div>
+          }
+        </app-section-card>
+
+        <app-section-card title="Sequência de reprodução" subtitle="Operações são salvas individualmente." class="sequence">
+          @for (item of playlist?.itens || []; track trackByItem($index, item); let i = $index) {
             <article class="sequence-item">
               <div class="sequence-order">{{ i + 1 }}</div>
               <mat-icon>{{ item.midiaTipo === 'VIDEO' ? 'movie' : 'image' }}</mat-icon>
-              <div class="sequence-info"><strong>{{ item.midiaNome }}</strong>
-                <small>{{ item.midiaTipo }} · {{ item.midiaStatus }}</small></div>
+              <div class="sequence-info">
+                <strong>{{ item.midiaNome }}</strong>
+                <small>{{ item.midiaTipo }} · {{ item.midiaStatus }}</small>
+              </div>
               @if (item.midiaTipo === 'IMAGEM') {
-                <mat-form-field appearance="outline" class="duration"><mat-label>Segundos</mat-label>
-                  <input matInput type="number" min="1" [(ngModel)]="item.duracaoSegundos" (change)="salvarItem(item)" />
+                <mat-form-field appearance="outline" class="duration">
+                  <mat-label>Segundos</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    min="1"
+                    [(ngModel)]="item.duracaoSegundos"
+                    [disabled]="salvando"
+                    (change)="salvarItem(item)" />
                 </mat-form-field>
               }
-              <mat-slide-toggle [(ngModel)]="item.ativo" (change)="salvarItem(item)" *temPermissao="'CLICKTV_PLAYLISTS_GERENCIAR'">Ativo</mat-slide-toggle>
+              <mat-slide-toggle
+                [(ngModel)]="item.ativo"
+                [disabled]="salvando"
+                (change)="salvarItem(item)"
+                *temPermissao="'CLICKTV_PLAYLISTS_GERENCIAR'">
+                Ativo
+              </mat-slide-toggle>
               <div class="clicktv-actions" *temPermissao="'CLICKTV_PLAYLISTS_GERENCIAR'">
-                <button mat-icon-button (click)="mover(item,-1)" [disabled]="i === 0"><mat-icon>arrow_upward</mat-icon></button>
-                <button mat-icon-button (click)="mover(item,1)" [disabled]="i === (playlist?.itens?.length || 0)-1"><mat-icon>arrow_downward</mat-icon></button>
-                <button mat-icon-button color="warn" (click)="remover(item)"><mat-icon>delete</mat-icon></button>
+                <button mat-icon-button type="button" (click)="mover(item,-1)" [disabled]="salvando || i === 0" matTooltip="Mover para cima" aria-label="Mover para cima">
+                  <mat-icon>arrow_upward</mat-icon>
+                </button>
+                <button mat-icon-button type="button" (click)="mover(item,1)" [disabled]="salvando || i === (playlist?.itens?.length || 0)-1" matTooltip="Mover para baixo" aria-label="Mover para baixo">
+                  <mat-icon>arrow_downward</mat-icon>
+                </button>
+                <button mat-icon-button type="button" color="warn" (click)="remover(item)" [disabled]="salvando" matTooltip="Remover" aria-label="Remover">
+                  <mat-icon>delete</mat-icon>
+                </button>
               </div>
             </article>
           } @empty {
-            <div class="clicktv-state"><mat-icon>playlist_add</mat-icon><strong>Playlist vazia</strong>
-              <span>Escolha uma mídia na biblioteca para adicioná-la.</span></div>
+            <div class="clicktv-state">
+              <mat-icon>playlist_add</mat-icon>
+              <strong>Playlist vazia</strong>
+              <span>Escolha uma mídia na biblioteca para adicioná-la.</span>
+            </div>
           }
-        </mat-card-content>
-      </mat-card>
-    </div>
-  }
+        </app-section-card>
+      </div>
+    }
+  </app-page-card>
 </section>

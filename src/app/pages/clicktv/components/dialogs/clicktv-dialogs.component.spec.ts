@@ -5,6 +5,7 @@ import { ClickTvMidia } from '../../models/clicktv.models';
 import {
   ClickTvMidiaPreviewDialogComponent,
   ClickTvNameDialogComponent,
+  ClickTvPlaylistDialogComponent,
   ClickTvUploadDialogComponent,
 } from './clicktv-dialogs.component';
 
@@ -154,5 +155,82 @@ describe('ClickTV media dialogs', () => {
     const fixture = TestBed.createComponent(ClickTvMidiaPreviewDialogComponent);
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Esta mídia não possui uma URL de visualização disponível.');
+  });
+
+  it('valida criação de playlist com nome, descrição, orientação e ativa', () => {
+    const ref = jasmine.createSpyObj<MatDialogRef<ClickTvPlaylistDialogComponent>>('MatDialogRef', ['close']);
+    TestBed.configureTestingModule({
+      imports: [ClickTvPlaylistDialogComponent],
+      providers: [
+        provideNoopAnimations(),
+        { provide: MatDialogRef, useValue: ref },
+        { provide: MAT_DIALOG_DATA, useValue: null },
+      ],
+    });
+    const fixture = TestBed.createComponent(ClickTvPlaylistDialogComponent);
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    expect(component.form.value.orientacao).toBe('HORIZONTAL');
+    expect(component.form.value.ativa).toBeTrue();
+    component.form.patchValue({ nome: '' });
+    expect(component.form.invalid).toBeTrue();
+    component.confirmar();
+    expect(ref.close).not.toHaveBeenCalled();
+
+    component.form.patchValue({ nome: 'A'.repeat(161) });
+    expect(component.form.invalid).toBeTrue();
+    component.form.patchValue({ nome: 'Vitrine', descricao: 'D'.repeat(1001) });
+    expect(component.form.invalid).toBeTrue();
+
+    component.form.patchValue({ descricao: 'Recepção', orientacao: null as any });
+    expect(component.form.invalid).toBeTrue();
+    component.form.patchValue({ orientacao: 'VERTICAL', ativa: false });
+    component.confirmar();
+
+    expect(ref.close).toHaveBeenCalledWith({
+      nome: 'Vitrine',
+      descricao: 'Recepção',
+      orientacao: 'VERTICAL',
+      ativa: false,
+    });
+  });
+
+  it('preenche edição de playlist e cancela sem fechar com payload', () => {
+    const ref = jasmine.createSpyObj<MatDialogRef<ClickTvPlaylistDialogComponent>>('MatDialogRef', ['close']);
+    TestBed.configureTestingModule({
+      imports: [ClickTvPlaylistDialogComponent],
+      providers: [
+        provideNoopAnimations(),
+        { provide: MatDialogRef, useValue: ref },
+        {
+          provide: MAT_DIALOG_DATA,
+          useValue: {
+            id: 1,
+            nome: 'Atual',
+            descricao: 'Descrição atual',
+            orientacao: 'QUADRADA',
+            ativa: false,
+            versao: 2,
+            quantidadeItens: 1,
+            quantidadeItensAtivos: 0,
+            criadoEm: '',
+            atualizadoEm: '',
+          },
+        },
+      ],
+    });
+    const fixture = TestBed.createComponent(ClickTvPlaylistDialogComponent);
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    expect(component.form.getRawValue()).toEqual({
+      nome: 'Atual',
+      descricao: 'Descrição atual',
+      orientacao: 'QUADRADA',
+      ativa: false,
+    });
+    expect(fixture.nativeElement.textContent).toContain('Editar playlist');
+    expect(ref.close).not.toHaveBeenCalled();
   });
 });

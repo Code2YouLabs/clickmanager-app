@@ -139,6 +139,44 @@
 .clicktv-table { width: 100%; }
 .clicktv-actions { display: flex; align-items: center; gap: 4px; }
 
+.clicktv-list-item {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid #e6e9ef;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.clicktv-list-item__main {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.clicktv-list-item__main strong,
+.clicktv-list-item__main span {
+  overflow-wrap: anywhere;
+}
+
+.clicktv-list-item__main span,
+.clicktv-list-item__meta {
+  color: #667085;
+  font-size: 13px;
+}
+
+.clicktv-list-item__meta,
+.clicktv-list-item__footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.clicktv-list-item__footer {
+  justify-content: space-between;
+}
+
 .clicktv-progress {
   position: sticky;
   top: 8px;

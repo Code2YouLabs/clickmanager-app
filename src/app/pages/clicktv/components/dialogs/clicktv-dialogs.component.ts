@@ -3,6 +3,8 @@ import { Component, Inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { InputNumericoComponent } from 'src/app/components/inputs/input-numerico/input-numerico.component';
+import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
+import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
 import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
 import { MaterialModule } from 'src/app/material.module';
 import {
@@ -174,24 +176,37 @@ export class ClickTvNameDialogComponent {
 @Component({
   selector: 'app-clicktv-playlist-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MaterialModule],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatDialogModule,
+    MaterialModule,
+    InputTextoRestritoComponent,
+    InputTextareaComponent,
+    InputOptionsComponent,
+  ],
   template: `
-    <h2 mat-dialog-title>{{ data ? 'Editar playlist' : 'Nova playlist' }}</h2>
-    <mat-dialog-content>
+    <div mat-dialog-title class="dialog-head">
+      <div class="dialog-head__copy">
+        <strong>{{ data ? 'Editar playlist' : 'Nova playlist' }}</strong>
+        <span>Defina os dados básicos da sequência exibida nas telas.</span>
+      </div>
+      <button mat-icon-button mat-dialog-close aria-label="Fechar"><mat-icon>close</mat-icon></button>
+    </div>
+    <mat-dialog-content class="dialog-content">
       <form [formGroup]="form" class="dialog-form">
-        <mat-form-field appearance="outline"><mat-label>Nome</mat-label><input matInput formControlName="nome" maxlength="160" /></mat-form-field>
-        <mat-form-field appearance="outline"><mat-label>Descrição</mat-label><textarea matInput formControlName="descricao" maxlength="1000"></textarea></mat-form-field>
-        <mat-form-field appearance="outline"><mat-label>Orientação</mat-label>
-          <mat-select formControlName="orientacao">@for (item of orientacoes; track item) { <mat-option [value]="item">{{ item }}</mat-option> }</mat-select>
-        </mat-form-field>
+        <app-input-texto-restrito [control]="nomeControl" label="Nome" [maxlength]="160"></app-input-texto-restrito>
+        <app-input-textarea [control]="descricaoControl" label="Descrição" [maxlength]="1000" [rows]="4"></app-input-textarea>
+        <app-input-options [control]="orientacaoControl" label="Orientação" [options]="orientacoes" [showNull]="false"></app-input-options>
         <mat-slide-toggle formControlName="ativa">Playlist ativa</mat-slide-toggle>
       </form>
     </mat-dialog-content>
-    <mat-dialog-actions align="end"><button mat-button mat-dialog-close>Cancelar</button>
+    <mat-dialog-actions align="end" class="dialog-actions"><button mat-button mat-dialog-close>Cancelar</button>
       <button mat-flat-button color="primary" [disabled]="form.invalid" (click)="confirmar()">Salvar</button>
     </mat-dialog-actions>
   `,
-  styles: [`.dialog-form { display:grid; gap: 8px; min-width:min(480px,75vw); padding-top:8px; }`],
+  styleUrls: ['../../../../components/dialog/dialog-form-shell.scss'],
+  styles: [`.dialog-form { display:grid; gap: 12px; min-width:min(480px,75vw); padding-top:8px; }`],
 })
 export class ClickTvPlaylistDialogComponent {
   readonly orientacoes = CLICKTV_ORIENTACOES;
@@ -206,6 +221,15 @@ export class ClickTvPlaylistDialogComponent {
     private readonly dialogRef: MatDialogRef<ClickTvPlaylistDialogComponent>,
     @Inject(MAT_DIALOG_DATA) readonly data: ClickTvPlaylistResumo | null
   ) {}
+  get nomeControl() {
+    return this.form.controls.nome;
+  }
+  get descricaoControl() {
+    return this.form.controls.descricao;
+  }
+  get orientacaoControl() {
+    return this.form.controls.orientacao;
+  }
   confirmar(): void {
     if (this.form.valid) this.dialogRef.close(this.form.getRawValue() as ClickTvPlaylistPayload);
   }
