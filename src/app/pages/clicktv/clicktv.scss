@@ -173,8 +173,17 @@
   flex-wrap: wrap;
 }
 
+.clicktv-list-item__field {
+  display: grid;
+  gap: 10px;
+}
+
 .clicktv-list-item__footer {
   justify-content: space-between;
+}
+
+.clicktv-inline-select {
+  width: min(100%, 260px);
 }
 
 .clicktv-progress {
