@@ -3,8 +3,11 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
-import { CardHeaderComponent } from 'src/app/components/card-header/card-header.component';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
+import { PageCardAction, PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { PageFormState } from 'src/app/components/page-card/page-form-state';
+import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
+import { StatusBadgeComponent } from 'src/app/components/status-badge/status-badge.component';
 import { MaterialModule } from 'src/app/material.module';
 import { getClickManagerPublicHost, normalizeHostInput } from '../../links/utils/links-url.util';
 import { catalogoSlugify } from '../../catalogo/shared/utils/catalogo-utils';
@@ -14,23 +17,42 @@ import { PresencaPublicaService } from './presenca-publica.service';
 @Component({
   selector: 'app-presenca-publica',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MaterialModule, CardHeaderComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MaterialModule,
+    PageCardComponent,
+    SectionCardComponent,
+    StatusBadgeComponent,
+  ],
   templateUrl: './presenca-publica.component.html',
   styleUrl: './presenca-publica.component.scss',
 })
 export class PresencaPublicaComponent implements OnInit {
+  readonly formId = 'presenca-publica-form';
   presenca: PresencaPublicaResponse | null = null;
   carregando = true;
+  erro: string | null = null;
+  semPermissao = false;
   salvando = false;
   consultandoSlug = false;
   salvandoSlug = false;
   slugConsultado: PresencaPublicaSlugDisponivelResponse | null = null;
   readonly dominioFixo = 'clickmanager.com.br';
+  private consultaSlugId = 0;
 
   readonly form = this.fb.group({
     slug: ['', [Validators.required, Validators.maxLength(80), Validators.pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)]],
     dominio: ['', [Validators.maxLength(255)]],
     ativo: [false],
+  });
+
+  readonly formState = new PageFormState(() => this.form, {
+    read: () => this.slugConsultado,
+    write: (slugConsultado) => {
+      this.slugConsultado = slugConsultado ?? null;
+    },
+    canReset: () => this.form.dirty || this.slugConsultado !== null,
   });
 
   constructor(
@@ -41,6 +63,7 @@ export class PresencaPublicaComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.formState.begin('edit');
     this.carregar();
     this.slugControl.valueChanges.subscribe(() => {
       this.slugConsultado = null;
@@ -82,7 +105,21 @@ export class PresencaPublicaComponent implements OnInit {
   }
 
   get podeSalvarSlug(): boolean {
-    return this.slugControl.valid && this.slugDisponivelParaSalvar && !this.consultandoSlug && !this.salvandoSlug;
+    return this.slugControl.valid && this.slugDisponivelParaSalvar && !this.consultandoSlug && !this.salvandoSlug && !this.carregando && !this.erro && !this.semPermissao;
+  }
+
+  get footerActions(): PageCardAction[] {
+    if (this.carregando || this.erro || this.semPermissao) return [];
+    return [{
+      id: 'salvar-presenca-publica',
+      type: 'submit',
+      form: this.formId,
+      disabled: !this.podeSalvarSlug,
+    }];
+  }
+
+  get pageFormState(): PageFormState<PresencaPublicaSlugDisponivelResponse | null> | undefined {
+    return !this.carregando && !this.erro && !this.semPermissao ? this.formState : undefined;
   }
 
   get dominioNormalizado(): string {
@@ -102,14 +139,22 @@ export class PresencaPublicaComponent implements OnInit {
 
   carregar(): void {
     this.carregando = true;
+    this.erro = null;
+    this.semPermissao = false;
+    this.formState.begin('edit');
     this.service.buscar().subscribe({
       next: (presenca) => {
         this.carregando = false;
         this.aplicarPresenca(presenca);
+        this.formState.loaded();
       },
       error: (err) => {
         this.carregando = false;
-        this.toastr.error(err?.userMessage || 'Erro ao carregar a presença pública.');
+        this.semPermissao = err?.status === 403;
+        this.erro = this.semPermissao ? null : (err?.userMessage || 'Erro ao carregar a presença pública.');
+        if (!this.semPermissao) {
+          this.toastr.error(this.erro || 'Erro ao carregar a presença pública.');
+        }
       },
     });
   }
@@ -137,15 +182,30 @@ export class PresencaPublicaComponent implements OnInit {
       return;
     }
 
+    const consultaId = ++this.consultaSlugId;
     this.consultandoSlug = true;
     this.service.consultarSlugDisponivel(slug).subscribe({
       next: (resultado) => {
+        if (consultaId !== this.consultaSlugId) {
+          return;
+        }
         this.consultandoSlug = false;
-        this.slugControl.setValue(resultado.slug, { emitEvent: false });
+        if ((this.slugControl.value || '') !== slug) {
+          return;
+        }
+        if (resultado.slug !== slug) {
+          this.slugControl.setValue(resultado.slug, { emitEvent: false });
+        }
         this.slugConsultado = resultado;
       },
       error: (err) => {
+        if (consultaId !== this.consultaSlugId) {
+          return;
+        }
         this.consultandoSlug = false;
+        if ((this.slugControl.value || '') !== slug) {
+          return;
+        }
         this.slugConsultado = null;
         this.toastr.error(err?.userMessage || err?.error?.message || 'Erro ao consultar disponibilidade.');
       },
@@ -167,6 +227,7 @@ export class PresencaPublicaComponent implements OnInit {
       next: (presenca) => {
         this.salvandoSlug = false;
         this.aplicarPresenca(presenca);
+        this.formState.loaded();
         this.toastr.success('Endereço ClickManager atualizado.');
       },
       error: (err) => {
@@ -248,6 +309,8 @@ export class PresencaPublicaComponent implements OnInit {
 
   private aplicarPresenca(presenca: PresencaPublicaResponse): void {
     this.presenca = presenca;
+    this.consultaSlugId++;
+    this.consultandoSlug = false;
     this.form.patchValue({
       slug: presenca.slugPublico || '',
       dominio: presenca.dominioProprio || '',
