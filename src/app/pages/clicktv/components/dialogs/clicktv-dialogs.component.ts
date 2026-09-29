@@ -2,6 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, Inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { InputNumericoComponent } from 'src/app/components/inputs/input-numerico/input-numerico.component';
+import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
 import { MaterialModule } from 'src/app/material.module';
 import {
   CLICKTV_ORIENTACOES,
@@ -18,8 +20,14 @@ import {
   standalone: true,
   imports: [CommonModule, MatDialogModule, MaterialModule],
   template: `
-    <h2 mat-dialog-title>{{ data.midia.nome }}</h2>
-    <mat-dialog-content class="preview-dialog">
+    <div mat-dialog-title class="dialog-head">
+      <div class="dialog-head__copy">
+        <strong>{{ data.midia.nome }}</strong>
+        <span>Prévia e utilizações da mídia nas playlists.</span>
+      </div>
+      <button mat-icon-button mat-dialog-close aria-label="Fechar"><mat-icon>close</mat-icon></button>
+    </div>
+    <mat-dialog-content class="dialog-content preview-dialog">
       @if (data.midia.visualizacao?.url) {
         @if (data.midia.tipo === 'VIDEO') {
           <video controls autoplay [src]="data.midia.visualizacao?.url"></video>
@@ -39,8 +47,9 @@ import {
         <p class="usage"><strong>{{ uso.nome }}</strong> · {{ uso.quantidadeItens }} item(ns)</p>
       }
     </mat-dialog-content>
-    <mat-dialog-actions align="end"><button mat-button mat-dialog-close>Fechar</button></mat-dialog-actions>
+    <mat-dialog-actions align="end" class="dialog-actions"><button mat-button mat-dialog-close>Fechar</button></mat-dialog-actions>
   `,
+  styleUrls: ['../../../../components/dialog/dialog-form-shell.scss'],
   styles: [`
     .preview-dialog { min-width:min(720px,80vw); }
     img, video { display:block; width:100%; max-height:55vh; object-fit:contain; background:#080b12; border-radius:12px; }
@@ -58,33 +67,34 @@ export class ClickTvMidiaPreviewDialogComponent {
 @Component({
   selector: 'app-clicktv-upload-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MaterialModule],
+  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MaterialModule, InputNumericoComponent, InputTextoRestritoComponent],
   template: `
-    <h2 mat-dialog-title>Enviar mídia</h2>
-    <mat-dialog-content>
+    <div mat-dialog-title class="dialog-head">
+      <div class="dialog-head__copy">
+        <strong>Enviar mídia</strong>
+        <span>JPG, JPEG, PNG, WebP ou MP4. Os limites são validados pelo servidor.</span>
+      </div>
+      <button mat-icon-button mat-dialog-close aria-label="Fechar"><mat-icon>close</mat-icon></button>
+    </div>
+    <mat-dialog-content class="dialog-content">
       <p class="text-muted">JPG, JPEG, PNG, WebP ou MP4. Os limites são validados pelo servidor.</p>
       <input #fileInput hidden type="file" accept=".jpg,.jpeg,.png,.webp,.mp4,image/jpeg,image/png,image/webp,video/mp4"
         (change)="selecionar($event)" />
       <button mat-stroked-button type="button" (click)="fileInput.click()">Selecionar arquivo</button>
       <span class="m-l-12">{{ arquivo?.name || 'Nenhum arquivo selecionado' }}</span>
       <form [formGroup]="form" class="dialog-form">
-        <mat-form-field appearance="outline">
-          <mat-label>Nome de exibição</mat-label>
-          <input matInput formControlName="nome" maxlength="160" />
-        </mat-form-field>
+        <app-input-texto-restrito [control]="nomeControl" label="Nome de exibição" [maxlength]="160"></app-input-texto-restrito>
         @if (arquivo?.type?.startsWith('image/')) {
-          <mat-form-field appearance="outline">
-            <mat-label>Duração da imagem (segundos)</mat-label>
-            <input matInput type="number" min="1" formControlName="duracaoImagem" />
-          </mat-form-field>
+          <app-input-numerico [control]="duracaoImagemControl" label="Duração da imagem (segundos)"></app-input-numerico>
         }
       </form>
     </mat-dialog-content>
-    <mat-dialog-actions align="end">
+    <mat-dialog-actions align="end" class="dialog-actions">
       <button mat-button mat-dialog-close>Cancelar</button>
       <button mat-flat-button color="primary" [disabled]="!arquivo || form.invalid" (click)="confirmar()">Enviar</button>
     </mat-dialog-actions>
   `,
+  styleUrls: ['../../../../components/dialog/dialog-form-shell.scss'],
   styles: [`.dialog-form { display: grid; gap: 12px; margin-top: 20px; min-width: min(460px, 75vw); }`],
 })
 export class ClickTvUploadDialogComponent {
@@ -95,6 +105,14 @@ export class ClickTvUploadDialogComponent {
     private readonly fb: FormBuilder,
     private readonly dialogRef: MatDialogRef<ClickTvUploadDialogComponent>
   ) {}
+
+  get nomeControl() {
+    return this.form.controls.nome;
+  }
+
+  get duracaoImagemControl() {
+    return this.form.controls.duracaoImagem;
+  }
 
   selecionar(event: Event): void {
     this.arquivo = (event.target as HTMLInputElement).files?.[0] || null;
@@ -116,23 +134,26 @@ export class ClickTvUploadDialogComponent {
 @Component({
   selector: 'app-clicktv-name-dialog',
   standalone: true,
-  imports: [ReactiveFormsModule, MatDialogModule, MaterialModule],
+  imports: [ReactiveFormsModule, MatDialogModule, MaterialModule, InputTextoRestritoComponent],
   template: `
-    <h2 mat-dialog-title>{{ data.titulo }}</h2>
-    <mat-dialog-content>
+    <div mat-dialog-title class="dialog-head">
+      <div class="dialog-head__copy">
+        <strong>{{ data.titulo }}</strong>
+        <span>Informe o nome de exibição da mídia.</span>
+      </div>
+      <button mat-icon-button mat-dialog-close aria-label="Fechar"><mat-icon>close</mat-icon></button>
+    </div>
+    <mat-dialog-content class="dialog-content">
       <form [formGroup]="form" class="dialog-form">
-        <mat-form-field appearance="outline">
-          <mat-label>Nome</mat-label>
-          <input matInput formControlName="nome" maxlength="160" />
-          <mat-error>Informe um nome.</mat-error>
-        </mat-form-field>
+        <app-input-texto-restrito [control]="nomeControl" label="Nome" [maxlength]="160"></app-input-texto-restrito>
       </form>
     </mat-dialog-content>
-    <mat-dialog-actions align="end">
+    <mat-dialog-actions align="end" class="dialog-actions">
       <button mat-button mat-dialog-close>Cancelar</button>
       <button mat-flat-button color="primary" [disabled]="form.invalid" (click)="confirmar()">Salvar</button>
     </mat-dialog-actions>
   `,
+  styleUrls: ['../../../../components/dialog/dialog-form-shell.scss'],
   styles: [`.dialog-form { min-width: min(420px, 75vw); padding-top: 8px; } mat-form-field { width: 100%; }`],
 })
 export class ClickTvNameDialogComponent {
@@ -142,6 +163,9 @@ export class ClickTvNameDialogComponent {
     private readonly dialogRef: MatDialogRef<ClickTvNameDialogComponent>,
     @Inject(MAT_DIALOG_DATA) readonly data: { titulo: string; nome?: string }
   ) {}
+  get nomeControl() {
+    return this.form.controls.nome;
+  }
   confirmar(): void {
     if (this.form.valid) this.dialogRef.close(this.form.value.nome?.trim());
   }

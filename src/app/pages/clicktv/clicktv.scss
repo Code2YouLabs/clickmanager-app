@@ -3,19 +3,9 @@
   gap: 20px;
 }
 
-.clicktv-toolbar {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.clicktv-toolbar mat-form-field {
-  min-width: 180px;
-}
-
-.clicktv-toolbar .search {
-  flex: 1 1 260px;
+.clicktv-content {
+  display: grid;
+  gap: 16px;
 }
 
 .clicktv-state {
@@ -26,6 +16,32 @@
   gap: 12px;
   color: #667085;
   text-align: center;
+}
+
+.clicktv-state--error {
+  color: #b42318;
+}
+
+.clicktv-state button {
+  margin-top: 4px;
+}
+
+.clicktv-refreshing {
+  display: grid;
+  gap: 8px;
+  color: #667085;
+  font-size: 13px;
+}
+
+.clicktv-inline-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid #fed7d7;
+  border-radius: 8px;
+  background: #fff7f7;
+  color: #b42318;
 }
 
 .clicktv-grid {
@@ -44,11 +60,19 @@
 .clicktv-card__preview {
   position: relative;
   height: 145px;
+  width: 100%;
+  border: 0;
+  padding: 0;
   display: grid;
   place-items: center;
   background: #101522;
   color: #fff;
   cursor: pointer;
+}
+
+.clicktv-card__preview:focus-visible {
+  outline: 3px solid #5b8def;
+  outline-offset: -3px;
 }
 
 .clicktv-card__preview .video-play {
@@ -126,7 +150,10 @@
 }
 
 @media (max-width: 700px) {
-  .clicktv-toolbar { align-items: stretch; }
-  .clicktv-toolbar > *, .clicktv-toolbar mat-form-field { width: 100%; }
   .clicktv-grid { grid-template-columns: 1fr; }
+
+  .clicktv-inline-error {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }

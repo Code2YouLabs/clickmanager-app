@@ -1,14 +1,16 @@
 import { CommonModule } from '@angular/common';
-import { HttpEventType } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { HttpErrorResponse, HttpEventType } from '@angular/common/http';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { FormControl } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { PageEvent } from '@angular/material/paginator';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, map, of, Subject, switchMap, takeUntil, tap } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { MaterialModule } from 'src/app/material.module';
-import { CardHeaderComponent } from 'src/app/components/card-header/card-header.component';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
+import { DataTableFilter, DataTableFilterState } from 'src/app/components/data-table/data-table.models';
+import { ListFilterBarComponent } from 'src/app/components/list-filter-bar/list-filter-bar.component';
+import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
 import { ClickTvMidia, ClickTvStatusMidia, ClickTvTipoMidia } from '../../models/clicktv.models';
 import { ClickTvService } from '../../services/clicktv.service';
@@ -21,11 +23,11 @@ import {
 @Component({
   selector: 'app-clicktv-midias',
   standalone: true,
-  imports: [CommonModule, FormsModule, MaterialModule, CardHeaderComponent, TemPermissaoDirective],
+  imports: [CommonModule, MaterialModule, PageCardComponent, ListFilterBarComponent, TemPermissaoDirective],
   templateUrl: './clicktv-midias.component.html',
   styleUrls: ['../../clicktv.scss'],
 })
-export class ClickTvMidiasComponent implements OnInit {
+export class ClickTvMidiasComponent implements OnInit, OnDestroy {
   midias: ClickTvMidia[] = [];
   total = 0;
   page = 0;
@@ -33,10 +35,42 @@ export class ClickTvMidiasComponent implements OnInit {
   nome = '';
   tipo: ClickTvTipoMidia | '' = '';
   status: ClickTvStatusMidia | '' = '';
-  carregando = false;
+  carregandoInicial = false;
+  refreshing = false;
+  erro: string | null = null;
+  semPermissao = false;
   uploadProgresso: number | null = null;
+  uploadEmAndamento = false;
   readonly tipos: ClickTvTipoMidia[] = ['IMAGEM', 'VIDEO'];
   readonly statuses: ClickTvStatusMidia[] = ['PROCESSANDO', 'DISPONIVEL', 'ERRO'];
+  readonly filtroControl = new FormControl('', { nonNullable: true });
+  readonly filtros: DataTableFilter[] = [
+    {
+      key: 'tipo',
+      label: 'Tipo',
+      type: 'select',
+      width: '180px',
+      options: [
+        { value: 'IMAGEM', label: 'Imagem' },
+        { value: 'VIDEO', label: 'Vídeo' },
+      ],
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      type: 'select',
+      width: '220px',
+      options: [
+        { value: 'PROCESSANDO', label: 'Processando' },
+        { value: 'DISPONIVEL', label: 'Disponível' },
+        { value: 'ERRO', label: 'Erro' },
+      ],
+    },
+  ];
+
+  private readonly carregar$ = new Subject<void>();
+  private readonly destroy$ = new Subject<void>();
+  private ignorarProximoStateChangeVazio = false;
 
   constructor(
     private readonly service: ClickTvService,
@@ -44,36 +78,87 @@ export class ClickTvMidiasComponent implements OnInit {
     private readonly toastr: ToastrService
   ) {}
 
-  ngOnInit(): void { this.carregar(); }
+  ngOnInit(): void {
+    this.carregar$
+      .pipe(
+        tap(() => this.iniciarCarregamento()),
+        switchMap(() => this.service.listarMidias({
+          nome: this.nome.trim() || undefined,
+          tipo: this.tipo || undefined,
+          status: this.status || undefined,
+          page: this.page,
+          size: this.size,
+        }).pipe(
+          map((res) => ({ res, error: null as HttpErrorResponse | null })),
+          catchError((error: HttpErrorResponse) => of({ res: null, error })),
+        )),
+        takeUntil(this.destroy$),
+      )
+      .subscribe(({ res, error }) => {
+        this.carregandoInicial = false;
+        this.refreshing = false;
+        if (error) {
+          this.tratarErro(error);
+          return;
+        }
+        this.erro = null;
+        this.semPermissao = false;
+        this.midias = res?.content || [];
+        this.total = res?.totalElements || 0;
+      });
 
-  carregar(): void {
-    this.carregando = true;
-    this.service.listarMidias({
-      nome: this.nome.trim() || undefined,
-      tipo: this.tipo || undefined,
-      status: this.status || undefined,
-      page: this.page,
-      size: this.size,
-    }).subscribe({
-      next: (res) => {
-        this.midias = res.content || [];
-        this.total = res.totalElements || 0;
-        this.carregando = false;
-      },
-      error: () => {
-        this.carregando = false;
-        this.toastr.error('Não foi possível carregar as mídias do ClickTV.');
-      },
-    });
+    this.carregar();
   }
 
-  pesquisar(): void { this.page = 0; this.carregar(); }
-  pagina(event: PageEvent): void { this.page = event.pageIndex; this.size = event.pageSize; this.carregar(); }
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  carregar(): void {
+    this.carregar$.next();
+  }
+
+  pesquisar(nome: string): void {
+    this.nome = nome;
+    this.page = 0;
+    this.carregar();
+  }
+
+  alterarFiltros(filtros: DataTableFilterState): void {
+    if (this.ignorarProximoStateChangeVazio && !Object.keys(filtros || {}).length) {
+      this.ignorarProximoStateChangeVazio = false;
+      return;
+    }
+    this.ignorarProximoStateChangeVazio = false;
+    this.tipo = (filtros['tipo'] as ClickTvTipoMidia | null | undefined) || '';
+    this.status = (filtros['status'] as ClickTvStatusMidia | null | undefined) || '';
+    this.page = 0;
+    this.carregar();
+  }
+
+  limparFiltros(): void {
+    this.nome = '';
+    this.tipo = '';
+    this.status = '';
+    this.page = 0;
+    this.ignorarProximoStateChangeVazio = true;
+    this.filtroControl.setValue('', { emitEvent: false });
+    this.carregar();
+  }
+
+  pagina(event: PageEvent): void {
+    this.page = event.pageIndex;
+    this.size = event.pageSize;
+    this.carregar();
+  }
 
   enviar(): void {
+    if (this.uploadEmAndamento) return;
     this.dialog.open(ClickTvUploadDialogComponent, { width: '560px' }).afterClosed().subscribe((result) => {
       if (!result) return;
       this.uploadProgresso = 0;
+      this.uploadEmAndamento = true;
       this.service.uploadMidia(result.arquivo, result.nome, result.duracaoImagem).subscribe({
         next: (event) => {
           if (event.type === HttpEventType.UploadProgress) {
@@ -81,12 +166,14 @@ export class ClickTvMidiasComponent implements OnInit {
           }
           if (event.type === HttpEventType.Response) {
             this.uploadProgresso = null;
+            this.uploadEmAndamento = false;
             this.toastr.success('Mídia enviada com sucesso.');
             this.carregar();
           }
         },
         error: () => {
           this.uploadProgresso = null;
+          this.uploadEmAndamento = false;
           this.toastr.error('Não foi possível enviar a mídia. Verifique formato e tamanho.');
         },
       });
@@ -134,6 +221,32 @@ export class ClickTvMidiasComponent implements OnInit {
     });
   }
 
+  get filtroState(): DataTableFilterState {
+    return {
+      tipo: this.tipo || null,
+      status: this.status || null,
+    };
+  }
+
+  get temFiltrosAtivos(): boolean {
+    return !!(this.nome.trim() || this.tipo || this.status);
+  }
+
+  get mensagemVazio(): { titulo: string; subtitulo: string; icone: string } {
+    if (this.temFiltrosAtivos) {
+      return {
+        titulo: 'Nenhuma mídia encontrada para os filtros',
+        subtitulo: 'Ajuste a busca, tipo ou status para localizar outras mídias.',
+        icone: 'filter_alt_off',
+      };
+    }
+    return {
+      titulo: 'Nenhuma mídia encontrada',
+      subtitulo: 'Envie a primeira imagem ou vídeo para começar.',
+      icone: 'perm_media',
+    };
+  }
+
   tamanho(bytes: number): string {
     if (!bytes) return '0 B';
     const unidades = ['B', 'KB', 'MB', 'GB'];
@@ -143,5 +256,25 @@ export class ClickTvMidiasComponent implements OnInit {
 
   statusClass(status: ClickTvStatusMidia): string {
     return status === 'DISPONIVEL' ? 'success' : status === 'PROCESSANDO' ? 'warning' : status === 'ERRO' ? 'danger' : 'neutral';
+  }
+
+  private iniciarCarregamento(): void {
+    this.erro = null;
+    this.semPermissao = false;
+    if (this.midias.length) {
+      this.refreshing = true;
+      this.carregandoInicial = false;
+      return;
+    }
+    this.carregandoInicial = true;
+    this.refreshing = false;
+  }
+
+  private tratarErro(error: HttpErrorResponse): void {
+    this.semPermissao = error.status === 403;
+    this.erro = this.semPermissao ? null : (error.error?.message || 'Não foi possível carregar as mídias do ClickTV.');
+    if (!this.midias.length) {
+      this.total = 0;
+    }
   }
 }
