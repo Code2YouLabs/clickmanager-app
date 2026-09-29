@@ -243,29 +243,35 @@ export interface ClickTvTelaDialogData {
 @Component({
   selector: 'app-clicktv-tela-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MaterialModule],
+  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MaterialModule, InputTextoRestritoComponent, InputOptionsComponent],
   template: `
-    <h2 mat-dialog-title>{{ data.vincular ? (data.tela ? 'Vincular novamente' : 'Vincular nova tela') : 'Editar tela' }}</h2>
-    <mat-dialog-content>
+    <div mat-dialog-title class="dialog-head">
+      <div class="dialog-head__copy">
+        <strong>{{ data.vincular ? (data.tela ? 'Vincular novamente' : 'Vincular nova tela') : 'Editar tela' }}</strong>
+        <span>{{ data.vincular ? 'Informe o código exibido no player e os dados da tela.' : 'Atualize identificação e orientação da tela.' }}</span>
+      </div>
+      <button mat-icon-button mat-dialog-close aria-label="Fechar"><mat-icon>close</mat-icon></button>
+    </div>
+    <mat-dialog-content class="dialog-content">
       <form [formGroup]="form" class="dialog-form">
         @if (data.vincular) {
           <mat-form-field appearance="outline"><mat-label>Código de ativação</mat-label>
-            <input matInput inputmode="numeric" maxlength="6" formControlName="codigo" />
+            <input matInput inputmode="numeric" maxlength="6" formControlName="codigo" (input)="normalizarCodigo()" />
             <mat-hint>Informe os seis dígitos exibidos na TV.</mat-hint>
+            <mat-error>Informe exatamente 6 dígitos.</mat-error>
           </mat-form-field>
         }
-        <mat-form-field appearance="outline"><mat-label>Nome</mat-label><input matInput formControlName="nome" maxlength="160" /></mat-form-field>
-        <mat-form-field appearance="outline"><mat-label>Local</mat-label><input matInput formControlName="descricaoLocal" maxlength="500" /></mat-form-field>
-        <mat-form-field appearance="outline"><mat-label>Orientação</mat-label>
-          <mat-select formControlName="orientacao">@for (item of orientacoes; track item) { <mat-option [value]="item">{{ item }}</mat-option> }</mat-select>
-        </mat-form-field>
+        <app-input-texto-restrito [control]="nomeControl" label="Nome" [maxlength]="160"></app-input-texto-restrito>
+        <app-input-texto-restrito [control]="descricaoLocalControl" label="Local" [maxlength]="500"></app-input-texto-restrito>
+        <app-input-options [control]="orientacaoControl" label="Orientação" [options]="orientacoes" [showNull]="false"></app-input-options>
       </form>
     </mat-dialog-content>
-    <mat-dialog-actions align="end"><button mat-button mat-dialog-close>Cancelar</button>
+    <mat-dialog-actions align="end" class="dialog-actions"><button mat-button mat-dialog-close>Cancelar</button>
       <button mat-flat-button color="primary" [disabled]="form.invalid" (click)="confirmar()">{{ data.vincular ? 'Vincular' : 'Salvar' }}</button>
     </mat-dialog-actions>
   `,
-  styles: [`.dialog-form { display:grid; gap:8px; min-width:min(480px,75vw); padding-top:8px; }`],
+  styleUrls: ['../../../../components/dialog/dialog-form-shell.scss'],
+  styles: [`.dialog-form { display:grid; gap:12px; min-width:min(480px,75vw); padding-top:8px; }`],
 })
 export class ClickTvTelaDialogComponent {
   readonly orientacoes = CLICKTV_ORIENTACOES;
@@ -280,6 +286,22 @@ export class ClickTvTelaDialogComponent {
     private readonly dialogRef: MatDialogRef<ClickTvTelaDialogComponent>,
     @Inject(MAT_DIALOG_DATA) readonly data: ClickTvTelaDialogData
   ) {}
+  get nomeControl() {
+    return this.form.controls.nome;
+  }
+  get descricaoLocalControl() {
+    return this.form.controls.descricaoLocal;
+  }
+  get orientacaoControl() {
+    return this.form.controls.orientacao;
+  }
+  normalizarCodigo(): void {
+    const atual = this.form.controls.codigo.value || '';
+    const normalizado = atual.replace(/\D/g, '').slice(0, 6);
+    if (normalizado !== atual) {
+      this.form.controls.codigo.setValue(normalizado);
+    }
+  }
   confirmar(): void {
     if (this.form.valid) this.dialogRef.close({
       ...this.form.getRawValue(),
