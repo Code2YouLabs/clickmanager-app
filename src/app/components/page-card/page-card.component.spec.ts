@@ -169,4 +169,18 @@ describe('PageCard footer action contract', () => {
     f.componentInstance.saving = false; f.componentInstance.disabled = true; f.detectChanges();
     expect(f.nativeElement.querySelector('button[type=submit]').disabled).toBeTrue();
   });
+  it('desabilita Cancelar quando o PageFormState informa que nao ha descarte', () => {
+    const f = TestBed.createComponent(ActionsHost);
+    let changed = false;
+    f.componentInstance.state = new PageFormState(() => f.componentInstance.form, { canReset: () => changed });
+    f.componentInstance.state.begin('create');
+    f.detectChanges();
+
+    const cancel: HTMLButtonElement = f.nativeElement.querySelector('button[type=button]');
+    expect(cancel.disabled).toBeTrue();
+
+    changed = true;
+    f.detectChanges();
+    expect(cancel.disabled).toBeFalse();
+  });
 });

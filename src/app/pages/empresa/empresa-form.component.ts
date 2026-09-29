@@ -30,10 +30,28 @@ import { InputCepComponent } from 'src/app/components/inputs/input-cep/input-cep
 import { EmpresaIdentidadePublicaService } from './empresa-identidade-publica.service';
 import { LinksIdentidadePublica } from '../links/models/links.models';
 import { getClickManagerPublicHost } from '../links/utils/links-url.util';
-import { CardHeaderComponent } from 'src/app/components/card-header/card-header.component';
+import { PageCardAction, PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { PageFormState } from 'src/app/components/page-card/page-form-state';
+import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
+import { EnderecoFormComponent } from 'src/app/components/endereco-form/endereco-form.component';
 
 type EmpresaOnboardingSection = 'all' | 'empresa' | 'logo' | 'endereco';
 type FormSnapshot = Record<string, unknown>;
+type IdentidadeSnapshot = {
+  imagemOriginal: string | null;
+  imagemPreview: string | ArrayBuffer | null;
+  logoIdentidadeSelecionada: File | null;
+  logoIdentidadeArquivoNome: string;
+  logoIdentidadeArquivoTamanho: string;
+  logoIdentidadeErro: string;
+  removerLogoIdentidade: boolean;
+  faviconPreviewUrl: string;
+  faviconSelecionado: File | null;
+  faviconArquivoNome: string;
+  faviconArquivoTamanho: string;
+  faviconErro: string;
+  removerFaviconIdentidade: boolean;
+};
 
 @Component({
   selector: 'app-empresa-form',
@@ -54,7 +72,9 @@ type FormSnapshot = Record<string, unknown>;
     MatSlideToggleModule,
     MatProgressSpinnerModule,
     TablerIconsModule,
-    CardHeaderComponent,
+    PageCardComponent,
+    SectionCardComponent,
+    EnderecoFormComponent,
     InputTextoRestritoComponent,
     InputEmailComponent,
     InputTelefoneComponent,
@@ -71,6 +91,7 @@ export class EmpresaFormComponent implements OnInit {
   @Output() empresaSalva = new EventEmitter<void>();
 
   form!: FormGroup;
+  readonly identidadeForm = new FormGroup({});
   abaSelecionada = 0;
 
   readonly IMAGEM_PADRAO = './assets/images/logos/LogoPadrao.png';
@@ -81,6 +102,8 @@ export class EmpresaFormComponent implements OnInit {
   identidadePublica: LinksIdentidadePublica | null = null;
   carregandoEmpresa = false;
   carregandoIdentidade = false;
+  erroEmpresa: string | null = null;
+  erroIdentidade: string | null = null;
   salvandoEmpresa = false;
   salvandoRedes = false;
   salvandoIdentidade = false;
@@ -98,6 +121,21 @@ export class EmpresaFormComponent implements OnInit {
   private logoIdentidadeSelecionada: File | null = null;
   private faviconSelecionado: File | null = null;
   private readonly faviconFallbackUrl = 'favicon.ico';
+  private empresaId: number | null = null;
+
+  readonly empresaFormState = new PageFormState(() => this.form, {
+    paths: ['nome', 'telefone', 'email', 'cnpj', 'inscricaoEstadual', 'horario', 'ativa', 'enderecoRequest'],
+    canReset: () => this.empresaDirty,
+  });
+  readonly redesFormState = new PageFormState(() => this.form, {
+    paths: ['instagramUrl', 'facebookUrl', 'youtubeUrl', 'siteUrl'],
+    canReset: () => this.redesDirty,
+  });
+  readonly identidadeFormState = new PageFormState<IdentidadeSnapshot>(() => this.identidadeForm, {
+    read: () => this.identidadeValues(),
+    write: value => this.aplicarIdentidadeValues(value),
+    canReset: () => this.identidadeDirty,
+  });
 
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
@@ -111,26 +149,37 @@ export class EmpresaFormComponent implements OnInit {
 
   ngOnInit(): void {
     this.form = this.criarFormulario();
+    this.empresaFormState.begin('edit');
+    this.redesFormState.begin('edit');
+    this.identidadeFormState.begin('edit');
 
     this.authService.usuario$
       .pipe(
         filter(usuario => !!usuario),
       ).subscribe(usuario => {
         if (usuario?.empresa?.id) {
-          this.carregandoEmpresa = true;
-          this.empresaService.buscarEmpresa(usuario.empresa.id).subscribe({
-            next: empresa => {
-              this.carregandoEmpresa = false;
-              this.preencherFormulario(empresa);
-            },
-            error: () => {
-              this.carregandoEmpresa = false;
-              this.toastr.warning('Erro ao buscar empresa');
-            }
-          });
+          this.empresaId = usuario.empresa.id;
+          this.carregarEmpresa();
           this.carregarIdentidadePublica();
         }
       });
+  }
+
+  carregarEmpresa(): void {
+    if (!this.empresaId) return;
+    this.carregandoEmpresa = true;
+    this.erroEmpresa = null;
+    this.empresaService.buscarEmpresa(this.empresaId).subscribe({
+      next: empresa => {
+        this.carregandoEmpresa = false;
+        this.preencherFormulario(empresa);
+      },
+      error: () => {
+        this.carregandoEmpresa = false;
+        this.erroEmpresa = 'Não foi possível carregar os dados da empresa.';
+        this.toastr.warning('Erro ao buscar empresa');
+      }
+    });
   }
 
   get mostrarSecaoEmpresa(): boolean {
@@ -196,7 +245,17 @@ export class EmpresaFormComponent implements OnInit {
     });
   }
 
+  get enderecoGroup(): FormGroup {
+    return this.form.get('enderecoRequest') as FormGroup;
+  }
+
   private preencherFormulario(empresa: Empresa): void {
+    this.preencherEmpresaFormulario(empresa);
+    this.preencherRedesFormulario(empresa);
+    this.atualizarSnapshotsFormulario();
+  }
+
+  private preencherEmpresaFormulario(empresa: Empresa): void {
     this.form.patchValue({
       nome: empresa.nome,
       telefone: empresa.telefone,
@@ -204,10 +263,6 @@ export class EmpresaFormComponent implements OnInit {
       cnpj: empresa.cnpj,
       inscricaoEstadual: empresa.inscricaoEstadual || '',
       horario: empresa.horario || '',
-      instagramUrl: empresa.instagramUrl || '',
-      facebookUrl: empresa.facebookUrl || '',
-      siteUrl: empresa.siteUrl || '',
-      youtubeUrl: empresa.youtubeUrl || '',
       ativa: empresa.ativa ?? true,
       enderecoRequest: {
         cep: empresa.endereco?.cep || '',
@@ -224,7 +279,17 @@ export class EmpresaFormComponent implements OnInit {
 
     this.imagemPreview = this.imagemOriginal;
     this.removerLogo = false;
-    this.atualizarSnapshotsFormulario();
+    this.registrarEmpresaBaseline();
+  }
+
+  private preencherRedesFormulario(empresa: Empresa): void {
+    this.form.patchValue({
+      instagramUrl: empresa.instagramUrl || '',
+      facebookUrl: empresa.facebookUrl || '',
+      siteUrl: empresa.siteUrl || '',
+      youtubeUrl: empresa.youtubeUrl || '',
+    });
+    this.registrarRedesBaseline();
   }
 
   get nomePublico(): string {
@@ -259,27 +324,69 @@ export class EmpresaFormComponent implements OnInit {
   }
 
   get podeSalvarEmpresa(): boolean {
-    return !this.carregandoEmpresa && !this.salvandoEmpresa && this.empresaDirty;
+    return !this.carregandoEmpresa && !this.erroEmpresa && !this.salvandoEmpresa && this.empresaDirty;
   }
 
   get podeSalvarIdentidade(): boolean {
-    return !this.carregandoIdentidade && !this.salvandoIdentidade && this.identidadeDirty;
+    return !this.carregandoIdentidade && !this.erroIdentidade && !this.salvandoIdentidade && this.identidadeDirty;
   }
 
   get podeSalvarRedes(): boolean {
-    return !this.carregandoEmpresa && !this.salvandoRedes && this.redesDirty;
+    return !this.carregandoEmpresa && !this.erroEmpresa && !this.salvandoRedes && this.redesDirty;
+  }
+
+  get pageFormState(): PageFormState<any> {
+    if (this.abaSelecionada === 1) return this.identidadeFormState;
+    if (this.abaSelecionada === 2) return this.redesFormState;
+    return this.empresaFormState;
+  }
+
+  get footerActions(): PageCardAction[] {
+    if (this.abaSelecionada === 1) {
+      return [{ id: 'salvar-identidade', type: 'button', label: 'Salvar', icon: 'save', color: 'primary', primary: true, disabled: !this.podeSalvarIdentidade }];
+    }
+    if (this.abaSelecionada === 2) {
+      return [{ id: 'salvar-redes', type: 'submit', form: 'empresa-redes-form', disabled: !this.podeSalvarRedes }];
+    }
+    return [{ id: 'salvar-empresa', type: 'submit', form: 'empresa-dados-form', disabled: !this.podeSalvarEmpresa }];
+  }
+
+  get savingAtual(): boolean {
+    if (this.abaSelecionada === 1) return this.salvandoIdentidade;
+    if (this.abaSelecionada === 2) return this.salvandoRedes;
+    return this.salvandoEmpresa;
+  }
+
+  get savingTextAtual(): string {
+    if (this.abaSelecionada === 1) return 'Salvando identidade pública...';
+    if (this.abaSelecionada === 2) return 'Salvando redes sociais...';
+    return 'Salvando dados da empresa...';
+  }
+
+  get actionsDisabledAtual(): boolean {
+    if (this.abaSelecionada === 1) return this.carregandoIdentidade || !!this.erroIdentidade;
+    return this.carregandoEmpresa || !!this.erroEmpresa;
+  }
+
+  onFooterAction(action: string): void {
+    if (action === 'salvar-identidade') {
+      this.salvarIdentidadePublica();
+    }
   }
 
   carregarIdentidadePublica(): void {
     this.carregandoIdentidade = true;
+    this.erroIdentidade = null;
     this.identidadeService.buscar().subscribe({
       next: (identidade) => {
         this.carregandoIdentidade = false;
         this.identidadePublica = identidade;
         this.restaurarMidiasIdentidade();
+        this.identidadeFormState.loaded();
       },
       error: () => {
         this.carregandoIdentidade = false;
+        this.erroIdentidade = 'Não foi possível carregar a identidade pública.';
         this.toastr.warning('Não foi possível carregar a identidade pública.');
       },
     });
@@ -417,9 +524,9 @@ export class EmpresaFormComponent implements OnInit {
       next: (empresa: Empresa | void) => {
         this.salvandoEmpresa = false;
         if (empresa) {
-          this.preencherFormulario(empresa);
+          this.preencherEmpresaFormulario(empresa);
         } else {
-          this.atualizarSnapshotsFormulario();
+          this.registrarEmpresaBaseline();
         }
         this.toastr.success('Dados da empresa salvos.');
       },
@@ -430,11 +537,6 @@ export class EmpresaFormComponent implements OnInit {
     });
   }
 
-  cancelarEmpresa(): void {
-    if (!this.empresaSnapshot) return;
-    this.aplicarEmpresaValues(this.empresaSnapshot);
-  }
-
   salvarRedes(): void {
     if (!this.redesDirty) return;
 
@@ -443,9 +545,9 @@ export class EmpresaFormComponent implements OnInit {
       next: (empresa: Empresa | void) => {
         this.salvandoRedes = false;
         if (empresa) {
-          this.preencherFormulario(empresa);
+          this.preencherRedesFormulario(empresa);
         } else {
-          this.atualizarSnapshotsFormulario();
+          this.registrarRedesBaseline();
         }
         this.toastr.success('Redes sociais salvas.');
       },
@@ -454,11 +556,6 @@ export class EmpresaFormComponent implements OnInit {
         this.toastr.error('Erro ao salvar redes sociais.');
       }
     });
-  }
-
-  cancelarRedes(): void {
-    if (!this.redesSnapshot) return;
-    this.aplicarRedesValues(this.redesSnapshot);
   }
 
   salvarIdentidadePublica(): void {
@@ -485,6 +582,7 @@ export class EmpresaFormComponent implements OnInit {
         this.salvandoIdentidade = false;
         this.identidadePublica = identidades[identidades.length - 1] || this.identidadePublica;
         this.restaurarMidiasIdentidade();
+        this.identidadeFormState.loaded();
         this.toastr.success('Identidade pública salva.');
       },
       error: (err) => {
@@ -493,11 +591,6 @@ export class EmpresaFormComponent implements OnInit {
       }
     });
   }
-
-  cancelarIdentidadePublica(): void {
-    this.restaurarMidiasIdentidade();
-  }
-
 
   private montarFormData(incluirLogo = true): FormData {
     const formData = new FormData();
@@ -578,9 +671,19 @@ export class EmpresaFormComponent implements OnInit {
   }
 
   private atualizarSnapshotsFormulario(): void {
-    this.empresaSnapshot = this.empresaValues();
-    this.redesSnapshot = this.redesValues();
+    this.registrarEmpresaBaseline();
+    this.registrarRedesBaseline();
     this.form.markAsPristine();
+  }
+
+  private registrarEmpresaBaseline(): void {
+    this.empresaSnapshot = this.empresaValues();
+    this.empresaFormState.loaded();
+  }
+
+  private registrarRedesBaseline(): void {
+    this.redesSnapshot = this.redesValues();
+    this.redesFormState.loaded();
   }
 
   private empresaValues(): FormSnapshot {
@@ -623,6 +726,40 @@ export class EmpresaFormComponent implements OnInit {
   private aplicarRedesValues(values: FormSnapshot): void {
     this.form.patchValue(values);
     this.redesSnapshot = this.redesValues();
+  }
+
+  private identidadeValues(): IdentidadeSnapshot {
+    return {
+      imagemOriginal: this.imagemOriginal,
+      imagemPreview: this.imagemPreview,
+      logoIdentidadeSelecionada: this.logoIdentidadeSelecionada,
+      logoIdentidadeArquivoNome: this.logoIdentidadeArquivoNome,
+      logoIdentidadeArquivoTamanho: this.logoIdentidadeArquivoTamanho,
+      logoIdentidadeErro: this.logoIdentidadeErro,
+      removerLogoIdentidade: this.removerLogoIdentidade,
+      faviconPreviewUrl: this.faviconPreviewUrl,
+      faviconSelecionado: this.faviconSelecionado,
+      faviconArquivoNome: this.faviconArquivoNome,
+      faviconArquivoTamanho: this.faviconArquivoTamanho,
+      faviconErro: this.faviconErro,
+      removerFaviconIdentidade: this.removerFaviconIdentidade,
+    };
+  }
+
+  private aplicarIdentidadeValues(values: IdentidadeSnapshot): void {
+    this.imagemOriginal = values.imagemOriginal;
+    this.imagemPreview = values.imagemPreview;
+    this.logoIdentidadeSelecionada = values.logoIdentidadeSelecionada;
+    this.logoIdentidadeArquivoNome = values.logoIdentidadeArquivoNome;
+    this.logoIdentidadeArquivoTamanho = values.logoIdentidadeArquivoTamanho;
+    this.logoIdentidadeErro = values.logoIdentidadeErro;
+    this.removerLogoIdentidade = values.removerLogoIdentidade;
+    this.faviconPreviewUrl = values.faviconPreviewUrl;
+    this.faviconSelecionado = values.faviconSelecionado;
+    this.faviconArquivoNome = values.faviconArquivoNome;
+    this.faviconArquivoTamanho = values.faviconArquivoTamanho;
+    this.faviconErro = values.faviconErro;
+    this.removerFaviconIdentidade = values.removerFaviconIdentidade;
   }
 
   private snapshotDiferente(snapshot: FormSnapshot | null, values: FormSnapshot): boolean {

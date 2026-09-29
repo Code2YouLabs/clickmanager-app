@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormBuilder, FormGroup, FormControl, ReactiveFormsModule } from '@angular/forms';
 import { InputTextoRestritoComponent } from '../inputs/input-texto/input-texto-restrito.component';
 import { SectionCardComponent } from '../section-card/section-card.component';
@@ -19,15 +19,16 @@ import { EnderecoViaCep } from 'src/app/models/endereco/endereco.viacep.model';
   ]
 })
 export class EnderecoFormComponent implements OnInit {
+    @Input() enderecoFormGroup?: FormGroup;
     @Output() formReady = new EventEmitter<FormGroup>();
-    enderecoForm!: FormGroup; 
+    enderecoForm!: FormGroup;
 
   constructor(
     private fb: FormBuilder
   ) {}
 
   ngOnInit(): void {
-    this.enderecoForm = this.fb.group({
+    this.enderecoForm = this.enderecoFormGroup ?? this.fb.group({
       cep: [''],
       logradouro: [''],
       numero: [''],

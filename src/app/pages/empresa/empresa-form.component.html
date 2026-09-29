@@ -201,26 +201,32 @@
 </ng-container>
 
 <ng-template #modoPadrao>
-  <mat-card class="cardWithShadow">
-    <app-card-header titulo="Dados da Empresa" [mostrarDivisor]="true">
-    </app-card-header>
-
-    <mat-card-content>
+  <app-page-card
+    titulo="Dados da empresa"
+    subtitulo="Mantenha dados cadastrais, identidade pública e canais digitais atualizados."
+    [mostrarDivisor]="true"
+    [formState]="pageFormState"
+    [footerActions]="footerActions"
+    [saving]="savingAtual"
+    [savingText]="savingTextAtual"
+    [actionsDisabled]="actionsDisabledAtual"
+    (footerAction)="onFooterAction($event)">
       <mat-tab-group mat-stretch-tabs="false" animationDuration="0ms" dynamicHeight [preserveContent]="true" [(selectedIndex)]="abaSelecionada">
         <mat-tab label="Empresa">
-          <form [formGroup]="form" (ngSubmit)="salvarEmpresa()">
+          <form id="empresa-dados-form" class="empresa-tab-panel" [formGroup]="form" (ngSubmit)="salvarEmpresa()">
             <div class="empresa-config-state" *ngIf="carregandoEmpresa">
               <mat-spinner diameter="32"></mat-spinner>
               <span>Carregando dados da empresa...</span>
             </div>
 
-            <ng-container *ngIf="!carregandoEmpresa">
-              <mat-card class="cardWithShadow m-t-24 m-b-16">
-                <mat-card-content>
-                  <mat-card-title class="f-s-16 f-w-600 m-b-16">
-                    Dados básicos
-                  </mat-card-title>
+            <div class="empresa-config-state empresa-config-state--error" *ngIf="!carregandoEmpresa && erroEmpresa" role="alert">
+              <mat-icon>error_outline</mat-icon>
+              <span>{{ erroEmpresa }}</span>
+              <button mat-stroked-button type="button" (click)="carregarEmpresa()">Tentar novamente</button>
+            </div>
 
+            <ng-container *ngIf="!carregandoEmpresa && !erroEmpresa">
+              <app-section-card title="Dados da empresa">
                   <div class="row g-3">
                     <div class="col-md-6">
                       <app-input-texto-restrito class="m-b-16" [control]="nomeControl" label="Nome da Empresa"
@@ -237,17 +243,7 @@
                         label="Inscrição Estadual" placeholder="Informe a inscrição estadual"
                         [maxlength]="60"></app-input-texto-restrito>
                     </div>
-                  </div>
-                </mat-card-content>
-              </mat-card>
 
-              <mat-card class="cardWithShadow m-b-16">
-                <mat-card-content>
-                  <mat-card-title class="f-s-16 f-w-600 m-b-16">
-                    Contato
-                  </mat-card-title>
-
-                  <div class="row g-3">
                     <div class="col-md-6">
                       <app-input-telefone class="m-b-16" [control]="telefoneControl" label="Telefone"
                         placeholder="(00) 00000-0000"></app-input-telefone>
@@ -257,107 +253,37 @@
                       <app-input-email class="m-b-16" [control]="emailControl" label="E-mail"
                         placeholder="contato@suaempresa.com"></app-input-email>
                     </div>
-                  </div>
-                </mat-card-content>
-              </mat-card>
 
-              <mat-card class="cardWithShadow m-b-16">
-                <mat-card-content>
-                  <mat-card-title class="f-s-16 f-w-600 m-b-16">
-                    Atendimento
-                  </mat-card-title>
-
-                  <div class="row g-3">
                     <div class="col-md-6">
                       <app-input-texto-restrito class="m-b-16" [control]="horarioControl"
                         label="Horário de Funcionamento" placeholder="Ex.: Seg a Sex, 08h às 18h"
                         [maxlength]="120"></app-input-texto-restrito>
                     </div>
                   </div>
-                </mat-card-content>
-              </mat-card>
+              </app-section-card>
 
-              <mat-card class="cardWithShadow m-b-16">
-                <mat-card-content>
-                  <mat-card-title class="f-s-16 f-w-600 m-b-16">
-                    Endereço
-                  </mat-card-title>
-
-                  <div formGroupName="enderecoRequest" class="row g-3">
-                    <div class="col-md-4">
-                      <app-input-cep class="m-b-16" [control]="cepControl" label="CEP"
-                        (enderecoEncontrado)="preencherEnderecoViaCep($event)">
-                      </app-input-cep>
-                    </div>
-
-                    <div class="col-md-6">
-                      <app-input-texto-restrito class="m-b-16" [control]="logradouroControl" label="Logradouro"
-                        placeholder="Rua, avenida..." [maxlength]="200">
-                      </app-input-texto-restrito>
-                    </div>
-
-                    <div class="col-md-2">
-                      <app-input-texto-restrito class="m-b-16" [control]="numeroControl" label="Número"
-                        placeholder="Nº" [maxlength]="10">
-                      </app-input-texto-restrito>
-                    </div>
-
-                    <div class="col-md-6">
-                      <app-input-texto-restrito class="m-b-16" [control]="complementoControl"
-                        label="Complemento" placeholder="Sala, bloco..." [maxlength]="120">
-                      </app-input-texto-restrito>
-                    </div>
-
-                    <div class="col-md-6">
-                      <app-input-texto-restrito class="m-b-16" [control]="bairroControl" label="Bairro"
-                        placeholder="Informe o bairro" [maxlength]="120">
-                      </app-input-texto-restrito>
-                    </div>
-
-                    <div class="col-md-6">
-                      <app-input-texto-restrito class="m-b-16" [control]="cidadeControl" label="Cidade"
-                        placeholder="Informe a cidade" [maxlength]="120">
-                      </app-input-texto-restrito>
-                    </div>
-
-                    <div class="col-md-2">
-                      <app-input-texto-restrito class="m-b-16" [control]="estadoControl" label="Estado"
-                        placeholder="UF" [maxlength]="2">
-                      </app-input-texto-restrito>
-                    </div>
-                  </div>
-                </mat-card-content>
-              </mat-card>
-
-              <div class="m-t-24 d-flex gap-2 flex-wrap empresa-form-actions">
-                <button mat-flat-button class="bg-error text-white" type="button" (click)="cancelarEmpresa()" [disabled]="salvandoEmpresa || !empresaDirty">
-                  Cancelar
-                </button>
-
-                <button mat-flat-button color="primary" type="submit" [disabled]="!podeSalvarEmpresa">
-                  {{ salvandoEmpresa ? 'Salvando...' : 'Salvar' }}
-                </button>
-              </div>
+              <app-endereco-form [enderecoFormGroup]="enderecoGroup"></app-endereco-form>
             </ng-container>
           </form>
         </mat-tab>
 
         <mat-tab label="Identidade Pública">
-          <div class="empresa-tab-content">
+          <div class="empresa-tab-panel">
             <div class="empresa-config-state" *ngIf="carregandoIdentidade">
               <mat-spinner diameter="32"></mat-spinner>
               <span>Carregando identidade pública...</span>
             </div>
 
-            <ng-container *ngIf="!carregandoIdentidade">
-              <mat-card class="cardWithShadow m-t-24 m-b-16">
-                <mat-card-content>
-                  <mat-card-title class="f-s-16 f-w-600 m-b-16">
-                    Identidade Pública
-                  </mat-card-title>
-                  <mat-card-subtitle class="f-s-14 m-b-16">
-                    Defina como sua empresa é apresentada nos recursos públicos do ClickManager.
-                  </mat-card-subtitle>
+            <div class="empresa-config-state empresa-config-state--error" *ngIf="!carregandoIdentidade && erroIdentidade" role="alert">
+              <mat-icon>error_outline</mat-icon>
+              <span>{{ erroIdentidade }}</span>
+              <button mat-stroked-button type="button" (click)="carregarIdentidadePublica()">Tentar novamente</button>
+            </div>
+
+            <ng-container *ngIf="!carregandoIdentidade && !erroIdentidade">
+              <app-section-card
+                title="Identidade Pública"
+                subtitle="Defina como sua empresa é apresentada nos recursos públicos do ClickManager.">
 
                   <div class="row g-3">
                     <div class="col-md-6">
@@ -380,14 +306,9 @@
                       </div>
                     </div>
                   </div>
-                </mat-card-content>
-              </mat-card>
+              </app-section-card>
 
-              <mat-card class="cardWithShadow m-b-16">
-                <mat-card-content>
-                  <mat-card-title class="f-s-16 f-w-600 m-b-16">
-                    Mídia pública
-                  </mat-card-title>
+              <app-section-card title="Mídia pública">
 
                   <div class="row g-3">
                     <div class="col-md-6">
@@ -446,38 +367,28 @@
                       </div>
                     </div>
                   </div>
-                </mat-card-content>
-              </mat-card>
-
-              <div class="m-t-24 d-flex gap-2 flex-wrap empresa-form-actions">
-                <button mat-flat-button class="bg-error text-white" type="button" (click)="cancelarIdentidadePublica()" [disabled]="salvandoIdentidade || !identidadeDirty">
-                  Cancelar
-                </button>
-
-                <button mat-flat-button color="primary" type="button" (click)="salvarIdentidadePublica()" [disabled]="!podeSalvarIdentidade">
-                  {{ salvandoIdentidade ? 'Salvando...' : 'Salvar' }}
-                </button>
-              </div>
+              </app-section-card>
             </ng-container>
           </div>
         </mat-tab>
 
         <mat-tab label="Redes Sociais">
-          <form [formGroup]="form" (ngSubmit)="salvarRedes()">
+          <form id="empresa-redes-form" class="empresa-tab-panel" [formGroup]="form" (ngSubmit)="salvarRedes()">
             <div class="empresa-config-state" *ngIf="carregandoEmpresa">
               <mat-spinner diameter="32"></mat-spinner>
               <span>Carregando redes sociais...</span>
             </div>
 
-            <ng-container *ngIf="!carregandoEmpresa">
-              <mat-card class="cardWithShadow m-t-24 m-b-16">
-                <mat-card-content>
-                  <mat-card-title class="f-s-16 f-w-600 m-b-16">
-                    Redes Sociais
-                  </mat-card-title>
-                  <mat-card-subtitle class="f-s-14 m-b-16">
-                    Ajuste os links públicos usados no site, no ClickLink e nos materiais da empresa.
-                  </mat-card-subtitle>
+            <div class="empresa-config-state empresa-config-state--error" *ngIf="!carregandoEmpresa && erroEmpresa" role="alert">
+              <mat-icon>error_outline</mat-icon>
+              <span>{{ erroEmpresa }}</span>
+              <button mat-stroked-button type="button" (click)="carregarEmpresa()">Tentar novamente</button>
+            </div>
+
+            <ng-container *ngIf="!carregandoEmpresa && !erroEmpresa">
+              <app-section-card
+                title="Redes Sociais"
+                subtitle="Ajuste os links públicos usados no site, no ClickLink e nos materiais da empresa.">
 
                   <div class="row g-3">
                     <div class="col-md-6">
@@ -504,22 +415,10 @@
                         [maxlength]="255"></app-input-texto-restrito>
                     </div>
                   </div>
-                </mat-card-content>
-              </mat-card>
-
-              <div class="m-t-24 d-flex gap-2 flex-wrap empresa-form-actions">
-                <button mat-flat-button class="bg-error text-white" type="button" (click)="cancelarRedes()" [disabled]="salvandoRedes || !redesDirty">
-                  Cancelar
-                </button>
-
-                <button mat-flat-button color="primary" type="submit" [disabled]="!podeSalvarRedes">
-                  {{ salvandoRedes ? 'Salvando...' : 'Salvar' }}
-                </button>
-              </div>
+              </app-section-card>
             </ng-container>
           </form>
         </mat-tab>
       </mat-tab-group>
-    </mat-card-content>
-  </mat-card>
+  </app-page-card>
 </ng-template>

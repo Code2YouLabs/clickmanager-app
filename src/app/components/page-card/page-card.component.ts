@@ -53,7 +53,7 @@ export class PageCardComponent {
 
   actionDisabled(action: ResolvedPageCardAction): boolean {
     return this.saving || this.actionsDisabled || !!action.disabled ||
-      (action.intent === 'cancel' && !this.formState?.ready);
+      (action.intent === 'cancel' && !this.formState?.canReset);
   }
 
   onFooterAction(action: ResolvedPageCardAction): void {
