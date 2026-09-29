@@ -957,6 +957,7 @@ export class FullComponent implements OnInit, OnDestroy {
       configuracao,
       (modulo) => this.featureFlagService.isEnabled(modulo),
       (permissao) => this.authService.temPermissao(permissao),
+      this.tipoEmpresaAtual,
     );
     this.quicklinks = (configuracao?.atalhos || [])
       .filter((atalho) => atalho.ativo)

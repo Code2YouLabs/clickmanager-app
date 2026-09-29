@@ -17,6 +17,19 @@
   color: var(--mat-sys-on-surface-variant, #6b7280);
 }
 
+.links-state {
+  flex-direction: column;
+  text-align: center;
+}
+
+.links-state--error mat-icon {
+  color: #dc2626;
+}
+
+.links-state strong {
+  color: #0f172a;
+}
+
 .links-alert {
   padding: 12px 14px;
   border-radius: 8px;
@@ -69,7 +82,7 @@
 
 .quicklink-row {
   display: grid;
-  grid-template-columns: minmax(180px, 0.8fr) minmax(320px, 1.2fr) 112px 44px;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(320px, 1.2fr) 132px 44px;
   gap: 12px;
   align-items: start;
 }
@@ -78,17 +91,7 @@
   min-height: 56px;
   display: flex;
   align-items: center;
-}
-
-.links-actions {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.links-actions button {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  white-space: nowrap;
 }
 
 @media (max-width: 900px) {
