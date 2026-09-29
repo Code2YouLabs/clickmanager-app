@@ -1,79 +1,109 @@
-.page-bg {
-  background: #f5f7fa;
-  padding: 4px;
-}
-
-.card {
-  background: #fff;
-  border-radius: 14px;
-  border: 1px solid #e6ebf2;
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
-}
-
-.content-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.assinatura-page {
+  display: flex;
+  flex-direction: column;
   gap: 16px;
 }
 
-.card-heading {
+.assinatura-state {
+  min-height: 260px;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 28px 16px;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant);
+
+  mat-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 34px;
+  }
+
+  strong {
+    color: #101828;
+    font-size: 18px;
+  }
+
+  p {
+    margin: 0;
+    max-width: 460px;
+  }
+
+  &--error mat-icon {
+    color: #b91c1c;
+  }
 }
 
-.alert-card {
-  border: 1px solid #f2c27d;
-  background: #fff9ef;
-}
-
-.alert-card-content {
+.assinatura-alert {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
   flex-wrap: wrap;
+  padding: 14px 16px;
+  border: 1px solid #f2c27d;
+  border-radius: 8px;
+  background: #fff9ef;
 }
 
-.alert-info {
+.assinatura-alert__info {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+
+  mat-icon {
+    color: #b45309;
+  }
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  strong {
+    font-size: 16px;
+    line-height: 1.25;
+    color: #111827;
+  }
+
+  span {
+    font-size: 14px;
+    color: #4b5563;
+  }
 }
 
-.alert-icon {
-  color: #b45309;
-}
-
-.alert-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.alert-subtitle {
-  margin: 2px 0 0;
-  font-size: 14px;
-  color: #4b5563;
-}
-
-.alert-actions {
-  display: flex;
+.assinatura-alert__actions {
+  display: inline-flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
+
+  span {
+    background: #ffe9c8;
+    color: #8a4700;
+    border: 1px solid #f3c785;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 13px;
+    font-weight: 700;
+  }
 }
 
-.urgency-badge {
-  background: #ffe9c8;
-  color: #8a4700;
-  border: 1px solid #f3c785;
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 13px;
-  font-weight: 700;
+.assinatura-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.assinatura-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .assinatura-status-strip {
@@ -83,7 +113,7 @@
   margin-bottom: 14px;
   padding: 10px 12px;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: 8px;
   background: #f8fafc;
 }
 
@@ -92,33 +122,48 @@
   min-width: 220px;
 }
 
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.kpi-card {
-  border: 1px solid #e5eaf1;
-  border-radius: 12px;
-  background: #fbfcfe;
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.kpi-label {
+.assinatura-status-chip {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 26px;
+  padding: 4px 10px;
+  border-radius: 999px;
   font-size: 12px;
-  color: #64748b;
-  font-weight: 600;
+  line-height: 1.2;
+  font-weight: 800;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
 
-.kpi-value {
-  font-size: 18px;
-  line-height: 1.2;
-  font-weight: 700;
-  color: #0f172a;
+.status-ok,
+.status-success {
+  background: #e8f7ee;
+  color: #1f7a3f;
+}
+
+.status-trial {
+  background: #e8f0ff;
+  color: #1d4ed8;
+}
+
+.status-alerta,
+.status-warning {
+  background: #fff4e5;
+  color: #b45309;
+}
+
+.status-bloqueado,
+.status-error {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.status-neutro,
+.status-neutral {
+  background: #eef2f7;
+  color: #334155;
 }
 
 .assinatura-meta {
@@ -131,6 +176,7 @@
 .assinatura-meta .meta-row {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .assinatura-meta dt {
@@ -144,6 +190,7 @@
   margin: 0;
   font-size: 14px;
   color: #1f2d3d;
+  overflow-wrap: anywhere;
 }
 
 .feature-list {
@@ -156,21 +203,21 @@
   align-items: flex-start;
   gap: 8px;
   padding: 8px 10px;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #f8fafc;
   font-size: 14px;
-}
 
-.feature-item mat-icon {
-  color: #3b82f6;
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-  margin-top: 1px;
-}
+  mat-icon {
+    color: #3b82f6;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+  }
 
-.feature-item.feature-limit {
-  background: #f1f5f9;
+  &.feature-limit {
+    background: #f1f5f9;
+  }
 }
 
 .empty-state {
@@ -179,68 +226,97 @@
   gap: 8px;
   padding: 10px;
   background: #f8fafc;
-  border-radius: 10px;
+  border-radius: 8px;
   color: #64748b;
   font-size: 14px;
 }
 
-.table-responsive {
-  overflow-x: auto;
+.assinatura-payment-status {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+
+  small {
+    color: #8a4700;
+    font-size: 12px;
+    font-weight: 700;
+  }
 }
 
-.table-row-warning {
-  background: #fff9e8;
-}
+.assinatura-payment-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #e5eaf1;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
 
-.status-chip {
-  text-transform: uppercase;
-  font-weight: 700;
-  letter-spacing: 0.2px;
-}
+  &--pending {
+    border-color: #f3c785;
+    background: #fffaf0;
+  }
 
-mat-chip.status-ok,
-mat-chip.status-success {
-  background: #e8f7ee;
-  color: #1f7a3f;
-}
+  > div:first-child {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+  }
 
-mat-chip.status-trial {
-  background: #e8f0ff;
-  color: #1d4ed8;
-}
+  strong {
+    color: #111827;
+  }
 
-mat-chip.status-alerta,
-mat-chip.status-warning {
-  background: #fff4e5;
-  color: #b45309;
-}
+  span {
+    color: #64748b;
+  }
 
-mat-chip.status-bloqueado,
-mat-chip.status-error {
-  background: #fee2e2;
-  color: #b91c1c;
-}
+  dl {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+  }
 
-mat-chip.status-neutro,
-mat-chip.status-neutral {
-  background: #eef2f7;
-  color: #334155;
+  dt {
+    font-size: 12px;
+    font-weight: 700;
+    color: #64748b;
+  }
+
+  dd {
+    margin: 0;
+    color: #1f2d3d;
+    overflow-wrap: anywhere;
+  }
 }
 
 @media (max-width: 991px) {
-  .content-grid {
+  .assinatura-overview {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 768px) {
-  .assinatura-status-strip,
-  .alert-card-content {
+  .assinatura-alert,
+  .assinatura-status-strip {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .kpi-grid {
+  .assinatura-alert__actions {
+    align-items: stretch;
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .assinatura-alert__actions button {
+    width: 100%;
+  }
+
+  .assinatura-metrics {
     grid-template-columns: 1fr;
   }
 }

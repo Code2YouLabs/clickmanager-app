@@ -1,19 +1,23 @@
 import { CommonModule, DatePipe, CurrencyPipe } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
-import { MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ToastrService } from 'ngx-toastr';
-import { forkJoin } from 'rxjs';
+import { distinctUntilChanged, filter, forkJoin } from 'rxjs';
 import { BillingService } from '../services/billing.service';
 import { BillingStateService } from '../services/billing-state.service';
 import { AuthService } from 'src/app/services/auth.service';
 import { Usuario } from 'src/app/models/usuario/usuario.model';
 import { BillingAccessResponse } from 'src/app/models/billing-access.model';
+import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
+import { MetricCardComponent, MetricCardAccent } from 'src/app/components/metric-card/metric-card.component';
+import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
+import { DataTableCellDirective } from 'src/app/components/data-table/data-table-cell.directive';
+import { DataTableItemDirective } from 'src/app/components/data-table/data-table-item.directive';
+import { DataTableColumn, DataTableEmptyState } from 'src/app/components/data-table/data-table.models';
 
 interface Pagamento {
   id: number;
@@ -30,28 +34,46 @@ interface Pagamento {
   standalone: true,
   imports: [
     CommonModule,
-    MatCardModule,
-    MatTableModule,
     MatIconModule,
-    MatChipsModule,
     MatButtonModule,
     MatProgressSpinnerModule,
     DatePipe,
-    CurrencyPipe
+    CurrencyPipe,
+    PageCardComponent,
+    SectionCardComponent,
+    MetricCardComponent,
+    DataTableComponent,
+    DataTableCellDirective,
+    DataTableItemDirective,
   ],
   templateUrl: './minha-assinatura.component.html',
   styleUrls: ['./minha-assinatura.component.scss']
 })
 export class MinhaAssinaturaComponent implements OnInit {
   loading = true;
+  error: string | null = null;
   resumo: any = null;
   billingAccess: BillingAccessResponse | null = null;
   pagamentos: Pagamento[] = [];
   usuario?: Usuario | null;
   acessoNegado = false;
   resumoCarregado = false;
+  private carregandoResumo = false;
 
-  displayedColumns = ['valor', 'forma', 'criado', 'confirmado', 'status', 'referencia', 'link'];
+  readonly pagamentoColumns: DataTableColumn<Pagamento>[] = [
+    { key: 'valor', label: 'Valor', width: '128px' },
+    { key: 'forma', label: 'Forma', width: '140px' },
+    { key: 'criado', label: 'Criado', width: '120px' },
+    { key: 'confirmado', label: 'Confirmado', width: '130px' },
+    { key: 'status', label: 'Status', width: '170px' },
+    { key: 'referencia', label: 'Referência' },
+    { key: 'link', label: 'Link', width: '160px' },
+  ];
+
+  readonly historicoEmptyState: DataTableEmptyState = {
+    title: 'Nenhum pagamento encontrado.',
+    description: 'As cobranças geradas para esta assinatura aparecerão aqui.',
+  };
 
   constructor(
     private billingService: BillingService,
@@ -62,12 +84,16 @@ export class MinhaAssinaturaComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.authService.usuario$.subscribe(u => {
+    this.authService.usuario$.pipe(
+      filter((u): u is Usuario => !!u),
+      distinctUntilChanged((a, b) => a.id === b.id && a.proprietario === b.proprietario),
+    ).subscribe(u => {
       this.usuario = u;
       this.acessoNegado = !u?.proprietario;
 
        if (this.acessoNegado) {
          this.loading = false;
+         this.error = null;
          return;
        }
 
@@ -79,7 +105,10 @@ export class MinhaAssinaturaComponent implements OnInit {
   }
 
   carregarResumo(): void {
+    if (this.carregandoResumo || this.acessoNegado) return;
+    this.carregandoResumo = true;
     this.loading = true;
+    this.error = null;
     forkJoin({
       resumo: this.billingService.resumoAssinatura(),
       access: this.billingService.obterStatus()
@@ -90,11 +119,14 @@ export class MinhaAssinaturaComponent implements OnInit {
         this.resumo = resumo;
         this.pagamentos = this.ordenarPagamentos(resumo?.pagamentos || []);
         this.loading = false;
+        this.carregandoResumo = false;
       },
       error: () => {
         this.toastr.error('Não foi possível carregar a assinatura.');
+        this.error = 'Não foi possível carregar a assinatura.';
         this.resumoCarregado = false;
         this.loading = false;
+        this.carregandoResumo = false;
       }
     });
   }
@@ -110,8 +142,12 @@ export class MinhaAssinaturaComponent implements OnInit {
 
   abrirLink(url?: string): void {
     if (url) {
-      window.open(url, '_blank');
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
+  }
+
+  podeAbrirCobranca(pagamento: Pagamento): boolean {
+    return !!pagamento.invoiceUrl && this.statusPendente(pagamento.status);
   }
 
   statusPendente(status?: string): boolean {
@@ -139,6 +175,10 @@ export class MinhaAssinaturaComponent implements OnInit {
 
   isPendingRow(p: Pagamento): boolean {
     return this.statusPendente(p.status);
+  }
+
+  pagamentoRowClass(p: Pagamento): string {
+    return this.isPendingRow(p) ? 'assinatura-payment-status assinatura-payment-status--pending' : 'assinatura-payment-status';
   }
 
   get beneficios(): string[] {
@@ -180,6 +220,58 @@ export class MinhaAssinaturaComponent implements OnInit {
 
   get ctaPlanoLabel(): string {
     return this.emTrial ? 'Escolher plano' : 'Trocar plano';
+  }
+
+  get pageHeaderActionLabel(): string | undefined {
+    return this.podeTrocarPlano && !this.acessoNegado ? this.ctaPlanoLabel : undefined;
+  }
+
+  get metricas(): Array<{ label: string; value: string; detail: string; icon: string; accent: MetricCardAccent }> {
+    return [
+      {
+        label: 'Status',
+        value: this.resumo?.status || '-',
+        detail: this.situacaoAssinatura,
+        icon: this.statusAssinatura.includes('TRIAL') ? 'clock' : 'circle-check',
+        accent: this.statusAssinatura === 'INADIMPLENTE' ? 'warning' : (this.statusAssinatura === 'ATIVA' ? 'success' : 'primary'),
+      },
+      {
+        label: 'Próxima cobrança',
+        value: this.resumo?.proximaCobrancaEm ? this.formatarData(this.resumo.proximaCobrancaEm) : '—',
+        detail: this.dueLabel || 'Sem aviso de vencimento',
+        icon: 'calendar-dollar',
+        accent: this.mostrarAlertaCobranca ? 'warning' : 'neutral',
+      },
+      {
+        label: 'Valor',
+        value: this.formatarMoeda(this.resumo?.valor),
+        detail: this.resumo?.periodicidade || 'Periodicidade não informada',
+        icon: 'cash',
+        accent: 'primary',
+      },
+      {
+        label: 'Cliente desde',
+        value: this.resumo?.clienteDesde ? this.formatarData(this.resumo.clienteDesde) : '—',
+        detail: this.resumo?.emailCobranca || 'E-mail de cobrança não informado',
+        icon: 'user-check',
+        accent: 'neutral',
+      },
+    ];
+  }
+
+  formatarData(value?: string | null): string {
+    if (!value) return '—';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '—';
+    return new Intl.DateTimeFormat('pt-BR').format(date);
+  }
+
+  formatarMoeda(value: number | string | null | undefined): string {
+    const amount = typeof value === 'number' ? value : Number(value ?? 0);
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: this.resumo?.moeda || 'BRL',
+    }).format(Number.isFinite(amount) ? amount : 0);
   }
 
   get mostrarAlertaCobranca(): boolean {
