@@ -1,8 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
+import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
+import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
+import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
 import { MaterialModule } from 'src/app/material.module';
 import {
   ChamadoSuporteCategoria,
@@ -15,7 +18,15 @@ import { SuporteService } from '../services/suporte.service';
 @Component({
   selector: 'app-chamado-suporte-dialog',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MaterialModule],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatDialogModule,
+    MaterialModule,
+    InputTextoRestritoComponent,
+    InputOptionsComponent,
+    InputTextareaComponent
+  ],
   templateUrl: './chamado-suporte-dialog.component.html',
   styleUrl: './chamado-suporte-dialog.component.scss'
 })
@@ -84,5 +95,21 @@ export class ChamadoSuporteDialogComponent {
         this.toastr.error(err?.userMessage || 'Não foi possível abrir o chamado.');
       }
     });
+  }
+
+  get assuntoControl(): FormControl<string | null> {
+    return this.form.controls.assunto;
+  }
+
+  get categoriaControl(): FormControl<ChamadoSuporteCategoria | null> {
+    return this.form.controls.categoria;
+  }
+
+  get prioridadeControl(): FormControl<ChamadoSuportePrioridade | null> {
+    return this.form.controls.prioridade;
+  }
+
+  get mensagemControl(): FormControl<string | null> {
+    return this.form.controls.mensagem;
   }
 }
