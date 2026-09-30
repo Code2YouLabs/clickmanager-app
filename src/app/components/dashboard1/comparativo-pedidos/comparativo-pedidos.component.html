@@ -1,5 +1,5 @@
-<mat-card class="cardWithShadow dashboard-chart-card">
-  <mat-card-content class="dashboard-chart-card__content">
+<div class="dashboard-chart-card">
+  <div class="dashboard-chart-card__content">
     <div class="dashboard-chart-card__header">
       <div>
         <span class="dashboard-chart-card__eyebrow">Tendência</span>
@@ -81,7 +81,22 @@
       </div>
     </div>
 
-    <div class="dashboard-chart-card__canvas" [class.dashboard-chart-card__canvas--loading]="loading">
+    @if (erro) {
+      <div class="dashboard-chart-card__feedback" role="alert">
+        <span>{{ erro }}</span>
+        <button mat-button type="button" (click)="carregarDoBack()">Tentar novamente</button>
+      </div>
+    } @else if (loading) {
+      <div class="dashboard-chart-card__feedback dashboard-chart-card__feedback--neutral" role="status">
+        Carregando comparativo...
+      </div>
+    } @else if (refreshing) {
+      <div class="dashboard-chart-card__feedback dashboard-chart-card__feedback--neutral" role="status">
+        Atualizando comparativo...
+      </div>
+    }
+
+    <div class="dashboard-chart-card__canvas" [class.dashboard-chart-card__canvas--loading]="loading || refreshing">
       <apx-chart
         #chart
         [series]="revenueSeries"
@@ -101,8 +116,8 @@
         Ver gráfico →
       </button>
     </div>
-  </mat-card-content>
-</mat-card>
+  </div>
+</div>
 
 <mat-menu #mesAMenu="matMenu">
   @for(month of meses; track month.value) {

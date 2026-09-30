@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, ChangeDetectorRef, Component, HostListener, NgZone, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, EventEmitter, HostListener, Input, NgZone, OnChanges, OnDestroy, OnInit, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { MaterialModule } from 'src/app/material.module';
 import { TablerIconsModule } from 'angular-tabler-icons';
 import {
@@ -16,7 +16,7 @@ import {
   NgApexchartsModule,
 } from 'ng-apexcharts';
 import { DashboardComparativoResponse, DashboardService } from '../dashboard.service';
-import { firstValueFrom } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { Router } from '@angular/router';
 
 interface Mes {
@@ -45,9 +45,13 @@ type ComparativoChart = {
   templateUrl: './comparativo-pedidos.component.html',
   styleUrls: ['./comparativo-pedidos.component.scss'],
 })
-export class AppComparativoPedidosComponent implements OnInit, AfterViewInit {
+export class AppComparativoPedidosComponent implements OnInit, OnChanges, OnDestroy, AfterViewInit {
+  @Input() refreshToken = 0;
+  @Output() refreshState = new EventEmitter<{ id: 'comparativo'; refreshing: boolean }>();
   @ViewChild('chart') chart?: ChartComponent;
   private viewReady = false;
+  private requestId = 0;
+  private readonly subscriptions = new Subscription();
 
   meses: Mes[] = [
     { value: 0, viewValue: 'Jan' }, { value: 1, viewValue: 'Fev' }, { value: 2, viewValue: 'Mar' },
@@ -69,6 +73,8 @@ export class AppComparativoPedidosComponent implements OnInit, AfterViewInit {
   ano = new Date().getFullYear();
   modo: ModoComparativo = 'quantidade';
   loading = false;
+  refreshing = false;
+  erro: string | null = null;
 
   revenueSeries: ApexAxisChartSeries = [
     { name: 'Mês A', data: [], color: 'var(--mat-sys-primary)' },
@@ -123,8 +129,18 @@ export class AppComparativoPedidosComponent implements OnInit, AfterViewInit {
     private ngZone: NgZone
   ) {}
 
-  async ngOnInit(): Promise<void> {
-    await this.carregarDoBack();
+  ngOnInit(): void {
+    this.carregarDoBack();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['refreshToken'] && !changes['refreshToken'].firstChange) {
+      this.carregarDoBack();
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
   }
 
   ngAfterViewInit(): void {
@@ -137,24 +153,24 @@ export class AppComparativoPedidosComponent implements OnInit, AfterViewInit {
     this.agendarRefreshGrafico();
   }
 
-  async alterarMesA(value: number): Promise<void> {
+  alterarMesA(value: number): void {
     this.mesA = value;
-    await this.carregarDoBack();
+    this.carregarDoBack();
   }
 
-  async alterarMesB(value: number): Promise<void> {
+  alterarMesB(value: number): void {
     this.mesB = value;
-    await this.carregarDoBack();
+    this.carregarDoBack();
   }
 
-  async alterarAno(value: number): Promise<void> {
+  alterarAno(value: number): void {
     this.ano = value;
-    await this.carregarDoBack();
+    this.carregarDoBack();
   }
 
-  async alterarModo(value: ModoComparativo): Promise<void> {
+  alterarModo(value: ModoComparativo): void {
     this.modo = value;
-    await this.carregarDoBack();
+    this.carregarDoBack();
   }
 
   mesLabel(index: number): string {
@@ -288,13 +304,17 @@ export class AppComparativoPedidosComponent implements OnInit, AfterViewInit {
     });
   }
 
-  private async carregarDoBack(): Promise<void> {
-    this.loading = true;
+  carregarDoBack(): void {
+    const currentRequestId = ++this.requestId;
+    const hasData = this.revenueSeries.some((serie) => (serie.data as number[]).length > 0);
+    this.loading = !hasData;
+    this.refreshing = hasData;
+    this.erro = null;
+    this.refreshState.emit({ id: 'comparativo', refreshing: true });
 
-    try {
-      const resp: DashboardComparativoResponse = await firstValueFrom(
-        this.dashboardService.obterComparativoSimples(this.ano, this.mesA, this.mesB, this.modo)
-      );
+    const subscription = this.dashboardService.obterComparativoSimples(this.ano, this.mesA, this.mesB, this.modo).subscribe({
+      next: (resp: DashboardComparativoResponse) => {
+        if (currentRequestId !== this.requestId) return;
 
       const nomeA = resp.comparativo.mesA?.label ?? this.mesLabel(this.mesA);
       const nomeB = resp.comparativo.mesB?.label ?? this.mesLabel(this.mesB);
@@ -310,9 +330,25 @@ export class AppComparativoPedidosComponent implements OnInit, AfterViewInit {
       this.configurarEixoY(this.modo);
       this.aplicarFallbackY(serieA, serieB);
       this.agendarRefreshGrafico();
-    } finally {
-      this.loading = false;
-    }
+      },
+      error: () => {
+        if (currentRequestId !== this.requestId) return;
+        this.erro = hasData
+          ? 'Não foi possível atualizar o comparativo. Mantivemos os dados anteriores.'
+          : 'Não foi possível carregar o comparativo.';
+        this.loading = false;
+        this.refreshing = false;
+        this.refreshState.emit({ id: 'comparativo', refreshing: false });
+      },
+      complete: () => {
+        if (currentRequestId !== this.requestId) return;
+        this.loading = false;
+        this.refreshing = false;
+        this.refreshState.emit({ id: 'comparativo', refreshing: false });
+      },
+    });
+
+    this.subscriptions.add(subscription);
   }
 
   private configurarEixoY(modo: ModoComparativo): void {
