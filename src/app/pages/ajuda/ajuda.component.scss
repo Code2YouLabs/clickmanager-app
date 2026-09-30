@@ -1,345 +1,184 @@
-.ajuda-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 16px;
+:host {
+  display: block;
 }
 
-.ajuda-mobile-hero,
-.ajuda-mobile-featured {
-  display: none;
+.ajuda-content {
+  display: grid;
+  gap: 24px;
+  padding: 24px;
 }
 
-.ajuda-header {
+.ajuda-toolbar {
+  display: grid;
+  gap: 16px;
+}
+
+.ajuda-search {
+  max-width: 720px;
+}
+
+.quick-topics {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
   flex-wrap: wrap;
+  gap: 10px;
+}
+
+.quick-topics button {
+  min-height: 40px;
+}
+
+.quick-topics mat-icon {
+  margin-right: 6px;
+}
+
+.ajuda-accordion {
+  display: grid;
   gap: 12px;
-  margin-bottom: 16px;
 }
 
-.titulo {
-  margin: 0;
+.ajuda-panel {
+  border: 1px solid #e5ebf2;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06) !important;
+  overflow: hidden;
 }
 
-.subtitulo {
-  margin: 4px 0 0;
-  color: #4b5563;
-}
-
-.atalhos {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.atalhos button mat-icon {
-  margin-right: 4px;
-}
-
-.pesquisa {
-  min-width: 260px;
-  flex: 1 1 260px;
-}
-
-.secoes {
-  mat-expansion-panel {
-    margin-bottom: 6px;
-  }
+.ajuda-panel + .ajuda-panel {
+  margin-top: 0;
 }
 
 .secao-icon {
-  margin-right: 8px;
-  color: #1d4ed8;
-  font-size: 20px;
   width: 20px;
   height: 20px;
+  margin-right: 8px;
+  color: #2563eb;
+  font-size: 20px;
 }
 
 .conteudo {
-  padding: 8px 0 4px;
+  padding: 4px 0 8px;
 }
 
 .passos {
-  padding-left: 18px;
-  margin: 0 0 8px;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 22px;
 }
 
 .itens {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 8px 12px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.item {
+  min-width: 0;
 }
 
 .item h4 {
-  margin: 0 0 4px;
+  margin: 0 0 8px;
+  color: #111827;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .item ul {
-  padding-left: 16px;
+  display: grid;
+  gap: 8px;
   margin: 0;
+  padding-left: 18px;
 }
 
-.no-results {
-  margin-top: 8px;
-  color: #6b7280;
-  font-size: 13px;
+.passos li,
+.item li {
+  color: #374151;
+  line-height: 1.6;
+}
+
+.empty-state {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 40px 16px;
+  text-align: center;
+}
+
+.empty-state mat-icon {
+  width: 36px;
+  height: 36px;
+  color: #64748b;
+  font-size: 36px;
+}
+
+.empty-state h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.empty-state p {
+  max-width: 520px;
+  margin: 0;
+  color: #64748b;
+}
+
+.empty-state__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 6px;
 }
 
 @media (max-width: 768px) {
-  .ajuda-container {
+  .ajuda-content {
+    gap: 18px;
+    padding: 16px;
+  }
+
+  .ajuda-search {
     max-width: none;
-    padding: 8px 0 calc(120px + env(safe-area-inset-bottom));
   }
 
-  .ajuda-container--mobile .ajuda-header {
-    display: none;
-  }
-
-  .ajuda-mobile-hero,
-  .ajuda-mobile-featured {
-    display: block;
-  }
-
-  .ajuda-mobile-hero {
-    margin-bottom: 18px;
-    padding: 4px 0 0;
-  }
-
-  .ajuda-mobile-hero__title {
-    font-size: 1.55rem;
-    font-weight: 800;
-    line-height: 1.1;
-    color: #0f172a;
-  }
-
-  .ajuda-mobile-hero__subtitle {
-    margin-top: 6px;
-    color: #64748b;
-    font-size: 0.94rem;
-    line-height: 1.45;
-  }
-
-  .ajuda-mobile-search {
-    min-height: 52px;
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 10px;
-    margin-top: 14px;
-    padding: 0 14px;
-    border-radius: 18px;
-    border: 1px solid rgba(203, 213, 225, 0.8);
-    background: rgba(255, 255, 255, 0.98);
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
-  }
-
-  .ajuda-mobile-search mat-icon {
-    color: #64748b;
-  }
-
-  .ajuda-mobile-search input {
-    width: 100%;
-    border: 0;
-    outline: 0;
-    background: transparent;
-    color: #0f172a;
-    font-size: 0.95rem;
-  }
-
-  .ajuda-mobile-search input::placeholder {
-    color: #94a3b8;
-  }
-
-  .ajuda-mobile-search__clear {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border: 0;
-    background: transparent;
-    color: #64748b;
-    border-radius: 999px;
-  }
-
-  .ajuda-mobile-topics {
-    display: flex;
-    gap: 10px;
-    margin-top: 14px;
-    padding-bottom: 4px;
+  .quick-topics {
+    flex-wrap: nowrap;
+    margin-inline: -16px;
+    padding: 0 16px 4px;
     overflow-x: auto;
     scrollbar-width: none;
   }
 
-  .ajuda-mobile-topics::-webkit-scrollbar {
+  .quick-topics::-webkit-scrollbar {
     display: none;
   }
 
-  .ajuda-mobile-chip {
+  .quick-topics button {
     flex: 0 0 auto;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 38px;
-    padding: 0 14px;
-    border-radius: 999px;
-    border: 1px solid rgba(191, 219, 254, 0.95);
-    background: rgba(255, 255, 255, 0.98);
-    color: #1d4ed8;
-    font-size: 0.82rem;
-    font-weight: 700;
-    white-space: nowrap;
   }
 
-  .ajuda-mobile-chip mat-icon {
-    width: 18px;
-    height: 18px;
-    font-size: 18px;
+  .ajuda-panel .mat-expansion-panel-header {
+    min-height: 72px;
+    padding: 0 16px;
   }
 
-  .ajuda-mobile-chip--ghost {
-    border-color: rgba(203, 213, 225, 0.9);
-    color: #475569;
-  }
-
-  .ajuda-mobile-featured {
-    margin-bottom: 18px;
-    padding: 18px 18px 16px;
-    border-radius: 24px;
-    border: 1px solid rgba(191, 219, 254, 0.9);
-    background: rgba(255, 255, 255, 0.98);
-    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
-  }
-
-  .ajuda-mobile-featured__eyebrow {
-    margin-bottom: 10px;
-    color: #2563eb;
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-
-  .ajuda-mobile-featured__header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-  }
-
-  .ajuda-mobile-featured__header h3 {
-    margin: 0;
-    color: #0f172a;
-    font-size: 1.08rem;
-    font-weight: 800;
-    line-height: 1.25;
-  }
-
-  .ajuda-mobile-featured__header p {
-    margin: 6px 0 0;
-    color: #64748b;
-    font-size: 0.88rem;
-    line-height: 1.5;
-  }
-
-  .ajuda-mobile-featured__header mat-icon {
-    color: #2563eb;
-  }
-
-  .ajuda-mobile-featured__body {
-    margin-top: 14px;
-  }
-
-  .secoes .ajuda-panel--mobile {
-    margin-bottom: 12px;
-    border-radius: 22px !important;
-    border: 1px solid rgba(226, 232, 240, 0.92);
-    background: rgba(255, 255, 255, 0.98);
-    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.05);
-    overflow: hidden;
-  }
-
-  .secoes .ajuda-panel--mobile .mat-expansion-panel-header {
-    min-height: 76px;
-    padding: 0 18px;
-  }
-
-  .secoes .ajuda-panel--mobile .mat-expansion-panel-header.mat-expanded {
+  .ajuda-panel .mat-expansion-panel-header.mat-expanded {
     height: auto;
-    min-height: 76px;
+    min-height: 72px;
   }
 
-  .secoes .ajuda-panel--mobile .mat-content {
-    gap: 0;
-  }
-
-  .secoes .ajuda-panel--mobile .mat-expansion-panel-body {
-    padding: 0 18px 18px;
-  }
-
-  .secoes .ajuda-panel--mobile .mat-expansion-indicator::after {
-    color: #64748b;
-  }
-
-  .secoes .ajuda-panel--mobile .mat-expansion-panel-header-title {
-    display: flex;
+  .ajuda-panel .mat-expansion-panel-header-title {
+    min-width: 0;
     align-items: center;
-    gap: 10px;
-    color: #0f172a;
-    font-size: 0.98rem;
-    font-weight: 800;
-    line-height: 1.35;
   }
 
-  .secao-icon {
-    color: #2563eb;
+  .ajuda-panel .mat-expansion-panel-header-description {
+    display: none;
   }
 
-  .conteudo {
-    padding: 4px 0 0;
-  }
-
-  .passos,
-  .item ul {
-    padding-left: 18px;
-  }
-
-  .passos--mobile,
-  .passos,
-  .item ul {
-    display: grid;
-    gap: 10px;
-  }
-
-  .passos li,
-  .item ul li {
-    color: #334155;
-    font-size: 0.9rem;
-    line-height: 1.65;
-  }
-
-  .itens--mobile,
   .itens {
     grid-template-columns: minmax(0, 1fr);
-    gap: 14px;
-  }
-
-  .item {
-    padding-top: 2px;
-  }
-
-  .item h4 {
-    margin: 0 0 8px;
-    color: #0f172a;
-    font-size: 0.95rem;
-    font-weight: 800;
-    line-height: 1.4;
-  }
-
-  .no-results {
-    margin-top: 16px;
-    padding: 20px 12px;
-    text-align: center;
   }
 }
