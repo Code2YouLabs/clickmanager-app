@@ -14,6 +14,10 @@
 }
 
 .dashboard-feedback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   margin-bottom: 14px;
   padding: 12px 14px;
   border: 1px solid #fecaca;
@@ -22,6 +26,16 @@
   color: #991b1b;
   font-size: 13px;
   font-weight: 700;
+
+  button {
+    flex: 0 0 auto;
+  }
+}
+
+.dashboard-feedback--warning {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: #9a3412;
 }
 
 .dashboard-kpis {
@@ -35,10 +49,14 @@
   opacity: 0.72;
 }
 
-.dashboard-kpi-button {
+.dashboard-kpi-button,
+.dashboard-kpi-static {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.dashboard-kpi-button {
   padding: 0;
   border: 0;
   background: transparent;
@@ -50,6 +68,10 @@
     outline-offset: 3px;
     border-radius: 10px;
   }
+}
+
+.dashboard-kpi-static {
+  cursor: default;
 }
 
 .dashboard-main-grid {

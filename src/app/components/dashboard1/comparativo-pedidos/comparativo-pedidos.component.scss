@@ -165,6 +165,26 @@
   display: none;
 }
 
+.dashboard-chart-card__feedback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.dashboard-chart-card__feedback--neutral {
+  border-color: #dbeafe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
 .dashboard-chart-card__canvas--loading {
   opacity: 0.72;
 }
@@ -181,6 +201,7 @@
     grid-template-areas:
       "header filters"
       "summary summary"
+      "feedback feedback"
       "canvas canvas"
       "footer footer";
     gap: 14px 18px;
@@ -216,6 +237,10 @@
     grid-template-columns: repeat(2, minmax(0, 168px)) minmax(0, 1fr);
     gap: 10px;
     align-items: stretch;
+  }
+
+  .dashboard-chart-card__feedback {
+    grid-area: feedback;
   }
 
   .dashboard-chart-card__desktop-metric,
