@@ -1,160 +1,98 @@
-<div class="ajuda-container" [class.ajuda-container--mobile]="isMobileView">
-  @if (isMobileView) {
-  <section class="ajuda-mobile-hero">
-    <div class="ajuda-mobile-hero__title">Central de Ajuda</div>
-    <div class="ajuda-mobile-hero__subtitle">Encontre respostas rápidas e acesse os principais guias do sistema.</div>
+<app-page-card
+  titulo="Central de Ajuda"
+  subtitulo="Encontre respostas e guias para usar o ClickManager."
+  [mostrarDivisor]="true"
+  [contentPadding]="false">
+  <div page-header-actions>
+    <button mat-flat-button color="primary" type="button" [routerLink]="suporteRoute">
+      <mat-icon>support_agent</mat-icon>
+      Falar com o suporte
+    </button>
+  </div>
 
-    <div class="ajuda-mobile-search">
-      <mat-icon>search</mat-icon>
-      <input
-        type="search"
+  <div class="ajuda-content">
+    <section class="ajuda-toolbar" aria-label="Busca e atalhos da Central de Ajuda">
+      <app-input-pesquisa
+        class="ajuda-search"
         placeholder="Buscar assunto, tela ou funcionalidade..."
+        [showLabel]="false"
+        [compact]="true"
+        [trim]="true"
         [value]="filtro"
-        (input)="filtro = $any($event.target).value" />
-      <button *ngIf="filtro" type="button" class="ajuda-mobile-search__clear" (click)="filtro = ''" aria-label="Limpar busca">
-        <mat-icon>close</mat-icon>
-      </button>
-    </div>
+        [pesquisaControl]="pesquisaControl"
+        (valorAlterado)="onPesquisar($event)" />
 
-    <div class="ajuda-mobile-topics">
-      @for (topic of visibleQuickTopics; track topic.id) {
-      <button type="button" class="ajuda-mobile-chip" (click)="rolarPara(topic.id)">
-        <mat-icon>{{ topic.icon }}</mat-icon>
-        <span>{{ topic.label }}</span>
-      </button>
-      }
-      @if (hasHiddenQuickTopics || showAllQuickTopics) {
-      <button type="button" class="ajuda-mobile-chip ajuda-mobile-chip--ghost" (click)="toggleQuickTopics()">
-        <mat-icon>{{ showAllQuickTopics ? 'expand_less' : 'expand_more' }}</mat-icon>
-        <span>{{ showAllQuickTopics ? 'Ver menos' : 'Ver mais' }}</span>
-      </button>
-      }
-    </div>
-  </section>
-
-  @if (featuredSecao) {
-  <section class="ajuda-mobile-featured" [id]="featuredSecao.id">
-    <div class="ajuda-mobile-featured__eyebrow">Tópico em destaque</div>
-    <div class="ajuda-mobile-featured__header">
-      <div>
-        <h3>{{ featuredSecao.titulo }}</h3>
-        <p>{{ featuredSecao.descricao }}</p>
-      </div>
-      @if (featuredSecao.icon) {
-      <mat-icon>{{ featuredSecao.icon }}</mat-icon>
-      }
-    </div>
-
-    <div class="ajuda-mobile-featured__body">
-      @if (featuredSecao.passos?.length) {
-      <ol class="passos passos--mobile">
-        <li *ngFor="let passo of featuredSecao.passos">{{ passo }}</li>
-      </ol>
-      }
-
-      @if (featuredSecao.itens?.length) {
-      <div class="itens itens--mobile">
-        <div class="item" *ngFor="let item of featuredSecao.itens">
-          <h4>{{ item.titulo }}</h4>
-          <ul>
-            <li *ngFor="let det of item.detalhes">{{ det }}</li>
-          </ul>
+      @if (quickTopics.length) {
+        <div class="quick-topics" aria-label="Tópicos rápidos">
+          @for (topic of quickTopics; track topic.id) {
+            <button mat-stroked-button color="primary" type="button" (click)="abrirTopico(topic)">
+              <mat-icon>{{ topic.icon }}</mat-icon>
+              {{ topic.label }}
+            </button>
+          }
         </div>
-      </div>
       }
-    </div>
-  </section>
-  }
-  } @else {
-  <header class="ajuda-header">
-    <div>
-      <h2 class="titulo">Central de Ajuda</h2>
-      <p class="subtitulo">Passo a passo para usar o sistema. Use os atalhos ou abra as seções abaixo.</p>
-    </div>
-    <div class="atalhos">
-      <button mat-stroked-button color="primary" (click)="rolarPara('smartcalc')">
-        <mat-icon>calculate</mat-icon>
-        SmartCalc
-      </button>
-      <button mat-stroked-button color="primary" (click)="rolarPara('funcionarios')">
-        <mat-icon>badge</mat-icon>
-        Funcionários
-      </button>
-      <button mat-stroked-button color="primary" (click)="rolarPara('folha-pagamento')">
-        <mat-icon>payments</mat-icon>
-        Folha
-      </button>
-      <button mat-stroked-button color="primary" (click)="rolarPara('folha-configuracao')">
-        <mat-icon>tune</mat-icon>
-        Config. Folha
-      </button>
-      <button mat-stroked-button color="primary" (click)="rolarPara('notificacoes')">
-        <mat-icon>notifications</mat-icon>
-        Notificações
-      </button>
-      <button mat-stroked-button color="primary" (click)="rolarPara('status-pedido')">
-        <mat-icon>sync_alt</mat-icon>
-        Fluxo do Pedido
-      </button>
-      <button mat-stroked-button color="primary" (click)="rolarPara('pedidos')">
-        <mat-icon>assignment</mat-icon>
-        Pedidos
-      </button>
-      <button mat-stroked-button color="primary" (click)="rolarPara('catalogo')">
-        <mat-icon>inventory_2</mat-icon>
-        Catálogo
-      </button>
-      <button mat-stroked-button color="primary" (click)="rolarPara('acabamentos')">
-        <mat-icon>auto_awesome</mat-icon>
-        Acabamentos
-      </button>
-    </div>
-    <div class="pesquisa">
-      <mat-form-field appearance="outline" class="w-100">
-        <mat-label>Pesquisar</mat-label>
-        <input matInput type="text" placeholder="Ex: SmartCalc, pagamento, onboarding" (input)="filtro = $any($event.target).value" />
-        <button *ngIf="filtro" mat-icon-button matSuffix aria-label="Limpar" (click)="filtro = ''">
-          <mat-icon>close</mat-icon>
-        </button>
-      </mat-form-field>
-    </div>
-  </header>
-  }
+    </section>
 
-  <div class="secoes">
-    <mat-accordion multi>
-      <mat-expansion-panel
-        *ngFor="let secao of (isMobileView ? remainingSecoes : filteredSecoes)"
-        [id]="secao.id"
-        [expanded]="expandedId === secao.id"
-        class="ajuda-panel"
-        [class.ajuda-panel--mobile]="isMobileView">
-        <mat-expansion-panel-header>
-          <mat-panel-title>
-            <mat-icon class="secao-icon" *ngIf="secao.icon">{{ secao.icon }}</mat-icon>
-            {{ secao.titulo }}
-          </mat-panel-title>
-          <mat-panel-description *ngIf="!isMobileView">{{ secao.descricao }}</mat-panel-description>
-        </mat-expansion-panel-header>
+    <app-section-card title="Guias" subtitle="Abra um tópico para ver passos e orientações.">
+      @if (filteredSecoes.length) {
+        <mat-accordion multi class="ajuda-accordion">
+          @for (secao of filteredSecoes; track trackBySecao($index, secao)) {
+            <mat-expansion-panel
+              [id]="secao.id"
+              class="ajuda-panel"
+              [expanded]="expandedId === secao.id">
+              <mat-expansion-panel-header>
+                <mat-panel-title>
+                  @if (secao.icon) {
+                    <mat-icon class="secao-icon">{{ secao.icon }}</mat-icon>
+                  }
+                  <span>{{ secao.titulo }}</span>
+                </mat-panel-title>
+                <mat-panel-description>{{ secao.descricao }}</mat-panel-description>
+              </mat-expansion-panel-header>
 
-        <div class="conteudo">
-          <ol *ngIf="secao.passos?.length" class="passos">
-            <li *ngFor="let passo of secao.passos">{{ passo }}</li>
-          </ol>
+              <div class="conteudo">
+                @if (secao.passos?.length) {
+                  <ol class="passos">
+                    @for (passo of secao.passos; track passo) {
+                      <li>{{ passo }}</li>
+                    }
+                  </ol>
+                }
 
-          <div *ngIf="secao.itens?.length" class="itens">
-            <div class="item" *ngFor="let item of secao.itens">
-              <h4>{{ item.titulo }}</h4>
-              <ul>
-                <li *ngFor="let det of item.detalhes">{{ det }}</li>
-              </ul>
-            </div>
+                @if (secao.itens?.length) {
+                  <div class="itens">
+                    @for (item of secao.itens; track item.titulo) {
+                      <article class="item">
+                        <h4>{{ item.titulo }}</h4>
+                        <ul>
+                          @for (detalhe of item.detalhes; track detalhe) {
+                            <li>{{ detalhe }}</li>
+                          }
+                        </ul>
+                      </article>
+                    }
+                  </div>
+                }
+              </div>
+            </mat-expansion-panel>
+          }
+        </mat-accordion>
+      } @else {
+        <div class="empty-state" role="status">
+          <mat-icon>search_off</mat-icon>
+          <h3>Não encontramos ajuda para "{{ filtro }}"</h3>
+          <p>Revise o termo pesquisado ou fale com o suporte para receber orientação.</p>
+          <div class="empty-state__actions">
+            <button mat-stroked-button type="button" (click)="limparBusca()">Limpar busca</button>
+            <button mat-flat-button color="primary" type="button" [routerLink]="suporteRoute">
+              <mat-icon>support_agent</mat-icon>
+              Falar com o suporte
+            </button>
           </div>
         </div>
-      </mat-expansion-panel>
-    </mat-accordion>
-    <div *ngIf="!filteredSecoes.length && filtro" class="no-results">
-      Nenhum resultado para "{{ filtro }}".
-    </div>
+      }
+    </app-section-card>
   </div>
-</div>
+</app-page-card>
