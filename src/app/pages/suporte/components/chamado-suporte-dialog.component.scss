@@ -1,8 +1,4 @@
-.dialog-hint {
-  margin: 0 0 16px;
-  color: #64748b;
-  line-height: 1.45;
-}
+@use '../../../components/dialog/dialog-form-shell';
 
 .dialog-form {
   display: grid;

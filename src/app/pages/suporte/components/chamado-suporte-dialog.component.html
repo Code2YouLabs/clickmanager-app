@@ -1,48 +1,55 @@
-<h2 mat-dialog-title>Novo chamado</h2>
+<h2 mat-dialog-title class="dialog-head">
+  <span class="dialog-head__copy">
+    <strong>Novo chamado</strong>
+    <span>Envie sua dúvida ou problema para o suporte do sistema.</span>
+  </span>
+</h2>
 
-<mat-dialog-content>
-  <p class="dialog-hint">
-    Envie sua dúvida ou problema para o suporte do sistema. O chamado já será criado com a sua primeira mensagem.
-  </p>
-
-  <form [formGroup]="form" class="dialog-form">
-    <mat-form-field appearance="outline" class="w-100">
-      <mat-label>Assunto</mat-label>
-      <input matInput formControlName="assunto" maxlength="160" />
-      <mat-hint align="end">{{ form.controls.assunto.value?.length || 0 }}/160</mat-hint>
-      <mat-error *ngIf="form.controls.assunto.hasError('required')">Informe o assunto do chamado.</mat-error>
-    </mat-form-field>
+<mat-dialog-content class="dialog-content">
+  <form id="novo-chamado-form" [formGroup]="form" class="dialog-form" (ngSubmit)="salvar()">
+    <app-input-texto-restrito
+      label="Assunto"
+      placeholder="Ex.: Dúvida sobre meu pedido"
+      [maxlength]="160"
+      [control]="assuntoControl"
+      requiredError="Informe o assunto do chamado.">
+    </app-input-texto-restrito>
 
     <div class="grid-two">
-      <mat-form-field appearance="outline" class="w-100">
-        <mat-label>Categoria</mat-label>
-        <mat-select formControlName="categoria">
-          <mat-option *ngFor="let item of categorias" [value]="item.value">{{ item.label }}</mat-option>
-        </mat-select>
-      </mat-form-field>
+      <app-input-options
+        label="Categoria"
+        [control]="categoriaControl"
+        [options]="categorias"
+        labelKey="label"
+        valueKey="value"
+        [showNull]="false">
+      </app-input-options>
 
-      <mat-form-field appearance="outline" class="w-100">
-        <mat-label>Prioridade</mat-label>
-        <mat-select formControlName="prioridade">
-          <mat-option *ngFor="let item of prioridades" [value]="item.value">{{ item.label }}</mat-option>
-        </mat-select>
-      </mat-form-field>
+      <app-input-options
+        label="Prioridade"
+        [control]="prioridadeControl"
+        [options]="prioridades"
+        labelKey="label"
+        valueKey="value"
+        [showNull]="false">
+      </app-input-options>
     </div>
 
-    <mat-form-field appearance="outline" class="w-100">
-      <mat-label>Mensagem inicial</mat-label>
-      <textarea matInput formControlName="mensagem" rows="6" maxlength="3000"></textarea>
-      <mat-hint align="end">{{ form.controls.mensagem.value?.length || 0 }}/3000</mat-hint>
-      <mat-error *ngIf="form.controls.mensagem.hasError('required')">Descreva o que aconteceu.</mat-error>
-    </mat-form-field>
+    <app-input-textarea
+      label="Mensagem inicial"
+      placeholder="Descreva o que aconteceu"
+      [rows]="6"
+      [maxlength]="3000"
+      [control]="mensagemControl">
+    </app-input-textarea>
   </form>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end">
+<mat-dialog-actions align="end" class="dialog-actions">
   <button mat-stroked-button color="primary" type="button" (click)="cancelar()" [disabled]="salvando">
     Cancelar
   </button>
-  <button mat-flat-button color="primary" type="button" (click)="salvar()" [disabled]="salvando">
+  <button mat-flat-button color="primary" type="submit" form="novo-chamado-form" [disabled]="salvando">
     {{ salvando ? 'Abrindo...' : 'Abrir chamado' }}
   </button>
 </mat-dialog-actions>
