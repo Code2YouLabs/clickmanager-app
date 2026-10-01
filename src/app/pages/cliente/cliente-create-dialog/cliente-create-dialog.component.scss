@@ -1,32 +1,126 @@
+@use '../../../components/dialog/dialog-form-shell';
+
 .cliente-dialog-form {
+  box-sizing: border-box;
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+.dialog-content {
+  box-sizing: border-box;
+  width: min(760px, calc(100vw - 48px));
+  max-height: min(68vh, 620px);
+  overflow-x: hidden;
+  padding: 18px 24px 20px !important;
+}
+
+.cliente-dialog-section {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(14, 23, 38, 0.10);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.cliente-dialog-section__header {
+  display: grid;
+  gap: 2px;
+}
+
+.cliente-dialog-section__header strong {
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.cliente-dialog-section__header span {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.cliente-dialog-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
-  min-width: min(720px, 78vw);
-  padding-top: 4px;
+  min-width: 0;
 }
 
-.cliente-dialog-form__address {
+.cliente-dialog-grid--address {
+  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1fr);
+}
+
+.cliente-dialog-grid__wide {
+  grid-column: 1 / -1;
+}
+
+.cliente-dialog-cep {
+  grid-column: 1 / -1;
+}
+
+.cliente-dialog-cep ::ng-deep > .w-100 {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  grid-template-columns: minmax(0, 220px) auto;
+  column-gap: 12px;
+  align-items: end;
+}
+
+.cliente-dialog-cep ::ng-deep mat-label {
   grid-column: 1 / -1;
 }
 
-.cliente-dialog-form__wide {
-  grid-column: 1 / -1;
+.cliente-dialog-cep ::ng-deep button {
+  width: auto !important;
+  min-width: 174px;
+  height: 40px;
+  margin-bottom: 1.34375em;
 }
 
-mat-dialog-actions button {
+.cliente-dialog-form ::ng-deep .mat-mdc-form-field {
+  width: 100%;
+}
+
+.dialog-actions button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
-@media (max-width: 720px) {
-  .cliente-dialog-form,
-  .cliente-dialog-form__address {
+.dialog-actions mat-spinner {
+  display: inline-block;
+}
+
+@media (max-width: 767px) {
+  .dialog-content {
+    width: calc(100vw - 32px);
+    max-height: min(70vh, 620px);
+    padding: 16px !important;
+  }
+
+  .cliente-dialog-grid,
+  .cliente-dialog-grid--address {
     grid-template-columns: 1fr;
+  }
+
+  .cliente-dialog-grid__wide {
+    grid-column: auto;
+  }
+
+  .cliente-dialog-cep {
+    grid-column: auto;
+  }
+
+  .cliente-dialog-cep ::ng-deep > .w-100 {
+    grid-template-columns: 1fr;
+  }
+
+  .cliente-dialog-cep ::ng-deep button {
+    width: 100% !important;
     min-width: 0;
+    margin-bottom: 0;
   }
 }

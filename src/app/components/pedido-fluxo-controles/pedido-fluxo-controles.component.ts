@@ -247,9 +247,7 @@ export class PedidoFluxoControlesComponent implements OnChanges {
       case 'mudarStatus': {
         const destino = (this.vm.nextAction as any)?.target;
         if (destino) {
-          this.statusControl?.setValue(destino);
-          this.trocarStatusSelecionado.emit(destino);
-          this.salvarStatus.emit();
+          this.abrirConfirmacaoTrocaStatus(destino);
         }
         break;
       }
@@ -273,10 +271,19 @@ export class PedidoFluxoControlesComponent implements OnChanges {
   abrirMenuTrocarStatus(): void {
     const opcoes = (this.transicoes?.length ? this.transicoes : (this.statusOptions || []).map(s => ({ status: s, label: this.statusLabel(s), bloqueado: false })));
     if (this.inativo || this.isReadOnly || !opcoes.length) return;
+    this.abrirConfirmacaoTrocaStatus();
+  }
+
+  private abrirConfirmacaoTrocaStatus(statusDestino?: string): void {
+    const opcoes = (this.transicoes?.length ? this.transicoes : (this.statusOptions || []).map(s => ({ status: s, label: this.statusLabel(s), bloqueado: false })));
+    if (this.inativo || this.isReadOnly || !opcoes.length) return;
+
     const ref = this.dialog.open(PedidoTrocarStatusDialogComponent, {
-      width: '360px',
+      width: '440px',
+      maxWidth: 'calc(100vw - 32px)',
       data: {
         statusAtual: this.statusControl?.value || this.statusAtual,
+        statusDestino: statusDestino || null,
         opcoes
       }
     });

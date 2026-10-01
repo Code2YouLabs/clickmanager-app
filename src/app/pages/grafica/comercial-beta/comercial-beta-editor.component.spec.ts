@@ -1,7 +1,8 @@
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { fakeAsync, tick } from '@angular/core/testing';
 import { FormBuilder } from '@angular/forms';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
+import { ClienteCreateDialogComponent } from '../../cliente/cliente-create-dialog/cliente-create-dialog.component';
 import {
   ComercialBetaEditorComponent,
   GraficaProdutoWizardDialogComponent,
@@ -479,6 +480,89 @@ describe('ComercialBetaEditorComponent', () => {
     });
   });
 
+  it('abre cadastro rapido de cliente com nome digitado e seleciona localmente em pedido novo', () => {
+    const component = criarEditor();
+    const dialog = (component as any).dialog;
+    const cliente = { id: 33, nome: 'Maria Nova', telefone: '31999990000', endereco: { cidade: 'BH' } };
+    dialog.open.and.returnValue({ afterClosed: () => of(cliente) });
+    component.clienteControl.setValue('Maria Nova');
+
+    component.onCriarCliente();
+
+    expect(dialog.open).toHaveBeenCalledWith(ClienteCreateDialogComponent, jasmine.objectContaining({
+      width: '760px',
+      maxWidth: '96vw',
+      data: { nome: 'Maria Nova' },
+    }));
+    expect(component.clienteConfirmado).toEqual(jasmine.objectContaining({ id: 33, nome: 'Maria Nova' }));
+    expect((component as any).graficaService.alterarClientePedidoComercial).not.toHaveBeenCalled();
+  });
+
+  it('vincula cliente criado ao pedido existente antes de atualizar o card', () => {
+    const component = criarEditor();
+    const dialog = (component as any).dialog;
+    const graficaService = (component as any).graficaService;
+    const cliente = { id: 33, nome: 'Maria Nova', telefone: '31999990000', endereco: { cidade: 'BH' } };
+    component.pedidoId = 4;
+    component.tipo = 'pedidos';
+    dialog.open.and.returnValue({ afterClosed: () => of(cliente) });
+    graficaService.alterarClientePedidoComercial.and.returnValue(of({
+      ...pedidoDetalhe(),
+      clienteId: 33,
+      clienteNome: 'Maria Nova',
+      clienteTelefone: '31999990000',
+    }));
+
+    component.onCriarCliente();
+
+    expect(graficaService.alterarClientePedidoComercial).toHaveBeenCalledWith(4, 33);
+    expect(component.clienteConfirmado).toEqual(jasmine.objectContaining({
+      id: 33,
+      nome: 'Maria Nova',
+      endereco: jasmine.objectContaining({ cidade: 'BH' }),
+    }));
+    expect((component as any).clienteService.buscarPorId).not.toHaveBeenCalledWith(33);
+  });
+
+  it('mantem cliente anterior quando cadastra cliente mas falha ao vincular no pedido', () => {
+    const component = criarEditor();
+    const dialog = (component as any).dialog;
+    const graficaService = (component as any).graficaService;
+    const toastr = (component as any).toastr;
+    const clienteAnterior = { id: 7, nome: 'Cliente Atual' };
+    component.pedidoId = 4;
+    component.tipo = 'pedidos';
+    component.clienteConfirmado = clienteAnterior;
+    component.clienteControl.setValue(clienteAnterior);
+    dialog.open.and.returnValue({ afterClosed: () => of({ id: 33, nome: 'Maria Nova' }) });
+    graficaService.alterarClientePedidoComercial.and.returnValue(throwError(() => ({})));
+
+    component.onCriarCliente();
+
+    expect(component.clienteConfirmado).toBe(clienteAnterior);
+    expect(component.clienteControl.value).toBe(clienteAnterior);
+    expect(toastr.error).toHaveBeenCalledWith('Cliente cadastrado, mas não foi possível vinculá-lo ao pedido.');
+  });
+
+  it('salva cliente selecionado no pedido existente via endpoint de associacao', () => {
+    const component = criarEditor();
+    const graficaService = (component as any).graficaService;
+    component.pedidoId = 4;
+    component.tipo = 'pedidos';
+    component.clienteControl.setValue({ id: 44, nome: 'Cliente Selecionado' });
+    graficaService.alterarClientePedidoComercial.and.returnValue(of({
+      ...pedidoDetalhe(),
+      clienteId: 44,
+      clienteNome: 'Cliente Selecionado',
+    }));
+
+    component.confirmarClienteSelecionado();
+
+    expect(graficaService.alterarClientePedidoComercial).toHaveBeenCalledWith(4, 44);
+    expect((component as any).clienteService.buscarPorId).not.toHaveBeenCalledWith(44);
+    expect(component.clienteConfirmado).toEqual(jasmine.objectContaining({ id: 44, nome: 'Cliente Selecionado' }));
+  });
+
   it('abre busca rapida e repassa produto selecionado para o wizard', () => {
     const produtoSelecionado = produto();
     const composicao = { itens: [{ nomeProduto: 'Panfleto', quantidade: 1, valorUnitario: 10, valorTotal: 10 }] };
@@ -516,6 +600,7 @@ function criarEditor(tipo = 'pedidos'): ComercialBetaEditorComponent {
     'listarFormasPagamento',
     'cancelarRecebimento',
     'alterarAjustesFinanceirosPedido',
+    'alterarClientePedidoComercial',
     'buscarResumoFinanceiroPedido',
     'listarRecebimentosPedido',
     'buscarFluxoPedidoComercial',
@@ -527,6 +612,7 @@ function criarEditor(tipo = 'pedidos'): ComercialBetaEditorComponent {
   graficaService.listarFormasPagamento.and.returnValue(of([]));
   graficaService.cancelarRecebimento.and.returnValue(of({}));
   graficaService.alterarAjustesFinanceirosPedido.and.returnValue(of(pedidoDetalhe()));
+  graficaService.alterarClientePedidoComercial.and.returnValue(of(pedidoDetalhe()));
   graficaService.buscarResumoFinanceiroPedido.and.returnValue(of(resumoFinanceiro({ total: 100, totalRecebido: 25, saldoAberto: 75 })));
   graficaService.listarRecebimentosPedido.and.returnValue(of({ content: [] }));
   graficaService.buscarFluxoPedidoComercial.and.returnValue(of(fluxoAberto()));
@@ -558,7 +644,7 @@ function criarEditor(tipo = 'pedidos'): ComercialBetaEditorComponent {
     new FormBuilder(),
     graficaService,
     clienteService,
-    jasmine.createSpyObj('ToastrService', ['error']) as any,
+    jasmine.createSpyObj('ToastrService', ['error', 'success']) as any,
     authServiceMock() as any,
   );
 }
@@ -566,6 +652,7 @@ function criarEditor(tipo = 'pedidos'): ComercialBetaEditorComponent {
 function authServiceMock() {
   return {
     getUsuario: () => ({ id: 1, nome: 'Leonardo Barros', username: 'leo' }),
+    temPermissao: () => true,
   };
 }
 
