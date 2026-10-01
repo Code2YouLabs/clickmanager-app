@@ -3,7 +3,7 @@ export type SiteWhatsappExibicao =
   | 'ICONE_TEXTO';
 
 export interface SiteConfigResponse {
-  siteAtivo: boolean;
+  siteAtivo?: boolean | null;
   slugPublico: string;
   dominioCustom?: string | null;
   dominioCustomAtivo?: boolean | null;

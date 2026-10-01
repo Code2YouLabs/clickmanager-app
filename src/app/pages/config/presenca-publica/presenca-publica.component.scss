@@ -21,132 +21,230 @@
   color: #0f172a;
 }
 
-.presenca-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.presenca-summary {
+  display: grid;
+  gap: 18px;
 }
 
-.presenca-slug-grid {
+.presenca-hero {
+  overflow: hidden;
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(255, 255, 255, 0) 54%),
+    #fff;
+}
+
+.presenca-hero__main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 18px;
+  padding: 22px;
+}
+
+.presenca-hero__icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  background: #eaf2ff;
+  color: #2563eb;
+}
+
+.presenca-hero__icon mat-icon {
+  width: 26px;
+  height: 26px;
+  font-size: 26px;
+}
+
+.presenca-hero__content {
+  display: grid;
   gap: 14px;
+  min-width: 0;
+}
+
+.presenca-hero__heading {
+  display: flex;
   align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
 }
 
-.presenca-slug-input-group {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
-  min-width: 0;
-  border: 1px solid rgba(14, 23, 38, 0.12);
-  border-radius: 8px;
-  background: #f8fafc;
+.presenca-hero__heading h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
-.presenca-slug-field {
-  width: 100%;
-  min-width: 0;
-}
-
-.presenca-slug-field ::ng-deep .mat-mdc-form-field-subscript-wrapper {
-  padding-inline: 14px;
-}
-
-.presenca-slug-field ::ng-deep .mdc-notched-outline__leading,
-.presenca-slug-field ::ng-deep .mdc-notched-outline__notch,
-.presenca-slug-field ::ng-deep .mdc-notched-outline__trailing {
-  border-color: transparent !important;
-}
-
-.presenca-domain-suffix {
-  display: flex;
-  align-items: center;
-  min-height: 56px;
-  padding: 0 16px;
-  border-left: 1px solid rgba(14, 23, 38, 0.12);
-  color: #475569;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.presenca-slug-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: flex-end;
-}
-
-.presenca-slug-actions button {
-  min-height: 40px;
-}
-
-.presenca-slug-actions mat-spinner {
-  display: inline-block;
-  margin-right: 8px;
-}
-
-.presenca-preview {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-top: 14px;
-  padding: 12px 14px;
-  border-radius: 8px;
-  background: #f8fafc;
+.presenca-hero__heading p {
+  margin: 4px 0 0;
   color: #64748b;
+  font-size: 13px;
+  line-height: 1.35;
 }
 
-.presenca-preview strong {
-  color: #111827;
+.presenca-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 5px 10px;
+  border: 1px solid rgba(14, 23, 38, 0.10);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.presenca-status span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.presenca-status--active span {
+  background: #16a34a;
+}
+
+.presenca-status--inactive span {
+  background: #d97706;
+}
+
+.presenca-url {
+  display: block;
+  color: #10213f;
+  font-size: clamp(20px, 2.4vw, 30px);
+  font-weight: 700;
+  line-height: 1.18;
   overflow-wrap: anywhere;
 }
 
-.presenca-feedback {
+.presenca-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.presenca-actions button mat-icon,
+.presenca-dev-panel button mat-icon {
+  margin-right: 6px;
+}
+
+.presenca-publication-note {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(217, 119, 6, 0.18);
+  border-radius: 8px;
+  background: #fffaf2;
+}
+
+.presenca-publication-note mat-icon {
+  color: #d97706;
+}
+
+.presenca-publication-note h4 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.presenca-publication-note p {
+  margin: 3px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.presenca-publication-note a {
+  white-space: nowrap;
+}
+
+.presenca-muted-status {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.presenca-dev-panel {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  margin-top: 14px;
-  padding: 10px 12px;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px dashed rgba(14, 23, 38, 0.16);
   border-radius: 8px;
+  background: #fbfdff;
+}
+
+.presenca-dev-panel div:first-child {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.presenca-dev-panel span {
+  color: #64748b;
+  font-size: 12px;
   font-weight: 600;
 }
 
-.presenca-feedback--success {
-  background: #e8f5e9;
-  color: #1b5e20;
+.presenca-dev-panel strong {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
-.presenca-feedback--error {
-  background: #ffebee;
-  color: #b71c1c;
+.presenca-dev-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 0 0 auto;
 }
 
-@media (max-width: 600px) {
-  .presenca-slug-grid {
-    display: flex;
+@media (max-width: 720px) {
+  .presenca-hero__main {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .presenca-hero__heading,
+  .presenca-dev-panel {
+    align-items: stretch;
     flex-direction: column;
+  }
+
+  .presenca-status {
+    width: fit-content;
+  }
+
+  .presenca-actions,
+  .presenca-dev-panel__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .presenca-actions button,
+  .presenca-dev-panel__actions button {
+    width: 100%;
+  }
+
+  .presenca-publication-note {
+    grid-template-columns: 1fr;
     align-items: stretch;
   }
 
-  .presenca-slug-input-group {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .presenca-domain-suffix {
-    min-height: 42px;
-    border-top: 1px solid rgba(14, 23, 38, 0.12);
-    border-left: 0;
-  }
-
-  .presenca-slug-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .presenca-slug-actions button {
+  .presenca-publication-note a {
     width: 100%;
   }
 }

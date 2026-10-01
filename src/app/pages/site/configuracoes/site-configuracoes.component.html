@@ -41,7 +41,7 @@
         <strong>{{ enderecoPublicoPrincipal }}</strong>
       </div>
 
-      <button mat-stroked-button color="primary" type="button" (click)="abrirSite()" [disabled]="siteInativo" [matTooltip]="mensagemSiteInativo">
+      <button mat-stroked-button color="primary" type="button" (click)="abrirSite()" [disabled]="siteInativo" [matTooltip]="mensagemAbrirSite">
         <mat-icon>open_in_new</mat-icon>
         Abrir site
       </button>
@@ -60,6 +60,8 @@
         </div>
       </div>
 
+      <p class="site-config-publication-message">{{ mensagemPublicacao }}</p>
+
       <div class="site-config-actions">
         <a mat-stroked-button color="primary" routerLink="/page/config/presenca-publica">
           <mat-icon>language</mat-icon>
@@ -69,7 +71,7 @@
           <mat-icon>badge</mat-icon>
           Gerenciar Identidade Pública
         </a>
-        <button mat-stroked-button color="primary" type="button" (click)="abrirSite()" [disabled]="siteInativo" [matTooltip]="mensagemSiteInativo">
+        <button mat-stroked-button color="primary" type="button" (click)="abrirSite()" [disabled]="siteInativo" [matTooltip]="mensagemAbrirSite">
           <mat-icon>open_in_new</mat-icon>
           Abrir site
         </button>
