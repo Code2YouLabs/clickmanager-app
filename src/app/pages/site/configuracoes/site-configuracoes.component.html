@@ -35,93 +35,122 @@
     </div>
     }
 
-    <div class="site-config-summary">
-      <div>
-        <span class="site-config-summary__label">Endereço público</span>
-        <strong>{{ enderecoPublicoPrincipal }}</strong>
-      </div>
+    <app-section-card titulo="Site público" subtitulo="Controle o endereço e a publicação do site para clientes.">
+      <div class="site-publication">
+        <div class="site-publication__content">
+          <span class="site-publication__status" [class.site-publication__status--inactive]="siteInativo">
+            {{ siteInativo ? 'Não publicado' : 'Publicado' }}
+          </span>
+          <strong>{{ enderecoPublicoPrincipal }}</strong>
+          <p>{{ mensagemPublicacao }}</p>
+        </div>
 
-      <button mat-stroked-button color="primary" type="button" (click)="abrirSite()" [disabled]="siteInativo" [matTooltip]="mensagemAbrirSite">
-        <mat-icon>open_in_new</mat-icon>
-        Abrir site
-      </button>
-    </div>
+        <div class="site-publication__actions">
+          <button mat-stroked-button color="primary" type="button" (click)="abrirSite()" [disabled]="siteInativo" [matTooltip]="mensagemAbrirSite">
+            <mat-icon>open_in_new</mat-icon>
+            Abrir site
+          </button>
 
-    <app-section-card titulo="Publicação" subtitulo="Controle a disponibilidade do conteúdo do site público.">
-      <mat-slide-toggle section-card-actions color="primary" [formControl]="siteAtivoControl">
-        Site ativo
-      </mat-slide-toggle>
-
-      <div class="site-config-grid">
-        <div class="site-config-readonly-field">
-          <span>Endereço ClickManager</span>
-          <strong>{{ enderecoClickManager }}</strong>
-          <small>O endereço e o domínio próprio são administrados em Presença Pública.</small>
+          <mat-slide-toggle color="primary" [formControl]="siteAtivoControl">
+            Site ativo
+          </mat-slide-toggle>
         </div>
       </div>
+    </app-section-card>
 
-      <p class="site-config-publication-message">{{ mensagemPublicacao }}</p>
+    <app-section-card titulo="Recursos" subtitulo="Defina quais canais e solicitações aparecem no site público.">
+      <div class="site-config-resources">
+        <div class="site-config-setting-row">
+          <div>
+            <strong>Solicitação de orçamento</strong>
+            <p>Permite que clientes solicitem orçamento pelo site público.</p>
+            @if (!orcamentoAtivoControl.value) {
+            <small>O formulário de orçamento ficará oculto no site.</small>
+            }
+          </div>
 
-      <div class="site-config-actions">
-        <a mat-stroked-button color="primary" routerLink="/page/config/presenca-publica">
+          <mat-slide-toggle color="primary" [formControl]="orcamentoAtivoControl">
+            Orçamento ativo
+          </mat-slide-toggle>
+        </div>
+
+        <div class="site-config-setting-row site-config-setting-row--stack">
+          <div class="site-config-setting-row__header">
+            <div>
+              <strong>WhatsApp</strong>
+              <p>Exiba um botão de contato no site público.</p>
+            </div>
+
+            <mat-slide-toggle color="primary" [formControl]="whatsappAtivoControl">
+              WhatsApp ativo
+            </mat-slide-toggle>
+          </div>
+
+          @if (whatsappAtivoControl.value) {
+          <div class="site-config-whatsapp-fields">
+            <div class="site-config-grid site-config-grid--two">
+              <app-input-telefone
+                [control]="whatsappTelefoneControl"
+                label="Telefone do WhatsApp"
+                placeholder="(00) 00000-0000"
+                [required]="false"
+                invalidError="Informe um telefone com DDD.">
+              </app-input-telefone>
+
+              <app-input-options
+                [control]="whatsappExibicaoControl"
+                label="Exibição do botão"
+                placeholder="Selecione a exibição"
+                [options]="exibicoesWhatsapp"
+                labelKey="label"
+                valueKey="value"
+                [showNull]="false">
+              </app-input-options>
+            </div>
+
+            <app-input-texto-restrito
+              [control]="whatsappTextoControl"
+              label="Texto do botão"
+              placeholder="Fale conosco"
+              [maxlength]="80">
+            </app-input-texto-restrito>
+
+            <app-input-textarea
+              [control]="whatsappMensagemInicialControl"
+              label="Mensagem inicial"
+              placeholder="Olá! Acessei o site e gostaria de mais informações."
+              [rows]="4">
+            </app-input-textarea>
+          </div>
+          }
+        </div>
+      </div>
+    </app-section-card>
+
+    <app-section-card titulo="Outras configurações" subtitulo="Acesse ajustes complementares do site público.">
+      <div class="site-config-links">
+        <a class="site-config-link-row" routerLink="/page/config/presenca-publica">
           <mat-icon>language</mat-icon>
-          Gerenciar Presença Pública
+          <span>
+            <strong>Presença Pública</strong>
+            <small>Endereço, subdomínio e domínio público.</small>
+          </span>
+          <span class="site-config-link-row__action">
+            Gerenciar
+          </span>
         </a>
-        <a mat-stroked-button color="primary" routerLink="/page/empresa">
+
+        <a class="site-config-link-row" routerLink="/page/empresa">
           <mat-icon>badge</mat-icon>
-          Gerenciar Identidade Pública
+          <span>
+            <strong>Identidade Pública</strong>
+            <small>Nome, logo e identidade exibida publicamente.</small>
+          </span>
+          <span class="site-config-link-row__action">
+            Gerenciar
+          </span>
         </a>
-        <button mat-stroked-button color="primary" type="button" (click)="abrirSite()" [disabled]="siteInativo" [matTooltip]="mensagemAbrirSite">
-          <mat-icon>open_in_new</mat-icon>
-          Abrir site
-        </button>
       </div>
-    </app-section-card>
-
-    <app-section-card titulo="Orçamento" subtitulo="Controle a exibição da funcionalidade de solicitação de orçamento.">
-      <mat-slide-toggle section-card-actions color="primary" [formControl]="orcamentoAtivoControl">
-        Orçamento ativo
-      </mat-slide-toggle>
-    </app-section-card>
-
-    <app-section-card titulo="WhatsApp" subtitulo="Configure o botão geral exibido no site público.">
-      <mat-slide-toggle section-card-actions color="primary" [formControl]="whatsappAtivoControl">
-        WhatsApp ativo
-      </mat-slide-toggle>
-
-      <div class="site-config-grid site-config-grid--two">
-        <app-input-telefone
-          [control]="whatsappTelefoneControl"
-          label="Telefone do WhatsApp"
-          placeholder="(00) 00000-0000"
-          [required]="false"
-          invalidError="Informe um telefone com DDD.">
-        </app-input-telefone>
-
-        <app-input-options
-          [control]="whatsappExibicaoControl"
-          label="Exibição do botão"
-          placeholder="Selecione a exibição"
-          [options]="exibicoesWhatsapp"
-          labelKey="label"
-          valueKey="value"
-          [showNull]="false">
-        </app-input-options>
-      </div>
-
-      <app-input-texto-restrito
-        [control]="whatsappTextoControl"
-        label="Texto do botão"
-        placeholder="Fale conosco"
-        [maxlength]="80">
-      </app-input-texto-restrito>
-
-      <app-input-textarea
-        [control]="whatsappMensagemInicialControl"
-        label="Mensagem inicial"
-        placeholder="Olá! Acessei o site e gostaria de mais informações."
-        [rows]="4">
-      </app-input-textarea>
     </app-section-card>
   </form>
   }
