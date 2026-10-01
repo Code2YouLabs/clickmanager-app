@@ -15,7 +15,7 @@ import { MaterialModule } from 'src/app/material.module';
 import { AuthService } from 'src/app/services/auth.service';
 import { SiteConfigResponse, SiteConfigUpdateRequest, SiteWhatsappExibicao } from '../models/site-config.models';
 import { SiteConfigService } from '../services/site-config.service';
-import { getUrlClickManager, getUrlPublicaPrincipal } from '../utils/site-public-url.util';
+import { getUrlPublicaPrincipal } from '../utils/site-public-url.util';
 
 @Component({
   selector: 'app-site-configuracoes',
@@ -131,10 +131,6 @@ export class SiteConfiguracoesComponent implements OnInit {
     return this.form.get('whatsappMensagemInicial') as FormControl;
   }
 
-  get enderecoClickManager(): string {
-    return getUrlClickManager(this.configAtual?.slugPublico);
-  }
-
   get enderecoPublicoPrincipal(): string {
     return getUrlPublicaPrincipal(this.configParaUrlAtual());
   }
@@ -145,8 +141,8 @@ export class SiteConfiguracoesComponent implements OnInit {
 
   get mensagemPublicacao(): string {
     return this.siteInativo
-      ? 'Seu site ainda não está publicado. Ative quando o conteúdo estiver pronto para ser acessado pelos clientes.'
-      : 'Seu site está publicado e pode ser acessado pelo endereço público.';
+      ? 'Seu site ainda não está disponível para clientes. Ative quando o conteúdo estiver pronto.'
+      : 'Seu site está disponível para clientes.';
   }
 
   get mensagemAbrirSite(): string {

@@ -65,6 +65,10 @@ describe('SiteConfiguracoesComponent', () => {
     return fixture.nativeElement.textContent as string;
   }
 
+  function occurrences(value: string, search: string): number {
+    return value.split(search).length - 1;
+  }
+
   afterEach(() => TestBed.resetTestingModule());
 
   it('renderiza loading sem mostrar defaults como configuração real', () => {
@@ -82,11 +86,12 @@ describe('SiteConfiguracoesComponent', () => {
     resolveConfig();
 
     expect(service.buscar).toHaveBeenCalledTimes(1);
-    expect(text()).toContain('Endereço público');
     expect(text()).toContain('https://santaluzia.com.br');
-    expect(text()).toContain('https://santa-luzia.clickmanager.com.br');
-    expect(text()).toContain('Gerenciar Presença Pública');
-    expect(text()).toContain('Gerenciar Identidade Pública');
+    expect(text()).toContain('Publicado');
+    expect(text()).not.toContain('Endereço ClickManager');
+    expect(text()).not.toContain('https://santa-luzia.clickmanager.com.br');
+    expect(text()).toContain('Presença Pública');
+    expect(text()).toContain('Identidade Pública');
     expect(text()).not.toContain('Slug público');
     expect(text()).not.toContain('Escolher favicon');
     expect(text()).not.toContain('Salvar favicon');
@@ -99,14 +104,15 @@ describe('SiteConfiguracoesComponent', () => {
 
     expect(component.siteAtivoControl.value).toBeFalse();
     expect(component.siteInativo).toBeTrue();
-    expect(text()).toContain('Seu site ainda não está publicado.');
+    expect(text()).toContain('Seu site ainda não está disponível para clientes.');
   });
 
   it('preserva siteAtivo false e true vindos do backend', () => {
     createComponent();
     resolveConfig(config({ siteAtivo: false }));
     expect(component.siteAtivoControl.value).toBeFalse();
-    expect(text()).toContain('Seu site ainda não está publicado.');
+    expect(text()).toContain('Não publicado');
+    expect(text()).toContain('Seu site ainda não está disponível para clientes.');
 
     component.carregarConfiguracao();
     service.buscar.and.returnValue(of(config({ siteAtivo: true })));
@@ -114,7 +120,8 @@ describe('SiteConfiguracoesComponent', () => {
     fixture.detectChanges();
 
     expect(component.siteAtivoControl.value).toBeTrue();
-    expect(text()).toContain('Seu site está publicado e pode ser acessado pelo endereço público.');
+    expect(text()).toContain('Publicado');
+    expect(text()).toContain('Seu site está disponível para clientes.');
   });
 
   it('mostra erro recuperável com retry sem renderizar formulário', () => {
@@ -166,6 +173,86 @@ describe('SiteConfiguracoesComponent', () => {
     expect(save?.textContent).toContain('Salvar');
     expect(save?.textContent).not.toContain('Salvar configurações');
     expect(save?.form?.id).toBe('site-config-form');
+  });
+
+  it('mostra um único endereço público e um único botão Abrir site na publicação', () => {
+    createComponent();
+    resolveConfig(config({ dominioCustom: null, dominioCustomAtivo: false, slugPublico: 'loja' }));
+
+    const conteudo = text();
+    expect(occurrences(conteudo, 'https://loja.clickmanager.com.br')).toBe(1);
+    expect(occurrences(conteudo, 'Abrir site')).toBe(1);
+    expect(fixture.nativeElement.querySelectorAll('.site-publication__actions > button').length).toBe(1);
+  });
+
+  it('mantém orçamento como recurso compacto e envia seu estado no payload', () => {
+    createComponent();
+    resolveConfig(config({ orcamentoAtivo: true }));
+
+    expect(text()).toContain('Solicitação de orçamento');
+    expect(text()).toContain('Permite que clientes solicitem orçamento pelo site público.');
+    expect(text()).not.toContain('O formulário de orçamento ficará oculto no site.');
+
+    component.orcamentoAtivoControl.setValue(false);
+    fixture.detectChanges();
+    component.salvar();
+
+    expect(text()).toContain('O formulário de orçamento ficará oculto no site.');
+    expect(service.atualizar.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({
+      orcamentoAtivo: false,
+    }));
+  });
+
+  it('recolhe configurações do WhatsApp desligado sem apagar valores e restaura ao reativar', () => {
+    createComponent();
+    const whatsappConfig = config({
+      whatsappAtivo: false,
+      whatsappTelefone: '5511987654321',
+      whatsappExibicao: 'ICONE',
+      whatsappTexto: 'Chamar no WhatsApp',
+      whatsappMensagemInicial: 'Mensagem preservada',
+    });
+    service.atualizar.and.returnValue(of(whatsappConfig));
+    resolveConfig(whatsappConfig);
+
+    expect(text()).toContain('WhatsApp');
+    expect(text()).toContain('Exiba um botão de contato no site público.');
+    expect(text()).not.toContain('Telefone do WhatsApp');
+    expect(text()).not.toContain('Mensagem inicial');
+    expect(component.whatsappTelefoneControl.value).toBe('11987654321');
+    expect(component.whatsappTextoControl.value).toBe('Chamar no WhatsApp');
+
+    component.salvar();
+    expect(service.atualizar.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({
+      whatsappAtivo: false,
+      whatsappTelefone: '11987654321',
+      whatsappExibicao: 'ICONE',
+      whatsappTexto: 'Chamar no WhatsApp',
+      whatsappMensagemInicial: 'Mensagem preservada',
+    }));
+
+    component.whatsappAtivoControl.setValue(true);
+    fixture.detectChanges();
+
+    expect(text()).toContain('Telefone do WhatsApp');
+    expect(text()).toContain('Mensagem inicial');
+    expect(component.whatsappTelefoneControl.value).toBe('11987654321');
+    expect(component.whatsappTextoControl.value).toBe('Chamar no WhatsApp');
+  });
+
+  it('agrupa presença pública e identidade pública em outras configurações com rotas corretas', () => {
+    createComponent();
+    resolveConfig();
+
+    expect(text()).toContain('Outras configurações');
+    expect(text()).toContain('Endereço, subdomínio e domínio público.');
+    expect(text()).toContain('Nome, logo e identidade exibida publicamente.');
+
+    const links = [...fixture.nativeElement.querySelectorAll('a.site-config-link-row')] as HTMLAnchorElement[];
+    expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      '/page/config/presenca-publica',
+      '/page/empresa',
+    ]);
   });
 
   it('submete pelo form id sem click duplicado e impede duplo submit', () => {
