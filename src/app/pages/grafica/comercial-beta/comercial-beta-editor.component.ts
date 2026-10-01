@@ -21,6 +21,7 @@ import { StatusBadgeComponent } from 'src/app/components/status-badge/status-bad
 import { MaterialModule } from 'src/app/material.module';
 import { Usuario } from 'src/app/models/usuario/usuario.model';
 import { AuthService } from 'src/app/services/auth.service';
+import { ClienteCreateDialogComponent, ClienteCreateDialogData } from '../../cliente/cliente-create-dialog/cliente-create-dialog.component';
 import { ClienteService } from '../../cliente/cliente.service';
 import { ComercialItemResponse, ComposicaoComercialResolvida, GraficaComercialComposicaoRequest, GraficaComercialDestinoResponse, GraficaOpcao, GraficaParametro, GraficaPrecoFaixa, GraficaPrecoLote, GraficaPrecoPolitica, GraficaPrecificacaoResultado, GraficaProduto, GraficaProdutoAcabamento, GraficaServico, OrcamentoComercialDetalhe, PedidoAjustesFinanceirosRequest, PedidoComercialDetalhe, PedidoFluxoPermissoes, PedidoFluxoResponse, RascunhoComercialResponse, RecebimentoPretendidoRequest, RecebimentoResponse, ResumoFinanceiroOrigem } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
@@ -419,7 +420,9 @@ export class GraficaServicoWizardDialogComponent {
             <app-cliente-selector-card
               [cliente]="clienteConfirmado"
               [editando]="trocandoCliente || !clienteConfirmado"
+              [salvando]="salvandoCliente"
               [inativo]="somenteLeitura || !permissoesFluxo.editarCliente"
+              [permitirCriarCliente]="podeCriarCliente"
               [showEmptyAlert]="true"
               [control]="clienteControl"
               [displayWith]="mostrarCliente"
@@ -783,6 +786,7 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
   carregandoStatus = false;
   salvandoPagamento = false;
   salvandoAjustesFinanceiros = false;
+  salvandoCliente = false;
   clienteConfirmado: any | null = null;
   trocandoCliente = true;
   observacaoClienteSalva = '';
@@ -1145,6 +1149,10 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
     return this.tipo === 'pedidos';
   }
 
+  get podeCriarCliente(): boolean {
+    return this.authService.temPermissao('CLIENTE_CADASTRAR');
+  }
+
   get pendenciasSalvar(): string[] {
     const pendencias: string[] = [];
     if (this.clienteObrigatorio && !this.clienteConfirmado?.id) {
@@ -1304,7 +1312,7 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
       });
   }
 
-  private aplicarPedido(pedido: PedidoComercialDetalhe): void {
+  private aplicarPedido(pedido: PedidoComercialDetalhe, clienteCompleto?: any): void {
     this.pedido = pedido;
     this.itens = (pedido.itens || []).map((item) => this.itemComercialResolvido(item));
     this.clienteConfirmado = pedido.clienteId ? {
@@ -1315,7 +1323,18 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
       email: pedido.clienteEmail,
     } : null;
     this.clienteControl.setValue(this.clienteConfirmado, { emitEvent: false });
-    this.carregarClienteConfirmado(pedido.clienteId);
+    if (clienteCompleto) {
+      const clienteNormalizado = this.normalizarClienteCard(clienteCompleto);
+      this.clienteConfirmado = {
+        ...clienteNormalizado,
+        ...this.clienteConfirmado,
+        id: this.clienteConfirmado?.id ?? clienteNormalizado?.id,
+        endereco: clienteNormalizado?.endereco ?? this.clienteConfirmado?.endereco ?? null,
+      };
+      this.clienteControl.setValue(this.clienteConfirmado, { emitEvent: false });
+    } else {
+      this.carregarClienteConfirmado(pedido.clienteId);
+    }
     this.observacaoClienteControl.setValue(pedido.observacaoCliente || '', { emitEvent: false });
     this.observacaoInternaControl.setValue(pedido.observacaoInterna || '', { emitEvent: false });
     this.observacaoClienteSalva = pedido.observacaoCliente || '';
@@ -1730,17 +1749,26 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
   }
 
   confirmarClienteSelecionado(): void {
+    if (this.salvandoCliente) {
+      return;
+    }
     const selecionado = this.clienteControl.value;
     const clienteId = selecionado?.id ?? selecionado?.clienteId;
     if (!clienteId) {
       return;
     }
 
+    if (this.devePersistirClienteNoPedido()) {
+      this.associarClienteAoPedido(clienteId, {
+        clienteCompleto: selecionado,
+        mensagemErro: 'Não foi possível vincular o cliente ao pedido.',
+      });
+      return;
+    }
+
     this.clienteService.buscarPorId(clienteId).pipe(take(1)).subscribe({
       next: (clienteCompleto) => {
-        this.clienteConfirmado = this.normalizarClienteCard(clienteCompleto);
-        this.clienteControl.setValue(this.clienteConfirmado, { emitEvent: false });
-        this.trocandoCliente = false;
+        this.aplicarClienteConfirmado(clienteCompleto);
       },
     });
   }
@@ -1774,6 +1802,40 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
     };
   }
 
+  private aplicarClienteConfirmado(cliente: any): any {
+    const normalizado = this.normalizarClienteCard(cliente);
+    this.clienteConfirmado = normalizado;
+    this.clienteControl.setValue(normalizado, { emitEvent: false });
+    this.trocandoCliente = false;
+    return normalizado;
+  }
+
+  private devePersistirClienteNoPedido(): boolean {
+    return this.tipo === 'pedidos' && this.pedidoId != null;
+  }
+
+  private associarClienteAoPedido(
+    clienteId: number,
+    options: { clienteCompleto?: any; mensagemErro: string; sucesso?: string },
+  ): void {
+    if (!this.pedidoId || this.salvandoCliente) {
+      return;
+    }
+
+    this.salvandoCliente = true;
+    this.graficaService.alterarClientePedidoComercial(this.pedidoId, clienteId)
+      .pipe(finalize(() => this.salvandoCliente = false), take(1))
+      .subscribe({
+        next: (pedido) => {
+          this.aplicarPedido(pedido, options.clienteCompleto);
+          if (options.sucesso) {
+            this.toastr.success(options.sucesso);
+          }
+        },
+        error: (error) => this.toastr.error(this.errorMessage(error, options.mensagemErro)),
+      });
+  }
+
   iniciarTrocaCliente(): void {
     this.trocandoCliente = true;
     this.clienteControl.reset(null, { emitEvent: false });
@@ -1787,8 +1849,43 @@ export class ComercialBetaEditorComponent implements OnInit, OnDestroy {
   }
 
   onCriarCliente(): void {
-    this.router.navigate(['/page/cliente/criar'], {
-      queryParams: { retorno: `/page/grafica/comercial-beta/${this.tipo}/novo` },
+    if (!this.podeCriarCliente || this.salvandoCliente || this.somenteLeitura || !this.permissoesFluxo.editarCliente) {
+      return;
+    }
+
+    const data: ClienteCreateDialogData = {};
+    const valorAtual = this.clienteControl.value;
+    if (typeof valorAtual === 'string') {
+      const nome = valorAtual.trim();
+      if (nome) {
+        data.nome = nome;
+      }
+    }
+
+    const dialogRef = this.dialog.open(ClienteCreateDialogComponent, {
+      width: '760px',
+      maxWidth: '96vw',
+      data,
+    });
+
+    dialogRef.afterClosed().pipe(take(1)).subscribe((cliente) => {
+      if (!cliente) {
+        return;
+      }
+
+      const clienteId = cliente.id ?? (cliente as any).clienteId;
+      if (!clienteId) {
+        return;
+      }
+      if (this.devePersistirClienteNoPedido()) {
+        this.associarClienteAoPedido(clienteId, {
+          clienteCompleto: cliente,
+          mensagemErro: 'Cliente cadastrado, mas não foi possível vinculá-lo ao pedido.',
+        });
+        return;
+      }
+
+      this.aplicarClienteConfirmado(cliente);
     });
   }
 

@@ -261,6 +261,10 @@ export class GraficaProdutoService {
     return this.api.patch<PedidoComercialDetalhe>(`api/comercial/pedidos/${id}/ajustes-financeiros`, body);
   }
 
+  alterarClientePedidoComercial(id: number, clienteId: number): Observable<PedidoComercialDetalhe> {
+    return this.api.patch<PedidoComercialDetalhe>(`api/comercial/pedidos/${id}/cliente`, { clienteId });
+  }
+
   listarFormasPagamento(): Observable<string[]> {
     return this.api.get<string[]>('api/financeiro/recebimentos/formas-pagamento');
   }

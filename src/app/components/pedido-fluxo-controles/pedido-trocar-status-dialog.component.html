@@ -1,6 +1,29 @@
-<h2 mat-dialog-title>Trocar status</h2>
-<div mat-dialog-content>
-  <mat-form-field appearance="outline" class="w-100">
+<h2 mat-dialog-title class="dialog-head">
+  <div class="dialog-head__copy">
+    <strong>Confirmar troca de status</strong>
+    <span>Revise a alteração antes de atualizar o pedido.</span>
+  </div>
+  <button mat-icon-button type="button" aria-label="Fechar" (click)="cancelar()">
+    <mat-icon>close</mat-icon>
+  </button>
+</h2>
+
+<mat-divider></mat-divider>
+
+<mat-dialog-content class="dialog-content">
+  <div class="status-summary" aria-label="Resumo da troca de status">
+    <div class="status-summary__item">
+      <span>Status atual</span>
+      <strong>{{ statusAtualLabel }}</strong>
+    </div>
+    <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+    <div class="status-summary__item status-summary__item--target">
+      <span>Novo status</span>
+      <strong>{{ statusSelecionadoLabel }}</strong>
+    </div>
+  </div>
+
+  <mat-form-field appearance="outline" class="w-100" *ngIf="!selecaoTravada">
     <mat-label>Novo status</mat-label>
     <mat-select [formControl]="control">
       <mat-option *ngFor="let o of data.opcoes" [value]="o.status" [disabled]="o.bloqueado">
@@ -9,8 +32,12 @@
       </mat-option>
     </mat-select>
   </mat-form-field>
-</div>
-<div mat-dialog-actions align="end">
-  <button mat-stroked-button (click)="cancelar()">Cancelar</button>
-  <button mat-flat-button color="primary" (click)="salvar()" [disabled]="!control.value">Salvar</button>
-</div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dialog-actions">
+  <button mat-stroked-button type="button" (click)="cancelar()">Cancelar</button>
+  <button mat-flat-button color="primary" type="button" (click)="salvar()" [disabled]="!control.value">
+    <mat-icon>check</mat-icon>
+    Confirmar status
+  </button>
+</mat-dialog-actions>

@@ -5,6 +5,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatOptionModule } from '@angular/material/core';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatIconModule } from '@angular/material/icon';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { StatusLabelPipe } from 'src/app/pipes/status-label.pipe';
 
@@ -25,6 +27,8 @@ interface DialogOpcao {
     MatFormFieldModule,
     MatSelectModule,
     MatOptionModule,
+    MatDividerModule,
+    MatIconModule,
     ReactiveFormsModule,
     StatusLabelPipe
   ],
@@ -36,10 +40,22 @@ export class PedidoTrocarStatusDialogComponent {
 
   constructor(
     private dialogRef: MatDialogRef<PedidoTrocarStatusDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { statusAtual: string; opcoes: DialogOpcao[] }
+    @Inject(MAT_DIALOG_DATA) public data: { statusAtual: string; statusDestino?: string | null; opcoes: DialogOpcao[] }
   ) {
-    const primeiraDisponivel = (data.opcoes || []).find(o => !o.bloqueado)?.status || null;
-    this.control.setValue(primeiraDisponivel);
+    const statusInicial = data.statusDestino || (data.opcoes || []).find(o => !o.bloqueado)?.status || null;
+    this.control.setValue(statusInicial);
+  }
+
+  get statusAtualLabel(): string {
+    return this.labelStatus(this.data.statusAtual);
+  }
+
+  get statusSelecionadoLabel(): string {
+    return this.labelStatus(this.control.value);
+  }
+
+  get selecaoTravada(): boolean {
+    return !!this.data.statusDestino;
   }
 
   salvar(): void {
@@ -48,5 +64,14 @@ export class PedidoTrocarStatusDialogComponent {
 
   cancelar(): void {
     this.dialogRef.close(null);
+  }
+
+  private labelStatus(status: string | null | undefined): string {
+    if (!status) return '—';
+    const opcao = (this.data.opcoes || []).find(o => o.status === status);
+    if (opcao?.label) return opcao.label;
+
+    const normalized = status.replace(/_/g, ' ').toLowerCase();
+    return normalized.replace(/\b\w/g, c => c.toUpperCase());
   }
 }
