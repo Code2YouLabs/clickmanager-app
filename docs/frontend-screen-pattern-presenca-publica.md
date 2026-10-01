@@ -2,32 +2,22 @@
 
 Projeto: `clickmanager-app`
 
-Branch: `feature/padronizar-presenca-publica`
+Branch da finalização #82: `feature/82-finalizar-presenca-publica`
 
-SHA base: `7687a028f03f0d9d7e3f9b0dd7edd2cb3266012f`
-
-Épico: `#79`
-
-## Escopo
-
-Tela migrada:
+Tela:
 
 - `/page/config/presenca-publica`
 
-Componente:
+Componentes principais:
 
 - `PresencaPublicaComponent`
+- `AlterarEnderecoPublicoDialogComponent`
 
 Serviço preservado:
 
 - `PresencaPublicaService`
 
-Modelos preservados:
-
-- `PresencaPublicaResponse`
-- `PresencaPublicaDominioProprioRequest`
-- `PresencaPublicaSlugDisponivelResponse`
-- `PresencaPublicaSlugRequest`
+## Contratos
 
 Contratos HTTP preservados:
 
@@ -37,326 +27,281 @@ Contratos HTTP preservados:
 - `PUT api/presenca-publica/dominio-proprio`
 - `DELETE api/presenca-publica/dominio-proprio`
 
-Não foram alterados:
+Contrato auxiliar de publicação:
 
-- backend;
-- rota `/page/config/presenca-publica`;
-- `permissionGuard`;
-- `SHARED_ROUTE_DATA`;
-- permissão `DADOS_EMPRESA`;
-- domínio fixo `clickmanager.com.br`.
+- `GET api/site/config`
 
-## Baseline
+O domínio ClickManager público é montado a partir de `environment.publicBaseDomain`.
 
-Antes das alterações, `develop` e `origin/develop` foram confirmados no mesmo SHA:
+## Estrutura Atual
 
-`7687a028f03f0d9d7e3f9b0dd7edd2cb3266012f`
+A página usa `PageCard` como shell.
 
-Baseline executada antes da alteração:
+Header:
 
-`npm test -- --watch=false --browsers=ChromeHeadless`
+- título: `Presença Pública`
+- subtítulo: `Gerencie como sua empresa é acessada publicamente.`
 
-Resultado: `610 SUCCESS`.
+A tela principal é uma tela de visualização e resumo. Ela não possui:
 
-Falhas preexistentes: nenhuma.
+- formulário inline de slug;
+- `PageFormState`;
+- footer de `Cancelar` e `Salvar`;
+- `SectionCard` forçado para a composição principal;
+- consulta de disponibilidade na primeira visão.
 
-## Estrutura Anterior
+Responsabilidades do `PresencaPublicaComponent`:
 
-A tela usava:
+- carregar presença pública;
+- carregar status informativo do Site Público;
+- montar URL pública e URL local;
+- abrir URL;
+- copiar URL;
+- abrir o dialog de alteração;
+- aplicar a resposta retornada pelo dialog sem novo `GET`.
 
-- `mat-card` local;
-- `CardHeader` separado;
-- seção customizada;
-- formulário com submit local;
-- botão local `Alterar`;
-- estilos locais para shell/seção/badge.
+## Resumo Do Endereço
 
-O erro de carregamento era comunicado principalmente por toast e poderia deixar a tela sem estado explícito no conteúdo.
+O bloco principal destaca:
 
-## Estrutura Final
+- ícone de globo;
+- `Endereço público`;
+- URL completa `https://{slug}.{environment.publicBaseDomain}`;
+- descrição `Seu endereço público ClickManager.`;
+- status compacto de publicação.
 
-A tela passou a usar:
+Ações:
 
-- `PageCard` como shell, header, conteúdo e footer;
-- `SectionCard` para a seção `Endereço ClickManager`;
-- `StatusBadge` para o status `ATIVO`;
-- `PageFormState` para o ciclo de edição/cancelamento.
+- `Abrir site`;
+- `Copiar endereço`;
+- `Alterar endereço`.
 
-Não foram criados:
+`Abrir site` e `Copiar endereço` são ações de consulta e não dependem de permissão de edição.
 
-- componente novo;
-- shell novo;
-- footer novo;
-- botão local de salvar;
-- fluxo mobile paralelo.
+## Status De Publicação
 
-## PageCard
+Presença Pública não controla `siteAtivo`.
 
-O header usa:
+Ownership preservado:
 
-- título: `Presença Pública`;
-- subtítulo: `Gerencie os endereços usados para acessar os recursos públicos da empresa.`
+- Presença Pública gerencia slug, subdomínio ClickManager, host e domínio próprio latente;
+- Meu Site -> Configurações gerencia `siteAtivo`, conteúdo, publicação, orçamento e WhatsApp.
 
-O footer é do `PageCard`:
+Quando `siteAtivo === true`, a tela mostra apenas estado compacto:
 
-- `Cancelar` gerado pelo `PageFormState`;
-- `Salvar` via `PageCardAction` submit;
-- `form="presenca-publica-form"`;
-- sem handler local de cancelar;
-- sem botão `Alterar`.
+- `Site publicado`
 
-O submit principal acontece apenas por:
+Quando `siteAtivo !== true`, a tela mostra:
 
-`<form id="presenca-publica-form" [formGroup]="form" (ngSubmit)="salvarSlug()">`
+- `Site não publicado`;
+- mensagem informando que o endereço está reservado;
+- CTA `Configurar publicação` para `/page/site/configuracoes`.
 
-## SectionCard
+Não há toggle de publicação nesta tela.
 
-A seção única usa:
+Se `GET api/site/config` falhar, a tela preserva o resumo do endereço e apenas omite o estado de publicação.
 
-- título: `Endereço ClickManager`;
-- subtítulo: `Escolha o subdomínio público da empresa. O final .clickmanager.com.br é fixo.`
+## Ambiente De Desenvolvimento
 
-Permanecem como ações contextuais dentro da seção:
+O bloco de ambiente local renderiza somente quando `environment.production === false`.
 
-- `Consultar`;
-- `Copiar`.
+Conteúdo:
 
-Essas ações não foram movidas para o footer.
+- `Ambiente de desenvolvimento`;
+- `${environment.publicSiteBaseUrl}/loja/{slug}`;
+- ações `Abrir` e `Copiar`.
 
-## PageFormState
+Em produção não há referência visual a `localhost` ou URL local.
 
-A tela usa `PageFormState` em modo `edit`.
+## Dialog De Alteração
 
-Fluxo:
+`AlterarEnderecoPublicoDialogComponent` fica em:
 
-- `begin('edit')` antes do GET;
-- `loaded()` depois do carregamento;
-- `reset()` pelo Cancelar do `PageCard`;
-- sem novo GET ao cancelar;
-- sem navegação ao cancelar.
+- `src/app/pages/config/presenca-publica/components`
 
-Estado extra registrado:
+Arquivos:
 
-- `slugConsultado`.
+- `alterar-endereco-publico-dialog.component.ts`
+- `alterar-endereco-publico-dialog.component.html`
+- `alterar-endereco-publico-dialog.component.scss`
+- `alterar-endereco-publico-dialog.component.spec.ts`
 
-Cancelar restaura:
+O dialog usa o padrão visual de `dialog-form-shell.scss` e não usa:
 
-- slug persistido;
-- estado transitório de disponibilidade.
+- `PageCard`;
+- `PageFormState`;
+- `ConfirmDialogComponent`;
+- modal sobre modal.
 
-Também limpa o feedback de disponibilidade quando a alteração é descartada.
+## Dialog - Pesquisa
 
-## Slug
+Ao abrir, o dialog começa limpo:
 
-Foram preservados:
+- sem `slugConsultado`;
+- sem resultado anterior;
+- sem draft anterior.
+
+Mostra:
+
+- título `Alterar endereço público`;
+- texto `Consulte um novo endereço antes de aplicá-lo à sua empresa.`;
+- endereço atual;
+- campo `Novo subdomínio`;
+- sufixo `.{environment.publicBaseDomain}`;
+- ação `Verificar disponibilidade`.
+
+Validações preservadas:
 
 - `required`;
 - `maxlength(80)`;
 - `pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)`;
-- `catalogoSlugify()`;
-- `normalizarSlugDigitado()`;
-- `dominioFixo`;
-- sufixo visual `.clickmanager.com.br`.
+- `catalogoSlugify()`.
 
-`InputTextoRestrito` foi avaliado, mas não foi aplicado porque este campo combina normalização por slugify, sufixo fixo visual, validação por regex e consulta remota de disponibilidade. Manter o `mat-form-field` local evita perder comportamento específico.
+Durante a consulta:
 
-## Prévia
+- botão mostra `Verificando...`;
+- segunda consulta concorrente é impedida;
+- respostas obsoletas são ignoradas se o campo mudou antes do retorno.
 
-O texto do bloco foi ajustado para:
+Resultado indisponível:
 
-`Prévia do endereço`
+- `Esse endereço já está em uso.`
 
-porque o valor digitado pode ainda não estar salvo. A prévia continua usando:
+Resultado disponível:
 
-- valor digitado;
-- ou slug persistido;
-- `slugPreviewHost`.
+- `{slug}.{dominio} está disponível`
+- botão `Usar este endereço` habilitado.
 
-## Consulta De Disponibilidade
+Alterar o campo depois de uma consulta invalida o resultado anterior.
 
-Fluxo preservado:
+## Dialog - Confirmação
 
-- normaliza slug;
-- valida campo;
-- consulta backend;
-- mostra disponível, indisponível ou erro.
+Ao clicar `Usar este endereço`, o mesmo dialog muda para a etapa:
 
-Slug igual ao persistido:
+- `Confirmar alteração`
 
-- não chama backend;
-- considera válido;
-- mostra `Este já é o endereço atual da empresa.`
+Mostra visualmente:
 
-Enquanto consulta:
+- endereço atual;
+- seta;
+- novo endereço;
+- aviso `Links compartilhados com o endereço anterior podem deixar de funcionar.`
 
-- bloqueia nova consulta;
-- indica estado pending no botão.
+Ações:
 
-## Proteção Contra Resposta Obsoleta
+- `Voltar`;
+- `Confirmar alteração`.
 
-A consulta agora usa um identificador de geração.
+`Voltar` retorna para a pesquisa, preserva a consulta e não consulta novamente.
 
-Uma resposta só é aplicada quando:
+## PUT Do Slug
 
-- pertence à última consulta vigente;
-- corresponde ao valor atual do campo.
-
-Se o usuário alterar o campo antes da resposta, a resposta antiga não:
-
-- marca o novo valor como disponível;
-- sobrescreve o campo;
-- valida uma consulta de outro slug;
-- habilita salvar indevidamente.
-
-## Salvar
-
-Endpoint preservado:
+Endpoint:
 
 `PUT api/presenca-publica/slug`
 
-Payload preservado:
+Payload:
 
 ```json
 {
-  "slug": "minha-empresa"
+  "slug": "minha-grafica"
 }
 ```
 
-Salvar exige:
+Não é enviado `empresaId`.
 
-- form válido;
-- slug alterado;
-- consulta de disponibilidade válida;
-- `slugConsultado.disponivel === true`;
-- `slugConsultado.slug === valor atual`;
-- não estar consultando;
-- não estar salvando.
+Durante o PUT:
 
-Após sucesso:
+- botão mostra `Confirmando...`;
+- `Voltar` fica desabilitado;
+- fechar o dialog fica bloqueado;
+- double-submit é impedido.
 
-- aplica resposta do backend;
-- atualiza `presenca`;
-- atualiza o form;
-- limpa `slugConsultado`;
-- atualiza baseline do `PageFormState`.
+Sucesso:
 
-Assim, depois de salvar `empresa-b`, cancelar uma alteração posterior volta para `empresa-b`, não para o valor inicial carregado.
+- dialog fecha retornando `PresencaPublicaResponse`;
+- componente pai aplica a resposta;
+- URL atual e URL local passam a refletir o novo slug;
+- toast `Endereço público alterado com sucesso.`;
+- não há novo `GET`.
 
-Erro no save:
+Erro:
 
-- mantém valor digitado;
-- mantém consulta válida correspondente;
-- libera nova tentativa.
+- dialog permanece aberto;
+- slug escolhido é preservado;
+- mensagem de erro é exibida;
+- retry fica liberado.
 
-## Copiar
+## Domínio Próprio
 
-Preservado:
+Domínio próprio permanece fora da UI desta etapa.
 
-- `navigator.clipboard`;
-- cópia de `slugPreviewHost`;
-- toast `Endereço copiado.`;
-- toast `Não foi possível copiar o endereço.`
-
-Copiar continua sendo ação contextual, sem navegação e fora do footer.
-
-## Estados
-
-Foram adicionados estados explícitos:
-
-- loading;
-- erro com retry;
-- forbidden;
-- content.
-
-Falha no `GET api/presenca-publica` não renderiza formulário vazio.
-
-Retry chama apenas:
-
-`carregar()`
-
-sem reload da aplicação.
-
-Quando o GET retorna 403, a tela exibe estado de acesso restrito em vez de erro genérico.
-
-## Domínio Próprio Latente
-
-O service e os models de domínio próprio foram preservados porque podem ter consumidores ou uso futuro:
+Preservados no service/model por compatibilidade e uso futuro:
 
 - `dominioProprio`;
 - `dominioProprioAtivo`;
 - `configurarDominioProprio()`;
 - `removerDominioProprio()`.
 
-A UI de domínio próprio não foi reintroduzida.
+Não foram adicionados:
 
-Não foram criados:
-
-- configuração de DNS;
+- DNS;
 - SSL;
 - ativação/desativação de domínio próprio;
 - controles de domínio próprio no template.
 
-Situação registrada como dívida técnica/código latente para decisão futura.
-
-## Responsividade
-
-Não houve redesign mobile.
-
-Foram preservados estilos locais apenas para:
-
-- campo de subdomínio com sufixo;
-- ações contextuais;
-- preview;
-- feedback de disponibilidade.
-
-O shell, seção e footer seguem os componentes compartilhados.
-
 ## Testes Focados
 
-`npx ng test --watch=false --browsers=ChromeHeadless --include='src/app/pages/config/presenca-publica/presenca-publica.component.spec.ts'`
+Specs de página cobrem:
 
-Resultado: `12 SUCCESS`.
+- carregamento da presença;
+- resumo do endereço atual;
+- status publicado/não publicado;
+- abrir URL;
+- copiar URL;
+- ambiente local oculto em produção;
+- ambiente local visível em desenvolvimento;
+- abertura do dialog;
+- resposta do dialog atualizando endereço sem novo `GET`;
+- cancelamento do dialog sem alteração;
+- erro/retry;
+- forbidden.
 
-Cobertura adicionada:
+Specs de dialog cobrem:
 
-- PageCard único;
-- SectionCard;
-- footer Cancelar + Salvar;
-- ausência de botão local `Alterar`;
-- loading/error/retry/forbidden;
-- validators;
-- normalização via `catalogoSlugify`;
-- domínio fixo;
-- prévia;
-- slug atual sem request;
-- disponível/indisponível;
-- resposta obsoleta ignorada;
-- save bloqueado sem consulta válida;
-- payload correto;
-- baseline após save;
-- erro no save preservando dados;
-- cancelar sem novo GET;
-- clipboard sucesso/falha;
-- domínio próprio latente fora da UI.
+- abertura com endereço atual;
+- campo vazio/inválido;
+- slugify;
+- consulta;
+- pending;
+- stale response;
+- indisponível;
+- disponível;
+- alteração do campo invalidando consulta;
+- `Usar este endereço` desabilitado sem consulta;
+- troca para confirmação;
+- confirmação com endereço atual + novo;
+- `Voltar` preservando consulta;
+- `Cancelar` sem PUT;
+- `Confirmar alteração` com PUT único;
+- payload sem `empresaId`;
+- double-submit bloqueado;
+- sucesso retornando response;
+- erro mantendo dialog aberto.
+
+Resultado focado após este refinamento:
+
+`npx ng test --watch=false --browsers=ChromeHeadless --include='src/app/pages/config/presenca-publica/**/*.spec.ts'`
+
+Resultado: `28 SUCCESS`.
 
 ## Validações
 
-`npx tsc --noEmit -p tsconfig.app.json`
+Validações obrigatórias deste refinamento:
 
-Resultado: sucesso.
-
-`npm test -- --watch=false --browsers=ChromeHeadless`
-
-Resultado: `618 SUCCESS`.
-
-Novas falhas: `0`.
-
-`npm run build`
-
-Resultado: sucesso. Permanecem warnings preexistentes fora do escopo desta tela, incluindo optional/nullish chains, imports não utilizados, avisos Sass e dependências CommonJS.
-
-`git diff --check`
-
-Resultado: sucesso.
+- `npm test -- --watch=false --browsers=ChromeHeadless`
+- `npm run build`
+- `npx tsc --noEmit -p tsconfig.app.json`
+- `git diff --check`
 
 Validação visual: pendente de revisão manual pelo responsável do produto.

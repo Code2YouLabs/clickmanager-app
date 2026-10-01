@@ -74,6 +74,7 @@ describe('SiteConfiguracoesComponent', () => {
     expect(fixture.nativeElement.querySelector('form')).toBeNull();
     expect(text()).not.toContain('Fale conosco');
     expect(text()).not.toContain('Olá! Acessei o site');
+    expect(component.siteAtivoControl.value).toBeFalse();
   });
 
   it('carrega configuração e preserva separação de presença pública e identidade', () => {
@@ -90,6 +91,30 @@ describe('SiteConfiguracoesComponent', () => {
     expect(text()).not.toContain('Escolher favicon');
     expect(text()).not.toContain('Salvar favicon');
     expect(text()).not.toContain('Testar domínio próprio');
+  });
+
+  it('não presume site ativo quando backend não informa o estado de publicação', () => {
+    createComponent();
+    resolveConfig(config({ siteAtivo: undefined as any }));
+
+    expect(component.siteAtivoControl.value).toBeFalse();
+    expect(component.siteInativo).toBeTrue();
+    expect(text()).toContain('Seu site ainda não está publicado.');
+  });
+
+  it('preserva siteAtivo false e true vindos do backend', () => {
+    createComponent();
+    resolveConfig(config({ siteAtivo: false }));
+    expect(component.siteAtivoControl.value).toBeFalse();
+    expect(text()).toContain('Seu site ainda não está publicado.');
+
+    component.carregarConfiguracao();
+    service.buscar.and.returnValue(of(config({ siteAtivo: true })));
+    component.carregarConfiguracao();
+    fixture.detectChanges();
+
+    expect(component.siteAtivoControl.value).toBeTrue();
+    expect(text()).toContain('Seu site está publicado e pode ser acessado pelo endereço público.');
   });
 
   it('mostra erro recuperável com retry sem renderizar formulário', () => {
@@ -233,6 +258,19 @@ describe('SiteConfiguracoesComponent', () => {
     expect(component.whatsappTextoControl.value).toBe('B');
     expect(component.siteAtivoControl.value).toBeFalse();
     expect(component.whatsappTelefoneControl.value).toBe('11977776666');
+  });
+
+  it('envia siteAtivo true ao ativar e false ao desativar', () => {
+    createComponent();
+    resolveConfig(config({ siteAtivo: false }));
+
+    component.siteAtivoControl.setValue(true);
+    component.salvar();
+    expect(service.atualizar.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({ siteAtivo: true }));
+
+    component.siteAtivoControl.setValue(false);
+    component.salvar();
+    expect(service.atualizar.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({ siteAtivo: false }));
   });
 
   it('mantém alterações no formulário quando salvar falha e libera nova tentativa', () => {

@@ -1,0 +1,118 @@
+<div mat-dialog-title class="dialog-head">
+  <span class="dialog-head__copy">
+    <strong>{{ etapa === 'pesquisa' ? 'Alterar endereço público' : 'Confirmar alteração' }}</strong>
+    <span>
+      {{ etapa === 'pesquisa'
+        ? 'Consulte um novo endereço antes de aplicá-lo à sua empresa.'
+        : 'Revise o novo endereço antes de concluir.' }}
+    </span>
+  </span>
+  <button mat-icon-button type="button" aria-label="Fechar" (click)="fechar()" [disabled]="confirmando">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<mat-divider></mat-divider>
+
+<mat-dialog-content class="dialog-content">
+  @if (etapa === 'pesquisa') {
+    <form id="alterar-endereco-publico-form" [formGroup]="form" class="address-dialog-form" (ngSubmit)="verificarDisponibilidade()">
+      <div class="address-current">
+        <span>Endereço atual</span>
+        <strong>{{ hostAtual }}</strong>
+      </div>
+
+      <div class="address-field">
+        <mat-form-field appearance="outline" class="address-field__input">
+          <mat-label>Novo subdomínio</mat-label>
+          <input
+            matInput
+            formControlName="slug"
+            maxlength="80"
+            placeholder="minha-grafica"
+            autocomplete="off"
+            (input)="normalizarSlugDigitado()">
+          <mat-error *ngIf="slugControl.hasError('required')">Informe o subdomínio.</mat-error>
+          <mat-error *ngIf="slugControl.hasError('maxlength')">Use no máximo 80 caracteres.</mat-error>
+          <mat-error *ngIf="slugControl.hasError('pattern')">Use letras, números e hífens, sem começar ou terminar com hífen.</mat-error>
+        </mat-form-field>
+        <div class="address-field__suffix" aria-hidden="true">.{{ data.dominioPublico }}</div>
+      </div>
+
+      <button
+        mat-stroked-button
+        color="primary"
+        type="submit"
+        [disabled]="consultando || confirmando || slugControl.invalid">
+        <mat-spinner *ngIf="consultando" diameter="18"></mat-spinner>
+        <mat-icon *ngIf="!consultando">search</mat-icon>
+        {{ consultando ? 'Verificando...' : 'Verificar disponibilidade' }}
+      </button>
+    </form>
+
+    @if (resultadoDisponivel) {
+      <div class="address-result address-result--success" role="status">
+        <mat-icon>check_circle</mat-icon>
+        <span>{{ novoHost }} está disponível</span>
+      </div>
+    } @else if (resultadoIndisponivel && mesmoEnderecoAtual) {
+      <div class="address-result address-result--muted" role="status">
+        <mat-icon>info</mat-icon>
+        <span>Este já é o endereço atual da sua empresa.</span>
+      </div>
+    } @else if (resultadoIndisponivel) {
+      <div class="address-result address-result--error" role="status">
+        <mat-icon>cancel</mat-icon>
+        <span>Esse endereço já está em uso.</span>
+      </div>
+    }
+  } @else {
+    <div class="address-confirmation">
+      <div class="address-change-card">
+        <div>
+          <span>Endereço atual</span>
+          <strong>{{ hostAtual }}</strong>
+        </div>
+        <mat-icon aria-hidden="true">south</mat-icon>
+        <div>
+          <span>Novo endereço</span>
+          <strong>{{ novoHost }}</strong>
+        </div>
+      </div>
+
+      <p class="address-warning">
+        Links compartilhados com o endereço anterior podem deixar de funcionar.
+      </p>
+
+      @if (erroAlteracao) {
+        <div class="address-result address-result--error" role="alert">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ erroAlteracao }}</span>
+        </div>
+      }
+    </div>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dialog-actions">
+  @if (etapa === 'pesquisa') {
+    <button mat-stroked-button color="primary" type="button" (click)="cancelar()" [disabled]="confirmando">
+      Cancelar
+    </button>
+    <button mat-flat-button color="primary" type="button" (click)="irParaConfirmacao()" [disabled]="!podeUsarEndereco">
+      Usar este endereço
+    </button>
+  } @else {
+    <button mat-stroked-button color="primary" type="button" (click)="voltarParaPesquisa()" [disabled]="confirmando">
+      Voltar
+    </button>
+    <button mat-flat-button color="primary" type="button" (click)="confirmarAlteracao()" [disabled]="!podeConfirmar">
+      @if (confirmando) {
+        <mat-spinner diameter="18"></mat-spinner>
+        Confirmando...
+      } @else {
+        Confirmar alteração
+      }
+    </button>
+  }
+</mat-dialog-actions>

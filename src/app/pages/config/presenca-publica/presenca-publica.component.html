@@ -1,11 +1,6 @@
 <app-page-card
   titulo="Presença Pública"
-  subtitulo="Gerencie os endereços usados para acessar os recursos públicos da empresa."
-  [formState]="pageFormState"
-  [footerActions]="footerActions"
-  [saving]="salvandoSlug"
-  savingText="Salvando..."
-  [actionsDisabled]="carregando || !!erro || semPermissao || consultandoSlug"
+  subtitulo="Gerencie como sua empresa é acessada publicamente."
   [mostrarDivisor]="true">
   @if (carregando) {
     <div class="presenca-state" role="status" aria-busy="true">
@@ -28,80 +23,105 @@
       </button>
     </div>
   } @else {
-    <form
-      id="presenca-publica-form"
-      [formGroup]="form"
-      (ngSubmit)="salvarSlug()"
-      class="presenca-form">
-      <app-section-card
-        titulo="Endereço ClickManager"
-        subtitulo="Escolha o subdomínio público da empresa. O final .clickmanager.com.br é fixo.">
-        <app-status-badge section-card-actions status="ATIVO" [compact]="true"></app-status-badge>
-
-        <div class="presenca-slug-grid">
-          <div class="presenca-slug-input-group">
-            <mat-form-field appearance="outline" class="presenca-slug-field">
-              <mat-label>Subdomínio</mat-label>
-              <input
-                matInput
-                formControlName="slug"
-                maxlength="80"
-                placeholder="minha-grafica"
-                autocomplete="off"
-                (input)="normalizarSlugDigitado()">
-              <mat-error *ngIf="slugControl.hasError('required')">Informe o subdomínio.</mat-error>
-              <mat-error *ngIf="slugControl.hasError('maxlength')">Use no máximo 80 caracteres.</mat-error>
-              <mat-error *ngIf="slugControl.hasError('pattern')">Use letras, números e hífens, sem começar ou terminar com hífen.</mat-error>
-            </mat-form-field>
-
-            <div class="presenca-domain-suffix" aria-hidden="true">.{{ dominioFixo }}</div>
+    <div class="presenca-summary">
+      <section class="presenca-hero" aria-labelledby="presenca-endereco-title">
+        <div class="presenca-hero__main">
+          <div class="presenca-hero__icon" aria-hidden="true">
+            <mat-icon>language</mat-icon>
           </div>
 
-          <div class="presenca-slug-actions">
-            <button
-              mat-stroked-button
-              color="primary"
-              type="button"
-              (click)="consultarSlug()"
-              [disabled]="consultandoSlug || slugControl.invalid">
-              @if (consultandoSlug) {
-                <mat-spinner diameter="18"></mat-spinner>
-              } @else {
-                <mat-icon>search</mat-icon>
-              }
-              Consultar
-            </button>
+          <div class="presenca-hero__content">
+            <div class="presenca-hero__heading">
+              <div>
+                <h3 id="presenca-endereco-title">Endereço público</h3>
+                <p>Seu endereço público ClickManager.</p>
+              </div>
 
-            <button mat-stroked-button color="primary" type="button" (click)="copiarHost(slugPreviewHost)">
+              @if (sitePublicado) {
+                <span class="presenca-status presenca-status--active" role="status">
+                  <span aria-hidden="true"></span>
+                  Site publicado
+                </span>
+              } @else if (siteNaoPublicado) {
+                <span class="presenca-status presenca-status--inactive" role="status">
+                  <span aria-hidden="true"></span>
+                  Site não publicado
+                </span>
+              }
+            </div>
+
+            <strong class="presenca-url">{{ enderecoClickManager }}</strong>
+
+            <div class="presenca-actions">
+              <button
+                mat-flat-button
+                color="primary"
+                type="button"
+                (click)="abrirUrl(urlClickManagerAtual)"
+                [disabled]="!urlClickManagerAtual">
+                <mat-icon>open_in_new</mat-icon>
+                Abrir site
+              </button>
+              <button
+                mat-stroked-button
+                color="primary"
+                type="button"
+                (click)="copiarUrl(urlClickManagerAtual)"
+                [disabled]="!urlClickManagerAtual">
+                <mat-icon>content_copy</mat-icon>
+                Copiar endereço
+              </button>
+              <button
+                mat-button
+                color="primary"
+                type="button"
+                (click)="abrirAlteracaoEndereco()"
+                [disabled]="!presenca">
+                <mat-icon>edit</mat-icon>
+                Alterar endereço
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      @if (siteNaoPublicado) {
+        <section class="presenca-publication-note" aria-labelledby="presenca-publicacao-title">
+          <mat-icon aria-hidden="true">visibility_off</mat-icon>
+          <div>
+            <h4 id="presenca-publicacao-title">Site ainda não publicado</h4>
+            <p>Seu endereço já está reservado. Publique o site quando o conteúdo estiver pronto.</p>
+          </div>
+          <a mat-stroked-button color="primary" routerLink="/page/site/configuracoes">
+            Configurar publicação
+          </a>
+        </section>
+      }
+
+      @if (siteConfigIndisponivel) {
+        <p class="presenca-muted-status" role="status">
+          Não foi possível confirmar o status de publicação agora.
+        </p>
+      }
+
+      @if (mostrarAmbienteDesenvolvimento) {
+        <section class="presenca-dev-panel" aria-labelledby="presenca-dev-title">
+          <div>
+            <span id="presenca-dev-title">Ambiente de desenvolvimento</span>
+            <strong>{{ urlLocalAtual }}</strong>
+          </div>
+          <div class="presenca-dev-panel__actions">
+            <button mat-stroked-button color="primary" type="button" (click)="abrirUrl(urlLocalAtual)">
+              <mat-icon>open_in_new</mat-icon>
+              Abrir
+            </button>
+            <button mat-stroked-button color="primary" type="button" (click)="copiarUrl(urlLocalAtual)">
               <mat-icon>content_copy</mat-icon>
               Copiar
             </button>
           </div>
-        </div>
-
-        <div class="presenca-preview">
-          <span>Prévia do endereço</span>
-          <strong>{{ slugPreviewHost }}</strong>
-        </div>
-
-        @if (slugConsultado?.disponivel) {
-          <div class="presenca-feedback presenca-feedback--success" role="status">
-            <mat-icon>check_circle</mat-icon>
-            <span>
-              @if (slugConsultado?.slug === slugAtual) {
-                Este já é o endereço atual da empresa.
-              } @else {
-                {{ slugConsultado?.slug }}.{{ dominioFixo }} está disponível.
-              }
-            </span>
-          </div>
-        } @else if (slugConsultado && !slugConsultado.disponivel) {
-          <div class="presenca-feedback presenca-feedback--error" role="status">
-            <mat-icon>cancel</mat-icon>
-            <span>{{ slugConsultado.slug }}.{{ dominioFixo }} não está disponível.</span>
-          </div>
-        }
-      </app-section-card>
-    </form>
+        </section>
+      }
+    </div>
   }
 </app-page-card>

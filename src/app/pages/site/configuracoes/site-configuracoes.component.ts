@@ -59,7 +59,7 @@ export class SiteConfiguracoesComponent implements OnInit {
 
   ngOnInit(): void {
     this.form = this.fb.group({
-      siteAtivo: [true],
+      siteAtivo: [false],
       orcamentoAtivo: [true],
       whatsappAtivo: [true],
       whatsappTelefone: ['', [Validators.pattern(/^\d{10,13}$/)]],
@@ -143,8 +143,14 @@ export class SiteConfiguracoesComponent implements OnInit {
     return this.siteAtivoControl.value !== true;
   }
 
-  get mensagemSiteInativo(): string {
-    return this.siteInativo ? 'Site desativado. Ative o site para abrir este endereço.' : '';
+  get mensagemPublicacao(): string {
+    return this.siteInativo
+      ? 'Seu site ainda não está publicado. Ative quando o conteúdo estiver pronto para ser acessado pelos clientes.'
+      : 'Seu site está publicado e pode ser acessado pelo endereço público.';
+  }
+
+  get mensagemAbrirSite(): string {
+    return this.siteInativo ? 'Ative o Site Público para acessar este endereço.' : '';
   }
 
   carregarConfiguracao(): void {
@@ -204,7 +210,7 @@ export class SiteConfiguracoesComponent implements OnInit {
   private preencherFormulario(config: SiteConfigResponse): void {
     this.configAtual = config;
     this.form.patchValue({
-      siteAtivo: config.siteAtivo ?? true,
+      siteAtivo: config.siteAtivo ?? false,
       orcamentoAtivo: config.orcamentoAtivo ?? true,
       whatsappAtivo: config.whatsappAtivo ?? true,
       whatsappTelefone: this.normalizarTelefoneParaFormulario(config.whatsappTelefone),
