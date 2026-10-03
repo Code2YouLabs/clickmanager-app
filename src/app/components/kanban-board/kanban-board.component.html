@@ -1,0 +1,103 @@
+<section class="kanban-board" [attr.aria-label]="boardLabel">
+  @if (allEmpty) {
+    <div class="kanban-board__empty" role="status">
+      <strong>{{ emptyTitle }}</strong>
+      <span>{{ emptyDescription }}</span>
+    </div>
+  }
+
+  <div class="kanban-board__scroll" tabindex="0" cdkDropListGroup>
+    @for (column of columns; track columnTrackBy($index, column)) {
+      <article
+        class="kanban-column"
+        [class.kanban-column--drop-source]="columnDropState(column) === 'source'"
+        [class.kanban-column--drop-allowed]="columnDropState(column) === 'allowed'"
+        [class.kanban-column--drop-blocked]="columnDropState(column) === 'blocked'"
+        [class.kanban-column--drop-loading]="columnDropState(column) === 'loading'"
+        [attr.data-tone]="column.tone || 'neutral'"
+        [attr.aria-labelledby]="'kanban-column-' + column.id">
+        <header class="kanban-column__header" [matTooltip]="columnDropHint(column)" matTooltipPosition="above">
+          <h3 [id]="'kanban-column-' + column.id">{{ column.title }}</h3>
+          <span class="kanban-column__count" [attr.aria-label]="(column.count ?? column.items.length) + ' registros'">
+            {{ column.count ?? column.items.length }}
+          </span>
+        </header>
+
+        <div class="kanban-column__body">
+          @if (column.loading && !column.items.length) {
+            <div class="kanban-skeleton" role="status" aria-label="Carregando coluna">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          } @else if (column.error && !column.items.length) {
+            <div class="kanban-state kanban-state--error" role="alert">
+              <strong>Não foi possível carregar.</strong>
+              <span>{{ column.error }}</span>
+              <button mat-stroked-button type="button" (click)="retryColumn.emit(column.id)">
+                {{ retryLabel }}
+              </button>
+            </div>
+          } @else {
+            <div
+              class="kanban-card-list"
+              role="list"
+              cdkDropList
+              [id]="dropListId(column)"
+              [cdkDropListData]="column.items"
+              (cdkDropListDropped)="onDrop($event)">
+              @for (item of column.items; track itemTrackBy($index, item)) {
+                <button
+                  class="kanban-card"
+                  [class.kanban-card--drag-enabled]="dragEnabled && !cardDisabled(item, column)"
+                  [class.kanban-card--drag-disabled]="dragEnabled && cardDisabled(item, column)"
+                  type="button"
+                  role="listitem"
+                  cdkDrag
+                  [cdkDragData]="item"
+                  [cdkDragDisabled]="cardDisabled(item, column)"
+                  [cdkDragStartDelay]="dragStartDelay"
+                  [attr.aria-label]="cardAriaLabel(item, column)"
+                  (cdkDragStarted)="onDragStarted($event, item, column, $index)"
+                  (cdkDragEnded)="onDragEnded($event, item, column, $index)"
+                  (click)="onCardClick(item)">
+                  @if (cardTemplate) {
+                    <ng-container
+                      [ngTemplateOutlet]="cardTemplate.template"
+                      [ngTemplateOutletContext]="{ $implicit: item, item: item, columnId: column.id }">
+                    </ng-container>
+                  }
+                </button>
+              } @empty {
+                <div class="kanban-state" role="status">
+                  <span>{{ column.emptyText || 'Nenhum registro nesta etapa.' }}</span>
+                </div>
+              }
+            </div>
+
+            @if (column.error) {
+              <div class="kanban-state kanban-state--inline-error" role="alert">
+                <span>{{ column.error }}</span>
+                <button mat-button type="button" (click)="retryColumn.emit(column.id)">{{ retryLabel }}</button>
+              </div>
+            }
+
+            @if (column.hasMore) {
+              <button
+                mat-stroked-button
+                class="kanban-column__load-more"
+                type="button"
+                [disabled]="column.loadingMore"
+                (click)="loadMore.emit(column.id)">
+                @if (column.loadingMore) {
+                  <mat-spinner diameter="16"></mat-spinner>
+                }
+                <span>{{ loadMoreLabel }}</span>
+              </button>
+            }
+          }
+        </div>
+      </article>
+    }
+  </div>
+</section>
