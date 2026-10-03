@@ -3,6 +3,111 @@
 html, body { height: 100%; }
 body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 
+body {
+  .sidebarNav,
+  .mat-drawer-content.contentWrapper,
+  .contentWrapper,
+  .pageWrapper,
+  .pageContent,
+  .mobile-bottom-nav {
+    transition:
+      width 220ms ease,
+      max-width 220ms ease,
+      margin 220ms ease,
+      padding 220ms ease,
+      opacity 180ms ease,
+      transform 220ms ease;
+  }
+
+  app-header,
+  app-billing-banner,
+  app-breadcrumb,
+  .mobile-topbar,
+  .onboarding-resume-banner {
+    transition:
+      max-height 200ms ease,
+      margin 200ms ease,
+      opacity 160ms ease,
+      transform 200ms ease;
+  }
+}
+
+body.cm-kanban-focus-mode {
+  .mat-drawer-content.contentWrapper,
+  .contentWrapper {
+    margin-left: 0 !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    transform: none !important;
+  }
+
+  .mainWrapper {
+    min-height: 100dvh;
+  }
+
+  .sidebarNav {
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    overflow: hidden !important;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-18px);
+    visibility: hidden;
+  }
+
+  .pageWrapper {
+    max-width: none !important;
+    min-height: 100dvh;
+  }
+
+  .pageContent {
+    margin-top: 0 !important;
+    padding: 8px 0 10px !important;
+  }
+
+  .mobile-bottom-nav,
+  .mobile-shell-backdrop {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(14px);
+    visibility: hidden;
+  }
+
+  .mobile-topbar,
+  .onboarding-resume-banner,
+  app-header,
+  app-billing-banner,
+  app-breadcrumb {
+    display: block;
+    max-height: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    overflow: hidden !important;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body {
+    .sidebarNav,
+    .mat-drawer-content.contentWrapper,
+    .contentWrapper,
+    .pageWrapper,
+    .pageContent,
+    .mobile-bottom-nav,
+    app-header,
+    app-billing-banner,
+    app-breadcrumb,
+    .mobile-topbar,
+    .onboarding-resume-banner {
+      transition: none !important;
+    }
+  }
+}
+
 /* Spinner Global */
 .loading-overlay {
     position: fixed;
