@@ -1,72 +1,120 @@
-<h2 mat-dialog-title>Novo cliente</h2>
+<div mat-dialog-title class="dialog-head">
+  <span class="dialog-head__copy">
+    <strong>Novo cliente</strong>
+    <span>Cadastre os dados essenciais para vincular ao pedido.</span>
+  </span>
+  <button mat-icon-button type="button" aria-label="Fechar" (click)="cancelar()" [disabled]="salvando">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
 
-<mat-dialog-content>
-  <form [formGroup]="form" class="cliente-dialog-form">
-    <mat-form-field appearance="outline">
-      <mat-label>Nome</mat-label>
-      <input matInput formControlName="nome" autocomplete="name" />
-      <mat-error *ngIf="form.get('nome')?.hasError('required')">Nome obrigatório</mat-error>
-    </mat-form-field>
+<mat-divider></mat-divider>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Telefone</mat-label>
-      <input matInput formControlName="telefone" mask="(00) 00000-0000||(00) 0000-0000" autocomplete="tel" />
-      <mat-error *ngIf="form.get('telefone')?.hasError('required')">Telefone obrigatório</mat-error>
-    </mat-form-field>
+<mat-dialog-content class="dialog-content">
+  <form id="novo-cliente-dialog-form" [formGroup]="form" class="cliente-dialog-form" (ngSubmit)="salvar()">
+    <section class="cliente-dialog-section" aria-labelledby="novo-cliente-dados-basicos">
+      <header class="cliente-dialog-section__header">
+        <strong id="novo-cliente-dados-basicos">Dados básicos</strong>
+        <span>Nome, contato e documento do cliente.</span>
+      </header>
 
-    <mat-form-field appearance="outline">
-      <mat-label>E-mail</mat-label>
-      <input matInput formControlName="email" autocomplete="email" />
-      <mat-error *ngIf="form.get('email')?.hasError('email')">E-mail inválido</mat-error>
-    </mat-form-field>
+      <div class="cliente-dialog-grid">
+        <app-input-texto-restrito
+          [control]="nomeControl"
+          label="Nome"
+          placeholder="Digite o nome do cliente"
+          autocomplete="name"
+          requiredError="Nome obrigatório">
+        </app-input-texto-restrito>
 
-    <mat-form-field appearance="outline">
-      <mat-label>CPF ou CNPJ</mat-label>
-      <input matInput formControlName="documento" />
-    </mat-form-field>
+        <app-input-telefone
+          [control]="telefoneControl"
+          label="Telefone"
+          placeholder="Digite o telefone do cliente">
+        </app-input-telefone>
 
-    <div formGroupName="endereco" class="cliente-dialog-form__address">
-      <mat-form-field appearance="outline">
-        <mat-label>CEP</mat-label>
-        <input matInput formControlName="cep" mask="00000-000" />
-      </mat-form-field>
+        <app-input-email
+          [control]="emailControl"
+          label="E-mail"
+          placeholder="Digite o e-mail">
+        </app-input-email>
 
-      <mat-form-field appearance="outline" class="cliente-dialog-form__wide">
-        <mat-label>Logradouro</mat-label>
-        <input matInput formControlName="logradouro" />
-      </mat-form-field>
+        <app-input-documento
+          [control]="documentoControl"
+          label="CPF ou CNPJ"
+          placeholder="Opcional">
+        </app-input-documento>
+      </div>
+    </section>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Número</mat-label>
-        <input matInput formControlName="numero" />
-      </mat-form-field>
+    <section class="cliente-dialog-section" aria-labelledby="novo-cliente-endereco">
+      <header class="cliente-dialog-section__header">
+        <strong id="novo-cliente-endereco">Endereço</strong>
+        <span>Dados opcionais para entrega ou cadastro.</span>
+      </header>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Bairro</mat-label>
-        <input matInput formControlName="bairro" />
-      </mat-form-field>
+      <div class="cliente-dialog-grid cliente-dialog-grid--address">
+        <app-input-cep
+          class="cliente-dialog-cep"
+          [control]="cepControl"
+          label="CEP"
+          placeholder="00000-000"
+          [autoBuscar]="false"
+          [showSearchButton]="true"
+          searchButtonText="Buscar endereço"
+          (enderecoEncontrado)="onEnderecoEncontrado($event)">
+        </app-input-cep>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Cidade</mat-label>
-        <input matInput formControlName="cidade" />
-      </mat-form-field>
+        <app-input-texto-restrito
+          class="cliente-dialog-grid__wide"
+          [control]="logradouroControl"
+          label="Logradouro"
+          placeholder="Rua, avenida..."
+          autocomplete="street-address">
+        </app-input-texto-restrito>
 
-      <mat-form-field appearance="outline">
-        <mat-label>UF</mat-label>
-        <input matInput formControlName="estado" maxlength="2" />
-      </mat-form-field>
+        <app-input-texto-restrito
+          [control]="numeroControl"
+          label="Número"
+          placeholder="Nº"
+          inputmode="numeric">
+        </app-input-texto-restrito>
 
-      <mat-form-field appearance="outline" class="cliente-dialog-form__wide">
-        <mat-label>Complemento</mat-label>
-        <input matInput formControlName="complemento" />
-      </mat-form-field>
-    </div>
+        <app-input-texto-restrito
+          [control]="bairroControl"
+          label="Bairro"
+          placeholder="Informe o bairro">
+        </app-input-texto-restrito>
+
+        <app-input-texto-restrito
+          [control]="cidadeControl"
+          label="Cidade"
+          placeholder="Informe a cidade">
+        </app-input-texto-restrito>
+
+        <app-input-texto-restrito
+          [control]="estadoControl"
+          label="Estado"
+          placeholder="UF"
+          [maxlength]="2">
+        </app-input-texto-restrito>
+
+        <app-input-texto-restrito
+          class="cliente-dialog-grid__wide"
+          [control]="complementoControl"
+          label="Complemento"
+          placeholder="Apartamento, bloco, referência...">
+        </app-input-texto-restrito>
+      </div>
+    </section>
   </form>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end">
-  <button mat-stroked-button type="button" (click)="cancelar()" [disabled]="salvando">Cancelar</button>
-  <button mat-flat-button color="primary" type="button" (click)="salvar()" [disabled]="salvando">
+<mat-dialog-actions align="end" class="dialog-actions">
+  <button mat-stroked-button color="primary" type="button" (click)="cancelar()" [disabled]="salvando">
+    Cancelar
+  </button>
+  <button mat-flat-button color="primary" type="submit" form="novo-cliente-dialog-form" [disabled]="salvando">
     <mat-spinner *ngIf="salvando" diameter="18"></mat-spinner>
     <mat-icon *ngIf="!salvando">save</mat-icon>
     <span>{{ salvando ? 'Salvando...' : 'Salvar cliente' }}</span>

@@ -41,6 +41,12 @@ describe('PerfilDialogComponent', () => {
     expect(component.modulos[1].recursos.map(recurso => recurso.codigo)).toEqual(['ORCAMENTOS']);
   });
 
+  it('ordena módulos pela ordem do catálogo e permissões pela ordem', () => {
+    const { component } = criarComponente();
+    expect(component.modulos.map(modulo => modulo.codigo)).toEqual(['CATALOGO', 'ORCAMENTOS']);
+    expect(component.modulos[1].recursos[0].permissoes.map(permissao => permissao.id)).toEqual([3, 4, 5]);
+  });
+
   it('inicia módulos e recursos com permissões selecionadas expandidos', () => {
     const { component } = criarComponente({ selecionadas: ['ORCAMENTOS_VER'] });
     const orcamentos = component.modulos.find(modulo => modulo.codigo === 'ORCAMENTOS')!;
@@ -76,6 +82,17 @@ describe('PerfilDialogComponent', () => {
     expect(component.modulosFiltrados.flatMap(modulo => modulo.recursos.flatMap(recurso => recurso.permissoes)).length).toBe(5);
   });
 
+  it('atualiza imediatamente o resultado de somente selecionadas após desmarcar', () => {
+    const { component } = criarComponente({ selecionadas: ['ORCAMENTOS_VER'] });
+    component.alternarSomenteSelecionadas(true);
+    component.getPermissaoControl('3').setValue(false);
+    component.atualizarFiltroVisual();
+    expect(component.modulosFiltrados).toEqual([]);
+    expect(component.semResultado).toBeTrue();
+    component.alternarSomenteSelecionadas(false);
+    expect(component.modulosFiltrados.flatMap(modulo => modulo.recursos.flatMap(recurso => recurso.permissoes)).length).toBe(5);
+  });
+
   it('seleciona módulo, recurso e permissão individual com estado parcial', () => {
     const { component } = criarComponente();
     const orcamentos = component.modulos.find(modulo => modulo.codigo === 'ORCAMENTOS')!;
@@ -93,6 +110,19 @@ describe('PerfilDialogComponent', () => {
 
     expect(component.moduloParcial(catalogo)).toBeTrue();
     expect(component.contadorModulo(catalogo)).toBe('1/2');
+    expect(component.algumasSelecionadas).toBeTrue();
+  });
+
+  it('permite expandir e recolher módulo e recurso', () => {
+    const { component } = criarComponente();
+    const modulo = component.modulos[0];
+    const recurso = modulo.recursos[0];
+    component.alternarModulo(modulo);
+    component.alternarRecurso(modulo, recurso);
+    expect(component.moduloExpandido(modulo)).toBeTrue();
+    expect(component.recursoExpandido(modulo, recurso)).toBeTrue();
+    component.alternarModulo(modulo);
+    expect(component.moduloExpandido(modulo)).toBeFalse();
   });
 
   it('selecionar visíveis atua somente no resultado filtrado', () => {
@@ -127,6 +157,29 @@ describe('PerfilDialogComponent', () => {
 
     expect(component.avisoProprietario).toBeTrue();
     expect(component.totalSelecionadas).toBe(0);
+  });
+
+  it('distingue catálogo vazio de busca sem resultado', () => {
+    const dialogRef = { close: jasmine.createSpy('close') };
+    const component = new PerfilDialogComponent(new FormBuilder().nonNullable, dialogRef as any,
+      { action: 'Add', perfil: {}, permissoesCatalogo: [] }, { warning: jasmine.createSpy('warning') } as any);
+    component.ngOnInit();
+    expect(component.totalPermissoes).toBe(0);
+    expect(component.semResultado).toBeFalse();
+
+    const preenchido = criarComponente().component;
+    preenchido.onBuscaChange('inexistente');
+    expect(preenchido.semResultado).toBeTrue();
+  });
+
+  it('valida nome obrigatório e cancelar fecha sem salvar', () => {
+    const { component, dialogRef, toastr } = criarComponente();
+    component.nomeControl.setValue('');
+    component.salvar();
+    expect(toastr.warning).toHaveBeenCalled();
+    expect(dialogRef.close).not.toHaveBeenCalled();
+    component.cancelar();
+    expect(dialogRef.close).toHaveBeenCalledWith();
   });
 });
 

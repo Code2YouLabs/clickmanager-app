@@ -1,63 +1,72 @@
 <app-page-card
   titulo="Suporte"
-  subtitulo="Abra chamados e acompanhe o histórico de atendimento"
+  subtitulo="Abra chamados e acompanhe o histórico de atendimento."
   [mostrarDivisor]="true"
 >
-  <app-section-card [divider]="false">
-    <div class="toolbar">
-      <div class="toolbar-summary">
-        <div class="summary-pill">
-          <span class="summary-number">{{ chamados.length }}</span>
-          <span class="summary-label">chamado(s)</span>
-        </div>
-        <div class="summary-pill active">
-          <span class="summary-number">{{ totalAbertos }}</span>
-          <span class="summary-label">em andamento</span>
-        </div>
-      </div>
+  <button page-header-actions mat-flat-button color="primary" type="button" (click)="abrirNovoChamado()">
+    <mat-icon>add</mat-icon>
+    Novo chamado
+  </button>
 
-      <div class="toolbar-actions">
-        <button mat-flat-button color="primary" (click)="abrirNovoChamado()">
-          <mat-icon>add</mat-icon>
-          Novo chamado
-        </button>
+  <div class="support-shell">
+    <div class="support-summary" aria-label="Resumo dos chamados carregados">
+      <div class="summary-pill">
+        <span class="summary-number">{{ totalItens }}</span>
+        <span class="summary-label">chamado(s)</span>
+      </div>
+      <div class="summary-pill active">
+        <span class="summary-number">{{ totalAbertosNestaLista }}</span>
+        <span class="summary-label">em andamento nesta lista</span>
       </div>
     </div>
-  </app-section-card>
 
-  <app-section-card [divider]="false">
     <div class="support-layout">
-      <aside class="support-sidebar">
+      <aside class="support-sidebar" aria-label="Lista de chamados">
         <div class="sidebar-top">
-          <mat-form-field appearance="outline" class="w-100 compact-field">
-            <mat-label>Buscar chamados</mat-label>
-            <input matInput type="text" (keyup)="aplicarFiltroBusca($event)" />
-            <mat-icon matSuffix>search</mat-icon>
-          </mat-form-field>
+          <app-input-pesquisa
+            placeholder="Buscar chamados"
+            [showLabel]="false"
+            [compact]="true"
+            [trim]="true"
+            [value]="buscaControl.value"
+            [pesquisaControl]="buscaControl"
+            (valorAlterado)="aplicarFiltroBusca($event)">
+          </app-input-pesquisa>
 
-          <mat-form-field appearance="outline" class="w-100 compact-field">
-            <mat-label>Status</mat-label>
-            <mat-select [(value)]="statusFiltro" (selectionChange)="aplicarFiltroStatus()">
-              <mat-option value="TODOS">Todos</mat-option>
-              <mat-option value="ABERTO">Aberto</mat-option>
-              <mat-option value="EM_ANALISE">Em análise</mat-option>
-              <mat-option value="AGUARDANDO_CLIENTE">Aguardando cliente</mat-option>
-              <mat-option value="RESPONDIDO">Respondido</mat-option>
-              <mat-option value="RESOLVIDO">Resolvido</mat-option>
-              <mat-option value="FECHADO">Fechado</mat-option>
-            </mat-select>
-          </mat-form-field>
+          <app-input-options
+            label="Status"
+            [control]="statusControl"
+            [options]="statusOptions"
+            labelKey="label"
+            valueKey="value"
+            [showNull]="false">
+          </app-input-options>
         </div>
 
         <div class="sidebar-list">
-          @if(carregandoLista) {
-          <div class="empty-state">Carregando chamados...</div>
+          @if(listaEstado === 'loading') {
+          <div class="support-state" role="status">
+            <mat-spinner diameter="28"></mat-spinner>
+            <span>Carregando chamados...</span>
+          </div>
+          } @else if(listaEstado === 'error') {
+          <div class="support-state support-state--error" role="alert">
+            <strong>Não foi possível carregar os chamados.</strong>
+            <span>{{ erroLista }}</span>
+            <button mat-stroked-button color="primary" type="button" (click)="retryLista()">Tentar novamente</button>
+          </div>
+          } @else if(listaEstado === 'empty') {
+          <div class="support-state">
+            <strong>Nenhum chamado aberto ainda.</strong>
+            <span>Use "Novo chamado" para falar com o suporte.</span>
+          </div>
           } @else if(chamadosFiltrados.length > 0) {
           @for(item of chamadosFiltrados; track item.id) {
           <button
             type="button"
             class="ticket-item"
             [class.selected]="item.id === chamadoSelecionado?.id"
+            [attr.aria-current]="item.id === chamadoSelecionado?.id ? 'true' : null"
             (click)="selecionarChamado(item)"
           >
             <div class="ticket-item-top">
@@ -78,28 +87,50 @@
             </div>
           </button>
           }
+
+          @if(temMaisPaginas) {
+          <button mat-stroked-button color="primary" type="button" class="load-more" (click)="carregarMais()" [disabled]="carregandoMais">
+            @if(carregandoMais) {
+            <mat-spinner diameter="18"></mat-spinner>
+            }
+            {{ carregandoMais ? 'Carregando...' : 'Carregar mais' }}
+          </button>
+          }
           } @else {
-          <div class="empty-state">
-            Nenhum chamado encontrado. Abra um novo chamado para falar com o suporte.
+          <div class="support-state">
+            <strong>Nenhum chamado corresponde aos filtros atuais.</strong>
           </div>
           }
         </div>
       </aside>
 
-      <section class="support-detail">
-        @if(carregandoDetalhe) {
-        <div class="empty-state">Carregando detalhe do chamado...</div>
+      <section class="support-detail" aria-label="Detalhe do chamado">
+        @if(detalheEstado === 'loading') {
+        <div class="support-state" role="status">
+          <mat-spinner diameter="28"></mat-spinner>
+          <span>Carregando detalhe do chamado...</span>
+        </div>
+        } @else if(detalheEstado === 'error') {
+        <div class="support-state support-state--error" role="alert">
+          <strong>Não foi possível carregar o chamado.</strong>
+          <span>{{ erroDetalhe }}</span>
+          <button mat-stroked-button color="primary" type="button" (click)="retryDetalhe()">Tentar novamente</button>
+        </div>
+        } @else if(detalheEstado === 'not-found') {
+        <div class="support-state">
+          <strong>Chamado não encontrado.</strong>
+          <span>Selecione outro chamado na lista.</span>
+        </div>
         } @else if(chamadoSelecionado) {
         <div class="detail-card">
-          <div class="detail-header">
+          <header class="detail-header">
             <div>
               <span class="detail-label">Chamado #{{ chamadoSelecionado.id }}</span>
               <h3>{{ chamadoSelecionado.assunto }}</h3>
               <div class="detail-meta">
                 <span>{{ categoriaLabel(chamadoSelecionado.categoria) }}</span>
-                <span>•</span>
                 <span>Criado em {{ chamadoSelecionado.criadoEm | date:'dd/MM/yyyy HH:mm' }}</span>
-                <span *ngIf="chamadoSelecionado.fechadoEm">• Fechado em {{ chamadoSelecionado.fechadoEm | date:'dd/MM/yyyy HH:mm' }}</span>
+                <span *ngIf="chamadoSelecionado.fechadoEm">Fechado em {{ chamadoSelecionado.fechadoEm | date:'dd/MM/yyyy HH:mm' }}</span>
               </div>
             </div>
 
@@ -109,44 +140,47 @@
               </span>
               <app-status-badge [status]="chamadoSelecionado.status"></app-status-badge>
             </div>
-          </div>
+          </header>
 
-          <div class="timeline">
-            @for(msg of chamadoSelecionado.mensagens; track msg.id) {
-            <div class="message-card" [ngClass]="autorMensagemClass(msg.autorTipo)">
+          <div class="timeline" aria-label="Histórico de mensagens">
+            @for(msg of mensagensVisiveis; track msg.id) {
+            <article class="message-card" [ngClass]="autorMensagemClass(msg.autorTipo)">
               <div class="message-head">
                 <strong>{{ msg.autorNome || 'Usuário' }}</strong>
-                <span>{{ msg.criadaEm | date:'dd/MM/yyyy HH:mm' }}</span>
+                <time [attr.datetime]="msg.criadaEm">{{ msg.criadaEm | date:'dd/MM/yyyy HH:mm' }}</time>
               </div>
               <div class="message-type">{{ msg.autorTipo === 'CLIENTE' ? 'Você' : 'Suporte' }}</div>
               <div class="message-body">{{ msg.mensagem }}</div>
-            </div>
+            </article>
             }
           </div>
 
           @if(!naoPodeResponder) {
-          <div class="reply-box">
+          <form id="resposta-chamado-form" class="reply-box" [formGroup]="respostaForm" (ngSubmit)="responderChamado()">
             <h4>Responder chamado</h4>
-            <mat-form-field appearance="outline" class="w-100">
-              <mat-label>Mensagem</mat-label>
-              <textarea matInput rows="4" maxlength="3000" [formControl]="respostaForm.controls.mensagem"></textarea>
-              <mat-hint align="end">{{ respostaForm.controls.mensagem.value?.length || 0 }}/3000</mat-hint>
-            </mat-form-field>
+            <app-input-textarea
+              label="Mensagem"
+              placeholder="Digite sua resposta"
+              [rows]="4"
+              [maxlength]="3000"
+              [control]="mensagemControl">
+            </app-input-textarea>
 
             <div class="reply-actions">
-              <button mat-stroked-button color="primary" (click)="fecharChamado()">
-                Fechar chamado
+              <button mat-stroked-button color="primary" type="button" (click)="fecharChamado()" [disabled]="fechandoChamado || salvandoResposta">
+                {{ fechandoChamado ? 'Fechando...' : 'Fechar chamado' }}
               </button>
               <button
                 mat-flat-button
                 color="primary"
-                (click)="responderChamado()"
-                [disabled]="salvandoResposta"
+                type="submit"
+                form="resposta-chamado-form"
+                [disabled]="salvandoResposta || fechandoChamado"
               >
                 {{ salvandoResposta ? 'Enviando...' : 'Enviar resposta' }}
               </button>
             </div>
-          </div>
+          </form>
           } @else {
           <div class="closed-box">
             <mat-icon>task_alt</mat-icon>
@@ -158,11 +192,12 @@
           }
         </div>
         } @else {
-        <div class="empty-state">
-          Selecione um chamado da lista para ver o histórico ou abra um novo atendimento.
+        <div class="support-state">
+          <strong>Selecione um chamado.</strong>
+          <span>Escolha um item da lista para ver o histórico ou abra um novo atendimento.</span>
         </div>
         }
       </section>
     </div>
-  </app-section-card>
+  </div>
 </app-page-card>

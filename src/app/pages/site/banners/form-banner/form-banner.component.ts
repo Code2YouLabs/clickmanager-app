@@ -1,12 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { finalize } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
 import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
-import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
-import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { PageFormState } from 'src/app/components/page-card/page-form-state';
+import { PageCardAction, PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { MaterialModule } from 'src/app/material.module';
 import { resolveStorageImageUrl } from 'src/app/pages/storage/utils/storage-media-url.util';
@@ -25,7 +26,6 @@ import { SiteBannerService } from '../../services/site-banner.service';
     MaterialModule,
     PageCardComponent,
     SectionCardComponent,
-    MobileTotalBarComponent,
     InputTextoRestritoComponent,
     InputTextareaComponent,
     SiteBannerImageUploadComponent,
@@ -46,14 +46,18 @@ export class FormBannerComponent implements OnInit {
   ];
 
   form!: FormGroup;
+  readonly formState = new PageFormState(() => this.form, {
+    read: () => this.snapshotImagem(),
+    write: (value) => this.restaurarImagem(value),
+  });
   isEditMode = false;
   bannerId!: number;
-  isMobileView = false;
   carregando = false;
   salvando = false;
   imagemSelecionada: File | null = null;
   imagemAtualUrl = '';
   previewImagemUrl = '';
+  @ViewChild(SiteBannerImageUploadComponent) private imageUpload?: SiteBannerImageUploadComponent;
 
   constructor(
     private readonly fb: FormBuilder,
@@ -64,7 +68,6 @@ export class FormBannerComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.atualizarViewport();
     this.form = this.fb.group({
       titulo: [''],
       subtitulo: [''],
@@ -85,20 +88,20 @@ export class FormBannerComponent implements OnInit {
 
     this.route.paramMap.subscribe((params) => {
       const id = params.get('id');
+      this.isEditMode = !!id;
+      this.bannerId = id ? +id : 0;
+      this.imagemSelecionada = null;
+      this.imagemAtualUrl = '';
+      this.previewImagemUrl = '';
+      this.form.reset(this.defaultsCriacao());
       if (!id) {
         this.carregarProximaOrdem();
         return;
       }
 
-      this.isEditMode = true;
-      this.bannerId = +id;
+      this.formState.begin('edit');
       this.carregarBanner(this.bannerId);
     });
-  }
-
-  @HostListener('window:resize')
-  onWindowResize(): void {
-    this.atualizarViewport();
   }
 
   get tituloControl(): FormControl {
@@ -166,15 +169,24 @@ export class FormBannerComponent implements OnInit {
   }
 
   get textoAcaoPrincipal(): string {
-    if (this.salvando) {
-      return this.isEditMode ? 'Atualizando...' : 'Salvando...';
-    }
-
     return this.isEditMode ? 'Atualizar' : 'Salvar';
   }
 
   get podeSalvar(): boolean {
     return !this.salvando && !this.carregando;
+  }
+
+  get footerActions(): PageCardAction[] {
+    if (this.carregando) {
+      return [];
+    }
+
+    return [{
+      id: 'salvar',
+      type: 'submit',
+      form: 'site-banner-form',
+      disabled: this.salvando,
+    }];
   }
 
   get previewImagem(): string {
@@ -207,21 +219,15 @@ export class FormBannerComponent implements OnInit {
       ? this.siteBannerService.atualizar(this.bannerId, payload)
       : this.siteBannerService.criar({ ...payload, imagem: this.imagemSelecionada as File });
 
-    request$.subscribe({
+    request$.pipe(finalize(() => this.salvando = false)).subscribe({
       next: () => {
-        this.salvando = false;
         this.toastr.success(this.isEditMode ? 'Banner atualizado com sucesso!' : 'Banner criado com sucesso!');
         this.router.navigate(['/page/site/banners']);
       },
       error: (err) => {
-        this.salvando = false;
         this.toastr.error(err?.userMessage || (this.isEditMode ? 'Erro ao atualizar o banner.' : 'Erro ao criar o banner.'));
       },
     });
-  }
-
-  voltar(): void {
-    this.router.navigate(['/page/site/banners']);
   }
 
   private carregarBanner(id: number): void {
@@ -230,6 +236,7 @@ export class FormBannerComponent implements OnInit {
       next: (banner) => {
         this.carregando = false;
         this.preencherFormulario(banner);
+        this.formState.loaded();
       },
       error: () => {
         this.carregando = false;
@@ -245,9 +252,11 @@ export class FormBannerComponent implements OnInit {
         const banners = Array.isArray(response) ? response : response.content || [];
         const maiorOrdem = banners.reduce((maior, banner) => Math.max(maior, Number(banner.ordem || 0)), 0);
         this.ordemControl.setValue(maiorOrdem + 1 || 1);
+        this.formState.begin('create');
       },
       error: () => {
         this.ordemControl.setValue(1);
+        this.formState.begin('create');
       },
     });
   }
@@ -339,11 +348,38 @@ export class FormBannerComponent implements OnInit {
       : `${normalized}T23:59:59`;
   }
 
-  private atualizarViewport(): void {
-    if (typeof window === 'undefined') {
-      return;
-    }
+  private defaultsCriacao(): Record<string, unknown> {
+    return {
+      titulo: '',
+      subtitulo: '',
+      descricao: '',
+      ctaTexto: '',
+      ctaUrl: '',
+      abrirEmNovaAba: false,
+      altText: '',
+      ordem: 1,
+      ativo: true,
+      posicaoTexto: 'ESQUERDA',
+      corTexto: 'CLARO',
+      overlayAtivo: true,
+      overlayOpacidade: 45,
+      dataInicio: '',
+      dataFim: '',
+    };
+  }
 
-    this.isMobileView = window.innerWidth <= 768;
+  private snapshotImagem(): { selecionada: File | null; atual: string; preview: string } {
+    return {
+      selecionada: this.imagemSelecionada,
+      atual: this.imagemAtualUrl,
+      preview: this.previewImagemUrl,
+    };
+  }
+
+  private restaurarImagem(value: { selecionada: File | null; atual: string; preview: string } | undefined): void {
+    this.imagemSelecionada = value?.selecionada || null;
+    this.imagemAtualUrl = value?.atual || '';
+    this.previewImagemUrl = value?.preview || '';
+    this.imageUpload?.restaurarSelecao(this.imagemAtualUrl);
   }
 }

@@ -1,5 +1,7 @@
 import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { PageFormState } from './page-form-state';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MaterialModule } from 'src/app/material.module';
@@ -75,20 +77,47 @@ describe('PageCardComponent', () => {
   });
 });
 
-@Component({ standalone: true, imports: [PageCardComponent], template: `
-  <app-page-card titulo="Cadastro" [footerActions]="actions" [saving]="saving" [actionsDisabled]="disabled" (footerAction)="commands.push($event)">
-    <form id="contract-form" (submit)="submits = submits + 1; $event.preventDefault()"><input name="name" value="Produto" /></form>
+@Component({ standalone: true, imports: [PageCardComponent, ReactiveFormsModule], template: `
+  <app-page-card titulo="Cadastro" [footerActions]="actions" [formState]="state" [saving]="saving" [actionsDisabled]="disabled" (footerAction)="commands.push($event)">
+    <form id="contract-form" [formGroup]="form" (submit)="submits = submits + 1; $event.preventDefault()"><input formControlName="name" /></form>
   </app-page-card>` })
 class ActionsHost {
+  form = new FormGroup({ name: new FormControl('', { nonNullable: true }) });
+  state = new PageFormState(() => this.form);
+  constructor() { this.state.begin('create'); }
+
   saving = false; disabled = false; submits = 0; commands: string[] = [];
   actions: PageCardAction[] = [
-    { id: 'cancel', label: 'Voltar' },
-    { id: 'save', label: 'Salvar', type: 'submit', form: 'contract-form', primary: true, pendingLabel: 'Salvando...' },
+    { id: 'cancel', label: 'Voltar', intent: 'cancel' },
+    { id: 'save', type: 'submit', form: 'contract-form' },
   ];
 }
 describe('PageCard footer action contract', () => {
   beforeEach(() => TestBed.configureTestingModule({ imports: [ActionsHost, NoopAnimationsModule] }));
   afterEach(() => TestBed.resetTestingModule());
+  it('gera Cancelar por padrão sem a tela declarar ação, texto ou handler', () => {
+    const f = TestBed.createComponent(ActionsHost);
+    f.componentInstance.actions = [];
+    f.componentInstance.form.setValue({ name: 'Alterado' }); f.detectChanges();
+    const buttons = f.nativeElement.querySelectorAll('.page-card__footer button');
+    expect(buttons.length).toBe(1); expect(buttons[0].textContent.trim()).toBe('Cancelar');
+    buttons[0].click(); expect(f.componentInstance.form.getRawValue()).toEqual({ name: '' });
+    expect(f.componentInstance.commands).toEqual([]);
+  });
+  it('define texto e ícone de Salvar sem configuração da página, inclusive durante saving', () => {
+    const f = TestBed.createComponent(ActionsHost); f.detectChanges();
+    const save: HTMLButtonElement = f.nativeElement.querySelector('button[type=submit]');
+    expect(save.querySelector('mat-icon')?.textContent?.trim()).toBe('save');
+    expect(save.textContent?.replace('save', '').trim()).toBe('Salvar');
+    f.componentInstance.actions = [{ id: 'save', type: 'submit', form: 'contract-form',
+      label: 'Atualizar usuário', icon: 'person', pendingLabel: 'Enviando', primary: false, color: 'warn' } as any];
+    f.componentInstance.saving = true; f.detectChanges();
+    const updated: HTMLButtonElement = f.nativeElement.querySelector('button[type=submit]');
+    expect(updated.querySelector('mat-icon')?.textContent?.trim()).toBe('save');
+    expect(updated.textContent?.replace('save', '').trim()).toBe('Salvar');
+    expect(updated.hasAttribute('mat-flat-button')).toBeTrue();
+    expect(updated.disabled).toBeTrue();
+  });
   it('associa submit nativo ao form e nao emite comando duplicado de click', () => {
     const f = TestBed.createComponent(ActionsHost); f.detectChanges();
     // Native form association requires the fixture to be connected to the document.
@@ -96,8 +125,41 @@ describe('PageCard footer action contract', () => {
     const save: HTMLButtonElement = f.nativeElement.querySelector('button[type=submit]');
     expect(save.form?.id).toBe('contract-form'); save.click();
     expect(f.componentInstance.submits).toBe(1); expect(f.componentInstance.commands).toEqual([]);
-    f.nativeElement.querySelector('button[type=button]').click(); expect(f.componentInstance.commands).toEqual(['cancel']);
+    f.nativeElement.querySelector('button[type=button]').click(); expect(f.componentInstance.commands).toEqual([]);
     f.nativeElement.remove();
+  });
+  it('padroniza cancelamento em vermelho independentemente do texto e da cor informada', () => {
+    const f = TestBed.createComponent(ActionsHost);
+    f.componentInstance.actions[0] = { id: 'cancel', label: 'Voltar', intent: 'cancel', color: 'primary', primary: true };
+    f.detectChanges();
+    const cancel: HTMLButtonElement = f.nativeElement.querySelector('button[type=button]');
+    expect(cancel.classList.contains('cancel-button')).toBeTrue();
+    expect(cancel.hasAttribute('mat-stroked-button')).toBeTrue();
+    expect(getComputedStyle(cancel).color).toBe('rgb(185, 28, 28)');
+    expect(f.nativeElement.querySelector('button[type=submit]').classList.contains('cancel-button')).toBeFalse();
+    cancel.click(); expect(f.componentInstance.commands).toEqual([]);
+  });
+  it('cancelar criação limpa dados e submitted sem emitir comando da tela', () => {
+    const f = TestBed.createComponent(ActionsHost); f.detectChanges();
+    f.componentInstance.form.setValue({ name: 'Rascunho' });
+    f.componentInstance.form.markAllAsTouched(); f.componentInstance.form.markAsDirty();
+    f.nativeElement.querySelector('form').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    f.nativeElement.querySelector('button[type=button]').click();
+    expect(f.componentInstance.form.getRawValue()).toEqual({ name: '' });
+    expect(f.componentInstance.form.pristine).toBeTrue(); expect(f.componentInstance.form.untouched).toBeTrue();
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('form').classList.contains('ng-submitted')).toBeFalse();
+    expect(f.componentInstance.commands).toEqual([]);
+  });
+  it('cancelar edição restaura a base carregada e ignora alterações posteriores', () => {
+    const f = TestBed.createComponent(ActionsHost);
+    const host = f.componentInstance; host.state.begin('edit'); f.detectChanges();
+    expect(f.nativeElement.querySelector('button[type=button]').disabled).toBeTrue();
+    host.form.setValue({ name: 'Backend' }); host.state.loaded(); f.detectChanges();
+    host.form.setValue({ name: 'Alterado' }); f.nativeElement.querySelector('button[type=button]').click();
+    expect(host.form.getRawValue()).toEqual({ name: 'Backend' }); expect(host.commands).toEqual([]);
+    host.form.setValue({ name: 'Segunda alteração' }); f.nativeElement.querySelector('button[type=button]').click();
+    expect(host.form.getRawValue()).toEqual({ name: 'Backend' });
   });
   it('bloqueia acoes durante saving e informa processamento acessivel', () => {
     const f = TestBed.createComponent(ActionsHost); f.componentInstance.saving = true; f.detectChanges();
@@ -106,5 +168,19 @@ describe('PageCard footer action contract', () => {
     expect(f.nativeElement.querySelector('[role=status]').textContent).toContain('Salvando');
     f.componentInstance.saving = false; f.componentInstance.disabled = true; f.detectChanges();
     expect(f.nativeElement.querySelector('button[type=submit]').disabled).toBeTrue();
+  });
+  it('desabilita Cancelar quando o PageFormState informa que nao ha descarte', () => {
+    const f = TestBed.createComponent(ActionsHost);
+    let changed = false;
+    f.componentInstance.state = new PageFormState(() => f.componentInstance.form, { canReset: () => changed });
+    f.componentInstance.state.begin('create');
+    f.detectChanges();
+
+    const cancel: HTMLButtonElement = f.nativeElement.querySelector('button[type=button]');
+    expect(cancel.disabled).toBeTrue();
+
+    changed = true;
+    f.detectChanges();
+    expect(cancel.disabled).toBeFalse();
   });
 });

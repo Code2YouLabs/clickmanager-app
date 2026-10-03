@@ -3,7 +3,9 @@ import ptBr from '@angular/common/locales/pt';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ActivatedRoute, convertToParamMap, Router } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
 import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
+import { ToastrService } from 'ngx-toastr';
 import { ComercialListComponent } from './comercial-list.component';
 import { GraficaProdutoService } from '../shared/grafica.service';
 import { ComercialTipo } from './comercial.models';
@@ -14,6 +16,8 @@ describe('ComercialListComponent', () => {
   let component: ComercialListComponent;
   let service: jasmine.SpyObj<GraficaProdutoService>;
   let router: jasmine.SpyObj<Router>;
+  let dialog: jasmine.SpyObj<MatDialog>;
+  let toastr: jasmine.SpyObj<ToastrService>;
   let data: BehaviorSubject<{ tipo: ComercialTipo }>;
   let params: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
   const page = { content: [{ id: 1, numero: 'PED-1', clienteNome: 'Maria', status: 'PENDENTE', total: 15 }], totalElements: 21 };
@@ -23,8 +27,11 @@ describe('ComercialListComponent', () => {
     service = jasmine.createSpyObj('GraficaProdutoService', ['listarPedidosComerciais', 'listarOrcamentosComerciais', 'listarRascunhosComerciais']);
     for (const method of [service.listarPedidosComerciais, service.listarOrcamentosComerciais, service.listarRascunhosComerciais]) method.and.returnValue(of(page as any));
     router = jasmine.createSpyObj('Router', ['navigate']);
+    dialog = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
+    toastr = jasmine.createSpyObj<ToastrService>('ToastrService', ['success', 'error', 'info']);
     TestBed.configureTestingModule({ imports: [ComercialListComponent, NoopAnimationsModule], providers: [
       { provide: GraficaProdutoService, useValue: service }, { provide: Router, useValue: router },
+      { provide: MatDialog, useValue: dialog }, { provide: ToastrService, useValue: toastr },
       { provide: ActivatedRoute, useValue: { data, queryParamMap: params } },
     ] });
     fixture = TestBed.createComponent(ComercialListComponent); component = fixture.componentInstance;

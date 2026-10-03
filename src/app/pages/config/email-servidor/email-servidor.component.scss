@@ -1,53 +1,57 @@
 .email-form {
-  .m-t-md-8 {
-    margin-top: 26px;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.actions-row {
+.email-state {
+  min-height: 180px;
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 12px;
-  flex-wrap: wrap;
-  justify-content: flex-start;
+  text-align: center;
+  color: var(--mat-sys-on-surface-variant, #6b7280);
+}
+
+.email-state--error mat-icon {
+  color: #dc2626;
+}
+
+.email-state strong {
+  color: #0f172a;
+}
+
+.email-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.email-grid--smtp {
+  grid-template-columns: minmax(260px, 1fr) minmax(120px, 180px) minmax(150px, auto);
+  align-items: start;
+}
+
+.email-grid--credentials {
+  grid-template-columns: repeat(2, minmax(260px, 1fr));
 }
 
 .ssl-col {
+  min-height: 56px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  height: 100%;
 }
 
-.email-row {
-  align-items: center;
+button mat-spinner {
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: middle;
 }
 
-@media (max-width: 767px) {
-  .email-form .d-flex.align-items-center {
-    margin-top: 0;
-    justify-content: flex-start;
-  }
-
-  .actions-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .actions-row button {
-    width: 100%;
-  }
-
-  .ssl-col {
-    justify-content: center;
-  }
-
-  .email-row {
-    align-items: flex-start;
-  }
-}
-
-@media (min-width: 768px) {
-  .ssl-col {
-    justify-content: flex-start;
+@media (max-width: 900px) {
+  .email-grid--smtp,
+  .email-grid--credentials {
+    grid-template-columns: 1fr;
   }
 }

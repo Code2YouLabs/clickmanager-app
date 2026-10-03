@@ -6,15 +6,34 @@
   botaoIcone="arrow_back"
   botaoCor="primary"
   [botaoRota]="['/page/site/paginas']"
-  [mostrarDivisor]="true">
+  [mostrarDivisor]="true"
+  [formState]="formState"
+  [footerActions]="footerActions"
+  [saving]="salvando"
+  [savingText]="savingText"
+  [actionsDisabled]="carregando || !!erro || semPermissao"
+  [headerActionDisabled]="salvando">
 
   @if (carregando) {
   <div class="site-pagina-form-state">
     <mat-spinner diameter="32"></mat-spinner>
     <span>Carregando página...</span>
   </div>
+  } @else if (semPermissao) {
+  <div class="site-pagina-form-state site-pagina-form-state--error">
+    <strong>Acesso restrito</strong>
+    <span>Você não possui permissão para visualizar esta página.</span>
+  </div>
+  } @else if (erro) {
+  <div class="site-pagina-form-state site-pagina-form-state--error">
+    <strong>Não foi possível carregar a página</strong>
+    <span>{{ erro }}</span>
+    <button mat-stroked-button color="primary" type="button" (click)="tentarNovamente()">
+      Tentar novamente
+    </button>
+  </div>
   } @else {
-  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+  <form [id]="formId" [formGroup]="form" (ngSubmit)="onSubmit()">
     <div class="site-pagina-form-layout">
       <app-section-card titulo="Dados da página" subtitulo="Defina identificação, rota e status principal.">
         <div class="cadastro-form-grid">
@@ -165,30 +184,6 @@
       }
     </div>
 
-    <div class="cadastro-form-actions" *ngIf="!isMobileView">
-      <button mat-stroked-button color="primary" type="button" (click)="voltar()">
-        Voltar
-      </button>
-
-      <button mat-flat-button color="primary" type="submit" [disabled]="!podeSalvar">
-        {{ textoAcaoPrincipal }}
-      </button>
-    </div>
   </form>
   }
 </app-page-card>
-
-<app-mobile-total-bar
-  *ngIf="isMobileView"
-  label="Meu Site"
-  valueText="Página"
-  detailText="Menu, Home e SEO"
-  [expandable]="false"
-  secondaryActionText="Voltar"
-  [actionText]="textoAcaoPrincipal"
-  [actionDisabled]="!podeSalvar"
-  bottomOffset="58px"
-  [attachedToBottomNav]="true"
-  (secondaryAction)="voltar()"
-  (action)="onSubmit()">
-</app-mobile-total-bar>

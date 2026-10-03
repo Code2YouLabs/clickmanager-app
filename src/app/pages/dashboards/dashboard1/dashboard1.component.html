@@ -3,22 +3,33 @@
   titulo="Dashboard"
   subtitulo="Acompanhe receita, atendimento e operação da gráfica.">
   <div page-header-actions class="dashboard-actions">
-    <button mat-stroked-button type="button" (click)="carregarResumo()" [disabled]="loading">
-      Atualizar
+    <button mat-stroked-button type="button" (click)="atualizarDashboard()" [disabled]="loading || atualizando">
+      {{ atualizando ? 'Atualizando...' : 'Atualizar' }}
     </button>
+    @if (podeCriarPedido) {
     <button mat-flat-button color="primary" type="button" (click)="navegar('/page/grafica/comercial/pedidos/novo')">
       Novo pedido
     </button>
+    }
   </div>
 
   @if (erro) {
     <div class="dashboard-feedback" role="alert">
       {{ erro }}
+      <button mat-button type="button" (click)="carregarResumo()">Tentar novamente</button>
     </div>
   }
 
-  <section class="dashboard-kpis" [class.dashboard-kpis--loading]="loading">
+  @if (erroAtualizacao) {
+    <div class="dashboard-feedback dashboard-feedback--warning" role="status">
+      {{ erroAtualizacao }}
+      <button mat-button type="button" (click)="carregarResumo()">Tentar novamente</button>
+    </div>
+  }
+
+  <section class="dashboard-kpis" [class.dashboard-kpis--loading]="loading || refreshingSummary">
     @for (card of summaryCards; track card.key) {
+      @if (card.navigable) {
       <button type="button" class="dashboard-kpi-button" (click)="abrirResumo(card)">
         <app-metric-card
           [label]="card.label"
@@ -29,6 +40,18 @@
           [disabled]="loading">
         </app-metric-card>
       </button>
+      } @else {
+      <div class="dashboard-kpi-static">
+        <app-metric-card
+          [label]="card.label"
+          [value]="card.value"
+          [detail]="card.amount || periodoReceita"
+          [icon]="card.icon"
+          [accent]="card.accent || 'neutral'"
+          [disabled]="true">
+        </app-metric-card>
+      </div>
+      }
     }
   </section>
 
@@ -38,7 +61,10 @@
       title="Evolução comercial"
       subtitle="Compare pedidos e receita por período."
       [divider]="true">
-      <app-comparativo-pedidos></app-comparativo-pedidos>
+      <app-comparativo-pedidos
+        [refreshToken]="refreshToken"
+        (refreshState)="onWidgetRefreshState($event)">
+      </app-comparativo-pedidos>
     </app-section-card>
 
     <app-section-card
@@ -63,7 +89,13 @@
   </section>
 
   <section class="dashboard-secondary-grid">
-    <app-status-grid></app-status-grid>
-    <app-receita-resumo></app-receita-resumo>
+    <app-status-grid
+      [refreshToken]="refreshToken"
+      (refreshState)="onWidgetRefreshState($event)">
+    </app-status-grid>
+    <app-receita-resumo
+      [refreshToken]="refreshToken"
+      (refreshState)="onWidgetRefreshState($event)">
+    </app-receita-resumo>
   </section>
 </app-page-card>

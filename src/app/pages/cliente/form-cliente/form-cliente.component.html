@@ -1,21 +1,23 @@
-@if (!isMobileView) {
-<mat-card class="cardWithShadow">
-
-    <app-card-header [titulo]="isEditMode ? 'Editar Cliente' : 'Novo Cliente'" botaoTexto="Voltar"
-        botaoIcone="arrow_back" botaoCor="primary" [botaoRota]="['/page/cliente']" [mostrarDivisor]="true">
-    </app-card-header>
-
-    <mat-card-content>
-
-        <form [formGroup]="form" (ngSubmit)="onSubmit()">
-
-            <mat-card class="cardWithShadow m-t-24 m-b-16">
-                <mat-card-content>
-
-                    <mat-card-title class="f-s-16 f-w-600 m-b-16">
-                        Dados Pessoais
-                    </mat-card-title>
-
+@if (!isMobileView || !pronto) {
+<app-page-card [titulo]="isEditMode ? 'Editar Cliente' : 'Novo Cliente'" botaoTexto="Voltar"
+    botaoIcone="arrow_back" [botaoRota]="['/page/cliente']" [headerActionDisabled]="saving"
+    [saving]="saving" [footerActions]="footerActions" [formState]="formState">
+    @if (carregando) {
+      <div class="cliente-form-state" role="status" aria-busy="true">
+        <mat-spinner diameter="36"></mat-spinner><span>Carregando cliente...</span>
+      </div>
+    } @else if (semPermissao) {
+      <div class="cliente-form-state" role="status">
+        <strong>Acesso restrito</strong><p>Você não possui permissão para visualizar este cliente.</p>
+      </div>
+    } @else if (erro) {
+      <div class="cliente-form-state" role="alert">
+        <strong>Não foi possível carregar o cliente</strong><p>{{ erro }}</p>
+        <button mat-stroked-button type="button" (click)="carregarCliente()">Tentar novamente</button>
+      </div>
+    } @else {
+      <form id="cliente-form" [formGroup]="form" (ngSubmit)="onSubmit()">
+        <app-section-card title="Dados do cliente">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <app-input-texto-restrito class="m-b-16" [control]="nomeControl" label="Nome"
@@ -41,28 +43,13 @@
                         </div>
                     </div>
 
-                </mat-card-content>
-            </mat-card>
-
-            <app-endereco-form (formReady)="setEnderecoGroup($event)"></app-endereco-form>
-
-            <div class="m-t-24 d-flex gap-2 flex-wrap">
-                <a mat-flat-button class="bg-error text-white" [routerLink]="['/page/cliente']">
-                    Cancelar
-                </a>
-
-                <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid">
-                    {{ isEditMode ? 'Atualizar' : 'Salvar' }}
-                </button>
-            </div>
-
-        </form>
-
-    </mat-card-content>
-
-</mat-card>
+        </app-section-card>
+        <app-endereco-form (formReady)="setEnderecoGroup($event)"></app-endereco-form>
+      </form>
+    }
+</app-page-card>
 } @else {
-<form [formGroup]="form" class="cliente-mobile-form" (ngSubmit)="onSubmit()">
+<form id="cliente-form" [formGroup]="form" class="cliente-mobile-form" (ngSubmit)="onSubmit()">
     <section class="cliente-mobile-hero">
         <div class="cliente-mobile-hero__copy">
             <div class="cliente-mobile-hero__topline">
@@ -194,7 +181,9 @@
         [expandable]="false"
         actionAriaLabel="Salvar cliente"
         [actionText]="mobileFooterLabel"
-        [actionDisabled]="!podeAvancarMobile"
+        [actionDisabled]="saving || !podeAvancarMobile"
+        [loading]="saving"
+        [secondaryActionDisabled]="saving"
         [secondaryActionText]="mobileStep === 1 ? 'Voltar' : ''"
         secondaryActionAriaLabel="Voltar etapa"
         bottomOffset="calc(var(--mobile-bottom-nav-height, 0px) + 8px)"

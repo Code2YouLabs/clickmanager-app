@@ -131,7 +131,7 @@ describe('CalculadoraConfigComponent', () => {
     component.form.controls.ativo.setValue(false);
     component.atualizarSelecao([2]);
     expect(component.salvarDesabilitado).toBeFalse();
-    component.cancelar();
+    component.formState.reset();
     expect(component.form.controls.ativo.value).toBeTrue();
     expect(component.selectedIds).toEqual([1, 3]);
     expect(component.salvarDesabilitado).toBeTrue();

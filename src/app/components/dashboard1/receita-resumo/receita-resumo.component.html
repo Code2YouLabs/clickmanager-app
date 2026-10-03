@@ -1,7 +1,7 @@
 <app-section-card
   class="dashboard-receita-card"
-  title="Receita hoje"
-  subtitle="Receita por forma de pagamento"
+  title="Receita por forma de pagamento"
+  subtitle="Acompanhe os recebimentos por período."
   [divider]="true">
   <div class="dashboard-receita-card__content">
     <div class="dashboard-receita-card__top">
@@ -15,12 +15,28 @@
     <div class="dashboard-receita-card__filters">
       <button *ngFor="let r of ranges" type="button" class="dashboard-receita-card__chip"
         [class.dashboard-receita-card__chip--active]="selectedRange === r.id"
+        [disabled]="loading || refreshing"
         (click)="selectedRange = r.id; onRangeChange()">
         {{ r.shortLabel }}
       </button>
     </div>
 
-    <div class="dashboard-receita-card__body">
+    @if (erro) {
+      <div class="dashboard-receita-card__feedback" role="alert">
+        <span>{{ erro }}</span>
+        <button mat-button type="button" (click)="carregarDoBack()">Tentar novamente</button>
+      </div>
+    } @else if (loading) {
+      <div class="dashboard-receita-card__feedback dashboard-receita-card__feedback--neutral" role="status">
+        Carregando receita...
+      </div>
+    } @else if (refreshing) {
+      <div class="dashboard-receita-card__feedback dashboard-receita-card__feedback--neutral" role="status">
+        Atualizando receita...
+      </div>
+    }
+
+    <div class="dashboard-receita-card__body" [class.dashboard-receita-card__body--loading]="loading || refreshing">
       <div class="dashboard-receita-card__chart">
         <ng-container *ngIf="!semMovimentacao; else receitaVazia">
           <apx-chart #chart [series]="chartData.series" [chart]="chartData.chart" [plotOptions]="chartData.plotOptions"

@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { ApiService } from 'src/app/services/api.service';
 
 export interface EmailServidorConfig {
+  id?: number;
   host: string;
   porta: number;
   usuario: string;

@@ -1,66 +1,55 @@
-.blocos-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 16px;
+:host ::ng-deep app-list-filter-bar .list-filter-bar {
+  margin-bottom: 12px;
 }
 
-.blocos-toolbar button {
+[data-table-toolbar-actions] button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
-.blocos-state {
-  min-height: 180px;
+.bloco-mobile-card {
   display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: 10px;
-  color: #64748b;
-  text-align: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 8px;
+  background: #fff;
 }
 
-.blocos-state--empty {
-  border-radius: 12px;
-  border: 1px dashed rgba(191, 219, 254, 0.9);
-  background: rgba(248, 250, 252, 0.72);
+.bloco-mobile-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.blocos-state strong {
-  color: #0f172a;
-  font-size: 1rem;
+.bloco-mobile-card__footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.status-pill {
+.bloco-pill {
   display: inline-flex;
   align-items: center;
-  padding: 6px 12px;
+  min-height: 24px;
+  padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(34, 197, 94, 0.12);
-  color: #166534;
-  font-size: 0.78rem;
+  background: rgba(37, 99, 235, 0.12);
+  color: #1d4ed8;
+  font-size: 0.76rem;
   font-weight: 700;
-}
-
-.status-pill--inactive {
-  background: rgba(148, 163, 184, 0.18);
-  color: #475569;
-}
-
-.blocos-actions {
   white-space: nowrap;
 }
 
-.mat-mdc-table .mat-mdc-row .mat-mdc-cell {
-  white-space: normal;
-}
-
 @media (max-width: 768px) {
-  .blocos-toolbar {
-    justify-content: stretch;
+  [data-table-toolbar-actions] {
+    width: 100%;
   }
 
-  .blocos-toolbar button {
+  [data-table-toolbar-actions] button {
     width: 100%;
     justify-content: center;
   }

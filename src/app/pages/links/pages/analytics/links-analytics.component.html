@@ -1,119 +1,128 @@
 <div class="links-page">
-  <app-card-header
+  <app-page-card
+    class="links-analytics-page"
     titulo="Analytics ClickLink"
-    subtitulo="ClickLink • Analytics"
+    subtitulo="Acompanhe acessos e cliques das suas páginas"
     [mostrarDivisor]="true">
-  </app-card-header>
 
-  <mat-card class="cardWithShadow links-panel">
-    <app-card-header
-      titulo="Desempenho"
-      subtitulo="Acompanhe acessos e cliques das suas páginas"
-      [mostrarDivisor]="true">
-    </app-card-header>
+    @if (carregandoPaginas) {
+    <div class="links-state">
+      <mat-spinner diameter="34"></mat-spinner>
+      <span>Carregando páginas...</span>
+    </div>
+    } @else if (semPermissaoPaginas) {
+    <div class="links-state links-state--error">
+      <strong>Acesso restrito</strong>
+      <span>Você não possui permissão para visualizar as páginas ClickLink.</span>
+    </div>
+    } @else if (erroPaginas) {
+    <div class="links-state links-state--error">
+      <strong>Não foi possível carregar as páginas</strong>
+      <span>{{ erroPaginas }}</span>
+      <button mat-stroked-button color="primary" type="button" (click)="carregarPaginas()">
+        Tentar novamente
+      </button>
+    </div>
+    } @else if (!paginas.length) {
+    <div class="links-empty">
+      <mat-icon>query_stats</mat-icon>
+      <h2>Nenhuma página para analisar</h2>
+      <p>Crie uma página ClickLink para acompanhar visualizações e cliques.</p>
+    </div>
+    } @else {
+    <div class="links-analytics-content">
+      <div class="links-analytics-filters" aria-label="Filtros do analytics ClickLink">
+        <app-input-options
+          [control]="paginaControl"
+          label="Página"
+          placeholder="Selecione uma página"
+          [options]="paginas"
+          labelKey="titulo"
+          valueKey="id"
+          [showNull]="false">
+        </app-input-options>
 
-    <mat-card-content>
-      <div class="links-state" *ngIf="carregandoPaginas">
-        <mat-spinner diameter="34"></mat-spinner>
-        <span>Carregando páginas...</span>
-      </div>
-
-      <div class="links-empty" *ngIf="!carregandoPaginas && !paginas.length">
-        <mat-icon>query_stats</mat-icon>
-        <h2>Nenhuma página para analisar</h2>
-        <p>Crie uma página ClickLink para acompanhar visualizações e cliques.</p>
-      </div>
-
-      <div class="links-analytics-page" *ngIf="!carregandoPaginas && paginas.length">
-        <div class="links-analytics-toolbar">
-          <mat-form-field appearance="outline">
-            <mat-label>Página</mat-label>
-            <mat-select [value]="paginaSelecionadaId" (selectionChange)="selecionarPagina($event.value)">
-              <mat-option *ngFor="let pagina of paginas" [value]="pagina.id">{{ pagina.titulo }}</mat-option>
-            </mat-select>
-          </mat-form-field>
-
-          <mat-button-toggle-group [value]="periodo" aria-label="Período" (change)="alterarPeriodo($event.value)">
-            <mat-button-toggle value="7d">7 dias</mat-button-toggle>
-            <mat-button-toggle value="30d">30 dias</mat-button-toggle>
+        <div class="links-analytics-period">
+          <mat-label class="f-s-14 f-w-600 m-b-8 d-block">Período</mat-label>
+          <mat-button-toggle-group
+            [value]="periodo"
+            aria-label="Período"
+            [disabled]="carregandoAnalytics"
+            (change)="alterarPeriodo($event.value)">
+            <mat-button-toggle *ngFor="let item of periodos" [value]="item.value">{{ item.label }}</mat-button-toggle>
           </mat-button-toggle-group>
         </div>
-
-        <div class="links-state links-state--compact" *ngIf="carregandoAnalytics">
-          <mat-spinner diameter="28"></mat-spinner>
-          <span>Carregando métricas...</span>
-        </div>
-
-        <div class="links-analytics-error" *ngIf="!carregandoAnalytics && erro">
-          <span>Não foi possível carregar as métricas.</span>
-          <button mat-stroked-button type="button" (click)="carregarAnalytics()">
-            <mat-icon>refresh</mat-icon>
-            Tentar novamente
-          </button>
-        </div>
-
-        <ng-container *ngIf="!carregandoAnalytics && !erro && analytics">
-          <div class="links-metric-grid">
-            <app-metric-card
-              label="Visualizações"
-              [value]="numeroFormatado(analytics.visualizacoes)"
-              detail="Página pública aberta"
-              icon="eye"
-              accent="primary">
-            </app-metric-card>
-            <app-metric-card
-              label="Cliques"
-              [value]="numeroFormatado(analytics.cliques)"
-              detail="Acessos aos links"
-              icon="hand-click"
-              accent="warning">
-            </app-metric-card>
-            <app-metric-card
-              label="Taxa de clique"
-              [value]="percentualFormatado(analytics.taxaClique)"
-              detail="Cliques por visualização"
-              icon="percentage"
-              accent="success">
-            </app-metric-card>
-          </div>
-
-          <section class="links-section">
-            <div class="links-section__header">
-              <div>
-                <h2>Desempenho dos links</h2>
-                <p>Ranking por cliques no período selecionado.</p>
-              </div>
-            </div>
-
-            <div class="links-empty links-empty--compact" *ngIf="!ranking().length">
-              <mat-icon>query_stats</mat-icon>
-              <h2>Ainda não há cliques neste período.</h2>
-            </div>
-
-            <div class="table-responsive links-ranking-table" *ngIf="ranking().length">
-              <table mat-table [dataSource]="ranking()" class="mat-elevation-z1 no-wrap v-middle w-100">
-                <ng-container matColumnDef="link">
-                  <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Link</th>
-                  <td mat-cell *matCellDef="let item" class="f-s-14">{{ item.titulo }}</td>
-                </ng-container>
-
-                <ng-container matColumnDef="tipo">
-                  <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Tipo</th>
-                  <td mat-cell *matCellDef="let item" class="f-s-14">{{ tipoLabel(item.tipo) }}</td>
-                </ng-container>
-
-                <ng-container matColumnDef="cliques">
-                  <th mat-header-cell *matHeaderCellDef class="f-s-16 f-w-600">Cliques</th>
-                  <td mat-cell *matCellDef="let item" class="f-s-14 f-w-600">{{ numeroFormatado(item.cliques) }}</td>
-                </ng-container>
-
-                <tr mat-header-row *matHeaderRowDef="colunasRanking"></tr>
-                <tr mat-row *matRowDef="let row; columns: colunasRanking"></tr>
-              </table>
-            </div>
-          </section>
-        </ng-container>
       </div>
-    </mat-card-content>
-  </mat-card>
+
+      @if (carregandoAnalytics) {
+      <div class="links-state links-state--compact">
+        <mat-spinner diameter="28"></mat-spinner>
+        <span>Carregando métricas...</span>
+      </div>
+      } @else if (semPermissaoAnalytics) {
+      <div class="links-state links-state--error links-state--compact">
+        <strong>Acesso restrito</strong>
+        <span>Você não possui permissão para visualizar as métricas desta página.</span>
+      </div>
+      } @else if (erroAnalytics) {
+      <div class="links-state links-state--error links-state--compact">
+        <strong>Não foi possível carregar as métricas</strong>
+        <span>{{ erroAnalytics }}</span>
+        <button mat-stroked-button color="primary" type="button" (click)="carregarAnalytics()">
+          Tentar novamente
+        </button>
+      </div>
+      } @else if (analytics) {
+      <div class="links-metric-grid">
+        <app-metric-card
+          label="Visualizações"
+          [value]="numeroFormatado(analytics.visualizacoes)"
+          detail="Página pública aberta"
+          icon="eye"
+          accent="primary">
+        </app-metric-card>
+        <app-metric-card
+          label="Cliques"
+          [value]="numeroFormatado(analytics.cliques)"
+          detail="Acessos aos links"
+          icon="hand-click"
+          accent="warning">
+        </app-metric-card>
+        <app-metric-card
+          label="Taxa de clique"
+          [value]="percentualFormatado(analytics.taxaClique)"
+          detail="Cliques por visualização"
+          icon="percentage"
+          accent="success">
+        </app-metric-card>
+      </div>
+
+      <app-section-card titulo="Desempenho dos links" subtitulo="Ranking por cliques no período selecionado.">
+        <app-data-table
+          [columns]="colunasRanking"
+          [data]="ranking()"
+          tableLabel="Ranking dos links"
+          rowKey="itemId"
+          [search]="{ enabled: false }"
+          [pagination]="null"
+          [loading]="false"
+          [retryEnabled]="false"
+          [emptyState]="rankingEmptyState">
+          <ng-template appDataTableCell="link" let-item>
+            {{ item.titulo }}
+          </ng-template>
+
+          <ng-template appDataTableCell="tipo" let-item>
+            {{ tipoLabel(item.tipo) }}
+          </ng-template>
+
+          <ng-template appDataTableCell="cliques" let-item>
+            <strong>{{ numeroFormatado(item.cliques) }}</strong>
+          </ng-template>
+        </app-data-table>
+      </app-section-card>
+      }
+    </div>
+    }
+  </app-page-card>
 </div>

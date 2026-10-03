@@ -1,18 +1,26 @@
-.links-analytics-page {
+.links-analytics-content {
   display: grid;
   gap: 16px;
 }
 
-.links-analytics-toolbar {
-  display: flex;
-  align-items: center;
+.links-analytics-filters {
+  display: grid;
+  grid-template-columns: minmax(260px, 360px) auto;
+  align-items: start;
   justify-content: space-between;
   gap: 12px;
-  flex-wrap: wrap;
 }
 
-.links-analytics-toolbar mat-form-field {
-  width: min(100%, 360px);
+.links-analytics-period {
+  min-width: 260px;
+}
+
+.links-analytics-period mat-button-toggle-group {
+  width: 100%;
+}
+
+.links-analytics-period mat-button-toggle {
+  flex: 1 1 0;
 }
 
 .links-metric-grid {
@@ -21,24 +29,13 @@
   gap: 14px;
 }
 
-.links-ranking-table td {
-  overflow-wrap: anywhere;
-}
-
 @media (max-width: 760px) {
-  .links-analytics-toolbar {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .links-analytics-toolbar mat-form-field,
-  .links-analytics-toolbar mat-button-toggle-group,
-  .links-analytics-toolbar mat-button-toggle,
-  .links-analytics-error button {
-    width: 100%;
-  }
-
+  .links-analytics-filters,
   .links-metric-grid {
     grid-template-columns: 1fr;
+  }
+
+  .links-analytics-period {
+    min-width: 0;
   }
 }

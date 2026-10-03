@@ -89,28 +89,24 @@ describe('LinksListaComponent', () => {
   });
 
   it('exibe Compartilhar como acao direta e abre o dialog reutilizavel', () => {
-    expect(fixture.nativeElement.textContent).toContain('Compartilhar');
-    expect(fixture.nativeElement.querySelector('td.action-link button[aria-label="Editar página"]')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('td.action-link button[aria-label="Compartilhar página"]')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('td.action-link button[aria-label="Abrir página"]')).toBeFalsy();
-    expect(fixture.nativeElement.querySelector('td.action-link button[aria-label="Mais ações"]')?.getAttribute('ng-reflect-message')).toBe('Mais ações');
+    const actions = fixture.componentInstance.acoesTabela.map((acao) => acao.label);
+    expect(actions).toEqual(jasmine.arrayContaining(['Editar', 'Compartilhar', 'Abrir', 'Despublicar', 'Excluir']));
 
-    fixture.componentInstance.compartilhar(paginas[0]);
+    fixture.componentInstance.onTableAction({ action: 'compartilhar', row: paginas[0] });
 
     expect(dialog.open).toHaveBeenCalledWith(LinksShareDialogComponent, jasmine.objectContaining({
       data: jasmine.objectContaining({ url: 'https://empresa-de-teste.clickmanager.com.br/links' }),
     }));
   });
 
-  it('mantem acoes de estado e exclusao no menu da listagem', () => {
-    fixture.componentInstance.paginaMenu = paginas[0];
-    fixture.detectChanges();
-    fixture.nativeElement.querySelector('button[aria-label="Mais ações"]')?.click();
-    fixture.detectChanges();
+  it('mantem acoes de estado e exclusao na tabela padronizada', () => {
+    const component = fixture.componentInstance;
+    const acoesPaginaPublicada = component.acoesTabela
+      .filter((acao) => acao.visible ? acao.visible(paginas[0]) : true)
+      .map((acao) => acao.label);
 
-    expect(document.body.textContent).toContain('Despublicar');
-    expect(document.body.textContent).not.toContain('Arquivar');
-    expect(document.body.textContent).toContain('Excluir');
+    expect(acoesPaginaPublicada).toEqual(jasmine.arrayContaining(['Despublicar', 'Excluir']));
+    expect(acoesPaginaPublicada).not.toContain('Arquivar');
   });
 
   it('exige confirmacao antes de excluir pela listagem', () => {

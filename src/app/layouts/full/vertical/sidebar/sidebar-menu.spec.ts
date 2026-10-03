@@ -128,6 +128,7 @@ describe('menu principal do ClickManager', () => {
     expect(filhos(catalogo)).toEqual(['Produtos', 'Categorias', 'Materiais', 'Formatos', 'Cores', 'Serviços']);
     expect(itemPorNome(menu, 'Gestão de Pessoas')).toBeFalsy();
     expect(itemPorNome(menu, 'Meu Site')).toBeTruthy();
+    expect(encontrarItem(menu, 'Calculadora de Materiais')).toBeFalsy();
   });
 
   it('mostra Comercial para proprietário de gráfica mesmo sem permissões no perfil', () => {
@@ -151,6 +152,7 @@ describe('menu principal do ClickManager', () => {
       '/page/catalogo/categorias',
       '/page/catalogo/marcas',
     ]);
+    expect(encontrarItem(menu, 'Calculadora de Materiais')?.route).toBe('/page/calculadora-materiais');
   });
 
   it('mantém o depósito legado filtrado por catalogoModo sem expor Itens como pai', () => {

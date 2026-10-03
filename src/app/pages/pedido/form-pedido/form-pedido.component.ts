@@ -1,3 +1,4 @@
+import { finalize } from 'rxjs';
 import { Component, signal, OnInit, HostListener } from '@angular/core';
 import {
   Validators,
@@ -36,6 +37,7 @@ import {
   animate
 } from '@angular/animations';
 import { ItemTipo } from 'src/app/models/pedido/item-tipo.enum';
+import { PageFormState } from 'src/app/components/page-card/page-form-state';
 import { PageCardComponent } from "src/app/components/page-card/page-card.component";
 import { PagamentosSectionComponent } from "src/app/components/pagamentos-section/pagamentos-section.component";
 import { ItensPedidoSectionComponent } from "src/app/components/itens-pedido-section/itens-pedido-section.component";
@@ -101,6 +103,7 @@ export class FormPedidoComponent implements OnInit {
   readonly mobileResumoAberto = signal(false);
   readonly mobileObservacoesAberto = signal(false);
 
+  salvando = false;
   addForm!: FormGroup;
   rows!: FormArray;
   pedidoItens: PedidoItemRequest[] = [];
@@ -113,6 +116,22 @@ export class FormPedidoComponent implements OnInit {
   pagamentoNovo = this.fb.group({
     forma: ['', Validators.required],
     valor: [0, [Validators.required]]
+  });
+
+  readonly formState = new PageFormState(() => this.addForm, {
+    read: () => ({ itens: this.pedidoItens, cliente: this.clienteConfirmado, pagamento: this.pagamentoNovo.getRawValue() }),
+    write: value => {
+      this.pedidoItens = value.itens;
+      this.clienteConfirmado = value.cliente;
+      this.trocandoCliente = !value.cliente;
+      this.pagamentoNovo.reset(value.pagamento);
+      this.observacaoSalva = this.addForm.get('observacoes')?.value || '';
+      this.obsSalvo = false;
+      this.produtoControl.reset();
+      this.rows.clear(); this.rows.push(this.createItemFormGroup());
+      this.mobileStep.set('cliente');
+      this.recalcularTotais();
+    },
   });
 
   subTotal = 0;
@@ -149,6 +168,7 @@ export class FormPedidoComponent implements OnInit {
 
     this.rows = this.fb.array([]);
     this.rows.push(this.createItemFormGroup());
+    this.formState.begin('create');
 
     this.addForm.valueChanges.subscribe(() => this.recalcularTotais());
     this.orcamentoControl.valueChanges.subscribe(() => this.sincronizarEtapaMobile());
@@ -394,6 +414,7 @@ export class FormPedidoComponent implements OnInit {
 
   saveDetail(event?: Event): void {
     event?.preventDefault();
+    if (this.salvando) return;
 
     const form = this.addForm.value;
 
@@ -432,7 +453,8 @@ export class FormPedidoComponent implements OnInit {
           : null,
       };
 
-      this.pedidoService.salvar(pedido).subscribe({
+      this.salvando = true;
+      this.pedidoService.salvar(pedido).pipe(finalize(() => this.salvando = false)).subscribe({
         next: (resp: PedidoListagem) => {
           this.toastr.success(isOrcamento ? 'Orçamento salvo com sucesso!' : 'Pedido salvo com sucesso!');
 

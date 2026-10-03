@@ -3,17 +3,19 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
-import { CardHeaderComponent } from 'src/app/components/card-header/card-header.component';
+import { finalize } from 'rxjs';
 import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
 import { InputTelefoneComponent } from 'src/app/components/inputs/input-telefone/input-telefone.component';
 import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
 import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
-import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
+import { PageCardAction, PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { PageFormState } from 'src/app/components/page-card/page-form-state';
+import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { MaterialModule } from 'src/app/material.module';
 import { AuthService } from 'src/app/services/auth.service';
 import { SiteConfigResponse, SiteConfigUpdateRequest, SiteWhatsappExibicao } from '../models/site-config.models';
 import { SiteConfigService } from '../services/site-config.service';
-import { getUrlClickManager, getUrlPublicaPrincipal } from '../utils/site-public-url.util';
+import { getUrlPublicaPrincipal } from '../utils/site-public-url.util';
 
 @Component({
   selector: 'app-site-configuracoes',
@@ -23,25 +25,29 @@ import { getUrlClickManager, getUrlPublicaPrincipal } from '../utils/site-public
     ReactiveFormsModule,
     RouterModule,
     MaterialModule,
-    CardHeaderComponent,
+    PageCardComponent,
+    SectionCardComponent,
     InputOptionsComponent,
     InputTelefoneComponent,
     InputTextoRestritoComponent,
     InputTextareaComponent,
-    TemPermissaoDirective,
   ],
   templateUrl: './site-configuracoes.component.html',
   styleUrl: './site-configuracoes.component.scss',
 })
 export class SiteConfiguracoesComponent implements OnInit {
+  readonly formId = 'site-config-form';
   readonly exibicoesWhatsapp: Array<{ value: SiteWhatsappExibicao; label: string }> = [
     { value: 'ICONE', label: 'Somente ícone' },
     { value: 'ICONE_TEXTO', label: 'Ícone e texto' },
   ];
 
   form!: FormGroup;
+  formState!: PageFormState;
   carregando = false;
   salvando = false;
+  erro: string | null = null;
+  semPermissao = false;
   private configAtual: SiteConfigResponse | null = null;
 
   constructor(
@@ -53,7 +59,7 @@ export class SiteConfiguracoesComponent implements OnInit {
 
   ngOnInit(): void {
     this.form = this.fb.group({
-      siteAtivo: [true],
+      siteAtivo: [false],
       orcamentoAtivo: [true],
       whatsappAtivo: [true],
       whatsappTelefone: ['', [Validators.pattern(/^\d{10,13}$/)]],
@@ -62,10 +68,13 @@ export class SiteConfiguracoesComponent implements OnInit {
       whatsappMensagemInicial: ['Olá! Acessei o site e gostaria de mais informações.', Validators.maxLength(500)],
     });
 
-    if (!this.podeEditar) {
-      this.form.disable({ emitEvent: false });
-    }
+    this.formState = new PageFormState(() => this.form, {
+      read: () => undefined,
+      write: () => this.aplicarPermissaoFormulario(),
+    });
 
+    this.formState.begin('edit');
+    this.aplicarPermissaoFormulario();
     this.carregarConfiguracao();
   }
 
@@ -74,7 +83,24 @@ export class SiteConfiguracoesComponent implements OnInit {
   }
 
   get podeSalvar(): boolean {
-    return this.podeEditar && !this.carregando && !this.salvando;
+    return this.podeEditar && !this.carregando && !this.salvando && !this.erro && !this.semPermissao;
+  }
+
+  get footerActions(): PageCardAction[] {
+    if (!this.podeEditar || this.carregando || this.erro || this.semPermissao) {
+      return [];
+    }
+
+    return [{
+      id: 'salvar-configuracoes',
+      type: 'submit',
+      form: this.formId,
+      disabled: !this.podeSalvar,
+    }];
+  }
+
+  get pageFormState(): PageFormState | undefined {
+    return this.podeEditar && !this.carregando && !this.erro && !this.semPermissao ? this.formState : undefined;
   }
 
   get siteAtivoControl(): FormControl {
@@ -105,10 +131,6 @@ export class SiteConfiguracoesComponent implements OnInit {
     return this.form.get('whatsappMensagemInicial') as FormControl;
   }
 
-  get enderecoClickManager(): string {
-    return getUrlClickManager(this.configAtual?.slugPublico);
-  }
-
   get enderecoPublicoPrincipal(): string {
     return getUrlPublicaPrincipal(this.configParaUrlAtual());
   }
@@ -117,20 +139,32 @@ export class SiteConfiguracoesComponent implements OnInit {
     return this.siteAtivoControl.value !== true;
   }
 
-  get mensagemSiteInativo(): string {
-    return this.siteInativo ? 'Site desativado. Ative o site para abrir este endereço.' : '';
+  get mensagemPublicacao(): string {
+    return this.siteInativo
+      ? 'Seu site ainda não está disponível para clientes. Ative quando o conteúdo estiver pronto.'
+      : 'Seu site está disponível para clientes.';
+  }
+
+  get mensagemAbrirSite(): string {
+    return this.siteInativo ? 'Ative o Site Público para acessar este endereço.' : '';
   }
 
   carregarConfiguracao(): void {
     this.carregando = true;
+    this.erro = null;
+    this.semPermissao = false;
+    this.formState.begin('edit');
+
     this.siteConfigService.buscar().subscribe({
       next: (config) => {
-        this.carregando = false;
         this.preencherFormulario(config);
+        this.formState.loaded();
+        this.carregando = false;
       },
       error: (err) => {
         this.carregando = false;
-        this.toastr.error(err?.userMessage || 'Erro ao carregar as configurações do site.');
+        this.semPermissao = err?.status === 403;
+        this.erro = this.semPermissao ? null : (err?.userMessage || 'Erro ao carregar as configurações do site.');
       },
     });
   }
@@ -148,14 +182,13 @@ export class SiteConfiguracoesComponent implements OnInit {
     }
 
     this.salvando = true;
-    this.siteConfigService.atualizar(this.buildPayload()).subscribe({
+    this.siteConfigService.atualizar(this.buildPayload()).pipe(finalize(() => this.salvando = false)).subscribe({
       next: (config) => {
-        this.salvando = false;
         this.preencherFormulario(config);
+        this.formState.loaded();
         this.toastr.success('Configurações do site salvas com sucesso!');
       },
       error: (err) => {
-        this.salvando = false;
         this.toastr.error(err?.userMessage || 'Erro ao salvar as configurações do site.');
       },
     });
@@ -173,14 +206,27 @@ export class SiteConfiguracoesComponent implements OnInit {
   private preencherFormulario(config: SiteConfigResponse): void {
     this.configAtual = config;
     this.form.patchValue({
-      siteAtivo: config.siteAtivo ?? true,
+      siteAtivo: config.siteAtivo ?? false,
       orcamentoAtivo: config.orcamentoAtivo ?? true,
       whatsappAtivo: config.whatsappAtivo ?? true,
       whatsappTelefone: this.normalizarTelefoneParaFormulario(config.whatsappTelefone),
       whatsappExibicao: config.whatsappExibicao || 'ICONE_TEXTO',
       whatsappTexto: config.whatsappTexto || '',
       whatsappMensagemInicial: config.whatsappMensagemInicial || '',
-    });
+    }, { emitEvent: false });
+    this.aplicarPermissaoFormulario();
+  }
+
+  private aplicarPermissaoFormulario(): void {
+    if (!this.form) {
+      return;
+    }
+
+    if (this.podeEditar) {
+      this.form.enable({ emitEvent: false });
+    } else {
+      this.form.disable({ emitEvent: false });
+    }
   }
 
   private buildPayload(): SiteConfigUpdateRequest {
@@ -225,5 +271,4 @@ export class SiteConfiguracoesComponent implements OnInit {
     }
     return telefone;
   }
-
 }

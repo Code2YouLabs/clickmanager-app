@@ -1,146 +1,157 @@
-<mat-card class="cardWithShadow site-config-card">
-  <app-card-header
-    titulo="Configurações do site"
-    subtitulo="Defina como o site público da empresa será publicado e atendido."
-    [mostrarDivisor]="true">
-  </app-card-header>
-
-  <mat-card-content>
-    @if (carregando) {
-    <div class="site-config-state">
-      <mat-spinner diameter="32"></mat-spinner>
-      <span>Carregando configurações...</span>
+<app-page-card
+  class="site-config-page"
+  titulo="Configurações do site"
+  subtitulo="Defina como o site público da empresa será publicado e atendido."
+  [formState]="pageFormState"
+  [footerActions]="footerActions"
+  [saving]="salvando"
+  savingText="Salvando..."
+  [actionsDisabled]="carregando || !!erro || semPermissao"
+  [mostrarDivisor]="true">
+  @if (carregando) {
+  <div class="site-config-state" role="status">
+    <mat-spinner diameter="32"></mat-spinner>
+    <span>Carregando configurações...</span>
+  </div>
+  } @else if (semPermissao) {
+  <div class="site-config-state site-config-state--error" role="status">
+    <strong>Acesso restrito</strong>
+    <span>Você não possui permissão para visualizar estas configurações.</span>
+  </div>
+  } @else if (erro) {
+  <div class="site-config-state site-config-state--error" role="alert">
+    <strong>Não foi possível carregar as configurações</strong>
+    <span>{{ erro }}</span>
+    <button mat-stroked-button color="primary" type="button" (click)="carregarConfiguracao()">
+      Tentar novamente
+    </button>
+  </div>
+  } @else {
+  <form [id]="formId" [formGroup]="form" (ngSubmit)="salvar()" class="site-config-form">
+    @if (!podeEditar) {
+    <div class="site-config-alert">
+      <mat-icon>lock</mat-icon>
+      <span>Você pode visualizar estas configurações, mas não possui permissão para editar.</span>
     </div>
-    } @else {
-    <form [formGroup]="form" (ngSubmit)="salvar()" class="site-config-form">
-      @if (!podeEditar) {
-      <div class="site-config-alert">
-        <mat-icon>lock</mat-icon>
-        <span>Você pode visualizar estas configurações, mas não possui permissão para editar.</span>
-      </div>
-      }
+    }
 
-      <div class="site-config-summary">
-        <div>
-          <span class="site-config-summary__label">Endereço público</span>
+    <app-section-card titulo="Site público" subtitulo="Controle o endereço e a publicação do site para clientes.">
+      <div class="site-publication">
+        <div class="site-publication__content">
+          <span class="site-publication__status" [class.site-publication__status--inactive]="siteInativo">
+            {{ siteInativo ? 'Não publicado' : 'Publicado' }}
+          </span>
           <strong>{{ enderecoPublicoPrincipal }}</strong>
+          <p>{{ mensagemPublicacao }}</p>
         </div>
 
-        <button mat-stroked-button color="primary" type="button" (click)="abrirSite()" [disabled]="siteInativo" [matTooltip]="mensagemSiteInativo">
-          <mat-icon>open_in_new</mat-icon>
-          Abrir site
-        </button>
-      </div>
-
-      <section class="site-config-section">
-        <div class="site-config-section__header">
-          <mat-icon>public</mat-icon>
-          <div>
-            <h3>Publicação</h3>
-            <p>Controle a disponibilidade do conteúdo do site público.</p>
-          </div>
+        <div class="site-publication__actions">
+          <button mat-stroked-button color="primary" type="button" (click)="abrirSite()" [disabled]="siteInativo" [matTooltip]="mensagemAbrirSite">
+            <mat-icon>open_in_new</mat-icon>
+            Abrir site
+          </button>
 
           <mat-slide-toggle color="primary" [formControl]="siteAtivoControl">
             Site ativo
           </mat-slide-toggle>
         </div>
+      </div>
+    </app-section-card>
 
-        <div class="site-config-grid">
-          <div class="site-config-readonly-field">
-            <span>Endereço ClickManager</span>
-            <strong>{{ enderecoClickManager }}</strong>
-            <small>O endereço e o domínio próprio são administrados em Presença Pública.</small>
-          </div>
-        </div>
-
-        <div class="site-config-actions">
-          <a mat-stroked-button color="primary" routerLink="/page/config/presenca-publica">
-            <mat-icon>language</mat-icon>
-            Gerenciar Presença Pública
-          </a>
-          <a mat-stroked-button color="primary" routerLink="/page/empresa">
-            <mat-icon>badge</mat-icon>
-            Gerenciar Identidade Pública
-          </a>
-          <button mat-stroked-button color="primary" type="button" (click)="abrirSite()" [disabled]="siteInativo" [matTooltip]="mensagemSiteInativo">
-            <mat-icon>open_in_new</mat-icon>
-            Abrir site
-          </button>
-        </div>
-      </section>
-
-      <section class="site-config-section">
-        <div class="site-config-section__header">
-          <mat-icon>request_quote</mat-icon>
+    <app-section-card titulo="Recursos" subtitulo="Defina quais canais e solicitações aparecem no site público.">
+      <div class="site-config-resources">
+        <div class="site-config-setting-row">
           <div>
-            <h3>Orçamento</h3>
-            <p>Controle a exibição da funcionalidade de solicitação de orçamento.</p>
+            <strong>Solicitação de orçamento</strong>
+            <p>Permite que clientes solicitem orçamento pelo site público.</p>
+            @if (!orcamentoAtivoControl.value) {
+            <small>O formulário de orçamento ficará oculto no site.</small>
+            }
           </div>
 
           <mat-slide-toggle color="primary" [formControl]="orcamentoAtivoControl">
             Orçamento ativo
           </mat-slide-toggle>
         </div>
-      </section>
 
-      <section class="site-config-section">
-        <div class="site-config-section__header">
-          <mat-icon>chat</mat-icon>
-          <div>
-            <h3>WhatsApp</h3>
-            <p>Configure o botão geral exibido no site público.</p>
+        <div class="site-config-setting-row site-config-setting-row--stack">
+          <div class="site-config-setting-row__header">
+            <div>
+              <strong>WhatsApp</strong>
+              <p>Exiba um botão de contato no site público.</p>
+            </div>
+
+            <mat-slide-toggle color="primary" [formControl]="whatsappAtivoControl">
+              WhatsApp ativo
+            </mat-slide-toggle>
           </div>
 
-          <mat-slide-toggle color="primary" [formControl]="whatsappAtivoControl">
-            WhatsApp ativo
-          </mat-slide-toggle>
+          @if (whatsappAtivoControl.value) {
+          <div class="site-config-whatsapp-fields">
+            <div class="site-config-grid site-config-grid--two">
+              <app-input-telefone
+                [control]="whatsappTelefoneControl"
+                label="Telefone do WhatsApp"
+                placeholder="(00) 00000-0000"
+                [required]="false"
+                invalidError="Informe um telefone com DDD.">
+              </app-input-telefone>
+
+              <app-input-options
+                [control]="whatsappExibicaoControl"
+                label="Exibição do botão"
+                placeholder="Selecione a exibição"
+                [options]="exibicoesWhatsapp"
+                labelKey="label"
+                valueKey="value"
+                [showNull]="false">
+              </app-input-options>
+            </div>
+
+            <app-input-texto-restrito
+              [control]="whatsappTextoControl"
+              label="Texto do botão"
+              placeholder="Fale conosco"
+              [maxlength]="80">
+            </app-input-texto-restrito>
+
+            <app-input-textarea
+              [control]="whatsappMensagemInicialControl"
+              label="Mensagem inicial"
+              placeholder="Olá! Acessei o site e gostaria de mais informações."
+              [rows]="4">
+            </app-input-textarea>
+          </div>
+          }
         </div>
-
-        <div class="site-config-grid site-config-grid--two">
-          <app-input-telefone
-            [control]="whatsappTelefoneControl"
-            label="Telefone do WhatsApp"
-            placeholder="(00) 00000-0000"
-            [required]="false"
-            invalidError="Informe um telefone com DDD.">
-          </app-input-telefone>
-
-          <app-input-options
-            [control]="whatsappExibicaoControl"
-            label="Exibição do botão"
-            placeholder="Selecione a exibição"
-            [options]="exibicoesWhatsapp"
-            labelKey="label"
-            valueKey="value"
-            [showNull]="false">
-          </app-input-options>
-        </div>
-
-        <app-input-texto-restrito
-          [control]="whatsappTextoControl"
-          label="Texto do botão"
-          placeholder="Fale conosco"
-          [maxlength]="80">
-        </app-input-texto-restrito>
-
-        <app-input-textarea
-          [control]="whatsappMensagemInicialControl"
-          label="Mensagem inicial"
-          placeholder="Olá! Acessei o site e gostaria de mais informações."
-          [rows]="4">
-        </app-input-textarea>
-      </section>
-
-      <div class="site-config-footer" *temPermissao="'SITE_CONFIG_EDITAR'">
-        <button mat-stroked-button color="primary" type="button" (click)="carregarConfiguracao()" [disabled]="salvando">
-          Cancelar
-        </button>
-
-        <button mat-flat-button color="primary" type="submit" [disabled]="!podeSalvar">
-          {{ salvando ? 'Salvando...' : 'Salvar configurações' }}
-        </button>
       </div>
-    </form>
-    }
-  </mat-card-content>
-</mat-card>
+    </app-section-card>
+
+    <app-section-card titulo="Outras configurações" subtitulo="Acesse ajustes complementares do site público.">
+      <div class="site-config-links">
+        <a class="site-config-link-row" routerLink="/page/config/presenca-publica">
+          <mat-icon>language</mat-icon>
+          <span>
+            <strong>Presença Pública</strong>
+            <small>Endereço, subdomínio e domínio público.</small>
+          </span>
+          <span class="site-config-link-row__action">
+            Gerenciar
+          </span>
+        </a>
+
+        <a class="site-config-link-row" routerLink="/page/empresa">
+          <mat-icon>badge</mat-icon>
+          <span>
+            <strong>Identidade Pública</strong>
+            <small>Nome, logo e identidade exibida publicamente.</small>
+          </span>
+          <span class="site-config-link-row__action">
+            Gerenciar
+          </span>
+        </a>
+      </div>
+    </app-section-card>
+  </form>
+  }
+</app-page-card>

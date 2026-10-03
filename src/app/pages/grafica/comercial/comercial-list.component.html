@@ -1,4 +1,8 @@
-<app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [mostrarDivisor]="true">
+<app-page-card
+  [titulo]="titulo"
+  [subtitulo]="subtitulo"
+  [mostrarDivisor]="true"
+  [class.comercial-kanban-expanded]="kanbanExpandedActive">
       <button page-header-actions mat-flat-button color="primary" type="button" (click)="novo()">
         <mat-icon>add</mat-icon>
         {{ configuracao.novo }}
@@ -12,6 +16,7 @@
         [pagination]="pagination"
         [loading]="carregando && !itens.length"
         [refreshing]="carregando && !!itens.length"
+        [showTable]="viewMode === 'lista'"
         [error]="erro" [forbidden]="acessoNegado"
         [tableLabel]="titulo" [filters]="filters" [filterState]="filterState"
         (filterChange)="filtrar($event)" (retry)="carregar()"
@@ -24,6 +29,25 @@
         (searchChange)="buscar($event)"
         (pageChange)="paginar($event)"
         (action)="onAction($event)">
+
+        <div data-table-toolbar-actions class="view-mode-actions" *ngIf="podeAlternarKanban">
+          <app-view-mode-toggle
+            [value]="viewMode"
+            [options]="viewModeOptions"
+            ariaLabel="Visualização dos pedidos"
+            (valueChange)="alterarVisualizacao($event)">
+          </app-view-mode-toggle>
+          <button
+            *ngIf="viewMode === 'kanban'"
+            mat-stroked-button
+            type="button"
+            class="kanban-expand-button"
+            [attr.aria-pressed]="kanbanExpanded"
+            (click)="toggleKanbanExpanded()">
+            <mat-icon>{{ kanbanExpanded ? 'close_fullscreen' : 'open_in_full' }}</mat-icon>
+            {{ kanbanExpanded ? 'Reduzir' : 'Ampliar' }}
+          </button>
+        </div>
 
         <ng-template appDataTableCell="referencia" let-item>
           <strong>{{ referencia(item) }}</strong>
@@ -38,7 +62,7 @@
         </ng-template>
 
         <ng-template appDataTableCell="status" let-item>
-          <span class="status-pill">{{ item.status || '-' }}</span>
+          <span class="status-pill">{{ statusLabel(item.status) }}</span>
         </ng-template>
 
         <ng-template appDataTableCell="total" let-item>
@@ -62,4 +86,39 @@
           </div>
         </ng-template>
       </app-data-table>
+
+      <app-kanban-board
+        *ngIf="podeAlternarKanban && viewMode === 'kanban'"
+        class="pedidos-kanban"
+        boardLabel="Kanban de pedidos"
+        emptyTitle="Nenhum pedido encontrado"
+        emptyDescription="Crie um novo pedido para começar."
+        [columns]="kanbanColumnsFiltradas"
+        [trackBy]="kanbanTrackBy"
+        [cardAriaLabel]="pedidoCardAriaLabel"
+        [dragEnabled]="kanbanDragEnabled"
+        [isDragDisabled]="isPedidoDragDisabled"
+        [dropState]="kanbanDropState"
+        [dropHint]="kanbanDropHint"
+        (cardClick)="abrir($event)"
+        (dragStarted)="onPedidoDragStarted($event)"
+        (dragEnded)="onPedidoDragEnded($event)"
+        (cardDropped)="onPedidoDropped($event)"
+        (retryColumn)="recarregarColunaKanban($event)"
+        (loadMore)="carregarMaisKanban($event)">
+        <ng-template appKanbanCard let-pedido>
+          <div class="pedido-kanban-card" [class.pedido-kanban-card--pending]="pedidoMovendo(pedido)">
+            <strong>{{ referencia(pedido) }}</strong>
+            <span>{{ cliente(pedido) || 'Balcão' }}</span>
+            <time [attr.datetime]="dataCriacao(pedido) || null">
+              {{ dataCriacao(pedido) | date:'dd/MM/yyyy HH:mm' }}
+            </time>
+            <em>{{ total(pedido) | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</em>
+            <span class="pedido-kanban-card__pending" *ngIf="pedidoMovendo(pedido)">
+              <mat-spinner diameter="16"></mat-spinner>
+              Atualizando...
+            </span>
+          </div>
+        </ng-template>
+      </app-kanban-board>
     </app-page-card>

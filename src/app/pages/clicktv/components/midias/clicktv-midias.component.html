@@ -1,83 +1,135 @@
 <section class="clicktv-page">
-  <mat-card class="cardWithShadow">
-    <app-card-header titulo="Mídias do ClickTV" subtitulo="Envie e organize imagens e vídeos usados nas playlists."
-      [mostrarDivisor]="true"></app-card-header>
-    <mat-card-content>
-      <div class="clicktv-toolbar">
-        <button mat-flat-button color="primary" (click)="enviar()" *temPermissao="'CLICKTV_MIDIAS_GERENCIAR'">
-          <mat-icon>cloud_upload</mat-icon> Enviar mídia
-        </button>
-        <mat-form-field appearance="outline" class="search">
-          <mat-label>Buscar por nome</mat-label>
-          <input matInput [(ngModel)]="nome" (keyup.enter)="pesquisar()" />
-          <button mat-icon-button matSuffix (click)="pesquisar()" aria-label="Pesquisar"><mat-icon>search</mat-icon></button>
-        </mat-form-field>
-        <mat-form-field appearance="outline"><mat-label>Tipo</mat-label>
-          <mat-select [(ngModel)]="tipo" (selectionChange)="pesquisar()">
-            <mat-option value="">Todos</mat-option>
-            @for (item of tipos; track item) { <mat-option [value]="item">{{ item }}</mat-option> }
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field appearance="outline"><mat-label>Status</mat-label>
-          <mat-select [(ngModel)]="status" (selectionChange)="pesquisar()">
-            <mat-option value="">Todos</mat-option>
-            @for (item of statuses; track item) { <mat-option [value]="item">{{ item }}</mat-option> }
-          </mat-select>
-        </mat-form-field>
-      </div>
-    </mat-card-content>
-  </mat-card>
+  <app-page-card
+    titulo="Mídias do ClickTV"
+    subtitulo="Envie e organize imagens e vídeos usados nas playlists."
+    [mostrarDivisor]="true">
+    <button
+      page-header-actions
+      mat-flat-button
+      color="primary"
+      type="button"
+      [disabled]="uploadEmAndamento"
+      (click)="enviar()"
+      *temPermissao="'CLICKTV_MIDIAS_GERENCIAR'">
+      <mat-icon>cloud_upload</mat-icon>
+      Enviar mídia
+    </button>
 
-  @if (uploadProgresso !== null) {
-    <div class="clicktv-progress"><strong>Enviando mídia… {{ uploadProgresso }}%</strong>
-      <mat-progress-bar mode="determinate" [value]="uploadProgresso"></mat-progress-bar>
-    </div>
-  }
+    <div class="clicktv-content">
+      <app-list-filter-bar
+        presentation="section"
+        placeholder="Buscar por nome"
+        [filters]="filtros"
+        [filterState]="filtroState"
+        [search]="{ enabled: true, value: nome, placeholder: 'Buscar por nome', debounceMs: 300 }"
+        [searchControl]="filtroControl"
+        [showClear]="temFiltrosAtivos"
+        filtersLabel="Filtros"
+        clearFiltersLabel="Limpar filtros"
+        (searchChange)="pesquisar($event)"
+        (stateChange)="alterarFiltros($event)"
+        (clear)="limparFiltros()">
+      </app-list-filter-bar>
 
-  @if (carregando) {
-    <div class="clicktv-state"><mat-spinner diameter="36"></mat-spinner><span>Carregando mídias…</span></div>
-  } @else if (!midias.length) {
-    <div class="clicktv-state"><mat-icon>perm_media</mat-icon><strong>Nenhuma mídia encontrada</strong>
-      <span>Envie a primeira imagem ou vídeo para começar.</span></div>
-  } @else {
-    <div class="clicktv-grid">
-      @for (midia of midias; track midia.id) {
-        <article class="clicktv-card">
-          <div class="clicktv-card__preview" (click)="visualizar(midia)">
-            @if (midia.visualizacao?.url) {
-              <img
-                [src]="midia.visualizacao!.url"
-                [alt]="midia.nome"
-                loading="lazy"
-                (error)="midia.visualizacao = null"
-              />
-              @if (midia.tipo === 'VIDEO') {
-                <mat-icon class="video-play">play_circle</mat-icon>
-              }
-            } @else {
-              <mat-icon>{{ midia.tipo === 'VIDEO' ? 'play_circle' : 'image' }}</mat-icon>
+      @if (uploadProgresso !== null) {
+        <div class="clicktv-progress" role="status" aria-live="polite">
+          <strong>Enviando mídia... {{ uploadProgresso }}%</strong>
+          <mat-progress-bar mode="determinate" [value]="uploadProgresso"></mat-progress-bar>
+        </div>
+      }
+
+      @if (carregandoInicial) {
+        <div class="clicktv-state" role="status">
+          <mat-spinner diameter="36"></mat-spinner>
+          <span>Carregando mídias...</span>
+        </div>
+      } @else if (semPermissao) {
+        <div class="clicktv-state clicktv-state--error" role="alert">
+          <mat-icon>lock</mat-icon>
+          <strong>Acesso restrito</strong>
+          <span>Você não possui permissão para visualizar as mídias do ClickTV.</span>
+        </div>
+      } @else if (erro && !midias.length) {
+        <div class="clicktv-state clicktv-state--error" role="alert">
+          <mat-icon>error_outline</mat-icon>
+          <strong>Não foi possível carregar as mídias</strong>
+          <span>{{ erro }}</span>
+          <button mat-stroked-button color="primary" type="button" (click)="carregar()">
+            Tentar novamente
+          </button>
+        </div>
+      } @else {
+        @if (refreshing) {
+          <div class="clicktv-refreshing" role="status" aria-live="polite">
+            <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+            <span>Atualizando mídias...</span>
+          </div>
+        }
+
+        @if (erro && midias.length) {
+          <div class="clicktv-inline-error" role="alert">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ erro }}</span>
+            <button mat-button color="primary" type="button" (click)="carregar()">Tentar novamente</button>
+          </div>
+        }
+
+        @if (!midias.length) {
+          <div class="clicktv-state">
+            <mat-icon>{{ mensagemVazio.icone }}</mat-icon>
+            <strong>{{ mensagemVazio.titulo }}</strong>
+            <span>{{ mensagemVazio.subtitulo }}</span>
+          </div>
+        } @else {
+          <div class="clicktv-grid" [attr.aria-busy]="refreshing">
+            @for (midia of midias; track midia.id) {
+              <article class="clicktv-card">
+                <button class="clicktv-card__preview" type="button" (click)="visualizar(midia)" [attr.aria-label]="'Visualizar ' + midia.nome">
+                  @if (midia.visualizacao?.url) {
+                    <img
+                      [src]="midia.visualizacao!.url"
+                      [alt]="midia.nome"
+                      loading="lazy"
+                      (error)="midia.visualizacao = null"
+                    />
+                    @if (midia.tipo === 'VIDEO') {
+                      <mat-icon class="video-play">play_circle</mat-icon>
+                    }
+                  } @else {
+                    <mat-icon>{{ midia.tipo === 'VIDEO' ? 'play_circle' : 'image' }}</mat-icon>
+                  }
+                </button>
+                <div class="clicktv-card__body">
+                  <div class="clicktv-card__head">
+                    <h3 class="clicktv-card__title">{{ midia.nome }}</h3>
+                    <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Ações da mídia"><mat-icon>more_vert</mat-icon></button>
+                    <mat-menu #menu="matMenu">
+                      <button mat-menu-item (click)="visualizar(midia)"><mat-icon>visibility</mat-icon>Visualizar</button>
+                      <button mat-menu-item (click)="renomear(midia)" *temPermissao="'CLICKTV_MIDIAS_GERENCIAR'"><mat-icon>edit</mat-icon>Renomear</button>
+                      <button mat-menu-item (click)="excluir(midia)" *temPermissao="'CLICKTV_MIDIAS_GERENCIAR'">
+                        <mat-icon color="warn">delete_forever</mat-icon>Excluir definitivamente
+                      </button>
+                    </mat-menu>
+                  </div>
+                  <p class="clicktv-meta">
+                    {{ midia.tipo }} · {{ tamanho(midia.tamanhoBytes) }}<br />
+                    {{ midia.largura || '–' }} × {{ midia.altura || '–' }} · {{ midia.orientacao }}
+                  </p>
+                  <span class="clicktv-badge clicktv-badge--{{ statusClass(midia.status) }}">{{ midia.status }}</span>
+                </div>
+              </article>
             }
           </div>
-          <div class="clicktv-card__body">
-            <div class="clicktv-card__head">
-              <h3 class="clicktv-card__title">{{ midia.nome }}</h3>
-              <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Ações"><mat-icon>more_vert</mat-icon></button>
-              <mat-menu #menu="matMenu">
-                <button mat-menu-item (click)="visualizar(midia)"><mat-icon>visibility</mat-icon>Visualizar</button>
-                <button mat-menu-item (click)="renomear(midia)" *temPermissao="'CLICKTV_MIDIAS_GERENCIAR'"><mat-icon>edit</mat-icon>Renomear</button>
-                <button mat-menu-item (click)="excluir(midia)" *temPermissao="'CLICKTV_MIDIAS_GERENCIAR'">
-                  <mat-icon color="warn">delete_forever</mat-icon>Excluir definitivamente
-                </button>
-              </mat-menu>
-            </div>
-            <p class="clicktv-meta">{{ midia.tipo }} · {{ tamanho(midia.tamanhoBytes) }}<br />
-              {{ midia.largura || '–' }} × {{ midia.altura || '–' }} · {{ midia.orientacao }}</p>
-            <span class="clicktv-badge clicktv-badge--{{ statusClass(midia.status) }}">{{ midia.status }}</span>
-          </div>
-        </article>
+          <mat-paginator
+            [length]="total"
+            [pageIndex]="page"
+            [pageSize]="size"
+            [pageSizeOptions]="[12, 24, 48]"
+            (page)="pagina($event)"
+            showFirstLastButtons>
+          </mat-paginator>
+        }
       }
     </div>
-    <mat-paginator [length]="total" [pageIndex]="page" [pageSize]="size" [pageSizeOptions]="[12, 24, 48]"
-      (page)="pagina($event)" showFirstLastButtons></mat-paginator>
-  }
+  </app-page-card>
 </section>

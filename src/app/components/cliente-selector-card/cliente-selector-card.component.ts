@@ -40,6 +40,7 @@ export class ClienteSelectorCardComponent {
   @Input() emptyMessage = 'Nenhum cliente definido para este pedido.';
   @Input() showEmptyAlert = true;
   @Input() inativo = false;
+  @Input() permitirCriarCliente = true;
 
   @Output() editarCliente = new EventEmitter<void>();
   @Output() cancelarEdicao = new EventEmitter<void>();

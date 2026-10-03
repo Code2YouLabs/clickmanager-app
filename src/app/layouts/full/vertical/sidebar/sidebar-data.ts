@@ -335,7 +335,7 @@ export const navItems: NavItem[] = [
                 route: '/page/calculadora-materiais',
                 featureKey: 'CALCULADORA_MATERIAIS',
                 requiredPermission: ['CALCULADORA_MATERIAIS_CONFIGURAR'],
-                allowedEmpresaTipos: todosSegmentos,
+                allowedEmpresaTipos: deposito,
             },
             {
                 displayName: 'Configuração SmartCalc',

@@ -6,7 +6,12 @@
   botaoIcone="arrow_back"
   botaoCor="primary"
   [botaoRota]="['/page/site/banners']"
-  [mostrarDivisor]="true">
+  [mostrarDivisor]="true"
+  [formState]="formState"
+  [footerActions]="footerActions"
+  [saving]="salvando"
+  [savingText]="isEditMode ? 'Atualizando...' : 'Salvando...'"
+  [actionsDisabled]="carregando">
 
   @if (carregando) {
   <div class="site-banner-form-state">
@@ -14,7 +19,7 @@
     <span>Carregando banner...</span>
   </div>
   } @else {
-  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+  <form id="site-banner-form" [formGroup]="form" (ngSubmit)="onSubmit()">
     <div class="site-banner-form-layout">
       <div class="site-banner-form-layout__main">
         <app-section-card titulo="Imagem" subtitulo="Selecione a imagem principal do banner.">
@@ -181,30 +186,6 @@
       </div>
     </div>
 
-    <div class="cadastro-form-actions" *ngIf="!isMobileView">
-      <button mat-stroked-button color="primary" type="button" (click)="voltar()">
-        Voltar
-      </button>
-
-      <button mat-flat-button color="primary" type="submit" [disabled]="!podeSalvar">
-        {{ textoAcaoPrincipal }}
-      </button>
-    </div>
   </form>
   }
 </app-page-card>
-
-<app-mobile-total-bar
-  *ngIf="isMobileView"
-  label="Meu Site"
-  valueText="Banner"
-  detailText="Imagem, texto e publicação"
-  [expandable]="false"
-  secondaryActionText="Voltar"
-  [actionText]="textoAcaoPrincipal"
-  [actionDisabled]="!podeSalvar"
-  bottomOffset="58px"
-  [attachedToBottomNav]="true"
-  (secondaryAction)="voltar()"
-  (action)="onSubmit()">
-</app-mobile-total-bar>

@@ -1,188 +1,200 @@
-<div *ngIf="acessoNegado" class="p-24">
-  <mat-card class="cardWithShadow">
-    <mat-card-content>
-      <h3 class="f-w-700 m-b-8">Acesso restrito</h3>
-      <p class="m-0 text-muted">Somente o proprietário pode visualizar os dados da assinatura.</p>
-    </mat-card-content>
-  </mat-card>
-</div>
+<app-page-card
+  titulo="Minha assinatura"
+  subtitulo="Consulte seu plano, cobrança e histórico de pagamentos."
+  [botaoTexto]="pageHeaderActionLabel"
+  botaoIcone="swap_horiz"
+  [botaoRota]="['/billing/pagamento']">
 
-<div *ngIf="loading" class="d-flex justify-content-center m-t-24">
-  <mat-progress-spinner mode="indeterminate" diameter="40"></mat-progress-spinner>
-</div>
-
-<div *ngIf="!loading && !acessoNegado" class="page-bg">
-  <mat-card class="card alert-card m-b-16" *ngIf="mostrarAlertaCobranca">
-    <mat-card-content>
-      <div class="alert-card-content">
-        <div class="alert-info">
-          <mat-icon class="alert-icon">warning_amber</mat-icon>
+  @if (acessoNegado) {
+    <div class="assinatura-state" role="status">
+      <mat-icon>lock</mat-icon>
+      <strong>Acesso restrito</strong>
+      <p>Somente o proprietário pode visualizar os dados da assinatura.</p>
+    </div>
+  } @else if (loading) {
+    <div class="assinatura-state" role="status" aria-busy="true">
+      <mat-progress-spinner mode="indeterminate" diameter="40"></mat-progress-spinner>
+      <strong>Carregando assinatura...</strong>
+    </div>
+  } @else if (error) {
+    <div class="assinatura-state assinatura-state--error" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <strong>{{ error }}</strong>
+      <p>Não foi possível montar o estado completo da assinatura.</p>
+      <button mat-stroked-button type="button" (click)="carregarResumo()">Tentar novamente</button>
+    </div>
+  } @else {
+    <div class="assinatura-page">
+      <section class="assinatura-alert" *ngIf="mostrarAlertaCobranca" role="alert">
+        <div class="assinatura-alert__info">
+          <mat-icon>warning_amber</mat-icon>
           <div>
-            <h3 class="alert-title">{{ alertTitle }}</h3>
-            <p class="alert-subtitle">{{ alertSubtitle }}</p>
+            <strong>{{ alertTitle }}</strong>
+            <span>{{ alertSubtitle }}</span>
           </div>
         </div>
-        <div class="alert-actions">
-          <span class="urgency-badge">{{ urgencyBadge }}</span>
-          <button mat-flat-button color="primary" *ngIf="mostrarAcaoRegularizacao" (click)="irParaPlanos()">
+        <div class="assinatura-alert__actions">
+          <span>{{ urgencyBadge }}</span>
+          <button mat-flat-button color="primary" type="button" *ngIf="mostrarAcaoRegularizacao" (click)="irParaPlanos()">
             Regularizar agora
           </button>
         </div>
-      </div>
-    </mat-card-content>
-  </mat-card>
+      </section>
 
-  <div class="content-grid">
-    <mat-card class="card h-100">
-      <mat-card-content>
-        <div class="card-heading">
-          <div>
-            <h3 class="f-w-700 m-b-4">Minha assinatura</h3>
-            <p class="text-muted m-b-0">{{ resumo?.planoNome }} ({{ resumo?.planoCodigo }})</p>
-          </div>
-          <button mat-stroked-button color="primary" *ngIf="podeTrocarPlano" (click)="irParaPlanos()">
-            <mat-icon>swap_horiz</mat-icon>
-            {{ ctaPlanoLabel }}
-          </button>
+      <section class="assinatura-overview" aria-label="Visão geral da assinatura">
+        <div class="assinatura-metrics">
+          @for (metrica of metricas; track metrica.label) {
+            <app-metric-card
+              [label]="metrica.label"
+              [value]="metrica.value"
+              [detail]="metrica.detail"
+              [icon]="metrica.icon"
+              [accent]="metrica.accent">
+            </app-metric-card>
+          }
         </div>
 
-        <div class="assinatura-status-strip" *ngIf="resumo">
-          <mat-chip selected [ngClass]="['status-chip', classeStatus]">{{ statusAssinatura }}</mat-chip>
-          <div class="status-texts">
-            <div class="f-w-600">{{ situacaoAssinatura }}</div>
-            <div class="text-muted f-s-13" *ngIf="billingAccess?.expiresAt">
-              Vencimento: {{ billingAccess?.expiresAt | date:'dd/MM/yyyy' }}
+        <app-section-card titulo="Informações da assinatura">
+          <div class="assinatura-status-strip" *ngIf="resumo">
+            <span class="assinatura-status-chip" [ngClass]="classeStatus">{{ statusAssinatura }}</span>
+            <div class="status-texts">
+              <div class="f-w-600">{{ situacaoAssinatura }}</div>
+              <div class="text-muted f-s-13" *ngIf="billingAccess?.expiresAt">
+                Vencimento: {{ billingAccess?.expiresAt | date:'dd/MM/yyyy' }}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="kpi-grid">
-          <div class="kpi-card">
-            <span class="kpi-label">Status</span>
-            <span class="kpi-value">{{ resumo?.status || '-' }}</span>
-          </div>
-          <div class="kpi-card">
-            <span class="kpi-label">Próxima cobrança</span>
-            <span class="kpi-value">{{ resumo?.proximaCobrancaEm ? (resumo?.proximaCobrancaEm | date:'dd/MM/yyyy') : '—' }}</span>
-          </div>
-          <div class="kpi-card">
-            <span class="kpi-label">Valor</span>
-            <span class="kpi-value">{{ resumo?.valor | currency:(resumo?.moeda || 'BRL'):'symbol':'1.2-2':'pt-BR' }}</span>
-          </div>
-          <div class="kpi-card">
-            <span class="kpi-label">Cliente desde</span>
-            <span class="kpi-value">{{ resumo?.clienteDesde | date:'dd/MM/yyyy' }}</span>
-          </div>
-        </div>
+          <dl class="assinatura-meta f-s-14">
+            <div class="meta-row">
+              <dt>Plano</dt>
+              <dd>{{ resumo?.planoNome || '-' }}</dd>
+            </div>
+            <div class="meta-row">
+              <dt>Código do plano</dt>
+              <dd>{{ resumo?.planoCodigo || '-' }}</dd>
+            </div>
+            <div class="meta-row">
+              <dt>Periodicidade</dt>
+              <dd>{{ resumo?.periodicidade || '-' }}</dd>
+            </div>
+            <div class="meta-row">
+              <dt>Início</dt>
+              <dd>{{ resumo?.inicio ? (resumo?.inicio | date:'dd/MM/yyyy') : '—' }}</dd>
+            </div>
+            <div class="meta-row">
+              <dt>Fim</dt>
+              <dd>{{ resumo?.fim ? (resumo?.fim | date:'dd/MM/yyyy') : '—' }}</dd>
+            </div>
+            <div class="meta-row">
+              <dt>E-mail de cobrança</dt>
+              <dd>{{ resumo?.emailCobranca || '-' }}</dd>
+            </div>
+            <div class="meta-row">
+              <dt>Vencimento</dt>
+              <dd>{{ dueLabel || (billingAccess?.expiresAt ? (billingAccess?.expiresAt | date:'dd/MM/yyyy') : '—') }}</dd>
+            </div>
+          </dl>
+        </app-section-card>
+      </section>
 
-        <dl class="assinatura-meta f-s-14 m-t-12">
-          <div class="meta-row">
-            <dt>Periodicidade</dt>
-            <dd>{{ resumo?.periodicidade || '-' }}</dd>
+      <app-section-card titulo="Recursos do plano">
+        @if (beneficios.length || limites.length) {
+          <div class="feature-list">
+            <div class="feature-item" *ngFor="let b of beneficios">
+              <mat-icon>check_circle</mat-icon>
+              <span>{{ b }}</span>
+            </div>
+            <div class="feature-item feature-limit" *ngFor="let l of limites">
+              <mat-icon>task_alt</mat-icon>
+              <span>{{ l }}</span>
+            </div>
           </div>
-          <div class="meta-row">
-            <dt>Início</dt>
-            <dd>{{ resumo?.inicio | date:'dd/MM/yyyy' }}</dd>
-          </div>
-          <div class="meta-row">
-            <dt>Fim</dt>
-            <dd>{{ resumo?.fim | date:'dd/MM/yyyy' }}</dd>
-          </div>
-          <div class="meta-row">
-            <dt>E-mail de cobrança</dt>
-            <dd>{{ resumo?.emailCobranca || '-' }}</dd>
-          </div>
-        </dl>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="card h-100">
-      <mat-card-content>
-        <h3 class="f-w-700 m-b-8">Recursos do plano</h3>
-        <div class="feature-list" *ngIf="beneficios.length || limites.length; else noInfo">
-          <div class="feature-item" *ngFor="let b of beneficios">
-            <mat-icon>check_circle</mat-icon>
-            <span>{{ b }}</span>
-          </div>
-          <div class="feature-item feature-limit" *ngFor="let l of limites">
-            <mat-icon>task_alt</mat-icon>
-            <span>{{ l }}</span>
-          </div>
-        </div>
-        <ng-template #noInfo>
+        } @else {
           <div class="empty-state">
             <mat-icon>info</mat-icon>
             <span>Nenhuma informação adicional.</span>
           </div>
-        </ng-template>
-      </mat-card-content>
-    </mat-card>
-  </div>
+        }
+      </app-section-card>
 
-  <mat-card class="card m-t-16">
-    <mat-card-content>
-      <div class="card-heading m-b-8">
-        <div>
-          <h3 class="f-w-700 m-0">Histórico de pagamentos</h3>
-          <p class="text-muted f-s-13 m-t-4 m-b-0">Use esta tabela apenas para consulta das cobranças já geradas.</p>
-        </div>
-      </div>
-      <div class="table-responsive">
-        <table mat-table [dataSource]="pagamentos" class="w-100">
-          <ng-container matColumnDef="valor">
-            <th mat-header-cell *matHeaderCellDef>Valor</th>
-            <td mat-cell *matCellDef="let p">{{ p.valor | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</td>
-          </ng-container>
+      <app-section-card titulo="Histórico de pagamentos" subtitulo="Use esta tabela apenas para consulta das cobranças já geradas.">
+        <app-data-table
+          tableLabel="Histórico de pagamentos"
+          [columns]="pagamentoColumns"
+          [data]="pagamentos"
+          [search]="{ enabled: false }"
+          [emptyState]="historicoEmptyState"
+          rowKey="id">
 
-          <ng-container matColumnDef="forma">
-            <th mat-header-cell *matHeaderCellDef>Forma</th>
-            <td mat-cell *matCellDef="let p">{{ resumo?.gateway || 'Gateway' }}</td>
-          </ng-container>
+          <ng-template appDataTableCell="valor" let-p>
+            {{ p.valor | currency:(resumo?.moeda || 'BRL'):'symbol':'1.2-2':'pt-BR' }}
+          </ng-template>
 
-          <ng-container matColumnDef="criado">
-            <th mat-header-cell *matHeaderCellDef>Criado</th>
-            <td mat-cell *matCellDef="let p">{{ p.criadoEm | date:'dd/MM/yyyy' }}</td>
-          </ng-container>
+          <ng-template appDataTableCell="forma">
+            {{ resumo?.gateway || 'Gateway' }}
+          </ng-template>
 
-          <ng-container matColumnDef="confirmado">
-            <th mat-header-cell *matHeaderCellDef>Confirmado</th>
-            <td mat-cell *matCellDef="let p">{{ p.confirmadoEm ? (p.confirmadoEm | date:'dd/MM/yyyy') : '—' }}</td>
-          </ng-container>
+          <ng-template appDataTableCell="criado" let-p>
+            {{ p.criadoEm | date:'dd/MM/yyyy' }}
+          </ng-template>
 
-          <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Status</th>
-            <td mat-cell *matCellDef="let p">
-              <mat-chip selected [ngClass]="['status-chip', getStatusClass(p.status)]">
-                {{ getStatusLabel(p.status) }}
-              </mat-chip>
-            </td>
-          </ng-container>
+          <ng-template appDataTableCell="confirmado" let-p>
+            {{ p.confirmadoEm ? (p.confirmadoEm | date:'dd/MM/yyyy') : '—' }}
+          </ng-template>
 
-          <ng-container matColumnDef="referencia">
-            <th mat-header-cell *matHeaderCellDef>Referência</th>
-            <td mat-cell *matCellDef="let p">{{ p.referenciaExterna || '—' }}</td>
-          </ng-container>
+          <ng-template appDataTableCell="status" let-p>
+            <span [class]="pagamentoRowClass(p)">
+              <span class="assinatura-status-chip" [ngClass]="getStatusClass(p.status)">{{ getStatusLabel(p.status) }}</span>
+              <small *ngIf="statusPendente(p.status)">Cobrança pendente</small>
+            </span>
+          </ng-template>
 
-          <ng-container matColumnDef="link">
-            <th mat-header-cell *matHeaderCellDef>Link</th>
-            <td mat-cell *matCellDef="let p">
+          <ng-template appDataTableCell="referencia" let-p>
+            {{ p.referenciaExterna || '—' }}
+          </ng-template>
+
+          <ng-template appDataTableCell="link" let-p>
+            <button
+              mat-flat-button
+              color="primary"
+              type="button"
+              *ngIf="podeAbrirCobranca(p); else semCobranca"
+              (click)="abrirLink(p.invoiceUrl)">
+              Abrir cobrança
+            </button>
+            <ng-template #semCobranca>—</ng-template>
+          </ng-template>
+
+          <ng-template [appDataTableItem]="pagamentos" let-p>
+            <article class="assinatura-payment-item" [class.assinatura-payment-item--pending]="statusPendente(p.status)">
+              <div>
+                <strong>{{ p.valor | currency:(resumo?.moeda || 'BRL'):'symbol':'1.2-2':'pt-BR' }}</strong>
+                <span>{{ p.criadoEm | date:'dd/MM/yyyy' }}</span>
+              </div>
+              <span class="assinatura-status-chip" [ngClass]="getStatusClass(p.status)">{{ getStatusLabel(p.status) }}</span>
+              <dl>
+                <div>
+                  <dt>Confirmado</dt>
+                  <dd>{{ p.confirmadoEm ? (p.confirmadoEm | date:'dd/MM/yyyy') : '—' }}</dd>
+                </div>
+                <div>
+                  <dt>Referência</dt>
+                  <dd>{{ p.referenciaExterna || '—' }}</dd>
+                </div>
+              </dl>
               <button
                 mat-flat-button
                 color="primary"
-                *ngIf="p.invoiceUrl && statusPendente(p.status)"
-                (click)="abrirLink(p.invoiceUrl)"
-              >
+                type="button"
+                *ngIf="podeAbrirCobranca(p)"
+                (click)="abrirLink(p.invoiceUrl)">
                 Abrir cobrança
               </button>
-              <span *ngIf="!(p.invoiceUrl && statusPendente(p.status))">—</span>
-            </td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;" [ngClass]="{ 'table-row-warning': isPendingRow(row) }"></tr>
-        </table>
-      </div>
-      <div *ngIf="!pagamentos.length" class="text-muted f-s-13 m-t-12">Nenhum pagamento encontrado.</div>
-    </mat-card-content>
-  </mat-card>
-</div>
+            </article>
+          </ng-template>
+        </app-data-table>
+      </app-section-card>
+    </div>
+  }
+</app-page-card>

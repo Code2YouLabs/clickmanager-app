@@ -16,6 +16,7 @@ import {
   HierarchyTreeNode,
 } from 'src/app/components/hierarchy-tree/hierarchy-tree.component';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { ViewModeToggleComponent, ViewModeToggleOption } from 'src/app/components/view-mode-toggle/view-mode-toggle.component';
 import { MaterialModule } from 'src/app/material.module';
 import { ToastrService } from 'ngx-toastr';
 import { AuthService } from 'src/app/services/auth.service';
@@ -34,6 +35,7 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
     DataTableComponent,
     DataTableCellDirective,
     HierarchyTreeComponent,
+    ViewModeToggleComponent,
   ],
   template: `
     <app-page-card titulo="Categorias gráficas" subtitulo="Organização dos produtos gráficos no catálogo">
@@ -64,20 +66,12 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
         (sortChange)="onSortChange($event)">
 
         <div data-table-toolbar-actions class="visualizacao-toggle">
-          <mat-button-toggle-group
+          <app-view-mode-toggle
             [value]="visualizacao"
-            hideSingleSelectionIndicator
-            aria-label="Visualização das categorias"
-            (change)="alterarVisualizacao($event.value)">
-            <mat-button-toggle value="lista" aria-label="Visualizar em lista">
-              <mat-icon>view_list</mat-icon>
-              <span>Lista</span>
-            </mat-button-toggle>
-            <mat-button-toggle value="arvore" aria-label="Visualizar em árvore">
-              <mat-icon>account_tree</mat-icon>
-              <span>Árvore</span>
-            </mat-button-toggle>
-          </mat-button-toggle-group>
+            [options]="visualizacaoOptions"
+            ariaLabel="Visualização das categorias"
+            (valueChange)="alterarVisualizacao($event)">
+          </app-view-mode-toggle>
         </div>
 
         <ng-template appDataTableCell="nome" let-row>
@@ -131,44 +125,6 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
       display: inline-flex;
     }
 
-    .visualizacao-toggle mat-button-toggle-group {
-      height: var(--mat-form-field-container-height, 37px);
-      border-radius: 8px;
-      border-color: var(--mat-sys-outline-variant);
-      overflow: hidden;
-    }
-
-    .visualizacao-toggle mat-button-toggle {
-      height: var(--mat-form-field-container-height, 37px);
-      min-width: 96px;
-      color: var(--mat-sys-on-surface);
-    }
-
-    .visualizacao-toggle ::ng-deep .mat-button-toggle-label-content {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      height: 100%;
-      line-height: 1;
-      padding: 0 12px;
-      font-weight: 600;
-    }
-
-    .visualizacao-toggle ::ng-deep .mat-button-toggle-button {
-      height: 100%;
-    }
-
-    .visualizacao-toggle ::ng-deep .mat-button-toggle-checked {
-      background: color-mix(in srgb, var(--mat-sys-primary) 10%, var(--mat-sys-surface));
-      color: var(--mat-sys-primary);
-    }
-
-    .visualizacao-toggle mat-icon {
-      width: 18px;
-      height: 18px;
-      font-size: 18px;
-    }
-
     .categoria-nome {
       display: block;
       color: #111827;
@@ -195,14 +151,8 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
     }
 
     @media (max-width: 760px) {
-      .visualizacao-toggle,
-      .visualizacao-toggle mat-button-toggle-group {
+      .visualizacao-toggle {
         width: 100%;
-      }
-
-      .visualizacao-toggle mat-button-toggle {
-        flex: 1 1 0;
-        min-width: 0;
       }
     }
   `],
@@ -218,6 +168,11 @@ export class GraficaCategoriasComponent implements OnInit {
   carregandoArvore = false;
   visualizacao: 'lista' | 'arvore' = 'lista';
   sort: Sort = { active: 'nome', direction: 'asc' };
+
+  readonly visualizacaoOptions: ViewModeToggleOption<'lista' | 'arvore'>[] = [
+    { value: 'lista', label: 'Lista', icon: 'view_list', ariaLabel: 'Visualizar em lista' },
+    { value: 'arvore', label: 'Árvore', icon: 'account_tree', ariaLabel: 'Visualizar em árvore' },
+  ];
 
   readonly searchConfig = {
     enabled: true,

@@ -1,3 +1,5 @@
+import { TipoEmpresa } from '../empresa/tipo-empresa.enum';
+
 export type AplicativoSistema = 'CALCULADORA_REVESTIMENTO' | 'SMARTCALC' | 'SMARTCALC_CONFIG';
 
 export interface AplicativoEmpresa {
@@ -28,6 +30,7 @@ export interface AplicativoCatalogo {
   rota: string;
   modulo: string;
   permissao: string;
+  allowedEmpresaTipos: readonly TipoEmpresa[];
 }
 
 export const APLICATIVOS_CATALOGO: readonly AplicativoCatalogo[] = [
@@ -40,16 +43,7 @@ export const APLICATIVOS_CATALOGO: readonly AplicativoCatalogo[] = [
     rota: '/smartcalc',
     modulo: 'SMARTCALC',
     permissao: 'SMARTCALC_USAR',
-  },
-  {
-    aplicativo: 'SMARTCALC_CONFIG',
-    nome: 'Configuração SmartCalc',
-    descricao: 'Controle ativação e produtos habilitados.',
-    icone: 'settings-automation',
-    imagem: 'assets/images/svgs/icon-connect.svg',
-    rota: '/page/calculadora/config/criar',
-    modulo: 'SMARTCALC',
-    permissao: 'CONFIG_CALCULADORAS',
+    allowedEmpresaTipos: [TipoEmpresa.GRAFICA],
   },
   {
     aplicativo: 'CALCULADORA_REVESTIMENTO',
@@ -60,13 +54,19 @@ export const APLICATIVOS_CATALOGO: readonly AplicativoCatalogo[] = [
     rota: '/apps/calculadoras/pisos',
     modulo: 'CALCULADORA_MATERIAIS',
     permissao: 'CALCULADORA_MATERIAIS_USAR',
+    allowedEmpresaTipos: [TipoEmpresa.DEPOSITO],
   },
 ] as const;
+
+export function aplicativosDisponiveisParaSegmento(tipoEmpresa: TipoEmpresa): AplicativoCatalogo[] {
+  return APLICATIVOS_CATALOGO.filter((app) => app.allowedEmpresaTipos.includes(tipoEmpresa));
+}
 
 export function aplicativosVisiveis(
   configuracao: ConfiguracaoAplicativos | null,
   moduloHabilitado: (modulo: string) => boolean,
   possuiPermissao: (permissao: string) => boolean,
+  tipoEmpresa: TipoEmpresa,
 ): AplicativoCatalogo[] {
   const preferidos = new Set(
     (configuracao?.aplicativos || [])
@@ -74,7 +74,7 @@ export function aplicativosVisiveis(
       .map((app) => app.aplicativo)
   );
 
-  return APLICATIVOS_CATALOGO.filter((app) =>
+  return aplicativosDisponiveisParaSegmento(tipoEmpresa).filter((app) =>
     preferidos.has(app.aplicativo)
     && moduloHabilitado(app.modulo)
     && possuiPermissao(app.permissao)

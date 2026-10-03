@@ -1,57 +1,93 @@
 <section class="clicktv-page">
-  <mat-card class="cardWithShadow">
-    <app-card-header titulo="Playlists do ClickTV" subtitulo="Monte sequências de imagens e vídeos para suas telas."
-      [mostrarDivisor]="true"></app-card-header>
-    <mat-card-content>
-      <div class="clicktv-toolbar">
-        <button mat-flat-button color="primary" (click)="criar()" *temPermissao="'CLICKTV_PLAYLISTS_GERENCIAR'"><mat-icon>add</mat-icon> Nova playlist</button>
-        <mat-form-field appearance="outline" class="search"><mat-label>Buscar por nome</mat-label>
-          <input matInput [(ngModel)]="nome" (keyup.enter)="pesquisar()" />
-          <button mat-icon-button matSuffix (click)="pesquisar()"><mat-icon>search</mat-icon></button>
-        </mat-form-field>
-        <mat-form-field appearance="outline"><mat-label>Orientação</mat-label>
-          <mat-select [(ngModel)]="orientacao" (selectionChange)="pesquisar()"><mat-option value="">Todas</mat-option>
-            @for (item of orientacoes; track item) { <mat-option [value]="item">{{ item }}</mat-option> }
-          </mat-select>
-        </mat-form-field>
-        <mat-form-field appearance="outline"><mat-label>Status</mat-label>
-          <mat-select [(ngModel)]="ativa" (selectionChange)="pesquisar()"><mat-option value="">Todos</mat-option>
-            <mat-option [value]="true">Ativa</mat-option><mat-option [value]="false">Inativa</mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-    </mat-card-content>
-  </mat-card>
+  <app-page-card
+    titulo="Playlists do ClickTV"
+    subtitulo="Monte sequências de imagens e vídeos para suas telas."
+    [mostrarDivisor]="true">
+    <button
+      page-header-actions
+      mat-flat-button
+      color="primary"
+      type="button"
+      (click)="criar()"
+      *temPermissao="'CLICKTV_PLAYLISTS_GERENCIAR'">
+      <mat-icon>add</mat-icon>
+      Nova playlist
+    </button>
 
-  <mat-card class="cardWithShadow">
-    <mat-card-content>
-      @if (carregando) {
-        <div class="clicktv-state"><mat-spinner diameter="36"></mat-spinner><span>Carregando playlists…</span></div>
-      } @else if (!playlists.length) {
-        <div class="clicktv-state"><mat-icon>playlist_play</mat-icon><strong>Nenhuma playlist encontrada</strong></div>
-      } @else {
-        <div class="clicktv-table-wrap">
-          <table mat-table [dataSource]="playlists" class="clicktv-table">
-            <ng-container matColumnDef="nome"><th mat-header-cell *matHeaderCellDef>Nome</th>
-              <td mat-cell *matCellDef="let item"><strong>{{ item.nome }}</strong><br><span class="clicktv-meta">{{ item.descricao || 'Sem descrição' }}</span></td></ng-container>
-            <ng-container matColumnDef="orientacao"><th mat-header-cell *matHeaderCellDef>Orientação</th><td mat-cell *matCellDef="let item">{{ item.orientacao }}</td></ng-container>
-            <ng-container matColumnDef="itens"><th mat-header-cell *matHeaderCellDef>Itens</th><td mat-cell *matCellDef="let item">{{ item.quantidadeItensAtivos }} / {{ item.quantidadeItens }}</td></ng-container>
-            <ng-container matColumnDef="versao"><th mat-header-cell *matHeaderCellDef>Versão</th><td mat-cell *matCellDef="let item">v{{ item.versao }}</td></ng-container>
-            <ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>Status</th><td mat-cell *matCellDef="let item">
-              <span class="clicktv-badge clicktv-badge--{{ item.ativa ? 'success' : 'neutral' }}">{{ item.ativa ? 'ATIVA' : 'INATIVA' }}</span></td></ng-container>
-            <ng-container matColumnDef="acoes"><th mat-header-cell *matHeaderCellDef>Ações</th><td mat-cell *matCellDef="let item">
-              <div class="clicktv-actions">
-                <button mat-icon-button (click)="abrir(item)" title="Editar conteúdo"><mat-icon>queue_music</mat-icon></button>
-                <button mat-icon-button (click)="editar(item)" title="Editar dados" *temPermissao="'CLICKTV_PLAYLISTS_GERENCIAR'"><mat-icon>edit</mat-icon></button>
-                <button mat-icon-button (click)="duplicar(item)" title="Duplicar" *temPermissao="'CLICKTV_PLAYLISTS_GERENCIAR'"><mat-icon>content_copy</mat-icon></button>
-                <button mat-icon-button (click)="desativar(item)" title="Desativar" [disabled]="!item.ativa" *temPermissao="'CLICKTV_PLAYLISTS_GERENCIAR'"><mat-icon>block</mat-icon></button>
-              </div>
-            </td></ng-container>
-            <tr mat-header-row *matHeaderRowDef="colunas"></tr><tr mat-row *matRowDef="let row; columns: colunas"></tr>
-          </table>
-        </div>
-        <mat-paginator [length]="total" [pageIndex]="page" [pageSize]="size" [pageSizeOptions]="[10,20,50]" (page)="pagina($event)"></mat-paginator>
-      }
-    </mat-card-content>
-  </mat-card>
+    <app-data-table
+      tableLabel="Playlists do ClickTV"
+      [columns]="columns"
+      [data]="playlists"
+      [filters]="filters"
+      [filterState]="filterState"
+      [search]="searchConfig"
+      [pagination]="pagination"
+      [actions]="actions"
+      [loading]="carregandoInicial"
+      [refreshing]="refreshing"
+      [error]="erro"
+      [forbidden]="semPermissao"
+      forbiddenMessage="Você não possui permissão para visualizar as playlists do ClickTV."
+      [filtered]="temFiltrosAtivos"
+      [emptyState]="emptyState"
+      rowKey="id"
+      (searchChange)="pesquisar($event)"
+      (filterChange)="alterarFiltros($event)"
+      (clearFilters)="limparFiltros()"
+      (pageChange)="pagina($event)"
+      (retry)="carregar()"
+      (action)="executarAcao($event)">
+
+      <ng-template appDataTableCell="nome" let-playlist>
+        <strong>{{ playlist.nome }}</strong><br>
+        <span class="clicktv-meta">{{ playlist.descricao || 'Sem descrição' }}</span>
+      </ng-template>
+
+      <ng-template appDataTableCell="itens" let-playlist>
+        {{ playlist.quantidadeItensAtivos }} / {{ playlist.quantidadeItens }}
+      </ng-template>
+
+      <ng-template appDataTableCell="versao" let-playlist>
+        v{{ playlist.versao }}
+      </ng-template>
+
+      <ng-template appDataTableCell="status" let-playlist>
+        <span class="clicktv-badge clicktv-badge--{{ playlist.ativa ? 'success' : 'neutral' }}">
+          {{ playlist.ativa ? 'ATIVA' : 'INATIVA' }}
+        </span>
+      </ng-template>
+
+      <ng-template [appDataTableItem]="playlists" let-playlist let-actions="actions" let-emitAction="emitAction">
+        <article class="clicktv-list-item">
+          <div class="clicktv-list-item__main">
+            <strong>{{ playlist.nome }}</strong>
+            <span>{{ playlist.descricao || 'Sem descrição' }}</span>
+          </div>
+          <div class="clicktv-list-item__meta">
+            <span>{{ playlist.orientacao }}</span>
+            <span>{{ playlist.quantidadeItensAtivos }} / {{ playlist.quantidadeItens }} itens</span>
+            <span>v{{ playlist.versao }}</span>
+          </div>
+          <div class="clicktv-list-item__footer">
+            <span class="clicktv-badge clicktv-badge--{{ playlist.ativa ? 'success' : 'neutral' }}">
+              {{ playlist.ativa ? 'ATIVA' : 'INATIVA' }}
+            </span>
+            <div class="clicktv-actions">
+              @for (action of actions; track action.id) {
+                <button
+                  mat-icon-button
+                  type="button"
+                  [disabled]="action.disabled?.(playlist)"
+                  [matTooltip]="action.label"
+                  [attr.aria-label]="action.label"
+                  (click)="emitAction(playlist, action.id)">
+                  <mat-icon [color]="action.color || null">{{ action.icon }}</mat-icon>
+                </button>
+              }
+            </div>
+          </div>
+        </article>
+      </ng-template>
+    </app-data-table>
+  </app-page-card>
 </section>

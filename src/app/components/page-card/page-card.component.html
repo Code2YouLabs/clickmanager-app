@@ -22,7 +22,7 @@
   </mat-card-content>
 
   <span class="page-card__saving" role="status" *ngIf="saving">{{ savingText }}</span>
-  <ng-container *ngIf="showFooter || footerActions.length">
+  <ng-container *ngIf="showFooter || resolvedFooterActions.length">
     <mat-divider *ngIf="footerDivider" class="page-card__footer-divider"></mat-divider>
     <mat-card-actions class="page-card__footer">
       <div class="page-card__footer-left">
@@ -30,15 +30,16 @@
       </div>
       <div class="page-card__footer-right">
         <ng-content select="[page-footer-right]"></ng-content>
-        @for (action of footerActions; track action.id) {
-          @if (action.primary) {
+        @for (action of resolvedFooterActions; track action.id) {
+          @if (action.primary && action.intent !== 'cancel') {
             <button mat-flat-button [color]="action.color || 'primary'" [type]="action.type || 'button'"
-              [attr.form]="action.form || null" [disabled]="saving || actionsDisabled || action.disabled"
-              (click)="onFooterAction(action)">{{ saving && action.pendingLabel ? action.pendingLabel : action.label }}</button>
+              [attr.form]="action.form || null" [disabled]="actionDisabled(action)"
+              (click)="onFooterAction(action)">@if (action.icon) { <mat-icon>{{ action.icon }}</mat-icon> }{{ saving && action.pendingLabel ? action.pendingLabel : action.label }}</button>
           } @else {
-            <button mat-stroked-button [color]="action.color || null" [type]="action.type || 'button'"
-              [attr.form]="action.form || null" [disabled]="saving || actionsDisabled || action.disabled"
-              (click)="onFooterAction(action)">{{ saving && action.pendingLabel ? action.pendingLabel : action.label }}</button>
+            <button mat-stroked-button [class.cancel-button]="action.intent === 'cancel'"
+              [color]="action.intent === 'cancel' ? null : (action.color || null)" [type]="action.type || 'button'"
+              [attr.form]="action.form || null" [disabled]="actionDisabled(action)"
+              (click)="onFooterAction(action)">@if (action.icon) { <mat-icon>{{ action.icon }}</mat-icon> }{{ saving && action.pendingLabel ? action.pendingLabel : action.label }}</button>
           }
         }
       </div>

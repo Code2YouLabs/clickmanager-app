@@ -932,7 +932,7 @@ export const PagesRoutes: Routes = [
       requiredPermission: ['USUARIO_CADASTRAR'],
       title: 'Cadastro de novo usuário',
       urls: [
-        { title: 'Novo usuário', url: '/dashboards/dashboard1' },
+        { title: 'Usuários', url: '/page/usuarios/listar' },
         { title: 'Cadastro de novo usuário' }
       ]
     }
@@ -946,7 +946,7 @@ export const PagesRoutes: Routes = [
       requiredPermission: ['USUARIO_EDITAR'],
       title: 'Editar usuário',
       urls: [
-        { title: 'Usuários', url: '/usuarios' },
+        { title: 'Usuários', url: '/page/usuarios/listar' },
         { title: 'Editar usuário' }
       ]
     }
@@ -960,7 +960,7 @@ export const PagesRoutes: Routes = [
       requiredPermission: ['USUARIOS_VER'],
       title: 'Lista de usuários',
       urls: [
-        { title: 'Lista de usuários', url: '/dashboards/dashboard1' },
+        { title: 'Usuários', url: '/page/usuarios/listar' },
         { title: 'Lista de usuários' }
       ]
     }

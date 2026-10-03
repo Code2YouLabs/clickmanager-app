@@ -76,7 +76,9 @@
             <app-cliente-selector-card
               [cliente]="clienteConfirmado"
               [editando]="trocandoCliente || !clienteConfirmado"
+              [salvando]="salvandoCliente"
               [inativo]="somenteLeitura || !permissoesFluxo.editarCliente"
+              [permitirCriarCliente]="podeCriarCliente"
               [showEmptyAlert]="true"
               [control]="clienteControl"
               [displayWith]="mostrarCliente"

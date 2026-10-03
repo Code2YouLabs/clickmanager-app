@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
 import { Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { Subscription } from 'rxjs';
 
 import { DashboardService, GraficaDashboardIndicador } from '../dashboard.service';
 import { SectionCardComponent } from '../../section-card/section-card.component';
@@ -22,9 +22,16 @@ interface StatusGridItem {
   templateUrl: './status-grid.component.html',
   styleUrls: ['./status-grid.component.scss'],
 })
-export class AppStatusGridComponent implements OnInit {
+export class AppStatusGridComponent implements OnInit, OnChanges, OnDestroy {
+  @Input() refreshToken = 0;
+  @Output() refreshState = new EventEmitter<{ id: 'status'; refreshing: boolean }>();
   pedidoStats: StatusGridItem[] = [];
   orcamentoStats: StatusGridItem[] = [];
+  loading = false;
+  refreshing = false;
+  erro: string | null = null;
+  private requestId = 0;
+  private readonly subscriptions = new Subscription();
 
   private readonly pedidoStatusOrder = [
     'AGUARDANDO_PAGAMENTO',
@@ -48,8 +55,18 @@ export class AppStatusGridComponent implements OnInit {
     private router: Router
   ) {}
 
-  async ngOnInit(): Promise<void> {
-    await this.carregarStatus();
+  ngOnInit(): void {
+    this.carregarStatus();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['refreshToken'] && !changes['refreshToken'].firstChange) {
+      this.carregarStatus();
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
   }
 
   abrirStatus(item: StatusGridItem): void {
@@ -60,26 +77,54 @@ export class AppStatusGridComponent implements OnInit {
     this.router.navigate(['/page/grafica/comercial/pedidos'], { queryParams: { status: item.status } });
   }
 
-  private async carregarStatus(): Promise<void> {
-    const resposta = await firstValueFrom(this.dashboardService.obterResumoGrafica());
-    const pedidos = new Map(resposta.pedidoStatus.map((item) => [item.codigo, item]));
-    const orcamentos = new Map(resposta.orcamentoStatus.map((item) => [item.codigo, item]));
+  carregarStatus(): void {
+    const currentRequestId = ++this.requestId;
+    const hasData = this.pedidoStats.length > 0 || this.orcamentoStats.length > 0;
+    this.loading = !hasData;
+    this.refreshing = hasData;
+    this.erro = null;
+    this.refreshState.emit({ id: 'status', refreshing: true });
 
-    this.pedidoStats = this.pedidoStatusOrder.map((status) => this.toStatusGridItem(
-      pedidos.get(status),
-      status,
-      this.mapPedidoLabel(status),
-      this.mapPedidoTone(status),
-      'pedido',
-    ));
+    const subscription = this.dashboardService.obterResumoGrafica().subscribe({
+      next: (resposta) => {
+        if (currentRequestId !== this.requestId) return;
+        const pedidos = new Map(resposta.pedidoStatus.map((item) => [item.codigo, item]));
+        const orcamentos = new Map(resposta.orcamentoStatus.map((item) => [item.codigo, item]));
 
-    this.orcamentoStats = this.orcamentoStatusOrder.map((status) => this.toStatusGridItem(
-      orcamentos.get(status),
-      status,
-      this.mapOrcamentoLabel(status),
-      this.mapOrcamentoTone(status),
-      'orcamento',
-    ));
+        this.pedidoStats = this.pedidoStatusOrder.map((status) => this.toStatusGridItem(
+          pedidos.get(status),
+          status,
+          this.mapPedidoLabel(status),
+          this.mapPedidoTone(status),
+          'pedido',
+        ));
+
+        this.orcamentoStats = this.orcamentoStatusOrder.map((status) => this.toStatusGridItem(
+          orcamentos.get(status),
+          status,
+          this.mapOrcamentoLabel(status),
+          this.mapOrcamentoTone(status),
+          'orcamento',
+        ));
+      },
+      error: () => {
+        if (currentRequestId !== this.requestId) return;
+        this.erro = hasData
+          ? 'Não foi possível atualizar os status. Mantivemos os dados anteriores.'
+          : 'Não foi possível carregar os status.';
+        this.loading = false;
+        this.refreshing = false;
+        this.refreshState.emit({ id: 'status', refreshing: false });
+      },
+      complete: () => {
+        if (currentRequestId !== this.requestId) return;
+        this.loading = false;
+        this.refreshing = false;
+        this.refreshState.emit({ id: 'status', refreshing: false });
+      },
+    });
+
+    this.subscriptions.add(subscription);
   }
 
   formatBRL(valor: number): string {

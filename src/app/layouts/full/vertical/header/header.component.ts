@@ -304,6 +304,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
       configuracao,
       (modulo) => this.featureFlagService.isEnabled(modulo),
       (permissao) => this.authService.temPermissao(permissao),
+      this.authService.getTipoEmpresa(this.usuarioLogado),
     );
     this.quicklinks = (configuracao?.atalhos || [])
       .filter((atalho) => atalho.ativo)
