@@ -230,7 +230,7 @@ export class OrcamentoComercialWhatsappPageComponent implements OnInit {
 
   get voltarLink(): any[] {
     const id = this.route.snapshot.paramMap.get('id');
-    return id ? ['/page/grafica/comercial-beta/orcamentos', id] : ['/page/grafica/comercial-beta/orcamentos'];
+    return id ? ['/page/grafica/comercial/orcamentos', id] : ['/page/grafica/comercial/orcamentos'];
   }
 
   carregarOrcamento(): void {

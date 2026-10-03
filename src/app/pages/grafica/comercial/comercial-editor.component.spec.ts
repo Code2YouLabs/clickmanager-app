@@ -1,42 +1,56 @@
-import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { fakeAsync, tick } from '@angular/core/testing';
 import { FormBuilder } from '@angular/forms';
-import { of, throwError } from 'rxjs';
-import { ClienteCreateDialogComponent } from '../../cliente/cliente-create-dialog/cliente-create-dialog.component';
+import { of, Subject, throwError } from 'rxjs';
 import {
-  ComercialBetaEditorComponent,
+  ComercialEditorComponent,
   GraficaProdutoWizardDialogComponent,
-} from './comercial-beta-editor.component';
+} from './comercial-editor.component';
 import { GraficaProdutoBuscaRapidaDialogComponent } from './grafica-produto-busca-rapida-dialog.component';
 
-describe('ComercialBetaEditorComponent', () => {
-  it('cancelar criação limpa itens, cliente, ajustes e pagamentos pretendidos sem navegar', () => {
-    const component = criarEditor('pedidos'); component.ngOnInit();
-    component.form.patchValue({ observacaoCliente: 'Rascunho', clienteId: { id: 7 } });
-    component.clienteConfirmado = { id: 7, nome: 'Cliente' };
-    component.itens = [{ valorTotal: 100 } as any];
-    component.pagamentosPretendidos = [{ formaPagamento: 'PIX', valor: 50 } as any];
-    component.ajustesFinanceirosForm.patchValue({ frete: 12 });
-    const card = new PageCardComponent(); card.formState = component.formState;
-    card.onFooterAction(card.resolvedFooterActions[0]);
-    expect(component.itens).toEqual([]); expect(component.clienteConfirmado).toBeNull();
-    expect(component.pagamentosPretendidos).toEqual([]); expect(component.ajustesFinanceirosForm.getRawValue().frete).toBe(0);
-    expect(component.form.getRawValue().observacaoCliente).toBe('');
-    expect((component as any).router.navigate).not.toHaveBeenCalled(); component.ngOnDestroy();
+describe('ComercialEditorComponent', () => {
+  it('define submit associado ao form e comandos distintos para conversão', () => {
+    const editor = criarEditor('orcamentos'); editor.ngOnInit();
+    expect(editor.footerActions.find(action => action.id === 'salvar')).toEqual(jasmine.objectContaining({ type: 'submit', form: 'comercial-editor-form', disabled: true }));
+    const salvar = spyOn(editor, 'salvar'); editor.salvarFormulario(); expect(salvar).toHaveBeenCalledTimes(1);
+    editor.salvando = true; editor.salvarFormulario(); expect(salvar).toHaveBeenCalledTimes(1);
+    editor.tipo = 'rascunhos'; editor.salvando = false; editor.salvarFormulario(); expect(salvar).toHaveBeenCalledTimes(1);
+    expect(editor.footerActions.map(action => action.id)).toEqual(['cancelar', 'orcamentos', 'pedidos']);
+    expect(editor.footerActions.every(action => action.type !== 'submit')).toBeTrue(); editor.ngOnDestroy();
   });
 
-  it('cancelar edição restaura dados locais sem cancelar recebimentos persistidos', () => {
-    const component = criarEditor('pedidos'); component.ngOnInit(); component.formState.begin('edit');
-    (component as any).aplicarPedido({ ...pedidoDetalhe(), observacaoCliente: 'Backend', clienteId: 7 });
-    const before = component.form.getRawValue(); const items = structuredClone(component.itens);
-    component.recebimentos = [{ id: 9, valor: 50, status: 'CONFIRMADO' } as any];
-    component.form.patchValue({ observacaoCliente: 'Alterado' }); component.itens = [];
-    const card = new PageCardComponent(); card.formState = component.formState;
-    card.onFooterAction(card.resolvedFooterActions[0]);
-    expect(component.form.getRawValue()).toEqual(before); expect(component.itens).toEqual(items);
-    expect(component.recebimentos[0].id).toBe(9);
-    expect((component as any).graficaService.cancelarRecebimento).not.toHaveBeenCalled();
-    expect((component as any).router.navigate).not.toHaveBeenCalled(); component.ngOnDestroy();
+  it('mantém destinos definitivos de impressão, duas vias, etiqueta e WhatsApp', () => {
+    const editor = criarEditor(); editor.pedidoId = 22;
+    const router = (editor as any).router;
+    editor.abrirImpressaoPedido('completo'); expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial/pedidos', 22, 'impressao']);
+    editor.abrirImpressaoPedido('duas-vias'); expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial/pedidos', 22, 'impressao', 'duas-vias']);
+    editor.abrirImpressaoPedido('etiqueta'); expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial/pedidos', 22, 'impressao', 'etiqueta']);
+    editor.abrirWhatsAppPedido(); expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial/pedidos', 22, 'whatsapp']);
+    editor.abrirImpressaoOrcamento(); expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial/orcamentos', 22, 'impressao']);
+    editor.abrirWhatsAppOrcamento(); expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial/orcamentos', 22, 'whatsapp']);
+  });
+
+  it('mantém erro e retry do detalhe separados do formulário de criação', () => {
+    const editor = criarEditor('orcamentos'); editor.tipo = 'orcamentos'; editor.pedidoId = 14;
+    const service = (editor as any).graficaService;
+    service.buscarOrcamentoComercial = jasmine.createSpy().and.returnValue(throwError(() => ({ status: 500 })));
+    editor.recarregar(); expect(editor.erroCarregamento).toBeTruthy(); expect(editor.temRegistroCarregado).toBeFalse();
+    expect(editor.footerActions).toEqual([]);
+    service.buscarOrcamentoComercial.and.returnValue(of({ id: 14, status: 'ABERTO', itens: [] }));
+    editor.recarregar(); expect(editor.temRegistroCarregado).toBeTrue(); expect(editor.erroCarregamento).toBeNull();
+    service.buscarOrcamentoComercial.and.returnValue(throwError(() => ({ status: 403 })));
+    editor.recarregar(); expect(editor.acessoNegado).toBeTrue(); expect(editor.erroCarregamento).toBeNull();
+  });
+
+  it('converte rascunho para pedido uma única vez enquanto pendente', () => {
+    const editor = criarEditor('rascunhos'); editor.tipo = 'rascunhos'; editor.pedidoId = 9;
+    editor.rascunho = { id: 9, status: 'ABERTO', itens: [] } as any; editor.itens = [{ valorTotal: 100 }] as any;
+    const response = new Subject<any>(); const service = (editor as any).graficaService;
+    service.converterRascunhoParaPedido.and.returnValue(response);
+    editor.onFooterAction('pedidos'); editor.onFooterAction('pedidos');
+    expect(service.converterRascunhoParaPedido).toHaveBeenCalledOnceWith(9);
+    response.next({ id: 22 }); response.complete();
+    expect((editor as any).router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial', 'pedidos', 22]);
+    expect(editor.salvando).toBeFalse();
   });
 
   it('usa linguagem comercial de orcamento na rota de novo orcamento', () => {
@@ -267,7 +281,7 @@ describe('ComercialBetaEditorComponent', () => {
     component.concluirRascunho('orcamentos');
 
     expect((component as any).graficaService.converterRascunhoParaOrcamento).toHaveBeenCalledWith(9);
-    expect((component as any).router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial-beta', 'orcamentos', 22]);
+    expect((component as any).router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial', 'orcamentos', 22]);
   });
 
   it('cria pedido quando o primeiro item e um servico grafico', () => {
@@ -298,7 +312,7 @@ describe('ComercialBetaEditorComponent', () => {
       clienteId: 7,
       precificacao: jasmine.objectContaining({ quantidade: 1 }),
     }));
-    expect((component as any).router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial-beta', 'pedidos', 22]);
+    expect((component as any).router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial', 'pedidos', 22]);
   });
 
   it('cria pedido reconhecendo snapshot legado de servico', () => {
@@ -480,89 +494,6 @@ describe('ComercialBetaEditorComponent', () => {
     });
   });
 
-  it('abre cadastro rapido de cliente com nome digitado e seleciona localmente em pedido novo', () => {
-    const component = criarEditor();
-    const dialog = (component as any).dialog;
-    const cliente = { id: 33, nome: 'Maria Nova', telefone: '31999990000', endereco: { cidade: 'BH' } };
-    dialog.open.and.returnValue({ afterClosed: () => of(cliente) });
-    component.clienteControl.setValue('Maria Nova');
-
-    component.onCriarCliente();
-
-    expect(dialog.open).toHaveBeenCalledWith(ClienteCreateDialogComponent, jasmine.objectContaining({
-      width: '760px',
-      maxWidth: '96vw',
-      data: { nome: 'Maria Nova' },
-    }));
-    expect(component.clienteConfirmado).toEqual(jasmine.objectContaining({ id: 33, nome: 'Maria Nova' }));
-    expect((component as any).graficaService.alterarClientePedidoComercial).not.toHaveBeenCalled();
-  });
-
-  it('vincula cliente criado ao pedido existente antes de atualizar o card', () => {
-    const component = criarEditor();
-    const dialog = (component as any).dialog;
-    const graficaService = (component as any).graficaService;
-    const cliente = { id: 33, nome: 'Maria Nova', telefone: '31999990000', endereco: { cidade: 'BH' } };
-    component.pedidoId = 4;
-    component.tipo = 'pedidos';
-    dialog.open.and.returnValue({ afterClosed: () => of(cliente) });
-    graficaService.alterarClientePedidoComercial.and.returnValue(of({
-      ...pedidoDetalhe(),
-      clienteId: 33,
-      clienteNome: 'Maria Nova',
-      clienteTelefone: '31999990000',
-    }));
-
-    component.onCriarCliente();
-
-    expect(graficaService.alterarClientePedidoComercial).toHaveBeenCalledWith(4, 33);
-    expect(component.clienteConfirmado).toEqual(jasmine.objectContaining({
-      id: 33,
-      nome: 'Maria Nova',
-      endereco: jasmine.objectContaining({ cidade: 'BH' }),
-    }));
-    expect((component as any).clienteService.buscarPorId).not.toHaveBeenCalledWith(33);
-  });
-
-  it('mantem cliente anterior quando cadastra cliente mas falha ao vincular no pedido', () => {
-    const component = criarEditor();
-    const dialog = (component as any).dialog;
-    const graficaService = (component as any).graficaService;
-    const toastr = (component as any).toastr;
-    const clienteAnterior = { id: 7, nome: 'Cliente Atual' };
-    component.pedidoId = 4;
-    component.tipo = 'pedidos';
-    component.clienteConfirmado = clienteAnterior;
-    component.clienteControl.setValue(clienteAnterior);
-    dialog.open.and.returnValue({ afterClosed: () => of({ id: 33, nome: 'Maria Nova' }) });
-    graficaService.alterarClientePedidoComercial.and.returnValue(throwError(() => ({})));
-
-    component.onCriarCliente();
-
-    expect(component.clienteConfirmado).toBe(clienteAnterior);
-    expect(component.clienteControl.value).toBe(clienteAnterior);
-    expect(toastr.error).toHaveBeenCalledWith('Cliente cadastrado, mas não foi possível vinculá-lo ao pedido.');
-  });
-
-  it('salva cliente selecionado no pedido existente via endpoint de associacao', () => {
-    const component = criarEditor();
-    const graficaService = (component as any).graficaService;
-    component.pedidoId = 4;
-    component.tipo = 'pedidos';
-    component.clienteControl.setValue({ id: 44, nome: 'Cliente Selecionado' });
-    graficaService.alterarClientePedidoComercial.and.returnValue(of({
-      ...pedidoDetalhe(),
-      clienteId: 44,
-      clienteNome: 'Cliente Selecionado',
-    }));
-
-    component.confirmarClienteSelecionado();
-
-    expect(graficaService.alterarClientePedidoComercial).toHaveBeenCalledWith(4, 44);
-    expect((component as any).clienteService.buscarPorId).not.toHaveBeenCalledWith(44);
-    expect(component.clienteConfirmado).toEqual(jasmine.objectContaining({ id: 44, nome: 'Cliente Selecionado' }));
-  });
-
   it('abre busca rapida e repassa produto selecionado para o wizard', () => {
     const produtoSelecionado = produto();
     const composicao = { itens: [{ nomeProduto: 'Panfleto', quantidade: 1, valorUnitario: 10, valorTotal: 10 }] };
@@ -574,7 +505,7 @@ describe('ComercialBetaEditorComponent', () => {
       return { afterClosed: () => of(composicao) };
     });
 
-    const component = new ComercialBetaEditorComponent(
+    const component = new ComercialEditorComponent(
       { data: of({ tipo: 'pedidos' }) } as any,
       jasmine.createSpyObj('Router', ['navigate']) as any,
       dialog,
@@ -595,12 +526,11 @@ describe('ComercialBetaEditorComponent', () => {
   });
 });
 
-function criarEditor(tipo = 'pedidos'): ComercialBetaEditorComponent {
+function criarEditor(tipo = 'pedidos'): ComercialEditorComponent {
   const graficaService = jasmine.createSpyObj('GraficaProdutoService', [
     'listarFormasPagamento',
     'cancelarRecebimento',
     'alterarAjustesFinanceirosPedido',
-    'alterarClientePedidoComercial',
     'buscarResumoFinanceiroPedido',
     'listarRecebimentosPedido',
     'buscarFluxoPedidoComercial',
@@ -612,7 +542,6 @@ function criarEditor(tipo = 'pedidos'): ComercialBetaEditorComponent {
   graficaService.listarFormasPagamento.and.returnValue(of([]));
   graficaService.cancelarRecebimento.and.returnValue(of({}));
   graficaService.alterarAjustesFinanceirosPedido.and.returnValue(of(pedidoDetalhe()));
-  graficaService.alterarClientePedidoComercial.and.returnValue(of(pedidoDetalhe()));
   graficaService.buscarResumoFinanceiroPedido.and.returnValue(of(resumoFinanceiro({ total: 100, totalRecebido: 25, saldoAberto: 75 })));
   graficaService.listarRecebimentosPedido.and.returnValue(of({ content: [] }));
   graficaService.buscarFluxoPedidoComercial.and.returnValue(of(fluxoAberto()));
@@ -637,14 +566,14 @@ function criarEditor(tipo = 'pedidos'): ComercialBetaEditorComponent {
     },
   }));
   clienteService.buscarPorNome.and.returnValue(of({ content: [] }));
-  return new ComercialBetaEditorComponent(
+  return new ComercialEditorComponent(
     { data: of({ tipo }), paramMap: of(new Map()) } as any,
     jasmine.createSpyObj('Router', ['navigate']) as any,
     jasmine.createSpyObj('MatDialog', ['open']) as any,
     new FormBuilder(),
     graficaService,
     clienteService,
-    jasmine.createSpyObj('ToastrService', ['error', 'success']) as any,
+    jasmine.createSpyObj('ToastrService', ['error']) as any,
     authServiceMock() as any,
   );
 }
@@ -652,7 +581,6 @@ function criarEditor(tipo = 'pedidos'): ComercialBetaEditorComponent {
 function authServiceMock() {
   return {
     getUsuario: () => ({ id: 1, nome: 'Leonardo Barros', username: 'leo' }),
-    temPermissao: () => true,
   };
 }
 

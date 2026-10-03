@@ -230,7 +230,7 @@ export class PedidoComercialWhatsappPageComponent implements OnInit {
 
   get voltarLink(): any[] {
     const id = this.route.snapshot.paramMap.get('id');
-    return id ? ['/page/grafica/comercial-beta/pedidos', id] : ['/page/grafica/comercial-beta/pedidos'];
+    return id ? ['/page/grafica/comercial/pedidos', id] : ['/page/grafica/comercial/pedidos'];
   }
 
   carregarPedido(): void {

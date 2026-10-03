@@ -1,0 +1,116 @@
+.pedido-layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; align-items: start; }
+    .main-column { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+    .summary-column { min-width: 0; }
+    .summary-sticky { position: sticky; top: 88px; display: flex; flex-direction: column; gap: 18px; }
+    .summary-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; color: #334155; }
+    .summary-row.total { font-size: 16px; }
+    .summary-row .value { white-space: nowrap; }
+    .summary-row .highlight { color: #1e40af; font-size: 18px; }
+	    .summary-row .success { color: #15803d; font-size: 18px; }
+    .orcamento-flow { display: grid; gap: 16px; }
+    .orcamento-meta-grid { display: grid; grid-template-columns: 180px repeat(2, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
+    .orcamento-meta { display: flex; min-height: 58px; flex-direction: column; justify-content: center; gap: 5px; padding: 10px 12px; border: 1px solid #dbe5f1; border-radius: 10px; background: #f8fafc; }
+    .orcamento-meta--status { align-items: flex-start; }
+    .orcamento-meta span { color: #64748b; font-size: 12px; font-weight: 700; }
+    .orcamento-meta strong { color: #0f172a; font-size: 14px; font-weight: 800; }
+    .orcamento-validade { display: grid; grid-template-columns: 220px 180px; gap: 12px; align-items: start; padding-top: 2px; }
+    .btn-save-validade { align-self: start; min-height: 40px; margin-top: 28px; border-radius: 999px; }
+    .orcamento-actions { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 2px; }
+    .status-action { min-height: 36px; border-radius: 999px; }
+    .status-action--sent { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; }
+    .status-action--approve { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
+    .status-action--refuse { background: #fff7ed; border-color: #fed7aa; color: #c2410c; }
+    .status-action--cancel { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+	    .financial-adjustments { display: grid; gap: 8px; margin: 10px 0 12px; }
+	    .btn-save-adjustments { width: 100%; min-height: 36px; border-radius: 999px; }
+	    .percentual { margin-top: 8px; color: #64748b; font-size: 12px; font-weight: 700; text-align: right; }
+	    .payment-entry { padding-bottom: 14px; border-bottom: 1px solid #e2e8f0; }
+	    .payment-form { display: grid; grid-template-columns: minmax(0, 1fr) 130px; gap: 10px; align-items: start; }
+	    .payment-form button { grid-column: 1 / -1; width: 100%; min-height: 38px; border-radius: 999px; }
+	    .payment-error { margin: 8px 0 0; color: #b91c1c; font-size: 12px; font-weight: 700; }
+	    .payment-history { padding-top: 12px; }
+	    .payment-context { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding-bottom: 10px; }
+	    .payment-context div { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+	    .payment-context span { color: #64748b; font-size: 12px; font-weight: 700; }
+	    .payment-context strong { font-size: 13px; white-space: nowrap; }
+	    .payment-context .success { color: #15803d; }
+	    .payment-context .highlight { color: #1e40af; }
+	    .payment-list { display: flex; flex-direction: column; margin-top: 0; }
+	    .payment-item { display: grid; grid-template-columns: minmax(0, 1fr) auto 32px; gap: 10px; align-items: center; min-height: 62px; padding: 10px 0; }
+	    .payment-item + .payment-item { border-top: 1px solid #e2e8f0; }
+	    .payment-main { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; min-width: 0; }
+	    .payment-main strong { display: block; color: #0f172a; font-size: 13px; font-weight: 800; line-height: 1.2; }
+	    .payment-item.cancelado { opacity: .58; }
+	    .payment-value { color: #0f172a; font-size: 15px; font-weight: 800; text-align: right; white-space: nowrap; }
+	    .payment-cancel { width: 32px; height: 32px; line-height: 32px; }
+	    .payment-cancel mat-icon { width: 18px; height: 18px; font-size: 18px; }
+	    .empty-payments { padding: 12px; border: 1px dashed #cbd5e1; border-radius: 8px; color: #64748b; font-size: 13px; text-align: center; }
+    .actions-final { display: flex; flex-direction: column; gap: 16px; }
+    .required-alert, .ready-alert { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; padding: 14px; border-radius: 10px; font-size: 13px; }
+    .required-alert { border: 1px solid #fed7aa; background: #fff7ed; color: #9a3412; }
+    .ready-alert { border: 1px solid #bbf7d0; background: #f0fdf4; color: #166534; }
+    .required-alert mat-icon, .ready-alert mat-icon { width: 20px; height: 20px; font-size: 20px; }
+    .required-alert strong, .required-alert span, .ready-alert strong, .ready-alert span { display: block; }
+    .required-alert strong, .ready-alert strong { font-weight: 800; }
+    .required-alert span, .ready-alert span { margin-top: 2px; line-height: 1.35; }
+    .checklist { display: flex; flex-direction: column; gap: 10px; color: #64748b; }
+    .check-item { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+    .check-item mat-icon { width: 16px; height: 16px; font-size: 16px; color: #94a3b8; }
+    .action-buttons { justify-content: flex-end; gap: 10px; }
+    .action-buttons button { min-height: 42px; border-radius: 999px; padding: 0 20px; }
+    :host ::ng-deep .summary-card .section-card,
+    :host ::ng-deep .responsavel-card .section-card,
+    :host ::ng-deep .documents-card .section-card,
+    :host ::ng-deep .payments-card .section-card,
+    :host ::ng-deep .submit-card .section-card,
+    :host ::ng-deep app-cliente-selector-card .section-card,
+    :host ::ng-deep app-itens-pedido-section .section-card,
+	    :host ::ng-deep app-observacoes-card .section-card {
+	      border: 1px solid #e2e8f0;
+	      border-radius: 16px;
+	      box-shadow: 0 10px 30px rgba(15, 23, 42, .08);
+	    }
+	    :host ::ng-deep .payments-card app-input-options .mat-mdc-form-field,
+	    :host ::ng-deep .payments-card app-input-moeda .mat-mdc-form-field,
+	    :host ::ng-deep .summary-card app-input-moeda .mat-mdc-form-field {
+	      margin-bottom: 0;
+	    }
+	    :host ::ng-deep .payments-card app-input-options .mat-mdc-text-field-wrapper,
+	    :host ::ng-deep .payments-card app-input-moeda .mat-mdc-text-field-wrapper,
+	    :host ::ng-deep .summary-card app-input-moeda .mat-mdc-text-field-wrapper {
+	      min-height: 44px;
+	    }
+	    :host ::ng-deep .payments-card app-input-options .mat-mdc-form-field-infix,
+	    :host ::ng-deep .payments-card app-input-moeda .mat-mdc-form-field-infix,
+	    :host ::ng-deep .summary-card app-input-moeda .mat-mdc-form-field-infix {
+	      min-height: 44px;
+	      padding-top: 10px;
+	      padding-bottom: 10px;
+	    }
+	    :host ::ng-deep .payment-status .status-chip {
+	      min-height: 22px;
+	      padding: 4px 8px;
+	      gap: 4px;
+	      font-size: 10px;
+	    }
+	    :host ::ng-deep .payment-status .status-chip mat-icon {
+	      width: 13px;
+	      height: 13px;
+	      font-size: 13px;
+	    }
+	    .responsavel-content { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 10px; align-items: center; }
+	    .responsavel-content mat-icon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 999px; background: #eff6ff; color: #2563eb; font-size: 20px; }
+	    .responsavel-content span,
+	    .responsavel-content strong { display: block; }
+	    .responsavel-content span { color: #64748b; font-size: 12px; font-weight: 700; }
+	    .responsavel-content strong { margin-top: 2px; color: #0f172a; font-size: 14px; font-weight: 800; line-height: 1.25; }
+	    @media (max-width: 980px) {
+	      .pedido-layout { grid-template-columns: 1fr; }
+	      .summary-sticky { position: static; }
+	      .payment-form { grid-template-columns: 1fr; }
+	      .payment-context { grid-template-columns: 1fr; }
+	      .orcamento-meta-grid,
+	      .orcamento-validade { grid-template-columns: 1fr; }
+	    }
+
+.editor-state { padding: 16px 0; }

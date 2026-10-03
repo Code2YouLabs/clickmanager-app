@@ -9,8 +9,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { CardHeaderComponent } from '../card-header/card-header.component';
 
 export type PageCardAction = { id: string; disabled?: boolean } & (
-  { type: 'submit'; form: string; intent?: never;
-    label?: never; icon?: never; pendingLabel?: never; color?: never; primary?: never } |
+  { type: 'submit'; form: string; intent?: never; label?: string; icon?: string;
+    pendingLabel?: string; color?: 'primary' | 'accent' | 'warn'; primary?: boolean } |
   { type?: 'button'; form?: never; intent?: 'cancel'; label: string; icon?: string;
     pendingLabel?: string; color?: 'primary' | 'accent' | 'warn'; primary?: boolean }
 );

@@ -1,0 +1,70 @@
+<div class="service-wizard">
+      <div class="service-wizard__header">
+        <div>
+          <span class="service-wizard__eyebrow">Serviço</span>
+          <h2 mat-dialog-title>{{ data.servico.nome }}</h2>
+        </div>
+        <button mat-icon-button type="button" mat-dialog-close aria-label="Fechar">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <mat-divider></mat-divider>
+
+      <mat-dialog-content class="service-wizard__content">
+        <p class="service-wizard__description" *ngIf="data.servico.descricao">{{ data.servico.descricao }}</p>
+
+        <div class="state-row state-row--error" *ngIf="!politica">
+          <mat-icon>warning</mat-icon>
+          <span>Este serviço ainda não possui preço configurado.</span>
+        </div>
+
+        <form [formGroup]="form" class="service-wizard__form" *ngIf="politica">
+          <div class="service-wizard__policy">
+            <span>Precificação</span>
+            <strong>{{ tipoPrecoLabel }}</strong>
+          </div>
+
+          <app-input-numerico
+            [control]="quantidadeControl"
+            label="Quantidade">
+          </app-input-numerico>
+
+          <ng-container *ngIf="politica.tipo === 'POR_METRO_QUADRADO'">
+            <div class="service-wizard__grid">
+              <app-input-numerico
+                [control]="larguraControl"
+                label="Largura">
+              </app-input-numerico>
+              <app-input-numerico
+                [control]="alturaControl"
+                label="Altura">
+              </app-input-numerico>
+            </div>
+            <mat-form-field appearance="outline">
+              <mat-label>Unidade</mat-label>
+              <mat-select formControlName="unidadeDimensao">
+                <mat-option value="METRO">Metro (m)</mat-option>
+                <mat-option value="CENTIMETRO">Centímetro (cm)</mat-option>
+                <mat-option value="MILIMETRO">Milímetro (mm)</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </ng-container>
+        </form>
+
+        <div class="service-wizard__price" *ngIf="preco">
+          <span>Total</span>
+          <strong>{{ preco.valorTotal | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
+          <small *ngIf="preco.valorUnitario">Unitário: {{ preco.valorUnitario | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</small>
+        </div>
+      </mat-dialog-content>
+
+      <mat-dialog-actions align="end" class="service-wizard__actions">
+        <button mat-stroked-button type="button" mat-dialog-close>Cancelar</button>
+        <button mat-stroked-button type="button" [disabled]="!politica || form.invalid || precificando" (click)="calcular()">
+          Calcular
+        </button>
+        <button mat-flat-button color="primary" type="button" [disabled]="!preco || precificando" (click)="adicionar()">
+          Adicionar
+        </button>
+      </mat-dialog-actions>
+    </div>

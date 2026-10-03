@@ -71,10 +71,10 @@ export class AppStatusGridComponent implements OnInit, OnChanges, OnDestroy {
 
   abrirStatus(item: StatusGridItem): void {
     if (item.tipo === 'orcamento') {
-      this.router.navigate(['/page/grafica/comercial-beta/orcamentos'], { queryParams: { status: item.status } });
+      this.router.navigate(['/page/grafica/comercial/orcamentos'], { queryParams: { status: item.status } });
       return;
     }
-    this.router.navigate(['/page/grafica/comercial-beta/pedidos'], { queryParams: { status: item.status } });
+    this.router.navigate(['/page/grafica/comercial/pedidos'], { queryParams: { status: item.status } });
   }
 
   carregarStatus(): void {

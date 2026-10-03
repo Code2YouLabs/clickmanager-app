@@ -1,0 +1,45 @@
+
+> clickmanager-app@4.0.0 test
+> ng test --watch=false --browsers=ChromeHeadless --include=src/app/pages/grafica/comercial/**/*.spec.ts --include=src/app/layouts/full/vertical/sidebar/sidebar-menu.spec.ts --include=src/app/pages/grafica/shared/grafica.service.spec.ts
+
+- Generating browser application bundles (phase: setup)...
+✔ Browser application bundle generation complete.
+25 09 2026 07:39:31.906:INFO [karma-server]: Karma v6.4.4 server started at http://localhost:9876/
+25 09 2026 07:39:31.907:INFO [launcher]: Launching browsers ChromeHeadless with concurrency unlimited
+25 09 2026 07:39:31.911:INFO [launcher]: Starting browser ChromeHeadless
+25 09 2026 07:39:32.864:INFO [Chrome Headless 153.0.0.0 (Mac OS 10.15.7)]: Connected on socket PgzMFaSrzGM_IbmxAAAB with id 18333912
+WARN: '
+  It looks like you're using the disabled attribute with a reactive form directive. If you set disabled to true
+  when you set up this control in your component class, the disabled attribute will actually be set in the DOM for
+  you. We recommend using this approach to avoid 'changed after checked' errors.
+
+  Example:
+  // Specify the `disabled` property at control creation time:
+  form = new FormGroup({
+    first: new FormControl({value: 'Nancy', disabled: true}, Validators.required),
+    last: new FormControl('Drew', Validators.required)
+  });
+
+  // Controls can also be enabled/disabled after creation:
+  form.get('first')?.enable();
+  form.get('last')?.disable();
+'
+WARN: '
+  It looks like you're using the disabled attribute with a reactive form directive. If you set disabled to true
+  when you set up this control in your component class, the disabled attribute will actually be set in the DOM for
+  you. We recommend using this approach to avoid 'changed after checked' errors.
+
+  Example:
+  // Specify the `disabled` property at control creation time:
+  form = new FormGroup({
+    first: new FormControl({value: 'Nancy', disabled: true}, Validators.required),
+    last: new FormControl('Drew', Validators.required)
+  });
+
+  // Controls can also be enabled/disabled after creation:
+  form.get('first')?.enable();
+  form.get('last')?.disable();
+'
+TOTAL: 66 SUCCESS
+✔ Browser application bundle generation complete.
+✔ Browser application bundle generation complete.

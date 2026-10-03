@@ -465,9 +465,25 @@ export const PagesRoutes: Routes = [
       ]
     }
   },
+  // Temporary URL compatibility; all destinations retain their original guards.
+  { path: 'grafica/comercial-beta/rascunhos', redirectTo: 'grafica/comercial/rascunhos', pathMatch: 'full' },
+  { path: 'grafica/comercial-beta/rascunhos/novo', redirectTo: 'grafica/comercial/rascunhos/novo', pathMatch: 'full' },
+  { path: 'grafica/comercial-beta/rascunhos/:id', redirectTo: 'grafica/comercial/rascunhos/:id', pathMatch: 'full' },
+  { path: 'grafica/comercial-beta/orcamentos', redirectTo: 'grafica/comercial/orcamentos', pathMatch: 'full' },
+  { path: 'grafica/comercial-beta/orcamentos/novo', redirectTo: 'grafica/comercial/orcamentos/novo', pathMatch: 'full' },
+  { path: 'grafica/comercial-beta/orcamentos/:id/impressao', redirectTo: 'grafica/comercial/orcamentos/:id/impressao', pathMatch: 'full' },
+  { path: 'grafica/comercial-beta/orcamentos/:id/whatsapp', redirectTo: 'grafica/comercial/orcamentos/:id/whatsapp', pathMatch: 'full' },
+  { path: 'grafica/comercial-beta/orcamentos/:id', redirectTo: 'grafica/comercial/orcamentos/:id', pathMatch: 'full' },
+  { path: 'grafica/comercial-beta/pedidos', redirectTo: 'grafica/comercial/pedidos', pathMatch: 'full' },
+  { path: 'grafica/comercial-beta/pedidos/novo', redirectTo: 'grafica/comercial/pedidos/novo', pathMatch: 'full' },
+  { path: 'grafica/comercial-beta/pedidos/:id/impressao', redirectTo: 'grafica/comercial/pedidos/:id/impressao', pathMatch: 'full' },
+  { path: 'grafica/comercial-beta/pedidos/:id/impressao/duas-vias', redirectTo: 'grafica/comercial/pedidos/:id/impressao/duas-vias', pathMatch: 'full' },
+  { path: 'grafica/comercial-beta/pedidos/:id/impressao/etiqueta', redirectTo: 'grafica/comercial/pedidos/:id/impressao/etiqueta', pathMatch: 'full' },
+  { path: 'grafica/comercial-beta/pedidos/:id/whatsapp', redirectTo: 'grafica/comercial/pedidos/:id/whatsapp', pathMatch: 'full' },
+  { path: 'grafica/comercial-beta/pedidos/:id', redirectTo: 'grafica/comercial/pedidos/:id', pathMatch: 'full' },
   {
-    path: 'grafica/comercial-beta/rascunhos',
-    loadComponent: () => import('./grafica/comercial-beta/comercial-beta-list.component').then((m) => m.ComercialBetaListComponent),
+    path: 'grafica/comercial/rascunhos',
+    loadComponent: () => import('./grafica/comercial/comercial-list.component').then((m) => m.ComercialListComponent),
     canActivate: [featureModuleGuard, permissionGuard],
     data: {
       ...GRAFICA_ROUTE_DATA,
@@ -479,8 +495,8 @@ export const PagesRoutes: Routes = [
     }
   },
   {
-    path: 'grafica/comercial-beta/rascunhos/novo',
-    loadComponent: () => import('./grafica/comercial-beta/comercial-beta-editor.component').then((m) => m.ComercialBetaEditorComponent),
+    path: 'grafica/comercial/rascunhos/novo',
+    loadComponent: () => import('./grafica/comercial/comercial-editor.component').then((m) => m.ComercialEditorComponent),
     canActivate: [featureModuleGuard, permissionGuard],
     data: {
       ...GRAFICA_ROUTE_DATA,
@@ -492,8 +508,8 @@ export const PagesRoutes: Routes = [
     }
   },
   {
-    path: 'grafica/comercial-beta/rascunhos/:id',
-    loadComponent: () => import('./grafica/comercial-beta/comercial-beta-editor.component').then((m) => m.ComercialBetaEditorComponent),
+    path: 'grafica/comercial/rascunhos/:id',
+    loadComponent: () => import('./grafica/comercial/comercial-editor.component').then((m) => m.ComercialEditorComponent),
     canActivate: [featureModuleGuard, permissionGuard],
     data: {
       ...GRAFICA_ROUTE_DATA,
@@ -505,8 +521,8 @@ export const PagesRoutes: Routes = [
     }
   },
   {
-    path: 'grafica/comercial-beta/orcamentos',
-    loadComponent: () => import('./grafica/comercial-beta/comercial-beta-list.component').then((m) => m.ComercialBetaListComponent),
+    path: 'grafica/comercial/orcamentos',
+    loadComponent: () => import('./grafica/comercial/comercial-list.component').then((m) => m.ComercialListComponent),
     canActivate: [featureModuleGuard, permissionGuard],
     data: {
       ...GRAFICA_ROUTE_DATA,
@@ -518,8 +534,8 @@ export const PagesRoutes: Routes = [
     }
   },
   {
-    path: 'grafica/comercial-beta/orcamentos/novo',
-    loadComponent: () => import('./grafica/comercial-beta/comercial-beta-editor.component').then((m) => m.ComercialBetaEditorComponent),
+    path: 'grafica/comercial/orcamentos/novo',
+    loadComponent: () => import('./grafica/comercial/comercial-editor.component').then((m) => m.ComercialEditorComponent),
     canActivate: [featureModuleGuard, permissionGuard],
     data: {
       ...GRAFICA_ROUTE_DATA,
@@ -531,8 +547,8 @@ export const PagesRoutes: Routes = [
     }
   },
   {
-    path: 'grafica/comercial-beta/orcamentos/:id/impressao',
-    loadComponent: () => import('./grafica/comercial-beta/orcamento-comercial-impressao-page.component').then((m) => m.OrcamentoComercialImpressaoPageComponent),
+    path: 'grafica/comercial/orcamentos/:id/impressao',
+    loadComponent: () => import('./grafica/comercial/orcamento-comercial-impressao-page.component').then((m) => m.OrcamentoComercialImpressaoPageComponent),
     canActivate: [featureModuleGuard, permissionGuard],
     data: {
       ...GRAFICA_ROUTE_DATA,
@@ -543,8 +559,8 @@ export const PagesRoutes: Routes = [
     }
   },
   {
-    path: 'grafica/comercial-beta/orcamentos/:id/whatsapp',
-    loadComponent: () => import('./grafica/comercial-beta/orcamento-comercial-whatsapp-page.component').then((m) => m.OrcamentoComercialWhatsappPageComponent),
+    path: 'grafica/comercial/orcamentos/:id/whatsapp',
+    loadComponent: () => import('./grafica/comercial/orcamento-comercial-whatsapp-page.component').then((m) => m.OrcamentoComercialWhatsappPageComponent),
     canActivate: [featureModuleGuard, permissionGuard],
     data: {
       ...GRAFICA_ROUTE_DATA,
@@ -555,8 +571,8 @@ export const PagesRoutes: Routes = [
     }
   },
   {
-    path: 'grafica/comercial-beta/orcamentos/:id',
-    loadComponent: () => import('./grafica/comercial-beta/comercial-beta-editor.component').then((m) => m.ComercialBetaEditorComponent),
+    path: 'grafica/comercial/orcamentos/:id',
+    loadComponent: () => import('./grafica/comercial/comercial-editor.component').then((m) => m.ComercialEditorComponent),
     canActivate: [featureModuleGuard, permissionGuard],
     data: {
       ...GRAFICA_ROUTE_DATA,
@@ -568,8 +584,8 @@ export const PagesRoutes: Routes = [
     }
   },
   {
-    path: 'grafica/comercial-beta/pedidos',
-    loadComponent: () => import('./grafica/comercial-beta/comercial-beta-list.component').then((m) => m.ComercialBetaListComponent),
+    path: 'grafica/comercial/pedidos',
+    loadComponent: () => import('./grafica/comercial/comercial-list.component').then((m) => m.ComercialListComponent),
     canActivate: [featureModuleGuard, permissionGuard],
     data: {
       ...GRAFICA_ROUTE_DATA,
@@ -581,8 +597,8 @@ export const PagesRoutes: Routes = [
     }
   },
   {
-    path: 'grafica/comercial-beta/pedidos/novo',
-    loadComponent: () => import('./grafica/comercial-beta/comercial-beta-editor.component').then((m) => m.ComercialBetaEditorComponent),
+    path: 'grafica/comercial/pedidos/novo',
+    loadComponent: () => import('./grafica/comercial/comercial-editor.component').then((m) => m.ComercialEditorComponent),
     canActivate: [featureModuleGuard, permissionGuard],
     data: {
       ...GRAFICA_ROUTE_DATA,
@@ -594,8 +610,8 @@ export const PagesRoutes: Routes = [
     }
   },
   {
-    path: 'grafica/comercial-beta/pedidos/:id/impressao',
-    loadComponent: () => import('./grafica/comercial-beta/pedido-comercial-impressao-page.component').then((m) => m.PedidoComercialImpressaoPageComponent),
+    path: 'grafica/comercial/pedidos/:id/impressao',
+    loadComponent: () => import('./grafica/comercial/pedido-comercial-impressao-page.component').then((m) => m.PedidoComercialImpressaoPageComponent),
     canActivate: [featureModuleGuard, permissionGuard],
     data: {
       ...GRAFICA_ROUTE_DATA,
@@ -607,8 +623,8 @@ export const PagesRoutes: Routes = [
     }
   },
   {
-    path: 'grafica/comercial-beta/pedidos/:id/impressao/duas-vias',
-    loadComponent: () => import('./grafica/comercial-beta/pedido-comercial-impressao-page.component').then((m) => m.PedidoComercialImpressaoPageComponent),
+    path: 'grafica/comercial/pedidos/:id/impressao/duas-vias',
+    loadComponent: () => import('./grafica/comercial/pedido-comercial-impressao-page.component').then((m) => m.PedidoComercialImpressaoPageComponent),
     canActivate: [featureModuleGuard, permissionGuard],
     data: {
       ...GRAFICA_ROUTE_DATA,
@@ -620,8 +636,8 @@ export const PagesRoutes: Routes = [
     }
   },
   {
-    path: 'grafica/comercial-beta/pedidos/:id/impressao/etiqueta',
-    loadComponent: () => import('./grafica/comercial-beta/pedido-comercial-impressao-page.component').then((m) => m.PedidoComercialImpressaoPageComponent),
+    path: 'grafica/comercial/pedidos/:id/impressao/etiqueta',
+    loadComponent: () => import('./grafica/comercial/pedido-comercial-impressao-page.component').then((m) => m.PedidoComercialImpressaoPageComponent),
     canActivate: [featureModuleGuard, permissionGuard],
     data: {
       ...GRAFICA_ROUTE_DATA,
@@ -633,8 +649,8 @@ export const PagesRoutes: Routes = [
     }
   },
   {
-    path: 'grafica/comercial-beta/pedidos/:id/whatsapp',
-    loadComponent: () => import('./grafica/comercial-beta/pedido-comercial-whatsapp-page.component').then((m) => m.PedidoComercialWhatsappPageComponent),
+    path: 'grafica/comercial/pedidos/:id/whatsapp',
+    loadComponent: () => import('./grafica/comercial/pedido-comercial-whatsapp-page.component').then((m) => m.PedidoComercialWhatsappPageComponent),
     canActivate: [featureModuleGuard, permissionGuard],
     data: {
       ...GRAFICA_ROUTE_DATA,
@@ -645,8 +661,8 @@ export const PagesRoutes: Routes = [
     }
   },
   {
-    path: 'grafica/comercial-beta/pedidos/:id',
-    loadComponent: () => import('./grafica/comercial-beta/comercial-beta-editor.component').then((m) => m.ComercialBetaEditorComponent),
+    path: 'grafica/comercial/pedidos/:id',
+    loadComponent: () => import('./grafica/comercial/comercial-editor.component').then((m) => m.ComercialEditorComponent),
     canActivate: [featureModuleGuard, permissionGuard],
     data: {
       ...GRAFICA_ROUTE_DATA,

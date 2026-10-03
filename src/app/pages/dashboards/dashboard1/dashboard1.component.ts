@@ -72,23 +72,23 @@ export class AppDashboard1Component implements OnInit, OnDestroy {
   private readonly subscriptions = new Subscription();
   summaryCards: DashboardSummaryCard[] = [
     { key: 'receita', label: 'Receita do mês', value: 'R$ 0,00', accent: 'primary', icon: 'cash', route: '/dashboards/dashboard1/grafico', queryParams: { tipo: 'receita' } },
-    { key: 'pedidos', label: 'Pedidos', value: '0', amount: 'R$ 0,00', accent: 'neutral', icon: 'clipboard-list', route: '/page/grafica/comercial-beta/pedidos', requiredPermission: ['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER'] },
-    { key: 'orcamentos', label: 'Orçamentos', value: '0', amount: 'R$ 0,00', accent: 'warning', icon: 'file-dollar', route: '/page/grafica/comercial-beta/orcamentos', requiredPermission: ['ORCAMENTOS_VER', 'GRAFICA_PRODUTOS_VER'] },
-    { key: 'rascunhos', label: 'Rascunhos', value: '0', amount: 'R$ 0,00', accent: 'success', icon: 'edit', route: '/page/grafica/comercial-beta/rascunhos', requiredPermission: ['GRAFICA_PRODUTOS_VER'] },
+    { key: 'pedidos', label: 'Pedidos', value: '0', amount: 'R$ 0,00', accent: 'neutral', icon: 'clipboard-list', route: '/page/grafica/comercial/pedidos', requiredPermission: ['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER'] },
+    { key: 'orcamentos', label: 'Orçamentos', value: '0', amount: 'R$ 0,00', accent: 'warning', icon: 'file-dollar', route: '/page/grafica/comercial/orcamentos', requiredPermission: ['ORCAMENTOS_VER', 'GRAFICA_PRODUTOS_VER'] },
+    { key: 'rascunhos', label: 'Rascunhos', value: '0', amount: 'R$ 0,00', accent: 'success', icon: 'edit', route: '/page/grafica/comercial/rascunhos', requiredPermission: ['GRAFICA_PRODUTOS_VER'] },
   ];
   private readonly quickActionCatalog: DashboardQuickAction[] = [
     {
       label: 'Novo pedido',
       description: 'Abrir fluxo comercial',
       icon: 'add',
-      route: '/page/grafica/comercial-beta/pedidos/novo',
+      route: '/page/grafica/comercial/pedidos/novo',
       requiredPermission: ['PEDIDOS_CADASTRAR', 'GRAFICA_PRODUTOS_VER'],
     },
     {
       label: 'Rascunhos',
       description: 'Continuar atendimentos',
       icon: 'draft',
-      route: '/page/grafica/comercial-beta/rascunhos',
+      route: '/page/grafica/comercial/rascunhos',
       requiredPermission: ['GRAFICA_PRODUTOS_VER'],
     },
     {
@@ -182,9 +182,9 @@ export class AppDashboard1Component implements OnInit, OnDestroy {
             route: '/dashboards/dashboard1/grafico',
             queryParams: { tipo: 'receita' },
           },
-          this.toSummaryCard('pedidos', 'Pedidos', pedidos, 'neutral', 'clipboard-list', '/page/grafica/comercial-beta/pedidos', ['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER']),
-          this.toSummaryCard('orcamentos', 'Orçamentos', orcamentos, 'warning', 'file-dollar', '/page/grafica/comercial-beta/orcamentos', ['ORCAMENTOS_VER', 'GRAFICA_PRODUTOS_VER']),
-          this.toSummaryCard('rascunhos', 'Rascunhos', rascunhos, 'success', 'edit', '/page/grafica/comercial-beta/rascunhos', ['GRAFICA_PRODUTOS_VER']),
+          this.toSummaryCard('pedidos', 'Pedidos', pedidos, 'neutral', 'clipboard-list', '/page/grafica/comercial/pedidos', ['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER']),
+          this.toSummaryCard('orcamentos', 'Orçamentos', orcamentos, 'warning', 'file-dollar', '/page/grafica/comercial/orcamentos', ['ORCAMENTOS_VER', 'GRAFICA_PRODUTOS_VER']),
+          this.toSummaryCard('rascunhos', 'Rascunhos', rascunhos, 'success', 'edit', '/page/grafica/comercial/rascunhos', ['GRAFICA_PRODUTOS_VER']),
         ];
         this.atualizarAcessos();
 

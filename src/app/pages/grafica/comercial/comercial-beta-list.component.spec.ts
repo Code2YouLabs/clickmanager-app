@@ -6,14 +6,14 @@ import { MatDialog } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of, Subject, throwError } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
-import { ComercialBetaListComponent } from './comercial-beta-list.component';
+import { ComercialListComponent } from './comercial-list.component';
 import { GraficaProdutoService } from '../shared/grafica.service';
 import { GraficaPagina, PedidoComercialDetalhe, PedidoComercialResumo, PedidoFluxoResponse } from '../shared/grafica.models';
 import { KanbanDragEvent, KanbanDropEvent } from 'src/app/components/kanban-board/kanban-board.models';
 
-describe('ComercialBetaListComponent', () => {
-  let fixture: ComponentFixture<ComercialBetaListComponent>;
-  let component: ComercialBetaListComponent;
+describe('ComercialListComponent Kanban', () => {
+  let fixture: ComponentFixture<ComercialListComponent>;
+  let component: ComercialListComponent;
   let service: jasmine.SpyObj<GraficaProdutoService>;
   let router: jasmine.SpyObj<Router>;
   let dialog: jasmine.SpyObj<MatDialog>;
@@ -46,7 +46,7 @@ describe('ComercialBetaListComponent', () => {
     dialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
 
     TestBed.configureTestingModule({
-      imports: [ComercialBetaListComponent, NoopAnimationsModule],
+      imports: [ComercialListComponent, NoopAnimationsModule],
       providers: [
         { provide: GraficaProdutoService, useValue: service },
         { provide: Router, useValue: router },
@@ -62,7 +62,7 @@ describe('ComercialBetaListComponent', () => {
       ],
     });
 
-    fixture = TestBed.createComponent(ComercialBetaListComponent);
+    fixture = TestBed.createComponent(ComercialListComponent);
     component = fixture.componentInstance;
     (component as unknown as { dialog: MatDialog }).dialog = dialog;
     (component as unknown as { toastr: ToastrService }).toastr = toastr;
@@ -189,7 +189,7 @@ describe('ComercialBetaListComponent', () => {
 
     component.abrir(item);
 
-    expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial-beta', component.tipo, item.pedidoId]);
+    expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial', component.tipo, item.pedidoId]);
     expect(service.listarPedidosComerciais).not.toHaveBeenCalledWith(jasmine.any(Number), jasmine.any(Number), 'PATCH');
   });
 
