@@ -33,6 +33,22 @@ export class JornadaService {
     );
   }
 
+  atualizarEtapa(definicao: JornadaDefinicao, etapa: string): Observable<JornadaProgressoResponse> {
+    return this.api.post<JornadaProgressoResponse>(
+      `${this.endpoint}/${definicao.chave}/etapas/${encodeURIComponent(etapa)}`,
+      {},
+      this.paramsVersao(definicao),
+    );
+  }
+
+  concluir(definicao: JornadaDefinicao): Observable<JornadaProgressoResponse> {
+    return this.api.post<JornadaProgressoResponse>(
+      `${this.endpoint}/${definicao.chave}/concluir`,
+      {},
+      this.paramsVersao(definicao),
+    );
+  }
+
   ignorar(definicao: JornadaDefinicao): Observable<JornadaProgressoResponse> {
     return this.api.post<JornadaProgressoResponse>(
       `${this.endpoint}/${definicao.chave}/ignorar`,

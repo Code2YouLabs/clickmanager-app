@@ -74,6 +74,7 @@
             </app-section-card>
 
             <app-cliente-selector-card
+              [appTutorialTarget]="tipo === 'pedidos' && !pedidoId ? primeiroPedidoTargets.cliente : ''"
               [cliente]="clienteConfirmado"
               [editando]="trocandoCliente || !clienteConfirmado"
               [salvando]="salvandoCliente"
@@ -92,6 +93,7 @@
             </app-cliente-selector-card>
 
             <app-itens-pedido-section
+              [appTutorialTarget]="tipo === 'pedidos' && !pedidoId && itens.length ? primeiroPedidoTargets.revisao : ''"
               [titulo]="itensTitulo"
               [itemContextoLabel]="itemContextoLabel"
               [itens]="itensView"
@@ -100,6 +102,7 @@
               [mostrarAcoes]="podeEditarItens"
               [mostrarDescreverItens]="false"
               [mostrarBuscaRapida]="true"
+              [buscarProdutosTutorialTarget]="tipo === 'pedidos' && !pedidoId ? primeiroPedidoTargets.adicionarItem : ''"
               buscarProdutosLabel="Adicionar produto"
               buscaRapidaLabel="Busca rápida"
               (buscarProdutos)="abrirWizard()"

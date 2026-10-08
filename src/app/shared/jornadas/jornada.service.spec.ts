@@ -61,4 +61,24 @@ describe('JornadaService', () => {
     expect(req.request.body).toEqual({});
     req.flush({ jornada: 'PRIMEIRO_PEDIDO', versao: 1, status: 'IGNORADO' });
   });
+
+  it('atualiza etapa e conclui usando os endpoints da fundacao', () => {
+    service.atualizarEtapa(PRIMEIRO_PEDIDO_JORNADA, 'pedido_criado').subscribe();
+    let req = http.expectOne((request) =>
+      request.method === 'POST'
+      && request.url === `${baseUrl}/etapas/pedido_criado`
+      && request.params.get('versao') === '1'
+    );
+    expect(req.request.body).toEqual({});
+    req.flush({ jornada: 'PRIMEIRO_PEDIDO', versao: 1, status: 'EM_ANDAMENTO', etapaAtual: 'pedido_criado' });
+
+    service.concluir(PRIMEIRO_PEDIDO_JORNADA).subscribe();
+    req = http.expectOne((request) =>
+      request.method === 'POST'
+      && request.url === `${baseUrl}/concluir`
+      && request.params.get('versao') === '1'
+    );
+    expect(req.request.body).toEqual({});
+    req.flush({ jornada: 'PRIMEIRO_PEDIDO', versao: 1, status: 'CONCLUIDO' });
+  });
 });

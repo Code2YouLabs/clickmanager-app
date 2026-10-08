@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { SectionCardComponent } from '../section-card/section-card.component';
+import { TutorialTargetDirective } from 'src/app/shared/tutorial/tutorial-target.directive';
 
 export interface ItemPedidoView {
   descricao: string;
@@ -28,7 +29,8 @@ export interface ItemPedidoView {
     MatButtonModule,
     MatIconModule,
     MatTooltipModule,
-    SectionCardComponent
+    SectionCardComponent,
+    TutorialTargetDirective
   ],
   templateUrl: './itens-pedido-section.component.html',
   styleUrls: ['./itens-pedido-section.component.scss']
@@ -46,6 +48,7 @@ export class ItensPedidoSectionComponent {
   @Input() buscaRapidaLabel = 'Busca rápida';
   @Input() descreverItensLabel = 'Descrever itens';
   @Input() inativo = false;
+  @Input() buscarProdutosTutorialTarget = '';
 
   @Output() buscarProdutos = new EventEmitter<void>();
   @Output() buscaRapida = new EventEmitter<void>();

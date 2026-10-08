@@ -20,12 +20,14 @@ import { StatusBadgeComponent } from 'src/app/components/status-badge/status-bad
 import { MaterialModule } from 'src/app/material.module';
 import { Usuario } from 'src/app/models/usuario/usuario.model';
 import { AuthService } from 'src/app/services/auth.service';
+import { TutorialTargetDirective } from 'src/app/shared/tutorial/tutorial-target.directive';
 import { ClienteCreateDialogComponent, ClienteCreateDialogData } from '../../cliente/cliente-create-dialog/cliente-create-dialog.component';
 import { ClienteService } from '../../cliente/cliente.service';
 import { ComercialItemResponse, ComposicaoComercialResolvida, GraficaComercialComposicaoRequest, GraficaComercialDestinoResponse, GraficaOpcao, GraficaParametro, GraficaPrecoFaixa, GraficaPrecoLote, GraficaPrecoPolitica, GraficaPrecificacaoResultado, GraficaProduto, GraficaProdutoAcabamento, GraficaServico, OrcamentoComercialDetalhe, PedidoAjustesFinanceirosRequest, PedidoComercialDetalhe, PedidoFluxoPermissoes, PedidoFluxoResponse, RascunhoComercialResponse, RecebimentoPretendidoRequest, RecebimentoResponse, ResumoFinanceiroOrigem } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
 import { GraficaBuscaRapidaItem, GraficaProdutoBuscaRapidaDialogComponent } from './grafica-produto-busca-rapida-dialog.component';
 import { PedidoDocumentosAcoesComponent } from './pedido-documentos-acoes.component';
+import { PRIMEIRO_PEDIDO_TARGETS, PrimeiroPedidoTutorialService } from './primeiro-pedido/primeiro-pedido-tutorial.service';
 
 import { ComercialTipo } from './comercial.models';
 type FunilColuna = 'produto' | 'material' | 'formato' | 'cor';
@@ -64,11 +66,13 @@ interface GraficaServicoWizardData {
     MaterialModule,
     ReactiveFormsModule,
     InputNumericoComponent,
+    TutorialTargetDirective,
   ],
   templateUrl: './grafica-servico-wizard-dialog.component.html',
   styleUrl: './grafica-servico-wizard-dialog.component.scss',
 })
 export class GraficaServicoWizardDialogComponent {
+  readonly primeiroPedidoTargets = PRIMEIRO_PEDIDO_TARGETS;
   readonly politica = (this.data.servico.politicas || []).find((item) => item.ativo !== false) || null;
   readonly form = this.fb.group({
     quantidade: this.fb.control(1, { nonNullable: true, validators: [Validators.required, Validators.min(1)] }),
@@ -163,11 +167,13 @@ export class GraficaServicoWizardDialogComponent {
     PedidoFluxoControlesComponent,
     PedidoDocumentosAcoesComponent,
     StatusBadgeComponent,
+    TutorialTargetDirective,
   ],
   templateUrl: './comercial-editor.component.html',
   styleUrl: './comercial-editor.component.scss',
 })
 export class ComercialEditorComponent implements OnInit, OnDestroy {
+  readonly primeiroPedidoTargets = PRIMEIRO_PEDIDO_TARGETS;
   tipo: ComercialTipo = 'rascunhos';
   pedidoId: number | null = null;
   itens: ComposicaoComercialResolvida['itens'] = [];
@@ -222,6 +228,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     private readonly clienteService: ClienteService,
     private readonly toastr: ToastrService,
     private readonly authService: AuthService,
+    private readonly primeiroPedidoTutorial: PrimeiroPedidoTutorialService,
   ) {}
 
   get titulo(): string {
@@ -333,7 +340,8 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
       { id: 'pedidos', label: 'Criar pedido', primary: true, disabled: !this.podeConcluirRascunho },
     ];
     return [cancelar, { id: 'salvar', label: this.acaoSalvar, pendingLabel: 'Salvando...', primary: true,
-      type: 'submit', form: 'comercial-editor-form', disabled: !this.podeSalvar }];
+      type: 'submit', form: 'comercial-editor-form', disabled: !this.podeSalvar,
+      tutorialTarget: this.tipo === 'pedidos' ? PRIMEIRO_PEDIDO_TARGETS.salvar : '' }];
   }
   onFooterAction(action: string): void {
     if (this.salvando) return;
@@ -637,6 +645,9 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
       } else if (this.tipo === 'rascunhos' && this.pedidoId) {
         this.carregarRascunho(this.pedidoId);
       }
+      if (this.tipo === 'pedidos') {
+        this.primeiroPedidoTutorial.iniciarSeNecessario(this.pedidoId);
+      }
     });
   }
 
@@ -912,31 +923,45 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   }
 
   private abrirWizardProduto(produtoPreSelecionado?: GraficaProduto): void {
-    this.dialog.open(GraficaProdutoWizardDialogComponent, {
+    const dialogRef = this.dialog.open(GraficaProdutoWizardDialogComponent, {
       width: 'min(1720px, calc(100vw - 104px))',
       height: 'min(900px, calc(100dvh - 96px))',
       maxWidth: '96vw',
       maxHeight: '92vh',
       panelClass: ['dialog-grande', 'grafica-produto-wizard-panel'],
       data: { cliente: this.clientePayload(), produtoPreSelecionado },
-    }).afterClosed().subscribe((composicao?: ComposicaoComercialResolvida) => {
+    });
+    if (this.tipo === 'pedidos' && !this.pedidoId) {
+      this.primeiroPedidoTutorial.registrarConfiguradorAberto();
+    }
+    dialogRef.afterClosed().subscribe((composicao?: ComposicaoComercialResolvida) => {
       if (composicao?.itens?.length) {
         this.itens = [...this.itens, ...composicao.itens];
+        if (this.tipo === 'pedidos' && !this.pedidoId) {
+          this.primeiroPedidoTutorial.registrarItemAdicionado();
+        }
       }
     });
   }
 
   private abrirWizardServico(servico: GraficaServico): void {
-    this.dialog.open(GraficaServicoWizardDialogComponent, {
+    const dialogRef = this.dialog.open(GraficaServicoWizardDialogComponent, {
       width: '560px',
       maxWidth: '96vw',
       panelClass: ['grafica-servico-wizard-panel'],
       autoFocus: true,
       restoreFocus: false,
       data: { cliente: this.clientePayload(), servico },
-    }).afterClosed().subscribe((composicao?: ComposicaoComercialResolvida) => {
+    });
+    if (this.tipo === 'pedidos' && !this.pedidoId) {
+      this.primeiroPedidoTutorial.registrarConfiguradorAberto();
+    }
+    dialogRef.afterClosed().subscribe((composicao?: ComposicaoComercialResolvida) => {
       if (composicao?.itens?.length) {
         this.itens = [...this.itens, ...composicao.itens];
+        if (this.tipo === 'pedidos' && !this.pedidoId) {
+          this.primeiroPedidoTutorial.registrarItemAdicionado();
+        }
       }
     });
   }
@@ -1042,6 +1067,18 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   }
 
   private navegarAposCriacao(destino: ComercialTipo, response: GraficaComercialDestinoResponse): void {
+    if (destino === 'pedidos' && response?.id) {
+      this.primeiroPedidoTutorial.registrarPedidoCriado(response).subscribe((guiando) => {
+        if (guiando) {
+          this.router.navigate(['/page/grafica/comercial', destino], {
+            queryParams: { primeiroPedidoId: response.id },
+          });
+          return;
+        }
+        this.router.navigate(['/page/grafica/comercial', destino, response.id]);
+      });
+      return;
+    }
     if (response?.id && destino !== 'rascunhos') {
       this.router.navigate(['/page/grafica/comercial', destino, response.id]);
       return;
@@ -1204,6 +1241,9 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     this.clienteConfirmado = this.normalizarClienteCard(cliente);
     this.clienteControl.setValue(this.clienteConfirmado, { emitEvent: false });
     this.trocandoCliente = false;
+    if (this.tipo === 'pedidos' && !this.pedidoId) {
+      this.primeiroPedidoTutorial.registrarClienteSelecionado();
+    }
   }
 
   private devePersistirClienteNoPedido(): boolean {
@@ -1642,11 +1682,12 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
 @Component({
   selector: 'app-grafica-produto-wizard-dialog',
   standalone: true,
-  imports: [CommonModule, MaterialModule, FormsModule, ReactiveFormsModule, InputNumericoComponent],
+  imports: [CommonModule, MaterialModule, FormsModule, ReactiveFormsModule, InputNumericoComponent, TutorialTargetDirective],
   templateUrl: './grafica-produto-wizard-dialog.component.html',
   styleUrl: './grafica-produto-wizard-dialog.component.scss',
 })
 export class GraficaProdutoWizardDialogComponent implements OnInit {
+  readonly primeiroPedidoTargets = PRIMEIRO_PEDIDO_TARGETS;
   @ViewChild('stepper') stepper?: MatStepper;
   @ViewChild('quantidadeWizardInputContainer') quantidadeWizardInputContainer?: ElementRef<HTMLElement>;
   produtos: GraficaProduto[] = [];

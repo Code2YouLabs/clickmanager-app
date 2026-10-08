@@ -15,6 +15,7 @@ import { KanbanColumnState, KanbanDragEvent, KanbanDropEvent, KanbanDropState } 
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { ViewModeToggleComponent, ViewModeToggleOption } from 'src/app/components/view-mode-toggle/view-mode-toggle.component';
 import { MaterialModule } from 'src/app/material.module';
+import { TutorialTargetDirective } from 'src/app/shared/tutorial/tutorial-target.directive';
 import {
   GraficaPagina,
   PedidoComercialDetalhe,
@@ -30,6 +31,7 @@ import {
   PEDIDO_STATUS_METADATA,
   pedidoStatusLabel,
 } from './shared/pedido-status.metadata';
+import { PRIMEIRO_PEDIDO_TARGETS, PrimeiroPedidoTutorialService } from './primeiro-pedido/primeiro-pedido-tutorial.service';
 
 type ComercialViewMode = 'lista' | 'kanban';
 type PedidoKanbanColumn = KanbanColumnState<PedidoComercialResumo> & {
@@ -52,11 +54,13 @@ type PedidoKanbanSnapshot = Pick<PedidoKanbanColumn, 'items' | 'count' | 'total'
     ViewModeToggleComponent,
     KanbanBoardComponent,
     KanbanCardDirective,
+    TutorialTargetDirective,
   ],
   templateUrl: './comercial-list.component.html',
   styleUrl: './comercial-list.component.scss',
 })
 export class ComercialListComponent implements OnInit, OnDestroy {
+  readonly primeiroPedidoTargets = PRIMEIRO_PEDIDO_TARGETS;
   itens: any[] = [];
   busca = '';
   pagina = 0;
@@ -130,6 +134,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
     private readonly graficaService: GraficaProdutoService,
     private readonly dialog: MatDialog,
     private readonly toastr: ToastrService,
+    private readonly primeiroPedidoTutorial: PrimeiroPedidoTutorialService,
     @Inject(DOCUMENT) private readonly document: Document,
   ) {}
 
@@ -192,6 +197,9 @@ export class ComercialListComponent implements OnInit, OnDestroy {
       this.syncKanbanFocusClass();
       this.resetKanbanSeContextoMudou();
       this.carregar();
+      if (this.tipo === 'pedidos') {
+        this.primeiroPedidoTutorial.iniciarSeNecessario();
+      }
     });
   }
 
@@ -232,6 +240,9 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   novo(): void {
+    if (this.tipo === 'pedidos') {
+      this.primeiroPedidoTutorial.registrarNovoPedido();
+    }
     this.router.navigate(['/page/grafica/comercial', this.tipo, 'novo']);
   }
 
@@ -268,6 +279,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
       this.setKanbanExpanded(false);
     } else {
       this.syncKanbanFocusClass();
+      this.primeiroPedidoTutorial.registrarKanbanSelecionado();
     }
     this.carregar();
   }
@@ -421,6 +433,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
         next: (pedido) => {
           this.aplicarStatusRetornado(pedidoId, pedido, target);
           this.toastr.success('Status atualizado.');
+          this.primeiroPedidoTutorial.registrarPedidoMovido(event.item);
         },
         error: (error) => {
           this.restoreColumn(source, sourceSnapshot);
@@ -449,6 +462,10 @@ export class ComercialListComponent implements OnInit, OnDestroy {
 
   pedidoMovendo(pedido: PedidoComercialResumo): boolean {
     return this.pedidosMovendo.has(this.pedidoId(pedido));
+  }
+
+  tutorialTargetPedidoKanban(pedido: PedidoComercialResumo): string {
+    return this.primeiroPedidoTutorial.targetPedidoKanban(pedido);
   }
 
   referencia(item: any): string {

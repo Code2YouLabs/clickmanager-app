@@ -9,6 +9,7 @@ import { ToastrService } from 'ngx-toastr';
 import { ComercialListComponent } from './comercial-list.component';
 import { GraficaProdutoService } from '../shared/grafica.service';
 import { ComercialTipo } from './comercial.models';
+import { PrimeiroPedidoTutorialService } from './primeiro-pedido/primeiro-pedido-tutorial.service';
 
 describe('ComercialListComponent', () => {
   beforeAll(() => registerLocaleData(ptBr, 'pt-BR'));
@@ -18,6 +19,7 @@ describe('ComercialListComponent', () => {
   let router: jasmine.SpyObj<Router>;
   let dialog: jasmine.SpyObj<MatDialog>;
   let toastr: jasmine.SpyObj<ToastrService>;
+  let primeiroPedidoTutorial: jasmine.SpyObj<PrimeiroPedidoTutorialService>;
   let data: BehaviorSubject<{ tipo: ComercialTipo }>;
   let params: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
   const page = { content: [{ id: 1, numero: 'PED-1', clienteNome: 'Maria', status: 'PENDENTE', total: 15 }], totalElements: 21 };
@@ -29,9 +31,18 @@ describe('ComercialListComponent', () => {
     router = jasmine.createSpyObj('Router', ['navigate']);
     dialog = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
     toastr = jasmine.createSpyObj<ToastrService>('ToastrService', ['success', 'error', 'info']);
+    primeiroPedidoTutorial = jasmine.createSpyObj<PrimeiroPedidoTutorialService>('PrimeiroPedidoTutorialService', [
+      'iniciarSeNecessario',
+      'registrarNovoPedido',
+      'registrarKanbanSelecionado',
+      'registrarPedidoMovido',
+      'targetPedidoKanban',
+    ]);
+    primeiroPedidoTutorial.targetPedidoKanban.and.returnValue('');
     TestBed.configureTestingModule({ imports: [ComercialListComponent, NoopAnimationsModule], providers: [
       { provide: GraficaProdutoService, useValue: service }, { provide: Router, useValue: router },
       { provide: MatDialog, useValue: dialog }, { provide: ToastrService, useValue: toastr },
+      { provide: PrimeiroPedidoTutorialService, useValue: primeiroPedidoTutorial },
       { provide: ActivatedRoute, useValue: { data, queryParamMap: params } },
     ] });
     fixture = TestBed.createComponent(ComercialListComponent); component = fixture.componentInstance;
