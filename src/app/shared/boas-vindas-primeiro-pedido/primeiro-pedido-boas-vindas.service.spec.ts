@@ -113,6 +113,21 @@ describe('PrimeiroPedidoBoasVindasService', () => {
     expect(jornada.consultar).not.toHaveBeenCalled();
   }));
 
+  it('permite reavaliar quando a primeira avaliacao ocorreu antes da conclusao do onboarding no fluxo', fakeAsync(() => {
+    const usuario = usuarioGrafica();
+
+    service.avaliarEExibir(usuario);
+    tick();
+    expect(dialog.open).not.toHaveBeenCalled();
+
+    flow.marcarOnboardingConcluido(usuario);
+    service.avaliarEExibir(usuario);
+    tick();
+
+    expect(dialog.open).toHaveBeenCalled();
+    expect(jornada.consultar).toHaveBeenCalledWith(PRIMEIRO_PEDIDO_JORNADA);
+  }));
+
   it('nao exibe para segmento incompativel, usuario sem permissao, onboarding legado ou onboarding pendente', fakeAsync(() => {
     flow.marcarOnboardingConcluido(usuarioGrafica());
     auth.getTipoEmpresa.and.returnValue(TipoEmpresa.DEPOSITO);

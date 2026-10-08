@@ -51,7 +51,9 @@ export class PrimeiroPedidoBoasVindasService {
     this.avaliarElegibilidade(usuario)
       .pipe(finalize(() => this.avaliando.delete(key)))
       .subscribe((resultado) => {
-        this.avaliados.add(key);
+        if (resultado.mostrar || resultado.motivo !== 'contexto_incompativel') {
+          this.avaliados.add(key);
+        }
         if (!resultado.mostrar) {
           return;
         }

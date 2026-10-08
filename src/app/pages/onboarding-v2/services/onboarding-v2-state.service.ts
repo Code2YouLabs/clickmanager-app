@@ -13,6 +13,7 @@ import {
 import { AuthService } from 'src/app/services/auth.service';
 import { OnboardingV2Service } from './onboarding-v2.service';
 import { PrimeiroPedidoBoasVindasFlowService } from 'src/app/shared/boas-vindas-primeiro-pedido/primeiro-pedido-boas-vindas-flow.service';
+import { PrimeiroPedidoBoasVindasService } from 'src/app/shared/boas-vindas-primeiro-pedido/primeiro-pedido-boas-vindas.service';
 
 @Injectable({ providedIn: 'root' })
 export class OnboardingV2StateService {
@@ -36,7 +37,8 @@ export class OnboardingV2StateService {
   constructor(
     private readonly onboardingV2Service: OnboardingV2Service,
     private readonly authService: AuthService,
-    private readonly primeiroPedidoBoasVindasFlow: PrimeiroPedidoBoasVindasFlowService
+    private readonly primeiroPedidoBoasVindasFlow: PrimeiroPedidoBoasVindasFlowService,
+    private readonly primeiroPedidoBoasVindas: PrimeiroPedidoBoasVindasService
   ) {}
 
   setError(message: string | null): void {
@@ -127,7 +129,11 @@ export class OnboardingV2StateService {
       tap((progress) => {
         this.applyProgress(progress);
         if (isOnboardingV2Finished(progress)) {
-          this.primeiroPedidoBoasVindasFlow.marcarOnboardingConcluido(this.getUsuarioAtual());
+          const usuario = this.getUsuarioAtual();
+          this.primeiroPedidoBoasVindasFlow.marcarOnboardingConcluido(usuario);
+          if (usuario) {
+            this.primeiroPedidoBoasVindas.avaliarEExibir(usuario);
+          }
         }
       }),
       catchError((error) => this.handleError(error, 'Não foi possível finalizar o onboarding agora.')),
