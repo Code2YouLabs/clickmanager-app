@@ -12,6 +12,7 @@ import {
 } from '../models/onboarding-v2.models';
 import { AuthService } from 'src/app/services/auth.service';
 import { OnboardingV2Service } from './onboarding-v2.service';
+import { PrimeiroPedidoBoasVindasFlowService } from 'src/app/shared/boas-vindas-primeiro-pedido/primeiro-pedido-boas-vindas-flow.service';
 
 @Injectable({ providedIn: 'root' })
 export class OnboardingV2StateService {
@@ -34,7 +35,8 @@ export class OnboardingV2StateService {
 
   constructor(
     private readonly onboardingV2Service: OnboardingV2Service,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly primeiroPedidoBoasVindasFlow: PrimeiroPedidoBoasVindasFlowService
   ) {}
 
   setError(message: string | null): void {
@@ -122,7 +124,12 @@ export class OnboardingV2StateService {
     this.errorSignal.set(null);
 
     return this.onboardingV2Service.finishOnboarding().pipe(
-      tap((progress) => this.applyProgress(progress)),
+      tap((progress) => {
+        this.applyProgress(progress);
+        if (isOnboardingV2Finished(progress)) {
+          this.primeiroPedidoBoasVindasFlow.marcarOnboardingConcluido(this.getUsuarioAtual());
+        }
+      }),
       catchError((error) => this.handleError(error, 'Não foi possível finalizar o onboarding agora.')),
       finalize(() => this.savingSignal.set(false))
     );
@@ -171,5 +178,13 @@ export class OnboardingV2StateService {
   private extractErrorMessage(error: unknown): string | null {
     const httpError = error as { error?: { message?: string; mensagem?: string } };
     return httpError?.error?.message || httpError?.error?.mensagem || null;
+  }
+
+  private getUsuarioAtual() {
+    try {
+      return this.authService.getUsuario();
+    } catch {
+      return null;
+    }
   }
 }
