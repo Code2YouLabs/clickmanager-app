@@ -12,6 +12,7 @@ import { PRIMEIRO_PEDIDO_JORNADA, PRIMEIRO_PEDIDO_PERMISSOES } from '../jornadas
 import { JornadaProgressoResponse } from '../jornadas/jornada.models';
 import { JornadaService } from '../jornadas/jornada.service';
 import { PrimeiroPedidoBoasVindasComponent } from './primeiro-pedido-boas-vindas.component';
+import { PrimeiroPedidoBoasVindasFlowService } from './primeiro-pedido-boas-vindas-flow.service';
 
 export interface PrimeiroPedidoElegibilidadeResultado {
   mostrar: boolean;
@@ -31,6 +32,7 @@ export class PrimeiroPedidoBoasVindasService {
     private readonly jornadaService: JornadaService,
     private readonly featureFlagService: FeatureFlagService,
     private readonly dialog: MatDialog,
+    private readonly flow: PrimeiroPedidoBoasVindasFlowService,
   ) {
     this.authService.usuario$.subscribe((usuario) => {
       if (!usuario) {
@@ -73,7 +75,7 @@ export class PrimeiroPedidoBoasVindasService {
         ),
       })),
       map(({ onboarding, jornada }) => {
-        if (!onboarding || onboarding.onboardingVersion !== 'v2' || !isOnboardingV2Finished(onboarding) || !onboarding.finishedAt) {
+        if (!onboarding || onboarding.onboardingVersion !== 'v2' || !isOnboardingV2Finished(onboarding)) {
           return { mostrar: false, motivo: 'onboarding_nao_concluido' };
         }
 
@@ -124,7 +126,7 @@ export class PrimeiroPedidoBoasVindasService {
       return false;
     }
 
-    if (usuario.onboardingIgnorado || usuario.empresa.onboardingIgnorado) {
+    if (!this.flow.onboardingConcluidoNesteFluxo(usuario)) {
       return false;
     }
 
