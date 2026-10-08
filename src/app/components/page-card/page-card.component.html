@@ -34,11 +34,13 @@
           @if (action.primary && action.intent !== 'cancel') {
             <button mat-flat-button [color]="action.color || 'primary'" [type]="action.type || 'button'"
               [attr.form]="action.form || null" [disabled]="actionDisabled(action)"
+              [appTutorialTarget]="action.tutorialTarget || ''"
               (click)="onFooterAction(action)">@if (action.icon) { <mat-icon>{{ action.icon }}</mat-icon> }{{ saving && action.pendingLabel ? action.pendingLabel : action.label }}</button>
           } @else {
             <button mat-stroked-button [class.cancel-button]="action.intent === 'cancel'"
               [color]="action.intent === 'cancel' ? null : (action.color || null)" [type]="action.type || 'button'"
               [attr.form]="action.form || null" [disabled]="actionDisabled(action)"
+              [appTutorialTarget]="action.tutorialTarget || ''"
               (click)="onFooterAction(action)">@if (action.icon) { <mat-icon>{{ action.icon }}</mat-icon> }{{ saving && action.pendingLabel ? action.pendingLabel : action.label }}</button>
           }
         }

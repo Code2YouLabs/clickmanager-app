@@ -9,6 +9,7 @@ import { ToastrService } from 'ngx-toastr';
 import { ComercialListComponent } from './comercial-list.component';
 import { GraficaProdutoService } from '../shared/grafica.service';
 import { ComercialTipo } from './comercial.models';
+import { PrimeiroPedidoTutorialService } from './primeiro-pedido/primeiro-pedido-tutorial.service';
 
 describe('ComercialListComponent', () => {
   beforeAll(() => registerLocaleData(ptBr, 'pt-BR'));
@@ -18,20 +19,39 @@ describe('ComercialListComponent', () => {
   let router: jasmine.SpyObj<Router>;
   let dialog: jasmine.SpyObj<MatDialog>;
   let toastr: jasmine.SpyObj<ToastrService>;
+  let primeiroPedidoTutorial: jasmine.SpyObj<PrimeiroPedidoTutorialService>;
   let data: BehaviorSubject<{ tipo: ComercialTipo }>;
   let params: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
+  let pedidoAcompanhadoId: number | null;
   const page = { content: [{ id: 1, numero: 'PED-1', clienteNome: 'Maria', status: 'PENDENTE', total: 15 }], totalElements: 21 };
   beforeEach(() => {
     data = new BehaviorSubject<{ tipo: ComercialTipo }>({ tipo: 'pedidos' });
     params = new BehaviorSubject(convertToParamMap({}));
-    service = jasmine.createSpyObj('GraficaProdutoService', ['listarPedidosComerciais', 'listarOrcamentosComerciais', 'listarRascunhosComerciais']);
+    pedidoAcompanhadoId = null;
+    service = jasmine.createSpyObj('GraficaProdutoService', [
+      'listarPedidosComerciais',
+      'listarOrcamentosComerciais',
+      'listarRascunhosComerciais',
+      'buscarPedidoComercial',
+    ]);
     for (const method of [service.listarPedidosComerciais, service.listarOrcamentosComerciais, service.listarRascunhosComerciais]) method.and.returnValue(of(page as any));
+    service.buscarPedidoComercial.and.returnValue(of({ id: 1, numero: 'PED-1', clienteNome: 'Maria', status: 'PENDENTE', total: 15, itens: [] } as any));
     router = jasmine.createSpyObj('Router', ['navigate']);
     dialog = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
     toastr = jasmine.createSpyObj<ToastrService>('ToastrService', ['success', 'error', 'info']);
+    primeiroPedidoTutorial = jasmine.createSpyObj<PrimeiroPedidoTutorialService>('PrimeiroPedidoTutorialService', [
+      'iniciarSeNecessario',
+      'registrarNovoPedido',
+      'registrarKanbanSelecionado',
+      'registrarPedidoMovido',
+      'targetPedidoKanban',
+    ]);
+    primeiroPedidoTutorial.targetPedidoKanban.and.returnValue('');
+    Object.defineProperty(primeiroPedidoTutorial, 'pedidoAcompanhadoId', { get: () => pedidoAcompanhadoId });
     TestBed.configureTestingModule({ imports: [ComercialListComponent, NoopAnimationsModule], providers: [
       { provide: GraficaProdutoService, useValue: service }, { provide: Router, useValue: router },
       { provide: MatDialog, useValue: dialog }, { provide: ToastrService, useValue: toastr },
+      { provide: PrimeiroPedidoTutorialService, useValue: primeiroPedidoTutorial },
       { provide: ActivatedRoute, useValue: { data, queryParamMap: params } },
     ] });
     fixture = TestBed.createComponent(ComercialListComponent); component = fixture.componentInstance;
@@ -102,5 +122,25 @@ describe('ComercialListComponent', () => {
     data.next({ tipo: 'orcamentos' }); response.next({ content: [{ id: 99 }], totalElements: 99 });
     expect(component.itens).toEqual(page.content); expect(component.totalItens).toBe(21);
     fixture.destroy(); expect(response.observed).toBeFalse();
+  });
+
+  it('busca o pedido acompanhado quando ele não veio na primeira página do Kanban', () => {
+    pedidoAcompanhadoId = 99;
+    service.listarPedidosComerciais.and.returnValue(of({ content: [], totalElements: 0, number: 0, size: 20 } as any));
+    service.buscarPedidoComercial.and.returnValue(of({
+      id: 99,
+      numero: 'PED-99',
+      clienteNome: 'Joana',
+      status: 'PENDENTE',
+      total: 30,
+      itens: [],
+    } as any));
+
+    fixture.detectChanges();
+    component.alterarVisualizacao('kanban');
+
+    expect(service.buscarPedidoComercial).toHaveBeenCalledWith(99);
+    expect(component.kanbanColumns.find((column) => column.status === 'PENDENTE')?.items)
+      .toEqual([jasmine.objectContaining({ id: 99 }) as any]);
   });
 });

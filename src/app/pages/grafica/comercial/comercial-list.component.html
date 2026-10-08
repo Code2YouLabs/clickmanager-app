@@ -1,9 +1,12 @@
 <app-page-card
+  [appTutorialTarget]="tipo === 'pedidos' ? primeiroPedidoTargets.lista : ''"
   [titulo]="titulo"
   [subtitulo]="subtitulo"
   [mostrarDivisor]="true"
   [class.comercial-kanban-expanded]="kanbanExpandedActive">
-      <button page-header-actions mat-flat-button color="primary" type="button" (click)="novo()">
+      <button page-header-actions mat-flat-button color="primary" type="button"
+        [appTutorialTarget]="tipo === 'pedidos' ? primeiroPedidoTargets.novo : ''"
+        (click)="novo()">
         <mat-icon>add</mat-icon>
         {{ configuracao.novo }}
       </button>
@@ -32,6 +35,7 @@
 
         <div data-table-toolbar-actions class="view-mode-actions" *ngIf="podeAlternarKanban">
           <app-view-mode-toggle
+            [appTutorialTarget]="tipo === 'pedidos' ? primeiroPedidoTargets.alternarKanban : ''"
             [value]="viewMode"
             [options]="viewModeOptions"
             ariaLabel="Visualização dos pedidos"
@@ -107,7 +111,9 @@
         (retryColumn)="recarregarColunaKanban($event)"
         (loadMore)="carregarMaisKanban($event)">
         <ng-template appKanbanCard let-pedido>
-          <div class="pedido-kanban-card" [class.pedido-kanban-card--pending]="pedidoMovendo(pedido)">
+          <div class="pedido-kanban-card"
+            [appTutorialTarget]="tutorialTargetPedidoKanban(pedido)"
+            [class.pedido-kanban-card--pending]="pedidoMovendo(pedido)">
             <strong>{{ referencia(pedido) }}</strong>
             <span>{{ cliente(pedido) || 'Balcão' }}</span>
             <time [attr.datetime]="dataCriacao(pedido) || null">

@@ -2,7 +2,7 @@ import { HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from 'src/app/services/api.service';
-import { JornadaDefinicao, JornadaOperacaoRequest, JornadaProgressoResponse } from './jornada.models';
+import { JornadaContexto, JornadaDefinicao, JornadaOperacaoRequest, JornadaProgressoResponse } from './jornada.models';
 
 @Injectable({ providedIn: 'root' })
 export class JornadaService {
@@ -29,6 +29,27 @@ export class JornadaService {
     return this.api.post<JornadaProgressoResponse>(
       `${this.endpoint}/${definicao.chave}/iniciar`,
       request ?? {},
+      this.paramsVersao(definicao),
+    );
+  }
+
+  atualizarEtapa(
+    definicao: JornadaDefinicao,
+    etapa: string,
+    contexto?: JornadaContexto | null,
+  ): Observable<JornadaProgressoResponse> {
+    const request: JornadaOperacaoRequest = contexto ? { contexto } : {};
+    return this.api.post<JornadaProgressoResponse>(
+      `${this.endpoint}/${definicao.chave}/etapas/${encodeURIComponent(etapa)}`,
+      request,
+      this.paramsVersao(definicao),
+    );
+  }
+
+  concluir(definicao: JornadaDefinicao): Observable<JornadaProgressoResponse> {
+    return this.api.post<JornadaProgressoResponse>(
+      `${this.endpoint}/${definicao.chave}/concluir`,
+      {},
       this.paramsVersao(definicao),
     );
   }

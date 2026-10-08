@@ -10,6 +10,7 @@ export interface JornadaProgressoResponse {
   versao: number;
   status: JornadaStatus;
   etapaAtual?: string | null;
+  contexto?: JornadaContexto | null;
   oferecidoEm?: string | null;
   iniciadoEm?: string | null;
   ultimaInteracaoEm?: string | null;
@@ -18,8 +19,13 @@ export interface JornadaProgressoResponse {
   abandonadoEm?: string | null;
 }
 
+export interface JornadaContexto {
+  pedidoId?: number | null;
+}
+
 export interface JornadaOperacaoRequest {
   etapa?: string | null;
+  contexto?: JornadaContexto | null;
 }
 
 export interface JornadaDefinicao {

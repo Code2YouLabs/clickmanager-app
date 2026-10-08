@@ -32,9 +32,11 @@ export class TutorialTargetDirective implements OnInit, OnChanges, OnDestroy {
 
   private register(): void {
     const nextId = this.targetId?.trim();
-    if (!nextId || nextId === this.currentId) {
+    if (!nextId) {
+      this.clearRegistration();
       return;
     }
+    if (nextId === this.currentId) return;
 
     this.clearRegistration();
     this.currentId = nextId;
@@ -45,6 +47,9 @@ export class TutorialTargetDirective implements OnInit, OnChanges, OnDestroy {
   private clearRegistration(): void {
     this.unregister?.();
     this.unregister = undefined;
+    if (this.currentId) {
+      this.renderer.removeAttribute(this.elementRef.nativeElement, 'data-tutorial-target');
+    }
     this.currentId = null;
   }
 }

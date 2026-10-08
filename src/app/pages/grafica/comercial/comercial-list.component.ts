@@ -15,6 +15,7 @@ import { KanbanColumnState, KanbanDragEvent, KanbanDropEvent, KanbanDropState } 
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { ViewModeToggleComponent, ViewModeToggleOption } from 'src/app/components/view-mode-toggle/view-mode-toggle.component';
 import { MaterialModule } from 'src/app/material.module';
+import { TutorialTargetDirective } from 'src/app/shared/tutorial/tutorial-target.directive';
 import {
   GraficaPagina,
   PedidoComercialDetalhe,
@@ -30,6 +31,7 @@ import {
   PEDIDO_STATUS_METADATA,
   pedidoStatusLabel,
 } from './shared/pedido-status.metadata';
+import { PRIMEIRO_PEDIDO_TARGETS, PrimeiroPedidoTutorialService } from './primeiro-pedido/primeiro-pedido-tutorial.service';
 
 type ComercialViewMode = 'lista' | 'kanban';
 type PedidoKanbanColumn = KanbanColumnState<PedidoComercialResumo> & {
@@ -52,11 +54,13 @@ type PedidoKanbanSnapshot = Pick<PedidoKanbanColumn, 'items' | 'count' | 'total'
     ViewModeToggleComponent,
     KanbanBoardComponent,
     KanbanCardDirective,
+    TutorialTargetDirective,
   ],
   templateUrl: './comercial-list.component.html',
   styleUrl: './comercial-list.component.scss',
 })
 export class ComercialListComponent implements OnInit, OnDestroy {
+  readonly primeiroPedidoTargets = PRIMEIRO_PEDIDO_TARGETS;
   itens: any[] = [];
   busca = '';
   pagina = 0;
@@ -77,6 +81,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   private activeDragSourceStatus: string | null = null;
   private activeDragLoading = false;
   private kanbanContextKey = '';
+  private tutorialPedidoLoadId: number | null = null;
   private readonly kanbanPageSize = 20;
 
   readonly viewModeOptions: ViewModeToggleOption<ComercialViewMode>[] = [
@@ -130,6 +135,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
     private readonly graficaService: GraficaProdutoService,
     private readonly dialog: MatDialog,
     private readonly toastr: ToastrService,
+    private readonly primeiroPedidoTutorial: PrimeiroPedidoTutorialService,
     @Inject(DOCUMENT) private readonly document: Document,
   ) {}
 
@@ -192,6 +198,9 @@ export class ComercialListComponent implements OnInit, OnDestroy {
       this.syncKanbanFocusClass();
       this.resetKanbanSeContextoMudou();
       this.carregar();
+      if (this.tipo === 'pedidos') {
+        this.primeiroPedidoTutorial.iniciarSeNecessario();
+      }
     });
   }
 
@@ -232,6 +241,9 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   novo(): void {
+    if (this.tipo === 'pedidos') {
+      this.primeiroPedidoTutorial.registrarNovoPedido();
+    }
     this.router.navigate(['/page/grafica/comercial', this.tipo, 'novo']);
   }
 
@@ -268,6 +280,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
       this.setKanbanExpanded(false);
     } else {
       this.syncKanbanFocusClass();
+      this.primeiroPedidoTutorial.registrarKanbanSelecionado();
     }
     this.carregar();
   }
@@ -421,6 +434,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
         next: (pedido) => {
           this.aplicarStatusRetornado(pedidoId, pedido, target);
           this.toastr.success('Status atualizado.');
+          this.primeiroPedidoTutorial.registrarPedidoMovido(event.item);
         },
         error: (error) => {
           this.restoreColumn(source, sourceSnapshot);
@@ -449,6 +463,10 @@ export class ComercialListComponent implements OnInit, OnDestroy {
 
   pedidoMovendo(pedido: PedidoComercialResumo): boolean {
     return this.pedidosMovendo.has(this.pedidoId(pedido));
+  }
+
+  tutorialTargetPedidoKanban(pedido: PedidoComercialResumo): string {
+    return this.primeiroPedidoTutorial.targetPedidoKanban(pedido);
   }
 
   referencia(item: any): string {
@@ -651,6 +669,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
           column.total = response?.totalElements ?? column.items.length;
           column.count = column.total;
           column.hasMore = column.items.length < column.total;
+          this.garantirPedidoTutorialNoKanban();
         },
         error: () => {
           column.error = 'Tente novamente para atualizar esta etapa.';
@@ -663,6 +682,45 @@ export class ComercialListComponent implements OnInit, OnDestroy {
           }
         },
       });
+  }
+
+  private garantirPedidoTutorialNoKanban(): void {
+    const pedidoId = this.primeiroPedidoTutorial.pedidoAcompanhadoId;
+    if (!pedidoId || this.pedidoEstaNoKanban(pedidoId) || this.tutorialPedidoLoadId === pedidoId) {
+      return;
+    }
+
+    this.tutorialPedidoLoadId = pedidoId;
+    this.graficaService.buscarPedidoComercial(pedidoId)
+      .pipe(finalize(() => {
+        if (this.tutorialPedidoLoadId === pedidoId) {
+          this.tutorialPedidoLoadId = null;
+        }
+      }))
+      .subscribe({
+        next: (pedido) => this.inserirPedidoTutorialNoKanban(pedido),
+        error: () => undefined,
+      });
+  }
+
+  private pedidoEstaNoKanban(pedidoId: number): boolean {
+    return this.kanbanColumns.some((column) =>
+      column.items.some((pedido) => this.pedidoId(pedido) === pedidoId)
+    );
+  }
+
+  private inserirPedidoTutorialNoKanban(pedido: PedidoComercialDetalhe): void {
+    const pedidoId = this.pedidoId(pedido);
+    const status = pedido.status as PedidoKanbanStatus;
+    const column = this.kanbanColumns.find((item) => item.status === status);
+    if (!pedidoId || !column || this.pedidoEstaNoKanban(pedidoId)) {
+      return;
+    }
+
+    column.items = this.ordenarPedidosPorData([...column.items, pedido]);
+    column.total = Math.max(column.total ?? 0, column.items.length);
+    column.count = Math.max(column.count ?? 0, column.items.length);
+    column.hasMore = column.items.length < column.total;
   }
 
   private mergePedidos(atual: PedidoComercialResumo[], novos: PedidoComercialResumo[]): PedidoComercialResumo[] {
