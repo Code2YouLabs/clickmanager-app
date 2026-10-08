@@ -1,0 +1,197 @@
+.guided-tutorial-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 1290;
+  pointer-events: none;
+}
+
+.guided-tutorial-mask__segment {
+  position: fixed;
+  background: rgba(15, 23, 42, 0.62);
+  backdrop-filter: blur(2px);
+
+  &--top,
+  &--bottom {
+    left: 0;
+    right: 0;
+  }
+
+  &--top {
+    top: 0;
+  }
+
+  &--bottom {
+    bottom: 0;
+  }
+
+  &--left {
+    left: 0;
+  }
+
+  &--right {
+    right: 0;
+  }
+}
+
+.guided-tutorial-mask__spotlight {
+  position: fixed;
+  z-index: 1291;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.95),
+    0 0 0 6px rgba(25, 118, 210, 0.18),
+    0 20px 48px rgba(15, 23, 42, 0.24);
+  pointer-events: none;
+  transition: top 0.18s ease, left 0.18s ease, width 0.18s ease, height 0.18s ease;
+}
+
+.guided-tutorial-popover {
+  position: fixed;
+  z-index: 1292;
+  min-width: 280px;
+  max-width: 360px;
+  padding: 18px;
+  border: 1px solid rgba(25, 118, 210, 0.14);
+  border-radius: 8px;
+  background: #fff;
+  color: #172033;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+  pointer-events: auto;
+
+  &::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-left: 1px solid rgba(25, 118, 210, 0.14);
+    border-top: 1px solid rgba(25, 118, 210, 0.14);
+    background: #fff;
+    transform: rotate(45deg);
+  }
+
+  &--bottom::after {
+    top: -9px;
+    left: 28px;
+  }
+
+  &--top::after {
+    bottom: -9px;
+    left: 28px;
+    transform: rotate(225deg);
+  }
+
+  &--right::after {
+    top: 28px;
+    left: -9px;
+    transform: rotate(315deg);
+  }
+
+  &--left::after {
+    top: 28px;
+    right: -9px;
+    transform: rotate(135deg);
+  }
+}
+
+.guided-tutorial-popover__close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.guided-tutorial-popover__eyebrow {
+  margin: 0 36px 6px 0;
+  color: #1976d2;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.guided-tutorial-popover__title {
+  margin: 0;
+  padding-right: 32px;
+  color: #172033;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.guided-tutorial-popover__description {
+  margin: 8px 0 0;
+  color: #536173;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.guided-tutorial-popover__progressbar {
+  height: 6px;
+  margin-top: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e3e8ef;
+}
+
+.guided-tutorial-popover__progressbar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: #1976d2;
+  transition: width 0.24s ease;
+}
+
+.guided-tutorial-popover__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.guided-tutorial-popover__progress {
+  flex: 0 0 auto;
+  color: #69778a;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.guided-tutorial-popover__actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .guided-tutorial-mask__spotlight {
+    border-radius: 8px;
+  }
+
+  .guided-tutorial-popover {
+    min-width: 0;
+    max-width: none;
+    padding: 14px;
+
+    &::after {
+      display: none;
+    }
+  }
+
+  .guided-tutorial-popover__title {
+    font-size: 0.98rem;
+  }
+
+  .guided-tutorial-popover__description {
+    font-size: 0.84rem;
+  }
+
+  .guided-tutorial-popover__footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .guided-tutorial-popover__actions {
+    width: 100%;
+  }
+}
