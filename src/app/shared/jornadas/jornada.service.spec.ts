@@ -30,6 +30,19 @@ describe('JornadaService', () => {
     req.flush({ jornada: 'PRIMEIRO_PEDIDO', versao: 1, status: 'NAO_INICIADO', oferecidoEm: null });
   });
 
+  it('lista progressos de jornadas em chamada agregada', () => {
+    service.listar().subscribe((response) => {
+      expect(response.length).toBe(1);
+      expect(response[0].jornada).toBe('PRIMEIRO_PEDIDO');
+    });
+
+    const req = http.expectOne((request) =>
+      request.method === 'GET'
+      && request.url === `${environment.apiUrl}/api/jornadas`
+    );
+    req.flush([{ jornada: 'PRIMEIRO_PEDIDO', versao: 1, status: 'EM_ANDAMENTO', etapaAtual: 'inicio' }]);
+  });
+
   it('registra oferta apenas quando chamado explicitamente', () => {
     service.oferecer(PRIMEIRO_PEDIDO_JORNADA).subscribe();
 
@@ -60,6 +73,24 @@ describe('JornadaService', () => {
     );
     expect(req.request.body).toEqual({});
     req.flush({ jornada: 'PRIMEIRO_PEDIDO', versao: 1, status: 'IGNORADO' });
+
+    service.reiniciar(PRIMEIRO_PEDIDO_JORNADA, { etapa: 'inicio' }).subscribe();
+    req = http.expectOne((request) =>
+      request.method === 'POST'
+      && request.url === `${baseUrl}/reiniciar`
+      && request.params.get('versao') === '1'
+    );
+    expect(req.request.body).toEqual({ etapa: 'inicio' });
+    req.flush({ jornada: 'PRIMEIRO_PEDIDO', versao: 1, status: 'EM_ANDAMENTO', etapaAtual: 'inicio' });
+
+    service.abandonar(PRIMEIRO_PEDIDO_JORNADA).subscribe();
+    req = http.expectOne((request) =>
+      request.method === 'POST'
+      && request.url === `${baseUrl}/abandonar`
+      && request.params.get('versao') === '1'
+    );
+    expect(req.request.body).toEqual({});
+    req.flush({ jornada: 'PRIMEIRO_PEDIDO', versao: 1, status: 'ABANDONADO' });
   });
 
   it('atualiza etapa e conclui usando os endpoints da fundacao', () => {

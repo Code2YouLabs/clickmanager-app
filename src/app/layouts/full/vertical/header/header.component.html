@@ -91,6 +91,14 @@
     <div class="d-flex align-items-center justify-content-center gap-10">
       <button
         mat-icon-button
+        routerLink="/page/ajuda"
+        matTooltip="Central de Ajuda"
+        aria-label="Abrir Central de Ajuda">
+        <i-tabler class="d-flex" name="help-circle"></i-tabler>
+      </button>
+
+      <button
+        mat-icon-button
         [matMenuTriggerFor]="msgMenu"
         (menuOpened)="onOpenNotificacoesMenu()"
         aria-label="Notificações"
@@ -130,6 +138,15 @@
       <span class="point" [class.bg-error]="possuiNotificacaoCriticaNaoLida()" [class.bg-primary]="!possuiNotificacaoCriticaNaoLida()"></span>
     </div>
     }
+  </button>
+
+  <button
+    mat-icon-button
+    routerLink="/page/ajuda"
+    matTooltip="Central de Ajuda"
+    aria-label="Abrir Central de Ajuda"
+    class="d-none d-lg-block align-items-center justify-content-center">
+    <i-tabler class="d-flex" name="help-circle"></i-tabler>
   </button>
 
   <mat-menu #msgMenu="matMenu" xPosition="before" class="topbar-dd cardWithShadow">

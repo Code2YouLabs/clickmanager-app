@@ -10,6 +10,10 @@ export class JornadaService {
 
   constructor(private readonly api: ApiService) {}
 
+  listar(): Observable<JornadaProgressoResponse[]> {
+    return this.api.get<JornadaProgressoResponse[]>(this.endpoint);
+  }
+
   consultar(definicao: JornadaDefinicao): Observable<JornadaProgressoResponse> {
     return this.api.get<JornadaProgressoResponse>(
       `${this.endpoint}/${definicao.chave}`,
@@ -58,6 +62,22 @@ export class JornadaService {
     return this.api.post<JornadaProgressoResponse>(
       `${this.endpoint}/${definicao.chave}/ignorar`,
       {},
+      this.paramsVersao(definicao),
+    );
+  }
+
+  abandonar(definicao: JornadaDefinicao): Observable<JornadaProgressoResponse> {
+    return this.api.post<JornadaProgressoResponse>(
+      `${this.endpoint}/${definicao.chave}/abandonar`,
+      {},
+      this.paramsVersao(definicao),
+    );
+  }
+
+  reiniciar(definicao: JornadaDefinicao, request?: JornadaOperacaoRequest): Observable<JornadaProgressoResponse> {
+    return this.api.post<JornadaProgressoResponse>(
+      `${this.endpoint}/${definicao.chave}/reiniciar`,
+      request ?? {},
       this.paramsVersao(definicao),
     );
   }

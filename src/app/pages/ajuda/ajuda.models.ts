@@ -1,4 +1,5 @@
 import { TipoEmpresa } from 'src/app/models/empresa/tipo-empresa.enum';
+import { JornadaDefinicao } from 'src/app/shared/jornadas/jornada.models';
 
 export type AjudaItem = {
   titulo: string;
@@ -6,6 +7,11 @@ export type AjudaItem = {
 };
 
 export type AjudaGrupo = 'Comecando' | 'Comercial' | 'Catalogo' | 'Clientes' | 'Pessoas' | 'Administracao' | 'Conta';
+
+export type AjudaTutorial = {
+  id: string;
+  jornada: JornadaDefinicao;
+};
 
 export type AjudaSecao = {
   id: string;
@@ -23,4 +29,5 @@ export type AjudaSecao = {
   ordemAtalho?: number;
   palavrasChave?: string[];
   aliases?: string[];
+  tutorial?: AjudaTutorial;
 };
