@@ -81,6 +81,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   private activeDragSourceStatus: string | null = null;
   private activeDragLoading = false;
   private kanbanContextKey = '';
+  private tutorialPedidoLoadId: number | null = null;
   private readonly kanbanPageSize = 20;
 
   readonly viewModeOptions: ViewModeToggleOption<ComercialViewMode>[] = [
@@ -668,6 +669,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
           column.total = response?.totalElements ?? column.items.length;
           column.count = column.total;
           column.hasMore = column.items.length < column.total;
+          this.garantirPedidoTutorialNoKanban();
         },
         error: () => {
           column.error = 'Tente novamente para atualizar esta etapa.';
@@ -680,6 +682,45 @@ export class ComercialListComponent implements OnInit, OnDestroy {
           }
         },
       });
+  }
+
+  private garantirPedidoTutorialNoKanban(): void {
+    const pedidoId = this.primeiroPedidoTutorial.pedidoAcompanhadoId;
+    if (!pedidoId || this.pedidoEstaNoKanban(pedidoId) || this.tutorialPedidoLoadId === pedidoId) {
+      return;
+    }
+
+    this.tutorialPedidoLoadId = pedidoId;
+    this.graficaService.buscarPedidoComercial(pedidoId)
+      .pipe(finalize(() => {
+        if (this.tutorialPedidoLoadId === pedidoId) {
+          this.tutorialPedidoLoadId = null;
+        }
+      }))
+      .subscribe({
+        next: (pedido) => this.inserirPedidoTutorialNoKanban(pedido),
+        error: () => undefined,
+      });
+  }
+
+  private pedidoEstaNoKanban(pedidoId: number): boolean {
+    return this.kanbanColumns.some((column) =>
+      column.items.some((pedido) => this.pedidoId(pedido) === pedidoId)
+    );
+  }
+
+  private inserirPedidoTutorialNoKanban(pedido: PedidoComercialDetalhe): void {
+    const pedidoId = this.pedidoId(pedido);
+    const status = pedido.status as PedidoKanbanStatus;
+    const column = this.kanbanColumns.find((item) => item.status === status);
+    if (!pedidoId || !column || this.pedidoEstaNoKanban(pedidoId)) {
+      return;
+    }
+
+    column.items = this.ordenarPedidosPorData([...column.items, pedido]);
+    column.total = Math.max(column.total ?? 0, column.items.length);
+    column.count = Math.max(column.count ?? 0, column.items.length);
+    column.hasMore = column.items.length < column.total;
   }
 
   private mergePedidos(atual: PedidoComercialResumo[], novos: PedidoComercialResumo[]): PedidoComercialResumo[] {

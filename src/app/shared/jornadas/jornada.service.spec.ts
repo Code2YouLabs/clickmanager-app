@@ -72,6 +72,21 @@ describe('JornadaService', () => {
     expect(req.request.body).toEqual({});
     req.flush({ jornada: 'PRIMEIRO_PEDIDO', versao: 1, status: 'EM_ANDAMENTO', etapaAtual: 'pedido_criado' });
 
+    service.atualizarEtapa(PRIMEIRO_PEDIDO_JORNADA, 'pedido_criado', { pedidoId: 123 }).subscribe();
+    req = http.expectOne((request) =>
+      request.method === 'POST'
+      && request.url === `${baseUrl}/etapas/pedido_criado`
+      && request.params.get('versao') === '1'
+    );
+    expect(req.request.body).toEqual({ contexto: { pedidoId: 123 } });
+    req.flush({
+      jornada: 'PRIMEIRO_PEDIDO',
+      versao: 1,
+      status: 'EM_ANDAMENTO',
+      etapaAtual: 'pedido_criado',
+      contexto: { pedidoId: 123 },
+    });
+
     service.concluir(PRIMEIRO_PEDIDO_JORNADA).subscribe();
     req = http.expectOne((request) =>
       request.method === 'POST'

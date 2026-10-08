@@ -3,8 +3,9 @@ import { Router } from '@angular/router';
 import { EMPTY, Observable, of } from 'rxjs';
 import { catchError, map, switchMap, take } from 'rxjs/operators';
 import { GraficaComercialDestinoResponse, PedidoComercialResumo } from '../../shared/grafica.models';
+import { GraficaProdutoService } from '../../shared/grafica.service';
 import { PRIMEIRO_PEDIDO_JORNADA } from 'src/app/shared/jornadas/jornada.constants';
-import { JornadaProgressoResponse } from 'src/app/shared/jornadas/jornada.models';
+import { JornadaContexto, JornadaProgressoResponse } from 'src/app/shared/jornadas/jornada.models';
 import { JornadaService } from 'src/app/shared/jornadas/jornada.service';
 import { TutorialDefinition } from 'src/app/shared/tutorial/tutorial.model';
 import { TutorialService } from 'src/app/shared/tutorial/tutorial.service';
@@ -51,6 +52,7 @@ export class PrimeiroPedidoTutorialService {
   private readonly jornada = inject(JornadaService);
   private readonly tutorial = inject(TutorialService);
   private readonly router = inject(Router);
+  private readonly graficaService = inject(GraficaProdutoService);
   private pedidoCriadoId: number | null = null;
   private retomadaSemPedidoId = false;
 
@@ -91,9 +93,10 @@ export class PrimeiroPedidoTutorialService {
       return of(false);
     }
 
-    this.pedidoCriadoId = pedidoId;
-    return this.persistirEtapa(PRIMEIRO_PEDIDO_ETAPAS.pedidoCriado).pipe(
+    return this.persistirEtapa(PRIMEIRO_PEDIDO_ETAPAS.pedidoCriado, { pedidoId }).pipe(
       map(() => {
+        this.pedidoCriadoId = pedidoId;
+        this.retomadaSemPedidoId = false;
         this.tutorial.notify(PRIMEIRO_PEDIDO_EVENTOS.pedidoCriado);
         return true;
       }),
@@ -136,25 +139,42 @@ export class PrimeiroPedidoTutorialService {
     return this.retomadaSemPedidoId;
   }
 
+  get pedidoAcompanhadoId(): number | null {
+    return this.pedidoCriadoId;
+  }
+
   private iniciarPorProgresso(progresso: JornadaProgressoResponse, pedidoIdContexto?: number | null): void {
+    this.pedidoCriadoId = null;
+    this.retomadaSemPedidoId = false;
+
     if (progresso.status !== 'EM_ANDAMENTO') {
       return;
     }
 
     const etapa = this.normalizarEtapa(progresso.etapaAtual);
-    const pedidoId = pedidoIdContexto || this.pedidoIdDaUrl();
-    if (pedidoId) {
-      this.pedidoCriadoId = pedidoId;
-      this.retomadaSemPedidoId = false;
-    }
+    const pedidoIdPersistido = this.pedidoIdDoContexto(progresso.contexto);
 
-    if (this.etapaExigePedido(etapa) && !this.pedidoCriadoId) {
-      this.retomadaSemPedidoId = true;
-      this.tutorial.stop();
+    if (this.etapaExigePedido(etapa)) {
+      if (!pedidoIdPersistido) {
+        this.bloquearRetomadaComPedido();
+        return;
+      }
+
+      this.validarPedidoPersistido(pedidoIdPersistido).subscribe((pedidoValido) => {
+        if (!pedidoValido) {
+          this.bloquearRetomadaComPedido();
+          return;
+        }
+        this.pedidoCriadoId = pedidoIdPersistido;
+        this.tutorial.start(this.definicaoTutorial(), this.stepInicial(etapa));
+      });
       return;
     }
 
-    this.retomadaSemPedidoId = false;
+    const pedidoIdSessao = pedidoIdContexto || this.pedidoIdDaUrl();
+    if (pedidoIdSessao) {
+      this.pedidoCriadoId = pedidoIdSessao;
+    }
     this.tutorial.start(this.definicaoTutorial(), this.stepInicial(etapa));
   }
 
@@ -249,8 +269,11 @@ export class PrimeiroPedidoTutorialService {
     }
   }
 
-  private persistirEtapa(etapa: PrimeiroPedidoEtapa): Observable<JornadaProgressoResponse> {
-    return this.jornada.atualizarEtapa(PRIMEIRO_PEDIDO_JORNADA, etapa).pipe(take(1));
+  private persistirEtapa(
+    etapa: PrimeiroPedidoEtapa,
+    contexto?: JornadaContexto,
+  ): Observable<JornadaProgressoResponse> {
+    return this.jornada.atualizarEtapa(PRIMEIRO_PEDIDO_JORNADA, etapa, contexto).pipe(take(1));
   }
 
   private normalizarEtapa(etapa?: string | null): PrimeiroPedidoEtapa {
@@ -267,6 +290,25 @@ export class PrimeiroPedidoTutorialService {
       PRIMEIRO_PEDIDO_ETAPAS.movimentado,
     ];
     return etapasComPedido.includes(etapa);
+  }
+
+  private pedidoIdDoContexto(contexto?: JornadaContexto | null): number | null {
+    const pedidoId = Number(contexto?.pedidoId || 0);
+    return pedidoId > 0 ? pedidoId : null;
+  }
+
+  private validarPedidoPersistido(pedidoId: number): Observable<boolean> {
+    return this.graficaService.buscarPedidoComercial(pedidoId).pipe(
+      take(1),
+      map(() => true),
+      catchError(() => of(false)),
+    );
+  }
+
+  private bloquearRetomadaComPedido(): void {
+    this.pedidoCriadoId = null;
+    this.retomadaSemPedidoId = true;
+    this.tutorial.stop();
   }
 
   private pedidoIdDaUrl(): number | null {
