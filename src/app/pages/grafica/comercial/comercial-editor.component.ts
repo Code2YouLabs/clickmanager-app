@@ -1290,6 +1290,9 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     }
 
     const data: ClienteCreateDialogData = {};
+    if (this.tipo === 'pedidos' && !this.pedidoId) {
+      data.tutorialTarget = PRIMEIRO_PEDIDO_TARGETS.cliente;
+    }
     const valorAtual = this.clienteControl.value;
     if (typeof valorAtual === 'string') {
       const nome = valorAtual.trim();

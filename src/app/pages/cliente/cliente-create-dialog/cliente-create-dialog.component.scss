@@ -1,5 +1,9 @@
 @use '../../../components/dialog/dialog-form-shell';
 
+.cliente-dialog-shell {
+  display: block;
+}
+
 .cliente-dialog-form {
   box-sizing: border-box;
   display: grid;

@@ -13,6 +13,7 @@ export interface TutorialStep {
   advanceOn?: string;
   timeoutMs?: number;
   actionLabel?: string;
+  action?: 'next' | 'clickTarget' | 'clickTargetThenNext';
 }
 
 export interface TutorialDefinition {

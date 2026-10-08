@@ -24,11 +24,19 @@ import { TutorialService } from './tutorial.service';
         Primario
       </button>
     }
+    @if (showReplacementPrimary) {
+      <button
+        appTutorialTarget="primary-action"
+        style="display:block;width:220px;height:54px;margin:160px 0 0 320px">
+        Primario substituto
+      </button>
+    }
     <button appTutorialTarget="secondary-action" style="display:block;width:150px;height:40px;margin:24px 0 0 96px">Secundario</button>
   `,
 })
 class TutorialHostComponent {
   showPrimary = true;
+  showReplacementPrimary = false;
   clicks = 0;
   pointerDowns = 0;
   mouseDowns = 0;
@@ -278,6 +286,116 @@ describe('TutorialService', () => {
     expect(fixture.componentInstance.mouseDowns).toBe(1);
     expect(fixture.componentInstance.clicks).toBe(1);
     expect(service.state().status).toBe('active');
+  }));
+
+  it('remeasure o alvo depois do layout tardio de modal animado', fakeAsync(() => {
+    const button = fixture.nativeElement.querySelector('[data-tutorial-target="primary-action"]') as HTMLButtonElement;
+    let left = 40;
+    spyOn(button, 'getBoundingClientRect').and.callFake(() => ({
+      top: 40,
+      left,
+      right: left + 120,
+      bottom: 88,
+      width: 120,
+      height: 48,
+      x: left,
+      y: 40,
+      toJSON: () => ({}),
+    } as DOMRect));
+
+    service.start({
+      id: 'late-layout-tour',
+      steps: [{
+        id: 'primary',
+        title: 'Layout tardio',
+        description: 'Recalcula o alvo apos animacao.',
+        targetId: 'primary-action',
+      }],
+    });
+    tick(20);
+    fixture.detectChanges();
+
+    expect(service.rect()?.left).toBe(30);
+
+    left = 180;
+    tick(80);
+    fixture.detectChanges();
+
+    expect(service.rect()?.left).toBe(170);
+  }));
+
+  it('acao primaria pode clicar no alvo destacado usando o fluxo real da tela', fakeAsync(() => {
+    service.start({
+      id: 'target-click-action-tour',
+      steps: [{
+        id: 'primary',
+        title: 'Clique real',
+        description: 'Aciona o alvo destacado.',
+        targetId: 'primary-action',
+        action: 'clickTarget',
+      }],
+    });
+    tick(20);
+    fixture.detectChanges();
+
+    service.primaryAction();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.clicks).toBe(1);
+    expect(service.currentStep()?.id).toBe('primary');
+  }));
+
+  it('acao primaria pode clicar no alvo e seguir para o proximo passo', fakeAsync(() => {
+    service.start({
+      id: 'target-click-then-next-tour',
+      steps: [
+        {
+          id: 'primary',
+          title: 'Clique e avance',
+          description: 'Aciona o alvo destacado e segue.',
+          targetId: 'primary-action',
+          action: 'clickTargetThenNext',
+        },
+        {
+          id: 'secondary',
+          title: 'Proximo',
+          description: 'Segundo passo.',
+          targetId: 'secondary-action',
+        },
+      ],
+    });
+    tick(20);
+    fixture.detectChanges();
+
+    service.primaryAction();
+    flushMicrotasks();
+    tick(20);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.clicks).toBe(1);
+    expect(service.currentStep()?.id).toBe('secondary');
+  }));
+
+  it('passa a mirar o alvo mais recente quando um modal registra o mesmo target', fakeAsync(() => {
+    service.start({
+      id: 'replacement-target-tour',
+      steps: [{
+        id: 'primary',
+        title: 'Alvo substituto',
+        description: 'Recalcula o alvo atual.',
+        targetId: 'primary-action',
+      }],
+    });
+    tick(20);
+    fixture.detectChanges();
+    const originalLeft = service.rect()?.left ?? 0;
+
+    fixture.componentInstance.showReplacementPrimary = true;
+    fixture.detectChanges();
+    flushMicrotasks();
+    tick(20);
+
+    expect(service.rect()?.left).toBeGreaterThan(originalLeft);
   }));
 
   it('remove listeners de viewport ao sair, concluir e falhar por timeout', fakeAsync(() => {

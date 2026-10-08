@@ -20,4 +20,5 @@ export interface NavItem {
     allowedEmpresaTipos?: TipoEmpresa[];
     catalogoModo?: 'LEGADO_DEPOSITO' | 'CATALOGO_NOVO';
     proprietarioOnly?: boolean;
+    tutorialTarget?: string;
 }

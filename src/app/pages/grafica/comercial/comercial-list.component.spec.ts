@@ -45,6 +45,7 @@ describe('ComercialListComponent', () => {
       'registrarKanbanSelecionado',
       'registrarPedidoMovido',
       'targetPedidoKanban',
+      'retomarPedidoCriado',
     ]);
     primeiroPedidoTutorial.targetPedidoKanban.and.returnValue('');
     Object.defineProperty(primeiroPedidoTutorial, 'pedidoAcompanhadoId', { get: () => pedidoAcompanhadoId });
@@ -142,5 +143,15 @@ describe('ComercialListComponent', () => {
     expect(service.buscarPedidoComercial).toHaveBeenCalledWith(99);
     expect(component.kanbanColumns.find((column) => column.status === 'PENDENTE')?.items)
       .toEqual([jasmine.objectContaining({ id: 99 }) as any]);
+  });
+
+  it('retoma o tutorial no pedido criado quando a lista recebe primeiroPedidoId', () => {
+    params.next(convertToParamMap({ primeiroPedidoId: 42 }));
+
+    fixture.detectChanges();
+
+    expect(component.viewMode).toBe('kanban');
+    expect(primeiroPedidoTutorial.retomarPedidoCriado).toHaveBeenCalledWith(42);
+    expect(primeiroPedidoTutorial.iniciarSeNecessario).not.toHaveBeenCalled();
   });
 });

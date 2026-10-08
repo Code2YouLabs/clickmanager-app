@@ -105,7 +105,7 @@ export class TutorialOverlayComponent implements AfterViewInit {
   }
 
   next(): void {
-    this.tutorial.next();
+    this.tutorial.primaryAction();
   }
 
   previous(): void {

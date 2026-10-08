@@ -199,7 +199,14 @@ export class ComercialListComponent implements OnInit, OnDestroy {
       this.resetKanbanSeContextoMudou();
       this.carregar();
       if (this.tipo === 'pedidos') {
-        this.primeiroPedidoTutorial.iniciarSeNecessario();
+        const primeiroPedidoId = Number(params.get('primeiroPedidoId') || 0);
+        if (primeiroPedidoId > 0) {
+          this.viewMode = 'kanban';
+          this.syncKanbanFocusClass();
+          this.primeiroPedidoTutorial.retomarPedidoCriado(primeiroPedidoId);
+        } else {
+          this.primeiroPedidoTutorial.iniciarSeNecessario();
+        }
       }
     });
   }

@@ -26,7 +26,7 @@ export class TutorialService {
 
   private viewportSubscription?: Subscription;
   private targetWaitSubscription?: Subscription;
-  private measureTimeout?: ReturnType<typeof setTimeout>;
+  private measureTimeouts: ReturnType<typeof setTimeout>[] = [];
   private targetTimeout?: ReturnType<typeof setTimeout>;
   private activationToken = 0;
 
@@ -51,6 +51,7 @@ export class TutorialService {
     elements.add(element);
     this.targets.set(id, elements);
     this.targetChangesSubject.next(id);
+    this.remeasureActiveTarget(id);
 
     return () => {
       const current = this.targets.get(id);
@@ -97,6 +98,23 @@ export class TutorialService {
     }
 
     void this.activateStep(state.stepIndex + 1);
+  }
+
+  primaryAction(): void {
+    const step = this.stateSignal().step;
+    if (!step) {
+      return;
+    }
+
+    if (step.action === 'clickTarget' || step.action === 'clickTargetThenNext') {
+      this.clickCurrentTarget(step);
+      if (step.action === 'clickTargetThenNext') {
+        queueMicrotask(() => this.next());
+      }
+      return;
+    }
+
+    this.next();
   }
 
   previous(): void {
@@ -183,6 +201,15 @@ export class TutorialService {
       ...state,
       rect: this.buildRect(target.getBoundingClientRect()),
     }));
+  }
+
+  private clickCurrentTarget(step: TutorialStep): void {
+    const target = this.findVisibleTarget(step.targetId);
+    if (!target) {
+      return;
+    }
+
+    target.click();
   }
 
   private async activateStep(stepIndex: number): Promise<void> {
@@ -310,7 +337,7 @@ export class TutorialService {
       return null;
     }
 
-    for (const element of elements) {
+    for (const element of Array.from(elements).reverse()) {
       if (!element.isConnected) {
         continue;
       }
@@ -324,6 +351,21 @@ export class TutorialService {
     return null;
   }
 
+  private remeasureActiveTarget(targetId: string): void {
+    const step = this.stateSignal().step;
+    if (this.stateSignal().status !== 'active' || step?.targetId !== targetId) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      const target = this.findVisibleTarget(targetId);
+      if (target) {
+        this.measureTarget(target);
+        this.scheduleMeasure(target);
+      }
+    });
+  }
+
   private scrollToTarget(target: HTMLElement, step: TutorialStep): void {
     target.scrollIntoView({
       behavior: 'smooth',
@@ -334,15 +376,33 @@ export class TutorialService {
 
   private scheduleMeasure(target: HTMLElement): void {
     this.clearMeasureTimeout();
-    this.measureTimeout = setTimeout(() => {
-      if (target.isConnected) {
-        this.stateSignal.update((state) => ({
-          ...state,
-          rect: this.buildRect(target.getBoundingClientRect()),
-        }));
+    [80, 180, 320, 520].forEach((delay) => {
+      const timeout = setTimeout(() => {
+        if (target.isConnected) {
+          this.measureTarget(target);
+        }
+        this.measureTimeouts = this.measureTimeouts.filter((item) => item !== timeout);
+      }, delay);
+      this.measureTimeouts.push(timeout);
+    });
+  }
+
+  private measureTarget(target: HTMLElement): void {
+    this.stateSignal.update((state) => {
+      if (!state.definition || !state.step) {
+        return state;
       }
-      this.measureTimeout = undefined;
-    }, 260);
+
+      const currentTarget = this.findVisibleTarget(state.step.targetId);
+      if (currentTarget !== target || !target.isConnected) {
+        return state;
+      }
+
+      return {
+        ...state,
+        rect: this.buildRect(target.getBoundingClientRect()),
+      };
+    });
   }
 
   private buildRect(rect: DOMRect): TutorialRect {
@@ -389,10 +449,8 @@ export class TutorialService {
   }
 
   private clearMeasureTimeout(): void {
-    if (this.measureTimeout) {
-      clearTimeout(this.measureTimeout);
-      this.measureTimeout = undefined;
-    }
+    this.measureTimeouts.forEach((timeout) => clearTimeout(timeout));
+    this.measureTimeouts = [];
   }
 
   private emitEvent(event: TutorialEvent): void {

@@ -24,6 +24,7 @@ export const PRIMEIRO_PEDIDO_ETAPAS = {
 } as const;
 
 export const PRIMEIRO_PEDIDO_TARGETS = {
+  menuPedidos: 'primeiro-pedido-menu-pedidos',
   lista: 'primeiro-pedido-lista',
   novo: 'primeiro-pedido-novo',
   cliente: 'primeiro-pedido-cliente',
@@ -57,6 +58,10 @@ export class PrimeiroPedidoTutorialService {
   private retomadaSemPedidoId = false;
 
   iniciarSeNecessario(pedidoIdContexto?: number | null): void {
+    if (this.tutorialAtivo()) {
+      return;
+    }
+
     this.jornada.consultar(PRIMEIRO_PEDIDO_JORNADA).pipe(
       take(1),
       catchError(() => EMPTY),
@@ -97,11 +102,29 @@ export class PrimeiroPedidoTutorialService {
       map(() => {
         this.pedidoCriadoId = pedidoId;
         this.retomadaSemPedidoId = false;
-        this.tutorial.notify(PRIMEIRO_PEDIDO_EVENTOS.pedidoCriado);
         return true;
       }),
       catchError(() => of(false)),
     );
+  }
+
+  retomarPedidoCriado(pedidoId: number | null): void {
+    const id = Number(pedidoId || 0);
+    if (!id) {
+      this.iniciarSeNecessario();
+      return;
+    }
+
+    this.validarPedidoPersistido(id).subscribe((pedidoValido) => {
+      if (!pedidoValido) {
+        this.bloquearRetomadaComPedido();
+        return;
+      }
+
+      this.pedidoCriadoId = id;
+      this.retomadaSemPedidoId = false;
+      this.tutorial.start(this.definicaoTutorial(), 'movimentar');
+    });
   }
 
   registrarKanbanSelecionado(): void {
@@ -190,13 +213,23 @@ export class PrimeiroPedidoTutorialService {
       },
       steps: [
         {
+          id: 'menu',
+          title: 'Os pedidos ficam no menu Comercial',
+          description: 'Sempre que precisar criar ou acompanhar pedidos, entre por Pedidos no menu lateral.',
+          targetId: PRIMEIRO_PEDIDO_TARGETS.menuPedidos,
+          route: PRIMEIRO_PEDIDO_JORNADA.rotaInicial,
+          actionLabel: 'Abrir pedidos',
+          action: 'clickTargetThenNext',
+        },
+        {
           id: 'lista',
-          title: 'Comece pelo fluxo real de pedidos',
+          title: 'Crie o primeiro pedido',
           description: 'Use o botão de novo pedido para criar o primeiro atendimento da gráfica.',
           targetId: PRIMEIRO_PEDIDO_TARGETS.novo,
           route: PRIMEIRO_PEDIDO_JORNADA.rotaInicial,
           advanceOn: PRIMEIRO_PEDIDO_EVENTOS.novoPedido,
           actionLabel: 'Criar pedido',
+          action: 'clickTarget',
         },
         {
           id: 'cliente',
@@ -265,7 +298,7 @@ export class PrimeiroPedidoTutorialService {
       case PRIMEIRO_PEDIDO_ETAPAS.movimentado:
         return 'movimentar';
       default:
-        return 'lista';
+        return 'menu';
     }
   }
 

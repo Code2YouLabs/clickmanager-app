@@ -54,16 +54,37 @@ describe('PrimeiroPedidoTutorialService', () => {
   });
 
   it('inicia o tutorial pelo progresso em andamento e ignora estados finais', () => {
+    tutorial.activeDefinition.and.returnValue(null);
     service.iniciarSeNecessario();
 
     expect(jornada.consultar).toHaveBeenCalledWith(PRIMEIRO_PEDIDO_JORNADA);
-    expect(tutorial.start).toHaveBeenCalledWith(jasmine.objectContaining({ id: PRIMEIRO_PEDIDO_TUTORIAL_ID }), 'lista');
+    expect(tutorial.start).toHaveBeenCalledWith(jasmine.objectContaining({ id: PRIMEIRO_PEDIDO_TUTORIAL_ID }), 'menu');
 
     tutorial.start.calls.reset();
     jornada.consultar.and.returnValue(of(progresso({ status: 'CONCLUIDO' })));
     service.iniciarSeNecessario();
 
     expect(tutorial.start).not.toHaveBeenCalled();
+  });
+
+  it('nao reinicia a jornada ao recriar componente enquanto o tutorial ja esta ativo', () => {
+    service.iniciarSeNecessario();
+
+    expect(jornada.consultar).not.toHaveBeenCalled();
+    expect(tutorial.start).not.toHaveBeenCalled();
+  });
+
+  it('mantem o passo de novo pedido aguardando o evento real da navegacao', () => {
+    tutorial.activeDefinition.and.returnValue(null);
+
+    service.iniciarSeNecessario();
+
+    const definition = tutorial.start.calls.mostRecent().args[0];
+    const novoPedidoStep = definition.steps.find((step) => step.id === 'lista');
+    expect(novoPedidoStep).toEqual(jasmine.objectContaining({
+      action: 'clickTarget',
+      advanceOn: PRIMEIRO_PEDIDO_EVENTOS.novoPedido,
+    }));
   });
 
   it('registra checkpoints semanticamente e avanca apenas quando o tutorial esta ativo', () => {
@@ -90,13 +111,22 @@ describe('PrimeiroPedidoTutorialService', () => {
         PRIMEIRO_PEDIDO_ETAPAS.pedidoCriado,
         { pedidoId: 42 },
       );
-      expect(tutorial.notify).toHaveBeenCalledWith(PRIMEIRO_PEDIDO_EVENTOS.pedidoCriado);
+      expect(tutorial.notify).not.toHaveBeenCalledWith(PRIMEIRO_PEDIDO_EVENTOS.pedidoCriado);
       expect(service.deveGuiarPedido({ id: 42, numero: 'PED-42', status: 'PENDENTE', total: 10 })).toBeTrue();
       done();
     });
   });
 
+  it('retoma diretamente no card do Kanban apos a lista carregar com o pedido criado', () => {
+    service.retomarPedidoCriado(42);
+
+    expect(graficaService.buscarPedidoComercial).toHaveBeenCalledWith(42);
+    expect(tutorial.start).toHaveBeenCalledWith(jasmine.objectContaining({ id: PRIMEIRO_PEDIDO_TUTORIAL_ID }), 'movimentar');
+    expect(service.deveGuiarPedido({ id: 42, numero: 'PED-42', status: 'PENDENTE', total: 10 })).toBeTrue();
+  });
+
   it('retoma pos-criacao pelo pedidoId persistido no contexto validando o pedido', () => {
+    tutorial.activeDefinition.and.returnValue(null);
     jornada.consultar.and.returnValue(of(progresso({
       etapaAtual: PRIMEIRO_PEDIDO_ETAPAS.pedidoCriado,
       contexto: { pedidoId: 42 },
@@ -110,6 +140,7 @@ describe('PrimeiroPedidoTutorialService', () => {
   });
 
   it('nao retoma pos-criacao sem id do pedido persistido e nao volta para criacao', () => {
+    tutorial.activeDefinition.and.returnValue(null);
     jornada.consultar.and.returnValue(of(progresso({ etapaAtual: PRIMEIRO_PEDIDO_ETAPAS.pedidoCriado })));
 
     service.iniciarSeNecessario();
@@ -121,6 +152,7 @@ describe('PrimeiroPedidoTutorialService', () => {
   });
 
   it('bloqueia retomada quando o pedido persistido nao esta acessivel no tenant atual', () => {
+    tutorial.activeDefinition.and.returnValue(null);
     graficaService.buscarPedidoComercial.and.returnValue(throwError(() => ({ status: 404 })));
     jornada.consultar.and.returnValue(of(progresso({
       etapaAtual: PRIMEIRO_PEDIDO_ETAPAS.kanban,
