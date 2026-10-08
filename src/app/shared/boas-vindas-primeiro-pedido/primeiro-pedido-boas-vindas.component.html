@@ -1,0 +1,45 @@
+<section class="primeiro-pedido-welcome" role="document">
+  <div class="primeiro-pedido-welcome__icon" aria-hidden="true">
+    <mat-icon>celebration</mat-icon>
+  </div>
+
+  <div class="primeiro-pedido-welcome__content">
+    <p class="primeiro-pedido-welcome__eyebrow">Tudo pronto</p>
+    <h2 mat-dialog-title>Bem-vindo ao ClickManager</h2>
+    <mat-dialog-content>
+      <p>
+        Sua empresa está pronta para começar.
+        Vamos criar seu primeiro pedido juntos?
+      </p>
+
+      @if (erroOferta) {
+        <div class="primeiro-pedido-welcome__notice" role="status">
+          {{ erroOferta }}
+        </div>
+      }
+
+      @if (erroAcao) {
+        <div class="primeiro-pedido-welcome__error" role="alert">
+          {{ erroAcao }}
+        </div>
+      }
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end">
+      <button mat-button type="button" [disabled]="iniciando || ignorando" (click)="explorarSozinho()">
+        @if (ignorando) {
+          Salvando...
+        } @else {
+          Explorar sozinho
+        }
+      </button>
+      <button mat-flat-button color="primary" type="button" [disabled]="iniciando || ignorando" (click)="criarPrimeiroPedido()">
+        @if (iniciando) {
+          Preparando...
+        } @else {
+          Criar meu primeiro pedido
+        }
+      </button>
+    </mat-dialog-actions>
+  </div>
+</section>
