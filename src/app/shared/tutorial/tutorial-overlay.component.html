@@ -1,0 +1,63 @@
+@if (active() && step() && rect(); as highlight) {
+  <div class="guided-tutorial-mask" aria-hidden="true">
+    <div class="guided-tutorial-mask__segment guided-tutorial-mask__segment--top" [style.height.px]="overlayTop()"></div>
+    <div class="guided-tutorial-mask__segment guided-tutorial-mask__segment--left" [style.top.px]="highlight.top" [style.width.px]="overlayLeft()" [style.height.px]="highlight.height"></div>
+    <div class="guided-tutorial-mask__segment guided-tutorial-mask__segment--right" [style.top.px]="highlight.top" [style.width.px]="overlayRight()" [style.height.px]="highlight.height"></div>
+    <div class="guided-tutorial-mask__segment guided-tutorial-mask__segment--bottom" [style.height.px]="overlayBottom()"></div>
+
+    <div
+      class="guided-tutorial-mask__spotlight"
+      [style.top.px]="highlight.top"
+      [style.left.px]="highlight.left"
+      [style.width.px]="highlight.width"
+      [style.height.px]="highlight.height">
+    </div>
+  </div>
+
+  <section
+    #popover
+    class="guided-tutorial-popover"
+    [class.guided-tutorial-popover--top]="placement() === 'top'"
+    [class.guided-tutorial-popover--right]="placement() === 'right'"
+    [class.guided-tutorial-popover--bottom]="placement() === 'bottom'"
+    [class.guided-tutorial-popover--left]="placement() === 'left'"
+    [class.guided-tutorial-popover--mobile]="isMobile()"
+    [ngStyle]="popoverStyles()"
+    role="dialog"
+    aria-modal="false"
+    [attr.aria-label]="step()?.title"
+    aria-live="polite">
+    <button
+      mat-icon-button
+      type="button"
+      class="guided-tutorial-popover__close"
+      [attr.aria-label]="labels().exit"
+      (click)="exit()">
+      <mat-icon>close</mat-icon>
+    </button>
+
+    <div class="guided-tutorial-popover__eyebrow">{{ labels().eyebrow }}</div>
+    <h2 class="guided-tutorial-popover__title">{{ step()?.title }}</h2>
+    <p class="guided-tutorial-popover__description">{{ step()?.description }}</p>
+
+    <div class="guided-tutorial-popover__progressbar" aria-hidden="true">
+      <div class="guided-tutorial-popover__progressbar-fill" [style.width.%]="progressPercent()"></div>
+    </div>
+
+    <div class="guided-tutorial-popover__footer">
+      <div class="guided-tutorial-popover__progress">{{ progressLabel() }}</div>
+
+      <div class="guided-tutorial-popover__actions">
+        @if (canGoBack()) {
+          <button mat-stroked-button type="button" (click)="previous()">{{ labels().back }}</button>
+        }
+
+        @if (isLastStep()) {
+          <button mat-flat-button color="primary" type="button" (click)="finish()">{{ step()?.actionLabel || labels().finish }}</button>
+        } @else {
+          <button mat-flat-button color="primary" type="button" (click)="next()">{{ step()?.actionLabel || labels().next }}</button>
+        }
+      </div>
+    </div>
+  </section>
+}
