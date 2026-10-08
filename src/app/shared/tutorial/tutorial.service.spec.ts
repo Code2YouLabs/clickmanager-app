@@ -3,7 +3,6 @@ import { Component } from '@angular/core';
 import { ComponentFixture, TestBed, fakeAsync, flushMicrotasks, tick } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
-import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { TutorialDefinition, TutorialEvent } from './tutorial.model';
 import { TutorialOverlayComponent } from './tutorial-overlay.component';
@@ -16,13 +15,23 @@ import { TutorialService } from './tutorial.service';
   template: `
     <app-tutorial-overlay></app-tutorial-overlay>
     @if (showPrimary) {
-      <button appTutorialTarget="primary-action" style="display:block;width:160px;height:44px">Primario</button>
+      <button
+        appTutorialTarget="primary-action"
+        style="display:block;width:160px;height:44px;margin:96px 0 0 96px"
+        (click)="clicks = clicks + 1"
+        (pointerdown)="pointerDowns = pointerDowns + 1"
+        (mousedown)="mouseDowns = mouseDowns + 1">
+        Primario
+      </button>
     }
-    <button appTutorialTarget="secondary-action" style="display:block;width:150px;height:40px">Secundario</button>
+    <button appTutorialTarget="secondary-action" style="display:block;width:150px;height:40px;margin:24px 0 0 96px">Secundario</button>
   `,
 })
 class TutorialHostComponent {
   showPrimary = true;
+  clicks = 0;
+  pointerDowns = 0;
+  mouseDowns = 0;
 }
 
 describe('TutorialService', () => {
@@ -71,7 +80,7 @@ describe('TutorialService', () => {
     TestBed.resetTestingModule();
   });
 
-  it('inicia, troca etapa e conclui mantendo eventos declarativos', fakeAsync(() => {
+  it('inicia tutorial e exibe overlay no primeiro alvo', fakeAsync(() => {
     service.start(definition);
     tick(20);
     fixture.detectChanges();
@@ -79,7 +88,15 @@ describe('TutorialService', () => {
     expect(service.state().status).toBe('active');
     expect(service.currentStep()?.id).toBe('primary');
     expect(fixture.nativeElement.querySelector('.guided-tutorial-popover')?.textContent).toContain('Acao principal');
+    expect(fixture.nativeElement.querySelector('.guided-tutorial-mask')).toBeTruthy();
     expect(scrollSpy).toHaveBeenCalled();
+    expect(events.map((event) => event.type)).toEqual(['started', 'stepChanged']);
+  }));
+
+  it('avanca e volta entre etapas sem concluir antes da ultima acao', fakeAsync(() => {
+    service.start(definition);
+    tick(20);
+    fixture.detectChanges();
 
     service.next();
     tick(20);
@@ -87,6 +104,38 @@ describe('TutorialService', () => {
 
     expect(service.currentStep()?.id).toBe('secondary');
     expect(fixture.nativeElement.querySelector('.guided-tutorial-popover')?.textContent).toContain('Acao secundaria');
+
+    service.previous();
+    tick(20);
+    fixture.detectChanges();
+
+    expect(service.currentStep()?.id).toBe('primary');
+    expect(service.state().status).toBe('active');
+    expect(events.map((event) => event.type)).toEqual(['started', 'stepChanged', 'stepChanged', 'stepChanged']);
+  }));
+
+  it('notify avanca apenas quando o evento corresponde ao passo atual', fakeAsync(() => {
+    service.start(definition);
+    tick(20);
+    fixture.detectChanges();
+
+    service.notify('secondary-ready');
+    tick(20);
+    fixture.detectChanges();
+
+    expect(service.currentStep()?.id).toBe('primary');
+    expect(service.state().status).toBe('active');
+
+    service.next();
+    tick(20);
+    fixture.detectChanges();
+
+    service.notify('evento-errado');
+    tick(20);
+    fixture.detectChanges();
+
+    expect(service.currentStep()?.id).toBe('secondary');
+    expect(service.state().status).toBe('active');
 
     service.notify('secondary-ready');
     tick(20);
@@ -135,6 +184,8 @@ describe('TutorialService', () => {
     fixture.detectChanges();
 
     expect(service.state().status).toBe('idle');
+    expect(fixture.nativeElement.querySelector('.guided-tutorial-mask')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.guided-tutorial-popover')).toBeFalsy();
     expect(events.at(-1)).toEqual(jasmine.objectContaining({
       type: 'error',
       tutorialId: 'missing-tour',
@@ -152,10 +203,149 @@ describe('TutorialService', () => {
     fixture.detectChanges();
 
     expect(service.state().status).toBe('idle');
+    expect(fixture.nativeElement.querySelector('.guided-tutorial-mask')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.guided-tutorial-popover')).toBeFalsy();
     expect(events.at(-1)).toEqual(jasmine.objectContaining({
       type: 'exited',
       reason: 'escape',
     }));
+  }));
+
+  it('conclui com cleanup de estado e overlay', fakeAsync(() => {
+    service.start({
+      id: 'single-step-tour',
+      steps: [{
+        id: 'primary',
+        title: 'Acao principal',
+        description: 'Passo unico.',
+        targetId: 'primary-action',
+      }],
+    });
+    tick(20);
+    fixture.detectChanges();
+
+    service.complete();
+    tick(20);
+    fixture.detectChanges();
+
+    expect(service.state().status).toBe('idle');
+    expect(service.currentStep()).toBeNull();
+    expect(service.rect()).toBeNull();
+    expect(fixture.nativeElement.querySelector('.guided-tutorial-mask')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.guided-tutorial-popover')).toBeFalsy();
+    expect(events.at(-1)).toEqual(jasmine.objectContaining({ type: 'completed' }));
+  }));
+
+  it('mantem a infraestrutura inativa sem overlay nem bloqueio no app', () => {
+    const button = fixture.nativeElement.querySelector('[data-tutorial-target="primary-action"]') as HTMLButtonElement;
+
+    button.click();
+    fixture.detectChanges();
+
+    expect(service.state().status).toBe('idle');
+    expect(fixture.componentInstance.clicks).toBe(1);
+    expect(fixture.nativeElement.querySelector('.guided-tutorial-mask')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.guided-tutorial-popover')).toBeFalsy();
+  });
+
+  it('mantem o target destacado clicavel e compatível com eventos nativos de drag', fakeAsync(() => {
+    service.start({
+      id: 'interactive-tour',
+      steps: [{
+        id: 'primary',
+        title: 'Interativo',
+        description: 'Aguarda acao real no alvo.',
+        targetId: 'primary-action',
+        advanceOn: 'target-clicked',
+      }],
+    });
+    tick(20);
+    fixture.detectChanges();
+
+    const mask = fixture.nativeElement.querySelector('.guided-tutorial-mask') as HTMLElement;
+    const spotlight = fixture.nativeElement.querySelector('.guided-tutorial-mask__spotlight') as HTMLElement;
+    const button = fixture.nativeElement.querySelector('[data-tutorial-target="primary-action"]') as HTMLButtonElement;
+
+    expect(getComputedStyle(mask).pointerEvents).toBe('none');
+    expect(getComputedStyle(spotlight).pointerEvents).toBe('none');
+
+    button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    button.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    button.click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.pointerDowns).toBe(1);
+    expect(fixture.componentInstance.mouseDowns).toBe(1);
+    expect(fixture.componentInstance.clicks).toBe(1);
+    expect(service.state().status).toBe('active');
+  }));
+
+  it('remove listeners de viewport ao sair, concluir e falhar por timeout', fakeAsync(() => {
+    const addSpy = spyOn(window, 'addEventListener').and.callThrough();
+    const removeSpy = spyOn(window, 'removeEventListener').and.callThrough();
+    const startAndExpectListeners = () => {
+      service.start(definition);
+      tick(20);
+      fixture.detectChanges();
+      expect(addSpy.calls.allArgs().some(([event]) => event === 'resize')).toBeTrue();
+      expect(addSpy.calls.allArgs().some(([event]) => event === 'scroll')).toBeTrue();
+    };
+
+    startAndExpectListeners();
+    service.exit();
+    tick(20);
+    fixture.detectChanges();
+
+    startAndExpectListeners();
+    service.complete();
+    tick(20);
+    fixture.detectChanges();
+
+    service.start({
+      id: 'timeout-cleanup',
+      steps: [{
+        id: 'missing',
+        title: 'Ausente',
+        description: 'Alvo ausente.',
+        targetId: 'missing-target',
+        timeoutMs: 30,
+      }],
+    });
+    tick(31);
+    fixture.detectChanges();
+
+    const removedEvents = removeSpy.calls.allArgs().map(([event]) => event);
+    expect(removedEvents.filter((event) => event === 'resize').length).toBeGreaterThanOrEqual(3);
+    expect(removedEvents.filter((event) => event === 'scroll').length).toBeGreaterThanOrEqual(3);
+    expect(service.state().status).toBe('idle');
+    expect(fixture.nativeElement.querySelector('.guided-tutorial-mask')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.guided-tutorial-popover')).toBeFalsy();
+  }));
+
+  it('remove o alvo do registro quando a diretiva e destruida', fakeAsync(() => {
+    fixture.componentInstance.showPrimary = false;
+    fixture.detectChanges();
+
+    service.start({
+      id: 'destroyed-target-tour',
+      steps: [{
+        id: 'primary',
+        title: 'Destruido',
+        description: 'Alvo destruido.',
+        targetId: 'primary-action',
+        timeoutMs: 30,
+      }],
+    });
+    tick(31);
+    fixture.detectChanges();
+
+    expect(service.state().status).toBe('idle');
+    expect(events.at(-1)).toEqual(jasmine.objectContaining({
+      type: 'error',
+      tutorialId: 'destroyed-target-tour',
+      stepId: 'primary',
+    }));
+    expect(fixture.nativeElement.querySelector('.guided-tutorial-mask')).toBeFalsy();
   }));
 });
 
