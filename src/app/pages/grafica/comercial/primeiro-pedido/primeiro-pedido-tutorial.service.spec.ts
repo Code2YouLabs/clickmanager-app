@@ -117,11 +117,11 @@ describe('PrimeiroPedidoTutorialService', () => {
     });
   });
 
-  it('retoma diretamente no card do Kanban apos a lista carregar com o pedido criado', () => {
+  it('retoma no passo de alternar para Kanban apos a lista carregar com o pedido criado', () => {
     service.retomarPedidoCriado(42);
 
     expect(graficaService.buscarPedidoComercial).toHaveBeenCalledWith(42);
-    expect(tutorial.start).toHaveBeenCalledWith(jasmine.objectContaining({ id: PRIMEIRO_PEDIDO_TUTORIAL_ID }), 'movimentar');
+    expect(tutorial.start).toHaveBeenCalledWith(jasmine.objectContaining({ id: PRIMEIRO_PEDIDO_TUTORIAL_ID }), 'kanban');
     expect(service.deveGuiarPedido({ id: 42, numero: 'PED-42', status: 'PENDENTE', total: 10 })).toBeTrue();
   });
 
@@ -167,7 +167,7 @@ describe('PrimeiroPedidoTutorialService', () => {
     expect(service.deveGuiarPedido({ id: 99, numero: 'PED-99', status: 'PENDENTE', total: 10 })).toBeFalse();
   });
 
-  it('conclui somente depois de mover o pedido guiado', () => {
+  it('apos mover o pedido guiado avanca para o passo final sem esconder o tutorial imediatamente', () => {
     service.registrarPedidoCriado({ tipo: 'PEDIDO', id: 7 }).subscribe();
     jornada.atualizarEtapa.calls.reset();
 
@@ -178,7 +178,26 @@ describe('PrimeiroPedidoTutorialService', () => {
 
     expect(jornada.atualizarEtapa).toHaveBeenCalledWith(PRIMEIRO_PEDIDO_JORNADA, PRIMEIRO_PEDIDO_ETAPAS.movimentado, undefined);
     expect(jornada.concluir).toHaveBeenCalledWith(PRIMEIRO_PEDIDO_JORNADA);
-    expect(tutorial.complete).toHaveBeenCalled();
+    expect(tutorial.notify).toHaveBeenCalledWith(PRIMEIRO_PEDIDO_EVENTOS.pedidoMovido);
+    expect(tutorial.complete).not.toHaveBeenCalled();
+  });
+
+  it('mantem um passo final de confirmacao apos o movimento do kanban', () => {
+    tutorial.activeDefinition.and.returnValue(null);
+
+    service.iniciarSeNecessario();
+
+    const definition = tutorial.start.calls.mostRecent().args[0];
+    const movimentarIndex = definition.steps.findIndex((step) => step.id === 'movimentar');
+    const conclusaoStep = definition.steps[movimentarIndex + 1];
+
+    expect(conclusaoStep).toEqual(jasmine.objectContaining({
+      id: 'conclusao',
+      targetId: 'primeiro-pedido-kanban-card',
+      actionLabel: 'Concluir',
+      completion: true,
+    }));
+    expect(conclusaoStep.advanceOn).toBeUndefined();
   });
 });
 

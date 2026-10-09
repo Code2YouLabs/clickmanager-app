@@ -49,9 +49,10 @@
 .guided-tutorial-popover {
   position: fixed;
   z-index: 1292;
-  min-width: 280px;
-  max-width: 360px;
-  padding: 18px;
+  min-width: 300px;
+  max-width: 380px;
+  overflow: hidden;
+  padding: 0;
   border: 1px solid rgba(25, 118, 210, 0.14);
   border-radius: 8px;
   background: #fff;
@@ -95,13 +96,23 @@
 }
 
 .guided-tutorial-popover__close {
-  position: absolute;
-  top: 8px;
-  right: 8px;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  color: #4b5563;
+}
+
+.guided-tutorial-popover__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 0 18px;
 }
 
 .guided-tutorial-popover__eyebrow {
-  margin: 0 36px 6px 0;
+  min-width: 0;
+  margin: 0;
   color: #1976d2;
   font-size: 0.75rem;
   font-weight: 800;
@@ -109,25 +120,36 @@
   text-transform: uppercase;
 }
 
+.guided-tutorial-popover__body {
+  padding: 4px 18px 0;
+}
+
+.guided-tutorial-popover__success-icon {
+  display: none;
+}
+
 .guided-tutorial-popover__title {
   margin: 0;
-  padding-right: 32px;
   color: #172033;
-  font-size: 1.05rem;
+  font-size: 1.08rem;
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1.24;
 }
 
 .guided-tutorial-popover__description {
-  margin: 8px 0 0;
+  margin: 10px 0 0;
   color: #536173;
   font-size: 0.92rem;
-  line-height: 1.45;
+  line-height: 1.5;
+}
+
+.guided-tutorial-popover__progress-section {
+  padding: 16px 18px 0;
 }
 
 .guided-tutorial-popover__progressbar {
   height: 6px;
-  margin-top: 14px;
+  margin-top: 8px;
   overflow: hidden;
   border-radius: 999px;
   background: #e3e8ef;
@@ -141,26 +163,115 @@
 }
 
 .guided-tutorial-popover__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 16px;
+  margin-top: 14px;
+  padding: 12px 18px 14px;
+  border-top: 1px solid rgba(226, 232, 240, 0.9);
+  background: #f8fafc;
 }
 
 .guided-tutorial-popover__progress {
-  flex: 0 0 auto;
   color: #69778a;
   font-size: 0.8rem;
   font-weight: 700;
 }
 
 .guided-tutorial-popover__actions {
-  display: inline-flex;
-  flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.guided-tutorial-popover__nav-actions {
+  display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
+}
+
+.guided-tutorial-popover__nav-actions button[mat-flat-button] {
+  min-width: 168px;
+  min-height: 40px;
+}
+
+.guided-tutorial-popover__nav-actions button[mat-stroked-button] {
+  min-width: 76px;
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 0.86rem;
+}
+
+.guided-tutorial-popover__give-up {
+  min-width: 64px;
+  min-height: 32px;
+  padding: 0 8px;
+  color: #69778a;
+  font-size: 0.82rem;
+}
+
+.guided-tutorial-popover--completion {
+  max-width: 420px;
+  border-color: color-mix(in srgb, var(--mat-sys-primary) 18%, transparent);
+
+  &::before {
+    position: absolute;
+    top: -82px;
+    left: 50%;
+    width: 360px;
+    height: 180px;
+    border-radius: 0 0 999px 999px;
+    background:
+      radial-gradient(circle at 50% 20%, color-mix(in srgb, var(--mat-sys-primary) 18%, transparent), transparent 68%),
+      linear-gradient(180deg, color-mix(in srgb, var(--mat-sys-primary) 10%, white), transparent);
+    content: '';
+    opacity: 0.82;
+    pointer-events: none;
+    transform: translateX(-50%);
+  }
+
+  .guided-tutorial-popover__header,
+  .guided-tutorial-popover__body,
+  .guided-tutorial-popover__progress-section,
+  .guided-tutorial-popover__footer {
+    position: relative;
+  }
+
+  .guided-tutorial-popover__body {
+    display: grid;
+    justify-items: center;
+    padding-top: 8px;
+    text-align: center;
+  }
+
+  .guided-tutorial-popover__success-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 54px;
+    height: 54px;
+    margin-bottom: 14px;
+    border: 1px solid color-mix(in srgb, var(--mat-sys-primary) 20%, transparent);
+    border-radius: 16px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0)),
+      var(--mat-sys-primary-fixed-dim);
+    color: var(--mat-sys-primary);
+    box-shadow: 0 12px 26px rgba(0, 133, 219, 0.13);
+  }
+
+  .guided-tutorial-popover__success-icon mat-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 30px;
+  }
+
+  .guided-tutorial-popover__description {
+    max-width: 310px;
+  }
+
+  .guided-tutorial-popover__actions {
+    justify-content: flex-end;
+  }
 }
 
 @media (max-width: 768px) {
@@ -171,11 +282,22 @@
   .guided-tutorial-popover {
     min-width: 0;
     max-width: none;
-    padding: 14px;
 
     &::after {
       display: none;
     }
+  }
+
+  .guided-tutorial-popover__header {
+    padding: 14px 14px 0 16px;
+  }
+
+  .guided-tutorial-popover__body {
+    padding: 4px 16px 0;
+  }
+
+  .guided-tutorial-popover--completion .guided-tutorial-popover__body {
+    padding-top: 8px;
   }
 
   .guided-tutorial-popover__title {
@@ -186,12 +308,23 @@
     font-size: 0.84rem;
   }
 
+  .guided-tutorial-popover__progress-section {
+    padding: 14px 16px 0;
+  }
+
   .guided-tutorial-popover__footer {
-    align-items: flex-start;
-    flex-direction: column;
+    padding: 12px 16px 14px;
   }
 
   .guided-tutorial-popover__actions {
     width: 100%;
+  }
+
+  .guided-tutorial-popover__nav-actions {
+    min-width: 0;
+  }
+
+  .guided-tutorial-popover__nav-actions button {
+    flex: 1 1 auto;
   }
 }

@@ -14,6 +14,7 @@ export interface TutorialStep {
   timeoutMs?: number;
   actionLabel?: string;
   action?: 'next' | 'clickTarget' | 'clickTargetThenNext';
+  completion?: boolean;
 }
 
 export interface TutorialDefinition {

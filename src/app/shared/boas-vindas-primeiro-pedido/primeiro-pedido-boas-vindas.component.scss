@@ -1,13 +1,32 @@
 .primeiro-pedido-welcome {
   box-sizing: border-box;
+  position: relative;
   display: grid;
   justify-items: center;
-  width: min(100%, 740px);
-  padding: 42px 54px 38px;
+  width: min(100%, 660px);
+  padding: 40px 44px 34px;
+  overflow: hidden;
   text-align: center;
 }
 
+.primeiro-pedido-welcome::before {
+  position: absolute;
+  top: -88px;
+  left: 50%;
+  width: min(540px, 92%);
+  height: 210px;
+  border-radius: 0 0 999px 999px;
+  background:
+    radial-gradient(circle at 50% 10%, color-mix(in srgb, var(--mat-sys-primary) 15%, transparent), transparent 66%),
+    linear-gradient(180deg, color-mix(in srgb, var(--mat-sys-primary) 10%, white), transparent);
+  content: '';
+  opacity: 0.72;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
 .primeiro-pedido-welcome__icon {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -20,7 +39,7 @@
     linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0)),
     var(--mat-sys-primary-fixed-dim);
   color: var(--mat-sys-primary);
-  box-shadow: 0 14px 30px rgba(0, 133, 219, 0.14);
+  box-shadow: 0 12px 26px rgba(0, 133, 219, 0.13);
 
   mat-icon {
     width: 32px;
@@ -30,6 +49,7 @@
 }
 
 .primeiro-pedido-welcome__content {
+  position: relative;
   display: grid;
   justify-items: center;
   min-width: 0;
@@ -51,14 +71,14 @@
   width: 100%;
   max-height: none;
   margin: 0;
-  padding: 18px 0 0;
+  padding: 20px 0 0;
   overflow: visible;
 }
 
 .primeiro-pedido-welcome__message {
   display: grid;
-  gap: 6px;
-  max-width: 520px;
+  gap: 8px;
+  max-width: 500px;
   margin: 0 auto;
 }
 
@@ -76,8 +96,8 @@
 
 .primeiro-pedido-welcome__notice,
 .primeiro-pedido-welcome__error {
-  max-width: 520px;
-  margin: 24px auto 0;
+  max-width: 500px;
+  margin: 26px auto 0;
   padding: 10px 12px;
   border-radius: 8px;
   font-size: 0.86rem;
@@ -103,11 +123,11 @@
   justify-content: center;
   min-height: 0;
   margin: 0;
-  padding: 30px 0 0;
+  padding: 34px 0 0;
 }
 
 .primeiro-pedido-welcome__primary {
-  width: min(100%, 260px);
+  width: min(100%, 280px);
   min-height: 46px;
   font-weight: 700;
 }

@@ -112,7 +112,7 @@ describe('PrimeiroPedidoBoasVindasService', () => {
     tick();
 
     expect(dialog.open).toHaveBeenCalledWith(jasmine.any(Function), jasmine.objectContaining({
-      width: '740px',
+      width: '660px',
       maxWidth: 'calc(100vw - 32px)',
       panelClass: 'primeiro-pedido-welcome-dialog',
     }));

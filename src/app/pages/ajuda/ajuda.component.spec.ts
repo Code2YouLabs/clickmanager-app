@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { MatDialog } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BehaviorSubject, of, throwError } from 'rxjs';
@@ -18,6 +19,7 @@ describe('AjudaComponent', () => {
   let authService: jasmine.SpyObj<AuthService>;
   let featureFlagService: jasmine.SpyObj<FeatureFlagService>;
   let jornadaService: jasmine.SpyObj<JornadaService>;
+  let dialog: jasmine.SpyObj<MatDialog>;
   let toastr: jasmine.SpyObj<ToastrService>;
   let router: jasmine.SpyObj<Router>;
   let fragment$: BehaviorSubject<string | null>;
@@ -33,6 +35,7 @@ describe('AjudaComponent', () => {
     authService = jasmine.createSpyObj<AuthService>('AuthService', ['getTipoEmpresa', 'temPermissao']);
     featureFlagService = jasmine.createSpyObj<FeatureFlagService>('FeatureFlagService', ['carregar', 'isEnabled']);
     jornadaService = jasmine.createSpyObj<JornadaService>('JornadaService', ['listar', 'iniciar', 'reiniciar']);
+    dialog = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
     toastr = jasmine.createSpyObj<ToastrService>('ToastrService', ['error']);
     router = jasmine.createSpyObj<Router>('Router', ['navigate', 'navigateByUrl']);
     fragment$ = new BehaviorSubject<string | null>(options.fragment ?? null);
@@ -52,6 +55,7 @@ describe('AjudaComponent', () => {
       : of(options.jornadas ?? [progresso('NAO_INICIADO')]));
     jornadaService.iniciar.and.returnValue(of(progresso('EM_ANDAMENTO', { etapaAtual: 'inicio' })));
     jornadaService.reiniciar.and.returnValue(of(progresso('EM_ANDAMENTO', { etapaAtual: 'inicio', contexto: null })));
+    dialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
 
     TestBed.configureTestingModule({
       imports: [AjudaComponent, NoopAnimationsModule],
@@ -59,6 +63,7 @@ describe('AjudaComponent', () => {
         { provide: AuthService, useValue: authService },
         { provide: FeatureFlagService, useValue: featureFlagService },
         { provide: JornadaService, useValue: jornadaService },
+        { provide: MatDialog, useValue: dialog },
         { provide: ToastrService, useValue: toastr },
         { provide: Router, useValue: router },
         {
@@ -211,14 +216,36 @@ describe('AjudaComponent', () => {
 
   it('refaz jornada concluida usando reiniciar e sem reutilizar contexto antigo', () => {
     setup({ jornadas: [progresso('CONCLUIDO', { contexto: { pedidoId: 99 } })] });
-    spyOn(window, 'confirm').and.returnValue(true);
+    const confirmSpy = spyOn(window, 'confirm');
     const secao = component.visibleSecoes.find(item => item.id === 'primeiro-pedido')!;
 
     component.executarTutorial(secao);
 
+    expect(confirmSpy).not.toHaveBeenCalled();
+    expect(dialog.open).toHaveBeenCalledWith(jasmine.any(Function), jasmine.objectContaining({
+      width: '460px',
+      data: jasmine.objectContaining({
+        title: 'Refazer tutorial?',
+        message: 'Refazer este tutorial inicia uma nova execução guiada. O pedido antigo não será alterado.',
+        confirmText: 'Refazer tutorial',
+        cancelText: 'Cancelar',
+        confirmColor: 'primary',
+      }),
+    }));
     expect(jornadaService.reiniciar).toHaveBeenCalledWith(PRIMEIRO_PEDIDO_JORNADA, { etapa: 'inicio' });
     expect(component.progressoTutorial(secao)?.contexto).toBeNull();
     expect(router.navigateByUrl).toHaveBeenCalledWith('/page/grafica/comercial/pedidos');
+  });
+
+  it('mantem jornada concluida quando usuario cancela modal de refazer tutorial', () => {
+    setup({ jornadas: [progresso('CONCLUIDO', { contexto: { pedidoId: 99 } })] });
+    dialog.open.and.returnValue({ afterClosed: () => of(false) } as any);
+    const secao = component.visibleSecoes.find(item => item.id === 'primeiro-pedido')!;
+
+    component.executarTutorial(secao);
+
+    expect(jornadaService.reiniciar).not.toHaveBeenCalled();
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 
   it('inicia jornada ignorada e reinicia jornada abandonada', () => {
@@ -231,10 +258,15 @@ describe('AjudaComponent', () => {
     fixture.destroy();
     TestBed.resetTestingModule();
     setup({ jornadas: [progresso('ABANDONADO', { contexto: { pedidoId: 7 } })] });
-    spyOn(window, 'confirm').and.returnValue(true);
     secao = component.visibleSecoes.find(item => item.id === 'primeiro-pedido')!;
 
     component.executarTutorial(secao);
+    expect(dialog.open).toHaveBeenCalledWith(jasmine.any(Function), jasmine.objectContaining({
+      data: jasmine.objectContaining({
+        title: 'Reiniciar tutorial?',
+        confirmText: 'Reiniciar tutorial',
+      }),
+    }));
     expect(jornadaService.reiniciar).toHaveBeenCalledWith(PRIMEIRO_PEDIDO_JORNADA, { etapa: 'inicio' });
   });
 

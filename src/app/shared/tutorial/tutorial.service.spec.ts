@@ -153,6 +153,82 @@ describe('TutorialService', () => {
     expect(events.map((event) => event.type)).toEqual(['started', 'stepChanged', 'stepChanged', 'completed']);
   }));
 
+  it('oculta voltar e acao primaria quando o passo aguarda evento real', fakeAsync(() => {
+    service.start(definition);
+    tick(20);
+    fixture.detectChanges();
+
+    service.next();
+    tick(20);
+    fixture.detectChanges();
+
+    const primaryButton = fixture.nativeElement.querySelector('.guided-tutorial-popover__actions button[mat-flat-button]') as HTMLButtonElement | null;
+    const backButton = fixture.nativeElement.querySelector('.guided-tutorial-popover__actions button[mat-stroked-button]') as HTMLButtonElement | null;
+    const giveUpButton = fixture.nativeElement.querySelector('.guided-tutorial-popover__give-up') as HTMLButtonElement;
+    expect(service.currentStep()?.id).toBe('secondary');
+    expect(primaryButton).toBeNull();
+    expect(backButton).toBeNull();
+    expect(giveUpButton.disabled).toBeFalse();
+
+    service.primaryAction();
+    tick(20);
+    fixture.detectChanges();
+
+    expect(service.currentStep()?.id).toBe('secondary');
+
+    service.notify('secondary-ready');
+    tick(20);
+    fixture.detectChanges();
+
+    expect(service.state().status).toBe('idle');
+  }));
+
+  it('permite desistir mesmo quando o passo aguarda evento real', fakeAsync(() => {
+    service.start(definition);
+    tick(20);
+    fixture.detectChanges();
+
+    service.next();
+    tick(20);
+    fixture.detectChanges();
+
+    const giveUpButton = fixture.nativeElement.querySelector('.guided-tutorial-popover__give-up') as HTMLButtonElement;
+    expect(service.currentStep()?.id).toBe('secondary');
+    expect(giveUpButton.disabled).toBeFalse();
+
+    giveUpButton.click();
+    tick(20);
+    fixture.detectChanges();
+
+    expect(service.state().status).toBe('idle');
+    expect(events.at(-1)).toEqual(jasmine.objectContaining({
+      type: 'exited',
+      reason: 'user',
+    }));
+  }));
+
+  it('exibe passo de conclusao sem botao de desistir', fakeAsync(() => {
+    service.start({
+      id: 'completion-tour',
+      steps: [{
+        id: 'primary',
+        title: 'Tudo pronto',
+        description: 'Fluxo finalizado.',
+        targetId: 'primary-action',
+        actionLabel: 'Concluir',
+        completion: true,
+      }],
+    });
+    tick(20);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.guided-tutorial-popover--completion')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.guided-tutorial-popover__success-icon')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.guided-tutorial-popover__give-up')).toBeFalsy();
+    expect(fixture.nativeElement.querySelector('.guided-tutorial-popover__actions button[mat-flat-button]')?.textContent)
+      .toContain('Concluir');
+  }));
+
   it('aguarda alvo renderizado tardiamente antes de exibir o passo', fakeAsync(() => {
     fixture.componentInstance.showPrimary = false;
     fixture.detectChanges();

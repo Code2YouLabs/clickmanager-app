@@ -123,7 +123,7 @@ export class PrimeiroPedidoTutorialService {
 
       this.pedidoCriadoId = id;
       this.retomadaSemPedidoId = false;
-      this.tutorial.start(this.definicaoTutorial(), 'movimentar');
+      this.tutorial.start(this.definicaoTutorial(), 'kanban');
     });
   }
 
@@ -145,7 +145,6 @@ export class PrimeiroPedidoTutorialService {
       catchError(() => EMPTY),
     ).subscribe(() => {
       this.tutorial.notify(PRIMEIRO_PEDIDO_EVENTOS.pedidoMovido);
-      this.tutorial.complete();
     });
   }
 
@@ -278,6 +277,15 @@ export class PrimeiroPedidoTutorialService {
           route: PRIMEIRO_PEDIDO_JORNADA.rotaInicial,
           advanceOn: PRIMEIRO_PEDIDO_EVENTOS.pedidoMovido,
           actionLabel: 'Mover no Kanban',
+        },
+        {
+          id: 'conclusao',
+          title: 'Primeiro pedido acompanhado',
+          description: 'Pronto. Agora você já sabe criar um pedido e acompanhar a evolução dele pelo Kanban.',
+          targetId: PRIMEIRO_PEDIDO_TARGETS.kanbanCard,
+          route: PRIMEIRO_PEDIDO_JORNADA.rotaInicial,
+          actionLabel: 'Concluir',
+          completion: true,
         },
       ],
     };

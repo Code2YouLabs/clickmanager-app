@@ -106,6 +106,10 @@ export class TutorialService {
       return;
     }
 
+    if (step.advanceOn) {
+      return;
+    }
+
     if (step.action === 'clickTarget' || step.action === 'clickTargetThenNext') {
       this.clickCurrentTarget(step);
       if (step.action === 'clickTargetThenNext') {

@@ -2,11 +2,13 @@ import { CommonModule } from '@angular/common';
 import { AfterViewInit, Component, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatDialog } from '@angular/material/dialog';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatIconModule } from '@angular/material/icon';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { Subscription, catchError, finalize, of, take } from 'rxjs';
+import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { InputPesquisaComponent } from 'src/app/components/inputs/input-pesquisa/input-pesquisa.component';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
@@ -65,6 +67,7 @@ export class AjudaComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly authService: AuthService,
     private readonly featureFlagService: FeatureFlagService,
     private readonly jornadaService: JornadaService,
+    private readonly dialog: MatDialog,
     private readonly toastr: ToastrService
   ) {}
 
@@ -145,18 +148,24 @@ export class AjudaComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     if (status === 'CONCLUIDO') {
-      if (!window.confirm('Refazer este tutorial inicia uma nova execução guiada. O pedido antigo não será alterado.')) {
-        return;
-      }
-      this.reiniciarTutorial(secao);
+      this.confirmarReinicioTutorial({
+        title: 'Refazer tutorial?',
+        message: 'Refazer este tutorial inicia uma nova execução guiada. O pedido antigo não será alterado.',
+        confirmText: 'Refazer tutorial',
+      }).subscribe(confirmado => {
+        if (confirmado) this.reiniciarTutorial(secao);
+      });
       return;
     }
 
     if (status === 'ABANDONADO') {
-      if (!window.confirm('Reiniciar este tutorial limpa apenas o progresso guiado. Dados de pedidos não serão alterados.')) {
-        return;
-      }
-      this.reiniciarTutorial(secao);
+      this.confirmarReinicioTutorial({
+        title: 'Reiniciar tutorial?',
+        message: 'Reiniciar este tutorial limpa apenas o progresso guiado. Dados de pedidos não serão alterados.',
+        confirmText: 'Reiniciar tutorial',
+      }).subscribe(confirmado => {
+        if (confirmado) this.reiniciarTutorial(secao);
+      });
       return;
     }
 
@@ -347,6 +356,21 @@ export class AjudaComponent implements OnInit, AfterViewInit, OnDestroy {
     const jornada = secao.tutorial?.jornada;
     if (!jornada) return;
     this.navegarParaJornada(jornada);
+  }
+
+  private confirmarReinicioTutorial(data: {
+    title: string;
+    message: string;
+    confirmText: string;
+  }) {
+    return this.dialog.open(ConfirmDialogComponent, {
+      width: '460px',
+      data: {
+        ...data,
+        cancelText: 'Cancelar',
+        confirmColor: 'primary',
+      },
+    }).afterClosed().pipe(take(1));
   }
 
   private navegarParaJornada(jornada: JornadaDefinicao): void {

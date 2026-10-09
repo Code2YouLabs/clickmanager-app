@@ -201,7 +201,6 @@ export class ComercialListComponent implements OnInit, OnDestroy {
       if (this.tipo === 'pedidos') {
         const primeiroPedidoId = Number(params.get('primeiroPedidoId') || 0);
         if (primeiroPedidoId > 0) {
-          this.viewMode = 'kanban';
           this.syncKanbanFocusClass();
           this.primeiroPedidoTutorial.retomarPedidoCriado(primeiroPedidoId);
         } else {

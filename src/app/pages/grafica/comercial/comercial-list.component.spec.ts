@@ -145,12 +145,12 @@ describe('ComercialListComponent', () => {
       .toEqual([jasmine.objectContaining({ id: 99 }) as any]);
   });
 
-  it('retoma o tutorial no pedido criado quando a lista recebe primeiroPedidoId', () => {
+  it('retoma o tutorial no pedido criado mantendo a lista para orientar a troca para Kanban', () => {
     params.next(convertToParamMap({ primeiroPedidoId: 42 }));
 
     fixture.detectChanges();
 
-    expect(component.viewMode).toBe('kanban');
+    expect(component.viewMode).toBe('lista');
     expect(primeiroPedidoTutorial.retomarPedidoCriado).toHaveBeenCalledWith(42);
     expect(primeiroPedidoTutorial.iniciarSeNecessario).not.toHaveBeenCalled();
   });
