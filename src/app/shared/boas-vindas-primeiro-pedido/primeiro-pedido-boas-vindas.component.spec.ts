@@ -54,6 +54,9 @@ describe('PrimeiroPedidoBoasVindasComponent', () => {
     expect(jornada.oferecer).toHaveBeenCalledOnceWith(PRIMEIRO_PEDIDO_JORNADA);
     expect(jornada.iniciar).not.toHaveBeenCalled();
     expect(text()).toContain('Bem-vindo ao ClickManager');
+    expect(text()).toContain('Sua gráfica está pronta para começar.');
+    expect(text()).toContain('Vamos criar seu primeiro pedido e conhecer o fluxo na prática?');
+    expect(text()).not.toContain('Tudo pronto');
     expect(text()).toContain('Criar meu primeiro pedido');
     expect(text()).toContain('Explorar sozinho');
   });

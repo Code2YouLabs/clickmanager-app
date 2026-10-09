@@ -4,13 +4,12 @@
   </div>
 
   <div class="primeiro-pedido-welcome__content">
-    <p class="primeiro-pedido-welcome__eyebrow">Tudo pronto</p>
     <h2 mat-dialog-title>Bem-vindo ao ClickManager</h2>
     <mat-dialog-content>
-      <p>
-        Sua empresa está pronta para começar.
-        Vamos criar seu primeiro pedido juntos?
-      </p>
+      <div class="primeiro-pedido-welcome__message">
+        <p>Sua gráfica está pronta para começar.</p>
+        <p>Vamos criar seu primeiro pedido e conhecer o fluxo na prática?</p>
+      </div>
 
       @if (erroOferta) {
         <div class="primeiro-pedido-welcome__notice" role="status">
@@ -25,19 +24,19 @@
       }
     </mat-dialog-content>
 
-    <mat-dialog-actions align="end">
-      <button mat-button type="button" [disabled]="iniciando || ignorando" (click)="explorarSozinho()">
-        @if (ignorando) {
-          Salvando...
-        } @else {
-          Explorar sozinho
-        }
-      </button>
-      <button mat-flat-button color="primary" type="button" [disabled]="iniciando || ignorando" (click)="criarPrimeiroPedido()">
+    <mat-dialog-actions>
+      <button class="primeiro-pedido-welcome__primary" mat-flat-button color="primary" type="button" [disabled]="iniciando || ignorando" (click)="criarPrimeiroPedido()">
         @if (iniciando) {
           Preparando...
         } @else {
           Criar meu primeiro pedido
+        }
+      </button>
+      <button class="primeiro-pedido-welcome__secondary" mat-button type="button" [disabled]="iniciando || ignorando" (click)="explorarSozinho()">
+        @if (ignorando) {
+          Salvando...
+        } @else {
+          Explorar sozinho
         }
       </button>
     </mat-dialog-actions>

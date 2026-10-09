@@ -1,61 +1,88 @@
 .primeiro-pedido-welcome {
+  box-sizing: border-box;
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 18px;
-  width: min(100%, 520px);
-  padding: 8px 4px 4px;
+  justify-items: center;
+  width: min(100%, 740px);
+  padding: 42px 54px 38px;
+  text-align: center;
 }
 
 .primeiro-pedido-welcome__icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 8px;
-  background: #e8f3ff;
-  color: #1976d2;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 24px;
+  border: 1px solid color-mix(in srgb, var(--mat-sys-primary) 20%, transparent);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(255, 255, 255, 0)),
+    var(--mat-sys-primary-fixed-dim);
+  color: var(--mat-sys-primary);
+  box-shadow: 0 14px 30px rgba(0, 133, 219, 0.14);
 
   mat-icon {
-    width: 28px;
-    height: 28px;
-    font-size: 28px;
+    width: 32px;
+    height: 32px;
+    font-size: 32px;
   }
 }
 
 .primeiro-pedido-welcome__content {
+  display: grid;
+  justify-items: center;
   min-width: 0;
-}
-
-.primeiro-pedido-welcome__eyebrow {
-  margin: 0 0 4px;
-  color: #1976d2;
-  font-size: 0.76rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  width: 100%;
 }
 
 .primeiro-pedido-welcome h2 {
   margin: 0;
+  padding: 0;
   color: #172033;
-  font-size: 1.45rem;
+  font-size: 30px;
   font-weight: 800;
-  line-height: 1.18;
+  line-height: 1.16;
+  letter-spacing: 0;
 }
 
-.primeiro-pedido-welcome p {
+.primeiro-pedido-welcome mat-dialog-content {
+  box-sizing: border-box;
+  width: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 18px 0 0;
+  overflow: visible;
+}
+
+.primeiro-pedido-welcome__message {
+  display: grid;
+  gap: 6px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.primeiro-pedido-welcome__message p {
+  margin: 0;
   color: #536173;
-  line-height: 1.5;
+  font-size: 17px;
+  line-height: 1.48;
+}
+
+.primeiro-pedido-welcome__message p:first-child {
+  color: #243047;
+  font-weight: 600;
 }
 
 .primeiro-pedido-welcome__notice,
 .primeiro-pedido-welcome__error {
-  margin-top: 14px;
+  max-width: 520px;
+  margin: 24px auto 0;
   padding: 10px 12px;
   border-radius: 8px;
   font-size: 0.86rem;
   line-height: 1.35;
+  text-align: left;
 }
 
 .primeiro-pedido-welcome__notice {
@@ -68,28 +95,107 @@
   color: #b71c1c;
 }
 
+.primeiro-pedido-welcome mat-dialog-actions {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 10px;
+  justify-content: center;
+  min-height: 0;
+  margin: 0;
+  padding: 30px 0 0;
+}
+
+.primeiro-pedido-welcome__primary {
+  width: min(100%, 260px);
+  min-height: 46px;
+  font-weight: 700;
+}
+
+.primeiro-pedido-welcome__secondary {
+  min-height: 38px;
+  padding: 0 12px;
+  color: var(--mat-sys-primary);
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .primeiro-pedido-welcome__icon {
+    animation: primeiro-pedido-welcome-icon 240ms ease-out both;
+  }
+}
+
+@keyframes primeiro-pedido-welcome-icon {
+  from {
+    opacity: 0.72;
+    transform: translateY(4px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @media (max-width: 599px) {
   .primeiro-pedido-welcome {
-    grid-template-columns: 1fr;
-    gap: 12px;
+    width: min(100%, calc(100vw - 32px));
+    max-height: calc(100dvh - 48px);
+    padding: 30px 22px 24px;
+    overflow-y: auto;
   }
 
   .primeiro-pedido-welcome__icon {
-    width: 46px;
-    height: 46px;
+    width: 56px;
+    height: 56px;
+    margin-bottom: 20px;
+    border-radius: 16px;
+
+    mat-icon {
+      width: 28px;
+      height: 28px;
+      font-size: 28px;
+    }
   }
 
   .primeiro-pedido-welcome h2 {
-    font-size: 1.22rem;
+    font-size: 26px;
+  }
+
+  .primeiro-pedido-welcome mat-dialog-content {
+    padding-top: 14px;
+  }
+
+  .primeiro-pedido-welcome__message {
+    max-width: 100%;
+  }
+
+  .primeiro-pedido-welcome__message p {
+    font-size: 15px;
+    line-height: 1.48;
   }
 
   .primeiro-pedido-welcome mat-dialog-actions {
-    align-items: stretch;
-    flex-direction: column-reverse;
+    width: 100%;
+    padding-top: 24px;
   }
 
-  .primeiro-pedido-welcome button {
+  .primeiro-pedido-welcome__primary {
     width: 100%;
-    min-height: 44px;
+  }
+
+  .primeiro-pedido-welcome__secondary {
+    width: 100%;
+  }
+}
+
+@media (max-width: 370px) {
+  .primeiro-pedido-welcome {
+    width: min(100%, calc(100vw - 24px));
+    padding: 26px 18px 22px;
+  }
+
+  .primeiro-pedido-welcome h2 {
+    font-size: 24px;
   }
 }

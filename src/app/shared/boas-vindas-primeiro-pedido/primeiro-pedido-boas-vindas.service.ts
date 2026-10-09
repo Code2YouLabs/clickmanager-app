@@ -103,7 +103,7 @@ export class PrimeiroPedidoBoasVindasService {
 
   private abrirDialog(usuario: Usuario): void {
     this.dialogRef = this.dialog.open(PrimeiroPedidoBoasVindasComponent, {
-      width: '560px',
+      width: '740px',
       maxWidth: 'calc(100vw - 32px)',
       disableClose: true,
       autoFocus: 'dialog',

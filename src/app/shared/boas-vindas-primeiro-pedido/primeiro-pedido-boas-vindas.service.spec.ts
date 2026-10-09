@@ -104,6 +104,20 @@ describe('PrimeiroPedidoBoasVindasService', () => {
     expect(jornada.consultar).toHaveBeenCalledWith(PRIMEIRO_PEDIDO_JORNADA);
   }));
 
+  it('abre o modal com largura de boas-vindas responsiva', fakeAsync(() => {
+    const usuario = usuarioGrafica();
+    flow.marcarOnboardingConcluido(usuario);
+
+    service.avaliarEExibir(usuario);
+    tick();
+
+    expect(dialog.open).toHaveBeenCalledWith(jasmine.any(Function), jasmine.objectContaining({
+      width: '740px',
+      maxWidth: 'calc(100vw - 32px)',
+      panelClass: 'primeiro-pedido-welcome-dialog',
+    }));
+  }));
+
   it('nao exibe para empresa antiga que ja aparece com onboarding v2 concluido', fakeAsync(() => {
     service.avaliarEExibir(usuarioGrafica());
     tick();
