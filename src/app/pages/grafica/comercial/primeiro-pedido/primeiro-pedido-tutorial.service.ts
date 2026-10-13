@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { EMPTY, Observable, of } from 'rxjs';
-import { catchError, map, switchMap, take } from 'rxjs/operators';
+import { catchError, filter, finalize, map, switchMap, take } from 'rxjs/operators';
 import { GraficaComercialDestinoResponse, PedidoComercialResumo } from '../../shared/grafica.models';
 import { GraficaProdutoService } from '../../shared/grafica.service';
 import { PRIMEIRO_PEDIDO_JORNADA } from 'src/app/shared/jornadas/jornada.constants';
@@ -56,6 +56,13 @@ export class PrimeiroPedidoTutorialService {
   private readonly graficaService = inject(GraficaProdutoService);
   private pedidoCriadoId: number | null = null;
   private retomadaSemPedidoId = false;
+  private abandonandoTutorial = false;
+
+  constructor() {
+    this.tutorial.events$.pipe(
+      filter((event) => event.type === 'exited' && event.tutorialId === PRIMEIRO_PEDIDO_TUTORIAL_ID),
+    ).subscribe(() => this.abandonarTutorial());
+  }
 
   iniciarSeNecessario(pedidoIdContexto?: number | null): void {
     if (this.tutorialAtivo()) {
@@ -257,8 +264,10 @@ export class PrimeiroPedidoTutorialService {
           id: 'revisao',
           title: 'Revise antes de criar',
           description: 'Confira cliente, item e total. Quando tudo estiver certo, crie o pedido.',
-          targetId: PRIMEIRO_PEDIDO_TARGETS.salvar,
+          targetId: PRIMEIRO_PEDIDO_TARGETS.revisao,
           route: `${PRIMEIRO_PEDIDO_JORNADA.rotaInicial}/novo`,
+          preferredPlacement: 'bottom',
+          scrollBlock: 'center',
           advanceOn: PRIMEIRO_PEDIDO_EVENTOS.pedidoCriado,
         },
         {
@@ -350,6 +359,23 @@ export class PrimeiroPedidoTutorialService {
     this.pedidoCriadoId = null;
     this.retomadaSemPedidoId = true;
     this.tutorial.stop();
+  }
+
+  private abandonarTutorial(): void {
+    if (this.abandonandoTutorial) {
+      return;
+    }
+
+    this.abandonandoTutorial = true;
+    this.jornada.abandonar(PRIMEIRO_PEDIDO_JORNADA).pipe(
+      take(1),
+      catchError(() => EMPTY),
+      finalize(() => {
+        this.abandonandoTutorial = false;
+        this.pedidoCriadoId = null;
+        this.retomadaSemPedidoId = false;
+      }),
+    ).subscribe();
   }
 
   private pedidoIdDaUrl(): number | null {

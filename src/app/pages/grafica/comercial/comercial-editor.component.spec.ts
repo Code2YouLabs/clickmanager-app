@@ -77,6 +77,19 @@ describe('ComercialEditorComponent', () => {
     component.ngOnDestroy();
   });
 
+  it('registra o passo de novo pedido somente quando a tela de criacao esta ativa', () => {
+    const component = criarEditor('pedidos');
+    const tutorial = (component as any).primeiroPedidoTutorial as jasmine.SpyObj<PrimeiroPedidoTutorialService>;
+
+    component.ngOnInit();
+    component.ngOnInit();
+
+    expect(tutorial.iniciarSeNecessario).toHaveBeenCalledWith(null);
+    expect(tutorial.registrarNovoPedido).toHaveBeenCalledTimes(1);
+
+    component.ngOnDestroy();
+  });
+
   it('mostra responsavel autenticado nos modos de criacao', () => {
     const pedido = criarEditor('pedidos');
     const orcamento = criarEditor('orcamentos');
@@ -573,6 +586,7 @@ function criarEditor(tipo = 'pedidos'): ComercialEditorComponent {
   clienteService.buscarPorNome.and.returnValue(of({ content: [] }));
   const primeiroPedidoTutorial = jasmine.createSpyObj<PrimeiroPedidoTutorialService>('PrimeiroPedidoTutorialService', [
     'iniciarSeNecessario',
+    'registrarNovoPedido',
     'registrarClienteSelecionado',
     'registrarItemAdicionado',
     'registrarConfiguradorAberto',

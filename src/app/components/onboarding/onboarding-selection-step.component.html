@@ -8,6 +8,35 @@
   <div class="selection-step">
     <p class="selection-step__helper" *ngIf="ajuda">{{ ajuda }}</p>
 
+    <div class="selection-step__quick-actions" *ngIf="!loading && items.length">
+      <span class="selection-step__quick-title">Escolha em massa:</span>
+
+      <div class="selection-step__quick-buttons">
+        <button
+          mat-stroked-button
+          type="button"
+          color="primary"
+          *ngIf="!allSelected; else allSelectedState"
+          (click)="toggleAll.emit(true)"
+        >
+          {{ textoSelecionarTodos }}
+        </button>
+
+        <ng-template #allSelectedState>
+          <button
+            mat-stroked-button
+            type="button"
+            color="primary"
+            (click)="toggleAll.emit(false)"
+          >
+            Desmarcar todos
+          </button>
+        </ng-template>
+
+        <span class="selection-step__all-selected" aria-live="polite">{{ contadorSelecionados }}</span>
+      </div>
+    </div>
+
     <div class="selection-step__featured" *ngIf="!loading && sugestoes.length">
       <span class="selection-step__featured-title">{{ featuredTitle }}</span>
       <div class="selection-step__featured-list">
@@ -20,36 +49,6 @@
         >
           <mat-icon *ngIf="isSelecionado(item.id)">check</mat-icon>
           {{ item.nome }}
-        </button>
-      </div>
-    </div>
-
-    <div class="selection-step__quick-actions" *ngIf="!loading && items.length">
-      <span class="selection-step__quick-title">Selecionar rapidamente:</span>
-
-      <div class="selection-step__quick-buttons">
-        <button
-          mat-stroked-button
-          type="button"
-          color="primary"
-          *ngIf="!allSelected; else allSelectedState"
-          (click)="toggleAll.emit(true)"
-        >
-          Marcar todos
-        </button>
-
-        <ng-template #allSelectedState>
-          <span class="selection-step__all-selected">Todos selecionados ✓</span>
-        </ng-template>
-
-        <button
-          mat-button
-          type="button"
-          color="primary"
-          [disabled]="!temSelecao"
-          (click)="toggleAll.emit(false)"
-        >
-          Limpar seleção
         </button>
       </div>
     </div>

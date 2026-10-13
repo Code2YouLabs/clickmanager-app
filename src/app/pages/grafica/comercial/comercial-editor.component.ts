@@ -174,6 +174,7 @@ export class GraficaServicoWizardDialogComponent {
 })
 export class ComercialEditorComponent implements OnInit, OnDestroy {
   readonly primeiroPedidoTargets = PRIMEIRO_PEDIDO_TARGETS;
+  private primeiroPedidoCriacaoRegistrada = false;
   tipo: ComercialTipo = 'rascunhos';
   pedidoId: number | null = null;
   itens: ComposicaoComercialResolvida['itens'] = [];
@@ -647,6 +648,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
       }
       if (this.tipo === 'pedidos') {
         this.primeiroPedidoTutorial.iniciarSeNecessario(this.pedidoId);
+        this.registrarCriacaoPrimeiroPedidoSeNecessario();
       }
     });
   }
@@ -662,6 +664,15 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     } catch {
       this.usuarioLogado = null;
     }
+  }
+
+  private registrarCriacaoPrimeiroPedidoSeNecessario(): void {
+    if (this.tipo !== 'pedidos' || this.pedidoId || this.primeiroPedidoCriacaoRegistrada) {
+      return;
+    }
+
+    this.primeiroPedidoCriacaoRegistrada = true;
+    this.primeiroPedidoTutorial.registrarNovoPedido();
   }
 
   carregarPedido(id: number): void {

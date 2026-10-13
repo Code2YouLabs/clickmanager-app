@@ -93,7 +93,6 @@
             </app-cliente-selector-card>
 
             <app-itens-pedido-section
-              [appTutorialTarget]="tipo === 'pedidos' && !pedidoId && itens.length ? primeiroPedidoTargets.revisao : ''"
               [titulo]="itensTitulo"
               [itemContextoLabel]="itemContextoLabel"
               [itens]="itensView"
@@ -137,7 +136,12 @@
 
           <div class="summary-column">
             <div class="summary-sticky">
-              <app-section-card [titulo]="resumoTitulo" [divider]="true" class="summary-card">
+              <app-section-card
+                [titulo]="resumoTitulo"
+                [divider]="true"
+                class="summary-card"
+                [appTutorialTarget]="tipo === 'pedidos' && !pedidoId && itens.length ? primeiroPedidoTargets.revisao : ''"
+              >
                 <div class="summary-row">
                   <span>Subtotal</span>
                   <strong class="value align-right">{{ resumoFinanceiroView.subtotal | currency:'BRL':'symbol':'1.2-2' }}</strong>

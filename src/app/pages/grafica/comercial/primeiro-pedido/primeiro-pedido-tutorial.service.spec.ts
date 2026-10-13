@@ -1,10 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { GraficaProdutoService } from '../../shared/grafica.service';
 import { PRIMEIRO_PEDIDO_JORNADA } from 'src/app/shared/jornadas/jornada.constants';
 import { JornadaProgressoResponse } from 'src/app/shared/jornadas/jornada.models';
 import { JornadaService } from 'src/app/shared/jornadas/jornada.service';
+import { TutorialEvent } from 'src/app/shared/tutorial/tutorial.model';
 import { TutorialService } from 'src/app/shared/tutorial/tutorial.service';
 import {
   PRIMEIRO_PEDIDO_ETAPAS,
@@ -19,11 +20,17 @@ describe('PrimeiroPedidoTutorialService', () => {
   let tutorial: jasmine.SpyObj<TutorialService>;
   let router: jasmine.SpyObj<Router>;
   let graficaService: jasmine.SpyObj<GraficaProdutoService>;
+  let tutorialEvents: Subject<TutorialEvent>;
 
   beforeEach(() => {
-    jornada = jasmine.createSpyObj<JornadaService>('JornadaService', ['consultar', 'atualizarEtapa', 'concluir']);
+    jornada = jasmine.createSpyObj<JornadaService>('JornadaService', ['consultar', 'atualizarEtapa', 'concluir', 'abandonar']);
     graficaService = jasmine.createSpyObj<GraficaProdutoService>('GraficaProdutoService', ['buscarPedidoComercial']);
-    tutorial = jasmine.createSpyObj<TutorialService>('TutorialService', ['start', 'notify', 'complete', 'stop', 'activeDefinition']);
+    tutorialEvents = new Subject<any>();
+    tutorial = jasmine.createSpyObj<TutorialService>(
+      'TutorialService',
+      ['start', 'notify', 'complete', 'stop', 'activeDefinition'],
+      { events$: tutorialEvents.asObservable() },
+    );
     tutorial.activeDefinition.and.returnValue({ id: PRIMEIRO_PEDIDO_TUTORIAL_ID } as any);
     router = jasmine.createSpyObj<Router>('Router', ['parseUrl'], { url: '/page/grafica/comercial/pedidos' });
     router.parseUrl.and.callFake((url: string) => ({
@@ -39,6 +46,7 @@ describe('PrimeiroPedidoTutorialService', () => {
     jornada.consultar.and.returnValue(of(progresso()));
     jornada.atualizarEtapa.and.returnValue(of(progresso({ etapaAtual: PRIMEIRO_PEDIDO_ETAPAS.item })));
     jornada.concluir.and.returnValue(of(progresso({ status: 'CONCLUIDO' })));
+    jornada.abandonar.and.returnValue(of(progresso({ status: 'ABANDONADO' })));
     graficaService.buscarPedidoComercial.and.returnValue(of({ id: 42, numero: 'PED-42', status: 'PENDENTE', total: 10, itens: [] }));
 
     TestBed.configureTestingModule({
@@ -84,6 +92,21 @@ describe('PrimeiroPedidoTutorialService', () => {
     expect(novoPedidoStep).toEqual(jasmine.objectContaining({
       action: 'clickTarget',
       advanceOn: PRIMEIRO_PEDIDO_EVENTOS.novoPedido,
+    }));
+  });
+
+  it('posiciona a revisao no resumo do pedido sem mirar o botao de criacao', () => {
+    tutorial.activeDefinition.and.returnValue(null);
+
+    service.iniciarSeNecessario();
+
+    const definition = tutorial.start.calls.mostRecent().args[0];
+    const revisaoStep = definition.steps.find((step) => step.id === 'revisao');
+    expect(revisaoStep).toEqual(jasmine.objectContaining({
+      targetId: 'primeiro-pedido-revisao',
+      preferredPlacement: 'bottom',
+      scrollBlock: 'center',
+      advanceOn: PRIMEIRO_PEDIDO_EVENTOS.pedidoCriado,
     }));
   });
 
@@ -198,6 +221,37 @@ describe('PrimeiroPedidoTutorialService', () => {
       completion: true,
     }));
     expect(conclusaoStep.advanceOn).toBeUndefined();
+  });
+
+  it('abandona a jornada quando o usuario fecha ou desiste do tutorial', () => {
+    tutorialEvents.next({
+      type: 'exited',
+      tutorialId: PRIMEIRO_PEDIDO_TUTORIAL_ID,
+      stepId: 'cliente',
+      stepIndex: 2,
+      reason: 'user',
+    });
+
+    expect(jornada.abandonar).toHaveBeenCalledOnceWith(PRIMEIRO_PEDIDO_JORNADA);
+  });
+
+  it('nao abandona a jornada por eventos de outros tutoriais', () => {
+    tutorialEvents.next({
+      type: 'exited',
+      tutorialId: 'OUTRO_TUTORIAL',
+      reason: 'user',
+    });
+
+    expect(jornada.abandonar).not.toHaveBeenCalled();
+  });
+
+  it('nao reinicia o tutorial quando a jornada ja foi abandonada', () => {
+    tutorial.activeDefinition.and.returnValue(null);
+    jornada.consultar.and.returnValue(of(progresso({ status: 'ABANDONADO' })));
+
+    service.iniciarSeNecessario();
+
+    expect(tutorial.start).not.toHaveBeenCalled();
   });
 });
 
