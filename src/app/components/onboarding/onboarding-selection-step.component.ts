@@ -33,7 +33,7 @@ export class OnboardingSelectionStepComponent {
   }
 
   get contadorSelecionados(): string {
-    return `${this.quantidadeSelecionada} selecionado${this.quantidadeSelecionada === 1 ? '' : 's'}`;
+    return `${this.quantidadeSelecionada} de ${this.items.length} selecionados`;
   }
 
   get allSelected(): boolean {
@@ -46,6 +46,12 @@ export class OnboardingSelectionStepComponent {
 
   get temSelecao(): boolean {
     return this.quantidadeSelecionada > 0;
+  }
+
+  get textoSelecionarTodos(): string {
+    const quantidade = this.items.length;
+    const item = quantidade === 1 ? 'item' : 'itens';
+    return `Selecionar todos os ${quantidade} ${item}`;
   }
 
   isSelecionado(id: number): boolean {

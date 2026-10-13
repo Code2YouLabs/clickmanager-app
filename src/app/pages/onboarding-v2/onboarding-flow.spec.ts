@@ -78,7 +78,11 @@ describe('Narrativa do onboarding', () => {
   it('mostra dois segundos por tarefa e libera a conclusão após os dados reais', fakeAsync(() => {
     const f = TestBed.createComponent(OnboardingV2ProductsPageComponent);
     f.detectChanges();
+    expect(f.nativeElement.textContent).toContain('Selecionar todos os 1 produto');
+    expect(f.nativeElement.textContent).toContain('0 de 1 selecionados');
     f.componentInstance.seletor!.selecionarTodos(true); f.detectChanges();
+    expect(f.nativeElement.textContent).toContain('Desmarcar todos');
+    expect(f.nativeElement.textContent).toContain('1 de 1 selecionados');
     f.nativeElement.querySelector('footer button[mat-flat-button]').click(); f.detectChanges();
     expect(f.componentInstance.stage).toBe('PREPARANDO');
     expect(biblioteca.importar).toHaveBeenCalledWith(jasmine.any(Array), true);
@@ -148,11 +152,12 @@ describe('Narrativa do onboarding', () => {
     expect(biblioteca.importar).not.toHaveBeenCalled(); f.destroy();
   });
 
-  it('acomoda stepper, árvore e ações em 360px sem rolagem horizontal', async () => {
+  for (const largura of [430, 390, 360]) {
+    it(`acomoda stepper, árvore e ações em ${largura}px sem rolagem horizontal`, async () => {
     const f = TestBed.createComponent(OnboardingV2ProductsPageComponent);
     f.detectChanges(); await f.whenStable(); f.detectChanges();
     const frame = document.createElement('iframe');
-    frame.style.width = '360px'; frame.style.height = '800px';
+    frame.style.width = `${largura}px`; frame.style.height = '800px';
     document.body.appendChild(frame);
     try {
       const doc = frame.contentDocument!;
@@ -166,8 +171,12 @@ describe('Narrativa do onboarding', () => {
       expect(steps.scrollWidth).toBeLessThanOrEqual(steps.clientWidth + 1);
       const actions = doc.querySelector('.onboarding-shell__footer-right') as HTMLElement;
       expect(frame.contentWindow!.getComputedStyle(actions).flexDirection).toBe('column');
+      const text = doc.body.textContent || '';
+      expect(text.indexOf('Selecionar todos os 1 produto')).toBeGreaterThan(-1);
+      expect(text.indexOf('Selecionar todos os 1 produto')).toBeLessThan(text.indexOf('Vinil'));
       expect(doc.querySelector('header button')).toBeNull();
     } finally { frame.remove(); f.destroy(); }
-  });
+    });
+  }
 
 });

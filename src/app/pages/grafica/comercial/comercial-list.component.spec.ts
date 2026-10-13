@@ -69,6 +69,7 @@ describe('ComercialListComponent', () => {
       expect(fixture.nativeElement.querySelector('[role=heading]').textContent).toContain(titulo);
       expect(fixture.nativeElement.textContent).toContain(component.subtitulo);
       component.novo(); expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial', tipo, 'novo']);
+      expect(primeiroPedidoTutorial.registrarNovoPedido).not.toHaveBeenCalled();
       component.onAction({ action: 'abrir', row: page.content[0] });
       expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial', tipo, 1]);
     });

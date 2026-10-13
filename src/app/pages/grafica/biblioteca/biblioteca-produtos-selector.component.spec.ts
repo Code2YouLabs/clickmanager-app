@@ -29,9 +29,21 @@ describe('BibliotecaProdutosSelectorComponent' , () => {
     component.categoria = 'Serviços'; expect(component.filtrados).toEqual([]);
   }));
   it('seleciona todos os resultados preservando ids iguais de tipos diferentes', () => {
+    expect(component.contadorSelecionados).toBe('0 de 2 selecionados');
+    expect(component.textoAcaoSelecao).toBe('Selecionar todos os 2 produtos');
     component.selecionarTodos(true); expect(component.selecionados.size).toBe(2);
+    expect(component.contadorSelecionados).toBe('2 de 2 selecionados');
+    expect(component.textoAcaoSelecao).toBe('Desmarcar todos');
     component.categoria = 'Serviços'; component.selecionarTodos(false);
     expect(component.selecionados.has('PRODUTO:1')).toBeTrue(); expect(component.selecionados.has('SERVICO:1')).toBeFalse();
+    expect(component.contadorSelecionados).toBe('0 de 1 selecionados');
+    expect(component.textoAcaoSelecao).toBe('Selecionar todos os 1 produto exibido');
+  });
+  it('mantem contador parcial quando a selecao individual continua sendo usada', () => {
+    component.marcar(produto, true);
+    expect(component.todosSelecionados).toBeFalse();
+    expect(component.algunsSelecionados).toBeTrue();
+    expect(component.contadorSelecionados).toBe('1 de 2 selecionados');
   });
   it('mostra sucesso parcial e atualiza o estado atual da empresa', () => {
     const resultado: BibliotecaResultado = { importados: [{ bibliotecaProdutoId: 1, nome: produto.nome }], ignorados: [{bibliotecaProdutoId: 1,nome: servico.nome,motivo:'DUPLICADO'}], erros: [] };
@@ -53,6 +65,8 @@ describe('BibliotecaProdutosSelectorComponent' , () => {
     const fixture = TestBed.createComponent(BibliotecaProdutosSelectorComponent); fixture.detectChanges();
     fixture.componentInstance.modo = 'detalhada'; fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Adicionar à empresa');
+    expect(fixture.nativeElement.textContent).toContain('Selecionar todos os 2 produtos');
+    expect(fixture.nativeElement.textContent).toContain('0 de 2 selecionados');
     expect(fixture.nativeElement.textContent).toContain('Acabamentos disponíveis');
     fixture.destroy();
   });

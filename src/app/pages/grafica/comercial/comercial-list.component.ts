@@ -247,9 +247,6 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   novo(): void {
-    if (this.tipo === 'pedidos') {
-      this.primeiroPedidoTutorial.registrarNovoPedido();
-    }
     this.router.navigate(['/page/grafica/comercial', this.tipo, 'novo']);
   }
 
