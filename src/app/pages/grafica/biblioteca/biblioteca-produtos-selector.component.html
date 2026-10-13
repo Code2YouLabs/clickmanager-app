@@ -21,9 +21,21 @@
     <mat-button-toggle value="detalhada">Detalhada</mat-button-toggle>
   </mat-button-toggle-group>
 </div>
-<div class="biblioteca-acoes">
-  <mat-checkbox [checked]="todosSelecionados" [indeterminate]="algunsSelecionados" [disabled]="carregando || importando || !filtrados.length" (change)="selecionarTodos($event.checked)">Selecionar todos os resultados ({{ filtrados.length }})</mat-checkbox>
-  @if (!onboarding) { <span aria-live="polite">{{ selecionados.size }} selecionado(s)</span> }
+<div class="biblioteca-acoes" *ngIf="!carregando || filtrados.length">
+  <div class="biblioteca-acoes__bulk">
+    <button
+      mat-stroked-button
+      color="primary"
+      type="button"
+      [disabled]="carregando || importando || !filtrados.length"
+      (click)="selecionarTodos(!todosSelecionados)"
+      [attr.aria-pressed]="todosSelecionados"
+    >
+      <mat-icon>{{ todosSelecionados ? 'remove_done' : 'select_all' }}</mat-icon>
+      <span>{{ textoAcaoSelecao }}</span>
+    </button>
+    <span class="biblioteca-acoes__contador" aria-live="polite">{{ contadorSelecionados }}</span>
+  </div>
   @if (mostrarAcaoAdicionar) { <button mat-flat-button color="primary" [disabled]="carregando || importando || !selecionados.size" (click)="adicionar()">{{ importando ? 'Adicionando...' : 'Adicionar à empresa' }}</button> }
 </div>
 @if (carregando) { <mat-progress-bar mode="indeterminate" aria-label="Carregando biblioteca"></mat-progress-bar> }

@@ -74,6 +74,7 @@
             </app-section-card>
 
             <app-cliente-selector-card
+              [appTutorialTarget]="tipo === 'pedidos' && !pedidoId ? primeiroPedidoTargets.cliente : ''"
               [cliente]="clienteConfirmado"
               [editando]="trocandoCliente || !clienteConfirmado"
               [salvando]="salvandoCliente"
@@ -100,6 +101,7 @@
               [mostrarAcoes]="podeEditarItens"
               [mostrarDescreverItens]="false"
               [mostrarBuscaRapida]="true"
+              [buscarProdutosTutorialTarget]="tipo === 'pedidos' && !pedidoId ? primeiroPedidoTargets.adicionarItem : ''"
               buscarProdutosLabel="Adicionar produto"
               buscaRapidaLabel="Busca rápida"
               (buscarProdutos)="abrirWizard()"
@@ -134,7 +136,12 @@
 
           <div class="summary-column">
             <div class="summary-sticky">
-              <app-section-card [titulo]="resumoTitulo" [divider]="true" class="summary-card">
+              <app-section-card
+                [titulo]="resumoTitulo"
+                [divider]="true"
+                class="summary-card"
+                [appTutorialTarget]="tipo === 'pedidos' && !pedidoId && itens.length ? primeiroPedidoTargets.revisao : ''"
+              >
                 <div class="summary-row">
                   <span>Subtotal</span>
                   <strong class="value align-right">{{ resumoFinanceiroView.subtotal | currency:'BRL':'symbol':'1.2-2' }}</strong>

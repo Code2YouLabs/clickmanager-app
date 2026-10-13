@@ -43,6 +43,7 @@ import {
 import { ConfiguracaoAplicativosService } from 'src/app/services/configuracao-aplicativos.service';
 import { FeatureFlagService } from 'src/app/services/feature-flag.service';
 import { filtrarMenuPrincipal } from './vertical/sidebar/menu-filter';
+import { PrimeiroPedidoBoasVindasService } from 'src/app/shared/boas-vindas-primeiro-pedido/primeiro-pedido-boas-vindas.service';
 
 const MOBILE_VIEW = 'screen and (max-width: 768px)';
 const TABLET_VIEW = 'screen and (min-width: 769px) and (max-width: 1024px)';
@@ -208,6 +209,7 @@ export class FullComponent implements OnInit, OnDestroy {
     private catalogoContext: CatalogoEmpresaContextService,
     private configuracaoAplicativosService: ConfiguracaoAplicativosService,
     private featureFlagService: FeatureFlagService,
+    private primeiroPedidoBoasVindas: PrimeiroPedidoBoasVindasService,
   ) {
     effect(() => {
       this.atualizarLinksEmpresa(this.configuracaoAplicativosService.configuracao());
@@ -267,6 +269,7 @@ export class FullComponent implements OnInit, OnDestroy {
         this.featureFlagService.carregar().pipe(take(1)).subscribe(() => {
           this.navItemsFiltrados = this.filtrarMenus(navItems, permissoes, this.tipoEmpresaAtual, this.versaoCatalogoAtual, usuario);
           this.mobileNavGroups = this.buildMobileNavGroups(this.navItemsFiltrados);
+          this.primeiroPedidoBoasVindas.avaliarEExibir(usuario);
         });
         this.currentPageTitle = this.resolveCurrentPageTitle(this.router.url);
         this.carregarStatusBilling();
@@ -287,6 +290,7 @@ export class FullComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.unlockBodyScroll();
     this.layoutChangesSubscription.unsubscribe();
+    this.primeiroPedidoBoasVindas.reset();
   }
 
   filtrarMenus(

@@ -1,11 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { TutorialOverlayComponent } from 'src/app/shared/tutorial/tutorial-overlay.component';
 import { AuthService } from 'src/app/services/auth.service';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, TutorialOverlayComponent],
   templateUrl: './app.component.html'
 })
 export class AppComponent implements OnInit {

@@ -20,11 +20,12 @@ import { TranslateModule } from '@ngx-translate/core';
 import { TablerIconsModule } from 'angular-tabler-icons';
 import { MaterialModule } from 'src/app/material.module';
 import { CommonModule } from '@angular/common';
+import { TutorialTargetDirective } from 'src/app/shared/tutorial/tutorial-target.directive';
 
 @Component({
   selector: 'app-nav-item',
   standalone: true,
-  imports: [TranslateModule, TablerIconsModule, MaterialModule, CommonModule],
+  imports: [TranslateModule, TablerIconsModule, MaterialModule, CommonModule, TutorialTargetDirective],
   templateUrl: './nav-item.component.html',
   styleUrls: [],
   animations: [

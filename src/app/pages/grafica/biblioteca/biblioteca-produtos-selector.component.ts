@@ -104,6 +104,15 @@ export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
   }
   get algunsSelecionados() { return !this.todosSelecionados && this.filtrados.some(i => this.selecionados.has(this.chave(i))); }
   get todosSelecionados() { return this.filtrados.length > 0 && this.filtrados.every(i => this.selecionados.has(this.chave(i))); }
+  get selecionadosFiltrados() { return this.filtrados.filter(i => this.selecionados.has(this.chave(i))).length; }
+  get contadorSelecionados() { return `${this.selecionadosFiltrados} de ${this.filtrados.length} selecionados`; }
+  get textoAcaoSelecao() {
+    if (this.todosSelecionados) return 'Desmarcar todos';
+    const quantidade = this.filtrados.length;
+    const produto = quantidade === 1 ? 'produto' : 'produtos';
+    const escopo = this.categoria || this.termo ? (quantidade === 1 ? ' exibido' : ' exibidos') : '';
+    return `Selecionar todos os ${quantidade} ${produto}${escopo}`;
+  }
   marcar(item: BibliotecaItem, valor: boolean) {
     if (this.importando) return;
     const chave = this.chave(item);

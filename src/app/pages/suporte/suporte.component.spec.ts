@@ -1,3 +1,5 @@
+import { registerLocaleData } from '@angular/common';
+import localePt from '@angular/common/locales/pt';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { convertToParamMap, ActivatedRoute, Router } from '@angular/router';
 import { By } from '@angular/platform-browser';
@@ -27,6 +29,10 @@ describe('SuporteComponent', () => {
 
   const item6 = chamadoItem(6, 'Pedido com dúvida', 'RESPONDIDO', '2026-09-29T15:00:00');
   const item7 = chamadoItem(7, 'Erro no acesso', 'ABERTO', '2026-09-29T16:00:00');
+
+  beforeAll(() => {
+    registerLocaleData(localePt);
+  });
 
   function setup(options: {
     initialId?: number | null;

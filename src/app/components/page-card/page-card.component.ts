@@ -7,24 +7,25 @@ import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
 import { CardHeaderComponent } from '../card-header/card-header.component';
+import { TutorialTargetDirective } from 'src/app/shared/tutorial/tutorial-target.directive';
 
 export type PageCardAction = { id: string; disabled?: boolean } & (
   { type: 'submit'; form: string; intent?: never; label?: string; icon?: string;
-    pendingLabel?: string; color?: 'primary' | 'accent' | 'warn'; primary?: boolean } |
+    pendingLabel?: string; color?: 'primary' | 'accent' | 'warn'; primary?: boolean; tutorialTarget?: string } |
   { type?: 'button'; form?: never; intent?: 'cancel'; label: string; icon?: string;
-    pendingLabel?: string; color?: 'primary' | 'accent' | 'warn'; primary?: boolean }
+    pendingLabel?: string; color?: 'primary' | 'accent' | 'warn'; primary?: boolean; tutorialTarget?: string }
 );
 
 type ResolvedPageCardAction = {
   id: string; label: string; icon?: string; disabled?: boolean; pendingLabel?: string;
   color?: 'primary' | 'accent' | 'warn'; primary?: boolean;
-  type?: 'submit' | 'button'; form?: string; intent?: 'cancel';
+  type?: 'submit' | 'button'; form?: string; intent?: 'cancel'; tutorialTarget?: string;
 };
 
 @Component({
   selector: 'app-page-card',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatDividerModule, MatButtonModule, MatIconModule, CardHeaderComponent],
+  imports: [CommonModule, MatCardModule, MatDividerModule, MatButtonModule, MatIconModule, CardHeaderComponent, TutorialTargetDirective],
   templateUrl: './page-card.component.html',
   styleUrls: ['./page-card.component.scss'],
 })
@@ -44,7 +45,7 @@ export class PageCardComponent {
       .filter(action => action.intent !== 'cancel')
       .map(action => action.type === 'submit'
         ? { id: action.id, type: 'submit', form: action.form, disabled: action.disabled,
-            label: 'Salvar', icon: 'save', primary: true, color: 'primary' }
+            label: 'Salvar', icon: 'save', primary: true, color: 'primary', tutorialTarget: action.tutorialTarget }
         : action);
     return this.formState
       ? [{ id: 'cancel', label: 'Cancelar', intent: 'cancel' }, ...actions]

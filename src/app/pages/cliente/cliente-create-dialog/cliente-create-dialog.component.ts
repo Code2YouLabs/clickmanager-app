@@ -12,6 +12,7 @@ import { MaterialModule } from 'src/app/material.module';
 import { EnderecoViaCep } from 'src/app/models/endereco/endereco.viacep.model';
 import { ClienteRequest } from 'src/app/models/cliente/cliente-request.model';
 import { ClienteResponse } from 'src/app/models/cliente/cliente-response.model';
+import { TutorialTargetDirective } from 'src/app/shared/tutorial/tutorial-target.directive';
 import { extrairMensagemErro } from 'src/app/utils/mensagem.util';
 import { ClienteService } from '../cliente.service';
 
@@ -19,6 +20,7 @@ export type ClienteCreateDialogData = {
   nome?: string | null;
   telefone?: string | null;
   email?: string | null;
+  tutorialTarget?: string | null;
 };
 
 @Component({
@@ -33,6 +35,7 @@ export type ClienteCreateDialogData = {
     InputEmailComponent,
     InputTelefoneComponent,
     InputTextoRestritoComponent,
+    TutorialTargetDirective,
   ],
   templateUrl: './cliente-create-dialog.component.html',
   styleUrl: './cliente-create-dialog.component.scss',

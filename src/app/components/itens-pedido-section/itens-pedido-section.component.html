@@ -1,7 +1,9 @@
 <app-section-card [titulo]="titulo" [divider]="true">
   <div class="itens-wrapper" [class.inativo]="inativo">
     <div class="itens-actions" actions *ngIf="mostrarAcoes">
-      <button mat-flat-button color="primary" class="add-item-button" type="button" (click)="buscarProdutos.emit()" [disabled]="inativo">
+      <button mat-flat-button color="primary" class="add-item-button" type="button"
+        [appTutorialTarget]="buscarProdutosTutorialTarget"
+        (click)="buscarProdutos.emit()" [disabled]="inativo">
         <mat-icon>add</mat-icon>
         {{ buscarProdutosLabel }}
       </button>

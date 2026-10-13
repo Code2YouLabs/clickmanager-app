@@ -53,6 +53,45 @@
               </mat-expansion-panel-header>
 
               <div class="conteudo">
+                @if (secao.tutorial) {
+                  <article class="tutorial-card" [class.tutorial-card--loading]="acaoTutorialEmAndamento === secao.id">
+                    <div class="tutorial-card__body">
+                      <span class="tutorial-card__badge">Tutorial</span>
+                      <div class="tutorial-card__status">
+                        <strong>Status:</strong>
+                        <span>{{ statusTutorialLabel(secao) }}</span>
+                      </div>
+                      @if (detalheTutorial(secao)) {
+                        <p>{{ detalheTutorial(secao) }}</p>
+                      }
+                      @if (erroJornadas && !progressoTutorial(secao)) {
+                        <p>Não foi possível carregar o estado dos tutoriais agora. Os guias continuam disponíveis.</p>
+                      }
+                    </div>
+
+                    <div class="tutorial-card__actions">
+                      @if (erroJornadas && !progressoTutorial(secao)) {
+                        <button mat-stroked-button color="primary" type="button" (click)="recarregarJornadas()">
+                          Tentar novamente
+                        </button>
+                      } @else {
+                        <button
+                          mat-flat-button
+                          color="primary"
+                          type="button"
+                          [disabled]="acaoTutorialDesabilitada(secao)"
+                          (click)="executarTutorial(secao)">
+                          @if (acaoTutorialEmAndamento === secao.id) {
+                            Processando...
+                          } @else {
+                            {{ acaoTutorialLabel(secao) }}
+                          }
+                        </button>
+                      }
+                    </div>
+                  </article>
+                }
+
                 @if (secao.passos?.length) {
                   <ol class="passos">
                     @for (passo of secao.passos; track passo) {

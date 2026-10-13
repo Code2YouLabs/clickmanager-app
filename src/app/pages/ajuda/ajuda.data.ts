@@ -1,4 +1,5 @@
 import { TipoEmpresa } from 'src/app/models/empresa/tipo-empresa.enum';
+import { PRIMEIRO_PEDIDO_JORNADA, PRIMEIRO_PEDIDO_PERMISSOES } from 'src/app/shared/jornadas/jornada.constants';
 import { AjudaSecao } from './ajuda.models';
 
 const grafica = [TipoEmpresa.GRAFICA];
@@ -6,6 +7,30 @@ const deposito = [TipoEmpresa.DEPOSITO];
 const todosSegmentos = [TipoEmpresa.GRAFICA, TipoEmpresa.DEPOSITO];
 
 export const AJUDA_SECOES: AjudaSecao[] = [
+  {
+    id: 'primeiro-pedido',
+    titulo: 'Primeiro Pedido',
+    descricao: 'Aprenda a criar uma venda e acompanhar o pedido pelo Kanban.',
+    grupo: 'Comecando',
+    icon: 'rocket_launch',
+    allowedEmpresaTipos: grafica,
+    featureKey: 'GRAFICA',
+    requiredPermissions: [...PRIMEIRO_PEDIDO_PERMISSOES],
+    destaque: true,
+    atalhoRapido: true,
+    ordemAtalho: 5,
+    palavrasChave: ['tutorial', 'primeiro pedido', 'pedido', 'venda', 'kanban', 'comercial', 'primeiros passos'],
+    aliases: ['tutorial-primeiro-pedido', 'primeiro-pedido-v1'],
+    tutorial: {
+      id: 'PRIMEIRO_PEDIDO_V1',
+      jornada: PRIMEIRO_PEDIDO_JORNADA,
+    },
+    passos: [
+      'Crie um pedido real para um cliente da gráfica.',
+      'Adicione um item vendido e confirme o pedido.',
+      'Acompanhe o pedido no Kanban e mova o card para concluir o tutorial.',
+    ],
+  },
   {
     id: 'clientes',
     titulo: 'Clientes',

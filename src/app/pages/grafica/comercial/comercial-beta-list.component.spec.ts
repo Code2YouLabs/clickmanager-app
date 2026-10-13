@@ -10,6 +10,7 @@ import { ComercialListComponent } from './comercial-list.component';
 import { GraficaProdutoService } from '../shared/grafica.service';
 import { GraficaPagina, PedidoComercialDetalhe, PedidoComercialResumo, PedidoFluxoResponse } from '../shared/grafica.models';
 import { KanbanDragEvent, KanbanDropEvent } from 'src/app/components/kanban-board/kanban-board.models';
+import { PrimeiroPedidoTutorialService } from './primeiro-pedido/primeiro-pedido-tutorial.service';
 
 describe('ComercialListComponent Kanban', () => {
   let fixture: ComponentFixture<ComercialListComponent>;
@@ -18,6 +19,7 @@ describe('ComercialListComponent Kanban', () => {
   let router: jasmine.SpyObj<Router>;
   let dialog: jasmine.SpyObj<MatDialog>;
   let toastr: jasmine.SpyObj<ToastrService>;
+  let primeiroPedidoTutorial: jasmine.SpyObj<PrimeiroPedidoTutorialService>;
   let routeData$: Subject<Record<string, unknown>>;
   let queryParamMap$: Subject<ReturnType<typeof convertToParamMap>>;
 
@@ -33,6 +35,14 @@ describe('ComercialListComponent Kanban', () => {
     router = jasmine.createSpyObj<Router>('Router', ['navigate']);
     dialog = jasmine.createSpyObj<MatDialog>('MatDialog', ['open']);
     toastr = jasmine.createSpyObj<ToastrService>('ToastrService', ['success', 'error', 'info']);
+    primeiroPedidoTutorial = jasmine.createSpyObj<PrimeiroPedidoTutorialService>('PrimeiroPedidoTutorialService', [
+      'iniciarSeNecessario',
+      'registrarNovoPedido',
+      'registrarKanbanSelecionado',
+      'registrarPedidoMovido',
+      'targetPedidoKanban',
+    ]);
+    primeiroPedidoTutorial.targetPedidoKanban.and.returnValue('');
     routeData$ = new Subject<Record<string, unknown>>();
     queryParamMap$ = new Subject<ReturnType<typeof convertToParamMap>>();
 
@@ -52,6 +62,7 @@ describe('ComercialListComponent Kanban', () => {
         { provide: Router, useValue: router },
         { provide: MatDialog, useValue: dialog },
         { provide: ToastrService, useValue: toastr },
+        { provide: PrimeiroPedidoTutorialService, useValue: primeiroPedidoTutorial },
         {
           provide: ActivatedRoute,
           useValue: {

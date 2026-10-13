@@ -6,6 +6,7 @@ import {
   GraficaProdutoWizardDialogComponent,
 } from './comercial-editor.component';
 import { GraficaProdutoBuscaRapidaDialogComponent } from './grafica-produto-busca-rapida-dialog.component';
+import { PrimeiroPedidoTutorialService } from './primeiro-pedido/primeiro-pedido-tutorial.service';
 
 describe('ComercialEditorComponent', () => {
   it('define submit associado ao form e comandos distintos para conversão', () => {
@@ -72,6 +73,19 @@ describe('ComercialEditorComponent', () => {
     }));
     expect((component as any).graficaService.listarFormasPagamento).not.toHaveBeenCalled();
     expect(component.responsavelNome).toBe('Leonardo Barros');
+
+    component.ngOnDestroy();
+  });
+
+  it('registra o passo de novo pedido somente quando a tela de criacao esta ativa', () => {
+    const component = criarEditor('pedidos');
+    const tutorial = (component as any).primeiroPedidoTutorial as jasmine.SpyObj<PrimeiroPedidoTutorialService>;
+
+    component.ngOnInit();
+    component.ngOnInit();
+
+    expect(tutorial.iniciarSeNecessario).toHaveBeenCalledWith(null);
+    expect(tutorial.registrarNovoPedido).toHaveBeenCalledTimes(1);
 
     component.ngOnDestroy();
   });
@@ -514,6 +528,10 @@ describe('ComercialEditorComponent', () => {
       {} as any,
       jasmine.createSpyObj('ToastrService', ['error']) as any,
       authServiceMock() as any,
+      jasmine.createSpyObj<PrimeiroPedidoTutorialService>('PrimeiroPedidoTutorialService', [
+        'registrarConfiguradorAberto',
+        'registrarItemAdicionado',
+      ]) as any,
     );
 
     component.abrirBuscaRapida();
@@ -566,6 +584,15 @@ function criarEditor(tipo = 'pedidos'): ComercialEditorComponent {
     },
   }));
   clienteService.buscarPorNome.and.returnValue(of({ content: [] }));
+  const primeiroPedidoTutorial = jasmine.createSpyObj<PrimeiroPedidoTutorialService>('PrimeiroPedidoTutorialService', [
+    'iniciarSeNecessario',
+    'registrarNovoPedido',
+    'registrarClienteSelecionado',
+    'registrarItemAdicionado',
+    'registrarConfiguradorAberto',
+    'registrarPedidoCriado',
+  ]);
+  primeiroPedidoTutorial.registrarPedidoCriado.and.returnValue(of(false));
   return new ComercialEditorComponent(
     { data: of({ tipo }), paramMap: of(new Map()) } as any,
     jasmine.createSpyObj('Router', ['navigate']) as any,
@@ -575,6 +602,7 @@ function criarEditor(tipo = 'pedidos'): ComercialEditorComponent {
     clienteService,
     jasmine.createSpyObj('ToastrService', ['error']) as any,
     authServiceMock() as any,
+    primeiroPedidoTutorial as any,
   );
 }
 

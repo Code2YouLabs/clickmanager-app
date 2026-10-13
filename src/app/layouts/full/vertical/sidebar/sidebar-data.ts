@@ -55,6 +55,7 @@ export const navItems: NavItem[] = [
         route: '/page/grafica/comercial/pedidos',
         requiredPermission: ['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER'],
         allowedEmpresaTipos: grafica,
+        tutorialTarget: 'primeiro-pedido-menu-pedidos',
     },
     {
         displayName: 'Orçamentos',
