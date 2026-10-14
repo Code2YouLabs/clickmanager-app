@@ -239,7 +239,7 @@
                         <input matInput type="number" min="1" formControlName="quantidade" />
                       </mat-form-field>
                       <button mat-flat-button color="primary" type="button" [disabled]="quantidadeForm.invalid || precificando" (click)="precificar()">
-                        {{ precificando ? 'Calculando...' : 'Confirmar preço' }}
+                        {{ precificando ? 'Calculando...' : 'Calcular' }}
                       </button>
                     </ng-container>
 

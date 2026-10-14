@@ -4,7 +4,7 @@ import { AbstractControl, FormBuilder, FormControl, FormsModule, ReactiveFormsMo
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatStepper } from '@angular/material/stepper';
 import { ActivatedRoute, Router } from '@angular/router';
-import { debounceTime, distinctUntilChanged, finalize, forkJoin, map, Observable, Subject, switchMap, take, takeUntil } from 'rxjs';
+import { debounceTime, distinctUntilChanged, finalize, forkJoin, map, Observable, Subject, Subscription, switchMap, take, takeUntil, tap } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { ClienteSelectorCardComponent } from 'src/app/components/cliente-selector-card/cliente-selector-card.component';
 import { ItemPedidoView, ItensPedidoSectionComponent } from 'src/app/components/itens-pedido-section/itens-pedido-section.component';
@@ -1700,7 +1700,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   templateUrl: './grafica-produto-wizard-dialog.component.html',
   styleUrl: './grafica-produto-wizard-dialog.component.scss',
 })
-export class GraficaProdutoWizardDialogComponent implements OnInit {
+export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   readonly primeiroPedidoTargets = PRIMEIRO_PEDIDO_TARGETS;
   @ViewChild('stepper') stepper?: MatStepper;
   @ViewChild('quantidadeWizardInputContainer') quantidadeWizardInputContainer?: ElementRef<HTMLElement>;
@@ -1738,6 +1738,10 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
   carregandoOpcoes = false;
   private tecladoQuantidadeEditando = false;
   private readonly buscaProdutos$ = new Subject<string>();
+  private readonly destroyWizard$ = new Subject<void>();
+  private precificacaoRequest?: Subscription;
+  private precificacaoKey: string | null = null;
+  private wizardDestruido = false;
   produtoForm = this.fb.group({ produtoGraficoId: [null as number | null, Validators.required] });
   quantidadeForm = this.fb.group({
     quantidade: [1, [Validators.required, Validators.min(1)]],
@@ -1754,7 +1758,11 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
 	  ) {}
 
   ngOnInit(): void {
-    this.quantidadeForm.valueChanges.subscribe(() => this.limparPreco());
+    this.quantidadeForm.valueChanges.pipe(
+      tap(() => this.limparPreco()),
+      debounceTime(250),
+      takeUntil(this.destroyWizard$),
+    ).subscribe(() => this.calcularPrecoAutomaticamente());
     this.carregarServicosFunil();
     this.buscaProdutos$.pipe(
       debounceTime(250),
@@ -1764,6 +1772,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
         return this.graficaService.listar({ size: 20, ativo: true, search: termo || null, sort: 'nome,asc' })
           .pipe(finalize(() => this.buscandoProdutos = false));
       }),
+      takeUntil(this.destroyWizard$),
     ).subscribe({
       next: (page) => this.produtos = page.content || [],
       error: () => this.produtos = [],
@@ -1774,6 +1783,13 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
       this.buscarProdutosDireto('');
       this.carregarProdutosFunil();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.wizardDestruido = true;
+    this.destroyWizard$.next();
+    this.destroyWizard$.complete();
+    this.precificacaoRequest?.unsubscribe();
   }
 
   get breadcrumb(): Array<{ label: string }> {
@@ -2140,16 +2156,18 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
     setTimeout(() => {
       if (this.stepper) {
         this.stepper.selectedIndex = 1;
+        this.calcularPrecoAutomaticamente();
         this.focarQuantidadePreco(true);
       }
     });
   }
 
   selecionarProduto(produto: GraficaProduto, direto = false, iniciarEmPreco = false): void {
+    this.limparPreco();
     this.servicoAtual = null;
     this.produtoSelecionado = produto;
     this.produtoForm.patchValue({ produtoGraficoId: produto.id });
-    this.graficaService.detalhar(produto.id).subscribe({
+    this.graficaService.detalhar(produto.id).pipe(takeUntil(this.destroyWizard$)).subscribe({
       next: (produto) => {
         this.produtoSelecionado = produto;
         this.parametros = (produto.parametros || []).filter((p) => p.ativo);
@@ -2159,9 +2177,8 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
         this.opcoesAtuais = [];
         this.acabamentosSelecionados.clear();
         this.servicosSelecionados.clear();
+        this.limparPreco();
         this.carregarPoliticasPreco(produto.id);
-        this.preco = null;
-        this.composicao = null;
         if (!direto) {
           this.carregarProximaOpcao();
         }
@@ -2172,6 +2189,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
           setTimeout(() => {
             if (this.stepper) {
               this.stepper.selectedIndex = 1;
+              this.calcularPrecoAutomaticamente();
               this.focarQuantidadePreco(true);
             }
           });
@@ -2230,25 +2248,41 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
     });
   }
 
+  private calcularPrecoAutomaticamente(indice = this.stepper?.selectedIndex ?? 0): void {
+    if (this.wizardDestruido || indice !== 1 || this.quantidadeForm.invalid) return;
+    if (this.tipoPrecoAtual !== 'FIXO' && this.tipoPrecoAtual !== 'POR_FAIXA_QUANTIDADE') return;
+    const key = this.chavePrecificacao();
+    if (key === this.precificacaoKey && (this.preco || this.precificando)) return;
+    this.precificar();
+  }
+
+  private chavePrecificacao(): string {
+    return JSON.stringify({
+      produtoId: this.produtoForm.value.produtoGraficoId,
+      servicoId: this.servicoAtual?.id,
+      precificacao: this.body().precificacao,
+    });
+  }
+
   precificar(): void {
     const id = this.produtoForm.value.produtoGraficoId;
-    if (!id && !this.servicoAtual) return;
+    if (this.wizardDestruido || (!id && !this.servicoAtual) || this.quantidadeForm.invalid) return;
+    this.precificacaoRequest?.unsubscribe();
     const body = this.body();
-	    this.precificando = true;
-	    const precificacao$ = this.servicoAtual
-	      ? this.graficaService.precificarServico(this.servicoAtual.id, body.precificacao)
-	      : this.graficaService.precificar(id!, body.precificacao);
-	    precificacao$.subscribe({
-	      next: (preco) => {
-	        this.preco = preco;
-	        this.precificando = false;
-	      },
-	      error: (error) => {
-	        this.precificando = false;
-	        this.toastr.error(this.errorMessage(error, 'Não foi possível calcular o preço.'));
-	      },
-	    });
-	  }
+    this.precificacaoKey = this.chavePrecificacao();
+    this.precificando = true;
+    const precificacao$ = this.servicoAtual
+      ? this.graficaService.precificarServico(this.servicoAtual.id, body.precificacao)
+      : this.graficaService.precificar(id!, body.precificacao);
+    this.precificacaoRequest = precificacao$.pipe(
+      take(1),
+      takeUntil(this.destroyWizard$),
+      finalize(() => this.precificando = false),
+    ).subscribe({
+      next: (preco) => this.preco = preco,
+      error: (error) => this.toastr.error(this.errorMessage(error, 'Não foi possível calcular o preço.')),
+    });
+  }
 
 	  private errorMessage(error: any, fallback: string): string {
 	    return error?.error?.message || error?.error?.userMessage || error?.message || fallback;
@@ -2333,6 +2367,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
     }
     this.stepper?.next();
     if (indexAtual === 0) {
+      this.calcularPrecoAutomaticamente();
       this.focarQuantidadePreco(true);
     }
   }
@@ -2422,6 +2457,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
 
   onStepSelectionChange(event: { selectedIndex: number }): void {
     if (event.selectedIndex === 1) {
+      this.calcularPrecoAutomaticamente(event.selectedIndex);
       this.focarQuantidadePreco(true);
     }
   }
@@ -2477,6 +2513,8 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
   }
 
   limparPreco(): void {
+    this.precificacaoRequest?.unsubscribe();
+    this.precificacaoKey = null;
     this.preco = null;
     this.composicao = null;
   }
@@ -2485,11 +2523,12 @@ export class GraficaProdutoWizardDialogComponent implements OnInit {
     this.politicasPreco = [];
     this.politicaPrecoAtual = null;
     this.loteSelecionado = null;
-    this.graficaService.listarPrecos(produtoId).subscribe({
+    this.graficaService.listarPrecos(produtoId).pipe(takeUntil(this.destroyWizard$)).subscribe({
       next: (politicas) => {
         this.politicasPreco = (politicas || []).filter((politica) => politica.ativo !== false);
         this.politicaPrecoAtual = this.resolverPoliticaPrecoAtual();
         this.configurarFormularioPreco();
+        this.calcularPrecoAutomaticamente();
       },
       error: () => {
         this.politicasPreco = [];

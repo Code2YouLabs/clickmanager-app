@@ -802,6 +802,8 @@ function criarWizard(): GraficaProdutoWizardDialogComponent {
     'listar',
     'detalhar',
     'listarPrecos',
+    'precificar',
+    'precificarServico',
     'listarServicos',
     'resolverComposicaoServico',
     'resolverComposicaoComercial',
@@ -809,6 +811,8 @@ function criarWizard(): GraficaProdutoWizardDialogComponent {
   graficaService.listar.and.returnValue(of({ content: [], pageNumber: 0, pageSize: 20, totalElements: 0, totalPages: 0, last: true }));
   graficaService.detalhar.and.returnValue(of(produto()));
   graficaService.listarPrecos.and.returnValue(of([]));
+  graficaService.precificar.and.returnValue(of(precoServicoCalculado()));
+  graficaService.precificarServico.and.returnValue(of(precoServicoCalculado()));
   graficaService.listarServicos.and.returnValue(of([]));
   graficaService.resolverComposicaoServico.and.returnValue(of(composicaoServico()));
   graficaService.resolverComposicaoComercial.and.returnValue(of(composicaoServico()));
