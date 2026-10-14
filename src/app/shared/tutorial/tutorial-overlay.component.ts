@@ -10,6 +10,7 @@ import {
   computed,
   effect,
   inject,
+  input,
   signal,
 } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
@@ -40,6 +41,15 @@ export class TutorialOverlayComponent implements AfterViewInit {
   private readonly tutorial = inject(TutorialService);
 
   @ViewChild('popover') private popover?: ElementRef<HTMLElement>;
+
+  readonly embeddedForTarget = input<string | null>(null);
+  readonly showPopover = computed(() => {
+    const target = this.embeddedForTarget();
+    const step = this.step();
+    return target
+      ? step?.presentation === 'inline' && step.targetId === target
+      : step?.presentation !== 'inline';
+  });
 
   readonly state = this.tutorial.state;
   readonly active = this.tutorial.isActive;
@@ -80,7 +90,7 @@ export class TutorialOverlayComponent implements AfterViewInit {
     effect(() => {
       const rect = this.rect();
       const step = this.step();
-      if (!this.active() || !rect || !step) {
+      if (!this.active() || !rect || !step || !this.showPopover() || this.embeddedForTarget()) {
         this.popoverStyles.set({});
         return;
       }
@@ -130,7 +140,7 @@ export class TutorialOverlayComponent implements AfterViewInit {
   private positionPopover(rect: TutorialRect | null): void {
     const popover = this.popover?.nativeElement;
     const step = this.step();
-    if (!popover || !rect || !step) {
+    if (!popover || !rect || !step || !this.showPopover() || this.embeddedForTarget()) {
       return;
     }
 

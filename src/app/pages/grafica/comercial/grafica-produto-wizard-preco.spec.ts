@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
@@ -40,7 +41,7 @@ describe('Wizard comercial: calcular preço', () => {
       { provide: MatDialogRef, useValue: { close: jasmine.createSpy('close') } },
       { provide: MAT_DIALOG_DATA, useValue: { produtoPreSelecionado: produto } },
       { provide: ToastrService, useValue: { error: jasmine.createSpy('error') } },
-      { provide: TutorialService, useValue: { registerTarget: () => () => {} } },
+      { provide: TutorialService, useValue: { registerTarget: () => () => {}, state: signal({ definition: null }), isActive: signal(false), currentStep: signal(null), rect: signal(null), currentIndex: signal(0), totalSteps: signal(0), canGoBack: signal(false), isLastStep: signal(false) } },
     ] }).compileComponents();
     fixture = TestBed.createComponent(GraficaProdutoWizardDialogComponent);
     component = fixture.componentInstance;
@@ -63,6 +64,27 @@ describe('Wizard comercial: calcular preço', () => {
     expect(fixture.nativeElement.querySelector('.summary-price-total')?.textContent).toContain('13,50');
     component.onStepSelectionChange({ selectedIndex: 1 });
     expect(service.precificar).toHaveBeenCalledTimes(1);
+  }));
+
+  it('mostra o tutorial no topo do wizard real sem cobrir o total', fakeAsync(() => {
+    document.body.appendChild(fixture.nativeElement);
+    fixture.nativeElement.style.width = '1200px';
+    fixture.nativeElement.style.height = '800px';
+    entrar();
+    const tutorial = TestBed.inject(TutorialService) as any;
+    tutorial.state.set({ definition: { labels: {} } });
+    tutorial.currentStep.set({ targetId: component.primeiroPedidoTargets.configurador, title: 'Configure produto ou serviço', description: 'Escolha as opções do item.', presentation: 'inline', advanceOn: 'item-adicionado' });
+    tutorial.rect.set({ top: 0, left: 0, right: 1200, bottom: 800, width: 1200, height: 800 });
+    tutorial.isActive.set(true);
+    fixture.detectChanges();
+    tick(0);
+    fixture.detectChanges();
+    const guide = fixture.nativeElement.querySelector('.guided-tutorial-popover--inline') as HTMLElement;
+    const total = fixture.nativeElement.querySelector('.summary-price-total') as HTMLElement;
+    expect(guide).not.toBeNull();
+    expect(guide.getBoundingClientRect().bottom).toBeLessThanOrEqual(total.getBoundingClientRect().top);
+    expect(total.textContent).toContain('13,50');
+    fixture.nativeElement.remove();
   }));
 
   it('recalcula ao digitar quantidade e agrupa alterações rápidas', fakeAsync(() => {

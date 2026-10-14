@@ -37,6 +37,7 @@ export class ClienteSelectorCardComponent {
   @Input() cliente: any | null = null;
   @Input() editando = false;
   @Input() salvando = false;
+  @Input() salvarAoSelecionar = false;
   @Input() emptyMessage = 'Nenhum cliente definido para este pedido.';
   @Input() showEmptyAlert = true;
   @Input() inativo = false;
@@ -44,7 +45,7 @@ export class ClienteSelectorCardComponent {
 
   @Output() editarCliente = new EventEmitter<void>();
   @Output() cancelarEdicao = new EventEmitter<void>();
-  @Output() salvarCliente = new EventEmitter<void>();
+  @Output() salvarCliente = new EventEmitter<any>();
   @Output() criarCliente = new EventEmitter<void>();
 
   onCriarCliente(): void {
@@ -57,6 +58,12 @@ export class ClienteSelectorCardComponent {
 
   onCancelarEdicao(): void {
     this.cancelarEdicao.emit();
+  }
+
+  onSelecionarCliente(cliente: any): void {
+    if (this.salvarAoSelecionar && !this.salvando && !this.inativo) {
+      this.salvarCliente.emit(cliente);
+    }
   }
 
   onSalvarCliente(): void {

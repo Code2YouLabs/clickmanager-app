@@ -9,6 +9,7 @@ export interface TutorialStep {
   targetId: string;
   route?: string;
   preferredPlacement?: TutorialPlacement;
+  presentation?: 'popover' | 'inline';
   scrollBlock?: ScrollLogicalPosition;
   advanceOn?: string;
   timeoutMs?: number;

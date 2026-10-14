@@ -938,3 +938,45 @@ function composicaoServico() {
     }],
   } as any;
 }
+
+
+describe('Confirmação automática do cliente comercial', () => {
+  it('usa o cliente selecionado no evento mesmo antes do autocomplete atualizar o controle', () => {
+    const editor = criarEditor();
+    editor.clienteControl.setValue('Pedro');
+    editor.confirmarClienteSelecionado({ id: 7, nome: 'Pedro de Lara' });
+    expect((editor as any).clienteService.buscarPorId).toHaveBeenCalledOnceWith(7);
+    expect(editor.clienteConfirmado?.id).toBe(7);
+  });
+
+  it('persiste automaticamente em pedido existente e evita chamadas duplicadas', () => {
+    const editor = criarEditor();
+    editor.tipo = 'pedidos';
+    editor.pedidoId = 22;
+    const resposta = new Subject<any>();
+    const service = (editor as any).graficaService;
+    service.alterarClientePedidoComercial = jasmine.createSpy().and.returnValue(resposta);
+    const aplicar = spyOn(editor as any, 'aplicarPedido');
+    (editor as any).toastr.success = jasmine.createSpy();
+    editor.confirmarClienteSelecionado({ id: 7 });
+    editor.confirmarClienteSelecionado({ id: 8 });
+    expect(service.alterarClientePedidoComercial).toHaveBeenCalledOnceWith(22, 7);
+    expect(editor.salvandoCliente).toBeTrue();
+    resposta.next(pedidoDetalhe());
+    expect(aplicar).toHaveBeenCalledWith(pedidoDetalhe(), { id: 7 });
+    expect(editor.salvandoCliente).toBeFalse();
+  });
+
+  it('encerra salvamento após erro e permite tentar novamente', () => {
+    const editor = criarEditor();
+    const service = (editor as any).clienteService;
+    service.buscarPorId.and.returnValue(throwError(() => new Error('falha')));
+    editor.confirmarClienteSelecionado({ id: 7 });
+    expect(editor.clienteConfirmado).toBeNull();
+    expect(editor.salvandoCliente).toBeFalse();
+    expect((editor as any).toastr.error).toHaveBeenCalled();
+    service.buscarPorId.and.returnValue(of({ id: 7, nome: 'Pedro' }));
+    editor.confirmarClienteSelecionado({ id: 7 });
+    expect(editor.clienteConfirmado?.id).toBe(7);
+  });
+});

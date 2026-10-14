@@ -20,6 +20,7 @@ import { StatusBadgeComponent } from 'src/app/components/status-badge/status-bad
 import { MaterialModule } from 'src/app/material.module';
 import { Usuario } from 'src/app/models/usuario/usuario.model';
 import { AuthService } from 'src/app/services/auth.service';
+import { TutorialOverlayComponent } from 'src/app/shared/tutorial/tutorial-overlay.component';
 import { TutorialTargetDirective } from 'src/app/shared/tutorial/tutorial-target.directive';
 import { ClienteCreateDialogComponent, ClienteCreateDialogData } from '../../cliente/cliente-create-dialog/cliente-create-dialog.component';
 import { ClienteService } from '../../cliente/cliente.service';
@@ -67,6 +68,7 @@ interface GraficaServicoWizardData {
     ReactiveFormsModule,
     InputNumericoComponent,
     TutorialTargetDirective,
+    TutorialOverlayComponent,
   ],
   templateUrl: './grafica-servico-wizard-dialog.component.html',
   styleUrl: './grafica-servico-wizard-dialog.component.scss',
@@ -1196,8 +1198,8 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     return labels[forma] || forma;
   }
 
-  confirmarClienteSelecionado(): void {
-    const selecionado = this.clienteControl.value;
+  confirmarClienteSelecionado(selecionado = this.clienteControl.value): void {
+    if (this.salvandoCliente || this.somenteLeitura || !this.permissoesFluxo.editarCliente) return;
     const clienteId = selecionado?.id ?? selecionado?.clienteId;
     if (!clienteId) {
       return;
@@ -1212,10 +1214,14 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.clienteService.buscarPorId(clienteId).pipe(take(1)).subscribe({
-      next: (clienteCompleto) => {
-        this.aplicarClienteConfirmado(clienteCompleto);
-      },
+    this.salvandoCliente = true;
+    this.clienteService.buscarPorId(clienteId).pipe(
+      take(1),
+      takeUntil(this.destroy$),
+      finalize(() => this.salvandoCliente = false),
+    ).subscribe({
+      next: (clienteCompleto) => this.aplicarClienteConfirmado(clienteCompleto),
+      error: (error) => this.toastr.error(this.errorMessage(error, 'Não foi possível selecionar o cliente.')),
     });
   }
 
@@ -1696,7 +1702,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
 @Component({
   selector: 'app-grafica-produto-wizard-dialog',
   standalone: true,
-  imports: [CommonModule, MaterialModule, FormsModule, ReactiveFormsModule, InputNumericoComponent, TutorialTargetDirective],
+  imports: [CommonModule, MaterialModule, FormsModule, ReactiveFormsModule, InputNumericoComponent, TutorialTargetDirective, TutorialOverlayComponent],
   templateUrl: './grafica-produto-wizard-dialog.component.html',
   styleUrl: './grafica-produto-wizard-dialog.component.scss',
 })

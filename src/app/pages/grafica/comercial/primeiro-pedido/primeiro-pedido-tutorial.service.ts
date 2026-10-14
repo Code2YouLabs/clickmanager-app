@@ -258,6 +258,7 @@ export class PrimeiroPedidoTutorialService {
           title: 'Configure produto ou serviço',
           description: 'Escolha as opções reais do item e adicione ao pedido.',
           targetId: PRIMEIRO_PEDIDO_TARGETS.configurador,
+          presentation: 'inline',
           advanceOn: PRIMEIRO_PEDIDO_EVENTOS.itemAdicionado,
         },
         {

@@ -1,3 +1,6 @@
+import { By } from '@angular/platform-browser';
+import { fakeAsync, tick } from '@angular/core/testing';
+import { AutoCompleteComponent } from 'src/app/components/inputs/auto-complete/auto-complete.component';
 import { registerLocaleData } from '@angular/common';
 import ptBr from '@angular/common/locales/pt';
 import { provideHttpClient } from '@angular/common/http';
@@ -29,6 +32,20 @@ describe('ComercialEditorComponent shell e formulário nativo', () => {
     fixture.componentInstance.tipo = 'pedidos';
   });
   afterEach(() => TestBed.resetTestingModule());
+  it('selecionar uma opção já confirma o cliente e fecha o editor sem clicar em salvar', fakeAsync(() => {
+    const service = TestBed.inject(ClienteService);
+    service.buscarPorId = jasmine.createSpy().and.returnValue(of({ id: 7, nome: 'Pedro de Lara', telefone: '31987531233' }));
+    fixture.detectChanges();
+    const autocomplete = fixture.debugElement.query(By.directive(AutoCompleteComponent)).componentInstance as AutoCompleteComponent;
+    autocomplete.aoSelecionar({ id: 7, nome: 'Pedro de Lara' });
+    fixture.detectChanges();
+    tick(300);
+    expect(service.buscarPorId).toHaveBeenCalledOnceWith(7);
+    expect(fixture.componentInstance.clienteConfirmado?.id).toBe(7);
+    expect(fixture.nativeElement.querySelector('app-cliente-selector-card .editor')).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-cliente-selector-card')?.textContent).toContain('Pedro de Lara');
+  }));
+
   it('associa o footer ao formulário sem forms aninhados ou submit duplicado', () => {
     const editor = fixture.componentInstance;
     spyOnProperty(editor, 'podeSalvar', 'get').and.returnValue(true);
