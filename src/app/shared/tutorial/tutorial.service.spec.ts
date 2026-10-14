@@ -88,6 +88,43 @@ describe('TutorialService', () => {
     TestBed.resetTestingModule();
   });
 
+  const revisaoECriacao: TutorialDefinition = {
+    id: 'review-create-tour',
+    steps: [
+      { ...definition.steps[0], id: 'revisao', advanceOn: 'pedido-criado', action: 'next', actionLabel: 'Próximo' },
+      { ...definition.steps[1], id: 'criar', advanceOn: 'pedido-criado' },
+      { ...definition.steps[0], id: 'kanban' },
+    ],
+  };
+
+  it('mostra Próximo na revisão e orienta a criação sem clicar no botão do pedido', fakeAsync(() => {
+    service.start(revisaoECriacao);
+    tick(20);
+    fixture.detectChanges();
+    const next = Array.from(fixture.nativeElement.querySelectorAll('.guided-tutorial-popover button') as NodeListOf<HTMLButtonElement>)
+      .find(button => button.textContent?.trim() === 'Próximo');
+    expect(next).toBeTruthy();
+    next!.click();
+    tick(20);
+    fixture.detectChanges();
+    expect(service.currentStep()?.id).toBe('criar');
+    expect(fixture.componentInstance.clicks).toBe(0);
+    service.primaryAction();
+    tick(20);
+    expect(service.currentStep()?.id).toBe('criar');
+    service.notify('pedido-criado');
+    tick(20);
+    expect(service.currentStep()?.id).toBe('kanban');
+  }));
+
+  it('aceita criação diretamente na revisão sem ficar preso esperando outro pedido', fakeAsync(() => {
+    service.start(revisaoECriacao);
+    tick(20);
+    service.notify('pedido-criado');
+    tick(20);
+    expect(service.currentStep()?.id).toBe('kanban');
+  }));
+
   it('inicia tutorial e exibe overlay no primeiro alvo', fakeAsync(() => {
     service.start(definition);
     tick(20);

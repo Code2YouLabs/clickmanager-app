@@ -71,7 +71,7 @@ export class TutorialOverlayComponent implements AfterViewInit {
     const total = this.totalSteps();
     return total ? ((this.currentIndex() + 1) / total) * 100 : 0;
   });
-  readonly primaryActionDisabled = computed(() => !!this.step()?.advanceOn);
+  readonly primaryActionDisabled = computed(() => !!this.step()?.advanceOn && this.step()?.action !== 'next');
   readonly backActionDisabled = computed(() => !!this.step()?.advanceOn);
   readonly completionStep = computed(() => !!this.step()?.completion);
   readonly isMobile = computed(() => this.viewport().width <= 768);

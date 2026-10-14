@@ -106,7 +106,7 @@ export class TutorialService {
       return;
     }
 
-    if (step.advanceOn) {
+    if (step.advanceOn && step.action !== 'next') {
       return;
     }
 
@@ -136,7 +136,14 @@ export class TutorialService {
       return;
     }
 
-    this.next();
+    // Consecutive instructions may share a completion event (review/create).
+    // If the user completes the action directly, skip instructions for an
+    // action that has already succeeded rather than waiting for it again.
+    const state = this.stateSignal();
+    let nextIndex = state.stepIndex + 1;
+    while (state.definition?.steps[nextIndex]?.advanceOn === eventName) nextIndex++;
+    if (nextIndex === state.stepIndex + 1) this.next();
+    else void this.activateStep(nextIndex);
   }
 
   exit(reason = 'user'): void {
