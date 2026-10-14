@@ -76,14 +76,15 @@
       </div>
     </ng-template>
 
-    <div class="editor" *ngIf="(editando || !cliente)">
+    <div class="editor" *ngIf="(editando || !cliente)" [attr.inert]="salvando || inativo ? '' : null">
       <app-auto-complete
         [control]="control"
         [label]="label"
         [displayWith]="displayWith"
         [buscarFn]="buscarFn"
         [minimoCaracteres]="minimoCaracteres"
-        [multiplo]="multiplo">
+        [multiplo]="multiplo"
+        (selecionado)="onSelecionarCliente($event)">
       </app-auto-complete>
 
       <div class="editor-actions">

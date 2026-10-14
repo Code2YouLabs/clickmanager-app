@@ -1,4 +1,5 @@
 @if (active() && step() && rect(); as highlight) {
+  @if (!embeddedForTarget()) {
   <div class="guided-tutorial-mask" aria-hidden="true">
     <div class="guided-tutorial-mask__segment guided-tutorial-mask__segment--top" [style.height.px]="overlayTop()"></div>
     <div class="guided-tutorial-mask__segment guided-tutorial-mask__segment--left" [style.top.px]="highlight.top" [style.width.px]="overlayLeft()" [style.height.px]="highlight.height"></div>
@@ -14,9 +15,13 @@
     </div>
   </div>
 
+  }
+
+  @if (showPopover()) {
   <section
     #popover
     class="guided-tutorial-popover"
+    [class.guided-tutorial-popover--inline]="!!embeddedForTarget()"
     [class.guided-tutorial-popover--top]="placement() === 'top'"
     [class.guided-tutorial-popover--right]="placement() === 'right'"
     [class.guided-tutorial-popover--bottom]="placement() === 'bottom'"
@@ -85,4 +90,5 @@
       </div>
     </div>
   </section>
+  }
 }

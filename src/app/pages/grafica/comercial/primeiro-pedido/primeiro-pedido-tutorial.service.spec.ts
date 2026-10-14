@@ -104,8 +104,16 @@ describe('PrimeiroPedidoTutorialService', () => {
     const revisaoStep = definition.steps.find((step) => step.id === 'revisao');
     expect(revisaoStep).toEqual(jasmine.objectContaining({
       targetId: 'primeiro-pedido-revisao',
+      actionLabel: 'Próximo',
+      action: 'next',
       preferredPlacement: 'bottom',
       scrollBlock: 'center',
+      advanceOn: PRIMEIRO_PEDIDO_EVENTOS.pedidoCriado,
+    }));
+    const criarStep = definition.steps[definition.steps.indexOf(revisaoStep!) + 1];
+    expect(criarStep).toEqual(jasmine.objectContaining({
+      id: 'criar',
+      targetId: 'primeiro-pedido-salvar',
       advanceOn: PRIMEIRO_PEDIDO_EVENTOS.pedidoCriado,
     }));
   });
