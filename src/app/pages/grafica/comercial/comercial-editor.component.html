@@ -78,6 +78,7 @@
               [cliente]="clienteConfirmado"
               [editando]="trocandoCliente || !clienteConfirmado"
               [salvando]="salvandoCliente"
+              [salvarAoSelecionar]="true"
               [inativo]="somenteLeitura || !permissoesFluxo.editarCliente"
               [permitirCriarCliente]="podeCriarCliente"
               [showEmptyAlert]="true"
@@ -86,7 +87,7 @@
               [buscarFn]="buscarClientes"
               [minimoCaracteres]="3"
               emptyMessage="Nenhum cliente definido para este atendimento."
-              (salvarCliente)="confirmarClienteSelecionado()"
+              (salvarCliente)="confirmarClienteSelecionado($event)"
               (editarCliente)="iniciarTrocaCliente()"
               (cancelarEdicao)="cancelarTrocaCliente()"
               (criarCliente)="onCriarCliente()">

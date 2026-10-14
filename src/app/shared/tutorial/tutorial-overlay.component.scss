@@ -328,3 +328,51 @@
     flex: 1 1 auto;
   }
 }
+
+// The configurator guide occupies its own row above the form, never the totals.
+.guided-tutorial-popover--inline {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 200px;
+  max-width: none;
+  min-width: 0;
+  margin: 0 24px 12px;
+  box-shadow: none;
+
+  &::after { display: none; }
+  .guided-tutorial-popover__header {
+    grid-column: 1;
+    grid-row: 1;
+    padding: 12px 16px 0;
+  }
+  .guided-tutorial-popover__close { position: absolute; top: 4px; right: 8px; }
+  .guided-tutorial-popover__body {
+    grid-column: 1;
+    grid-row: 2;
+    padding: 4px 16px 12px;
+  }
+  .guided-tutorial-popover__title { font-size: 1rem; }
+  .guided-tutorial-popover__description { margin-top: 4px; }
+  .guided-tutorial-popover__progress-section {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 12px 48px 0 16px;
+  }
+  .guided-tutorial-popover__footer {
+    grid-column: 2;
+    grid-row: 2;
+    margin-top: 0;
+    padding: 4px 16px 12px;
+    border: none;
+    background: transparent;
+  }
+}
+
+@media (max-width: 768px) {
+  .guided-tutorial-popover--inline {
+    margin: 0 12px 12px;
+    grid-template-columns: minmax(0, 1fr);
+    .guided-tutorial-popover__progress-section { grid-column: 1; grid-row: 3; padding: 0 16px; }
+    .guided-tutorial-popover__footer { grid-column: 1; grid-row: 4; padding-top: 8px; }
+  }
+}
