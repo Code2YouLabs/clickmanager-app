@@ -12,6 +12,7 @@ import { BibliotecaItem, BibliotecaResultado, BibliotecaService } from './biblio
   imports: [CommonModule, FormsModule, MaterialModule, HierarchyTreeComponent, SetupProgressComponent],
   templateUrl: './biblioteca-produtos-selector.component.html',
   styleUrls: ['./biblioteca-produtos-selector.component.scss'],
+  host: { '[class.biblioteca-selector--onboarding]': 'onboarding' },
 })
 export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
   @Input() onboarding = false;

@@ -11,6 +11,8 @@ import { OnboardingV2CompanyPageComponent } from './company-step/onboarding-v2-c
 import { OnboardingV2SummaryPageComponent } from './summary-step/onboarding-v2-summary-page.component';
 import { OnboardingV2StateService } from './services/onboarding-v2-state.service';
 import { OnboardingV2Service } from './services/onboarding-v2.service';
+import { By } from '@angular/platform-browser';
+import { HierarchyTreeComponent } from 'src/app/components/hierarchy-tree/hierarchy-tree.component';
 
 const pending: SetupProgress = { id: 9, status: 'PENDENTE', fase: 'AGUARDANDO', total: 150, processados: 0, criados: 0, duplicados: 0, erros: 0, smartCalcPrevistos: 2, smartCalcPreparados: 0, tempoEstimadoRestanteSegundos: null, itens: [] };
 const done: SetupProgress = { ...pending, status: 'CONCLUIDO', fase: 'CONCLUIDO', processados: 150, criados: 148, duplicados: 2, smartCalcPreparados: 2 };
@@ -176,6 +178,79 @@ describe('Narrativa do onboarding', () => {
       expect(text.indexOf('Selecionar todos os 1 produto')).toBeLessThan(text.indexOf('Vinil'));
       expect(doc.querySelector('header button')).toBeNull();
     } finally { frame.remove(); f.destroy(); }
+    });
+  }
+
+  it('mantém seleção, expansão e elementos ao alternar visualizações e selecionar itens', async () => {
+    biblioteca.listar.and.returnValue(of(Array.from({length: 216}, (_, i) => ({id:i+1,tipo:'PRODUTO',nome:`Produto ${i+1}`,categoria:'Adesivos',tiposPreco:[],acabamentos:[]}))));
+    const f = TestBed.createComponent(OnboardingV2ProductsPageComponent);
+    f.detectChanges(); await f.whenStable(); f.detectChanges();
+    const selector = f.componentInstance.seletor!;
+    const tree = f.debugElement.query(By.directive(HierarchyTreeComponent)).componentInstance as HierarchyTreeComponent;
+    tree.treeControl.expand(selector.arvore[0]);
+    selector.modo = 'detalhada'; f.detectChanges();
+    const region = f.nativeElement.querySelector('.biblioteca-resultados');
+    const scroller = getComputedStyle(region).overflowY === 'auto' ? region : f.nativeElement.querySelector('.onboarding-shell__content');
+    scroller.scrollTop = 100;
+    const scrollBefore = scroller.scrollTop;
+    expect(scrollBefore).toBeGreaterThan(0);
+    const first = region.querySelector('article');
+    first.querySelector('input[type="checkbox"]').click(); f.detectChanges();
+    expect(selector.selecionados.size).toBe(1);
+    expect(f.nativeElement.querySelector('footer').textContent).toContain('1 itens selecionados');
+    expect(f.nativeElement.textContent).toContain('Seleção parcial dos resultados.');
+    expect(region.querySelector('article')).toBe(first);
+    expect(f.nativeElement.querySelector('.biblioteca-resultados')).toBe(region);
+    expect(scroller.scrollTop).toBe(scrollBefore);
+    selector.modo = 'arvore'; f.detectChanges();
+    expect(f.debugElement.query(By.directive(HierarchyTreeComponent)).componentInstance).toBe(tree);
+    expect(tree.treeControl.isExpanded(selector.arvore[0])).toBeTrue();
+    expect(selector.estados.get(selector.arvore[0].id)?.indeterminate).toBeTrue();
+    selector.modo = 'detalhada'; f.detectChanges();
+    expect(region.querySelector('article input').checked).toBeTrue();
+    selector.categoria = 'Não existe'; f.detectChanges();
+    expect(f.nativeElement.textContent).toContain('Nenhum item encontrado.');
+    expect(selector.selecionados.size).toBe(1);
+    selector.categoria = ''; f.detectChanges();
+    expect(region.querySelectorAll('article').length).toBe(216);
+    expect(f.nativeElement.querySelector('footer button[mat-flat-button]').disabled).toBeFalse();
+    f.destroy();
+  });
+
+  for (const [width, height] of [[360,800],[390,844],[430,932],[768,1024],[1366,900],[800,360],[390,420]]) {
+    it(`limita centenas de produtos e mantém rodapé acessível em ${width}×${height}`, async () => {
+      biblioteca.listar.and.returnValue(of(Array.from({length:216}, (_, i) => ({id:i+1,tipo:'PRODUTO',nome:`Produto ${i+1}`,categoria:'Adesivos',descricao:'Descrição do produto',tiposPreco:[],acabamentos:[]}))));
+      const f = TestBed.createComponent(OnboardingV2ProductsPageComponent);
+      f.detectChanges(); await f.whenStable(); f.detectChanges();
+      f.componentInstance.seletor!.modo = 'detalhada'; f.detectChanges();
+      const frame = document.createElement('iframe');
+      frame.style.width = `${width}px`; frame.style.height = `${height}px`;
+      document.body.appendChild(frame);
+      try {
+        const doc = frame.contentDocument!;
+        document.querySelectorAll('style, link[rel="stylesheet"]').forEach(style => doc.head.appendChild(style.cloneNode(true)));
+        doc.body.style.margin = '0';
+        doc.body.appendChild(f.nativeElement.cloneNode(true));
+        await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+        const layout = doc.querySelector('.onboarding-page-layout') as HTMLElement;
+        const list = doc.querySelector('.biblioteca-resultados') as HTMLElement;
+        const content = doc.querySelector('.onboarding-shell__content') as HTMLElement;
+        const scroll = height <= 840 ? content : list;
+        const footer = doc.querySelector('footer') as HTMLElement;
+        expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1);
+        expect(footer.getBoundingClientRect().bottom).toBeLessThanOrEqual(height);
+        expect(footer.getBoundingClientRect().top).toBeGreaterThan(0);
+        expect(scroll.clientHeight).toBeGreaterThan(40);
+        expect(scroll.scrollHeight).toBeGreaterThan(scroll.clientHeight);
+        const bottomBefore = footer.getBoundingClientRect().bottom;
+        scroll.scrollTop = scroll.scrollHeight;
+        expect(footer.getBoundingClientRect().bottom).toBe(bottomBefore);
+        expect(list.lastElementChild!.lastElementChild!.getBoundingClientRect().bottom).toBeLessThanOrEqual(footer.getBoundingClientRect().top);
+        expect(layout.scrollHeight).toBeLessThanOrEqual(layout.clientHeight + 1);
+        // Few products use the same bounded page, without pushing actions down.
+        Array.from(list.querySelectorAll('article')).slice(3).forEach(item => item.remove());
+        expect(footer.getBoundingClientRect().bottom).toBe(bottomBefore);
+      } finally { frame.remove(); f.destroy(); }
     });
   }
 

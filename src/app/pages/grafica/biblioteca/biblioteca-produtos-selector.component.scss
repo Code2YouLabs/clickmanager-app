@@ -1,4 +1,5 @@
 :host { display: block; }
+.biblioteca-resultados > [hidden] { display: none; }
 p { color: var(--mat-sys-on-surface-variant, #526075); }
 .biblioteca-toolbar { display: flex; gap: 16px; flex-wrap: wrap; mat-form-field { flex: 1 1 260px; } }
 .biblioteca-acoes { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 12px 0 20px; }
@@ -32,5 +33,46 @@ details { margin-top: 12px; summary { cursor: pointer; } }
 
   .biblioteca-acoes__contador {
     padding-left: 2px;
+  }
+}
+
+// The bounded layout is opt-in to onboarding; the regular library keeps its layout.
+:host(.biblioteca-selector--onboarding) {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+
+  .biblioteca-toolbar { flex: 0 0 auto; gap: 8px; }
+  .biblioteca-toolbar mat-form-field { min-width: 0; }
+  .biblioteca-acoes { flex: 0 0 auto; margin: 8px 0; gap: 8px; }
+  .biblioteca-acoes__bulk { width: 100%; min-width: 0; gap: 4px 12px; }
+  .biblioteca-acoes__bulk button { min-height: 44px; max-width: 100%; height: auto; white-space: normal; }
+  .biblioteca-acoes__bulk small { width: 100%; color: var(--mat-sys-on-surface-variant); font-size: 12px; line-height: 16px; }
+  .biblioteca-resultados { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; padding: 4px; }
+  .biblioteca-resultados:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: -2px; }
+  .biblioteca-lista { gap: 8px; }
+  article { min-width: 0; padding: 8px 12px; }
+  .biblioteca-item-corpo { padding-left: 40px; overflow-wrap: anywhere; font-size: 14px; line-height: 20px; }
+  .biblioteca-item-corpo p { margin: 4px 0; }
+  details { margin-top: 8px; }
+
+  ::ng-deep {
+    .biblioteca-toolbar .mat-mdc-form-field-subscript-wrapper { display: none; }
+    .biblioteca-toolbar input { font-size: 16px; }
+    .biblioteca-lista mat-checkbox,
+    .biblioteca-lista .mdc-form-field { width: 100%; min-width: 0; }
+    .biblioteca-lista .mdc-label { flex: 1; min-width: 0; padding: 8px 0; overflow-wrap: anywhere; }
+    .hierarchy-tree-shell--compact .hierarchy-tree__row { min-height: 44px; }
+  }
+
+  @media (max-width: 768px) {
+    .biblioteca-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+    .biblioteca-toolbar mat-form-field:first-child { grid-column: 1 / -1; }
+    .biblioteca-toolbar mat-button-toggle-group { max-width: 100%; }
+    .biblioteca-acoes__bulk button { width: 100%; }
+    .biblioteca-lista { grid-template-columns: minmax(0, 1fr); }
+    .biblioteca-item-corpo { padding-left: 12px; }
+    ::ng-deep .biblioteca-toolbar .mat-button-toggle-label-content { padding: 0 12px; line-height: 44px; }
   }
 }

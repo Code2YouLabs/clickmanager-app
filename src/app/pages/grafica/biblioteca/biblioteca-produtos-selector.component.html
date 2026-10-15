@@ -12,6 +12,7 @@
   <mat-form-field appearance="outline">
     <mat-label>Categoria</mat-label>
     <mat-select [(ngModel)]="categoria" [disabled]="importando">
+      @if (onboarding) { <mat-select-trigger>{{ categoria || 'Todas' }}</mat-select-trigger> }
       <mat-option value="">Todas as categorias</mat-option>
       @for (c of categorias; track c) { <mat-option [value]="c">{{ c }}</mat-option> }
     </mat-select>
@@ -30,21 +31,28 @@
       [disabled]="carregando || importando || !filtrados.length"
       (click)="selecionarTodos(!todosSelecionados)"
       [attr.aria-pressed]="todosSelecionados"
+      [attr.aria-describedby]="onboarding ? 'biblioteca-selecao-escopo' : null"
     >
       <mat-icon>{{ todosSelecionados ? 'remove_done' : 'select_all' }}</mat-icon>
       <span>{{ textoAcaoSelecao }}</span>
     </button>
     <span class="biblioteca-acoes__contador" aria-live="polite">{{ contadorSelecionados }}</span>
+    @if (onboarding) {
+      <small id="biblioteca-selecao-escopo">A ação vale para os resultados da pesquisa e da categoria.</small>
+      <span class="cdk-visually-hidden" role="status">{{ todosSelecionados ? 'Todos os resultados selecionados.' : algunsSelecionados ? 'Seleção parcial dos resultados.' : 'Nenhum resultado selecionado.' }}</span>
+    }
   </div>
   @if (mostrarAcaoAdicionar) { <button mat-flat-button color="primary" [disabled]="carregando || importando || !selecionados.size" (click)="adicionar()">{{ importando ? 'Adicionando...' : 'Adicionar à empresa' }}</button> }
 </div>
 @if (carregando) { <mat-progress-bar mode="indeterminate" aria-label="Carregando biblioteca"></mat-progress-bar> }
-@if (modo === 'arvore') {
-  <app-hierarchy-tree [nodes]="arvore" [selectable]="true" [compact]="true"
+<div class="biblioteca-resultados" role="region" aria-label="Produtos da biblioteca" [attr.tabindex]="onboarding ? 0 : null">
+@if (onboarding || modo === 'arvore') {
+  <app-hierarchy-tree [hidden]="modo !== 'arvore'" [nodes]="arvore" [selectable]="true" [compact]="true"
     [selectionStates]="estados" [selectionDisabled]="importando || carregando" [loading]="carregando"
     [expandAll]="!onboarding || !!termo || !!categoria" [expandRoots]="!onboarding" emptyDescription="Altere a pesquisa ou a categoria."
     (selectionChange)="marcarNo($event)"></app-hierarchy-tree>
-} @else {
+}
+@if (modo === 'detalhada') {
 <div class="biblioteca-lista" [attr.aria-busy]="carregando || importando">
   @for (item of filtrados; track chave(item)) {
     <article>
@@ -64,5 +72,6 @@
 </div>
 
 }
+</div>
 
 }

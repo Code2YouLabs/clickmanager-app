@@ -1,0 +1,282 @@
+[
+  {
+    "contentHeight": 45080,
+    "footer": {
+      "bottom": 776,
+      "height": 102.34375,
+      "left": 24,
+      "right": 336,
+      "top": 673.65625,
+      "width": 312,
+      "x": 24,
+      "y": 673.65625
+    },
+    "height": 800,
+    "horizontalOverflow": 0,
+    "listHeight": 499,
+    "mode": "detalhada",
+    "pageHeight": 800,
+    "selected": "216 itens selecionados Pular por enquanto Preparar meu catálogo",
+    "width": 360
+  },
+  {
+    "contentHeight": 44496,
+    "footer": {
+      "bottom": 820,
+      "height": 150.34375,
+      "left": 24,
+      "right": 366,
+      "top": 669.65625,
+      "width": 342,
+      "x": 24,
+      "y": 669.65625
+    },
+    "height": 844,
+    "horizontalOverflow": 0,
+    "listHeight": 163,
+    "mode": "detalhada",
+    "pageHeight": 844,
+    "selected": "216 itens selecionados Pular por enquanto Preparar meu catálogo",
+    "width": 390
+  },
+  {
+    "contentHeight": 44496,
+    "footer": {
+      "bottom": 908,
+      "height": 150.34375,
+      "left": 24,
+      "right": 406,
+      "top": 757.65625,
+      "width": 382,
+      "x": 24,
+      "y": 757.65625
+    },
+    "height": 932,
+    "horizontalOverflow": 0,
+    "listHeight": 271,
+    "mode": "detalhada",
+    "pageHeight": 932,
+    "selected": "216 itens selecionados Pular por enquanto Preparar meu catálogo",
+    "width": 430
+  },
+  {
+    "contentHeight": 40176,
+    "footer": {
+      "bottom": 1000,
+      "height": 150.34375,
+      "left": 24,
+      "right": 744,
+      "top": 849.65625,
+      "width": 720,
+      "x": 24,
+      "y": 849.65625
+    },
+    "height": 1024,
+    "horizontalOverflow": 0,
+    "listHeight": 363,
+    "mode": "detalhada",
+    "pageHeight": 1024,
+    "selected": "216 itens selecionados Pular por enquanto Preparar meu catálogo",
+    "width": 768
+  },
+  {
+    "contentHeight": 14832,
+    "footer": {
+      "bottom": 872,
+      "height": 65,
+      "left": 147,
+      "right": 1219,
+      "top": 807,
+      "width": 1072,
+      "x": 147,
+      "y": 807
+    },
+    "height": 900,
+    "horizontalOverflow": 0,
+    "listHeight": 428,
+    "mode": "detalhada",
+    "pageHeight": 900,
+    "selected": "216 itens selecionados Pular por enquanto Preparar meu catálogo",
+    "width": 1366
+  },
+  {
+    "contentHeight": 22529,
+    "footer": {
+      "bottom": 332,
+      "height": 90.34375,
+      "left": 36,
+      "right": 764,
+      "top": 241.65625,
+      "width": 728,
+      "x": 36,
+      "y": 241.65625
+    },
+    "height": 360,
+    "horizontalOverflow": 0,
+    "listHeight": 90,
+    "mode": "detalhada",
+    "pageHeight": 360,
+    "selected": "216 itens selecionados Pular por enquanto Preparar meu catálogo",
+    "width": 800
+  },
+  {
+    "contentHeight": 44840,
+    "footer": {
+      "bottom": 396,
+      "height": 98.34375,
+      "left": 24,
+      "right": 366,
+      "top": 297.65625,
+      "width": 342,
+      "x": 24,
+      "y": 297.65625
+    },
+    "height": 420,
+    "horizontalOverflow": 0,
+    "listHeight": 123,
+    "mode": "detalhada",
+    "pageHeight": 420,
+    "selected": "216 itens selecionados Pular por enquanto Preparar meu catálogo",
+    "width": 390
+  },
+  {
+    "contentHeight": 10906,
+    "footer": {
+      "bottom": 776,
+      "height": 102.34375,
+      "left": 24,
+      "right": 336,
+      "top": 673.65625,
+      "width": 312,
+      "x": 24,
+      "y": 673.65625
+    },
+    "height": 800,
+    "horizontalOverflow": 0,
+    "listHeight": 499,
+    "mode": "arvore-expandida",
+    "pageHeight": 800,
+    "selected": "216 itens selecionados Pular por enquanto Preparar meu catálogo",
+    "width": 360
+  },
+  {
+    "contentHeight": 10526,
+    "footer": {
+      "bottom": 820,
+      "height": 150.34375,
+      "left": 24,
+      "right": 366,
+      "top": 669.65625,
+      "width": 342,
+      "x": 24,
+      "y": 669.65625
+    },
+    "height": 844,
+    "horizontalOverflow": 0,
+    "listHeight": 163,
+    "mode": "arvore-expandida",
+    "pageHeight": 844,
+    "selected": "216 itens selecionados Pular por enquanto Preparar meu catálogo",
+    "width": 390
+  },
+  {
+    "contentHeight": 10526,
+    "footer": {
+      "bottom": 908,
+      "height": 150.34375,
+      "left": 24,
+      "right": 406,
+      "top": 757.65625,
+      "width": 382,
+      "x": 24,
+      "y": 757.65625
+    },
+    "height": 932,
+    "horizontalOverflow": 0,
+    "listHeight": 271,
+    "mode": "arvore-expandida",
+    "pageHeight": 932,
+    "selected": "216 itens selecionados Pular por enquanto Preparar meu catálogo",
+    "width": 430
+  },
+  {
+    "contentHeight": 10526,
+    "footer": {
+      "bottom": 1000,
+      "height": 150.34375,
+      "left": 24,
+      "right": 744,
+      "top": 849.65625,
+      "width": 720,
+      "x": 24,
+      "y": 849.65625
+    },
+    "height": 1024,
+    "horizontalOverflow": 0,
+    "listHeight": 363,
+    "mode": "arvore-expandida",
+    "pageHeight": 1024,
+    "selected": "216 itens selecionados Pular por enquanto Preparar meu catálogo",
+    "width": 768
+  },
+  {
+    "contentHeight": 10550,
+    "footer": {
+      "bottom": 872,
+      "height": 65,
+      "left": 147,
+      "right": 1219,
+      "top": 807,
+      "width": 1072,
+      "x": 147,
+      "y": 807
+    },
+    "height": 900,
+    "horizontalOverflow": 0,
+    "listHeight": 428,
+    "mode": "arvore-expandida",
+    "pageHeight": 900,
+    "selected": "216 itens selecionados Pular por enquanto Preparar meu catálogo",
+    "width": 1366
+  },
+  {
+    "contentHeight": 10831,
+    "footer": {
+      "bottom": 332,
+      "height": 90.34375,
+      "left": 36,
+      "right": 764,
+      "top": 241.65625,
+      "width": 728,
+      "x": 36,
+      "y": 241.65625
+    },
+    "height": 360,
+    "horizontalOverflow": 0,
+    "listHeight": 90,
+    "mode": "arvore-expandida",
+    "pageHeight": 360,
+    "selected": "216 itens selecionados Pular por enquanto Preparar meu catálogo",
+    "width": 800
+  },
+  {
+    "contentHeight": 10870,
+    "footer": {
+      "bottom": 396,
+      "height": 98.34375,
+      "left": 24,
+      "right": 366,
+      "top": 297.65625,
+      "width": 342,
+      "x": 24,
+      "y": 297.65625
+    },
+    "height": 420,
+    "horizontalOverflow": 0,
+    "listHeight": 123,
+    "mode": "arvore-expandida",
+    "pageHeight": 420,
+    "selected": "216 itens selecionados Pular por enquanto Preparar meu catálogo",
+    "width": 390
+  }
+]

@@ -1,4 +1,5 @@
-<div class="blank-layout-container justify-content-center onboarding-page-layout">
+<div class="blank-layout-container justify-content-center onboarding-page-layout"
+  [class.onboarding-catalogo--selecao]="!carregando && stage === 'CATALOGO' && !seletor?.reconectando">
   <div class="auth-wrapper onboarding-page-wrapper">
     <div class="w-100 rounded bg-white auth-card onboarding-page-card">
       <div class="auth-body onboarding-page">

@@ -1,1 +1,64 @@
 @use '../onboarding-v2-page';
+
+// Only the selection stage owns the viewport. Preparation/completion keep their existing layout.
+.onboarding-catalogo--selecao {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+
+  .onboarding-page-wrapper { height: 100%; min-height: 0; margin: 0 auto; }
+  .onboarding-page-card { height: 100%; min-height: 0; min-width: 0; overflow: hidden; }
+  .onboarding-page { height: 100%; min-height: 0; padding: 16px 24px; box-sizing: border-box; }
+  .onboarding-page__intro h1 { margin-bottom: 8px; }
+  .onboarding-page__intro p { margin-bottom: 4px; font-size: 14px; line-height: 20px; }
+
+  :host ::ng-deep & {
+    app-onboarding-shell { display: block; height: 100%; min-height: 0; }
+    .onboarding-shell { height: 100%; min-height: 0; gap: 12px; }
+    .onboarding-shell__header { flex: 0 0 auto; padding: 0 0 12px; }
+    .onboarding-shell__content { flex: 1 1 0; min-height: 0; gap: 12px; }
+    app-biblioteca-produtos-selector { flex: 1 1 0; min-height: 0; }
+    .onboarding-shell__footer { position: static; flex: 0 0 auto; padding: 12px 0 0; }
+    .onboarding-shell__footer-left:empty { display: none; }
+    .onboarding-shell__footer-right { flex: 1; justify-content: flex-end; }
+    .onboarding-shell__hint { margin-right: auto; }
+    .onboarding-shell__footer button { min-height: 44px; }
+  }
+}
+
+@media (max-width: 768px) {
+  .onboarding-catalogo--selecao {
+    .onboarding-page { padding: 12px; }
+    .onboarding-page__intro h1 { font-size: 20px; line-height: 28px; }
+    :host ::ng-deep & {
+      .onboarding-shell__header { gap: 8px; }
+      .onboarding-shell__brand { display: none; }
+      .onboarding-shell__brand img { width: 112px; }
+      .onboarding-shell__steps ol { margin-bottom: 4px; }
+      .onboarding-shell__footer-right { display: grid; grid-template-columns: 1fr; gap: 4px; }
+      .onboarding-shell__hint { width: auto; margin: 0; }
+      .onboarding-shell__footer button[mat-flat-button] { min-height: 48px; }
+    }
+  }
+}
+
+// With a keyboard/reduced height, scroll context and filters with the results.
+// The footer stays in its own row; there is still only one vertical scroll area.
+@media (max-height: 840px) {
+  :host ::ng-deep .onboarding-catalogo--selecao {
+    .onboarding-shell__content { display: block; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; }
+    .onboarding-page__intro { margin-bottom: 12px; }
+    app-biblioteca-produtos-selector { display: block; }
+    .onboarding-shell__content .biblioteca-selector--onboarding .biblioteca-resultados { overflow: visible; flex: none; }
+    .onboarding-shell__header { flex-direction: row; align-items: center; }
+    .onboarding-shell__brand { display: none; }
+    .onboarding-shell__steps { max-width: none; }
+    .onboarding-shell__steps li { flex-direction: row; font-size: 12px; }
+    .onboarding-shell__step-marker { width: 24px; height: 24px; }
+    .onboarding-shell__footer .onboarding-shell__footer-right { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 8px; }
+    .onboarding-shell__footer .onboarding-shell__hint { grid-column: 1 / -1; width: auto; }
+    .onboarding-shell__footer .onboarding-shell__footer-right button { width: 100%; min-width: 0; font-size: 14px; white-space: normal; line-height: 20px; height: auto; padding: 8px 12px; }
+  }
+}
