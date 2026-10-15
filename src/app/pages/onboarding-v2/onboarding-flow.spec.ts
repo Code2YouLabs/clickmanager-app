@@ -13,6 +13,7 @@ import { OnboardingV2StateService } from './services/onboarding-v2-state.service
 import { OnboardingV2Service } from './services/onboarding-v2.service';
 import { By } from '@angular/platform-browser';
 import { HierarchyTreeComponent } from 'src/app/components/hierarchy-tree/hierarchy-tree.component';
+import { OverlayContainer } from '@angular/cdk/overlay';
 
 const pending: SetupProgress = { id: 9, status: 'PENDENTE', fase: 'AGUARDANDO', total: 150, processados: 0, criados: 0, duplicados: 0, erros: 0, smartCalcPrevistos: 2, smartCalcPreparados: 0, tempoEstimadoRestanteSegundos: null, itens: [] };
 const done: SetupProgress = { ...pending, status: 'CONCLUIDO', fase: 'CONCLUIDO', processados: 150, criados: 148, duplicados: 2, smartCalcPreparados: 2 };
@@ -81,10 +82,10 @@ describe('Narrativa do onboarding', () => {
     const f = TestBed.createComponent(OnboardingV2ProductsPageComponent);
     f.detectChanges();
     expect(f.nativeElement.textContent).toContain('Selecionar todos os 1 produto');
-    expect(f.nativeElement.textContent).toContain('0 de 1 selecionados');
+    expect(f.nativeElement.querySelector('.biblioteca-acoes__contador')).toBeNull();
     f.componentInstance.seletor!.selecionarTodos(true); f.detectChanges();
     expect(f.nativeElement.textContent).toContain('Desmarcar todos');
-    expect(f.nativeElement.textContent).toContain('1 de 1 selecionados');
+    expect(f.componentInstance.seletor!.selecionados.size).toBe(1);
     f.nativeElement.querySelector('footer button[mat-flat-button]').click(); f.detectChanges();
     expect(f.componentInstance.stage).toBe('PREPARANDO');
     expect(biblioteca.importar).toHaveBeenCalledWith(jasmine.any(Array), true);
@@ -172,7 +173,12 @@ describe('Narrativa do onboarding', () => {
       const steps = doc.querySelector('ol') as HTMLElement;
       expect(steps.scrollWidth).toBeLessThanOrEqual(steps.clientWidth + 1);
       const actions = doc.querySelector('.onboarding-shell__footer-right') as HTMLElement;
-      expect(frame.contentWindow!.getComputedStyle(actions).flexDirection).toBe('column');
+      expect(frame.contentWindow!.getComputedStyle(actions).display).toBe('grid');
+      const heading = doc.querySelector('.onboarding-catalogo__heading') as HTMLElement;
+      const controls = doc.querySelector('.biblioteca-mobile-controls') as HTMLElement;
+      expect(frame.contentWindow!.getComputedStyle(heading).display).toBe('flex');
+      expect(frame.contentWindow!.getComputedStyle(controls).display).toBe('flex');
+      expect((doc.querySelector('.biblioteca-resultados') as HTMLElement).clientHeight).toBeGreaterThan(400);
       const text = doc.body.textContent || '';
       expect(text.indexOf('Selecionar todos os 1 produto')).toBeGreaterThan(-1);
       expect(text.indexOf('Selecionar todos os 1 produto')).toBeLessThan(text.indexOf('Vinil'));
@@ -180,6 +186,55 @@ describe('Narrativa do onboarding', () => {
     } finally { frame.remove(); f.destroy(); }
     });
   }
+
+  it('abre filtros em modal, combina pesquisa e categoria, limpa e mantém seleção', fakeAsync(() => {
+    const f = TestBed.createComponent(OnboardingV2ProductsPageComponent);
+    f.detectChanges(); tick(); f.detectChanges();
+    const selector = f.componentInstance.seletor!;
+    selector.selecionarTodos(true);
+    f.nativeElement.querySelector('.onboarding-catalogo__filters').click(); tick(); f.detectChanges();
+    const overlay = TestBed.inject(OverlayContainer).getContainerElement();
+    expect(overlay.querySelector('[mat-dialog-title]')?.textContent).toContain('Filtros do catálogo');
+    expect(overlay.querySelector('mat-button-toggle-group')).toBeNull();
+    expect(overlay.textContent).not.toContain('Selecionar todos');
+    const input = overlay.querySelector('input')!;
+    input.value = 'vinil'; input.dispatchEvent(new Event('input')); tick(300); f.detectChanges();
+    overlay.querySelector<HTMLElement>('mat-select')!.click(); tick(); f.detectChanges();
+    Array.from(overlay.querySelectorAll<HTMLElement>('mat-option')).find(option => option.textContent?.trim() === 'Adesivos')!.click();
+    tick(); f.detectChanges();
+    expect(selector.filtrosAtivos).toBe(2);
+    expect(selector.filtrados.length).toBe(1);
+    expect(f.nativeElement.querySelector('.onboarding-catalogo__filters').getAttribute('aria-label')).toBe('Filtros: 2 ativos');
+    overlay.querySelector<HTMLButtonElement>('mat-dialog-actions button[mat-button]')!.click();
+    tick(300); f.detectChanges();
+    expect(selector.filtrosAtivos).toBe(0);
+    expect(selector.selecionados.size).toBe(1);
+    overlay.querySelector<HTMLButtonElement>('[mat-dialog-close]')!.click(); tick(); f.detectChanges();
+    expect(overlay.querySelector('mat-dialog-container')).toBeNull();
+    expect(f.nativeElement.querySelector('.biblioteca-acoes__contador')).toBeNull();
+    expect(f.nativeElement.querySelector('footer .onboarding-shell__hint')).toBeNull();
+    f.destroy();
+  }));
+
+  it('exibe seleção indeterminada no controle compacto e mantém ação completa', async () => {
+    biblioteca.listar.and.returnValue(of([
+      {id:1,tipo:'PRODUTO',nome:'Vinil',categoria:'Adesivos',tiposPreco:[],acabamentos:[]},
+      {id:2,tipo:'PRODUTO',nome:'Couché',categoria:'Adesivos',tiposPreco:[],acabamentos:[]},
+    ]));
+    const f = TestBed.createComponent(OnboardingV2ProductsPageComponent);
+    f.detectChanges(); await f.whenStable(); f.detectChanges();
+    const selector = f.componentInstance.seletor!;
+    selector.marcar(selector.itens[0], true); f.detectChanges();
+    const input = f.nativeElement.querySelector('.biblioteca-mobile-controls input') as HTMLInputElement;
+    expect(input.indeterminate).toBeTrue();
+    input.click(); f.detectChanges();
+    expect(selector.selecionados.size).toBe(2);
+    expect(input.indeterminate).toBeFalse();
+    expect(input.checked).toBeTrue();
+    input.click(); f.detectChanges();
+    expect(selector.selecionados.size).toBe(0);
+    f.destroy();
+  });
 
   it('mantém seleção, expansão e elementos ao alternar visualizações e selecionar itens', async () => {
     biblioteca.listar.and.returnValue(of(Array.from({length: 216}, (_, i) => ({id:i+1,tipo:'PRODUTO',nome:`Produto ${i+1}`,categoria:'Adesivos',tiposPreco:[],acabamentos:[]}))));
@@ -197,7 +252,7 @@ describe('Narrativa do onboarding', () => {
     const first = region.querySelector('article');
     first.querySelector('input[type="checkbox"]').click(); f.detectChanges();
     expect(selector.selecionados.size).toBe(1);
-    expect(f.nativeElement.querySelector('footer').textContent).toContain('1 itens selecionados');
+    expect(f.nativeElement.querySelector('footer .onboarding-shell__hint')).toBeNull();
     expect(f.nativeElement.textContent).toContain('Seleção parcial dos resultados.');
     expect(region.querySelector('article')).toBe(first);
     expect(f.nativeElement.querySelector('.biblioteca-resultados')).toBe(region);
@@ -217,7 +272,7 @@ describe('Narrativa do onboarding', () => {
     f.destroy();
   });
 
-  for (const [width, height] of [[360,800],[390,844],[430,932],[768,1024],[1366,900],[800,360],[390,420]]) {
+  for (const [width, height] of [[360,800],[390,844],[430,932],[768,1024],[1366,900],[1440,900],[800,360],[390,420]]) {
     it(`limita centenas de produtos e mantém rodapé acessível em ${width}×${height}`, async () => {
       biblioteca.listar.and.returnValue(of(Array.from({length:216}, (_, i) => ({id:i+1,tipo:'PRODUTO',nome:`Produto ${i+1}`,categoria:'Adesivos',descricao:'Descrição do produto',tiposPreco:[],acabamentos:[]}))));
       const f = TestBed.createComponent(OnboardingV2ProductsPageComponent);
@@ -235,8 +290,21 @@ describe('Narrativa do onboarding', () => {
         const layout = doc.querySelector('.onboarding-page-layout') as HTMLElement;
         const list = doc.querySelector('.biblioteca-resultados') as HTMLElement;
         const content = doc.querySelector('.onboarding-shell__content') as HTMLElement;
-        const scroll = height <= 840 ? content : list;
+        const scroll = width > 768 && height <= 840 ? content : list;
         const footer = doc.querySelector('footer') as HTMLElement;
+        if (width <= 768) {
+          const primary = footer.querySelector('button[mat-flat-button]')!.getBoundingClientRect();
+          const skip = footer.querySelector('button[mat-button]')!.getBoundingClientRect();
+          expect(primary.right).toBeLessThanOrEqual(skip.left);
+          expect(primary.left).toBeGreaterThanOrEqual(footer.getBoundingClientRect().left);
+          expect(frame.contentWindow!.getComputedStyle(doc.querySelector('.biblioteca-desktop-controls')!).display).toBe('none');
+          expect(frame.contentWindow!.getComputedStyle(doc.querySelector('.onboarding-page__intro > p')!).display).toBe('none');
+        } else {
+          expect(frame.contentWindow!.getComputedStyle(doc.querySelector('.biblioteca-toolbar')!).display).toBe('flex');
+          expect(frame.contentWindow!.getComputedStyle(doc.querySelector('.biblioteca-mobile-controls')!).display).toBe('none');
+          expect(frame.contentWindow!.getComputedStyle(doc.querySelector('.onboarding-catalogo__filters')!).display).toBe('none');
+          expect(frame.contentWindow!.getComputedStyle(doc.querySelector('.onboarding-page__intro > p')!).display).toBe('block');
+        }
         expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1);
         expect(footer.getBoundingClientRect().bottom).toBeLessThanOrEqual(height);
         expect(footer.getBoundingClientRect().top).toBeGreaterThan(0);

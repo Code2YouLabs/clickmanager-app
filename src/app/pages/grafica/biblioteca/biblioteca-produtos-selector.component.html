@@ -3,26 +3,11 @@
 @if (job) { <app-setup-progress [job]="job" [onboarding]="onboarding" [animarEtapas]="animarEtapas" (etapasConcluidas)="etapasConcluidas.emit()" /> }
 @if (!importando && !reconectando && (!onboarding || !job)) {
 @if (mostrarIntroducao) { <p>Escolha produtos e serviços prontos para sua empresa. Depois de adicionar, você pode editar os cadastros e preços livremente.</p> }
-<div class="biblioteca-toolbar">
-  <mat-form-field appearance="outline">
-    <mat-label>Pesquisar na biblioteca</mat-label>
-    <input matInput [(ngModel)]="busca" (ngModelChange)="pesquisar($event)" [disabled]="importando" placeholder="Nome, material, formato ou cor">
-    <mat-icon matSuffix>search</mat-icon>
-  </mat-form-field>
-  <mat-form-field appearance="outline">
-    <mat-label>Categoria</mat-label>
-    <mat-select [(ngModel)]="categoria" [disabled]="importando">
-      @if (onboarding) { <mat-select-trigger>{{ categoria || 'Todas' }}</mat-select-trigger> }
-      <mat-option value="">Todas as categorias</mat-option>
-      @for (c of categorias; track c) { <mat-option [value]="c">{{ c }}</mat-option> }
-    </mat-select>
-  </mat-form-field>
-  <mat-button-toggle-group [(ngModel)]="modo" aria-label="Visualização da biblioteca">
-    <mat-button-toggle value="arvore">Árvore</mat-button-toggle>
-    <mat-button-toggle value="detalhada">Detalhada</mat-button-toggle>
-  </mat-button-toggle-group>
+<div class="biblioteca-toolbar" [class.biblioteca-desktop-controls]="onboarding">
+  <ng-container *ngTemplateOutlet="camposFiltros" />
+  <ng-container *ngTemplateOutlet="visualizacao" />
 </div>
-<div class="biblioteca-acoes" *ngIf="!carregando || filtrados.length">
+<div class="biblioteca-acoes" [class.biblioteca-desktop-controls]="onboarding" *ngIf="!carregando || filtrados.length">
   <div class="biblioteca-acoes__bulk">
     <button
       mat-stroked-button
@@ -31,19 +16,26 @@
       [disabled]="carregando || importando || !filtrados.length"
       (click)="selecionarTodos(!todosSelecionados)"
       [attr.aria-pressed]="todosSelecionados"
-      [attr.aria-describedby]="onboarding ? 'biblioteca-selecao-escopo' : null"
     >
       <mat-icon>{{ todosSelecionados ? 'remove_done' : 'select_all' }}</mat-icon>
       <span>{{ textoAcaoSelecao }}</span>
     </button>
-    <span class="biblioteca-acoes__contador" aria-live="polite">{{ contadorSelecionados }}</span>
+    @if (!onboarding) { <span class="biblioteca-acoes__contador" aria-live="polite">{{ contadorSelecionados }}</span> }
     @if (onboarding) {
-      <small id="biblioteca-selecao-escopo">A ação vale para os resultados da pesquisa e da categoria.</small>
       <span class="cdk-visually-hidden" role="status">{{ todosSelecionados ? 'Todos os resultados selecionados.' : algunsSelecionados ? 'Seleção parcial dos resultados.' : 'Nenhum resultado selecionado.' }}</span>
     }
   </div>
   @if (mostrarAcaoAdicionar) { <button mat-flat-button color="primary" [disabled]="carregando || importando || !selecionados.size" (click)="adicionar()">{{ importando ? 'Adicionando...' : 'Adicionar à empresa' }}</button> }
 </div>
+@if (onboarding) {
+  <div class="biblioteca-mobile-controls">
+    <mat-checkbox [checked]="todosSelecionados" [indeterminate]="algunsSelecionados"
+      [disabled]="carregando || importando || !filtrados.length" (change)="selecionarTodos($event.checked)">
+      Selecionar todos
+    </mat-checkbox>
+    <ng-container *ngTemplateOutlet="visualizacao; context: { compact: true }" />
+  </div>
+}
 @if (carregando) { <mat-progress-bar mode="indeterminate" aria-label="Carregando biblioteca"></mat-progress-bar> }
 <div class="biblioteca-resultados" role="region" aria-label="Produtos da biblioteca" [attr.tabindex]="onboarding ? 0 : null">
 @if (onboarding || modo === 'arvore') {
@@ -75,3 +67,37 @@
 </div>
 
 }
+
+<ng-template #visualizacao let-compact="compact">
+  <mat-button-toggle-group [(ngModel)]="modo" [hideSingleSelectionIndicator]="!!compact" aria-label="Visualização da biblioteca">
+    <mat-button-toggle value="arvore">Árvore</mat-button-toggle>
+    <mat-button-toggle value="detalhada">Detalhada</mat-button-toggle>
+  </mat-button-toggle-group>
+</ng-template>
+
+<ng-template #camposFiltros>
+  <mat-form-field appearance="outline">
+    <mat-label>Pesquisar na biblioteca</mat-label>
+    <input matInput [(ngModel)]="busca" (ngModelChange)="pesquisar($event)" [disabled]="importando" placeholder="Nome, material, formato ou cor">
+    <mat-icon matSuffix>search</mat-icon>
+  </mat-form-field>
+  <mat-form-field appearance="outline">
+    <mat-label>Categoria</mat-label>
+    <mat-select [(ngModel)]="categoria" [disabled]="importando">
+      @if (onboarding) { <mat-select-trigger>{{ categoria || 'Todas' }}</mat-select-trigger> }
+      <mat-option value="">Todas as categorias</mat-option>
+      @for (c of categorias; track c) { <mat-option [value]="c">{{ c }}</mat-option> }
+    </mat-select>
+  </mat-form-field>
+</ng-template>
+
+<ng-template #modalFiltros>
+  <h2 mat-dialog-title>Filtros do catálogo</h2>
+  <mat-dialog-content class="biblioteca-filtros-dialog">
+    <ng-container *ngTemplateOutlet="camposFiltros" />
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="limparFiltros()" [disabled]="!busca && !categoria">Limpar filtros</button>
+    <button mat-flat-button color="primary" type="button" mat-dialog-close>Concluir</button>
+  </mat-dialog-actions>
+</ng-template>
