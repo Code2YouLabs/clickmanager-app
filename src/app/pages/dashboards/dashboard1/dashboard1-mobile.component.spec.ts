@@ -144,6 +144,7 @@ describe('Dashboard — composição mobile compartilhando dados e widgets', () 
     const widgets = fixture.debugElement.queryAll(By.directive(WidgetStub)).map(element => element.componentInstance);
     layout.next({ matches: false }); fixture.detectChanges();
     expect(query('.dashboard-mobile-toolbar')).toBeNull();
+    expect(fixture.debugElement.query(By.css('app-status-grid')).componentInstance.compactMobile).toBeFalse();
     expect(query('app-card-header')?.textContent).toContain('Dashboard');
     expect(query('app-card-header')?.textContent).toContain('Acompanhe receita, atendimento e operação da gráfica.');
     expect(query('.dashboard-actions')?.textContent).toContain('Atualizar');
@@ -153,6 +154,7 @@ describe('Dashboard — composição mobile compartilhando dados e widgets', () 
     expect(service.obterVisaoGeralGrafica).toHaveBeenCalledTimes(1);
     layout.next({ matches: true }); fixture.detectChanges();
     expect(count('.dashboard-mobile-toolbar')).toBe(1);
+    expect(fixture.debugElement.query(By.css('app-status-grid')).componentInstance.compactMobile).toBeTrue();
     expect(query('.dashboard-quick-section')).toBeNull();
     expect(fixture.debugElement.queryAll(By.directive(WidgetStub)).find(element => element.nativeElement.tagName === 'APP-COMPARATIVO-PEDIDOS')?.componentInstance.compactMobile).toBeTrue();
     expect(count('app-comparativo-pedidos')).toBe(1); expect(count('app-status-grid')).toBe(1); expect(count('app-receita-resumo')).toBe(1);

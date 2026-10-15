@@ -111,6 +111,7 @@
 
   <section class="dashboard-secondary-grid">
     <app-status-grid
+      [compactMobile]="isMobile"
       [refreshToken]="refreshToken"
       (refreshState)="onWidgetRefreshState($event)">
     </app-status-grid>

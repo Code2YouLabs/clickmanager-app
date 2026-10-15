@@ -17,14 +17,7 @@
 
     <div class="status-grid" [class.status-grid--loading]="loading || refreshing">
       @for (item of pedidoStats; track item.status) {
-      <button
-        type="button"
-        class="status-grid__item status-grid__item--{{ item.tone }}"
-        (click)="abrirStatus(item)">
-        <strong class="status-grid__value">{{ item.quantidade }}</strong>
-        <span class="status-grid__label">{{ item.label }}</span>
-        <small class="status-grid__amount">{{ formatBRL(item.valor) }}</small>
-      </button>
+        <ng-container *ngTemplateOutlet="statusIndicator; context: { $implicit: item }"></ng-container>
       }
     </div>
   </app-section-card>
@@ -36,15 +29,24 @@
     [divider]="true">
     <div class="status-grid" [class.status-grid--loading]="loading || refreshing">
       @for (item of orcamentoStats; track item.status) {
-      <button
-        type="button"
-        class="status-grid__item status-grid__item--{{ item.tone }}"
-        (click)="abrirStatus(item)">
-        <strong class="status-grid__value">{{ item.quantidade }}</strong>
-        <span class="status-grid__label">{{ item.label }}</span>
-        <small class="status-grid__amount">{{ formatBRL(item.valor) }}</small>
-      </button>
+        <ng-container *ngTemplateOutlet="statusIndicator; context: { $implicit: item }"></ng-container>
       }
     </div>
   </app-section-card>
 </div>
+
+<ng-template #statusIndicator let-item>
+  <button
+    type="button"
+    class="status-grid__item status-grid__item--{{ item.tone }}"
+    (click)="abrirStatus(item)">
+    @if (compactMobile) {
+      <span class="status-grid__label">{{ item.label }}</span>
+    }
+    <strong class="status-grid__value">{{ item.quantidade }}</strong>
+    @if (!compactMobile) {
+      <span class="status-grid__label">{{ item.label }}</span>
+    }
+    <small class="status-grid__amount">{{ formatBRL(item.valor) }}</small>
+  </button>
+</ng-template>

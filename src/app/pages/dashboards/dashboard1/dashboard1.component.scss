@@ -330,8 +330,8 @@
     app-status-grid .status-grid { gap: 8px; }
     app-status-grid .status-grid__item {
       display: grid;
-      grid-template-columns: minmax(0, 0.65fr) minmax(0, 1fr);
-      grid-template-areas: 'count label' 'amount amount';
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: 'label' 'count' 'amount';
       align-content: center;
       align-items: center;
       min-height: 80px;
@@ -340,7 +340,12 @@
       border-radius: 12px;
     }
     app-status-grid .status-grid__value { grid-area: count; font-size: 1.5rem; overflow-wrap: anywhere; }
-    app-status-grid .status-grid__label { grid-area: label; font-size: 0.75rem; overflow-wrap: anywhere; }
+    app-status-grid .status-grid__label {
+      grid-area: label;
+      min-height: 2.3em;
+      font-size: 0.75rem;
+      overflow-wrap: anywhere;
+    }
     app-status-grid .status-grid__amount { grid-area: amount; font-size: 0.75rem; overflow-wrap: anywhere; }
     .status-grid-feedback, .dashboard-chart-card__feedback, .dashboard-receita-card__feedback { flex-wrap: wrap; }
 
@@ -424,9 +429,10 @@
     .section-card__title .subtitle { font-size: 0.75rem; line-height: 1.25; }
 
     app-status-grid .status-grid-stack { gap: 16px; }
-    app-status-grid .status-grid { gap: 0 12px; }
+    app-status-grid .status-grid { grid-auto-rows: 1fr; gap: 0 12px; }
     app-status-grid .status-grid__item {
-      min-height: 72px;
+      min-width: 0;
+      min-height: 88px;
       padding: 8px 4px;
       border-width: 0 0 1px;
       border-style: solid;
