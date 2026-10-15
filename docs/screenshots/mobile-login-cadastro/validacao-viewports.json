@@ -1,0 +1,520 @@
+[
+  {
+    "screen": "login",
+    "clippedHorizontally": 0,
+    "cta": {
+      "height": 48,
+      "width": 288
+    },
+    "document": {
+      "clientWidth": 360,
+      "height": 800,
+      "width": 360
+    },
+    "inputs": [
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "login-email",
+        "width": 252
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "login-password",
+        "width": 216
+      }
+    ],
+    "viewport": {
+      "height": 800,
+      "width": 360
+    }
+  },
+  {
+    "screen": "login",
+    "clippedHorizontally": 0,
+    "cta": {
+      "height": 48,
+      "width": 318
+    },
+    "document": {
+      "clientWidth": 390,
+      "height": 844,
+      "width": 390
+    },
+    "inputs": [
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "login-email",
+        "width": 282
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "login-password",
+        "width": 246
+      }
+    ],
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "screen": "login",
+    "clippedHorizontally": 0,
+    "cta": {
+      "height": 48,
+      "width": 358
+    },
+    "document": {
+      "clientWidth": 430,
+      "height": 932,
+      "width": 430
+    },
+    "inputs": [
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "login-email",
+        "width": 322
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "login-password",
+        "width": 286
+      }
+    ],
+    "viewport": {
+      "height": 932,
+      "width": 430
+    }
+  },
+  {
+    "screen": "login",
+    "clippedHorizontally": 0,
+    "cta": {
+      "height": 48,
+      "width": 462
+    },
+    "document": {
+      "clientWidth": 768,
+      "height": 1024,
+      "width": 768
+    },
+    "inputs": [
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "login-email",
+        "width": 426
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "login-password",
+        "width": 390
+      }
+    ],
+    "viewport": {
+      "height": 1024,
+      "width": 768
+    }
+  },
+  {
+    "screen": "login",
+    "clippedHorizontally": 0,
+    "cta": {
+      "height": 48,
+      "width": 446
+    },
+    "document": {
+      "clientWidth": 1366,
+      "height": 900,
+      "width": 1366
+    },
+    "inputs": [
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "login-email",
+        "width": 410
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "login-password",
+        "width": 374
+      }
+    ],
+    "viewport": {
+      "height": 900,
+      "width": 1366
+    }
+  },
+  {
+    "screen": "login",
+    "clippedHorizontally": 0,
+    "cta": {
+      "height": 48,
+      "width": 446
+    },
+    "document": {
+      "clientWidth": 785,
+      "height": 742,
+      "width": 785
+    },
+    "inputs": [
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "login-email",
+        "width": 410
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "login-password",
+        "width": 374
+      }
+    ],
+    "viewport": {
+      "height": 360,
+      "width": 800
+    }
+  },
+  {
+    "screen": "login",
+    "clippedHorizontally": 0,
+    "cta": {
+      "height": 48,
+      "width": 303
+    },
+    "document": {
+      "clientWidth": 375,
+      "height": 758,
+      "width": 375
+    },
+    "inputs": [
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "login-email",
+        "width": 267
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "login-password",
+        "width": 231
+      }
+    ],
+    "viewport": {
+      "height": 420,
+      "width": 390
+    }
+  },
+  {
+    "screen": "cadastro",
+    "clippedHorizontally": 0,
+    "cta": {
+      "height": 48,
+      "width": 273
+    },
+    "document": {
+      "clientWidth": 345,
+      "height": 880,
+      "width": 345
+    },
+    "inputs": [
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-name",
+        "width": 237
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-email",
+        "width": 237
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-password",
+        "width": 201
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-confirm-password",
+        "width": 201
+      }
+    ],
+    "viewport": {
+      "height": 800,
+      "width": 360
+    }
+  },
+  {
+    "screen": "cadastro",
+    "clippedHorizontally": 0,
+    "cta": {
+      "height": 48,
+      "width": 303
+    },
+    "document": {
+      "clientWidth": 375,
+      "height": 880,
+      "width": 375
+    },
+    "inputs": [
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-name",
+        "width": 267
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-email",
+        "width": 267
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-password",
+        "width": 231
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-confirm-password",
+        "width": 231
+      }
+    ],
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  {
+    "screen": "cadastro",
+    "clippedHorizontally": 0,
+    "cta": {
+      "height": 48,
+      "width": 358
+    },
+    "document": {
+      "clientWidth": 430,
+      "height": 932,
+      "width": 430
+    },
+    "inputs": [
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-name",
+        "width": 322
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-email",
+        "width": 322
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-password",
+        "width": 286
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-confirm-password",
+        "width": 286
+      }
+    ],
+    "viewport": {
+      "height": 932,
+      "width": 430
+    }
+  },
+  {
+    "screen": "cadastro",
+    "clippedHorizontally": 0,
+    "cta": {
+      "height": 48,
+      "width": 462
+    },
+    "document": {
+      "clientWidth": 768,
+      "height": 1024,
+      "width": 768
+    },
+    "inputs": [
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-name",
+        "width": 426
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-email",
+        "width": 426
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-password",
+        "width": 390
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-confirm-password",
+        "width": 390
+      }
+    ],
+    "viewport": {
+      "height": 1024,
+      "width": 768
+    }
+  },
+  {
+    "screen": "cadastro",
+    "clippedHorizontally": 0,
+    "cta": {
+      "height": 48,
+      "width": 446
+    },
+    "document": {
+      "clientWidth": 1366,
+      "height": 900,
+      "width": 1366
+    },
+    "inputs": [
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-name",
+        "width": 410
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-email",
+        "width": 410
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-password",
+        "width": 374
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-confirm-password",
+        "width": 374
+      }
+    ],
+    "viewport": {
+      "height": 900,
+      "width": 1366
+    }
+  },
+  {
+    "screen": "cadastro",
+    "clippedHorizontally": 0,
+    "cta": {
+      "height": 48,
+      "width": 446
+    },
+    "document": {
+      "clientWidth": 785,
+      "height": 896,
+      "width": 785
+    },
+    "inputs": [
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-name",
+        "width": 410
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-email",
+        "width": 410
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-password",
+        "width": 374
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-confirm-password",
+        "width": 374
+      }
+    ],
+    "viewport": {
+      "height": 360,
+      "width": 800
+    }
+  },
+  {
+    "screen": "cadastro",
+    "clippedHorizontally": 0,
+    "cta": {
+      "height": 48,
+      "width": 303
+    },
+    "document": {
+      "clientWidth": 375,
+      "height": 880,
+      "width": 375
+    },
+    "inputs": [
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-name",
+        "width": 267
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-email",
+        "width": 267
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-password",
+        "width": 231
+      },
+      {
+        "fontSize": "16px",
+        "height": 24,
+        "id": "register-confirm-password",
+        "width": 231
+      }
+    ],
+    "viewport": {
+      "height": 420,
+      "width": 390
+    }
+  }
+]
