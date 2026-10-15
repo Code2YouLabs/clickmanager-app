@@ -14,7 +14,7 @@
             @if (stage === 'CATALOGO' && !seletor?.reconectando) {
               <div class="onboarding-page__intro">
                 <div class="onboarding-catalogo__heading">
-                  <h1>Quais produtos você oferece?</h1>
+                  <h1 class="onboarding-step-title">Quais produtos você oferece?</h1>
                 </div>
                 <p>Escolha categorias inteiras ou produtos individuais. Você poderá adicionar outros produtos a qualquer momento.</p>
                 <p>Esta etapa é opcional.</p>
@@ -22,7 +22,7 @@
             }
             @if (stage === 'PREPARANDO' && !seletor?.job) {
               <div class="onboarding-page__intro" role="status">
-                <h1>Estamos preparando seu ClickManager</h1>
+                <h1 class="onboarding-step-title">Estamos preparando seu ClickManager</h1>
                 <p>Isso pode levar alguns instantes. Você não precisa fazer nada.</p>
               </div>
             }

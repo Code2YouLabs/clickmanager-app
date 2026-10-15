@@ -22,7 +22,7 @@
               <ng-container *ngIf="!erroCarregamento && onboardingV2State.resumo(); else errorTemplate">
                 <section class="onboarding-page__section">
                   @if (job) { <app-setup-progress [job]="job" [onboarding]="true" /> } @else {
-                  <app-section-card
+                  <app-section-card class="onboarding-step-summary"
                     titulo="Tudo pronto!"
                     subtitulo="Seu ClickManager está configurado e pronto para usar."
                     [divider]="true"
@@ -72,7 +72,7 @@
 
 <ng-template #errorTemplate>
   <section class="onboarding-page__section">
-    <app-section-card
+    <app-section-card class="onboarding-step-summary"
       titulo="Não foi possível carregar o resumo"
       [subtitulo]="onboardingV2State.error() || 'Tente carregar novamente.'"
       [divider]="true"

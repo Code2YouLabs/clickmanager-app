@@ -1,6 +1,6 @@
 <section class="setup-progress" [class.setup-progress--onboarding]="onboarding" aria-label="Progresso da preparação">
       @if (onboarding) {
-        <h2>{{ titulo }}</h2>
+        <h2 class="onboarding-step-title">{{ titulo }}</h2>
         <p>{{ exibicaoAtiva ? 'Isso pode levar alguns instantes. Você não precisa fazer nada.' : 'Seu ClickManager foi preparado com os produtos e configurações que você escolheu.' }}</p>
         <ol class="setup-progress__tasks">
           @for (task of tarefas; track task.label) {

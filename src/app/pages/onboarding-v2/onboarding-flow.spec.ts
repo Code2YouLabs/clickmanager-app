@@ -2,7 +2,8 @@ import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
-import { of, Subject, delay, throwError } from 'rxjs';
+import { BehaviorSubject, of, Subject, delay, throwError } from 'rxjs';
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { AuthService } from 'src/app/services/auth.service';
 import { SetupProgress } from 'src/app/components/setup-progress/setup-progress.component';
 import { BibliotecaService } from '../grafica/biblioteca/biblioteca.service';
@@ -49,6 +50,43 @@ describe('Narrativa do onboarding', () => {
     }).compileComponents();
   });
 
+  it('adapta apenas os textos de cadastro ao mobile sem recriar campos ou alterar dados e validações', async () => {
+    const viewport = new BehaviorSubject({matches: true, breakpoints: {}});
+    const observe = jasmine.createSpy('observe').and.callFake((query: string) => query.startsWith('(max-width') ? viewport : of({matches: false, breakpoints: {}}));
+    TestBed.overrideProvider(BreakpointObserver, {useValue: {observe}});
+    state.refreshProgress.and.returnValue(of({onboardingVersion: 'v2', currentStep: 'company', status: 'pending', empresa: company}));
+    const f = TestBed.createComponent(OnboardingV2CompanyPageComponent);
+    f.detectChanges(); await f.whenStable(); f.detectChanges();
+    const inputs = Array.from(f.nativeElement.querySelectorAll('input')) as HTMLInputElement[];
+    const labels = () => Array.from(f.nativeElement.querySelectorAll('mat-label')).map((label: any) => label.textContent.replace('*', '').trim());
+    expect(f.nativeElement.querySelector('h1').textContent.trim()).toBe('Dados de Cadastro');
+    expect(f.nativeElement.querySelector('.onboarding-page__intro p')).toBeNull();
+    expect(f.nativeElement.querySelector('.onboarding-v2-company__business .title')).toBeNull();
+    expect(f.nativeElement.querySelector('.onboarding-v2-company__contact .title').textContent).toBe('Responsável da empresa');
+    expect(labels()).toEqual(['Nome da empresa', 'Telefone da empresa', 'E-mail da empresa', 'Nome do responsável', 'Telefone do responsável']);
+    expect(inputs.map(input => input.type)).toEqual(['text', 'tel', 'email', 'text', 'tel']);
+    expect(f.nativeElement.querySelectorAll('mat-label span').length).toBe(5);
+    for (const control of Object.values(f.componentInstance.form.controls)) {
+      const value = control.value;
+      control.setValue('');
+      expect(control.hasError('required')).toBeTrue();
+      control.setValue(value);
+    }
+    expect(f.componentInstance.form.valid).toBeTrue();
+    expect(f.componentInstance.form.getRawValue()).toEqual(company);
+    viewport.next({matches: false, breakpoints: {}}); f.detectChanges();
+    expect(f.nativeElement.querySelector('h1').textContent.trim()).toBe('Sua empresa');
+    expect(f.nativeElement.querySelector('.onboarding-page__intro p').textContent).toBe('Vamos começar com algumas informações básicas.');
+    expect(f.nativeElement.querySelector('.onboarding-v2-company__business .title').textContent).toBe('Empresa');
+    expect(f.nativeElement.querySelector('.onboarding-v2-company__contact .title').textContent).toBe('Responsável');
+    expect(labels()).toEqual(['Nome da empresa', 'Telefone', 'E-mail', 'Nome do responsável', 'Telefone do responsável']);
+    expect(Array.from(f.nativeElement.querySelectorAll('input'))).toEqual(inputs);
+    expect(f.componentInstance.form.getRawValue()).toEqual(company);
+    expect(state.saveCompany).not.toHaveBeenCalled();
+    expect(observe).toHaveBeenCalledWith('(max-width: 768px), (max-width: 960px) and (max-height: 560px)');
+    f.destroy();
+  });
+
   it('preserva validação e payload da empresa com o rodapé compartilhado', async () => {
     state.refreshProgress.and.returnValue(of({onboardingVersion: 'v2', currentStep: 'company', status: 'pending', empresa: company}));
     const f = TestBed.createComponent(OnboardingV2CompanyPageComponent);
@@ -80,6 +118,7 @@ describe('Narrativa do onboarding', () => {
       f.detectChanges();
       const steps = f.nativeElement.querySelectorAll('ol li');
       expect(steps.length).toBe(3);
+      expect(Array.from(steps).map((li: any) => li.querySelector('span:last-child').textContent.trim())).toEqual(['Sua empresa', 'Seu catálogo', 'Preparando']);
       expect(f.nativeElement.querySelectorAll('[aria-current="step"]').length).toBe(1);
       expect(steps[step - 1].getAttribute('aria-current')).toBe('step');
       expect(f.nativeElement.querySelectorAll('ol li.complete').length).toBe(step - 1);
@@ -98,6 +137,7 @@ describe('Narrativa do onboarding', () => {
     f.detectChanges(); await f.whenStable(); f.detectChanges();
     const shell = f.debugElement.query(By.directive(OnboardingShellComponent)).componentInstance as OnboardingShellComponent;
     expect(shell.mobileLayout).toBe('catalog');
+    expect(f.nativeElement.querySelector('.onboarding-step-title').textContent.trim()).toBe('Quais produtos você oferece?');
     expect(shell.mobileActions).toBeNull();
     f.destroy();
     for (const job of [pending, done]) {
@@ -106,6 +146,7 @@ describe('Narrativa do onboarding', () => {
       preparing.detectChanges(); await preparing.whenStable(); preparing.detectChanges();
       const preparingShell = preparing.debugElement.query(By.directive(OnboardingShellComponent)).componentInstance as OnboardingShellComponent;
       expect(preparingShell.mobileLayout).toBe('flow');
+      expect(preparing.nativeElement.querySelector('.onboarding-step-title').textContent.trim()).toBe(job === pending ? 'Estamos preparando seu ClickManager' : 'Tudo pronto para você!');
       const action = preparing.nativeElement.querySelector('.onboarding-shell__footer--mobile-actions button');
       if (job === pending) {
         expect(action).toBeNull();
@@ -141,7 +182,8 @@ describe('Narrativa do onboarding', () => {
     f.destroy();
   });
 
-  it('mostra Sua empresa e avança para catálogo pelo botão no final do conteúdo', async () => {
+  it('mantém Sua empresa no desktop e avança para catálogo pelo botão no final do conteúdo', async () => {
+    TestBed.overrideProvider(BreakpointObserver, {useValue: {observe: () => of({matches: false, breakpoints: {}})}});
     state.refreshProgress.and.returnValue(of({onboardingVersion: 'v2', currentStep: 'company', status: 'pending', empresa: company}).pipe(delay(0)));
     const f = TestBed.createComponent(OnboardingV2CompanyPageComponent);
     f.detectChanges(); await f.whenStable(); f.detectChanges();
