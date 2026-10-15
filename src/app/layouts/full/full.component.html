@@ -152,7 +152,8 @@
     </button>
   </div>
 
-  <nav class="mobile-sheet__content mobile-sheet__content--more" aria-label="Menu principal">
+  <div class="mobile-sheet__content mobile-sheet__content--more">
+  <nav aria-label="Menu principal">
     @for(group of mobileNavGroups; track trackByGroupTitle($index, group)) {
     <section class="mobile-nav-group" [class.mobile-nav-group--active]="isMobileGroupActive(group)">
       @if(group.title) {
@@ -170,6 +171,18 @@
     </section>
     }
   </nav>
+  @if(mobileHelpItem) {
+  <nav class="mobile-sheet__section" aria-label="Ajuda">
+    <button type="button" class="mobile-nav-item" [class.mobile-nav-item--active]="isMobileItemActive(mobileHelpItem)"
+      [attr.aria-current]="isMobileItemActive(mobileHelpItem) ? 'page' : null" (click)="onMobileNavItemClick(mobileHelpItem)">
+      <span class="mobile-nav-item__main">
+        <i-tabler [name]="mobileHelpItem.iconName || 'help'" class="icon-20 d-flex mobile-nav-item__icon"></i-tabler>
+        <span class="mobile-nav-item__label">Ajuda e Tutoriais</span>
+      </span>
+    </button>
+  </nav>
+  }
+  </div>
 </section>
 
 <ng-template #mobileMenuItems let-items let-parentId="parentId" let-depth="depth">
@@ -382,14 +395,17 @@
   </div>
 </section>
 
-@if(!hideMobileBottomNav) {
-<nav class="mobile-bottom-nav" aria-label="Navegação principal">
+@if(!hideMobileBottomNav && mobileBottomNavItems.length) {
+<nav class="mobile-bottom-nav" aria-label="Navegação principal"
+  [style.grid-template-columns]="'repeat(' + mobileBottomNavItems.length + ', minmax(0, 1fr))'">
   @for(item of mobileBottomNavItems; track item.key) {
   <button
     type="button"
     class="mobile-bottom-nav__item"
     [class.mobile-bottom-nav__item--active]="isMobileBottomNavActive(item)"
     [class.mobile-bottom-nav__item--special]="item.special"
+    [attr.aria-current]="item.route && isMobileBottomNavActive(item) ? 'page' : null"
+    [attr.aria-pressed]="item.action ? isMobileBottomNavActive(item) : null"
     (click)="onMobileBottomNavClick(item)">
     <span class="mobile-bottom-nav__icon-wrap">
       <i-tabler [name]="item.icon" class="icon-20 d-flex"></i-tabler>

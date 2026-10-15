@@ -34,3 +34,9 @@ export function mobileNavItemKey(item: NavItem): string {
 export function mobileNavItemId(item: NavItem, parentId = 'mobile-nav'): string {
   return parentId + '--' + encodeURIComponent(mobileNavItemKey(item));
 }
+
+/** Mais is the existing global drawer: expose Help once as a supporting action, outside its main list. */
+export function buildMobileMoreNavigation(items: NavItem[]): { groups: MobileNavGroup[]; help?: NavItem } {
+  const help = items.find(item => item.route === '/page/ajuda');
+  return { groups: buildMobileNavGroups(items.filter(item => item !== help)), help };
+}

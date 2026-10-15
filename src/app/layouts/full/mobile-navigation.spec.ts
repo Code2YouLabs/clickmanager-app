@@ -1,4 +1,4 @@
-import { buildMobileNavGroups, mobileNavItemId } from './mobile-navigation';
+import { buildMobileNavGroups, buildMobileMoreNavigation, mobileNavItemId } from './mobile-navigation';
 import { navItems } from './vertical/sidebar/sidebar-data';
 import { filtrarMenuPrincipal } from './vertical/sidebar/menu-filter';
 import { TipoEmpresa } from 'src/app/models/empresa/tipo-empresa.enum';
@@ -60,4 +60,15 @@ describe('Projeção mobile da configuração desktop', () => {
     expect(buildMobileNavGroups([{ navCap: 'Catálogo' }, parent])[0].id)
       .toBe(buildMobileNavGroups([{ navCap: 'Menu' }, { route: '/inicio' }, { navCap: 'Catálogo' }, parent])[1].id);
   });
+
+  it('Mais apresenta Ajuda uma vez fora da lista principal sem mutar a configuração desktop', () => {
+    const before = JSON.stringify(navItems);
+    const result = buildMobileMoreNavigation(navItems);
+    expect(result.help?.route).toBe('/page/ajuda');
+    expect(result.groups.flatMap(group => group.items).some(item => item.route === '/page/ajuda')).toBeFalse();
+    expect(result.groups.flatMap(group => group.items).some(item => item.route === '/page/suporte')).toBeTrue();
+    expect(JSON.stringify(navItems)).toBe(before);
+    expect(buildMobileMoreNavigation([{ navCap: 'Ajuda' }, { route: '/page/ajuda' }]).groups).toEqual([]);
+  });
+
 });

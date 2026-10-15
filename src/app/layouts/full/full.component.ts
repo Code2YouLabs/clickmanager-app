@@ -1,8 +1,9 @@
+import { buildGraficaMobileBottomNav, MobileBottomNavItem } from './mobile-bottom-navigation';
 import { A11yModule } from '@angular/cdk/a11y';
 import { TranslateModule } from '@ngx-translate/core';
-import { buildMobileNavGroups, MobileNavGroup, mobileNavItemId, mobileNavItemKey } from './mobile-navigation';
+import { buildMobileMoreNavigation, MobileNavGroup, mobileNavItemId, mobileNavItemKey } from './mobile-navigation';
 import { BreakpointObserver, MediaMatcher } from '@angular/cdk/layout';
-import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild, ViewEncapsulation, effect } from '@angular/core';
+import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild, ViewEncapsulation, effect, signal } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { MatSidenav, MatSidenavContent } from '@angular/material/sidenav';
 import { MatDialog } from '@angular/material/dialog';
@@ -53,16 +54,6 @@ const TABLET_VIEW = 'screen and (min-width: 769px) and (max-width: 1024px)';
 const MONITOR_VIEW = 'screen and (min-width: 1024px)';
 const BELOWMONITOR = 'screen and (max-width: 1023px)';
 
-interface MobileBottomNavItem {
-  key: string;
-  label: string;
-  icon: string;
-  route?: string;
-  startsWith?: string[];
-  special?: boolean;
-  action?: 'drawer' | 'apps' | 'profile';
-}
-
 @Component({
   selector: 'app-full',
   standalone: true,
@@ -106,6 +97,11 @@ export class FullComponent implements OnInit, OnDestroy {
   exibirAvisoOnboarding = false;
   ImagemUtil = ImagemUtil;
   mobileNavGroups: MobileNavGroup[] = [];
+  mobileHelpItem?: NavItem;
+  private readonly mobileNavigationReady = signal(false);
+  private featureLoadSubscription = Subscription.EMPTY;
+  private userSubscription = Subscription.EMPTY;
+  private mobileCompanyKey?: string;
   mobileDrawerOpen = false;
   mobileAppsOpen = false;
   mobileProfileOpen = false;
@@ -183,6 +179,13 @@ export class FullComponent implements OnInit, OnDestroy {
       this.atualizarLinksEmpresa(this.configuracaoAplicativosService.configuracao());
     });
 
+    effect(() => {
+      this.featureFlagService.features();
+      if (this.mobileNavigationReady() && this.tipoEmpresaAtual === TipoEmpresa.GRAFICA) {
+        this.updateGraficaMobileBottomNav();
+      }
+    });
+
     this.htmlElement = document.querySelector('html')!;
     this.layoutChangesSubscription = this.breakpointObserver
       .observe([MOBILE_VIEW, TABLET_VIEW, MONITOR_VIEW, BELOWMONITOR])
@@ -220,11 +223,15 @@ export class FullComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.aplicarConfiguracaoPorTipoEmpresa(this.tipoEmpresaAtual);
-    this.authService.usuario$
-      .pipe(
-        filter((usuario): usuario is Usuario => !!usuario)
-      )
-      .subscribe(usuario => {  
+    this.userSubscription = this.authService.usuario$
+      .subscribe(usuario => {
+        this.featureLoadSubscription.unsubscribe();
+        this.mobileNavigationReady.set(false);
+        if (!usuario) {
+          this.usuarioLogado = null;
+          this.mobileBottomNavItems = [];
+          return;
+        }
         this.usuarioLogado = usuario;
         this.tipoEmpresaAtual = resolveTipoEmpresa(usuario.empresa?.tipoEmpresa);
         this.versaoCatalogoAtual = this.catalogoContext.snapshot().versaoCatalogo;
@@ -233,10 +240,15 @@ export class FullComponent implements OnInit, OnDestroy {
         this.atualizarPermissaoEnvioNotificacao();
         const permissoes = (usuario.perfil?.permissoes || []).map(p => p.chave);
         this.navItemsFiltrados = this.filtrarMenus(navItems, permissoes, this.tipoEmpresaAtual, this.versaoCatalogoAtual, usuario);
-        this.mobileNavGroups = buildMobileNavGroups(this.navItemsFiltrados);
-        this.featureFlagService.carregar().pipe(take(1)).subscribe(() => {
+        this.updateMobileMoreNavigation();
+        const companyKey = String(usuario.empresa?.id ?? '') + ':' + this.tipoEmpresaAtual;
+        const companyChanged = this.mobileCompanyKey !== undefined && this.mobileCompanyKey !== companyKey;
+        this.mobileCompanyKey = companyKey;
+        this.featureLoadSubscription = this.featureFlagService.carregar(companyChanged).pipe(take(1)).subscribe(() => {
           this.navItemsFiltrados = this.filtrarMenus(navItems, permissoes, this.tipoEmpresaAtual, this.versaoCatalogoAtual, usuario);
-          this.mobileNavGroups = buildMobileNavGroups(this.navItemsFiltrados);
+          this.updateMobileMoreNavigation();
+          if (this.tipoEmpresaAtual === TipoEmpresa.GRAFICA) this.updateGraficaMobileBottomNav();
+          this.mobileNavigationReady.set(true);
           this.currentPageTitle = this.resolveCurrentPageTitle(this.router.url);
           this.primeiroPedidoBoasVindas.avaliarEExibir(usuario);
         });
@@ -261,6 +273,8 @@ export class FullComponent implements OnInit, OnDestroy {
     this.unlockBodyScroll();
     this.layoutChangesSubscription.unsubscribe();
     this.navigationSubscription.unsubscribe();
+    this.featureLoadSubscription.unsubscribe();
+    this.userSubscription.unsubscribe();
     this.primeiroPedidoBoasVindas.reset();
   }
 
@@ -464,7 +478,7 @@ export class FullComponent implements OnInit, OnDestroy {
       return this.currentRoute === item.route;
     }
 
-    return (item.startsWith ?? [item.route]).some((route) => this.currentRoute.startsWith(route));
+    return (item.startsWith ?? [item.route]).some(route => this.router.isActive(route, { paths: 'subset', queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored' }));
   }
 
   toggleMobileItemExpanded(item: NavItem): void {
@@ -743,16 +757,18 @@ export class FullComponent implements OnInit, OnDestroy {
   }
 
   private aplicarConfiguracaoPorTipoEmpresa(tipoEmpresa: TipoEmpresa): void {
-    const catalogoNovoAtivo = tipoEmpresa === TipoEmpresa.DEPOSITO && this.versaoCatalogoAtual === 'CATALOGO_NOVO';
+    if (tipoEmpresa === TipoEmpresa.GRAFICA) {
+      this.mobileBottomNavItems = [];
+      this.atualizarLinksEmpresa(this.configuracaoAplicativosService.configuracao());
+      return;
+    }
+    const catalogoNovoAtivo = this.versaoCatalogoAtual === 'CATALOGO_NOVO';
     const catalogoRoute = this.catalogoPrincipalRoute();
-    const catalogoStartsWith = tipoEmpresa === TipoEmpresa.GRAFICA
-      ? ['/page/grafica']
-      : catalogoNovoAtivo
+    const catalogoStartsWith = catalogoNovoAtivo
       ? ['/page/catalogo']
       : ['/page/deposito/itens', '/page/deposito/categorias', '/page/deposito/marcas'];
 
-    this.mobileBottomNavItems = tipoEmpresa === TipoEmpresa.DEPOSITO
-      ? [
+    this.mobileBottomNavItems = [
           {
             key: 'dashboard',
             label: 'Dashboard',
@@ -787,45 +803,23 @@ export class FullComponent implements OnInit, OnDestroy {
             icon: 'menu-2',
             action: 'drawer',
           }
-        ]
-      : [
-          {
-            key: 'dashboard',
-            label: 'Dashboard',
-            icon: 'layout-dashboard',
-            route: '/dashboards/dashboard1',
-            startsWith: ['/dashboards/dashboard1'],
-          },
-          {
-            key: 'atalhos',
-            label: 'Atalhos',
-            icon: 'grid-dots',
-            action: 'apps',
-          },
-          {
-            key: 'catalogo',
-            label: 'Catálogo',
-            icon: 'package',
-            route: '/page/grafica/produtos',
-            startsWith: ['/page/grafica'],
-            special: true,
-          },
-          {
-            key: 'pedidos',
-            label: 'Pedidos',
-            icon: 'file-text',
-            route: '/page/grafica/comercial/pedidos',
-            startsWith: ['/page/grafica/comercial/pedidos'],
-          },
-          {
-            key: 'mais',
-            label: 'Mais',
-            icon: 'menu-2',
-            action: 'drawer',
-          }
         ];
 
     this.atualizarLinksEmpresa(this.configuracaoAplicativosService.configuracao());
+  }
+
+  private updateMobileMoreNavigation(): void {
+    const navigation = buildMobileMoreNavigation(this.navItemsFiltrados);
+    this.mobileNavGroups = navigation.groups;
+    this.mobileHelpItem = navigation.help;
+  }
+
+  private updateGraficaMobileBottomNav(): void {
+    const usuario = this.usuarioLogado;
+    if (!usuario) return;
+    const menu = this.filtrarMenus(navItems, (usuario.perfil?.permissoes || []).map(item => item.chave),
+      this.tipoEmpresaAtual, this.versaoCatalogoAtual, usuario);
+    this.mobileBottomNavItems = buildGraficaMobileBottomNav(menu, key => this.featureFlagService.isEnabled(key));
   }
 
   abrirAtalhoMobile(atalho: AtalhoEmpresa, event: Event): void {
