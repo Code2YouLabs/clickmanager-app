@@ -63,7 +63,7 @@ describe('AppStatusGridComponent', () => {
 
     component.abrirStatus(component.orcamentoStats.find((item) => item.status === 'APROVADO')!);
 
-    expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial-beta/orcamentos'], {
+    expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial/orcamentos'], {
       queryParams: { status: 'APROVADO' },
     });
   });
