@@ -248,24 +248,143 @@
   }
 }
 
-@media (max-width: 767px) {
-  .dashboard-actions {
-    width: 100%;
+// The shell switches to mobile below 1024px. All overrides remain local to this Dashboard.
+@media (max-width: 1023px) {
+  :host { min-width: 0; }
 
-    button {
-      flex: 1 1 0;
+  .dashboard-mobile-toolbar {
+    position: sticky;
+    top: var(--dashboard-shell-header-height, 0px);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 56px;
+    padding: 4px max(8px, env(safe-area-inset-right)) 4px max(8px, env(safe-area-inset-left));
+    margin-bottom: 12px;
+    background: var(--mat-sys-surface, #fff);
+    border-bottom: 1px solid var(--mat-sys-outline-variant, #e2e8f0);
+
+    h2 {
       min-width: 0;
+      margin: 0;
+      font-size: 1rem;
+      line-height: 1.5;
+      font-weight: 600;
+      white-space: nowrap;
     }
   }
 
-  .dashboard-kpis,
-  .dashboard-main-grid,
-  .dashboard-secondary-grid {
-    gap: 12px;
-    margin-bottom: 12px;
-  }
+  .dashboard-mobile-toolbar__actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+  .dashboard-mobile-toolbar__refresh { width: 44px; height: 44px; padding: 10px; }
+  .dashboard-mobile-toolbar__new { white-space: nowrap; min-height: 44px; padding-inline: 12px; }
+  .dashboard-mobile-toolbar__refresh[aria-busy='true'] mat-icon { animation: dashboard-refresh 1s linear infinite; }
 
-  .dashboard-kpis {
-    grid-template-columns: 1fr;
+  .dashboard-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); order: 1; gap: 8px; margin: 0; }
+  .dashboard-main-grid, .dashboard-secondary-grid { display: contents; }
+  .dashboard-quick-section { order: 2; }
+  app-status-grid { order: 3; }
+  .dashboard-chart-section { order: 4; }
+  app-receita-resumo { order: 5; }
+  .dashboard-feedback { flex-wrap: wrap; margin: 0; }
+
+  .quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .quick-action { min-height: 64px; padding: 8px; gap: 8px; align-items: flex-start; }
+  .quick-action__icon { width: 32px; height: 32px; }
+  .quick-action__copy { overflow-wrap: anywhere; }
+  .quick-action__copy strong { font-size: 0.875rem; }
+
+  :host ::ng-deep .dashboard-page {
+    // PageCard stays the desktop foundation; its legacy header is replaced only here.
+    > .page-card > app-card-header { display: none; }
+    > .page-card > mat-card-content {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+      padding: 8px;
+    }
+
+    .dashboard-kpis .metric-card { position: relative; display: block; min-height: 112px; padding: 12px; }
+    .dashboard-kpis .metric-card__icon { position: absolute; top: 12px; right: 12px; width: 28px; height: 28px; }
+    .dashboard-kpis .metric-card__content > span {
+      max-width: calc(100% - 32px);
+      min-height: 2.5em;
+      font-size: 0.75rem;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    .dashboard-kpis .metric-card__content > strong {
+      margin: 8px 0 4px;
+      font-size: 1.125rem;
+      line-height: 1.25;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      text-overflow: clip;
+    }
+    .dashboard-kpis .metric-card small { display: block; min-height: 0; font-size: 0.75rem; overflow-wrap: anywhere; -webkit-line-clamp: unset; }
+
+    app-status-grid, app-receita-resumo { min-width: 0; height: auto; }
+    app-status-grid .status-grid-stack { gap: 12px; }
+    app-status-grid .status-grid { gap: 8px; }
+    app-status-grid .status-grid__item {
+      display: grid;
+      grid-template-columns: minmax(0, 0.65fr) minmax(0, 1fr);
+      grid-template-areas: 'count label' 'amount amount';
+      align-content: center;
+      align-items: center;
+      min-height: 80px;
+      padding: 12px;
+      gap: 4px 8px;
+      border-radius: 12px;
+    }
+    app-status-grid .status-grid__value { grid-area: count; font-size: 1.5rem; overflow-wrap: anywhere; }
+    app-status-grid .status-grid__label { grid-area: label; font-size: 0.75rem; overflow-wrap: anywhere; }
+    app-status-grid .status-grid__amount { grid-area: amount; font-size: 0.75rem; overflow-wrap: anywhere; }
+    .status-grid-feedback, .dashboard-chart-card__feedback, .dashboard-receita-card__feedback { flex-wrap: wrap; }
+
+    .dashboard-quick-section .section-card, .dashboard-chart-section .section-card,
+    app-status-grid .section-card, app-receita-resumo .section-card { margin: 0; padding: 12px; min-height: 0; height: auto; }
+    .dashboard-quick-section .subtitle, .dashboard-chart-section .subtitle,
+    app-status-grid .subtitle, app-receita-resumo .subtitle { font-size: 0.75rem; }
+
+    .dashboard-chart-card__header, .dashboard-chart-card__desktop-summary, .dashboard-chart-card__canvas { display: none; }
+    .dashboard-chart-card__content { gap: 12px; }
+    .dashboard-chart-card__filters {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+      overflow: visible;
+      padding: 0;
+    }
+    .dashboard-chart-filter { grid-column: span 2; min-width: 0; min-height: 44px; padding: 4px 8px; font-size: 0.75rem; }
+    .dashboard-chart-filter:nth-child(n + 4) { grid-column: span 3; }
+    .dashboard-chart-card__mobile-summary { display: grid; gap: 8px; }
+    .dashboard-chart-card__mobile-lines { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .dashboard-chart-card__mobile-line { display: grid; gap: 4px; min-width: 0; }
+    .dashboard-chart-card__mobile-line span { font-size: 0.75rem; }
+    .dashboard-chart-card__mobile-line strong { font-size: 1rem; overflow-wrap: anywhere; }
+    .dashboard-chart-card__mobile-insights strong { font-size: 0.875rem; }
+    .dashboard-chart-card__footer { display: flex; }
+    .dashboard-chart-card__mobile-cta, .dashboard-receita-card__detail-btn { min-height: 44px; }
+
+    .dashboard-receita-card__top h2 { font-size: 1.125rem; overflow-wrap: anywhere; }
+    .dashboard-receita-card__summary { min-width: 0; }
+    .dashboard-receita-card__filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; gap: 8px; padding: 0; }
+    .dashboard-receita-card__chip { min-width: 0; min-height: 44px; padding: 4px 8px; font-size: 0.75rem; }
+    .dashboard-receita-card__chart { display: none; }
+    .dashboard-receita-card__body { display: block; }
+    .dashboard-receita-card__legend { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .dashboard-receita-card__legend-item { display: grid; grid-template-columns: auto minmax(0, 1fr); padding: 8px; gap: 4px 8px; min-width: 0; }
+    .dashboard-receita-card__legend-label { font-size: 0.75rem; overflow-wrap: anywhere; }
+    .dashboard-receita-card__legend-value { grid-column: 2; margin: 0; font-size: 0.75rem; overflow-wrap: anywhere; }
+    .dashboard-receita-card__chart:has(.dashboard-receita-card__empty-state) { display: block; }
+    .dashboard-receita-card__empty-state { min-height: 0; padding: 8px; }
+    .dashboard-receita-card__empty-ring { display: block; width: 100%; aspect-ratio: auto; border: 0; background: none; }
+    .dashboard-receita-card__empty-copy { max-width: none; text-align: left; }
   }
 }
+
+@keyframes dashboard-refresh { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .dashboard-mobile-toolbar__refresh mat-icon { animation: none !important; } }
