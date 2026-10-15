@@ -90,7 +90,8 @@
       <span class="onboarding-shell__hint" *ngIf="primaryHint">{{ primaryHint }}</span>
 
       <button mat-button type="button" *ngIf="showSkip" [disabled]="skipDisabled" (click)="pular.emit()">
-        Pular por enquanto
+        <span [class.onboarding-shell__skip-desktop]="!!mobileSkipLabel">Pular por enquanto</span>
+        @if (mobileSkipLabel) { <span class="onboarding-shell__skip-mobile">{{ mobileSkipLabel }}</span> }
       </button>
 
       <button

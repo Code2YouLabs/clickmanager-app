@@ -29,12 +29,20 @@
 </div>
 @if (onboarding) {
   <div class="biblioteca-mobile-controls">
-    <mat-checkbox [checked]="todosSelecionados" [indeterminate]="algunsSelecionados"
-      [disabled]="carregando || importando || !filtrados.length" (change)="selecionarTodos($event.checked)">
-      Selecionar todos
-    </mat-checkbox>
+    <button class="onboarding-catalogo__filters" mat-stroked-button type="button"
+      [disabled]="carregando || importando || !!erro" [class.onboarding-catalogo__filters--active]="!!filtrosAtivos"
+      [attr.aria-label]="filtrosAtivos ? 'Filtros: ' + filtrosAtivos + ' ativos' : 'Filtros'" (click)="abrirFiltros()">
+      <mat-icon>filter_list</mat-icon>Filtros
+      @if (filtrosAtivos) { <span class="biblioteca-filter-count" aria-hidden="true">{{ filtrosAtivos }}</span> }
+    </button>
     <ng-container *ngTemplateOutlet="visualizacao; context: { compact: true }" />
   </div>
+  <button class="biblioteca-mobile-bulk" mat-stroked-button color="primary" type="button"
+    [disabled]="carregando || importando || !filtrados.length" [attr.aria-pressed]="todosSelecionados ? 'true' : algunsSelecionados ? 'mixed' : 'false'"
+    (click)="selecionarTodos(!todosSelecionados)">
+    <mat-icon>{{ todosSelecionados ? 'check_box' : algunsSelecionados ? 'indeterminate_check_box' : 'check_box_outline_blank' }}</mat-icon>
+    Selecionar todos
+  </button>
 }
 @if (carregando) { <mat-progress-bar mode="indeterminate" aria-label="Carregando biblioteca"></mat-progress-bar> }
 <div class="biblioteca-resultados" role="region" aria-label="Produtos da biblioteca" [attr.tabindex]="onboarding ? 0 : null">

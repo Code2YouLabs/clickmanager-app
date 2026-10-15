@@ -176,7 +176,7 @@ describe('Narrativa do onboarding', () => {
       expect(frame.contentWindow!.getComputedStyle(actions).display).toBe('grid');
       const heading = doc.querySelector('.onboarding-catalogo__heading') as HTMLElement;
       const controls = doc.querySelector('.biblioteca-mobile-controls') as HTMLElement;
-      expect(frame.contentWindow!.getComputedStyle(heading).display).toBe('flex');
+      expect(frame.contentWindow!.getComputedStyle(heading.querySelector('h1')!).whiteSpace).toBe('nowrap');
       expect(frame.contentWindow!.getComputedStyle(controls).display).toBe('flex');
       expect((doc.querySelector('.biblioteca-resultados') as HTMLElement).clientHeight).toBeGreaterThan(400);
       const text = doc.body.textContent || '';
@@ -225,12 +225,12 @@ describe('Narrativa do onboarding', () => {
     f.detectChanges(); await f.whenStable(); f.detectChanges();
     const selector = f.componentInstance.seletor!;
     selector.marcar(selector.itens[0], true); f.detectChanges();
-    const input = f.nativeElement.querySelector('.biblioteca-mobile-controls input') as HTMLInputElement;
-    expect(input.indeterminate).toBeTrue();
+    const input = f.nativeElement.querySelector('.biblioteca-mobile-bulk') as HTMLButtonElement;
+    expect(input.getAttribute('aria-pressed')).toBe('mixed');
     input.click(); f.detectChanges();
     expect(selector.selecionados.size).toBe(2);
-    expect(input.indeterminate).toBeFalse();
-    expect(input.checked).toBeTrue();
+    expect(input.getAttribute('aria-pressed')).toBe('true');
+    expect(selector.todosSelecionados).toBeTrue();
     input.click(); f.detectChanges();
     expect(selector.selecionados.size).toBe(0);
     f.destroy();
@@ -272,7 +272,7 @@ describe('Narrativa do onboarding', () => {
     f.destroy();
   });
 
-  for (const [width, height] of [[360,800],[390,844],[430,932],[768,1024],[1366,900],[1440,900],[800,360],[390,420]]) {
+  for (const [width, height] of [[360,800],[390,844],[430,932],[768,1024],[1366,900],[1366,768],[1440,900],[1440,800],[800,360],[390,420]]) {
     it(`limita centenas de produtos e mantém rodapé acessível em ${width}×${height}`, async () => {
       biblioteca.listar.and.returnValue(of(Array.from({length:216}, (_, i) => ({id:i+1,tipo:'PRODUTO',nome:`Produto ${i+1}`,categoria:'Adesivos',descricao:'Descrição do produto',tiposPreco:[],acabamentos:[]}))));
       const f = TestBed.createComponent(OnboardingV2ProductsPageComponent);
@@ -290,20 +290,43 @@ describe('Narrativa do onboarding', () => {
         const layout = doc.querySelector('.onboarding-page-layout') as HTMLElement;
         const list = doc.querySelector('.biblioteca-resultados') as HTMLElement;
         const content = doc.querySelector('.onboarding-shell__content') as HTMLElement;
-        const scroll = width > 768 && height <= 840 ? content : list;
+        const scroll = list;
         const footer = doc.querySelector('footer') as HTMLElement;
-        if (width <= 768) {
+        if (width <= 768 || (width <= 960 && height <= 560)) {
           const primary = footer.querySelector('button[mat-flat-button]')!.getBoundingClientRect();
           const skip = footer.querySelector('button[mat-button]')!.getBoundingClientRect();
-          expect(primary.right).toBeLessThanOrEqual(skip.left);
+          expect(skip.right).toBeLessThanOrEqual(primary.left);
           expect(primary.left).toBeGreaterThanOrEqual(footer.getBoundingClientRect().left);
           expect(frame.contentWindow!.getComputedStyle(doc.querySelector('.biblioteca-desktop-controls')!).display).toBe('none');
           expect(frame.contentWindow!.getComputedStyle(doc.querySelector('.onboarding-page__intro > p')!).display).toBe('none');
+          expect(frame.contentWindow!.getComputedStyle(doc.querySelector('.onboarding-shell__steps > small')!).display).toBe('none');
+          const title = doc.querySelector('h1')!;
+          const titleRange = doc.createRange(); titleRange.selectNodeContents(title);
+          expect(titleRange.getBoundingClientRect().width).toBeLessThanOrEqual(title.getBoundingClientRect().width);
+          const filters = doc.querySelector('.onboarding-catalogo__filters')!.getBoundingClientRect();
+          const mode = doc.querySelector('.biblioteca-mobile-controls mat-button-toggle-group')!.getBoundingClientRect();
+          const bulk = doc.querySelector('.biblioteca-mobile-bulk')!.getBoundingClientRect();
+          expect(filters.top).toBeGreaterThanOrEqual(title.getBoundingClientRect().bottom);
+          expect(filters.right).toBeLessThanOrEqual(mode.left);
+          expect(bulk.top).toBeGreaterThanOrEqual(Math.max(filters.bottom, mode.bottom));
+          expect(bulk.bottom).toBeLessThanOrEqual(list.getBoundingClientRect().top);
+          const primaryText = footer.querySelector('button[mat-flat-button] .mdc-button__label')!;
+          const textRange = doc.createRange(); textRange.selectNodeContents(primaryText);
+          expect(textRange.getBoundingClientRect().width).toBeLessThanOrEqual(primary.width);
+          expect(footer.querySelector<HTMLElement>('button[mat-button]')!.innerText.trim()).toBe('Pular');
         } else {
           expect(frame.contentWindow!.getComputedStyle(doc.querySelector('.biblioteca-toolbar')!).display).toBe('flex');
           expect(frame.contentWindow!.getComputedStyle(doc.querySelector('.biblioteca-mobile-controls')!).display).toBe('none');
-          expect(frame.contentWindow!.getComputedStyle(doc.querySelector('.onboarding-catalogo__filters')!).display).toBe('none');
+          expect(doc.querySelector('.onboarding-catalogo__filters')!.getBoundingClientRect().width).toBe(0);
           expect(frame.contentWindow!.getComputedStyle(doc.querySelector('.onboarding-page__intro > p')!).display).toBe('block');
+          const headerStyle = frame.contentWindow!.getComputedStyle(doc.querySelector('.onboarding-shell__header')!);
+          expect(headerStyle.paddingTop).toBe('16px');
+          expect(headerStyle.paddingBottom).toBe('24px');
+          expect(headerStyle.gap).toBe('24px');
+          expect(headerStyle.flexDirection).toBe('row');
+          expect(frame.contentWindow!.getComputedStyle(doc.querySelector('.onboarding-shell__steps > small')!).visibility).toBe('hidden');
+          expect((doc.querySelector('.onboarding-shell__brand img') as HTMLElement).getBoundingClientRect().width).toBe(156);
+          expect(frame.contentWindow!.getComputedStyle(doc.querySelector('.onboarding-shell__step-marker')!).width).toBe('28px');
         }
         expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1);
         expect(footer.getBoundingClientRect().bottom).toBeLessThanOrEqual(height);

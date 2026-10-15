@@ -6,7 +6,7 @@
         <app-onboarding-shell [semanticSteps]="true" [completed]="stage === 'CONCLUIDO'" [showExit]="false" tituloFluxo=""
           [passoAtual]="stageNumber(stage)" [totalPassos]="3" [showBack]="false"
           [showFooter]="!carregando && stage === 'CATALOGO' && !seletor?.reconectando"
-          [showSkip]="true" [skipDisabled]="bloqueado" (pular)="pular()"
+          mobileSkipLabel="Pular" [showSkip]="true" [skipDisabled]="bloqueado" (pular)="pular()"
           primaryLabel="Preparar meu catálogo" [primaryDisabled]="bloqueado || !seletor?.selecionados?.size"
           (principal)="submit()">
           @if (carregando) { <div class="onboarding-v2-page__loading" role="status" aria-label="Carregando configuração"><mat-spinner diameter="42" /></div> }
@@ -15,13 +15,6 @@
               <div class="onboarding-page__intro">
                 <div class="onboarding-catalogo__heading">
                   <h1>Quais produtos você oferece?</h1>
-                  <button class="onboarding-catalogo__filters" mat-stroked-button type="button"
-                    [disabled]="bloqueado" [class.onboarding-catalogo__filters--active]="!!seletor?.filtrosAtivos"
-                    [attr.aria-label]="seletor?.filtrosAtivos ? 'Filtros: ' + seletor?.filtrosAtivos + ' ativos' : 'Filtros'"
-                    (click)="seletor?.abrirFiltros()">
-                    <mat-icon>filter_list</mat-icon>Filtros
-                    @if (seletor?.filtrosAtivos) { <span class="onboarding-catalogo__filter-count" aria-hidden="true">{{ seletor?.filtrosAtivos }}</span> }
-                  </button>
                 </div>
                 <p>Escolha categorias inteiras ou produtos individuais. Você poderá adicionar outros produtos a qualquer momento.</p>
                 <p>Esta etapa é opcional.</p>

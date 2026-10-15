@@ -77,23 +77,30 @@ details { margin-top: 12px; summary { cursor: pointer; } }
   }
 }
 
-.biblioteca-mobile-controls { display: none; }
+.biblioteca-mobile-controls, .biblioteca-mobile-bulk { display: none; }
 .biblioteca-filtros-dialog { display: grid; gap: 8px; }
 .biblioteca-filtros-dialog > mat-form-field:first-child { margin-top: 12px; }
 .biblioteca-filtros-dialog mat-form-field { width: 100%; min-width: 0; }
 .biblioteca-filtros-dialog input { font-size: 16px; }
 :host(.biblioteca-selector--onboarding) ::ng-deep .hierarchy-tree__row--parent .hierarchy-tree__meta { display: none; }
 
-@media (max-width: 768px) {
+@media (max-width: 768px), (max-width: 960px) and (max-height: 560px) {
   :host(.biblioteca-selector--onboarding) {
     .biblioteca-desktop-controls { display: none; }
-    .biblioteca-mobile-controls { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 4px; min-width: 0; margin-bottom: 8px; }
-    .biblioteca-mobile-controls > mat-checkbox { min-width: 0; flex: 1 1 0; }
+    .biblioteca-mobile-controls { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; margin-bottom: 8px; }
+    .onboarding-catalogo__filters { flex: 0 0 auto; min-height: 44px; padding: 0 12px; }
+    .onboarding-catalogo__filters--active { background: var(--mat-sys-primary-container); }
+    .biblioteca-filter-count { margin-left: 4px; font-weight: 700; }
     .biblioteca-mobile-controls mat-button-toggle-group { flex: 0 0 auto; }
-    ::ng-deep .biblioteca-mobile-controls {
-      .mdc-label { font-size: 14px; line-height: 20px; padding-right: 0; }
-      .mat-mdc-checkbox-touch-target { width: 44px; height: 44px; }
-      .mat-button-toggle-label-content { padding: 0 4px; font-size: 14px; line-height: 44px; }
-    }
+    .biblioteca-mobile-bulk { display: inline-flex; flex: 0 0 auto; width: 100%; min-height: 44px; margin-bottom: 8px; background: var(--mat-sys-primary-container); font-weight: 600; }
+    .biblioteca-lista { grid-template-columns: minmax(0, 1fr); }
+    .biblioteca-item-corpo { padding-left: 12px; }
+    ::ng-deep .biblioteca-mobile-controls .mat-button-toggle-label-content { padding: 0 8px; font-size: 14px; line-height: 44px; }
+  }
+}
+
+@media (max-width: 960px) and (max-height: 560px) {
+  :host(.biblioteca-selector--onboarding) {
+    .biblioteca-mobile-controls, .biblioteca-mobile-bulk { margin-bottom: 4px; }
   }
 }

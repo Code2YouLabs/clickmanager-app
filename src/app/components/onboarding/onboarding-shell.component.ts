@@ -26,6 +26,7 @@ export class OnboardingShellComponent {
   @Input() showFooter = true;
   @Input() showBack = true;
   @Input() showSkip = false;
+  @Input() mobileSkipLabel = '';
   @Input() showPrimary = true;
   @Input() primaryLabel = 'Próximo';
   @Input() primaryDisabled = false;
