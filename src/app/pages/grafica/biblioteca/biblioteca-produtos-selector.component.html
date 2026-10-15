@@ -9,17 +9,7 @@
 </div>
 <div class="biblioteca-acoes" [class.biblioteca-desktop-controls]="onboarding" *ngIf="!carregando || filtrados.length">
   <div class="biblioteca-acoes__bulk">
-    <button
-      mat-stroked-button
-      color="primary"
-      type="button"
-      [disabled]="carregando || importando || !filtrados.length"
-      (click)="selecionarTodos(!todosSelecionados)"
-      [attr.aria-pressed]="todosSelecionados"
-    >
-      <mat-icon>{{ todosSelecionados ? 'remove_done' : 'select_all' }}</mat-icon>
-      <span>{{ textoAcaoSelecao }}</span>
-    </button>
+    <ng-container *ngTemplateOutlet="selecaoCompleta" />
     @if (!onboarding) { <span class="biblioteca-acoes__contador" aria-live="polite">{{ contadorSelecionados }}</span> }
     @if (onboarding) {
       <span class="cdk-visually-hidden" role="status">{{ todosSelecionados ? 'Todos os resultados selecionados.' : algunsSelecionados ? 'Seleção parcial dos resultados.' : 'Nenhum resultado selecionado.' }}</span>
@@ -37,12 +27,7 @@
     </button>
     <ng-container *ngTemplateOutlet="visualizacao; context: { compact: true }" />
   </div>
-  <button class="biblioteca-mobile-bulk" mat-stroked-button color="primary" type="button"
-    [disabled]="carregando || importando || !filtrados.length" [attr.aria-pressed]="todosSelecionados ? 'true' : algunsSelecionados ? 'mixed' : 'false'"
-    (click)="selecionarTodos(!todosSelecionados)">
-    <mat-icon>{{ todosSelecionados ? 'check_box' : algunsSelecionados ? 'indeterminate_check_box' : 'check_box_outline_blank' }}</mat-icon>
-    Selecionar todos
-  </button>
+  <ng-container *ngTemplateOutlet="selecaoCompleta; context: { mobile: true }" />
 }
 @if (carregando) { <mat-progress-bar mode="indeterminate" aria-label="Carregando biblioteca"></mat-progress-bar> }
 <div class="biblioteca-resultados" role="region" aria-label="Produtos da biblioteca" [attr.tabindex]="onboarding ? 0 : null">
@@ -75,6 +60,16 @@
 </div>
 
 }
+
+<ng-template #selecaoCompleta let-mobile="mobile">
+  <button mat-stroked-button color="primary" type="button" [class.biblioteca-mobile-bulk]="mobile"
+    [disabled]="carregando || importando || !filtrados.length"
+    [attr.aria-pressed]="mobile && algunsSelecionados ? 'mixed' : todosSelecionados"
+    (click)="selecionarTodos(!todosSelecionados)">
+    <mat-icon>{{ todosSelecionados ? 'remove_done' : 'select_all' }}</mat-icon>
+    <span>{{ mobile ? 'Selecionar todos' : textoAcaoSelecao }}</span>
+  </button>
+</ng-template>
 
 <ng-template #visualizacao let-compact="compact">
   <mat-button-toggle-group [(ngModel)]="modo" [hideSingleSelectionIndicator]="!!compact" aria-label="Visualização da biblioteca">

@@ -362,12 +362,19 @@ describe('Narrativa do onboarding', () => {
     selector.marcar(selector.itens[0], true); f.detectChanges();
     const input = f.nativeElement.querySelector('.biblioteca-mobile-bulk') as HTMLButtonElement;
     expect(input.getAttribute('aria-pressed')).toBe('mixed');
+    expect(input.querySelector('mat-icon')!.textContent).toBe('select_all');
     input.click(); f.detectChanges();
     expect(selector.selecionados.size).toBe(2);
     expect(input.getAttribute('aria-pressed')).toBe('true');
+    expect(input.querySelector('mat-icon')!.textContent).toBe('remove_done');
     expect(selector.todosSelecionados).toBeTrue();
     input.click(); f.detectChanges();
     expect(selector.selecionados.size).toBe(0);
+    expect(input.getAttribute('aria-pressed')).toBe('false');
+    expect(input.querySelector('mat-icon')!.textContent).toBe('select_all');
+    const desktop = f.nativeElement.querySelector('.biblioteca-acoes__bulk button');
+    expect(desktop.hasAttribute('mat-stroked-button')).toBeTrue();
+    expect(desktop.querySelector('mat-icon').textContent).toBe(input.querySelector('mat-icon')!.textContent);
     f.destroy();
   });
 
