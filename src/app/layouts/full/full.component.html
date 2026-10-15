@@ -56,75 +56,14 @@
       }
 
       @if(isMobileLayout) {
-      <header
-        class="mobile-topbar"
-        [class.mobile-topbar--minimal]="useMinimalMobileHeader"
-        [class.mobile-topbar--title-only]="useTitleOnlyMobileHeader">
-        @if(useTitleOnlyMobileHeader) {
-        <span class="mobile-topbar__spacer" aria-hidden="true"></span>
-
-        <div class="mobile-topbar__center mobile-topbar__center--minimal">
-          <span class="mobile-topbar__title">{{ currentPageTitle }}</span>
-        </div>
-
-        <div class="mobile-topbar__actions">
-          <button mat-icon-button type="button" class="mobile-topbar__icon-btn mobile-topbar__notification-btn"
-            (click)="toggleMobileNotificationsSheet()" aria-label="Abrir notificações"
-            [class.mobile-topbar__notification-btn--critical]="possuiNotificacaoCriticaNaoLida()">
-            <i-tabler name="message-2" class="icon-20 d-flex"></i-tabler>
-            @if(notificacoesNaoLidas > 0) {
-            <span class="mobile-topbar__notification-badge">{{ notificacoesNaoLidas }}</span>
-            }
-          </button>
-          <button mat-icon-button type="button" class="mobile-topbar__avatar-btn" (click)="toggleMobileProfileSheet()"
-            aria-label="Abrir perfil">
-            @if(usuarioLogado?.fotoPerfil) {
-            <img [src]="ImagemUtil.montarUrlImagemPerfil(usuarioLogado?.fotoPerfil)" alt="Perfil" class="mobile-topbar__avatar-image" />
-            } @else {
-            <i-tabler name="user-circle" class="icon-22 d-flex"></i-tabler>
-            }
-          </button>
-        </div>
-        } @else if(useMinimalMobileHeader) {
-        <button mat-icon-button type="button" class="mobile-topbar__icon-btn" (click)="navigateMobileBack()"
-          aria-label="Voltar">
-          <i-tabler name="arrow-left" class="icon-20 d-flex"></i-tabler>
-        </button>
-
-        <div class="mobile-topbar__center mobile-topbar__center--minimal">
-          <span class="mobile-topbar__title">{{ currentPageTitle }}</span>
-        </div>
-
-        <div class="mobile-topbar__actions">
-          <button mat-icon-button type="button" class="mobile-topbar__icon-btn mobile-topbar__notification-btn"
-            (click)="toggleMobileNotificationsSheet()" aria-label="Abrir notificações"
-            [class.mobile-topbar__notification-btn--critical]="possuiNotificacaoCriticaNaoLida()">
-            <i-tabler name="message-2" class="icon-20 d-flex"></i-tabler>
-            @if(notificacoesNaoLidas > 0) {
-            <span class="mobile-topbar__notification-badge">{{ notificacoesNaoLidas }}</span>
-            }
-          </button>
-          <button mat-icon-button type="button" class="mobile-topbar__avatar-btn" (click)="toggleMobileProfileSheet()"
-            aria-label="Abrir perfil">
-            @if(usuarioLogado?.fotoPerfil) {
-            <img [src]="ImagemUtil.montarUrlImagemPerfil(usuarioLogado?.fotoPerfil)" alt="Perfil" class="mobile-topbar__avatar-image" />
-            } @else {
-            <i-tabler name="user-circle" class="icon-22 d-flex"></i-tabler>
-            }
-          </button>
-        </div>
-        } @else {
+      <header class="mobile-topbar">
         <button mat-icon-button type="button" class="mobile-topbar__icon-btn" (click)="toggleMobileDrawer()"
           aria-label="Abrir menu">
           <i-tabler name="menu-2" class="icon-22 d-flex"></i-tabler>
         </button>
 
         <div class="mobile-topbar__center">
-          @if(currentPageTitle !== 'ClickManager') {
-          <span class="mobile-topbar__title">{{ currentPageTitle }}</span>
-          } @else {
-          <img src="./assets/images/logos/logoClickManager.png" alt="ClickManager" class="mobile-topbar__logo" />
-          }
+          <span class="mobile-topbar__title" [title]="currentPageTitle">{{ currentPageTitle }}</span>
         </div>
 
         <div class="mobile-topbar__actions">
@@ -149,7 +88,6 @@
             }
           </button>
         </div>
-        }
       </header>
       }
 

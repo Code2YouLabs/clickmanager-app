@@ -7,7 +7,7 @@ import { CoreService } from 'src/app/services/core.service';
 import { AppSettings } from 'src/app/config';
 import { distinctUntilChanged, filter, take } from 'rxjs/operators';
 import { NavigationEnd, Router } from '@angular/router';
-import { Location } from '@angular/common';
+import { resolveMobilePageTitle } from './mobile-page-title';
 import { navItems } from './vertical/sidebar/sidebar-data';
 import { NavService } from '../../services/nav.service';
 import { AppNavItemComponent } from './vertical/sidebar/nav-item/nav-item.component';
@@ -96,6 +96,7 @@ export class FullComponent implements OnInit, OnDestroy {
   //get options from service
   options = this.settings.getOptions();
   private layoutChangesSubscription = Subscription.EMPTY;
+  private navigationSubscription = Subscription.EMPTY;
   private isMobileScreen = false;
   private isContentWidthFixed = true;
   private isCollapsedWidthFixed = false;
@@ -143,43 +144,6 @@ export class FullComponent implements OnInit, OnDestroy {
     return this.mobileDrawerOpen || this.mobileAppsOpen || this.mobileProfileOpen || this.mobileNotificationsOpen;
   }
 
-  get useMinimalMobileHeader(): boolean {
-    const url = this.currentRoute;
-
-    if (!this.isMobileLayout) {
-      return false;
-    }
-
-    return (
-      url.startsWith('/smartcalc') ||
-      url.startsWith('/page/pedido') ||
-      url.startsWith('/page/cadastro-tecnico/acabamentos') ||
-      url.startsWith('/page/cadastro-tecnico/cores') ||
-      url.startsWith('/page/cadastro-tecnico/formatos') ||
-      url.startsWith('/page/cadastro-tecnico/materiais') ||
-      url.startsWith('/page/cadastro-tecnico/produtos') ||
-      url.startsWith('/page/deposito') ||
-      url.startsWith('/page/orcamentos') ||
-      url.startsWith('/page/catalogo') ||
-      url.startsWith('/page/ajuda') ||
-      url.startsWith('/page/cadastro-tecnico/servico') ||
-      url.startsWith('/page/cadastro-tecnico/servicos') ||
-      url.startsWith('/dashboards/dashboard1/grafico') ||
-      url.startsWith('/onboarding') ||
-      url.includes('/form') ||
-      url.includes('/criar') ||
-      url.includes('/editar')
-    );
-  }
-
-  get useTitleOnlyMobileHeader(): boolean {
-    if (!this.isMobileLayout) {
-      return false;
-    }
-
-    return this.currentRoute.startsWith('/dashboards/dashboard1');
-  }
-
   get hideMobileBottomNav(): boolean {
     return false;
   }
@@ -201,7 +165,6 @@ export class FullComponent implements OnInit, OnDestroy {
     private navService: NavService,
     private authService: AuthService,
     private dialog: MatDialog,
-    private location: Location,
     @Inject(BillingService) private billingService: BillingService,
     private billingState: BillingStateService,
     private onboardingFlow: OnboardingFlowService,
@@ -237,7 +200,7 @@ export class FullComponent implements OnInit, OnDestroy {
     this.receiveOptions(this.options);
 
     // This is for scroll to top
-    this.router.events
+    this.navigationSubscription = this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe((e) => {
         this.content.scrollTo({ top: 0 });
@@ -269,6 +232,7 @@ export class FullComponent implements OnInit, OnDestroy {
         this.featureFlagService.carregar().pipe(take(1)).subscribe(() => {
           this.navItemsFiltrados = this.filtrarMenus(navItems, permissoes, this.tipoEmpresaAtual, this.versaoCatalogoAtual, usuario);
           this.mobileNavGroups = this.buildMobileNavGroups(this.navItemsFiltrados);
+          this.currentPageTitle = this.resolveCurrentPageTitle(this.router.url);
           this.primeiroPedidoBoasVindas.avaliarEExibir(usuario);
         });
         this.currentPageTitle = this.resolveCurrentPageTitle(this.router.url);
@@ -290,6 +254,7 @@ export class FullComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.unlockBodyScroll();
     this.layoutChangesSubscription.unsubscribe();
+    this.navigationSubscription.unsubscribe();
     this.primeiroPedidoBoasVindas.reset();
   }
 
@@ -407,15 +372,6 @@ export class FullComponent implements OnInit, OnDestroy {
       this.carregarResumoNotificacoes(true);
     }
     this.syncBodyScroll();
-  }
-
-  navigateMobileBack(): void {
-    if (window.history.length > 1) {
-      this.location.back();
-      return;
-    }
-
-    this.router.navigate(['/dashboards/dashboard1']);
   }
 
   closeMobileOverlays(): void {
@@ -747,47 +703,7 @@ export class FullComponent implements OnInit, OnDestroy {
   }
 
   private resolveCurrentPageTitle(url: string): string {
-    if (url.startsWith('/smartcalc')) return 'SmartCalc';
-    if (url.startsWith('/dashboards/dashboard1/grafico')) return 'Gráfico';
-    if (this.isPedidosListRoute(url)) return 'Pedidos';
-
-    const exactMatch = this.findNavLabel(url, true);
-    if (exactMatch) return exactMatch;
-
-    const prefixMatch = this.findNavLabel(url, false);
-    if (prefixMatch) return prefixMatch;
-
-    if (url.includes('/theme-pages/account-setting')) return 'Meu perfil';
-    if (url.includes('/billing/')) return 'Assinatura';
-    if (url.includes('/page/suporte')) return 'Suporte';
-
-    return 'ClickManager';
-  }
-
-  private findNavLabel(url: string, exact: boolean): string | null {
-    const search = (items: NavItem[]): string | null => {
-      for (const item of items) {
-        if (item.route) {
-          const matched = exact ? this.router.isActive(item.route, true) : url.startsWith(item.route);
-          if (matched) {
-            return item.displayName || null;
-          }
-        }
-
-        if (item.children?.length) {
-          const childMatch = search(item.children);
-          if (childMatch) return childMatch;
-        }
-      }
-
-      return null;
-    };
-
-    return search(this.navItemsFiltrados);
-  }
-
-  private isPedidosListRoute(url: string): boolean {
-    return url.startsWith('/page/pedido') && !url.includes('/criar') && !url.includes('/editar') && !url.includes('/detalhe/');
+    return resolveMobilePageTitle(this.router.routerState.snapshot.root, url, this.navItemsFiltrados);
   }
 
   private syncBodyScroll(): void {
