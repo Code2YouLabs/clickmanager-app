@@ -503,3 +503,133 @@
     background: #fff;
   }
 }
+
+// Extra wrappers leave the desktop grid and its section cards unchanged.
+.smartcalc-step,
+.smartcalc-step__content {
+  display: contents;
+}
+.smartcalc-step__content[hidden] { display: none; }
+
+@media (max-width: 900px) {
+  .smartcalc-page {
+    padding-bottom: calc(var(--smartcalc-mobile-total-bar-height, 104px) + var(--mobile-bottom-nav-height, 60px) + 16px);
+  }
+
+  .mobile-flow-status {
+    margin: 0 0 12px;
+    color: var(--mat-sys-on-surface-variant, #64748b);
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+
+  .smartcalc-layout__main { gap: 0; }
+  .smartcalc-step {
+    display: block;
+    min-width: 0;
+    border-bottom: 1px solid var(--mat-sys-outline-variant, #e2e8f0);
+  }
+  .smartcalc-step__content { display: block; padding: 0 0 12px; }
+  .smartcalc-step__toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 64px;
+    padding: 12px 0;
+    border: 0;
+    background: transparent;
+    color: var(--mat-sys-on-surface, #111827);
+    text-align: left;
+    font: inherit;
+    cursor: pointer;
+  }
+  .smartcalc-step__number {
+    display: grid;
+    place-items: center;
+    flex: 0 0 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--mat-sys-surface-container, #f1f5f9);
+    color: var(--mat-sys-on-surface-variant, #64748b);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  .smartcalc-step--current .smartcalc-step__number,
+  .smartcalc-step--complete .smartcalc-step__number {
+    background: var(--mat-sys-primary-container, #eff6ff);
+    color: var(--mat-sys-primary, #2563eb);
+  }
+  .smartcalc-step__heading { display: grid; gap: 4px; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .smartcalc-step__heading strong { font-size: 0.875rem; font-weight: 600; line-height: 1.4; }
+  .smartcalc-step__heading small { color: #64748b; font-size: 0.75rem; line-height: 1.4; }
+  .smartcalc-step__toggle > mat-icon { flex-shrink: 0; color: #64748b; }
+  .smartcalc-step__toggle:focus-visible { outline: 2px solid var(--mat-sys-primary, #2563eb); outline-offset: 2px; }
+  .mobile-step-next { min-height: 44px; width: 100%; margin-top: 4px; }
+
+  :host ::ng-deep .smartcalc-step .section-card {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  :host ::ng-deep .smartcalc-page .card-header { padding: 12px; gap: 8px; }
+  :host ::ng-deep .smartcalc-page app-card-header > mat-divider { margin-bottom: 12px !important; }
+  :host ::ng-deep .smartcalc-step .mat-mdc-form-field { min-width: 0; }
+  :host ::ng-deep .smartcalc-step .mat-mdc-form-field-infix { min-width: 0; width: auto; }
+  :host ::ng-deep .smartcalc-step input,
+  :host ::ng-deep .smartcalc-step .mat-mdc-select { font-size: 1rem; }
+  .form-grid { gap: 8px; }
+  .field-stack { min-width: 0; }
+  .form-grid--three { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; }
+  .form-grid--three .field-stack:last-child { grid-column: 1 / -1; }
+  .selected-product { display: none; } // The same selection is summarized in the step heading.
+  .empty-inline { min-height: 44px; padding: 8px 0; border: 0; background: transparent; font-size: 0.875rem; }
+  .empty-inline mat-icon { flex-shrink: 0; }
+  .acabamento-option { min-height: 48px; padding: 4px 8px; gap: 8px; }
+  .acabamento-option span { white-space: normal; overflow-wrap: anywhere; }
+
+  // Scope all footer refinements to SmartCalc; other consumers keep their current skin.
+  :host ::ng-deep app-mobile-total-bar .mobile-total-bar {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: 'summary cta';
+    align-items: center;
+    gap: 12px;
+    padding: 12px max(12px, env(safe-area-inset-right)) 12px max(12px, env(safe-area-inset-left));
+    border-radius: 12px 12px 0 0;
+    background: var(--mat-sys-surface, #fff);
+    box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.06);
+  }
+  :host ::ng-deep app-mobile-total-bar .mobile-total-bar::before,
+  :host ::ng-deep app-mobile-total-bar .mobile-total-bar__handle { display: none; }
+  :host ::ng-deep app-mobile-total-bar .mobile-total-bar__summary { padding: 0; gap: 4px; }
+  :host ::ng-deep app-mobile-total-bar .mobile-total-bar__summary .label { font-size: 0.75rem; line-height: 1; text-transform: none; letter-spacing: normal; }
+  :host ::ng-deep app-mobile-total-bar .mobile-total-bar__summary .value { font-size: 1.125rem; line-height: 1.25; overflow-wrap: anywhere; }
+  :host ::ng-deep app-mobile-total-bar .mobile-total-bar__expand { min-height: 24px; font-size: 0.75rem; }
+  :host ::ng-deep app-mobile-total-bar .mobile-total-bar__actions { min-width: 0; }
+  :host ::ng-deep app-mobile-total-bar .mobile-total-bar__cta { min-height: 48px; border-radius: 8px; padding: 8px; font-size: 0.875rem; font-weight: 600; box-shadow: none; }
+
+  .mobile-result-sheet {
+    max-height: calc(100dvh - var(--mobile-bottom-nav-height, 60px) - var(--smartcalc-mobile-total-bar-height, 104px) - 72px);
+    border-radius: 12px 12px 0 0;
+  }
+  .mobile-result-sheet__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #e2e8f0; }
+  .mobile-result-sheet__top h2 { margin: 0; font-size: 1rem; font-weight: 600; }
+  .mobile-result-sheet__body { padding: 12px; }
+  .mobile-result-sheet__footer { padding: 8px 12px; border-top: 1px solid #e2e8f0; }
+  .mobile-result-sheet__footer button { min-height: 44px; width: 100%; }
+  .mobile-result-sheet .empty-state { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; min-height: 0; padding: 8px 0; border: 0; }
+  .mobile-result-sheet .empty-state span { grid-column: 2; }
+  .result-table { min-width: 0; table-layout: fixed; }
+  .result-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .result-table tbody { display: block; }
+  .result-table tr { display: grid; grid-template-columns: minmax(0, 1fr); padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
+  .result-table td { min-width: 0; padding: 4px 0; border: 0; overflow-wrap: anywhere; }
+  .result-table td.num { display: flex; justify-content: space-between; gap: 12px; text-align: right; white-space: normal; }
+  .result-table td.num::before { content: attr(data-label); color: #64748b; text-align: left; }
+  :host ::ng-deep .mobile-result-sheet .metric-grid .metric-card { min-height: 0; padding: 12px; }
+  .total-summary strong { white-space: normal; overflow-wrap: anywhere; }
+}
