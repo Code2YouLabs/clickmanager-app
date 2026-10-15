@@ -30,43 +30,12 @@
   }
 }
 
-// Include landscape phones without applying the mobile layout to desktop widths.
+// Catalog-specific content stays unchanged; the shared shell owns header/scroll/footer.
 @media (max-width: 768px), (max-width: 960px) and (max-height: 560px) {
   .onboarding-catalogo--selecao {
-    .onboarding-page { padding: 12px; }
     .onboarding-page__intro { margin: 0; }
     .onboarding-page__intro > p { display: none; }
     .onboarding-catalogo__heading h1 { margin: 0; font-size: 18px; line-height: 28px; white-space: nowrap; }
   }
-  :host ::ng-deep .onboarding-catalogo--selecao {
-    .onboarding-shell.onboarding-shell--semantic .onboarding-shell__header { padding: 0 0 8px; gap: 0; flex-direction: row; align-items: center; }
-    .onboarding-shell__brand { display: none; }
-    .onboarding-shell__steps { width: 100%; max-width: none; }
-    .onboarding-shell__steps > small { display: none; }
-    .onboarding-shell__header .onboarding-shell__steps ol { margin: 0; gap: 4px; justify-content: space-between; }
-    .onboarding-shell__header .onboarding-shell__steps li { flex: 0 1 auto; flex-direction: row; gap: 4px; font-size: 12px; line-height: 18px; text-align: left; white-space: nowrap; }
-    .onboarding-shell__header .onboarding-shell__steps .onboarding-shell__step-marker { width: 20px; height: 20px; }
-    .onboarding-shell__content { display: flex; flex-direction: column; overflow: hidden; scrollbar-gutter: auto; gap: 8px; }
-    app-biblioteca-produtos-selector { display: flex; flex: 1 1 0; min-height: 0; }
-    .onboarding-shell.onboarding-shell--semantic .onboarding-shell__footer { padding: 8px 0 0; }
-    .onboarding-shell__footer .onboarding-shell__footer-right { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; }
-    .onboarding-shell__footer .onboarding-shell__footer-right button { min-width: 64px; width: 100%; height: auto; min-height: 44px; padding: 8px 12px; font-size: 14px; line-height: 20px; white-space: nowrap; }
-    .onboarding-shell__footer .onboarding-shell__footer-right button[mat-flat-button] { min-width: 0; min-height: 44px; }
-    .onboarding-shell__skip-desktop { display: none; }
-    .onboarding-shell__skip-mobile { display: inline; }
-  }
-}
-
-@media (max-width: 960px) and (max-height: 560px) {
-  .onboarding-catalogo--selecao {
-    padding-top: max(4px, env(safe-area-inset-top));
-    padding-bottom: max(4px, env(safe-area-inset-bottom));
-    .onboarding-page { padding: 8px 12px; }
-  }
-  :host ::ng-deep .onboarding-catalogo--selecao {
-    .onboarding-shell { gap: 8px; }
-    .onboarding-shell.onboarding-shell--semantic .onboarding-shell__header { padding-bottom: 4px; }
-    .onboarding-shell__content { gap: 4px; }
-    .onboarding-shell.onboarding-shell--semantic .onboarding-shell__footer { padding-top: 4px; }
-  }
+  :host ::ng-deep .onboarding-catalogo--selecao app-biblioteca-produtos-selector { display: flex; flex: 1 1 0; min-height: 0; }
 }

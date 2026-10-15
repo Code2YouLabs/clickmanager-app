@@ -1,9 +1,9 @@
-<div class="blank-layout-container justify-content-center onboarding-page-layout">
+<div class="blank-layout-container justify-content-center onboarding-page-layout onboarding-mobile-layout">
   <div class="auth-wrapper onboarding-page-wrapper">
     <div class="position-relative w-100">
       <div class="w-100 position-relative rounded bg-white auth-card onboarding-page-card">
         <div class="auth-body onboarding-page">
-          <app-onboarding-shell [semanticSteps]="true" [completed]="!carregando && !erroCarregamento && !!onboardingV2State.resumo()" [showFooter]="false" [showExit]="false"
+          <app-onboarding-shell mobileLayout="flow" [mobileActions]="!carregando && !erroCarregamento && !!onboardingV2State.resumo() ? finishAction : null" [semanticSteps]="true" [completed]="!carregando && !erroCarregamento && !!onboardingV2State.resumo()" [showFooter]="false" [showExit]="false"
             tituloFluxo=""
             tituloEtapa=""
             subtituloEtapa=""
@@ -51,8 +51,8 @@
                   </app-section-card>
                   }
                   <p>Você poderá adicionar produtos pela Biblioteca a qualquer momento.</p>
-                  <div class="onboarding-page__completion-action">
-                    <button mat-flat-button color="primary" [disabled]="onboardingV2State.saving()" (click)="submit()">{{ onboardingV2State.saving() ? 'Finalizando...' : 'Entrar no ClickManager' }}</button>
+                  <div class="onboarding-page__completion-action onboarding-mobile-desktop-action">
+                    <ng-container *ngTemplateOutlet="finishAction" />
                   </div>
                 </section>
               </ng-container>
@@ -82,4 +82,8 @@
       </button>
     </app-section-card>
   </section>
+</ng-template>
+
+<ng-template #finishAction>
+  <button mat-flat-button color="primary" [disabled]="onboardingV2State.saving()" (click)="submit()">{{ onboardingV2State.saving() ? 'Finalizando...' : 'Entrar no ClickManager' }}</button>
 </ng-template>

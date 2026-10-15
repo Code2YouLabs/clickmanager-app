@@ -1,3 +1,19 @@
 @use '../onboarding-v2-page';
 
 .onboarding-v2-company__form { display: block; }
+
+@media (max-width: 768px), (max-width: 960px) and (max-height: 560px) {
+  .onboarding-page__section--empresa { gap: 16px; }
+  .row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin: 0; }
+  .row > div { width: 100%; min-width: 0; padding: 0; }
+  :host ::ng-deep .onboarding-mobile-layout {
+    .section-card { padding: 0; box-shadow: none; border-radius: 0; background: transparent; }
+    .section-card__header { margin-bottom: 12px; }
+    .section-card mat-divider { display: none; }
+    .mat-mdc-form-field { width: 100%; min-width: 0; }
+    .mat-mdc-form-field input { font-size: 16px; }
+    .mat-mdc-form-field-subscript-wrapper { height: auto; min-height: 0; }
+    .mat-mdc-form-field-subscript-wrapper:not(:has(mat-error)) { display: none; }
+    .mat-mdc-form-field-error-wrapper { position: static; padding: 4px 12px 0; }
+  }
+}

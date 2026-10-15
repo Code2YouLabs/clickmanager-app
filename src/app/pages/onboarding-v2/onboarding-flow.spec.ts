@@ -2,7 +2,7 @@ import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
-import { of, Subject, delay } from 'rxjs';
+import { of, Subject, delay, throwError } from 'rxjs';
 import { AuthService } from 'src/app/services/auth.service';
 import { SetupProgress } from 'src/app/components/setup-progress/setup-progress.component';
 import { BibliotecaService } from '../grafica/biblioteca/biblioteca.service';
@@ -14,6 +14,7 @@ import { OnboardingV2Service } from './services/onboarding-v2.service';
 import { By } from '@angular/platform-browser';
 import { HierarchyTreeComponent } from 'src/app/components/hierarchy-tree/hierarchy-tree.component';
 import { OverlayContainer } from '@angular/cdk/overlay';
+import { OnboardingShellComponent } from 'src/app/components/onboarding/onboarding-shell.component';
 
 const pending: SetupProgress = { id: 9, status: 'PENDENTE', fase: 'AGUARDANDO', total: 150, processados: 0, criados: 0, duplicados: 0, erros: 0, smartCalcPrevistos: 2, smartCalcPreparados: 0, tempoEstimadoRestanteSegundos: null, itens: [] };
 const done: SetupProgress = { ...pending, status: 'CONCLUIDO', fase: 'CONCLUIDO', processados: 150, criados: 148, duplicados: 2, smartCalcPreparados: 2 };
@@ -46,6 +47,98 @@ describe('Narrativa do onboarding', () => {
         {provide: AuthService, useValue: {isAuthenticated: () => true, getDefaultRouteForUsuario: () => '/painel'}},
       ],
     }).compileComponents();
+  });
+
+  it('preserva validação e payload da empresa com o rodapé compartilhado', async () => {
+    state.refreshProgress.and.returnValue(of({onboardingVersion: 'v2', currentStep: 'company', status: 'pending', empresa: company}));
+    const f = TestBed.createComponent(OnboardingV2CompanyPageComponent);
+    f.detectChanges(); await f.whenStable(); f.detectChanges();
+    const shell = f.debugElement.query(By.directive(OnboardingShellComponent)).componentInstance as OnboardingShellComponent;
+    expect(shell.mobileLayout).toBe('flow');
+    expect(f.nativeElement.querySelectorAll('input').length).toBe(5);
+    f.componentInstance.emailControl.setValue('invalido');
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('footer button[mat-flat-button]').disabled).toBeTrue();
+    f.componentInstance.submit();
+    expect(f.componentInstance.emailControl.touched).toBeTrue();
+    expect(state.saveCompany).not.toHaveBeenCalled();
+    f.componentInstance.emailControl.setValue(company.email);
+    f.detectChanges();
+    f.nativeElement.querySelector('footer button[mat-flat-button]').click();
+    expect(state.saveCompany).toHaveBeenCalledOnceWith({...company, cnpj: null, inscricaoEstadual: null, horario: null, endereco: null});
+    expect(TestBed.inject(Router).navigateByUrl).toHaveBeenCalledWith('/onboarding-v2/produtos');
+    f.destroy();
+  });
+
+  it('compartilha os estados semânticos do cabeçalho sem impor o layout a outros fluxos', () => {
+    const f = TestBed.createComponent(OnboardingShellComponent);
+    f.componentInstance.semanticSteps = true;
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('.onboarding-shell--mobile-layout')).toBeNull();
+    for (const step of [1, 2, 3]) {
+      f.componentInstance.passoAtual = step;
+      f.detectChanges();
+      const steps = f.nativeElement.querySelectorAll('ol li');
+      expect(steps.length).toBe(3);
+      expect(f.nativeElement.querySelectorAll('[aria-current="step"]').length).toBe(1);
+      expect(steps[step - 1].getAttribute('aria-current')).toBe('step');
+      expect(f.nativeElement.querySelectorAll('ol li.complete').length).toBe(step - 1);
+      expect(steps[step - 1].querySelector('.onboarding-shell__step-marker').textContent.trim()).toBe(String(step));
+    }
+    f.componentInstance.completed = true;
+    f.detectChanges();
+    expect(f.nativeElement.querySelector('[aria-current="step"]')).toBeNull();
+    expect(f.nativeElement.querySelectorAll('ol li.complete').length).toBe(3);
+    expect(Array.from(f.nativeElement.querySelectorAll('.onboarding-shell__step-marker')).every((el: any) => el.textContent.trim() === '✓')).toBeTrue();
+    f.destroy();
+  });
+
+  it('alterna a estrutura de catálogo e preparação e só oferece entrada após concluir', async () => {
+    const f = TestBed.createComponent(OnboardingV2ProductsPageComponent);
+    f.detectChanges(); await f.whenStable(); f.detectChanges();
+    const shell = f.debugElement.query(By.directive(OnboardingShellComponent)).componentInstance as OnboardingShellComponent;
+    expect(shell.mobileLayout).toBe('catalog');
+    expect(shell.mobileActions).toBeNull();
+    f.destroy();
+    for (const job of [pending, done]) {
+      biblioteca.ultima.and.returnValue(of(job));
+      const preparing = TestBed.createComponent(OnboardingV2ProductsPageComponent);
+      preparing.detectChanges(); await preparing.whenStable(); preparing.detectChanges();
+      const preparingShell = preparing.debugElement.query(By.directive(OnboardingShellComponent)).componentInstance as OnboardingShellComponent;
+      expect(preparingShell.mobileLayout).toBe('flow');
+      const action = preparing.nativeElement.querySelector('.onboarding-shell__footer--mobile-actions button');
+      if (job === pending) {
+        expect(action).toBeNull();
+      } else {
+        expect(action.textContent).toContain('Entrar no ClickManager');
+        expect(preparing.nativeElement.textContent).toContain('2 produtos preparados para o SmartCalc');
+        action.click();
+        expect(state.finishOnboarding).toHaveBeenCalledTimes(1);
+        expect(TestBed.inject(Router).navigateByUrl).toHaveBeenCalledWith('/painel');
+      }
+      preparing.destroy();
+    }
+  });
+
+  it('protege a ação mobile do resumo durante erro e salvamento e permite tentar novamente', async () => {
+    state.loadResumo.and.returnValue(throwError(() => new Error('conexão')));
+    const f = TestBed.createComponent(OnboardingV2SummaryPageComponent);
+    f.detectChanges(); await f.whenStable(); f.detectChanges();
+    expect(f.nativeElement.querySelector('.onboarding-shell__footer--mobile-actions')).toBeNull();
+    expect(state.finishOnboarding).not.toHaveBeenCalled();
+    state.loadResumo.and.returnValue(of({onboardingVersion: 'v2', currentStep: 'summary', status: 'products_completed'}));
+    f.nativeElement.querySelector('button[mat-stroked-button]').click();
+    f.detectChanges(); await f.whenStable(); f.detectChanges();
+    const action = f.nativeElement.querySelector('.onboarding-shell__footer--mobile-actions button');
+    expect(action.textContent).toContain('Entrar no ClickManager');
+    state.saving.and.returnValue(true); f.detectChanges();
+    expect(action.disabled).toBeTrue();
+    action.click();
+    expect(state.finishOnboarding).not.toHaveBeenCalled();
+    state.saving.and.returnValue(false); f.detectChanges(); action.click();
+    expect(state.finishOnboarding).toHaveBeenCalledTimes(1);
+    expect(TestBed.inject(Router).navigateByUrl).toHaveBeenCalledWith('/painel');
+    f.destroy();
   });
 
   it('mostra Sua empresa e avança para catálogo pelo botão no final do conteúdo', async () => {

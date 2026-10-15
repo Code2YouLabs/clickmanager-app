@@ -1,9 +1,9 @@
-<div class="blank-layout-container justify-content-center onboarding-page-layout"
+<div class="blank-layout-container justify-content-center onboarding-page-layout onboarding-mobile-layout"
   [class.onboarding-catalogo--selecao]="!carregando && stage === 'CATALOGO' && !seletor?.reconectando">
   <div class="auth-wrapper onboarding-page-wrapper">
     <div class="w-100 rounded bg-white auth-card onboarding-page-card">
       <div class="auth-body onboarding-page">
-        <app-onboarding-shell [semanticSteps]="true" [completed]="stage === 'CONCLUIDO'" [showExit]="false" tituloFluxo=""
+        <app-onboarding-shell [mobileLayout]="stage === 'CATALOGO' ? 'catalog' : 'flow'" [mobileActions]="stage === 'CONCLUIDO' ? enterAction : null" [semanticSteps]="true" [completed]="stage === 'CONCLUIDO'" [showExit]="false" tituloFluxo=""
           [passoAtual]="stageNumber(stage)" [totalPassos]="3" [showBack]="false"
           [showFooter]="!carregando && stage === 'CATALOGO' && !seletor?.reconectando"
           mobileSkipLabel="Pular" [showSkip]="true" [skipDisabled]="bloqueado" (pular)="pular()"
@@ -30,8 +30,8 @@
               [animarEtapas]="animandoEtapas" (etapasConcluidas)="concluirAnimacao()"
               (preparacao)="atualizarPreparacao($event)" (ocupado)="importando = $event" />
             @if (stage === 'CONCLUIDO') {
-              <div class="onboarding-page__completion-action">
-                <button mat-flat-button color="primary" [disabled]="bloqueado" (click)="entrar()">{{ avancando ? 'Finalizando...' : 'Entrar no ClickManager' }}</button>
+              <div class="onboarding-page__completion-action onboarding-mobile-desktop-action">
+                <ng-container *ngTemplateOutlet="enterAction" />
               </div>
             }
           }
@@ -40,3 +40,7 @@
     </div>
   </div>
 </div>
+
+<ng-template #enterAction>
+  <button mat-flat-button color="primary" [disabled]="bloqueado" (click)="entrar()">{{ avancando ? 'Finalizando...' : 'Entrar no ClickManager' }}</button>
+</ng-template>

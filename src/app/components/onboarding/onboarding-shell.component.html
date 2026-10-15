@@ -1,4 +1,6 @@
-<section class="onboarding-shell" [class.onboarding-shell--header-navigation]="navigationInHeader" [class.onboarding-shell--semantic]="semanticSteps">
+<section class="onboarding-shell" [class.onboarding-shell--header-navigation]="navigationInHeader" [class.onboarding-shell--semantic]="semanticSteps"
+  [class.onboarding-shell--mobile-layout]="!!mobileLayout" [class.onboarding-shell--mobile-catalog]="mobileLayout === 'catalog'"
+  [class.onboarding-shell--mobile-secondary]="showSkip">
   <header class="onboarding-shell__header">
     @if (semanticSteps) {
       <div class="onboarding-shell__brand"><img src="./assets/images/logos/logoClickManager.png" alt="ClickManager" /></div>
@@ -77,6 +79,11 @@
   <footer class="onboarding-shell__footer" *ngIf="showFooter && !navigationInHeader">
     <ng-container *ngTemplateOutlet="navigation"></ng-container>
   </footer>
+  @if (mobileActions) {
+    <footer class="onboarding-shell__footer onboarding-shell__footer--mobile-actions">
+      <div class="onboarding-shell__footer-right"><ng-container *ngTemplateOutlet="mobileActions" /></div>
+    </footer>
+  }
 </section>
 
 <ng-template #navigation>
