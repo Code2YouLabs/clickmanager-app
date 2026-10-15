@@ -137,6 +137,7 @@ describe('Narrativa do onboarding', () => {
     f.detectChanges(); await f.whenStable(); f.detectChanges();
     const shell = f.debugElement.query(By.directive(OnboardingShellComponent)).componentInstance as OnboardingShellComponent;
     expect(shell.mobileLayout).toBe('catalog');
+    expect(f.nativeElement.querySelector('app-onboarding-shell').classList.contains('onboarding-preparation')).toBeFalse();
     expect(f.nativeElement.querySelector('.onboarding-step-title').textContent.trim()).toBe('Quais produtos você oferece?');
     expect(shell.mobileActions).toBeNull();
     f.destroy();
@@ -146,6 +147,7 @@ describe('Narrativa do onboarding', () => {
       preparing.detectChanges(); await preparing.whenStable(); preparing.detectChanges();
       const preparingShell = preparing.debugElement.query(By.directive(OnboardingShellComponent)).componentInstance as OnboardingShellComponent;
       expect(preparingShell.mobileLayout).toBe('flow');
+      expect(preparing.nativeElement.querySelector('app-onboarding-shell').classList.contains('onboarding-preparation')).toBeTrue();
       expect(preparing.nativeElement.querySelector('.onboarding-step-title').textContent.trim()).toBe(job === pending ? 'Estamos preparando seu ClickManager' : 'Tudo pronto para você!');
       const action = preparing.nativeElement.querySelector('.onboarding-shell__footer--mobile-actions button');
       if (job === pending) {
@@ -233,13 +235,19 @@ describe('Narrativa do onboarding', () => {
     updates.next({...pending, status: 'PROCESSANDO', fase: 'IMPORTANDO_ITENS', processados: 47, criados: 45, duplicados: 2, tempoEstimadoRestanteSegundos: 60}); f.detectChanges();
     tick(4000); f.detectChanges();
     expect(f.nativeElement.textContent).toContain('47 de 150');
+    expect(f.debugElement.query(By.css('.setup-progress__task-content mat-progress-bar')).componentInstance.value).toBeCloseTo(47 * 100 / 150, 4);
     expect(f.nativeElement.querySelector('app-setup-progress li[data-state="PROCESSANDO"]').textContent).toContain('Criando seu catálogo');
     updates.next(done); f.detectChanges();
     expect(f.componentInstance.stage).toBe('PREPARANDO');
+    expect(f.nativeElement.querySelector('.setup-progress__outcome')).toBeNull();
+    expect(f.nativeElement.querySelector('.setup-progress__contadores')).toBeNull();
     expect(f.nativeElement.querySelector('.onboarding-page__completion-action button')).toBeNull();
     tick(6000); f.detectChanges();
     expect(f.nativeElement.querySelector('header').textContent).toContain('100%');
     expect(f.nativeElement.textContent).toContain('148 produtos e serviços adicionados');
+    expect(f.nativeElement.querySelector('.setup-progress__outcome mat-icon').textContent).toBe('check_circle');
+    expect(Array.from(f.nativeElement.querySelectorAll('.setup-progress__count')).map((el: any) => el.textContent.trim())).toEqual(['148', '2', '2']);
+    expect(f.nativeElement.querySelectorAll('.setup-progress__tasks li').length).toBe(5);
     expect(f.nativeElement.querySelector('header button')).toBeNull();
     f.nativeElement.querySelector('.onboarding-page__completion-action button').click();
     expect(state.finishOnboarding).toHaveBeenCalled(); f.destroy();
@@ -251,10 +259,26 @@ describe('Narrativa do onboarding', () => {
     const f = TestBed.createComponent(OnboardingV2ProductsPageComponent);
     f.detectChanges(); await f.whenStable(); f.detectChanges();
     expect(f.nativeElement.textContent).toContain('configuração adicional');
+    expect(f.nativeElement.querySelector('.setup-progress__outcome mat-icon').textContent).toBe('info');
     expect(f.nativeElement.textContent).toContain('148 produtos e serviços adicionados');
     expect(f.nativeElement.textContent).not.toContain('não puderam ser adicionados');
     f.nativeElement.querySelector('.onboarding-page__completion-action button').click();
     expect(state.finishOnboarding).toHaveBeenCalled(); f.destroy();
+  });
+
+  it('mantém a falha real e seus detalhes na apresentação de conclusão com atenção', async () => {
+    biblioteca.ultima.and.returnValue(of({...done, status: 'ERRO', fase: 'ERRO', criados: 0, duplicados: 0, smartCalcPreparados: 0, erros: 1,
+      itens: [{id: 1, tipo: 'PRODUTO', templateId: 3, status: 'ERRO', nome: 'Impressão A3', mensagem: 'Não foi possível adicionar este item.', criadoId: null}]}));
+    const f = TestBed.createComponent(OnboardingV2ProductsPageComponent);
+    f.detectChanges(); await f.whenStable(); f.detectChanges();
+    expect(f.nativeElement.querySelector('.onboarding-step-title').textContent).toBe('Não foi possível concluir a preparação');
+    expect(f.nativeElement.querySelector('.setup-progress__outcome mat-icon').textContent).toBe('info');
+    expect(f.nativeElement.querySelector('.setup-progress--attention')).not.toBeNull();
+    expect(f.nativeElement.querySelectorAll('.setup-progress__tasks li').length).toBe(5);
+    expect(f.nativeElement.querySelectorAll('.setup-progress__count').length).toBe(0);
+    expect(f.nativeElement.querySelector('details').textContent).toContain('Impressão A3: Não foi possível adicionar este item.');
+    expect(biblioteca.importar).not.toHaveBeenCalled();
+    f.destroy();
   });
 
   for (const job of [pending, done]) {

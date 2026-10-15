@@ -1,7 +1,12 @@
-<section class="setup-progress" [class.setup-progress--onboarding]="onboarding" aria-label="Progresso da preparação">
+<section class="setup-progress" [class.setup-progress--onboarding]="onboarding"
+  [class.setup-progress--finished]="onboarding && !exibicaoAtiva"
+  [class.setup-progress--attention]="onboarding && (!!job.erros || !!job.alertaPreparacao || job.status === 'ERRO')" aria-label="Progresso da preparação">
       @if (onboarding) {
+        @if (!exibicaoAtiva) {
+          <div class="setup-progress__outcome" aria-hidden="true"><mat-icon>{{ job.erros || job.alertaPreparacao || job.status === 'ERRO' ? 'info' : 'check_circle' }}</mat-icon></div>
+        }
         <h2 class="onboarding-step-title">{{ titulo }}</h2>
-        <p>{{ exibicaoAtiva ? 'Isso pode levar alguns instantes. Você não precisa fazer nada.' : 'Seu ClickManager foi preparado com os produtos e configurações que você escolheu.' }}</p>
+        <p class="setup-progress__description">{{ exibicaoAtiva ? 'Isso pode levar alguns instantes. Você não precisa fazer nada.' : 'Seu ClickManager foi preparado com os produtos e configurações que você escolheu.' }}</p>
         <ol class="setup-progress__tasks">
           @for (task of tarefas; track task.label) {
             <li [attr.data-state]="task.state">
@@ -19,9 +24,9 @@
         </ol>
         @if (!exibicaoAtiva) {
           <div class="setup-progress__contadores" aria-live="polite">
-            @if (job.criados) { <span>{{ job.criados }} produtos e serviços adicionados</span> }
-            @if (job.duplicados) { <span>{{ job.duplicados }} já existiam</span> }
-            @if (job.smartCalcPreparados) { <span>{{ job.smartCalcPreparados }} produtos preparados para o SmartCalc</span> }
+            @if (job.criados) { <span><span class="setup-progress__count">{{ job.criados }}</span> produtos e serviços adicionados</span> }
+            @if (job.duplicados) { <span><span class="setup-progress__count">{{ job.duplicados }}</span> já existiam</span> }
+            @if (job.smartCalcPreparados) { <span><span class="setup-progress__count">{{ job.smartCalcPreparados }}</span> produtos preparados para o SmartCalc</span> }
           </div>
         }
       } @else {

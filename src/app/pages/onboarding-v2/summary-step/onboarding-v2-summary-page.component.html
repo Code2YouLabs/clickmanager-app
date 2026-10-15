@@ -3,7 +3,7 @@
     <div class="position-relative w-100">
       <div class="w-100 position-relative rounded bg-white auth-card onboarding-page-card">
         <div class="auth-body onboarding-page">
-          <app-onboarding-shell mobileLayout="flow" [mobileActions]="!carregando && !erroCarregamento && !!onboardingV2State.resumo() ? finishAction : null" [semanticSteps]="true" [completed]="!carregando && !erroCarregamento && !!onboardingV2State.resumo()" [showFooter]="false" [showExit]="false"
+          <app-onboarding-shell [class.onboarding-preparation]="!carregando && !erroCarregamento && !!onboardingV2State.resumo()" mobileLayout="flow" [mobileActions]="!carregando && !erroCarregamento && !!onboardingV2State.resumo() ? finishAction : null" [semanticSteps]="true" [completed]="!carregando && !erroCarregamento && !!onboardingV2State.resumo()" [showFooter]="false" [showExit]="false"
             tituloFluxo=""
             tituloEtapa=""
             subtituloEtapa=""

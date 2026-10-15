@@ -360,6 +360,17 @@
   }
 }
 
+// Step 3 only: the action follows the result instead of being separated by spare viewport space.
+@media (max-width: 768px), (max-width: 960px) and (max-height: 560px) {
+  :host(.onboarding-preparation) .onboarding-shell.onboarding-shell--semantic.onboarding-shell--mobile-layout {
+    .onboarding-shell__content { flex: 0 1 auto; }
+    .onboarding-shell__content ::ng-deep .onboarding-step-title,
+    .onboarding-shell__content ::ng-deep .onboarding-step-summary .section-card__title > .title { font-size: 20px; line-height: 28px; font-weight: 600; }
+    .onboarding-shell__footer--mobile-actions { padding-top: 16px; }
+    .onboarding-shell__footer--mobile-actions ::ng-deep button[mat-flat-button] { min-height: 48px; font-size: 16px; line-height: 24px; }
+  }
+}
+
 @media (max-width: 960px) and (max-height: 560px) {
   .onboarding-shell.onboarding-shell--semantic.onboarding-shell--mobile-layout {
     gap: 8px;

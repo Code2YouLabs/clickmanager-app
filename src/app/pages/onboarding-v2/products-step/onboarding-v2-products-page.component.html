@@ -3,7 +3,7 @@
   <div class="auth-wrapper onboarding-page-wrapper">
     <div class="w-100 rounded bg-white auth-card onboarding-page-card">
       <div class="auth-body onboarding-page">
-        <app-onboarding-shell [mobileLayout]="stage === 'CATALOGO' ? 'catalog' : 'flow'" [mobileActions]="stage === 'CONCLUIDO' ? enterAction : null" [semanticSteps]="true" [completed]="stage === 'CONCLUIDO'" [showExit]="false" tituloFluxo=""
+        <app-onboarding-shell [class.onboarding-preparation]="stage === 'PREPARANDO' || stage === 'CONCLUIDO'" [mobileLayout]="stage === 'CATALOGO' ? 'catalog' : 'flow'" [mobileActions]="stage === 'CONCLUIDO' ? enterAction : null" [semanticSteps]="true" [completed]="stage === 'CONCLUIDO'" [showExit]="false" tituloFluxo=""
           [passoAtual]="stageNumber(stage)" [totalPassos]="3" [showBack]="false"
           [showFooter]="!carregando && stage === 'CATALOGO' && !seletor?.reconectando"
           mobileSkipLabel="Pular" [showSkip]="true" [skipDisabled]="bloqueado" (pular)="pular()"
