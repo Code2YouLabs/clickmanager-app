@@ -1,0 +1,79 @@
+// Shared presentation for boxed login/register; uses the existing ClickManager skin.
+@mixin layout {
+  :host { display: block; }
+
+  .auth-page {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: max(24px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+    background-color: var(--mat-sys-background, #f0f5f9);
+  }
+
+  .auth-entry-card {
+    width: 100%;
+    max-width: 510px;
+    min-width: 0;
+    margin: 0;
+    border-radius: var(--mat-sys-corner-medium, 16px);
+    background: var(--mat-sys-surface, #fff);
+  }
+
+  .auth-entry-card .auth-body { padding: 32px; }
+  .auth-branding { display: flex; justify-content: center; line-height: 0; }
+  .auth-intro { margin-top: 16px; text-align: center; }
+  .auth-intro h1 { margin: 0; color: var(--mat-sys-on-background, #111c2d); font-size: 24px; font-weight: 700; line-height: 32px; text-wrap: balance; }
+  .auth-intro p { margin: 8px 0 0; color: var(--mat-sys-on-surface-variant, #475569); font-size: 14px; line-height: 20px; text-wrap: pretty; }
+
+  .auth-google-btn,
+  .auth-submit-btn { width: 100%; min-height: 48px; border-radius: 24px; font-size: 16px; font-weight: 700; }
+  .auth-google-btn { margin-top: 24px; color: var(--mat-sys-primary); border-color: var(--mat-sys-outline-variant); }
+  .auth-google-btn:not(:disabled):hover { background: var(--mat-sys-primary-fixed-dim); }
+  .auth-google-btn__icon { display: inline-flex; align-items: center; margin-right: 8px; }
+  .auth-google-btn__icon img { display: block; }
+
+  .auth-divider { display: flex; align-items: center; gap: 16px; margin: 16px 0 24px; color: var(--mat-sys-on-surface-variant, #475569); font-size: 14px; line-height: 20px; }
+  .auth-divider::before,
+  .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--mat-sys-outline-variant, #e5eaef); }
+
+  .auth-form,
+  .auth-fields { display: grid; gap: 16px; min-width: 0; }
+  .auth-field { display: grid; gap: 8px; min-width: 0; }
+  .auth-field label { color: var(--mat-sys-on-background, #111c2d); font-size: 14px; font-weight: 600; line-height: 20px; }
+  .auth-options { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 12px; }
+  .auth-link { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; max-width: 100%; color: var(--mat-sys-primary); font-size: 14px; font-weight: 600; text-decoration: none; overflow-wrap: anywhere; }
+  .auth-link:hover { text-decoration: underline; }
+  .auth-link:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: 4px; border-radius: 4px; text-decoration: underline; }
+  .auth-switch { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0 8px; margin-top: 16px; color: var(--mat-sys-on-background, #111c2d); font-size: 14px; line-height: 20px; }
+  .auth-feedback { margin: 0; padding: 12px; border: 1px solid #fecaca; border-radius: 8px; color: #b91c1c; background: #fef2f2; font-size: 14px; line-height: 20px; overflow-wrap: anywhere; }
+
+  :host ::ng-deep {
+    .auth-branding app-branding { display: inline-flex; justify-content: center; max-width: 100%; }
+    .auth-branding app-branding img,
+    .auth-branding app-branding svg { max-height: 42px; max-width: 100%; width: auto; }
+    .auth-field .mat-mdc-form-field { width: 100%; min-width: 0; --mat-form-field-error-text-color: #b91c1c; }
+    .auth-field .mat-mdc-text-field-wrapper { min-height: 52px; border-radius: var(--mat-sys-corner-medium, 16px); }
+    .auth-field .mat-mdc-form-field-infix { min-height: 52px; padding-top: 14px; padding-bottom: 14px; width: auto; }
+    .auth-field input { font-size: 16px; line-height: 24px; }
+    .auth-field .mat-mdc-form-field-subscript-wrapper { font-size: 14px; line-height: 20px; }
+    .auth-field .mat-mdc-icon-button { width: 48px; height: 48px; padding: 12px; }
+    .auth-field .mat-mdc-form-field-error { color: #b91c1c; }
+    .auth-options .mdc-form-field { min-height: 44px; }
+  }
+
+  @media (max-width: 768px) {
+    .auth-page { padding: max(16px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); }
+    .auth-page.bg-gredient::before { display: none; }
+    .auth-entry-card .auth-body { padding: 24px; }
+    :host ::ng-deep .auth-branding app-branding img,
+    :host ::ng-deep .auth-branding app-branding svg { max-height: 36px; }
+  }
+
+  @media (max-height: 560px) {
+    .auth-page { align-items: flex-start; }
+  }
+}
