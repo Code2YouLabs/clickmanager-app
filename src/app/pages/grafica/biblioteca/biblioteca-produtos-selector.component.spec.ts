@@ -1,5 +1,7 @@
 import { fakeAsync, tick, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { By } from '@angular/platform-browser';
+import { HierarchyTreeComponent } from 'src/app/components/hierarchy-tree/hierarchy-tree.component';
 import { of, Subject, throwError } from 'rxjs';
 import { BibliotecaProdutosSelectorComponent } from './biblioteca-produtos-selector.component';
 import { BibliotecaItem, BibliotecaResultado, BibliotecaService } from './biblioteca.service';
@@ -70,6 +72,44 @@ describe('BibliotecaProdutosSelectorComponent' , () => {
     expect(fixture.nativeElement.textContent).toContain('Acabamentos disponíveis');
     fixture.destroy();
   });
+  it('separa expansão e seleção da categoria pelos controles reais e preserva o estado entre modos', async () => {
+    api.listar.and.returnValue(of([produto, {...produto, id: 2, nome: 'Impressão A3'}, servico]));
+    await TestBed.configureTestingModule({imports: [BibliotecaProdutosSelectorComponent, NoopAnimationsModule], providers: [{provide: BibliotecaService, useValue: api}]}).compileComponents();
+    const f = TestBed.createComponent(BibliotecaProdutosSelectorComponent);
+    f.componentInstance.onboarding = true;
+    f.detectChanges(); await f.whenStable(); f.detectChanges();
+    const selector = f.componentInstance;
+    const tree = f.debugElement.query(By.directive(HierarchyTreeComponent)).componentInstance as HierarchyTreeComponent;
+    const category = selector.arvore[0];
+    const row = f.nativeElement.querySelector('.hierarchy-tree__row--parent');
+    const expand = row.querySelector('.hierarchy-tree__toggle') as HTMLButtonElement;
+    const checkbox = row.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    expand.click(); f.detectChanges();
+    expect(expand.getAttribute('aria-expanded')).toBe('true');
+    expect(expand.querySelector('mat-icon')!.textContent).toBe('expand_more');
+    expect(selector.selecionados.size).toBe(0);
+    selector.marcar(produto, true); f.detectChanges();
+    expect(checkbox.indeterminate).toBeTrue();
+    checkbox.click(); f.detectChanges();
+    expect(selector.selecionados.size).toBe(2);
+    expect(selector.selecionados.has(selector.chave(servico))).toBeFalse();
+    expect(tree.treeControl.isExpanded(category)).toBeTrue();
+    expect(checkbox.checked).toBeTrue();
+    expect(checkbox.indeterminate).toBeFalse();
+    selector.modo = 'detalhada'; f.detectChanges();
+    expect(f.nativeElement.querySelectorAll('.biblioteca-lista input:checked').length).toBe(2);
+    selector.modo = 'arvore'; f.detectChanges();
+    expect(f.debugElement.query(By.directive(HierarchyTreeComponent)).componentInstance).toBe(tree);
+    expect(tree.treeControl.isExpanded(category)).toBeTrue();
+    expand.click(); f.detectChanges();
+    expect(expand.getAttribute('aria-expanded')).toBe('false');
+    expect(selector.selecionados.size).toBe(2);
+    checkbox.click(); f.detectChanges();
+    expect(selector.selecionados.size).toBe(0);
+    expect(expand.getAttribute('aria-expanded')).toBe('false');
+    f.destroy();
+  });
+
   it('monta categorias reais em profundidade arbitrária, inclusive com itens e subcategorias', () => {
     component.itens = [produto, { ...produto, id: 2, categoria: 'Impressão' },
       { ...produto, id: 3, categoria: 'Impressão > Papel > Especial' }];

@@ -1,0 +1,25 @@
+// Shared outer frame. The shell chooses scrolling for forms/progress or the catalog list.
+@media (max-width: 768px), (max-width: 960px) and (max-height: 560px) {
+  .onboarding-mobile-layout.onboarding-page-layout {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    .onboarding-page-wrapper { height: 100%; min-height: 0; margin: 0 auto; }
+    .onboarding-page-wrapper > .position-relative { height: 100%; min-height: 0; }
+    .onboarding-page-card { height: 100%; min-height: 0; min-width: 0; overflow: hidden; }
+    .onboarding-page { height: 100%; min-height: 0; padding: 12px; box-sizing: border-box; }
+    .onboarding-page__intro > h1 { margin: 0 0 8px; font-size: 18px; line-height: 28px; }
+    .onboarding-page__intro p { margin: 0; font-size: 14px; line-height: 20px; }
+    .onboarding-mobile-desktop-action { display: none; }
+  }
+}
+
+@media (max-width: 960px) and (max-height: 560px) {
+  .onboarding-mobile-layout.onboarding-page-layout {
+    padding-top: max(4px, env(safe-area-inset-top));
+    padding-bottom: max(4px, env(safe-area-inset-bottom));
+    .onboarding-page { padding: 8px 12px; }
+  }
+}

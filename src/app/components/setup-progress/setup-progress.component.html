@@ -1,0 +1,56 @@
+<section class="setup-progress" [class.setup-progress--onboarding]="onboarding"
+  [class.setup-progress--finished]="onboarding && !exibicaoAtiva"
+  [class.setup-progress--attention]="onboarding && (!!job.erros || !!job.alertaPreparacao || job.status === 'ERRO')" aria-label="Progresso da preparação">
+      @if (onboarding) {
+        <div class="setup-progress__heading">
+          @if (!exibicaoAtiva) {
+            <div class="setup-progress__outcome" aria-hidden="true"><mat-icon>{{ job.erros || job.alertaPreparacao || job.status === 'ERRO' ? 'info' : 'check_circle' }}</mat-icon></div>
+          }
+          <h2 class="onboarding-step-title">{{ titulo }}</h2>
+        </div>
+        <p class="setup-progress__description">{{ exibicaoAtiva ? 'Isso pode levar alguns instantes. Você não precisa fazer nada.' : 'Seu ClickManager foi preparado com os produtos e configurações que você escolheu.' }}</p>
+        <ol class="setup-progress__tasks">
+          @for (task of tarefas; track task.label) {
+            <li [attr.data-state]="task.state">
+              <span class="setup-progress__task-icon" [attr.aria-label]="task.state">
+                @if (task.state === 'PROCESSANDO') { <mat-spinner diameter="20" aria-label="Processando" /> }
+                @else { <mat-icon>{{ task.state === 'CONCLUIDO' ? 'check_circle' : task.state === 'ALERTA' ? 'warning' : 'radio_button_unchecked' }}</mat-icon> }
+              </span>
+              <div class="setup-progress__task-content">
+                <strong>{{ task.label }}</strong>
+                @if (task.detail) { <span>{{ task.detail }}</span> }
+                @if (task.catalog) { <mat-progress-bar mode="determinate" [value]="percentual" aria-label="Progresso do catálogo" /> }
+              </div>
+            </li>
+          }
+        </ol>
+        @if (!exibicaoAtiva) {
+          <div class="setup-progress__contadores" aria-live="polite">
+            @if (job.criados) { <span><span class="setup-progress__count">{{ job.criados }}</span> produtos e serviços adicionados</span> }
+            @if (job.duplicados) { <span><span class="setup-progress__count">{{ job.duplicados }}</span> já existiam</span> }
+            @if (job.smartCalcPreparados) { <span><span class="setup-progress__count">{{ job.smartCalcPreparados }}</span> produtos preparados para o SmartCalc</span> }
+          </div>
+        }
+      } @else {
+        <mat-icon>{{ ativa ? 'inventory_2' : (job.erros || job.alertaPreparacao ? 'info' : 'check_circle') }}</mat-icon>
+        <h2>{{ titulo }}</h2>
+        <p>{{ ativa ? 'Você pode fechar esta janela e continuar usando o sistema.' : 'Confira o resultado da preparação.' }}</p>
+        <p class="fase" role="status">{{ fase }}</p>
+        <strong>{{ job.processados }} de {{ job.total }} itens processados</strong>
+        <mat-progress-bar mode="determinate" [value]="percentual" aria-label="Itens processados" />
+        @if (ativa) { <p>{{ estimativa }}</p> }
+        <div class="setup-progress__contadores" aria-live="polite">
+          <span>{{ job.criados }} adicionados</span><span>{{ job.duplicados }} já existiam</span>
+          @if (job.erros) { <span>{{ job.erros }} não puderam ser adicionados</span> }
+        </div>
+      }
+      @if (!exibicaoAtiva && job.alertaPreparacao) { <p role="status">{{ job.alertaPreparacao }}</p> }
+      @if (!exibicaoAtiva && job.erros) {
+        <details><summary>Ver detalhes</summary>
+          @for (item of job.itens; track item.id) {
+            @if (item.status === 'ERRO') { <p>{{ item.nome || ('Item ' + item.templateId) }}: {{ item.mensagem }}</p> }
+          }
+          @if (!onboarding) { <small>Importação #{{ job.id }}</small> }
+        </details>
+      }
+    </section>

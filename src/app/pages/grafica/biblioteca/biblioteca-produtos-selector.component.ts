@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, TemplateRef, ViewChild, Optional } from '@angular/core';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, finalize, takeUntil, Subscription, timeout } from 'rxjs';
 import { SetupProgress, SetupProgressComponent, preparacaoAtiva } from 'src/app/components/setup-progress/setup-progress.component';
@@ -12,8 +13,22 @@ import { BibliotecaItem, BibliotecaResultado, BibliotecaService } from './biblio
   imports: [CommonModule, FormsModule, MaterialModule, HierarchyTreeComponent, SetupProgressComponent],
   templateUrl: './biblioteca-produtos-selector.component.html',
   styleUrls: ['./biblioteca-produtos-selector.component.scss'],
+  host: { '[class.biblioteca-selector--onboarding]': 'onboarding' },
 })
 export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
+  private dialogFiltros?: MatDialogRef<unknown>;
+  @ViewChild('modalFiltros') modalFiltros?: TemplateRef<unknown>;
+  get filtrosAtivos(): number { return Number(!!this.busca.trim()) + Number(!!this.categoria); }
+  abrirFiltros(): void {
+    if (!this.onboarding || !this.modalFiltros || !this.dialog || this.dialogFiltros) return;
+    this.dialogFiltros = this.dialog.open(this.modalFiltros, { width: '480px', maxWidth: 'calc(100vw - 32px)', maxHeight: '90dvh' });
+    this.dialogFiltros.afterClosed().subscribe(() => this.dialogFiltros = undefined);
+  }
+  limparFiltros(): void {
+    this.busca = '';
+    this.pesquisar('');
+    this.categoria = '';
+  }
   @Input() onboarding = false;
   @Input() animarEtapas = false;
   @Output() etapasConcluidas = new EventEmitter<void>();
@@ -49,12 +64,12 @@ export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
   resultado: BibliotecaResultado | null = null;
   private readonly pesquisa = new Subject<string>();
   private readonly destruir = new Subject<void>();
-  constructor(private readonly service: BibliotecaService) {}
+  constructor(private readonly service: BibliotecaService, @Optional() private readonly dialog: MatDialog | null = null) {}
   ngOnInit() {
     this.pesquisa.pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destruir)).subscribe(v => this.termo = this.normalizar(v));
     this.reconectar();
   }
-  ngOnDestroy() { this.acompanhamento?.unsubscribe(); this.destruir.next(); this.destruir.complete(); }
+  ngOnDestroy() { this.dialogFiltros?.close(); this.acompanhamento?.unsubscribe(); this.destruir.next(); this.destruir.complete(); }
   carregar() {
     this.carregando = true; this.erro = '';
     this.service.listar().pipe(takeUntil(this.destruir), finalize(() => this.carregando = false)).subscribe({

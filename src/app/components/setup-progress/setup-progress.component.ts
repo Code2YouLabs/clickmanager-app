@@ -19,72 +19,8 @@ interface PreparationTask { label: string; state: TaskState; detail?: string; ca
 
 @Component({
   selector: 'app-setup-progress', standalone: true, imports: [CommonModule, MaterialModule],
-  template: `
-    <section class="setup-progress" [class.setup-progress--onboarding]="onboarding" aria-label="Progresso da preparação">
-      @if (onboarding) {
-        <h2>{{ titulo }}</h2>
-        <p>{{ exibicaoAtiva ? 'Isso pode levar alguns instantes. Você não precisa fazer nada.' : 'Seu ClickManager foi preparado com os produtos e configurações que você escolheu.' }}</p>
-        <ol class="setup-progress__tasks">
-          @for (task of tarefas; track task.label) {
-            <li [attr.data-state]="task.state">
-              <span class="setup-progress__task-icon" [attr.aria-label]="task.state">
-                @if (task.state === 'PROCESSANDO') { <mat-spinner diameter="20" aria-label="Processando" /> }
-                @else { <mat-icon>{{ task.state === 'CONCLUIDO' ? 'check_circle' : task.state === 'ALERTA' ? 'warning' : 'radio_button_unchecked' }}</mat-icon> }
-              </span>
-              <div class="setup-progress__task-content">
-                <strong>{{ task.label }}</strong>
-                @if (task.detail) { <span>{{ task.detail }}</span> }
-                @if (task.catalog) { <mat-progress-bar mode="determinate" [value]="percentual" aria-label="Progresso do catálogo" /> }
-              </div>
-            </li>
-          }
-        </ol>
-        @if (!exibicaoAtiva) {
-          <div class="setup-progress__contadores" aria-live="polite">
-            @if (job.criados) { <span>{{ job.criados }} produtos e serviços adicionados</span> }
-            @if (job.duplicados) { <span>{{ job.duplicados }} já existiam</span> }
-            @if (job.smartCalcPreparados) { <span>{{ job.smartCalcPreparados }} produtos preparados para o SmartCalc</span> }
-          </div>
-        }
-      } @else {
-        <mat-icon>{{ ativa ? 'inventory_2' : (job.erros || job.alertaPreparacao ? 'info' : 'check_circle') }}</mat-icon>
-        <h2>{{ titulo }}</h2>
-        <p>{{ ativa ? 'Você pode fechar esta janela e continuar usando o sistema.' : 'Confira o resultado da preparação.' }}</p>
-        <p class="fase" role="status">{{ fase }}</p>
-        <strong>{{ job.processados }} de {{ job.total }} itens processados</strong>
-        <mat-progress-bar mode="determinate" [value]="percentual" aria-label="Itens processados" />
-        @if (ativa) { <p>{{ estimativa }}</p> }
-        <div class="setup-progress__contadores" aria-live="polite">
-          <span>{{ job.criados }} adicionados</span><span>{{ job.duplicados }} já existiam</span>
-          @if (job.erros) { <span>{{ job.erros }} não puderam ser adicionados</span> }
-        </div>
-      }
-      @if (!exibicaoAtiva && job.alertaPreparacao) { <p role="status">{{ job.alertaPreparacao }}</p> }
-      @if (!exibicaoAtiva && job.erros) {
-        <details><summary>Ver detalhes</summary>
-          @for (item of job.itens; track item.id) {
-            @if (item.status === 'ERRO') { <p>{{ item.nome || ('Item ' + item.templateId) }}: {{ item.mensagem }}</p> }
-          }
-          @if (!onboarding) { <small>Importação #{{ job.id }}</small> }
-        </details>
-      }
-    </section>`,
-  styles: [`
-    .setup-progress { padding: 24px; border: 1px solid var(--mat-sys-outline-variant); border-radius: 16px; }
-    .setup-progress--onboarding { margin: 0; padding: 16px 0; border: 0; border-radius: 0; }
-    h2 { margin: 12px 0; } p { color: var(--mat-sys-on-surface-variant); }
-    mat-progress-bar { margin: 16px 0; } .fase { font-weight: 600; }
-    .setup-progress__contadores { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0; }
-    .setup-progress__tasks { display: grid; gap: 18px; list-style: none; padding: 0; margin: 24px 0; }
-    .setup-progress__tasks li { display: flex; align-items: flex-start; gap: 12px; }
-    .setup-progress__task-icon { width: 24px; height: 24px; display: grid; place-items: center; color: var(--mat-sys-outline); }
-    .setup-progress__tasks li[data-state='CONCLUIDO'] .setup-progress__task-icon { color: var(--mat-sys-primary); }
-    .setup-progress__tasks li[data-state='ALERTA'] .setup-progress__task-icon { color: var(--mat-sys-error); }
-    .setup-progress__task-content { display: grid; gap: 4px; flex: 1; }
-    .setup-progress__task-content span { color: var(--mat-sys-on-surface-variant); }
-    .setup-progress__task-content mat-progress-bar { margin: 6px 0 0; }
-    details p { overflow-wrap: anywhere; }
-  `],
+  templateUrl: './setup-progress.component.html',
+  styleUrls: ['./setup-progress.component.scss'],
 })
 export class SetupProgressComponent implements OnChanges, OnDestroy {
   @Input({ required: true }) job!: SetupProgress;

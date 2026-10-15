@@ -3,6 +3,7 @@
   flex-direction: column;
   gap: 24px;
 }
+.onboarding-shell__skip-mobile { display: none; }
 
 .onboarding-shell__header {
   position: relative;
@@ -319,5 +320,58 @@
     ol { gap: 8px; }
     li { flex-direction: column; text-align: center; gap: 6px; font-size: 12px; }
     .onboarding-shell__footer-right { flex-direction: column; align-items: stretch; }
+  }
+}
+
+.onboarding-shell__footer--mobile-actions { display: none; }
+
+// Opt-in V2 mobile frame. Desktop and legacy consumers retain their current styles.
+@media (max-width: 768px), (max-width: 960px) and (max-height: 560px) {
+  :host(.onboarding-shell-host--mobile) { height: 100%; min-height: 0; }
+  .onboarding-shell.onboarding-shell--semantic.onboarding-shell--mobile-layout {
+    height: 100%; min-height: 0; gap: 12px;
+    .onboarding-shell__header { flex: 0 0 auto; padding: 8px 0 12px; gap: 0; flex-direction: row; align-items: center; }
+    .onboarding-shell__brand { display: none; }
+    .onboarding-shell__steps { width: 100%; max-width: none; }
+    .onboarding-shell__steps > small { display: none; }
+    .onboarding-shell__steps ol { margin: 0; gap: 8px; justify-content: space-between; }
+    .onboarding-shell__steps li { flex: 0 1 auto; flex-direction: row; gap: 4px; font-size: 12px; line-height: 18px; text-align: left; white-space: nowrap; }
+    .onboarding-shell__step-marker { width: 20px; height: 20px; }
+    .onboarding-shell__content { flex: 1 1 0; min-height: 0; gap: 8px; padding-bottom: 0; overflow-y: auto; scrollbar-gutter: stable; overscroll-behavior-y: contain; }
+    // Summary cards follow the same content inset, including compact landscape.
+    .onboarding-shell__content ::ng-deep .onboarding-step-summary .section-card { padding: 0; }
+    // Projected heading contract shared by the three V2 steps, including setup-progress.
+    .onboarding-shell__content ::ng-deep .onboarding-step-title,
+    .onboarding-shell__content ::ng-deep .onboarding-step-summary .section-card__title > .title {
+      margin: 0; font-size: 18px; line-height: 28px; font-weight: 500; text-align: left;
+    }
+    &.onboarding-shell--mobile-catalog .onboarding-shell__content { overflow: hidden; scrollbar-gutter: auto; }
+    // One footer frame and button scale for navigation and projected completion actions.
+    .onboarding-shell__footer { position: static; flex: 0 0 auto; width: 100%; box-sizing: border-box; padding: 8px 0 0; align-items: stretch; }
+    .onboarding-shell__footer-left:empty { display: none; }
+    .onboarding-shell__footer-right { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; gap: 8px; }
+    &.onboarding-shell--mobile-secondary .onboarding-shell__footer:not(.onboarding-shell__footer--mobile-actions) .onboarding-shell__footer-right { grid-template-columns: auto minmax(0, 1fr); }
+    .onboarding-shell__footer .onboarding-shell__footer-right ::ng-deep button { min-width: 64px; width: 100%; height: auto; min-height: 44px; padding: 8px 12px; font-size: 14px; line-height: 20px; white-space: nowrap; }
+    .onboarding-shell__footer .onboarding-shell__footer-right ::ng-deep button[mat-flat-button] { min-width: 0; }
+    .onboarding-shell__footer--mobile-actions { display: flex; }
+    .onboarding-shell__skip-desktop { display: none; }
+    .onboarding-shell__skip-mobile { display: inline; }
+  }
+}
+
+// Step 3 title emphasis; footer layout remains shared by all three steps.
+@media (max-width: 768px), (max-width: 960px) and (max-height: 560px) {
+  :host(.onboarding-preparation) .onboarding-shell.onboarding-shell--semantic.onboarding-shell--mobile-layout {
+    .onboarding-shell__content ::ng-deep .onboarding-step-title,
+    .onboarding-shell__content ::ng-deep .onboarding-step-summary .section-card__title > .title { font-size: 20px; line-height: 28px; font-weight: 600; }
+  }
+}
+
+@media (max-width: 960px) and (max-height: 560px) {
+  .onboarding-shell.onboarding-shell--semantic.onboarding-shell--mobile-layout {
+    gap: 8px;
+    .onboarding-shell__header { padding: 4px 0 8px; }
+    .onboarding-shell__content { gap: 8px; }
+    .onboarding-shell__footer { padding-top: 4px; }
   }
 }
