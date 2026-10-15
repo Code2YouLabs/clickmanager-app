@@ -2,10 +2,12 @@
   [class.setup-progress--finished]="onboarding && !exibicaoAtiva"
   [class.setup-progress--attention]="onboarding && (!!job.erros || !!job.alertaPreparacao || job.status === 'ERRO')" aria-label="Progresso da preparação">
       @if (onboarding) {
-        @if (!exibicaoAtiva) {
-          <div class="setup-progress__outcome" aria-hidden="true"><mat-icon>{{ job.erros || job.alertaPreparacao || job.status === 'ERRO' ? 'info' : 'check_circle' }}</mat-icon></div>
-        }
-        <h2 class="onboarding-step-title">{{ titulo }}</h2>
+        <div class="setup-progress__heading">
+          @if (!exibicaoAtiva) {
+            <div class="setup-progress__outcome" aria-hidden="true"><mat-icon>{{ job.erros || job.alertaPreparacao || job.status === 'ERRO' ? 'info' : 'check_circle' }}</mat-icon></div>
+          }
+          <h2 class="onboarding-step-title">{{ titulo }}</h2>
+        </div>
         <p class="setup-progress__description">{{ exibicaoAtiva ? 'Isso pode levar alguns instantes. Você não precisa fazer nada.' : 'Seu ClickManager foi preparado com os produtos e configurações que você escolheu.' }}</p>
         <ol class="setup-progress__tasks">
           @for (task of tarefas; track task.label) {

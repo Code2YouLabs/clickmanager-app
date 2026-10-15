@@ -13,6 +13,7 @@
     .setup-progress__task-content mat-progress-bar { margin: 6px 0 0; }
     details p { overflow-wrap: anywhere; }
 
+.setup-progress__heading { display: contents; }
 .setup-progress__outcome { display: none; }
 
 @media (max-width: 768px), (max-width: 960px) and (max-height: 560px) {
@@ -49,6 +50,11 @@
     .setup-progress__contadores > span { min-width: 0; padding: 12px; border: 1px solid var(--mat-sys-outline-variant); border-radius: var(--mat-sys-corner-medium); background: var(--mat-sys-surface-bright); font-size: 14px; line-height: 20px; }
     .setup-progress__contadores > span:last-child:nth-child(odd) { grid-column: 1 / -1; }
     .setup-progress__count { display: block; margin-bottom: 4px; color: var(--mat-sys-primary); font-size: 24px; line-height: 32px; font-weight: 600; }
+    &.setup-progress--finished:not(.setup-progress--attention) {
+      .setup-progress__heading { display: flex; align-items: center; gap: 12px; min-width: 0; }
+      .setup-progress__outcome { flex: 0 0 48px; margin: 0; }
+      .setup-progress__heading > h2 { flex: 1; min-width: 0; margin: 0; overflow-wrap: anywhere; }
+    }
     &.setup-progress--finished {
       .setup-progress__tasks li { min-height: 48px; padding: 4px 0; }
       .setup-progress__task-content { padding: 4px 0; }
