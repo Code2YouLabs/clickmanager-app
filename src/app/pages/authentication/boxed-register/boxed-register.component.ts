@@ -19,6 +19,8 @@ import { OnboardingV2Service } from 'src/app/pages/onboarding-v2/services/onboar
 import { OnboardingV2StateService } from 'src/app/pages/onboarding-v2/services/onboarding-v2-state.service';
 import { switchMap } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
+import { ErrorStateMatcher } from '@angular/material/core';
+import { focusInvalidAuthInput } from '../shared/auth-form-focus';
 
 declare global {
   interface Window {
@@ -73,6 +75,13 @@ export class AppBoxedRegisterComponent implements OnInit, AfterViewInit {
   googleLoading = false;
   showPassword = false;
   showConfirmPassword = false;
+  authError: string | null = null;
+  @ViewChild('authForm', { read: ElementRef }) authForm?: ElementRef<HTMLFormElement>;
+  readonly confirmPasswordErrorMatcher: ErrorStateMatcher = {
+    isErrorState: control => !!control && (control.touched || control.dirty) && (control.invalid || this.senhaDivergente),
+  };
+
+  get busy(): boolean { return this.submitting || this.googleLoading; }
 
   @ViewChild('registerCard', { read: ElementRef }) registerCard?: ElementRef<HTMLElement>;
 
@@ -143,20 +152,21 @@ export class AppBoxedRegisterComponent implements OnInit, AfterViewInit {
   }
 
   get ctaLabel(): string {
-    return this.submitting ? 'Criando sua conta...' : 'Começar agora';
+    return this.submitting ? 'Criando sua conta...' : 'Criar conta';
   }
 
   handleEnter(event: Event): void {
     const target = event.target as HTMLElement | null;
-    if (!target || target.tagName === 'TEXTAREA') {
+    if (!target || (target.tagName !== 'INPUT' && !(target instanceof HTMLButtonElement && target.type === 'submit'))) {
       return;
     }
 
     event.preventDefault();
+    if (this.busy) return;
 
     const focusables = Array.from(
       this.registerCard?.nativeElement.querySelectorAll<HTMLInputElement | HTMLButtonElement>(
-        'form input, form button[type="submit"]'
+        'form input'
       ) ?? []
     ).filter(element => !element.disabled && element.offsetParent !== null);
 
@@ -168,18 +178,17 @@ export class AppBoxedRegisterComponent implements OnInit, AfterViewInit {
       return;
     }
 
-    if (this.formPronto && !this.submitting) {
-      this.submit();
-    }
+    this.submit();
   }
 
   submit() {
-    if (this.submitting) {
+    if (this.busy) {
       return;
     }
 
     if (this.form.invalid || this.senhaDivergente) {
       this.form.markAllAsTouched();
+      focusInvalidAuthInput(this.authForm?.nativeElement, this.senhaDivergente ? '#register-confirm-password' : undefined);
       return;
     }
 
@@ -203,6 +212,7 @@ export class AppBoxedRegisterComponent implements OnInit, AfterViewInit {
     };
 
     this.submitting = true;
+    this.authError = null;
 
     this.onboardingV2Service.registerEmpresa(payload).pipe(
       switchMap((response) => this.autenticarAposCadastro(response, emailUsuario, usuario.senha!)),
@@ -218,7 +228,8 @@ export class AppBoxedRegisterComponent implements OnInit, AfterViewInit {
       error: err => {
         this.submitting = false;
         const msg = err?.error?.message || err?.message || 'Erro desconhecido';
-        this.toastr.error('Erro ao concluir cadastro: ' + msg);
+        this.authError = 'Erro ao concluir cadastro: ' + msg;
+        this.toastr.error(this.authError);
       }
     });
   }
@@ -234,6 +245,7 @@ export class AppBoxedRegisterComponent implements OnInit, AfterViewInit {
     }
 
     this.googleLoading = true;
+    this.authError = null;
 
     this.carregarGoogleScript()
       .then(() => {
@@ -248,7 +260,8 @@ export class AppBoxedRegisterComponent implements OnInit, AfterViewInit {
       })
       .catch(() => {
         this.googleLoading = false;
-        this.toastr.error('Não foi possível abrir o login do Google.');
+        this.authError = 'Não foi possível abrir o login do Google.';
+        this.toastr.error(this.authError);
       });
   }
 
@@ -310,7 +323,8 @@ export class AppBoxedRegisterComponent implements OnInit, AfterViewInit {
     if (response?.error || !accessToken || this.submitting) {
       this.googleLoading = false;
       if (response?.error) {
-        this.toastr.error('Não foi possível entrar com Google.');
+        this.authError = 'Não foi possível entrar com Google.';
+        this.toastr.error(this.authError);
       }
       return;
     }
@@ -334,7 +348,8 @@ export class AppBoxedRegisterComponent implements OnInit, AfterViewInit {
         this.submitting = false;
         this.googleLoading = false;
         const msg = err?.error?.message || err?.message || 'Erro desconhecido';
-        this.toastr.error('Erro ao entrar com Google: ' + msg);
+        this.authError = 'Erro ao entrar com Google: ' + msg;
+        this.toastr.error(this.authError);
       }
     });
   }

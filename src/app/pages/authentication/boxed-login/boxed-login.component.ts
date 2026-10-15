@@ -1,4 +1,4 @@
-import { AfterViewInit, Component } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
 import { CoreService } from 'src/app/services/core.service';
 import {
   FormGroup,
@@ -13,6 +13,7 @@ import { BrandingComponent } from '../../../layouts/full/vertical/sidebar/brandi
 import { AuthService } from '../../../services/auth.service';
 import { ToastrService } from 'ngx-toastr';
 import { environment } from 'src/environments/environment';
+import { focusInvalidAuthInput } from '../shared/auth-form-focus';
 
 declare global {
   interface Window {
@@ -61,7 +62,11 @@ export class AppBoxedLoginComponent implements AfterViewInit {
   showPassword = false;
   submitting = false;
   googleLoading = false;
+  authError: string | null = null;
+  @ViewChild('authForm', { read: ElementRef }) authForm?: ElementRef<HTMLFormElement>;
   private googleTokenClient?: GoogleTokenClient;
+
+  get busy(): boolean { return this.submitting || this.googleLoading; }
 
   constructor(
     private settings: CoreService,
@@ -90,14 +95,17 @@ export class AppBoxedLoginComponent implements AfterViewInit {
   }
 
   submit() {
-    if (this.submitting || this.form.invalid) {
+    if (this.busy) return;
+    if (this.form.invalid) {
       this.form.markAllAsTouched();
+      focusInvalidAuthInput(this.authForm?.nativeElement);
       return;
     }
 
     const { uname, password, lembrar } = this.form.value;
 
     this.submitting = true;
+    this.authError = null;
     this.authService.login(uname!, password!, lembrar!).subscribe({
       next: (usuario) => {
         this.submitting = false;
@@ -109,7 +117,8 @@ export class AppBoxedLoginComponent implements AfterViewInit {
           return;
         }
 
-        this.toastr.error('E-mail ou senha inválidos');
+        this.authError = 'E-mail ou senha inválidos';
+        this.toastr.error(this.authError);
       }
     });
   }
@@ -125,6 +134,7 @@ export class AppBoxedLoginComponent implements AfterViewInit {
     }
 
     this.googleLoading = true;
+    this.authError = null;
 
     this.carregarGoogleScript()
       .then(() => {
@@ -139,13 +149,16 @@ export class AppBoxedLoginComponent implements AfterViewInit {
       })
       .catch(() => {
         this.googleLoading = false;
-        this.toastr.error('Não foi possível abrir o login do Google.');
+        this.authError = 'Não foi possível abrir o login do Google.';
+        this.toastr.error(this.authError);
       });
   }
 
-  abrirCriacaoConta(): void {
+  abrirCriacaoConta(event?: MouseEvent): void {
+    if (event && (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey)) return;
     this.authService.clearSession();
-    this.router.navigateByUrl('/authentication/registro-gestor');
+    // RouterLink handles pointer/keyboard navigation; keep the programmatic command available.
+    if (!event) this.router.navigateByUrl('/authentication/registro-gestor');
   }
 
   private inicializarGoogleClient(): void {
@@ -206,7 +219,8 @@ export class AppBoxedLoginComponent implements AfterViewInit {
     if (response?.error || !accessToken || this.submitting) {
       this.googleLoading = false;
       if (response?.error) {
-        this.toastr.error('Não foi possível entrar com Google.');
+        this.authError = 'Não foi possível entrar com Google.';
+        this.toastr.error(this.authError);
       }
       return;
     }
@@ -224,6 +238,7 @@ export class AppBoxedLoginComponent implements AfterViewInit {
         this.submitting = false;
         this.googleLoading = false;
         const msg = err?.error?.message || err?.message || 'Não foi possível entrar com Google.';
+        this.authError = msg;
         this.toastr.error(msg);
       }
     });
