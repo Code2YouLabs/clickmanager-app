@@ -80,12 +80,13 @@
       subtitle="Compare pedidos e receita por período."
       [divider]="true">
       <app-comparativo-pedidos
+        [compactMobile]="isMobile"
         [refreshToken]="refreshToken"
         (refreshState)="onWidgetRefreshState($event)">
       </app-comparativo-pedidos>
     </app-section-card>
 
-    @if (!isMobile || visibleQuickActions.length) {
+    @if (!isMobile) {
     <app-section-card
       class="dashboard-quick-section"
       title="Atalhos"

@@ -19,6 +19,7 @@ import { AppDashboard1Component } from './dashboard1.component';
 @Component({ selector: 'app-comparativo-pedidos, app-status-grid, app-receita-resumo', standalone: true, template: '' })
 class WidgetStub {
   @Input() refreshToken = 0;
+  @Input() compactMobile = false;
   @Output() refreshState = new EventEmitter<{ id: 'comparativo' | 'status' | 'receita'; refreshing: boolean }>();
 }
 
@@ -68,9 +69,8 @@ describe('Dashboard — composição mobile compartilhando dados e widgets', () 
     expect(count('.dashboard-mobile-toolbar button')).toBe(2);
     expect(count('.dashboard-actions button')).toBe(0);
     expect(fixture.nativeElement.textContent).not.toContain('Acompanhe receita, atendimento e operação');
-    expect(query('.quick-actions')?.textContent).not.toContain('Novo pedido');
-    expect(query('.quick-actions')?.textContent).toContain('Rascunhos');
-    expect(query('.quick-actions')?.textContent).toContain('SmartCalc');
+    expect(query('.dashboard-quick-section')).toBeNull();
+    expect(count('.quick-action')).toBe(0);
     expect(service.obterVisaoGeralGrafica).toHaveBeenCalledTimes(1);
   });
 
@@ -119,11 +119,13 @@ describe('Dashboard — composição mobile compartilhando dados e widgets', () 
     expect(count('.dashboard-kpi-button')).toBe(1); // Receita mantém a navegação existente.
   });
 
-  it('não oferece SmartCalc quando o módulo está indisponível e mantém a ação de Rascunhos', () => {
+  it('preserva no desktop o filtro SmartCalc e a ação de Rascunhos', () => {
+    layout.next({ matches: false });
     smartcalc = false; fixture.componentInstance.carregarResumo(); fixture.detectChanges();
     expect(query('.quick-actions')?.textContent).not.toContain('SmartCalc');
     expect(query('.quick-actions')?.textContent).toContain('Rascunhos');
-    query('.quick-action')!.click();
+    const rascunhos = Array.from(fixture.nativeElement.querySelectorAll('.quick-action')).find((button: any) => button.textContent.includes('Rascunhos')) as HTMLButtonElement;
+    rascunhos.click();
     expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial/rascunhos']);
   });
 
@@ -151,6 +153,8 @@ describe('Dashboard — composição mobile compartilhando dados e widgets', () 
     expect(service.obterVisaoGeralGrafica).toHaveBeenCalledTimes(1);
     layout.next({ matches: true }); fixture.detectChanges();
     expect(count('.dashboard-mobile-toolbar')).toBe(1);
+    expect(query('.dashboard-quick-section')).toBeNull();
+    expect(fixture.debugElement.queryAll(By.directive(WidgetStub)).find(element => element.nativeElement.tagName === 'APP-COMPARATIVO-PEDIDOS')?.componentInstance.compactMobile).toBeTrue();
     expect(count('app-comparativo-pedidos')).toBe(1); expect(count('app-status-grid')).toBe(1); expect(count('app-receita-resumo')).toBe(1);
     expect(service.obterVisaoGeralGrafica).toHaveBeenCalledTimes(1);
   });

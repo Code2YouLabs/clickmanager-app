@@ -47,6 +47,7 @@ type ComparativoChart = {
 })
 export class AppComparativoPedidosComponent implements OnInit, OnChanges, OnDestroy, AfterViewInit {
   @Input() refreshToken = 0;
+  @Input() compactMobile = false;
   @Output() refreshState = new EventEmitter<{ id: 'comparativo'; refreshing: boolean }>();
   @ViewChild('chart') chart?: ChartComponent;
   private viewReady = false;
