@@ -112,3 +112,12 @@
   .data-table-mobile-pagination__controls { display: flex; align-items: center; }
   .data-table-mobile-pagination button { min-width: 44px; min-height: 44px; }
 }
+
+@include mobile.mobile-foundation {
+  .data-table-progressive { display: grid; justify-items: center; gap: 8px; padding-top: 16px; }
+  .data-table-progressive__summary { color: var(--mat-sys-on-surface-variant); font-size: 12px; line-height: 18px; text-align: center; }
+  .data-table-progressive button { min-height: 44px; max-width: 100%; }
+  .data-table-progressive__more { display: inline-flex; align-items: center; gap: 8px; }
+  .data-table-progressive__error { width: 100%; text-align: center; }
+  .data-table-progressive__error p { margin: 0 0 8px; overflow-wrap: anywhere; color: var(--mat-sys-error); }
+}

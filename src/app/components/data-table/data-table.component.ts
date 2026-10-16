@@ -34,6 +34,7 @@ import {
   DataTableFilterState,
   DataTableFilterValue,
   DataTablePagination,
+  DataTableProgressiveState,
   DataTableSearchConfig,
   DataTableSort,
 } from './data-table.models';
@@ -59,6 +60,12 @@ export class DataTableComponent<T = unknown>
   @Input() mobileFilterPresentation: 'sheet' | 'inline' = 'sheet';
   @Input() mobileShowToolbarTitle = false;
   @Input() mobilePagination: 'compact' | 'material' = 'compact';
+  @Input() mobileLoadMode: 'paged' | 'progressive' = 'paged';
+  @Input() progressiveState: DataTableProgressiveState | null = null;
+  @Input() loadMoreLabel = 'Carregar mais';
+  @Input() itemsLabel = 'registros';
+  private requestedProgressivePage: number | null = null;
+  private progressiveFilterKey = '';
   @Input() columns: DataTableColumn<T>[] = [];
   @Input() data: T[] = [];
   @Input() filters: DataTableFilter[] = [];
@@ -113,8 +120,25 @@ export class DataTableComponent<T = unknown>
     this.breakpoints.observe([MOBILE_FOUNDATION_QUERY, '(prefers-reduced-motion: reduce)']).pipe(takeUntil(this.destroy$))
       .subscribe(result => {
         this.isMobile = result.breakpoints[MOBILE_FOUNDATION_QUERY] ?? result.matches;
+        if (!this.useProgressiveLoading) this.requestedProgressivePage = null;
         this.reducedMotion = result.breakpoints['(prefers-reduced-motion: reduce)'] ?? false;
       });
+  }
+  get useProgressiveLoading(): boolean { return this.isMobile && this.mobileLoadMode === 'progressive'; }
+  get progressiveLoadedCount(): number { return this.progressiveState?.loadedCount ?? this.data.length; }
+  get loadingNextBatch(): boolean { return !!this.progressiveState?.loading || this.requestedProgressivePage !== null; }
+  /** A manual trigger today; a future observer can call the same guarded entry point. */
+  loadNextBatch(): void {
+    const page = this.pagination;
+    if (!this.useProgressiveLoading || !this.showTable || !page || this.busy || this.error || this.forbidden || this.loadingNextBatch || !this.canNextPage) return;
+    this.requestedProgressivePage = page.pageIndex + 1;
+    this.onPageChange({ pageIndex: page.pageIndex + 1, previousPageIndex: page.pageIndex,
+      pageSize: page.pageSize, length: page.totalItems });
+  }
+  retryNextBatch(): void {
+    if (!this.useProgressiveLoading || this.busy || this.forbidden || this.loadingNextBatch) return;
+    if (this.progressiveState?.restartRequired) this.retry.emit();
+    else this.loadNextBatch();
   }
   get mobileTemplate(): DataTableItemDirective<T> | undefined { return this.itemTemplates?.first; }
   get useMobileItems(): boolean { return this.isMobile && !!this.mobileTemplate; }
@@ -180,6 +204,13 @@ export class DataTableComponent<T = unknown>
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    const filterKey = JSON.stringify(this.filterState);
+    if (filterKey !== this.progressiveFilterKey || !this.useProgressiveLoading ||
+      this.progressiveState?.error || (this.progressiveLoadedCount === 0 && !this.progressiveState?.loading) ||
+      (this.requestedProgressivePage !== null && (this.pagination?.pageIndex ?? -1) >= this.requestedProgressivePage)) {
+      this.requestedProgressivePage = null;
+    }
+    this.progressiveFilterKey = filterKey;
     if (changes['filterState']) this.currentFilters = { ...this.filterState };
     if (changes['columns'] || changes['actions'] || changes['expandable']) {
       this.displayedColumns = [

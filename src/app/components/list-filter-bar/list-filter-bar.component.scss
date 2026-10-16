@@ -310,3 +310,7 @@
 @include mobile.mobile-foundation {
   .list-mobile-toolbar__controls:has(> .list-mobile-toolbar__actions:empty):not(:has(> .list-mobile-toolbar__filter-button)) { display: none; }
 }
+
+@include mobile.mobile-foundation {
+  .list-mobile-toolbar__hint { font-size: 12px; line-height: 18px; color: var(--mat-sys-on-surface-variant); }
+}

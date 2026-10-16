@@ -29,6 +29,7 @@ export interface DataTableFilter {
 }
 
 export interface DataTableSearchConfig {
+  mobileHint?: string;
   enabled: boolean;
   label?: string;
   placeholder?: string;
@@ -71,3 +72,11 @@ export interface DataTableEmptyState {
 export type DataTableFilterValue = string | number | boolean | Array<string | number | boolean> | null;
 export type DataTableFilterState = Record<string, DataTableFilterValue>;
 export type DataTableSort = Sort;
+
+/** The consumer owns the accumulated collection and commits pagination only after success. */
+export interface DataTableProgressiveState {
+  loadedCount: number;
+  loading?: boolean;
+  error?: string | null;
+  restartRequired?: boolean;
+}

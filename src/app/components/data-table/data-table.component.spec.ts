@@ -9,7 +9,7 @@ import { PageEvent } from '@angular/material/paginator';
 import { Sort } from '@angular/material/sort';
 import { DataTableCellDirective } from './data-table-cell.directive';
 import { DataTableComponent } from './data-table.component';
-import { DataTableActionEvent, DataTableFilterState } from './data-table.models';
+import { DataTableActionEvent, DataTableFilterState, DataTableProgressiveState } from './data-table.models';
 
 interface TestRow extends Record<string, unknown> {
   id: number;
@@ -29,6 +29,7 @@ interface TestRow extends Record<string, unknown> {
       [filterState]="filterState"
       [search]="search"
       [pagination]="pagination"
+      [mobileLoadMode]="loadMode" [progressiveState]="progressive" loadMoreLabel="Carregar mais produtos" itemsLabel="produtos"
       [loading]="loading" [refreshing]="refreshing" [error]="error" [forbidden]="forbidden"
       [expandable]="expandable" (retry)="retries = retries + 1"
       [actions]="actions"
@@ -86,6 +87,8 @@ class HostComponent {
   filterState: DataTableFilterState = {};
   search = { enabled: true, label: 'Buscar produtos', placeholder: 'Buscar por nome', debounceMs: 300 };
   pagination = { pageIndex: 0, pageSize: 10, totalItems: 1, pageSizeOptions: [10, 20] };
+  loadMode: 'paged' | 'progressive' = 'paged';
+  progressive: DataTableProgressiveState | null = null;
   loading = false;
   refreshing = false;
   error: string | null = null;
@@ -136,6 +139,66 @@ describe('DataTableComponent', () => {
   });
 
   afterEach(() => TestBed.resetTestingModule());
+
+  it('progressivo usa PageEvent, bloqueia cliques simultâneos e mantém os nós existentes ao acrescentar', () => {
+    host.mobile = true; host.loadMode = 'progressive';
+    host.pagination = { pageIndex: 0, pageSize: 1, totalItems: 3, pageSizeOptions: [1] };
+    host.progressive = { loadedCount: 1 };
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    const firstNode = fixture.nativeElement.querySelector('[role=listitem]');
+    const emit = spyOn(table.pageChange, 'emit');
+    const more = fixture.nativeElement.querySelector('.data-table-progressive__more');
+    expect(more.textContent).toContain('Carregar mais produtos');
+    expect(fixture.nativeElement.querySelector('.data-table-mobile-pagination')).toBeNull();
+    more.click(); more.click();
+    expect(emit).toHaveBeenCalledOnceWith({ pageIndex: 1, previousPageIndex: 0, pageSize: 1, length: 3 });
+    host.progressive = { loadedCount: 1, loading: true }; fixture.detectChanges();
+    expect(more.disabled).toBeTrue(); expect(more.textContent).toContain('Carregando mais');
+    host.data = [...host.data, { id: 2, name: 'Cartão', status: 'Ativo' }];
+    host.pagination = { ...host.pagination, pageIndex: 1 }; host.progressive = { loadedCount: 2 }; fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role=listitem]')).toBe(firstNode);
+    expect(fixture.nativeElement.querySelectorAll('[role=listitem]').length).toBe(2);
+    expect(fixture.nativeElement.textContent).toContain('Carregados 2 de 3 produtos');
+    table.loadNextBatch(); expect(emit).toHaveBeenCalledTimes(2);
+  });
+
+  it('progressivo diferencia fim, vazio, pesquisa local e desktop sem aderir outros consumidores', () => {
+    host.loadMode = 'progressive'; host.progressive = { loadedCount: 1 };
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.data-table-progressive')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.data-table-progressive__more')).toBeNull();
+    host.data = []; host.progressive = { loadedCount: 0 }; host.pagination.totalItems = 0; fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.data-table-empty')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.data-table-progressive')).toBeNull();
+    expect(fixture.nativeElement.querySelector('mat-paginator')).toBeNull();
+    host.progressive = { loadedCount: 10 }; host.pagination = { pageIndex: 0, pageSize: 10, totalItems: 20, pageSizeOptions: [10] };
+    const emit = spyOn(table.pageChange, 'emit'); table.onSearch('ausente'); fixture.detectChanges();
+    expect(emit).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('Carregados 10 de 20 produtos');
+    expect(fixture.nativeElement.querySelector('.data-table-progressive__more')).toBeTruthy();
+    viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.data-table-progressive')).toBeNull();
+    expect(fixture.nativeElement.querySelector('mat-paginator')).toBeTruthy();
+  });
+
+  it('progressivo permite retry do mesmo lote e atualização explícita, sem substituir os dados', () => {
+    host.loadMode = 'progressive'; host.progressive = { loadedCount: 1 };
+    host.pagination = { pageIndex: 0, pageSize: 1, totalItems: 3, pageSizeOptions: [1] };
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    const emit = spyOn(table.pageChange, 'emit'); table.loadNextBatch();
+    host.progressive = { loadedCount: 1, error: 'Falha de rede' }; fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.custom-name')).toBeTruthy();
+    fixture.nativeElement.querySelector('.data-table-progressive__error button').click();
+    expect(emit).toHaveBeenCalledTimes(2);
+    expect(emit.calls.mostRecent().args[0]?.pageIndex).toBe(1);
+    host.progressive = { loadedCount: 1, error: 'A lista mudou', restartRequired: true }; fixture.detectChanges();
+    const reset = fixture.nativeElement.querySelector('.data-table-progressive__error button');
+    expect(reset.textContent).toContain('Atualizar lista'); reset.click();
+    expect(host.retries).toBe(1); expect(emit).toHaveBeenCalledTimes(2);
+    host.filterState = { materialId: 10 }; host.progressive = { loadedCount: 0 }; host.data = []; fixture.detectChanges();
+    host.progressive = { loadedCount: 1 }; host.data = [{ id: 3, name: 'Novo filtro', status: 'Ativo' }]; fixture.detectChanges();
+    table.loadNextBatch(); expect(emit).toHaveBeenCalledTimes(3);
+  });
 
   it('renderiza colunas, dados e template customizado', () => {
     expect(fixture.nativeElement.textContent).toContain('Nome');

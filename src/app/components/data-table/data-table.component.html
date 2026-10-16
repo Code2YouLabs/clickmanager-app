@@ -187,7 +187,25 @@
 
   }
   @if (pagination) {
-    @if (isMobile && mobilePagination === 'compact') {
+    @if (useProgressiveLoading) {
+      @if (progressiveLoadedCount > 0) {
+        <div class="data-table-progressive" [attr.aria-busy]="loadingNextBatch">
+          <span class="data-table-progressive__summary" aria-live="polite">Carregados {{ progressiveLoadedCount }} de {{ pagination.totalItems }} {{ itemsLabel }}</span>
+          @if (progressiveState?.error) {
+            <div class="data-table-progressive__error" role="alert">
+              <p>{{ progressiveState?.error }}</p>
+              <button mat-stroked-button type="button" [disabled]="busy || !!error || loadingNextBatch" (click)="retryNextBatch()">{{ progressiveState?.restartRequired ? 'Atualizar lista' : 'Tentar novamente' }}</button>
+            </div>
+          } @else if (canNextPage || loadingNextBatch) {
+            <button mat-stroked-button type="button" class="data-table-progressive__more"
+              [disabled]="busy || !!error || loadingNextBatch" (click)="loadNextBatch()">
+              @if (loadingNextBatch) { <mat-spinner diameter="18" aria-hidden="true"></mat-spinner> }
+              {{ loadingNextBatch ? 'Carregando mais...' : loadMoreLabel }}
+            </button>
+          }
+        </div>
+      }
+    } @else if (isMobile && mobilePagination === 'compact') {
       <nav class="data-table-mobile-pagination" aria-label="Paginação dos resultados">
         <div class="data-table-mobile-pagination__summary" aria-live="polite">
           <strong class="data-table-page">Página {{ pagination.pageIndex + 1 }} de {{ pageCount }}</strong>

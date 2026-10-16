@@ -9,6 +9,7 @@
         [pesquisaControl]="searchControl" [debounceMs]="search.debounceMs ?? (presentation === 'section' ? 300 : 400)"
         (valorAlterado)="onSearchChange($event)"></app-input-pesquisa>
     }
+    @if (search.enabled && search.mobileHint) { <small class="list-mobile-toolbar__hint">{{ search.mobileHint }}</small> }
     <div class="list-mobile-toolbar__controls">
       @if (!filterTriggerInHeader) { <ng-container [ngTemplateOutlet]="mobileFilterAction"></ng-container> }
       <div class="list-mobile-toolbar__actions"><ng-container [ngTemplateOutlet]="toolbarActions"></ng-container></div>
