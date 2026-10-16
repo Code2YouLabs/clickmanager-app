@@ -90,6 +90,7 @@ describe('PageCardComponent', () => {
 
   it('exibe somente o título e o FAB no mobile, restaurando header completo no desktop', () => {
     host.titleOnly = true;
+    host.showFooter = true;
     host.primaryAction = { label: 'Novo produto', tutorialTarget: 'novo-produto' };
     viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
     const header = fixture.nativeElement.querySelector('app-card-header');
@@ -98,6 +99,10 @@ describe('PageCardComponent', () => {
     expect(header.querySelector('.card-header__mobile-actions').textContent).toContain('Nova ação');
     expect(header.querySelector('mat-divider')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.body-content')).toBeTruthy();
+    const clearance = fixture.nativeElement.querySelector('.page-card__fab-clearance');
+    expect(clearance?.getAttribute('aria-hidden')).toBe('true');
+    expect(fixture.nativeElement.querySelector('mat-card').lastElementChild).toBe(clearance);
+    expect(clearance.previousElementSibling.classList.contains('page-card__footer')).toBeTrue();
     const fab = fixture.nativeElement.querySelector('.mobile-fab-action--page');
     expect(fab.getAttribute('aria-label')).toBe('Novo produto');
     expect(fab.getAttribute('data-tutorial-target')).toBe('novo-produto');
@@ -107,6 +112,7 @@ describe('PageCardComponent', () => {
     expect(header.textContent).toContain('Nova ação');
     expect(header.querySelector('mat-divider')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.page-card__fab-clearance')).toBeNull();
   });
 
   it('mantém o header legado na exceção explícita e respeita visibilidade e bloqueio da ação', () => {
@@ -114,12 +120,14 @@ describe('PageCardComponent', () => {
     viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Configuração de venda');
     expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.page-card__fab-clearance')).toBeNull();
     host.mode = 'standard'; host.primaryAction = { label: 'Novo', disabled: true }; fixture.detectChanges();
     const page = fixture.debugElement.query(By.directive(PageCardComponent)).componentInstance as PageCardComponent;
     expect(fixture.nativeElement.querySelector('.mobile-fab-action').disabled).toBeTrue();
     page.onMobilePrimaryAction(); expect(host.primaryClicks).toBe(0);
     host.primaryAction = null; fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.page-card__fab-clearance')).toBeNull();
   });
 
   it('simplifica o título automaticamente sem criar FAB e preserva ações secundárias fora do header', () => {
@@ -129,6 +137,7 @@ describe('PageCardComponent', () => {
     expect(fixture.nativeElement.querySelector('.card-header__subtitle--semantic').textContent).toContain('Configuração de venda');
     expect(fixture.nativeElement.querySelector('.card-header__mobile-actions button').textContent).toContain('Nova ação');
     expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.page-card__fab-clearance')).toBeNull();
     expect(fixture.nativeElement.querySelectorAll('[page-header-actions]').length).toBe(1);
     host.mode = 'legacy'; fixture.detectChanges();
     expect(header.textContent).toContain('Configuração de venda');
@@ -141,6 +150,7 @@ describe('PageCardComponent', () => {
     let button = fixture.nativeElement.querySelector('.card-header__primary-action');
     expect(button.textContent).toContain('Criar'); button.click(); expect(host.declaredClicks).toBe(1);
     expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.page-card__fab-clearance')).toBeNull();
     viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.card-header__primary-action')).toBeNull();
     button = fixture.nativeElement.querySelector('.mobile-fab-action');
@@ -157,6 +167,7 @@ describe('PageCardComponent', () => {
       viewport.next({ matches: mobile, breakpoints: {} }); fixture.detectChanges();
       expect(fixture.nativeElement.querySelector('.card-header__primary-action')).toBeNull();
       expect(fixture.nativeElement.querySelector('.mobile-fab-action')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.page-card__fab-clearance')).toBeNull();
       expect(fixture.nativeElement.querySelector('[page-header-actions]')).toBeTruthy();
     });
   }
@@ -167,6 +178,7 @@ describe('PageCardComponent', () => {
     page.subtitulo = undefined; fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.card-header').textContent).toContain('Nova ação');
     expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.page-card__fab-clearance')).toBeNull();
   });
 
   it('renderiza footer em areas esquerda e direita quando habilitado', () => {

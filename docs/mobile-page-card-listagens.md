@@ -1,5 +1,7 @@
 # PageCard e listagens mobile — contrato global
 
+Evolução posterior do piloto: [carregamento progressivo mobile, cards e reserva do FAB](mobile-progressive-pedidos.md). O novo modo é opt-in; os demais consumidores mantêm a paginação anterior.
+
 ## Composição e responsabilidades
 
 Até 760 px, PageCard padrão oferece título à esquerda, ações contextuais à direita e divisor. O slot `[page-mobile-header-actions]` aceita uma ou mais ações secundárias; CardHeader recebe essa projeção em `[card-header-contextual-actions]`, ativada por `mobileContextualActionsEnabled`. Ambos continuam sem regras de filtros, Comercial ou navegação. O slot anterior `[page-header-actions]` mantém compatibilidade e sua composição existente.

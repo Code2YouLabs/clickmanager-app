@@ -1,5 +1,7 @@
 # Fundação global de listagens mobile
 
+Evolução posterior do piloto: [carregamento progressivo mobile, cards e reserva do FAB](mobile-progressive-pedidos.md). O novo modo é opt-in; os demais consumidores mantêm a paginação anterior.
+
 ## Escopo e diagnóstico
 
 A composição anterior mantinha título da busca, filtros inline e paginação Material no celular. Os ajustes compactos ainda dependiam de inputs no piloto. Esta entrega evolui **DataTable, ListFilterBar, InputPesquisa e ViewModeToggle**, preservando a composição desktop e o contrato `appDataTableItem`.

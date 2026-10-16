@@ -86,13 +86,14 @@
 }
 
 @include mobile.mobile-foundation {
-  // Reserve only the space not already provided by the surrounding mobile shell.
   :host(.page-card-host--mobile-fab) {
-    padding-bottom: max(0px, calc(
-      var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))
-      + 88px - var(--mobile-safe-bottom-space, 0px)
-    ));
+    --mobile-page-fab-size: 56px;
+    --mobile-page-fab-gap: 16px;
   }
+  // In-flow space belongs to this card, including when content scrolls inside another container.
+  // Do not subtract ancestor padding: it may not belong to the same scroll surface.
+  .page-card__fab-clearance { height: calc(var(--mobile-page-fab-size) + 2 * var(--mobile-page-fab-gap)); flex-shrink: 0; }
+
 }
 
 @include mobile.mobile-foundation {
