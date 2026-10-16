@@ -28,6 +28,7 @@ import { MatDivider } from "@angular/material/divider";
   styleUrls: ['./card-header.component.scss'],
 })
 export class CardHeaderComponent {
+  @Input() mobileContextualActionsEnabled = false;
   @Input() mobileCompact = false;
   @Input() titleOnly = false;
   @Input() primaryAction: PageCardPrimaryAction | null = null;

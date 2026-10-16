@@ -1,6 +1,7 @@
 <mat-card class="cardWithShadow page-card" [class.page-card--mobile-compact]="compactMobileHeader" [attr.aria-busy]="saving">
   <app-card-header
     [titulo]="titulo"
+    [mobileContextualActionsEnabled]="enabled()"
     [titleOnly]="titleOnlyMobileHeader && isMobile()"
     [mobileCompact]="compactMobileHeader"
     [primaryAction]="showMobilePrimaryAction ? null : primaryAction"
@@ -18,6 +19,14 @@
     [helpExterno]="helpExterno"
     [permissao]="permissao"
     [mostrarDivisor]="showHeaderDivider">
+    <div card-header-contextual-actions class="page-card__contextual-actions">
+      <ng-content select="[page-mobile-header-actions]"></ng-content>
+      @if (enabled()) {
+        @for (action of contextualActions(); track action) {
+          @if (action.visible()) { <ng-container [ngTemplateOutlet]="action.template"></ng-container> }
+        }
+      }
+    </div>
     <ng-content select="[page-header-actions]"></ng-content>
   </app-card-header>
 

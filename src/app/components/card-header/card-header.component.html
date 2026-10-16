@@ -1,4 +1,4 @@
-<div [class.card-header--mobile-compact]="mobileCompact" class="card-header d-flex justify-content-between align-items-center flex-wrap p-16 w-100">
+<div [class.card-header--mobile-compact]="mobileCompact" [class.card-header--mobile-contextual]="mobileContextualActionsEnabled" [class.flex-wrap]="!mobileContextualActionsEnabled" class="card-header d-flex justify-content-between align-items-center p-16 w-100">
     <div class="card-header__context">
         <div role="heading" aria-level="2" class="f-s-20 f-w-600 text-primary-dark">
             {{ titulo }}
@@ -8,6 +8,9 @@
         </div>
     </div>
 
+    @if (mobileContextualActionsEnabled) {
+      <ng-content select="[card-header-contextual-actions]"></ng-content>
+    }
     <ng-container *ngIf="!titleOnly" [ngTemplateOutlet]="headerActions"></ng-container>
 
 </div>

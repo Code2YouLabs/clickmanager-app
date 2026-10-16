@@ -94,3 +94,10 @@
     ));
   }
 }
+
+@include mobile.mobile-foundation {
+  .page-card__contextual-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+  .page-card__contextual-actions:empty { display: none; }
+  .page-card__contextual-actions ::ng-deep button,
+  .page-card__contextual-actions ::ng-deep a { min-height: 44px; }
+}

@@ -1,3 +1,4 @@
+import { MOBILE_HEADER_ACTIONS, MobileHeaderAction, MobileHeaderActionsHost } from './mobile-header-actions';
 import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
 import { PageCardPrimaryAction } from './page-card-primary-action';
 export type { PageCardPrimaryAction } from './page-card-primary-action';
@@ -5,7 +6,7 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { Subscription } from 'rxjs';
 import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { MobileFabActionComponent } from '../mobile-fab-action/mobile-fab-action.component';
-import { signal, Optional, OnDestroy, Component, ContentChildren, Input, Output, EventEmitter, QueryList } from '@angular/core';
+import { forwardRef, signal, Optional, OnDestroy, Component, ContentChildren, Input, Output, EventEmitter, QueryList } from '@angular/core';
 import { FormGroupDirective } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { PageFormState } from './page-form-state';
@@ -40,11 +41,18 @@ type ResolvedPageCardAction = {
   selector: 'app-page-card',
   standalone: true,
   imports: [CommonModule, MatCardModule, MatDividerModule, MatButtonModule, MatIconModule, CardHeaderComponent, TutorialTargetDirective, MobileFabActionComponent, TemPermissaoDirective],
+  providers: [{ provide: MOBILE_HEADER_ACTIONS, useExisting: forwardRef(() => PageCardComponent) }],
   host: { '[class.page-card-host--mobile-fab]': 'showMobilePrimaryAction' },
   templateUrl: './page-card.component.html',
   styleUrls: ['./page-card.component.scss'],
 })
-export class PageCardComponent implements OnDestroy {
+export class PageCardComponent implements OnDestroy, MobileHeaderActionsHost {
+  readonly contextualActions = signal<MobileHeaderAction[]>([]);
+  enabled(): boolean { return this.isMobile() && this.mobileHeaderMode === 'standard'; }
+  register(action: MobileHeaderAction): () => void {
+    this.contextualActions.update(actions => [...actions, action]);
+    return () => this.contextualActions.update(actions => actions.filter(item => item !== action));
+  }
   /** Legacy is an explicit exception for pages with an independently designed mobile shell. */
   @Input() mobileHeaderMode: 'standard' | 'legacy' = 'standard';
   /** Compatibility overrides; common pages need neither input. */

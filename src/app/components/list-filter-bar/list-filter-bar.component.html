@@ -10,12 +10,7 @@
         (valorAlterado)="onSearchChange($event)"></app-input-pesquisa>
     }
     <div class="list-mobile-toolbar__controls">
-      @if (filters.length || hasCustomFilters || customFilterTemplate) {
-        <button #mobileFilterTrigger mat-stroked-button type="button" class="list-mobile-toolbar__filter-button"
-          aria-haspopup="dialog" [attr.aria-expanded]="mobileFiltersOpen" (click)="openMobileFilters()">
-          <mat-icon>filter_list</mat-icon>{{ filtersLabel }}{{ activeFilterCount ? ' (' + activeFilterCount + ')' : '' }}
-        </button>
-      }
+      @if (!filterTriggerInHeader) { <ng-container [ngTemplateOutlet]="mobileFilterAction"></ng-container> }
       <div class="list-mobile-toolbar__actions"><ng-container [ngTemplateOutlet]="toolbarActions"></ng-container></div>
     </div>
   </div>
@@ -163,4 +158,13 @@
   } @else {
     <ng-content select="[list-filter-custom]"></ng-content>
   }
+</ng-template>
+
+<ng-template #mobileFilterAction>
+      @if (useMobilePanel && hasFilterFields) {
+        <button #mobileFilterTrigger mat-stroked-button type="button" class="list-mobile-toolbar__filter-button"
+          aria-haspopup="dialog" [attr.aria-expanded]="mobileFiltersOpen" (click)="openMobileFilters()">
+          <mat-icon>filter_list</mat-icon>{{ filtersLabel }}{{ activeFilterCount ? ' (' + activeFilterCount + ')' : '' }}
+        </button>
+      }
 </ng-template>

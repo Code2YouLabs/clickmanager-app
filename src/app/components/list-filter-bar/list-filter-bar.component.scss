@@ -291,3 +291,7 @@
   ::ng-deep .list-filter-mobile-panel .mat-mdc-dialog-container.mdc-dialog--open:not(.mdc-dialog--closing) .mat-mdc-dialog-inner-container,
   ::ng-deep .list-filter-mobile-panel.list-filter-mobile-panel--closing .mat-mdc-dialog-container .mat-mdc-dialog-inner-container { animation: none; }
 }
+
+@include mobile.mobile-foundation {
+  .list-mobile-toolbar__controls:has(> .list-mobile-toolbar__actions:empty):not(:has(> .list-mobile-toolbar__filter-button)) { display: none; }
+}

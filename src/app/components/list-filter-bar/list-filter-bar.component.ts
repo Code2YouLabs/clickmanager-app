@@ -1,9 +1,10 @@
+import { MOBILE_HEADER_ACTIONS } from '../page-card/mobile-header-actions';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { MatDialog, MatDialogRef, MatDialogState } from '@angular/material/dialog';
 import { fromEvent, merge, Subject, takeUntil } from 'rxjs';
 import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild, TemplateRef, ViewContainerRef, ElementRef, inject } from '@angular/core';
+import { afterNextRender, Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild, TemplateRef, ViewContainerRef, ElementRef, inject } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { MaterialModule } from 'src/app/material.module';
 import { SectionCardComponent } from '../section-card/section-card.component';
@@ -38,6 +39,11 @@ export class ListFilterBarComponent implements OnChanges, OnDestroy {
   @Input() mobileShowTitle = false;
   @ViewChild('mobileFilterTrigger', { read: ElementRef }) private mobileFilterTrigger?: ElementRef<HTMLButtonElement>;
   @ViewChild('mobileFilterPanel', { static: true }) private mobileFilterPanel!: TemplateRef<unknown>;
+  @ViewChild('mobileFilterAction', { static: true }) private mobileFilterAction!: TemplateRef<unknown>;
+  readonly mobileHeaderHost = inject(MOBILE_HEADER_ACTIONS, { optional: true });
+  private unregisterHeaderAction?: () => void;
+  get hasFilterFields(): boolean { return !!(this.filters.length || this.hasCustomFilters || this.customFilterTemplate); }
+  get filterTriggerInHeader(): boolean { return !!this.mobileHeaderHost?.enabled(); }
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly dialog = inject(MatDialog);
   private readonly breakpoints = inject(BreakpointObserver);
@@ -52,12 +58,18 @@ export class ListFilterBarComponent implements OnChanges, OnDestroy {
   get hasDraftFilters(): boolean { return Object.keys(this.withoutEmptyFilters(this.draftFilters)).length > 0; }
 
   constructor() {
+    afterNextRender(() => {
+      this.unregisterHeaderAction = this.mobileHeaderHost?.register({
+        template: this.mobileFilterAction, visible: () => this.useMobilePanel && this.hasFilterFields,
+      });
+    });
     this.breakpoints.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => {
       this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches;
       if (!this.isMobile) this.closeMobileFilters();
     });
   }
   ngOnDestroy(): void {
+    this.unregisterHeaderAction?.();
     this.closeMobileFilters(); this.destroy$.next(); this.destroy$.complete();
   }
   private copyState(state: DataTableFilterState): DataTableFilterState {
