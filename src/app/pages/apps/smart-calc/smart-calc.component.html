@@ -186,7 +186,7 @@
       @if (mobileViewport()) {
         <div class="mobile-calculation-details">
           <h2>Detalhes do cálculo</h2>
-          <ng-container [ngTemplateOutlet]="resultContentTpl"></ng-container>
+          <ng-container [ngTemplateOutlet]="resultContentTpl" [ngTemplateOutletContext]="{ mobile: true }"></ng-container>
           <button mat-stroked-button type="button" class="mobile-calculation-details__clear"
             (click)="limpar()" [disabled]="carregandoCalculo || carregandoAdd">Limpar cálculo</button>
         </div>
@@ -206,8 +206,10 @@
     }
   </ng-template>
 
-  <ng-template #resultContentTpl>
-    @if (carregandoCalculo && !temResultado()) {
+  <ng-template #resultContentTpl let-mobile="mobile">
+    @if (mobile && erroCalculo) {
+      <div class="feedback feedback--error" role="alert">{{ erroCalculo }}</div>
+    } @else if (carregandoCalculo && !temResultado()) {
       <div class="loading">
         <mat-progress-spinner diameter="28" mode="indeterminate"></mat-progress-spinner>
         <span>Calculando...</span>
@@ -259,31 +261,65 @@
       </div>
 
       @if (resultado()?.observacaoResumo; as resumo) {
-        <div class="result-block">
-          <div class="metric-grid">
-            <app-metric-card
-              label="Produzido"
-              [value]="resumo.produzido + ''"
-              [detail]="detalheCusto('Custo unit.', resumo.custoUnitarioProduzido)"
-              icon="stack-2"
-              accent="primary">
-            </app-metric-card>
-            <app-metric-card
-              label="Sobra útil"
-              [value]="resumo.sobraUtil + ''"
-              [detail]="detalheSobra(resumo.sobraUtil)"
-              icon="circle-check"
-              accent="warning">
-            </app-metric-card>
-            <app-metric-card
-              label="Solicitado"
-              [value]="resumo.solicitado + ''"
-              [detail]="detalheCusto('Custo unit.', resumo.custoUnitarioSolicitado)"
-              icon="clipboard-list"
-              accent="success">
-            </app-metric-card>
+        @if (mobile) {
+          @if (resumo.produzido != null || resumo.solicitado != null || resumo.sobraUtil != null || resumo.custoUnitarioProduzido != null || resumo.custoUnitarioSolicitado != null) {
+            <div class="result-block mobile-production">
+              <div class="block-title">Aproveitamento da produção</div>
+              <dl class="mobile-production__indicators">
+                @if (resumo.produzido != null || resumo.custoUnitarioProduzido != null) {
+                  <div>
+                    <dt>Produzido</dt>
+                    <dd>
+                      @if (resumo.produzido != null) { <span class="mobile-production__value">{{ resumo.produzido }}</span> }
+                      @if (resumo.custoUnitarioProduzido != null) { <small>{{ detalheCusto('Custo unit.', resumo.custoUnitarioProduzido) }}</small> }
+                    </dd>
+                  </div>
+                }
+                @if (resumo.solicitado != null || resumo.custoUnitarioSolicitado != null) {
+                  <div>
+                    <dt>Solicitado</dt>
+                    <dd>
+                      @if (resumo.solicitado != null) { <span class="mobile-production__value">{{ resumo.solicitado }}</span> }
+                      @if (resumo.custoUnitarioSolicitado != null) { <small>{{ detalheCusto('Custo unit.', resumo.custoUnitarioSolicitado) }}</small> }
+                    </dd>
+                  </div>
+                }
+                @if (resumo.sobraUtil != null) {
+                  <div>
+                    <dt>Sobra útil</dt>
+                    <dd><span class="mobile-production__value">{{ resumo.sobraUtil }}</span><small>{{ detalheSobra(resumo.sobraUtil) }}</small></dd>
+                  </div>
+                }
+              </dl>
+            </div>
+          }
+        } @else {
+          <div class="result-block">
+            <div class="metric-grid">
+              <app-metric-card
+                label="Produzido"
+                [value]="resumo.produzido + ''"
+                [detail]="detalheCusto('Custo unit.', resumo.custoUnitarioProduzido)"
+                icon="stack-2"
+                accent="primary">
+              </app-metric-card>
+              <app-metric-card
+                label="Sobra útil"
+                [value]="resumo.sobraUtil + ''"
+                [detail]="detalheSobra(resumo.sobraUtil)"
+                icon="circle-check"
+                accent="warning">
+              </app-metric-card>
+              <app-metric-card
+                label="Solicitado"
+                [value]="resumo.solicitado + ''"
+                [detail]="detalheCusto('Custo unit.', resumo.custoUnitarioSolicitado)"
+                icon="clipboard-list"
+                accent="success">
+              </app-metric-card>
+            </div>
           </div>
-        </div>
+        }
 
         @if (resumo.distribuicao?.length) {
           <div class="result-block">
@@ -292,8 +328,17 @@
               @for (d of resumo.distribuicao; track $index) {
                 <div class="distribution-row">
                   <div>
-                    <strong>{{ d.formato }} · {{ d.orientacao | titlecase }}</strong>
-                    <span>{{ d.folhas }} folha(s) × {{ d.porFolha }} por folha</span>
+                    @if (mobile) {
+                      @if (d.formato || d.orientacao) {
+                        <strong>{{ d.formato }}@if (d.formato && d.orientacao) { · }{{ d.orientacao | titlecase }}</strong>
+                      }
+                      @if (d.folhas != null || d.porFolha != null) {
+                        <span>@if (d.folhas != null) { {{ d.folhas }} folha(s) }@if (d.folhas != null && d.porFolha != null) { × }@if (d.porFolha != null) { {{ d.porFolha }} por folha }</span>
+                      }
+                    } @else {
+                      <strong>{{ d.formato }} · {{ d.orientacao | titlecase }}</strong>
+                      <span>{{ d.folhas }} folha(s) × {{ d.porFolha }} por folha</span>
+                    }
                   </div>
                 </div>
               }
@@ -302,10 +347,12 @@
         }
       }
 
-      <div class="total-summary">
-        <span>Total</span>
-        <strong>{{ total() | currency:'BRL':'symbol-narrow':'1.2-2' }}</strong>
-      </div>
+      @if (!mobile) {
+        <div class="total-summary">
+          <span>Total</span>
+          <strong>{{ total() | currency:'BRL':'symbol-narrow':'1.2-2' }}</strong>
+        </div>
+      }
     }
   </ng-template>
 

@@ -34,6 +34,84 @@ describe('MobileTotalBarComponent — detalhes internos opcionais', () => {
     fixture = TestBed.createComponent(HostComponent); fixture.detectChanges();
   });
 
+  const pointer = (type: string, x: number, y: number, options: PointerEventInit = {}) => {
+    query('.mobile-total-bar__handle-toggle').dispatchEvent(new PointerEvent(type, {
+      pointerId: 1, pointerType: 'touch', isPrimary: true, button: 0, clientX: x, clientY: y, bubbles: true, ...options,
+    }));
+  };
+  const ghostClick = () => query('.mobile-total-bar__handle-toggle').dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
+  const prepareHandle = () => {
+    const handle = query<HTMLButtonElement>('.mobile-total-bar__handle-toggle');
+    spyOn(handle, 'setPointerCapture'); spyOn(handle, 'hasPointerCapture').and.returnValue(true); spyOn(handle, 'releasePointerCapture');
+    return handle;
+  };
+
+  it('oferece handle nativo com nome, estado e expansão/recolhimento por clique', () => {
+    const handle = query<HTMLButtonElement>('.mobile-total-bar__handle-toggle');
+    expect(handle.tagName).toBe('BUTTON'); expect(handle.type).toBe('button');
+    expect(handle.getAttribute('aria-label')).toBeTruthy();
+    expect(handle.getAttribute('aria-controls')).toBe('test-details');
+    expect(handle.getAttribute('aria-expanded')).toBe('false');
+    handle.click(); fixture.detectChanges();
+    expect(handle.getAttribute('aria-expanded')).toBe('true');
+    handle.click(); fixture.detectChanges(); expect(fixture.componentInstance.expanded).toBeFalse();
+  });
+
+  it('arrasta para cima para expandir e para baixo para recolher sem duplo acionamento', () => {
+    const handle = prepareHandle();
+    pointer('pointerdown', 100, 200); pointer('pointermove', 103, 150);
+    expect(fixture.componentInstance.expanded).toBeFalse();
+    pointer('pointerup', 103, 150); fixture.detectChanges(); ghostClick();
+    expect(fixture.componentInstance.expanded).toBeTrue(); expect(fixture.componentInstance.expansions).toBe(1);
+    pointer('pointerdown', 100, 150); pointer('pointerup', 100, 200); fixture.detectChanges(); ghostClick();
+    expect(fixture.componentInstance.expanded).toBeFalse(); expect(fixture.componentInstance.expansions).toBe(2);
+    expect(handle.setPointerCapture).toHaveBeenCalledWith(1); expect(handle.releasePointerCapture).toHaveBeenCalledWith(1);
+  });
+
+  it('ignora arraste na direção contrária ao estado atual', () => {
+    prepareHandle(); pointer('pointerdown', 100, 100); pointer('pointerup', 100, 150); ghostClick();
+    expect(fixture.componentInstance.expanded).toBeFalse();
+    fixture.componentInstance.expanded = true; fixture.detectChanges();
+    pointer('pointerdown', 100, 150); pointer('pointerup', 100, 100); ghostClick();
+    expect(fixture.componentInstance.expanded).toBeTrue(); expect(fixture.componentInstance.expansions).toBe(0);
+  });
+
+  it('cancela movimentos curtos, horizontais e diagonais sem converter arraste em clique', () => {
+    prepareHandle();
+    [[102, 180], [150, 198], [130, 160]].forEach(([x, y]) => {
+      pointer('pointerdown', 100, 200); pointer('pointermove', x, y); pointer('pointerup', x, y); ghostClick();
+    });
+    expect(fixture.componentInstance.expansions).toBe(0);
+  });
+
+  it('cancela gestos interrompidos e perda de captura sem impedir nova ativação por teclado', () => {
+    prepareHandle();
+    ['pointercancel', 'lostpointercapture'].forEach(type => {
+      pointer('pointerdown', 100, 200); pointer('pointermove', 100, 150); pointer(type, 100, 150);
+      pointer('pointerup', 100, 150); ghostClick();
+    });
+    expect(fixture.componentInstance.expansions).toBe(0);
+    // Native keyboard/assistive activation produces a click with detail 0.
+    query<HTMLButtonElement>('.mobile-total-bar__handle-toggle').click();
+    expect(fixture.componentInstance.expanded).toBeTrue();
+  });
+
+  it('cancela múltiplos ponteiros e não captura cliques secundários', () => {
+    prepareHandle(); pointer('pointerdown', 100, 200);
+    pointer('pointerdown', 110, 190, { pointerId: 2, isPrimary: false });
+    pointer('pointerup', 100, 140); ghostClick();
+    pointer('pointerdown', 100, 200, { button: 2 }); pointer('pointerup', 100, 140, { button: 2 });
+    expect(fixture.componentInstance.expansions).toBe(0);
+  });
+
+  it('mantém um toque com pequena oscilação como clique e não altera o conteúdo ao mover fora do handle', () => {
+    prepareHandle(); pointer('pointerdown', 100, 200); pointer('pointerup', 102, 198); ghostClick();
+    expect(fixture.componentInstance.expanded).toBeTrue();
+    query('.mobile-total-bar__details-content').dispatchEvent(new PointerEvent('pointerdown', { pointerId: 3, clientY: 200, bubbles: true }));
+    query('.mobile-total-bar__details-content').dispatchEvent(new PointerEvent('pointerup', { pointerId: 3, clientY: 100, bubbles: true }));
+    expect(fixture.componentInstance.expansions).toBe(1);
+  });
+
   it('mantém os detalhes recolhidos e fora da navegação por teclado', () => {
     expect(query('#test-details').getAttribute('aria-hidden')).toBe('true');
     expect(query('#test-details').hasAttribute('inert')).toBeTrue();

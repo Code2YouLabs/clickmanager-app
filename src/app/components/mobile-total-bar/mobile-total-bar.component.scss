@@ -308,3 +308,32 @@
     .mobile-total-bar__details { transition: none; }
   }
 }
+
+@media (max-width: 900px) {
+  .mobile-total-bar__handle-toggle {
+    display: grid;
+    place-items: center;
+    align-self: center;
+    flex: 0 0 44px;
+    width: 72px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    cursor: pointer;
+    touch-action: none;
+    user-select: none;
+  }
+  .mobile-total-bar__handle-toggle span {
+    width: 40px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--mat-sys-outline, #94a3b8);
+    pointer-events: none;
+  }
+  .mobile-total-bar__handle-toggle:focus-visible {
+    outline: 2px solid var(--mat-sys-primary, #2563eb);
+    outline-offset: -2px;
+  }
+}

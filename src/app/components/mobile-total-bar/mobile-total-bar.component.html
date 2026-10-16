@@ -15,6 +15,17 @@
   <div class="mobile-total-bar__handle"></div>
   }
 
+  @if (inlineDetails && expandable) {
+    <button type="button" class="mobile-total-bar__handle-toggle"
+      [attr.aria-label]="expandAriaLabel" [attr.aria-expanded]="expanded" [attr.aria-controls]="detailsPanelId"
+      (click)="onHandleClick($event)"
+      (pointerdown)="onHandlePointerDown($event)" (pointermove)="onHandlePointerMove($event)"
+      (pointerup)="onHandlePointerUp($event)" (pointercancel)="onHandlePointerCancel($event)"
+      (lostpointercapture)="onHandlePointerCancel($event)">
+      <span aria-hidden="true"></span>
+    </button>
+  }
+
   @if (inlineDetails) {
     <div class="mobile-total-bar__details" [class.mobile-total-bar__details--expanded]="expanded"
       [id]="detailsPanelId" [attr.aria-hidden]="!expanded" [attr.inert]="expanded ? null : ''">

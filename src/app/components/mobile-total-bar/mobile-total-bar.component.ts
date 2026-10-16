@@ -35,6 +35,8 @@ export class MobileTotalBarComponent {
   @Output() action = new EventEmitter<void>();
 
   private touchStartY: number | null = null;
+  private handlePointer: { id: number; x: number; y: number; dragged: boolean; cancelled: boolean } | null = null;
+  private suppressHandleClick = false;
 
   onRootClick(): void {
     if (!this.expandable || this.inlineDetails) {
@@ -78,6 +80,59 @@ export class MobileTotalBarComponent {
     if (deltaY > 24) {
       this.expand.emit();
     }
+  }
+
+  onHandlePointerDown(event: PointerEvent): void {
+    if (!this.inlineDetails || !this.expandable || event.button !== 0) return;
+    if (!event.isPrimary || this.handlePointer) {
+      this.handlePointer = null;
+      this.suppressHandleClick = true;
+      return;
+    }
+    this.suppressHandleClick = false;
+    this.handlePointer = { id: event.pointerId, x: event.clientX, y: event.clientY, dragged: false, cancelled: false };
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+  }
+
+  onHandlePointerMove(event: PointerEvent): void {
+    const pointer = this.handlePointer;
+    if (!pointer || pointer.id !== event.pointerId) return;
+    const dx = Math.abs(event.clientX - pointer.x);
+    const dy = Math.abs(event.clientY - pointer.y);
+    if (Math.hypot(dx, dy) > 8) pointer.dragged = true;
+    if (dx > 12 && dx > dy) pointer.cancelled = true;
+  }
+
+  onHandlePointerUp(event: PointerEvent): void {
+    const pointer = this.handlePointer;
+    if (!pointer || pointer.id !== event.pointerId) return;
+    this.onHandlePointerMove(event);
+    this.handlePointer = null;
+    const target = event.currentTarget as HTMLElement;
+    if (target.hasPointerCapture(event.pointerId)) target.releasePointerCapture(event.pointerId);
+    this.suppressHandleClick = pointer.dragged || pointer.cancelled;
+    if (!this.inlineDetails || !this.expandable || pointer.cancelled) return;
+    const dy = event.clientY - pointer.y;
+    const dx = Math.abs(event.clientX - pointer.x);
+    if (Math.abs(dy) < 32 || Math.abs(dy) < dx * 1.5) return;
+    if ((dy < 0 && !this.expanded) || (dy > 0 && this.expanded)) this.expand.emit();
+  }
+
+  onHandlePointerCancel(event: PointerEvent): void {
+    if (this.handlePointer?.id !== event.pointerId) return;
+    this.handlePointer = null;
+    this.suppressHandleClick = true;
+  }
+
+  onHandleClick(event: MouseEvent): void {
+    event.stopPropagation();
+    // A drag may be followed by a synthetic click. Keyboard/assistive clicks stay available.
+    if (this.suppressHandleClick && event.detail !== 0) {
+      this.suppressHandleClick = false;
+      event.preventDefault();
+      return;
+    }
+    this.onExpandClick(event);
   }
 
   onExpandClick(event: Event): void {

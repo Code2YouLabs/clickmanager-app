@@ -37,7 +37,7 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
   let viewportWidth: number;
   const query = <T extends HTMLElement = HTMLElement>(selector: string): T => fixture.nativeElement.querySelector(selector);
   const cta = () => query<HTMLButtonElement>('.mobile-total-bar__cta');
-  const text = (selector: string) => query(selector)?.textContent?.replace(/\s/g, ' ').trim();
+  const text = (selector: string) => query(selector)?.textContent?.replace(/\s+/g, ' ').trim();
   const render = () => { fixture.detectChanges(); tick(0); fixture.detectChanges(); };
   const fill = () => {
     component.form.controls.produtoId.setValue(1);
@@ -280,6 +280,86 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     tick(300); expect(data.calcularSmartCalc).not.toHaveBeenCalled();
   }));
 
+  it('expande e recolhe pelo handle mantendo o texto de detalhes e o mesmo resumo', fakeAsync(() => {
+    render(); fill();
+    const bar = query('.mobile-total-bar'); const button = cta();
+    query('.mobile-total-bar__handle-toggle').click(); fixture.detectChanges();
+    expect(component.resultadoMobileAberto()).toBeTrue();
+    expect(text('.mobile-total-bar__expand--button')).toContain('Ocultar detalhes');
+    expect(query('.mobile-total-bar__handle-toggle').getAttribute('aria-label')).toBe('Ocultar detalhes do cálculo');
+    query('.mobile-total-bar__handle-toggle').click(); fixture.detectChanges();
+    expect(component.resultadoMobileAberto()).toBeFalse();
+    expect(query('.mobile-total-bar')).toBe(bar); expect(cta()).toBe(button);
+    expect(data.calcularSmartCalc).toHaveBeenCalledTimes(1);
+  }));
+
+  it('exibe o total somente no rodapé mobile, preservando subtotais dos itens', fakeAsync(() => {
+    render(); fill(); openDetails();
+    expect(query('#smartcalc-mobile-details .total-summary')).toBeNull();
+    expect(text('.mobile-total-bar__summary .value')).toContain('123.45');
+    expect(text('#smartcalc-mobile-details [data-label="Subtotal"]')).toContain('123.45');
+    expect(fixture.nativeElement.querySelectorAll('.mobile-total-bar__summary').length).toBe(1);
+    expect(query('.smartcalc-layout__sidebar .total-summary')).not.toBeNull();
+  }));
+
+  it('agrupa aproveitamento em indicadores compactos na ordem produzido, solicitado e sobra', fakeAsync(() => {
+    render(); fill(); openDetails();
+    const labels = Array.from(fixture.nativeElement.querySelectorAll('.mobile-production dt') as NodeListOf<HTMLElement>).map(item => item.textContent?.trim());
+    expect(labels).toEqual(['Produzido', 'Solicitado', 'Sobra útil']);
+    const values = Array.from(fixture.nativeElement.querySelectorAll('.mobile-production__value') as NodeListOf<HTMLElement>).map(item => item.textContent?.trim());
+    expect(values).toEqual(['504', '500', '4']);
+    expect(text('.mobile-production')).toContain('Custo unit. R$ 0,25');
+    expect(text('.mobile-production')).toContain('+4 sem alterar o custo');
+    expect(query('#smartcalc-mobile-details app-metric-card')).toBeNull();
+    expect(text('#smartcalc-mobile-details')).toContain('Aproveitamento da produção');
+    expect(text('#smartcalc-mobile-details')).toContain('Distribuição da produção');
+  }));
+
+  it('preserva múltiplos itens e descrições por área/quantidade/acabamentos sem inventar aproveitamento', fakeAsync(() => {
+    data.calcularSmartCalc.and.returnValue(of({
+      total: 198.45,
+      itens: [resultado.itens[0], { ...resultado.itens[0], id: 99, nomeComposto: 'Lona por m² com ilhós', descricao: '2,5 m² · acabamento ilhós', quantidade: 2.5, valor: 30, subTotal: 75 }],
+    }));
+    render(); fill(); openDetails();
+    expect(fixture.nativeElement.querySelectorAll('#smartcalc-mobile-details tbody tr').length).toBe(2);
+    expect(text('#smartcalc-mobile-details')).toContain('2,5 m² · acabamento ilhós');
+    expect(text('#smartcalc-mobile-details')).toContain('75.00');
+    expect(query('.mobile-production')).toBeNull();
+    expect(query('#smartcalc-mobile-details .distribution-list')).toBeNull();
+    expect(text('.mobile-total-bar__summary .value')).toContain('198.45');
+  }));
+
+  it('não inventa folhas ou indicadores quando a distribuição contém somente formato e orientação', fakeAsync(() => {
+    data.calcularSmartCalc.and.returnValue(of({ ...resultado, observacaoResumo: {
+      distribuicao: [{ formato: 'Rolo de lona', orientacao: 'PAISAGEM' }],
+    } }));
+    render(); fill(); openDetails();
+    expect(text('#smartcalc-mobile-details .distribution-list')).toContain('Rolo de lona');
+    expect(text('#smartcalc-mobile-details .distribution-list')).not.toContain('folha');
+    expect(text('#smartcalc-mobile-details')).not.toContain('undefined');
+    expect(query('.mobile-production')).toBeNull();
+  }));
+
+  it('preserva zero e ausência de sobra útil sem preencher números ausentes', fakeAsync(() => {
+    data.calcularSmartCalc.and.returnValue(of({ ...resultado, observacaoResumo: { solicitado: 0, sobraUtil: 0, custoUnitarioSolicitado: 0 } }));
+    render(); fill(); openDetails();
+    expect(text('.mobile-production')).toContain('Sem sobra útil');
+    expect(text('.mobile-production')).toContain('Custo unit. R$ 0,00');
+    expect(text('.mobile-production')).not.toContain('Produzido');
+    expect(text('.mobile-production')).not.toContain('undefined');
+    expect(fixture.nativeElement.querySelectorAll('.mobile-production dd').length).toBe(2);
+  }));
+
+  it('mostra carregamento e erro nos detalhes sem dados de produção inventados', fakeAsync(() => {
+    const pending = new Subject<SmartCalcResultado>(); data.calcularSmartCalc.and.returnValue(pending);
+    render(); fill(); openDetails();
+    expect(text('#smartcalc-mobile-details .loading')).toContain('Calculando...');
+    expect(cta().disabled).toBeTrue(); expect(query('.mobile-production')).toBeNull();
+    pending.error({ error: { message: 'SEM_PRECO_CONFIGURADO' } }); fixture.detectChanges();
+    expect(text('#smartcalc-mobile-details .feedback--error')).toContain('Não há preço configurado');
+    expect(query('.mobile-production')).toBeNull(); expect(cta().disabled).toBeTrue();
+  }));
+
   it('mantém o desktop com títulos, seções abertas, resultado e criação originais', fakeAsync(() => {
     viewportWidth = 1280; render(); fill();
     expect(text('app-card-header')).toContain('SmartCalc – Calculadora Inteligente');
@@ -291,6 +371,8 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     expect(text('.smartcalc-layout__main')).toContain('3. Acabamentos');
     expect(text('.smartcalc-layout__sidebar')).toContain('Resultado do cálculo');
     expect(query('.mobile-flow-status')).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('.smartcalc-layout__sidebar app-metric-card').length).toBe(3);
+    expect(query('.smartcalc-layout__sidebar .total-summary')).not.toBeNull();
     query<HTMLButtonElement>('.smartcalc-layout__sidebar button[mat-flat-button]').click();
     expect(data.criarRascunhoSmartCalc).toHaveBeenCalledTimes(1);
     expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial/rascunhos', 42]);

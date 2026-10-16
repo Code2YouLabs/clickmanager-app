@@ -188,6 +188,7 @@ export class SmartCalcComponent implements OnInit, AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     const bar = this.host.nativeElement.querySelector('.mobile-total-bar');
     const controls = this.host.nativeElement.querySelector('.mobile-total-bar__controls');
+    const handle = this.host.nativeElement.querySelector('.mobile-total-bar__handle-toggle');
     if (!bar || !controls || typeof ResizeObserver === 'undefined') return;
     this.totalBarObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
@@ -195,12 +196,13 @@ export class SmartCalcComponent implements OnInit, AfterViewInit, OnDestroy {
         if (!height || height <= 0) continue;
         const variable = entry.target === bar
           ? '--smartcalc-mobile-total-bar-height'
-          : '--smartcalc-mobile-summary-height';
+          : entry.target === handle ? '--smartcalc-mobile-handle-height' : '--smartcalc-mobile-summary-height';
         this.host.nativeElement.style.setProperty(variable, `${height}px`);
       }
     });
     this.totalBarObserver.observe(bar);
     this.totalBarObserver.observe(controls);
+    if (handle) this.totalBarObserver.observe(handle);
   }
 
   ngOnDestroy(): void {
