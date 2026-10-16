@@ -36,3 +36,7 @@ O alvo `primeiroPedidoTargets.novo` é transferido para o botão flutuante no mo
 - Logs completos: `/tmp/clickmanager-title-fab-tests.log`, `/tmp/clickmanager-title-fab-full-tests.log` e `/tmp/clickmanager-title-fab-build.log`.
 - Compatibilidade com os consumidores que constroem `new PageCardComponent()` preservada por dependência opcional; a inscrição do viewport é encerrada ao destruir o componente.
 - Nenhum teste visual ou screenshot produzido; avaliação visual final pelo responsável pelo projeto.
+
+## Evolução global posterior
+
+O cabeçalho mínimo passou a ser o padrão global do PageCard, e a ação das três listagens do Comercial passou ao contrato único `primaryAction`. As decisões específicas do piloto acima registram a etapa anterior. Consulte o [padrão global, compatibilidade e exceções](pagecard-mobile-global.md).

@@ -111,3 +111,7 @@ Além destes arquivos: este relatório e as evidências em `docs/validation/mobi
 ## Refinamento posterior: cabeçalho e ação principal mobile
 
 O piloto passou a exibir somente o título e a oferecer Novo pedido pelo FAB compartilhado, mantendo a apresentação desktop. Consulte os [contratos, arquivos e validação do refinamento](mobile-pedidos-header-fab.md).
+
+## Padronização global posterior do PageCard
+
+O cabeçalho mínimo agora é automático; `primaryAction` controla a mesma ação no header desktop e no FAB mobile. Há exceção explícita para estruturas especiais. Consulte o [relatório global e inventário dos consumidores](pagecard-mobile-global.md).
