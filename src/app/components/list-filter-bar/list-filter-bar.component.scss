@@ -235,12 +235,11 @@
       transform: translateX(100%);
       transition: transform var(--mat-dialog-transition-duration, 0ms) cubic-bezier(0.4, 0, 0.2, 1);
     }
+    // Keep the final animation frame for the entire open state. Material removes
+    // --opening on a timer, which can precede the animation's last rendered frame.
     .mat-mdc-dialog-container.mdc-dialog--open:not(.mdc-dialog--closing) .mat-mdc-dialog-inner-container {
       transform: translateX(0);
-    }
-    // A newly mounted overlay may receive Material's open class before its first paint.
-    // Keyframes guarantee the off-screen starting position even without a previous painted frame.
-    .mat-mdc-dialog-container.mdc-dialog--opening:not(.mdc-dialog--closing) .mat-mdc-dialog-inner-container {
+      transition: none;
       animation: list-filter-slide-in var(--mat-dialog-transition-duration, 360ms) cubic-bezier(0.4, 0, 0.2, 1) both;
     }
     .mat-mdc-dialog-container.mdc-dialog--closing { pointer-events: none; }
@@ -279,5 +278,5 @@
 
 @media (prefers-reduced-motion: reduce) {
   ::ng-deep .list-filter-mobile-panel .mat-mdc-dialog-container .mat-mdc-dialog-inner-container { transition: none; }
-  ::ng-deep .list-filter-mobile-panel .mat-mdc-dialog-container.mdc-dialog--opening:not(.mdc-dialog--closing) .mat-mdc-dialog-inner-container { animation: none; }
+  ::ng-deep .list-filter-mobile-panel .mat-mdc-dialog-container.mdc-dialog--open:not(.mdc-dialog--closing) .mat-mdc-dialog-inner-container { animation: none; }
 }

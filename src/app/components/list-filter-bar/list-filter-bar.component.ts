@@ -70,7 +70,8 @@ export class ListFilterBarComponent implements OnChanges, OnDestroy {
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const ref = this.dialog.open(this.mobileFilterPanel, {
       viewContainerRef: this.viewContainerRef, panelClass: 'list-filter-mobile-panel', ariaLabel: this.filtersLabel,
-      autoFocus: 'first-tabbable', delayFocusTrap: false, restoreFocus: true, closeOnNavigation: true,
+      // Focus the stationary dialog; focusing a translated child can scroll the overlay mid-slide.
+      autoFocus: 'dialog', delayFocusTrap: false, restoreFocus: true, closeOnNavigation: true,
       width: '100vw', maxWidth: '100vw', height: '100dvh', maxHeight: '100dvh',
       position: { top: '0', right: '0' }, enterAnimationDuration: reducedMotion ? 0 : 360, exitAnimationDuration: reducedMotion ? 0 : 300,
     });

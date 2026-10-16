@@ -117,7 +117,8 @@ describe('ListFilterBarComponent', () => {
     const trigger: HTMLButtonElement = fixture.nativeElement.querySelector('.list-mobile-toolbar__filter-button');
     trigger.focus(); trigger.click(); fixture.detectChanges(); await fixture.whenStable(); TestBed.inject(ApplicationRef).tick();
     const emit = spyOn(bar.stateChange, 'emit');
-    expect(document.activeElement?.getAttribute('aria-label')).withContext(document.activeElement?.outerHTML || '').toBe('Voltar à listagem');
+    expect(document.activeElement?.getAttribute('role')).toBe('dialog');
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Filtros');
     expect(TestBed.inject(OverlayContainer).getContainerElement().querySelectorAll('.cdk-focus-trap-anchor').length).toBe(2);
     bar.onFieldChange('active', true);
     const overlay = TestBed.inject(OverlayContainer).getContainerElement();
@@ -298,6 +299,27 @@ describe('ListFilterBarComponent — transição lateral', () => {
     overlay = TestBed.inject(OverlayContainer).getContainerElement();
   });
   afterEach(() => TestBed.resetTestingModule());
+
+  it('mantém o mesmo estado aberto e o foco no dialog ao terminar e repetir a entrada', fakeAsync(() => {
+    spyOn(window, 'matchMedia').and.returnValue({ matches: false } as MediaQueryList);
+    for (let attempt = 0; attempt < 3; attempt++) {
+      bar.openMobileFilters(); fixture.detectChanges(); tick(20); fixture.detectChanges();
+      TestBed.inject(ApplicationRef).tick();
+      const container = overlay.querySelector<HTMLElement>('mat-dialog-container')!;
+      expect(container.classList.contains('mdc-dialog--open')).toBeTrue();
+      expect(container.classList.contains('mdc-dialog--opening')).toBeTrue();
+      expect(document.activeElement).toBe(container);
+      tick(340); fixture.detectChanges();
+      expect(container.classList.contains('mdc-dialog--opening')).toBeFalse();
+      expect(container.classList.contains('mdc-dialog--open')).toBeTrue();
+      expect(overlay.querySelector('mat-dialog-container')).toBe(container);
+      tick(400); fixture.detectChanges();
+      expect(document.activeElement).toBe(container);
+      expect(container.classList.contains('mdc-dialog--open')).toBeTrue();
+      bar.closeMobileFilters(); tick(320); fixture.detectChanges();
+      expect(overlay.querySelector('mat-dialog-container')).toBeNull();
+    }
+  }));
 
   for (const close of ['voltar', 'Escape', 'aplicar'] as const) {
     it(`aguarda o recolhimento antes de remover o painel por ${close}`, fakeAsync(() => {
