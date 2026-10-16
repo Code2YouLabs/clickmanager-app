@@ -183,6 +183,18 @@ describe('ComercialListComponent', () => {
     expect(fixture.nativeElement.querySelector('table').textContent).toContain('Total Pago');
   });
 
+  it('abrevia status longo apenas no card mobile e mantém o rótulo completo acessível', () => {
+    service.listarPedidosComerciais.and.returnValue(of({ content: [{ ...page.content[0], status: 'AGUARDANDO_PAGAMENTO' }], totalElements: 1 } as any));
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    const status = fixture.nativeElement.querySelector('.pedido-mobile-item .status-pill');
+    expect(status.textContent).toBe('Ag. pagto.');
+    expect(status.getAttribute('title')).toBe('Aguardando pagamento');
+    expect(status.getAttribute('aria-label')).toBe('Aguardando pagamento');
+    expect(component.statusMobileLabel('EM_PRODUCAO')).toBe('Em produção');
+    viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('table .status-pill').textContent).toBe('Aguardando pagamento');
+  });
+
   it('mantém referência completa, nome longo e valores reais nas ações e no financeiro mobile', () => {
     const number = 'PED-2026-000000000000000000000000000000000123';
     const name = 'Associação Comercial e Industrial de São José dos Campos';

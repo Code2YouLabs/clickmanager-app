@@ -54,7 +54,7 @@
     min-width: 0;
     header { display: grid; grid-template-columns: minmax(0, 1fr) fit-content(48%); align-items: center; gap: 8px; }
     header > strong { min-width: 0; font-size: 14px; line-height: 20px; overflow-wrap: anywhere; }
-    .status-pill { min-width: 0; max-width: 100%; justify-self: end; line-height: 16px; white-space: normal; overflow-wrap: anywhere; }
+    .status-pill { display: block; box-sizing: border-box; min-width: 0; max-width: 100%; justify-self: end; line-height: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     &__cliente { margin: 6px 0; overflow-wrap: anywhere; font-size: 15px; line-height: 22px; }
     &__summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
     time { color: var(--mat-sys-on-surface-variant); font-size: 12px; line-height: 16px; }

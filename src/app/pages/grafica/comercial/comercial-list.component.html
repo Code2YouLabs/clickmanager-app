@@ -79,7 +79,7 @@
         @if (tipo === 'pedidos') {
           <ng-template [appDataTableItem]="itensFiltrados" let-item let-itemActions="actions" let-emit="emitAction" let-expanded="expanded" let-toggle="toggle">
             <article class="pedido-mobile-item" [attr.aria-label]="'Pedido ' + referencia(item)">
-              <header><strong>{{ referencia(item) }}</strong><span class="status-pill">{{ statusLabel(item.status) }}</span></header>
+              <header><strong>{{ referencia(item) }}</strong><span class="status-pill" [attr.title]="statusLabel(item.status)" [attr.aria-label]="statusLabel(item.status)">{{ statusMobileLabel(item.status) }}</span></header>
               <p class="pedido-mobile-item__cliente">{{ cliente(item) || 'Balcão' }}</p>
               <div class="pedido-mobile-item__summary">
                 <time [attr.datetime]="dataCriacao(item) || null">{{ dataCriacao(item) | date:'dd/MM/yyyy HH:mm' }}</time>

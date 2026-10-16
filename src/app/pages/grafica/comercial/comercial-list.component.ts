@@ -646,6 +646,10 @@ export class ComercialListComponent implements OnInit, OnDestroy {
     return pedidoStatusLabel(status);
   }
 
+  statusMobileLabel(status: string | null | undefined): string {
+    return status === 'AGUARDANDO_PAGAMENTO' ? 'Ag. pagto.' : this.statusLabel(status);
+  }
+
   totalPago(item: any): number {
     return Number(item.totalPago ?? item.valorTotalPago ?? item.pago ?? 0);
   }
