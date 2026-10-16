@@ -4,6 +4,7 @@ export interface KanbanColumnState<T = unknown> {
   count?: number;
   items: T[];
   loading?: boolean;
+  forbidden?: boolean;
   error?: string | null;
   emptyText?: string;
   hasMore?: boolean;

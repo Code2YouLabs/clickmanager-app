@@ -1,4 +1,4 @@
-<section class="kanban-board" [attr.aria-label]="boardLabel">
+<section class="kanban-board" [class.kanban-board--mobile-navigation]="mobileNavigation" [attr.aria-label]="boardLabel">
   @if (allEmpty) {
     <div class="kanban-board__empty" role="status">
       <strong>{{ emptyTitle }}</strong>
@@ -6,9 +6,24 @@
     </div>
   }
 
-  <div class="kanban-board__scroll" tabindex="0" cdkDropListGroup>
+  @if (mobileNavigation && isMobile && columns.length) {
+    <nav class="kanban-mobile-nav" aria-label="Etapas do quadro">
+      <button mat-icon-button type="button" aria-label="Etapa anterior" [disabled]="activeColumnIndex === 0" (click)="navigateColumn(-1)"><mat-icon>chevron_left</mat-icon></button>
+      <mat-form-field appearance="outline">
+        <mat-label>Etapa {{ activeColumnIndex + 1 }} de {{ columns.length }}</mat-label>
+        <mat-select [value]="activeColumnId" (selectionChange)="selectColumn($event.value)">
+          @for (column of columns; track column.id) {
+            <mat-option [value]="column.id">{{ column.title }} ({{ column.count ?? column.items.length }})</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <button mat-icon-button type="button" aria-label="Próxima etapa" [disabled]="activeColumnIndex === columns.length - 1" (click)="navigateColumn(1)"><mat-icon>chevron_right</mat-icon></button>
+    </nav>
+  }
+
+  <div #boardScroll (scroll)="onBoardScroll()" class="kanban-board__scroll" tabindex="0" cdkDropListGroup>
     @for (column of columns; track columnTrackBy($index, column)) {
-      <article
+      <article #kanbanColumn
         class="kanban-column"
         [class.kanban-column--drop-source]="columnDropState(column) === 'source'"
         [class.kanban-column--drop-allowed]="columnDropState(column) === 'allowed'"
@@ -24,7 +39,9 @@
         </header>
 
         <div class="kanban-column__body">
-          @if (column.loading && !column.items.length) {
+          @if (column.forbidden && mobileNavigation && isMobile) {
+            <div class="kanban-state" role="status"><strong>Acesso restrito</strong><span>{{ forbiddenMessage }}</span></div>
+          } @else if (column.loading && !column.items.length) {
             <div class="kanban-skeleton" role="status" aria-label="Carregando coluna">
               <span></span>
               <span></span>
@@ -47,6 +64,7 @@
               [cdkDropListData]="column.items"
               (cdkDropListDropped)="onDrop($event)">
               @for (item of column.items; track itemTrackBy($index, item)) {
+                <div class="kanban-item">
                 <button
                   class="kanban-card"
                   [class.kanban-card--drag-enabled]="dragEnabled && !cardDisabled(item, column)"
@@ -68,6 +86,13 @@
                     </ng-container>
                   }
                 </button>
+                @if (mobileNavigation && isMobile && mobileCardAction.observed) {
+                  <button mat-stroked-button type="button" class="kanban-card-action"
+                    [disabled]="cardDisabled(item, column)" (click)="onMobileCardAction(item, column)">
+                    {{ mobileCardActionLabel }}
+                  </button>
+                }
+                </div>
               } @empty {
                 <div class="kanban-state" role="status">
                   <span>{{ column.emptyText || 'Nenhum registro nesta etapa.' }}</span>

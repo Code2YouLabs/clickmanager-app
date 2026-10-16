@@ -1,0 +1,8 @@
+@use "../../../shared/responsive/mobile-foundation" as mobile;
+@include mobile.mobile-foundation {
+  :host { display: flex; flex-direction: column; max-height: calc(100dvh - 48px); min-width: 0; }
+  [mat-dialog-title], mat-dialog-content { overflow-wrap: anywhere; }
+  mat-dialog-content { min-height: 0; overflow-y: auto; }
+  mat-dialog-actions { flex-shrink: 0; display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 24px; }
+  mat-dialog-actions button { flex: 1 1 100%; margin: 0; min-height: 44px; white-space: normal; }
+}
