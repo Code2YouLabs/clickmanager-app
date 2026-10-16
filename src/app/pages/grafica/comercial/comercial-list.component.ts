@@ -1,5 +1,9 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { PedidoTrocarStatusDialogComponent } from 'src/app/components/pedido-fluxo-controles/pedido-trocar-status-dialog.component';
+import { DataTableItemDirective } from 'src/app/components/data-table/data-table-item.directive';
 import { CommonModule, DOCUMENT } from '@angular/common';
-import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PageEvent } from '@angular/material/paginator';
 import { MatDialog } from '@angular/material/dialog';
@@ -51,6 +55,7 @@ type PedidoKanbanSnapshot = Pick<PedidoKanbanColumn, 'items' | 'count' | 'total'
     PageCardComponent,
     DataTableComponent,
     DataTableCellDirective,
+    DataTableItemDirective,
     ViewModeToggleComponent,
     KanbanBoardComponent,
     KanbanCardDirective,
@@ -62,6 +67,8 @@ type PedidoKanbanSnapshot = Pick<PedidoKanbanColumn, 'items' | 'count' | 'total'
 export class ComercialListComponent implements OnInit, OnDestroy {
   readonly primeiroPedidoTargets = PRIMEIRO_PEDIDO_TARGETS;
   itens: any[] = [];
+  isMobile = false;
+  private readonly breakpoints = inject(BreakpointObserver);
   busca = '';
   pagina = 0;
   tamanho = 10;
@@ -170,7 +177,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   get kanbanExpandedActive(): boolean {
-    return this.kanbanExpanded && this.podeAlternarKanban && this.viewMode === 'kanban';
+    return !this.isMobile && this.kanbanExpanded && this.podeAlternarKanban && this.viewMode === 'kanban';
   }
 
   get kanbanDragEnabled(): boolean {
@@ -185,6 +192,10 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.breakpoints.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => {
+      this.isMobile = state.matches;
+      this.syncKanbanFocusClass();
+    });
     combineLatest([this.route.data, this.route.queryParamMap]).pipe(takeUntil(this.destroy$)).subscribe(([data, params]) => {
       const tipo = data['tipo'] || 'rascunhos';
       if (tipo !== this.tipo) { this.itens = []; this.totalItens = 0; this.busca = ''; }
@@ -294,6 +305,47 @@ export class ComercialListComponent implements OnInit, OnDestroy {
     }
 
     this.setKanbanExpanded(!this.kanbanExpanded);
+  }
+
+  moverPedidoMobile(pedido: PedidoComercialResumo): void {
+    if (!this.isMobile || this.isPedidoDragDisabled(pedido)) return;
+    const source = this.kanbanColumns.find(column => column.id === pedido.status);
+    if (!source || source.forbidden) return;
+    this.activeDragPedidoId = this.pedidoId(pedido);
+    this.activeDragSourceStatus = source.id;
+    this.activeDragLoading = true;
+    this.graficaService.buscarFluxoPedidoComercial(this.pedidoId(pedido))
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: fluxo => {
+          const opcoes = (fluxo.proximasTransicoes || [])
+            .filter(transicao => transicao.status !== source.id && this.kanbanColumns.some(column => column.id === transicao.status))
+            .map(transicao => ({ status: transicao.status, label: transicao.label,
+              bloqueado: !transicao.permitida, motivo: transicao.motivo || undefined }));
+          if (!fluxo.permissoes.alterarStatus || !opcoes.some(opcao => !opcao.bloqueado)) {
+            this.limparDragAtivo();
+            this.toastr.info('Não há etapas disponíveis para movimentar este pedido.');
+            return;
+          }
+          this.dialog.open(PedidoTrocarStatusDialogComponent, {
+            width: '480px', maxWidth: 'calc(100vw - 24px)',
+            data: { statusAtual: pedido.status, opcoes },
+          }).afterClosed().pipe(takeUntil(this.destroy$)).subscribe(resultado => {
+            this.limparDragAtivo();
+            if (!resultado?.status || this.isPedidoDragDisabled(pedido)) return;
+            const target = this.kanbanColumns.find(column => column.id === resultado.status);
+            if (!target || target.forbidden || target.id === source.id) return;
+            // Re-enter the existing drag path: revalidate, confirm cancellation, persist and roll back.
+            this.onPedidoDragStarted({ item: pedido, column: source, index: source.items.indexOf(pedido) });
+            this.onPedidoDropped({ item: pedido, sourceColumn: source, targetColumn: target,
+              previousIndex: source.items.indexOf(pedido), currentIndex: 0 });
+          });
+        },
+        error: error => {
+          this.limparDragAtivo();
+          this.toastr.error(this.errorMessage(error, 'Não foi possível validar as etapas do pedido.'));
+        },
+      });
   }
 
   onPedidoDragStarted(event: KanbanDragEvent<PedidoComercialResumo>): void {
@@ -465,7 +517,8 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   pedidoMovendo(pedido: PedidoComercialResumo): boolean {
-    return this.pedidosMovendo.has(this.pedidoId(pedido));
+    return this.pedidosMovendo.has(this.pedidoId(pedido))
+      || (this.activeDragLoading && this.activeDragPedidoId === this.pedidoId(pedido));
   }
 
   tutorialTargetPedidoKanban(pedido: PedidoComercialResumo): string {
@@ -658,6 +711,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
     column.loading = reset;
     column.loadingMore = !reset;
     column.error = null;
+    column.forbidden = false;
 
     this.graficaService.listarPedidosComerciais(page, column.pageSize, status)
       .pipe(finalize(() => {
@@ -674,7 +728,8 @@ export class ComercialListComponent implements OnInit, OnDestroy {
           column.hasMore = column.items.length < column.total;
           this.garantirPedidoTutorialNoKanban();
         },
-        error: () => {
+        error: (error) => {
+          column.forbidden = error?.status === 403;
           column.error = 'Tente novamente para atualizar esta etapa.';
           if (reset) {
             column.items = [];

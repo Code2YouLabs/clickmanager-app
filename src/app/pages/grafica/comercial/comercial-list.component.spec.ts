@@ -1,3 +1,7 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { By } from '@angular/platform-browser';
+import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
+import { TutorialTargetDirective } from 'src/app/shared/tutorial/tutorial-target.directive';
 import { registerLocaleData } from '@angular/common';
 import ptBr from '@angular/common/locales/pt';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
@@ -22,9 +26,11 @@ describe('ComercialListComponent', () => {
   let primeiroPedidoTutorial: jasmine.SpyObj<PrimeiroPedidoTutorialService>;
   let data: BehaviorSubject<{ tipo: ComercialTipo }>;
   let params: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
+  let viewport: BehaviorSubject<any>;
   let pedidoAcompanhadoId: number | null;
   const page = { content: [{ id: 1, numero: 'PED-1', clienteNome: 'Maria', status: 'PENDENTE', total: 15 }], totalElements: 21 };
   beforeEach(() => {
+    viewport = new BehaviorSubject({ matches: false, breakpoints: {} });
     data = new BehaviorSubject<{ tipo: ComercialTipo }>({ tipo: 'pedidos' });
     params = new BehaviorSubject(convertToParamMap({}));
     pedidoAcompanhadoId = null;
@@ -50,6 +56,7 @@ describe('ComercialListComponent', () => {
     primeiroPedidoTutorial.targetPedidoKanban.and.returnValue('');
     Object.defineProperty(primeiroPedidoTutorial, 'pedidoAcompanhadoId', { get: () => pedidoAcompanhadoId });
     TestBed.configureTestingModule({ imports: [ComercialListComponent, NoopAnimationsModule], providers: [
+      { provide: BreakpointObserver, useValue: { observe: () => viewport } },
       { provide: GraficaProdutoService, useValue: service }, { provide: Router, useValue: router },
       { provide: MatDialog, useValue: dialog }, { provide: ToastrService, useValue: toastr },
       { provide: PrimeiroPedidoTutorialService, useValue: primeiroPedidoTutorial },
@@ -155,4 +162,64 @@ describe('ComercialListComponent', () => {
     expect(primeiroPedidoTutorial.retomarPedidoCriado).toHaveBeenCalledWith(42);
     expect(primeiroPedidoTutorial.iniciarSeNecessario).not.toHaveBeenCalled();
   });
+  it('projeta o pedido mobile com as mesmas ações, totais e detalhes financeiros', () => {
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    const item = fixture.nativeElement.querySelector('.pedido-mobile-item');
+    expect(item.textContent).toContain('PED-1'); expect(item.textContent).toContain('Maria');
+    expect(item.textContent).toContain('Pendente'); expect(item.textContent).toContain('15,00');
+    expect(fixture.nativeElement.querySelector('table')).toBeNull();
+    const buttons = item.querySelectorAll('button');
+    buttons[0].click(); expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial', 'pedidos', 1]);
+    buttons[1].click(); fixture.detectChanges();
+    expect(buttons[1].getAttribute('aria-expanded')).toBe('true');
+    expect(item.textContent).toContain('Responsável'); expect(item.textContent).toContain('Total Pago');
+    expect(item.textContent).toContain('Resta Pagar');
+    const table = fixture.debugElement.query(By.directive(DataTableComponent)).componentInstance;
+    expect(table.data).toEqual(component.itensFiltrados);
+    expect(table.pagination.totalItems).toBe(21);
+    viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.pedido-mobile-item')).toBeNull();
+    expect(fixture.nativeElement.querySelector('table')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('table').textContent).toContain('Total Pago');
+  });
+
+  it('preserva estados no item mobile: loading, vazio, erro, retry, refresh e 403', () => {
+    viewport.next({ matches: true, breakpoints: {} });
+    const response = new Subject<any>(); service.listarPedidosComerciais.and.returnValue(response);
+    fixture.detectChanges(); expect(fixture.nativeElement.textContent).toContain('Carregando registros');
+    response.next({ content: [], totalElements: 0 }); fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Nenhum registro encontrado');
+    component.carregar(); response.error({ status: 500 }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role=alert]')).toBeTruthy();
+    service.listarPedidosComerciais.and.returnValue(of(page as any));
+    fixture.nativeElement.querySelector('[role=alert] button').click(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.pedido-mobile-item')).toBeTruthy();
+    const refresh = new Subject<any>(); service.listarPedidosComerciais.and.returnValue(refresh);
+    component.carregar(); fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Atualizando registros');
+    expect(fixture.nativeElement.querySelector('.pedido-mobile-item')).toBeTruthy();
+    refresh.error({ status: 403 }); fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Acesso restrito');
+    expect(fixture.nativeElement.querySelector('.pedido-mobile-item')).toBeNull();
+  });
+
+  for (const tipo of ['orcamentos', 'rascunhos'] as const) {
+    it(`não migra ${tipo} para a apresentação de item`, () => {
+      viewport.next({ matches: true, breakpoints: {} }); data.next({ tipo }); fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('table')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('.pedido-mobile-item')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.page-card--mobile-compact')).toBeNull();
+    });
+  }
+
+  it('preserva as âncoras de lista, novo e alternância no mobile', () => {
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    const targets = fixture.debugElement.queryAll(By.directive(TutorialTargetDirective));
+    const ids = targets.map(target => target.injector.get(TutorialTargetDirective).targetId);
+    expect(ids).toContain(component.primeiroPedidoTargets.lista);
+    expect(ids).toContain(component.primeiroPedidoTargets.novo);
+    expect(ids).toContain(component.primeiroPedidoTargets.alternarKanban);
+    expect(primeiroPedidoTutorial.iniciarSeNecessario).toHaveBeenCalled();
+  });
+
 });

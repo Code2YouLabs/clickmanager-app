@@ -1,3 +1,7 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { BehaviorSubject } from 'rxjs';
+import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
+import { PedidoTrocarStatusDialogComponent } from 'src/app/components/pedido-fluxo-controles/pedido-trocar-status-dialog.component';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
@@ -13,6 +17,7 @@ import { KanbanDragEvent, KanbanDropEvent } from 'src/app/components/kanban-boar
 import { PrimeiroPedidoTutorialService } from './primeiro-pedido/primeiro-pedido-tutorial.service';
 
 describe('ComercialListComponent Kanban', () => {
+  let viewport: BehaviorSubject<any>;
   let fixture: ComponentFixture<ComercialListComponent>;
   let component: ComercialListComponent;
   let service: jasmine.SpyObj<GraficaProdutoService>;
@@ -24,6 +29,7 @@ describe('ComercialListComponent Kanban', () => {
   let queryParamMap$: Subject<ReturnType<typeof convertToParamMap>>;
 
   beforeEach(() => {
+    viewport = new BehaviorSubject({ matches: false, breakpoints: {} });
     registerLocaleData(localePt);
     service = jasmine.createSpyObj<GraficaProdutoService>('GraficaProdutoService', [
       'listarPedidosComerciais',
@@ -58,6 +64,7 @@ describe('ComercialListComponent Kanban', () => {
     TestBed.configureTestingModule({
       imports: [ComercialListComponent, NoopAnimationsModule],
       providers: [
+        { provide: BreakpointObserver, useValue: { observe: () => viewport } },
         { provide: GraficaProdutoService, useValue: service },
         { provide: Router, useValue: router },
         { provide: MatDialog, useValue: dialog },
@@ -437,6 +444,83 @@ describe('ComercialListComponent Kanban', () => {
     emitRoute('pedidos');
     component.alterarVisualizacao('kanban');
   }
+
+  it('mobile escolhe a etapa e reutiliza validação, PATCH e checkpoint do arraste', () => {
+    viewport.next({ matches: true, breakpoints: {} }); montarKanban();
+    const item = coluna('PENDENTE').items[0];
+    dialog.open.and.returnValue({ afterClosed: () => of({ status: 'EM_PRODUCAO' }) } as any);
+    component.moverPedidoMobile(item);
+    expect(dialog.open).toHaveBeenCalledWith(PedidoTrocarStatusDialogComponent, jasmine.objectContaining({
+      data: jasmine.objectContaining({ statusAtual: 'PENDENTE' }),
+    }));
+    expect(service.buscarFluxoPedidoComercial.calls.count()).toBe(2);
+    expect(service.alterarStatusPedidoComercial).toHaveBeenCalledWith(item.pedidoId!, 'EM_PRODUCAO');
+    expect(primeiroPedidoTutorial.registrarPedidoMovido).toHaveBeenCalledWith(item);
+  });
+
+  it('mobile respeita cancelamento do seletor, permissão, status finais e filtro', () => {
+    viewport.next({ matches: true, breakpoints: {} }); montarKanban();
+    const item = coluna('PENDENTE').items[0];
+    dialog.open.and.returnValue({ afterClosed: () => of(null) } as any);
+    component.moverPedidoMobile(item); expect(service.alterarStatusPedidoComercial).not.toHaveBeenCalled();
+    expect(component.pedidoMovendo(item)).toBeFalse();
+    const semPermissao = fluxo('PENDENTE', ['EM_PRODUCAO']); semPermissao.permissoes.alterarStatus = false;
+    service.buscarFluxoPedidoComercial.and.returnValue(of(semPermissao)); dialog.open.calls.reset();
+    component.moverPedidoMobile(item); expect(dialog.open).not.toHaveBeenCalled();
+    service.buscarFluxoPedidoComercial.calls.reset();
+    component.moverPedidoMobile(coluna('ENTREGUE').items[0]);
+    component.statusFiltro = 'PENDENTE'; component.moverPedidoMobile(item);
+    expect(service.buscarFluxoPedidoComercial).not.toHaveBeenCalled();
+  });
+
+  it('mobile revalida a seleção e restaura os cards se a etapa ficar bloqueada', () => {
+    viewport.next({ matches: true, breakpoints: {} }); montarKanban();
+    const source = coluna('PENDENTE'); const item = source.items[0];
+    service.buscarFluxoPedidoComercial.and.returnValues(
+      of(fluxo('PENDENTE', ['EM_PRODUCAO'])),
+      of(fluxo('PENDENTE', ['EM_PRODUCAO'], { EM_PRODUCAO: 'Etapa bloqueada' })),
+    );
+    dialog.open.and.returnValue({ afterClosed: () => of({ status: 'EM_PRODUCAO' }) } as any);
+    component.moverPedidoMobile(item);
+    expect(service.alterarStatusPedidoComercial).not.toHaveBeenCalled();
+    expect(source.items).toContain(item); expect(component.pedidoMovendo(item)).toBeFalse();
+    expect(toastr.info).toHaveBeenCalledWith('Etapa bloqueada');
+  });
+
+  for (const confirmar of [false, true]) {
+    it(`mobile ${confirmar ? 'confirma' : 'recusa'} cancelamento pelo diálogo existente`, () => {
+      viewport.next({ matches: true, breakpoints: {} }); montarKanban();
+      const item = coluna('PENDENTE').items[0];
+      dialog.open.and.returnValues(
+        { afterClosed: () => of({ status: 'CANCELADO' }) } as any,
+        { afterClosed: () => of(confirmar) } as any,
+      );
+      component.moverPedidoMobile(item);
+      expect(dialog.open.calls.mostRecent().args[0]).toBe(ConfirmDialogComponent);
+      if (confirmar) expect(service.alterarStatusPedidoComercial).toHaveBeenCalledWith(item.pedidoId!, 'CANCELADO');
+      else expect(service.alterarStatusPedidoComercial).not.toHaveBeenCalled();
+    });
+  }
+
+  it('retira o foco global ao entrar no mobile e o restaura somente no desktop', () => {
+    montarKanban(); component.toggleKanbanExpanded();
+    expect(document.body.classList.contains('cm-kanban-focus-mode')).toBeTrue();
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    expect(document.body.classList.contains('cm-kanban-focus-mode')).toBeFalse();
+    expect(fixture.nativeElement.querySelector('.kanban-expand-button')).toBeNull();
+    viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
+    expect(document.body.classList.contains('cm-kanban-focus-mode')).toBeTrue();
+  });
+
+  it('mobile distingue HTTP 403 por coluna e mantém os alvos do tutorial nos cards', () => {
+    viewport.next({ matches: true, breakpoints: {} }); montarKanban();
+    primeiroPedidoTutorial.targetPedidoKanban.and.returnValue('primeiro-pedido-kanban-card');
+    fixture.detectChanges(); expect(primeiroPedidoTutorial.targetPedidoKanban).toHaveBeenCalled();
+    service.listarPedidosComerciais.and.returnValue(throwError(() => ({ status: 403 })));
+    component.recarregarColunaKanban('PENDENTE'); fixture.detectChanges();
+    expect(coluna('PENDENTE').forbidden).toBeTrue();
+    expect(fixture.nativeElement.textContent).toContain('Acesso restrito');
+  });
 
   function coluna(status: string) {
     const column = component.kanbanColumns.find((item) => item.id === status);
