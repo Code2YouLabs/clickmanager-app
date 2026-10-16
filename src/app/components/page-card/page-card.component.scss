@@ -90,7 +90,7 @@
     --mobile-page-fab-size: 56px;
     --mobile-page-fab-gap: 16px;
   }
-  // In-flow space belongs to this card, including when content scrolls inside another container.
+  // Reserve scroll space after the card without extending its surface below the content.
   // Do not subtract ancestor padding: it may not belong to the same scroll surface.
   .page-card__fab-clearance { height: calc(var(--mobile-page-fab-size) + 2 * var(--mobile-page-fab-gap)); flex-shrink: 0; }
 

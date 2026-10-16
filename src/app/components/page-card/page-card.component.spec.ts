@@ -101,8 +101,10 @@ describe('PageCardComponent', () => {
     expect(fixture.nativeElement.querySelector('.body-content')).toBeTruthy();
     const clearance = fixture.nativeElement.querySelector('.page-card__fab-clearance');
     expect(clearance?.getAttribute('aria-hidden')).toBe('true');
-    expect(fixture.nativeElement.querySelector('mat-card').lastElementChild).toBe(clearance);
-    expect(clearance.previousElementSibling.classList.contains('page-card__footer')).toBeTrue();
+    const card = fixture.nativeElement.querySelector('mat-card');
+    expect(card.contains(clearance)).toBeFalse();
+    expect(clearance.previousElementSibling).toBe(card);
+    expect(card.lastElementChild.classList.contains('page-card__footer')).toBeTrue();
     const fab = fixture.nativeElement.querySelector('.mobile-fab-action--page');
     expect(fab.getAttribute('aria-label')).toBe('Novo produto');
     expect(fab.getAttribute('data-tutorial-target')).toBe('novo-produto');

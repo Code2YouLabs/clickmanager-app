@@ -56,7 +56,7 @@ Financeiro continua com responsável, total pago e saldo reais, pelas mesmas fun
 
 ## Reserva do FAB compartilhado
 
-Antes, PageCard subtraía `--mobile-safe-bottom-space` do ancestral para calcular padding externo. Essa conta podia zerar a reserva do card mesmo que o conteúdo utilizasse outra superfície de rolagem. Agora há um elemento de fluxo **no fim do próprio PageCard, depois de conteúdo e footer**, condicionado à mesma ação mobile e permissão do FAB.
+Antes, PageCard subtraía `--mobile-safe-bottom-space` do ancestral para calcular padding externo. Essa conta podia zerar a reserva do card mesmo que o conteúdo utilizasse outra superfície de rolagem. Agora há um elemento de fluxo **no host do PageCard, imediatamente depois do mat-card**, condicionado à mesma ação mobile e permissão do FAB. A reserva fica fora da superfície branca do cartão, preservando o espaçamento compacto após o conteúdo e o footer.
 
 `--mobile-page-fab-size` (56 px) e `--mobile-page-fab-gap` (16 px) são compartilhados pelo posicionamento do FAB e pela reserva (tamanho + dois espaçamentos). O FAB permanece acima de `--mobile-bottom-nav-height`, que já considera safe area, com fallback equivalente e um mínimo explícito de safe area mesmo quando não existe navegação inferior. Não se desconta padding de outro contêiner. Isso permite rolar o último registro, footer progressivo, erro/retry e ações até uma posição acima do botão. A reserva não aparece no desktop, sem ação autorizada ou no modo legacy. Nenhum padding específico foi colocado em Pedidos e nenhum arquivo do shell/navegação foi alterado.
 

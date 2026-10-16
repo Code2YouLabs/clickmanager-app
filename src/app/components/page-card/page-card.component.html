@@ -60,16 +60,14 @@
       </div>
     </mat-card-actions>
   </ng-container>
-  @if (showMobilePrimaryAction && floatingPrimaryAction; as action) {
-    @if (action.permission) {
-      <div *temPermissao="action.permission" class="page-card__fab-clearance" aria-hidden="true"></div>
-    } @else {
-      <div class="page-card__fab-clearance" aria-hidden="true"></div>
-    }
-  }
 </mat-card>
 
 @if (showMobilePrimaryAction && floatingPrimaryAction; as action) {
+  @if (action.permission) {
+    <div *temPermissao="action.permission" class="page-card__fab-clearance" aria-hidden="true"></div>
+  } @else {
+    <div class="page-card__fab-clearance" aria-hidden="true"></div>
+  }
   @if (action.permission) {
     <ng-container *temPermissao="action.permission"><ng-container [ngTemplateOutlet]="primaryFab"></ng-container></ng-container>
   } @else {
