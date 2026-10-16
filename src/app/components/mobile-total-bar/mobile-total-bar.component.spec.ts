@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MobileTotalBarComponent } from './mobile-total-bar.component';
 
@@ -7,16 +7,18 @@ import { MobileTotalBarComponent } from './mobile-total-bar.component';
   standalone: true,
   imports: [MobileTotalBarComponent],
   template: `
-    <app-mobile-total-bar [inlineDetails]="inlineDetails" [expanded]="expanded" detailsPanelId="test-details"
+    <app-mobile-total-bar [inlineDetails]="inlineDetails" [awaitingResult]="awaitingResult" [loading]="loading" [expanded]="expanded" detailsPanelId="test-details"
       [expandable]="expandable" valueText="R$ 123,45" actionText="Criar rascunho" [actionDisabled]="disabled"
       secondaryActionText="Revisar" [detailText]="expanded ? 'Ocultar detalhes' : 'Detalhes'"
-      (expand)="expanded = !expanded; expansions = expansions + 1"
+      (collapse)="expanded = false" (expand)="expanded = !expanded; expansions = expansions + 1"
       (action)="actions = actions + 1" (secondaryAction)="secondaryActions = secondaryActions + 1">
       <div total-bar-details><p>Distribuição da produção</p><button type="button" class="clear" (click)="clears = clears + 1">Limpar cálculo</button></div>
     </app-mobile-total-bar>`,
 })
 class HostComponent {
   inlineDetails = true;
+  awaitingResult = false;
+  loading = false;
   expanded = false;
   expandable = true;
   disabled = false;
@@ -111,6 +113,35 @@ describe('MobileTotalBarComponent — detalhes internos opcionais', () => {
     query('.mobile-total-bar__details-content').dispatchEvent(new PointerEvent('pointerup', { pointerId: 3, clientY: 100, bubbles: true }));
     expect(fixture.componentInstance.expansions).toBe(1);
   });
+
+  it('apresenta espera no mesmo painel, sem valores ou ações, com handle não expansível', fakeAsync(() => {
+    const bar = query('.mobile-total-bar');
+    fixture.componentInstance.awaitingResult = true; fixture.detectChanges(); tick(0);
+    expect(query('.mobile-total-bar')).toBe(bar);
+    expect(query('.mobile-total-bar__waiting').textContent).toContain('Aguardando cálculo');
+    expect(query('.mobile-total-bar__waiting').textContent).toContain('O resultado aparecerá aqui.');
+    expect(query('.mobile-total-bar__summary')).toBeNull(); expect(query('.mobile-total-bar__cta')).toBeNull();
+    expect(query('.mobile-total-bar__expand--button')).toBeNull(); expect(query('#test-details')).toBeNull();
+    expect(query<HTMLButtonElement>('.mobile-total-bar__handle-toggle').disabled).toBeTrue();
+    query<HTMLButtonElement>('.mobile-total-bar__handle-toggle').click(); query('.mobile-total-bar').click();
+    expect(fixture.componentInstance.expansions).toBe(0);
+    expect(query('.mobile-total-bar__waiting mat-progress-spinner')).toBeNull();
+  }));
+
+  it('recolhe ao entrar em espera, informa processamento real e retorna ao resultado na mesma superfície', fakeAsync(() => {
+    query('.mobile-total-bar__expand--button').click(); fixture.detectChanges();
+    expect(fixture.componentInstance.expanded).toBeTrue();
+    const bar = query('.mobile-total-bar');
+    fixture.componentInstance.awaitingResult = true; fixture.componentInstance.loading = true; fixture.detectChanges(); tick(0);
+    expect(fixture.componentInstance.expanded).toBeFalse();
+    expect(query('.mobile-total-bar__waiting').textContent).toContain('Calculando...');
+    expect(query('.mobile-total-bar__waiting mat-progress-spinner')).not.toBeNull();
+    fixture.componentInstance.awaitingResult = false; fixture.componentInstance.loading = false; fixture.detectChanges();
+    expect(query('.mobile-total-bar')).toBe(bar); expect(query('.mobile-total-bar__waiting')).toBeNull();
+    expect(query('.mobile-total-bar__summary').textContent).toContain('R$ 123,45');
+    expect(query<HTMLButtonElement>('.mobile-total-bar__handle-toggle').disabled).toBeFalse();
+    expect(query('#test-details').getAttribute('aria-hidden')).toBe('true');
+  }));
 
   it('mantém os detalhes recolhidos e fora da navegação por teclado', () => {
     expect(query('#test-details').getAttribute('aria-hidden')).toBe('true');

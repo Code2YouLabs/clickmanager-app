@@ -1,5 +1,6 @@
 <div class="mobile-total-bar"
-  [class.mobile-total-bar--expanded]="expanded"
+  [class.mobile-total-bar--expanded]="expanded && !awaitingResult"
+  [class.mobile-total-bar--awaiting-result]="awaitingResult"
   [class.mobile-total-bar--inline-details]="inlineDetails"
   [class.mobile-total-bar--attached]="attachedToBottomNav"
   [class.mobile-total-bar--static]="!expandable"
@@ -15,9 +16,9 @@
   <div class="mobile-total-bar__handle"></div>
   }
 
-  @if (inlineDetails && expandable) {
-    <button type="button" class="mobile-total-bar__handle-toggle"
-      [attr.aria-label]="expandAriaLabel" [attr.aria-expanded]="expanded" [attr.aria-controls]="detailsPanelId"
+  @if (inlineDetails && (expandable || awaitingResult)) {
+    <button type="button" class="mobile-total-bar__handle-toggle" [disabled]="awaitingResult || !expandable"
+      [attr.aria-label]="awaitingResult ? 'Aguardando cálculo' : expandAriaLabel" [attr.aria-expanded]="expanded && !awaitingResult" [attr.aria-controls]="detailsPanelId"
       (click)="onHandleClick($event)"
       (pointerdown)="onHandlePointerDown($event)" (pointermove)="onHandlePointerMove($event)"
       (pointerup)="onHandlePointerUp($event)" (pointercancel)="onHandlePointerCancel($event)"
@@ -26,7 +27,7 @@
     </button>
   }
 
-  @if (inlineDetails) {
+  @if (inlineDetails && !awaitingResult) {
     <div class="mobile-total-bar__details" [class.mobile-total-bar__details--expanded]="expanded"
       [id]="detailsPanelId" [attr.aria-hidden]="!expanded" [attr.inert]="expanded ? null : ''">
       <div class="mobile-total-bar__details-clip">
@@ -38,6 +39,16 @@
   }
 
   <div class="mobile-total-bar__controls">
+    @if (awaitingResult) {
+      <div class="mobile-total-bar__waiting" role="status" [attr.aria-busy]="loading">
+        @if (loading) {
+          <mat-progress-spinner diameter="18" mode="indeterminate" aria-label="Calculando"></mat-progress-spinner>
+        } @else {
+          <mat-icon aria-hidden="true">calculate</mat-icon>
+        }
+        <div><strong>{{ loading ? 'Calculando...' : 'Aguardando cálculo' }}</strong><span>O resultado aparecerá aqui.</span></div>
+      </div>
+    } @else {
   <div class="mobile-total-bar__summary" [class.mobile-total-bar__summary--compact]="!status && !detailText">
     <span class="label">{{ label }}</span>
     <span class="value" [class.value--loading]="loading">{{ valueText }}</span>
@@ -91,5 +102,6 @@
       {{ actionText }}
     </button>
   </div>
+    }
   </div>
 </div>

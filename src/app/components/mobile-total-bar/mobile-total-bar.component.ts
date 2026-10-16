@@ -1,16 +1,17 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { StatusBadgeComponent } from '../status-badge/status-badge.component';
 
 @Component({
   selector: 'app-mobile-total-bar',
   standalone: true,
-  imports: [MatButtonModule, MatIconModule, StatusBadgeComponent],
+  imports: [MatButtonModule, MatIconModule, MatProgressSpinnerModule, StatusBadgeComponent],
   templateUrl: './mobile-total-bar.component.html',
   styleUrls: ['./mobile-total-bar.component.scss'],
 })
-export class MobileTotalBarComponent {
+export class MobileTotalBarComponent implements OnChanges {
   @Input() label = 'Total estimado';
   @Input() valueText = '';
   @Input() status: string | null | undefined = null;
@@ -18,6 +19,7 @@ export class MobileTotalBarComponent {
   @Input() expandable = true;
   @Input() expanded = false;
   @Input() inlineDetails = false;
+  @Input() awaitingResult = false;
   @Input() detailsPanelId = '';
   @Input() loading = false;
   @Input() secondaryActionText = '';
@@ -30,6 +32,8 @@ export class MobileTotalBarComponent {
   @Input() bottomOffset = '0px';
   @Input() attachedToBottomNav = false;
 
+  // Notify the owner after the current input update has finished.
+  @Output() collapse = new EventEmitter<void>(true);
   @Output() expand = new EventEmitter<void>();
   @Output() secondaryAction = new EventEmitter<void>();
   @Output() action = new EventEmitter<void>();
@@ -38,15 +42,23 @@ export class MobileTotalBarComponent {
   private handlePointer: { id: number; x: number; y: number; dragged: boolean; cancelled: boolean } | null = null;
   private suppressHandleClick = false;
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['awaitingResult']?.currentValue) {
+      this.handlePointer = null;
+      this.touchStartY = null;
+      this.collapse.emit();
+    }
+  }
+
   onRootClick(): void {
-    if (!this.expandable || this.inlineDetails) {
+    if (this.awaitingResult || !this.expandable || this.inlineDetails) {
       return;
     }
     this.expand.emit();
   }
 
   onRootKeydown(event: KeyboardEvent): void {
-    if (!this.expandable || this.inlineDetails) {
+    if (this.awaitingResult || !this.expandable || this.inlineDetails) {
       return;
     }
 
@@ -59,12 +71,12 @@ export class MobileTotalBarComponent {
   }
 
   onTouchStart(event: TouchEvent): void {
-    if (this.inlineDetails) return;
+    if (this.inlineDetails || this.awaitingResult) return;
     this.touchStartY = event.changedTouches[0]?.clientY ?? null;
   }
 
   onTouchEnd(event: TouchEvent): void {
-    if (!this.expandable || this.inlineDetails) {
+    if (this.awaitingResult || !this.expandable || this.inlineDetails) {
       this.touchStartY = null;
       return;
     }
@@ -83,7 +95,7 @@ export class MobileTotalBarComponent {
   }
 
   onHandlePointerDown(event: PointerEvent): void {
-    if (!this.inlineDetails || !this.expandable || event.button !== 0) return;
+    if (this.awaitingResult || !this.inlineDetails || !this.expandable || event.button !== 0) return;
     if (!event.isPrimary || this.handlePointer) {
       this.handlePointer = null;
       this.suppressHandleClick = true;
@@ -111,7 +123,7 @@ export class MobileTotalBarComponent {
     const target = event.currentTarget as HTMLElement;
     if (target.hasPointerCapture(event.pointerId)) target.releasePointerCapture(event.pointerId);
     this.suppressHandleClick = pointer.dragged || pointer.cancelled;
-    if (!this.inlineDetails || !this.expandable || pointer.cancelled) return;
+    if (this.awaitingResult || !this.inlineDetails || !this.expandable || pointer.cancelled) return;
     const dy = event.clientY - pointer.y;
     const dx = Math.abs(event.clientX - pointer.x);
     if (Math.abs(dy) < 32 || Math.abs(dy) < dx * 1.5) return;
@@ -137,7 +149,7 @@ export class MobileTotalBarComponent {
 
   onExpandClick(event: Event): void {
     event.stopPropagation();
-    if (this.expandable) this.expand.emit();
+    if (this.expandable && !this.awaitingResult) this.expand.emit();
   }
 
   onActionClick(event: Event): void {

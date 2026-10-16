@@ -1,6 +1,6 @@
 <app-page-card
   class="smartcalc-page"
-  [class.smartcalc-page--has-result]="mobileViewport() && resultadoMobileAtual()"
+  [class.smartcalc-page--has-mobile-panel]="mobileViewport()"
   [titulo]="mobileViewport() ? 'SmartCalc' : 'SmartCalc – Calculadora Inteligente'"
   [subtitulo]="mobileViewport() ? 'Calcule e crie seu rascunho.' : 'Calcule automaticamente o melhor aproveitamento de produção.'">
   <div page-header-actions class="header-actions">
@@ -166,14 +166,16 @@
     </aside>
   </form>
 
-  @if (mobileViewport() && resultadoMobileAtual()) {
+  @if (mobileViewport()) {
     <app-mobile-total-bar
       label="Total"
       [valueText]="(total() | currency:'BRL':'symbol-narrow':'1.2-2') ?? ''"
       [detailText]="resultadoMobileAberto() ? 'Ocultar detalhes' : 'Detalhes'"
       [inlineDetails]="true"
+      [awaitingResult]="!resultadoMobileAtual()"
+      [expandable]="resultadoMobileAtual()"
       detailsPanelId="smartcalc-mobile-details"
-      [expanded]="resultadoMobileAberto()"
+      [expanded]="resultadoMobileAtual() && resultadoMobileAberto()"
       [loading]="carregandoCalculo"
       [actionText]="carregandoAdd ? 'Criando...' : 'Criar rascunho'"
       [actionDisabled]="!temResultado() || carregandoAdd || needsRecalcular() || carregandoCalculo"
@@ -182,10 +184,11 @@
       [expandAriaLabel]="resultadoMobileAberto() ? 'Ocultar detalhes do cálculo' : 'Ver detalhes do cálculo'"
       actionAriaLabel="Criar rascunho"
       (keydown.escape)="fecharResultadoMobile(); $event.stopPropagation()"
+      (collapse)="resultadoMobileAberto.set(false)"
       (expand)="alternarResultadoMobile()"
       (action)="adicionarAoPedido()">
       <div total-bar-details>
-        @if (mobileViewport()) {
+        @if (resultadoMobileAtual()) {
           <div class="mobile-calculation-details">
             <h2>Detalhes do cálculo</h2>
             <ng-container [ngTemplateOutlet]="resultContentTpl" [ngTemplateOutletContext]="{ mobile: true }"></ng-container>
@@ -195,24 +198,6 @@
         }
       </div>
     </app-mobile-total-bar>
-  } @else if (mobileViewport()) {
-    <section class="mobile-result-state" aria-labelledby="smartcalc-result-state-title">
-      <h2 id="smartcalc-result-state-title">Resumo do cálculo</h2>
-      <div class="mobile-result-state__message" role="status" [attr.aria-busy]="carregandoCalculo">
-        @if (carregandoCalculo) {
-          <mat-progress-spinner diameter="18" mode="indeterminate" aria-label="Calculando"></mat-progress-spinner>
-          <p>Calculando o resultado...</p>
-        } @else if (erroProdutos || (!carregandoConfig && !configAtiva)) {
-          <p>O resumo será exibido quando o SmartCalc estiver disponível.</p>
-        } @else if (erroCalculo) {
-          <p>Revise os dados para calcular novamente.</p>
-        } @else if (needsRecalcular()) {
-          <p>O resumo será atualizado com os dados informados.</p>
-        } @else {
-          <p>O resultado aparecerá aqui após preencher os dados necessários.</p>
-        }
-      </div>
-    </section>
   }
 
   <ng-template #mobileStepHeader let-step let-title="title">

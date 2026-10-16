@@ -39,6 +39,15 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
   const query = <T extends HTMLElement = HTMLElement>(selector: string): T => fixture.nativeElement.querySelector(selector);
   const cta = () => query<HTMLButtonElement>('.mobile-total-bar__cta');
   const text = (selector: string) => query(selector)?.textContent?.replace(/\s+/g, ' ').trim();
+  const expectAwaitingPanel = () => {
+    expect(query('app-mobile-total-bar')).not.toBeNull();
+    expect(query('.mobile-total-bar--awaiting-result')).not.toBeNull();
+    expect(query('.mobile-total-bar__summary')).toBeNull();
+    expect(cta()).toBeNull();
+    expect(query('.mobile-total-bar__expand--button')).toBeNull();
+    expect(query('#smartcalc-mobile-details')).toBeNull();
+    expect(query<HTMLButtonElement>('.mobile-total-bar__handle-toggle').disabled).toBeTrue();
+  };
   const render = () => { fixture.detectChanges(); tick(0); fixture.detectChanges(); };
   const fill = () => {
     component.form.controls.produtoId.setValue(1);
@@ -76,7 +85,7 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     else Reflect.deleteProperty(window, 'innerWidth');
   });
 
-  it('prioriza o formulário vazio sem rodapé ou espaço reservado a ele', fakeAsync(() => {
+  it('mantém o formulário inicial sem resumo artificial e o painel inferior discreto', fakeAsync(() => {
     render();
     expect(text('app-card-header')).toContain('SmartCalc');
     expect(text('app-card-header')).not.toContain('Calculadora Inteligente');
@@ -84,11 +93,14 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     expect(query('#smartcalc-step-1').hidden).toBeFalse();
     expect(query('#smartcalc-step-2').hidden).toBeTrue();
     expect(query('#smartcalc-step-3').hidden).toBeTrue();
-    expect(query('app-mobile-total-bar')).toBeNull();
-    expect(query('.smartcalc-page--has-result')).toBeNull();
-    expect(text('.mobile-result-state h2')).toBe('Resumo do cálculo');
-    expect(text('.mobile-result-state')).toContain('O resultado aparecerá aqui após preencher os dados necessários.');
-    expect(query('.mobile-result-state mat-progress-spinner')).toBeNull();
+    expectAwaitingPanel();
+    expect(query('.smartcalc-page--has-mobile-panel')).not.toBeNull();
+    expect(text('.mobile-total-bar__waiting strong')).toBe('Aguardando cálculo');
+    expect(text('.mobile-total-bar__waiting')).toContain('O resultado aparecerá aqui.');
+    expect(query('.mobile-total-bar__waiting mat-progress-spinner')).toBeNull();
+    expect(query('.mobile-result-state')).toBeNull();
+    expect(query('form.smartcalc-layout').textContent).not.toContain('Resumo do cálculo');
+    expect(fixture.nativeElement.textContent).not.toContain('O resultado aparecerá aqui após preencher os dados necessários.');
     expect(data.calcularSmartCalc).not.toHaveBeenCalled();
     expect(initService.carregarInit$).toHaveBeenCalledTimes(1);
   }));
@@ -139,8 +151,8 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     query('#smartcalc-step-toggle-3').click(); fixture.detectChanges();
     expect(query('#smartcalc-step-2').hidden).toBeFalse();
     expect(text('#smartcalc-step-toggle-2')).toContain('Revise os campos');
-    expect(query('app-mobile-total-bar')).toBeNull();
-    expect(query('.smartcalc-page--has-result')).toBeNull();
+    expectAwaitingPanel();
+    expect(query('.smartcalc-page--has-mobile-panel')).not.toBeNull();
     tick(300); expect(data.calcularSmartCalc).not.toHaveBeenCalled();
   }));
 
@@ -148,18 +160,18 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     render(); fill();
     const pending = new Subject<SmartCalcResultado>(); data.calcularSmartCalc.and.returnValue(pending);
     component.form.controls.quantidade.setValue(1000); fixture.detectChanges();
-    expect(query('app-mobile-total-bar')).toBeNull();
-    expect(query('.mobile-result-state mat-progress-spinner')).toBeNull();
-    expect(text('.mobile-result-state')).toContain('O resumo será atualizado');
+    expectAwaitingPanel();
+    expect(query('.mobile-total-bar__waiting mat-progress-spinner')).toBeNull();
+    expect(text('.mobile-total-bar__waiting')).toContain('Aguardando cálculo');
     tick(300); fixture.detectChanges();
     expect(component.carregandoCalculo).toBeTrue();
-    expect(query('.mobile-result-state mat-progress-spinner')).not.toBeNull();
-    expect(query('.smartcalc-page--has-result')).toBeNull();
-    expect(query('app-mobile-total-bar')).toBeNull();
+    expect(query('.mobile-total-bar__waiting mat-progress-spinner')).not.toBeNull();
+    expect(query('.smartcalc-page--has-mobile-panel')).not.toBeNull();
+    expectAwaitingPanel();
     pending.next({ ...resultado, total: 250 }); pending.complete(); fixture.detectChanges();
     expect(text('.mobile-total-bar__summary .value')).toContain('250.00');
     expect(cta().disabled).toBeFalse();
-    expect(query('.mobile-result-state')).toBeNull();
+    expect(query('.mobile-total-bar__waiting')).toBeNull();
     expect(data.calcularSmartCalc).toHaveBeenCalledTimes(2);
   }));
 
@@ -178,8 +190,8 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     render(); query('#smartcalc-step-toggle-3').click(); fixture.detectChanges();
     expect(query('#smartcalc-step-3').hidden).toBeFalse();
     expect(text('#smartcalc-step-3')).toContain('Nenhum acabamento disponível para este produto.');
-    expect(query('app-mobile-total-bar')).toBeNull();
-    expect(query('.smartcalc-page--has-result')).toBeNull();
+    expectAwaitingPanel();
+    expect(query('.smartcalc-page--has-mobile-panel')).not.toBeNull();
   }));
 
   it('expande os detalhes do resultado na mesma barra e recolhe por Escape sem bloquear a página', fakeAsync(() => {
@@ -255,10 +267,10 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     expect(component.etapaMobileAberta()).toBe(1);
     expect(component.form.controls.produtoId.value).toBeNull();
     expect(component.total()).toBe(0);
-    expect(text('.mobile-result-state')).toContain('O resultado aparecerá aqui');
-    expect(query('.mobile-result-state mat-progress-spinner')).toBeNull();
-    expect(query('app-mobile-total-bar')).toBeNull();
-    expect(query('.smartcalc-page--has-result')).toBeNull();
+    expect(text('.mobile-total-bar__waiting')).toContain('O resultado aparecerá aqui');
+    expect(query('.mobile-total-bar__waiting mat-progress-spinner')).toBeNull();
+    expectAwaitingPanel();
+    expect(query('.smartcalc-page--has-mobile-panel')).not.toBeNull();
   }));
 
   it('mostra erros do cálculo no formulário mesmo com detalhes recolhidos', fakeAsync(() => {
@@ -266,8 +278,8 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     render(); fill();
     expect(text('.feedback--error')).toContain('As medidas informadas não cabem');
     expect(query('[role="dialog"]')).toBeNull();
-    expect(query('app-mobile-total-bar')).toBeNull();
-    expect(query('.smartcalc-page--has-result')).toBeNull();
+    expectAwaitingPanel();
+    expect(query('.smartcalc-page--has-mobile-panel')).not.toBeNull();
   }));
 
   it('preserva a criação do rascunho e a rota existente pelo CTA, sem abrir detalhes', fakeAsync(() => {
@@ -285,7 +297,7 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     expect(cta().disabled).toBeTrue(); expect(text('.mobile-total-bar__cta')).toBe('Criando...');
     pending.next({ id: 42 }); pending.complete(); fixture.detectChanges();
     component.resultado.set({ itens: [], total: 0 }); fixture.detectChanges();
-    expect(query('app-mobile-total-bar')).toBeNull();
+    expectAwaitingPanel();
   }));
 
   it('preserva a desativação do SmartCalc e não cria cálculos', fakeAsync(() => {
@@ -293,8 +305,8 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     render();
     expect(text('.feedback--warning')).toContain('SmartCalc desativado');
     expect(component.form.disabled).toBeTrue();
-    expect(query('app-mobile-total-bar')).toBeNull();
-    expect(query('.smartcalc-page--has-result')).toBeNull();
+    expectAwaitingPanel();
+    expect(query('.smartcalc-page--has-mobile-panel')).not.toBeNull();
     tick(300); expect(data.calcularSmartCalc).not.toHaveBeenCalled();
   }));
 
@@ -368,43 +380,43 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     expect(fixture.nativeElement.querySelectorAll('.mobile-production dd').length).toBe(2);
   }));
 
-  it('aguarda o primeiro resultado e remove o rodapé se o recálculo falhar', fakeAsync(() => {
+  it('mantém o painel discreto antes do resultado e quando o recálculo falha', fakeAsync(() => {
     const pending = new Subject<SmartCalcResultado>(); data.calcularSmartCalc.and.returnValue(pending);
     render(); fill();
-    expect(query('app-mobile-total-bar')).toBeNull();
-    expect(query('.smartcalc-page--has-result')).toBeNull();
+    expectAwaitingPanel();
+    expect(query('.smartcalc-page--has-mobile-panel')).not.toBeNull();
     pending.next(resultado); pending.complete(); fixture.detectChanges();
     expect(cta().disabled).toBeFalse();
     const recalculo = new Subject<SmartCalcResultado>(); data.calcularSmartCalc.and.returnValue(recalculo);
     openDetails(); component.form.controls.quantidade.setValue(1000); tick(300); fixture.detectChanges();
-    expect(query('app-mobile-total-bar')).toBeNull();
-    expect(query('.mobile-result-state mat-progress-spinner')).not.toBeNull();
-    recalculo.error({ error: { message: 'SEM_PRECO_CONFIGURADO' } }); fixture.detectChanges();
+    expectAwaitingPanel();
+    expect(query('.mobile-total-bar__waiting mat-progress-spinner')).not.toBeNull();
+    recalculo.error({ error: { message: 'SEM_PRECO_CONFIGURADO' } }); fixture.detectChanges(); tick(0);
     expect(text('.feedback--error')).toContain('Não há preço configurado');
-    expect(query('app-mobile-total-bar')).toBeNull();
-    expect(query('.smartcalc-page--has-result')).toBeNull();
+    expectAwaitingPanel();
+    expect(query('.smartcalc-page--has-mobile-panel')).not.toBeNull();
     expect(component.resultadoMobileAberto()).toBeFalse();
   }));
 
-  it('exibe o rodapé apenas após resultado útil e inicia recolhido, inclusive com total zero válido', fakeAsync(() => {
+  it('alterna de espera para resultado recolhido, inclusive com total zero válido', fakeAsync(() => {
     data.calcularSmartCalc.and.returnValue(of({ ...resultado, total: 0 }));
     render();
-    expect(query('app-mobile-total-bar')).toBeNull();
+    expectAwaitingPanel();
     fill();
     expect(query('app-mobile-total-bar')).not.toBeNull();
-    expect(query('.smartcalc-page--has-result')).not.toBeNull();
+    expect(query('.smartcalc-page--has-mobile-panel')).not.toBeNull();
     expect(text('.mobile-total-bar__summary .value')).toContain('0.00');
     expect(cta().disabled).toBeFalse();
     expect(query('#smartcalc-mobile-details').getAttribute('aria-hidden')).toBe('true');
     expect(query('.mobile-total-bar__handle-toggle')).not.toBeNull();
   }));
 
-  it('remove o rodapé ao invalidar o formulário e recria recolhido sem consultas extras', fakeAsync(() => {
+  it('retorna o mesmo painel ao estado de espera ao invalidar e depois recolhido ao calcular', fakeAsync(() => {
     render(); fill(); openDetails();
     component.form.controls.altura.setValue(null); fixture.detectChanges(); tick(300);
-    expect(query('app-mobile-total-bar')).toBeNull();
+    expectAwaitingPanel();
     expect(component.resultadoMobileAberto()).toBeFalse();
-    expect(query('.smartcalc-page--has-result')).toBeNull();
+    expect(query('.smartcalc-page--has-mobile-panel')).not.toBeNull();
     component.form.controls.altura.setValue(5); tick(300); fixture.detectChanges();
     expect(query('app-mobile-total-bar')).not.toBeNull();
     expect(query('#smartcalc-mobile-details').getAttribute('aria-hidden')).toBe('true');
@@ -412,21 +424,22 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     expect(initService.carregarInit$).toHaveBeenCalledTimes(1);
   }));
 
-  it('acompanha o tamanho da barra ao aparecer e volta a observar após recriação', fakeAsync(() => {
+  it('preserva o painel e seus elementos medidos ao alternar entre vazio e calculado', fakeAsync(() => {
     const observe = spyOn(ResizeObserver.prototype, 'observe').and.callThrough();
-    const disconnect = spyOn(ResizeObserver.prototype, 'disconnect').and.callThrough();
-    render(); fill();
-    const firstBar = query('.mobile-total-bar');
-    expect(observe).toHaveBeenCalledWith(firstBar);
-    expect(observe).toHaveBeenCalledWith(query('.mobile-total-bar__controls'));
-    expect(observe).toHaveBeenCalledWith(query('.mobile-total-bar__handle-toggle'));
-    const before = disconnect.calls.count();
-    component.form.controls.altura.setValue(null); fixture.detectChanges();
-    expect(disconnect.calls.count()).toBeGreaterThan(before);
+    render();
+    const bar = query('.mobile-total-bar');
+    const controls = query('.mobile-total-bar__controls'); const handle = query('.mobile-total-bar__handle-toggle');
+    expect(observe).toHaveBeenCalledWith(bar); expect(observe).toHaveBeenCalledWith(controls); expect(observe).toHaveBeenCalledWith(handle);
+    fill(); openDetails();
+    expect(query('.mobile-total-bar')).toBe(bar);
+    component.form.controls.altura.setValue(null); fixture.detectChanges(); tick(0);
+    expectAwaitingPanel();
+    expect(component.resultadoMobileAberto()).toBeFalse();
+    expect(query('.mobile-total-bar')).toBe(bar);
     component.form.controls.altura.setValue(5); tick(300); fixture.detectChanges();
-    const nextBar = query('.mobile-total-bar');
-    expect(nextBar).not.toBe(firstBar);
-    expect(observe).toHaveBeenCalledWith(nextBar);
+    expect(query('.mobile-total-bar')).toBe(bar);
+    expect(query('.mobile-total-bar__controls')).toBe(controls); expect(query('.mobile-total-bar__handle-toggle')).toBe(handle);
+    expect(query('#smartcalc-mobile-details').getAttribute('aria-hidden')).toBe('true');
   }));
 
   it('mantém os grupos e a ação final dentro da área de detalhes, separados dos controles do rodapé', fakeAsync(() => {
@@ -450,16 +463,17 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     expect(query('.mobile-total-bar__controls').contains(cta())).toBeTrue();
   }));
 
-  it('orienta o preenchimento parcial após as etapas sem spinner, total ou CTA', fakeAsync(() => {
+  it('mantém orientação parcial somente no painel inferior, sem spinner, total ou CTA', fakeAsync(() => {
     render(); component.form.controls.produtoId.setValue(1); fixture.detectChanges(); tick(300);
     expect(component.form.controls.materialId.value).toBe(20);
-    expect(text('.mobile-result-state')).toContain('O resultado aparecerá aqui');
-    expect(query('.mobile-result-state mat-progress-spinner')).toBeNull();
-    expect(query('.mobile-result-state .value')).toBeNull();
-    expect(query('.mobile-result-state button')).toBeNull();
-    expect(query('app-mobile-total-bar')).toBeNull();
+    expect(text('.mobile-total-bar__waiting')).toContain('O resultado aparecerá aqui');
+    expect(query('.mobile-total-bar__waiting mat-progress-spinner')).toBeNull();
+    expect(query('.mobile-total-bar__waiting .value')).toBeNull();
+    expect(query('.mobile-total-bar__waiting button')).toBeNull();
+    expectAwaitingPanel();
     const form = query('form.smartcalc-layout');
-    expect(form.compareDocumentPosition(query('.mobile-result-state')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(form.contains(query('.mobile-total-bar__waiting'))).toBeFalse();
+    expect(query('app-mobile-total-bar').contains(query('.mobile-total-bar__waiting'))).toBeTrue();
     expect(data.calcularSmartCalc).not.toHaveBeenCalled();
   }));
 
@@ -468,14 +482,14 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     const form = component.form;
     const inputs = Array.from(fixture.nativeElement.querySelectorAll('mat-select, app-input-numerico input'));
     fill();
-    expect(query('.mobile-result-state')).toBeNull();
+    expect(query('.mobile-total-bar__waiting')).toBeNull();
     expect(query('app-mobile-total-bar')).not.toBeNull();
     expect(component.form).toBe(form);
     expect(Array.from(fixture.nativeElement.querySelectorAll('mat-select, app-input-numerico input'))).toEqual(inputs);
     expect(component.form.getRawValue()).toEqual(jasmine.objectContaining({ produtoId: 1, materialId: 20, largura: 9, altura: 5, quantidade: 500 }));
-    component.form.controls.altura.setValue(null); fixture.detectChanges();
-    expect(query('app-mobile-total-bar')).toBeNull();
-    expect(query('.mobile-result-state')).not.toBeNull();
+    component.form.controls.altura.setValue(null); fixture.detectChanges(); tick(0);
+    expectAwaitingPanel();
+    expect(query('.mobile-total-bar__waiting')).not.toBeNull();
     expect(component.form).toBe(form);
     expect(component.form.controls.quantidade.value).toBe(500);
     expect(Array.from(fixture.nativeElement.querySelectorAll('mat-select, app-input-numerico input'))).toEqual(inputs);
@@ -484,13 +498,13 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
   it('indica processamento real sem repetir o spinner no cabeçalho mobile', fakeAsync(() => {
     const pending = new Subject<SmartCalcResultado>(); data.calcularSmartCalc.and.returnValue(pending);
     render(); fill();
-    expect(query('.mobile-result-state__message').getAttribute('aria-busy')).toBe('true');
-    expect(text('.mobile-result-state')).toContain('Calculando o resultado...');
-    expect(query('.mobile-result-state mat-progress-spinner')).not.toBeNull();
+    expect(query('.mobile-total-bar__waiting').getAttribute('aria-busy')).toBe('true');
+    expect(text('.mobile-total-bar__waiting')).toContain('Calculando...');
+    expect(query('.mobile-total-bar__waiting mat-progress-spinner')).not.toBeNull();
     expect(query('app-card-header mat-progress-spinner')).toBeNull();
     expect(query('.mobile-flow-status')).toBeNull();
     pending.next(resultado); pending.complete(); fixture.detectChanges();
-    expect(query('.mobile-result-state')).toBeNull();
+    expect(query('.mobile-total-bar__waiting')).toBeNull();
     expect(text('.mobile-total-bar__summary .value')).toContain('123.45');
   }));
 
@@ -498,12 +512,12 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     const pending = new Subject<SmartCalcResultado>(); data.calcularSmartCalc.and.returnValue(pending);
     render(); fill();
     component.form.controls.altura.setValue(null); fixture.detectChanges();
-    expect(query('.mobile-result-state mat-progress-spinner')).toBeNull();
+    expect(query('.mobile-total-bar__waiting mat-progress-spinner')).toBeNull();
     pending.next(resultado); pending.complete(); fixture.detectChanges();
-    expect(query('app-mobile-total-bar')).toBeNull();
+    expectAwaitingPanel();
     expect(component.total()).toBe(0);
-    expect(query('.mobile-result-state')).not.toBeNull();
-    expect(query('.smartcalc-page--has-result')).toBeNull();
+    expect(query('.mobile-total-bar__waiting')).not.toBeNull();
+    expect(query('.smartcalc-page--has-mobile-panel')).not.toBeNull();
   }));
 
   it('esconde valores anteriores durante cálculo manual mesmo sem sinal de debounce', fakeAsync(() => {
@@ -511,10 +525,20 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     const pending = new Subject<SmartCalcResultado>(); data.calcularSmartCalc.and.returnValue(pending);
     component.calcular(); fixture.detectChanges();
     expect(component.needsRecalcular()).toBeFalse();
-    expect(query('app-mobile-total-bar')).toBeNull();
-    expect(query('.mobile-result-state mat-progress-spinner')).not.toBeNull();
+    expectAwaitingPanel();
+    expect(query('.mobile-total-bar__waiting mat-progress-spinner')).not.toBeNull();
     pending.next({ ...resultado, total: 300 }); pending.complete(); fixture.detectChanges();
     expect(text('.mobile-total-bar__summary .value')).toContain('300.00');
+  }));
+
+  it('mantém o handle vazio desabilitado e sem área de expansão', fakeAsync(() => {
+    render();
+    const handle = query<HTMLButtonElement>('.mobile-total-bar__handle-toggle');
+    handle.click(); fixture.detectChanges();
+    expect(component.resultadoMobileAberto()).toBeFalse();
+    expect(query('#smartcalc-mobile-details')).toBeNull();
+    expect(handle.getAttribute('aria-expanded')).toBe('false');
+    expect(handle.getAttribute('aria-label')).toBe('Aguardando cálculo');
   }));
 
   it('mantém o desktop com títulos, seções abertas, resultado e criação originais', fakeAsync(() => {
@@ -528,9 +552,9 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     expect(text('.smartcalc-layout__main')).toContain('3. Acabamentos');
     expect(text('.smartcalc-layout__sidebar')).toContain('Resultado do cálculo');
     expect(query('.mobile-flow-status')).toBeNull();
-    expect(query('.mobile-result-state')).toBeNull();
+    expect(query('.mobile-total-bar__waiting')).toBeNull();
     expect(query('app-mobile-total-bar')).toBeNull();
-    expect(query('.smartcalc-page--has-result')).toBeNull();
+    expect(query('.smartcalc-page--has-mobile-panel')).toBeNull();
     expect(fixture.nativeElement.querySelectorAll('.smartcalc-layout__sidebar app-metric-card').length).toBe(3);
     expect(query('.smartcalc-layout__sidebar .total-summary')).not.toBeNull();
     query<HTMLButtonElement>('.smartcalc-layout__sidebar button[mat-flat-button]').click();

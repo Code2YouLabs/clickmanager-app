@@ -445,8 +445,8 @@
 
 @media (max-width: 900px) {
   .smartcalc-page { padding-bottom: 16px; }
-  .smartcalc-page--has-result {
-    padding-bottom: calc(var(--smartcalc-mobile-total-bar-height, 108px) + var(--mobile-bottom-nav-height, 60px) + 16px);
+  .smartcalc-page--has-mobile-panel {
+    padding-bottom: calc(var(--smartcalc-mobile-total-bar-height, 72px) + var(--mobile-bottom-nav-height, 60px) + 16px);
   }
 
   .mobile-flow-status {
@@ -590,15 +590,4 @@
   .mobile-calculation-details .distribution-row span { line-height: 1.5; }
   .mobile-calculation-details .distribution-row strong { font-size: 0.875rem; color: #334155; font-weight: 600; overflow-wrap: anywhere; }
   .total-summary strong { white-space: normal; overflow-wrap: anywhere; }
-}
-
-@media (max-width: 900px) {
-  .mobile-result-state {
-    padding: 16px 0 8px;
-    color: var(--mat-sys-on-surface-variant, #64748b);
-  }
-  .mobile-result-state h2 { margin: 0 0 8px; font-size: 0.875rem; font-weight: 600; color: #475569; }
-  .mobile-result-state__message { display: flex; align-items: center; gap: 8px; }
-  .mobile-result-state__message p { margin: 0; font-size: 0.875rem; line-height: 1.5; }
-  .mobile-result-state__message mat-progress-spinner { flex-shrink: 0; }
 }
