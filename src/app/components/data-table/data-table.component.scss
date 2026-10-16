@@ -87,7 +87,6 @@
   .data-table-container--mobile-compact {
     min-width: 0;
     .data-table-items { gap: 12px; }
-    .data-table-page { margin-top: 12px; font-size: 12px; line-height: 16px; color: var(--mat-sys-on-surface-variant); }
     ::ng-deep .mat-mdc-paginator-container { padding: 0; gap: 4px; justify-content: space-between; }
     ::ng-deep .mat-mdc-paginator-page-size { margin-right: 0; align-items: center; }
     ::ng-deep .mat-mdc-paginator-page-size-label { margin-left: 0; white-space: normal; }
@@ -95,4 +94,20 @@
     ::ng-deep .mat-mdc-paginator-navigation-previous,
     ::ng-deep .mat-mdc-paginator-navigation-next { min-width: 44px; min-height: 44px; }
   }
+}
+
+@include mobile.mobile-foundation {
+  .data-table-container { min-height: 0; }
+  .data-table-container--initial-loading { min-height: 180px; }
+  .data-table-empty { padding: 16px 12px; text-align: left; display: grid; gap: 4px; }
+  .data-table-empty strong { margin: 0; font-size: 16px; line-height: 24px; }
+  .data-table-empty span { font-size: 14px; line-height: 20px; }
+  .data-table-empty__actions:empty { display: none; }
+  .data-table-empty__actions { margin-top: 8px; }
+  .data-table-mobile-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; }
+  .data-table-mobile-pagination__summary { display: grid; gap: 4px; font-size: 12px; line-height: 16px; }
+  .data-table-mobile-pagination__summary strong { font-weight: 600; }
+  .data-table-mobile-pagination__summary span { color: var(--mat-sys-on-surface-variant); }
+  .data-table-mobile-pagination__controls { display: flex; align-items: center; }
+  .data-table-mobile-pagination button { min-width: 44px; min-height: 44px; }
 }

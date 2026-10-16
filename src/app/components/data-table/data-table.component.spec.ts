@@ -46,6 +46,7 @@ interface TestRow extends Record<string, unknown> {
         <span class="custom-name">Produto: {{ row.name }}</span>
       </ng-template>
       <button data-table-toolbar-actions>Importar</button>
+      <button data-table-empty-actions (click)="emptyClicks = emptyClicks + 1">Cadastrar</button>
       <ng-template appDataTableCell="__expandedDetail" let-row><span class="details">Detalhe {{ row.name }}</span></ng-template>
       @if (mobile) {
         <ng-template [appDataTableItem]="data" let-row let-actions="actions" let-emit="emitAction" let-toggle="toggle" let-expanded="expanded">
@@ -90,6 +91,7 @@ class HostComponent {
   error: string | null = null;
   forbidden = false;
   expandable = false;
+  emptyClicks = 0;
   compact = false;
   mobile = false;
   retries = 0;
@@ -124,7 +126,7 @@ describe('DataTableComponent', () => {
     viewport = new BehaviorSubject<{ matches: boolean; breakpoints: Record<string, boolean> }>({ matches: false, breakpoints: {} });
     TestBed.configureTestingModule({
       imports: [HostComponent, NoopAnimationsModule],
-      providers: [{ provide: BreakpointObserver, useValue: { observe: () => viewport } }],
+      providers: [{ provide: BreakpointObserver, useValue: { observe: () => viewport, isMatched: () => false } }],
     });
 
     fixture = TestBed.createComponent(HostComponent);
@@ -284,13 +286,13 @@ describe('DataTableComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Importar');
     table.emitAction({ ...host.data[0], status: 'Inativo' }, host.actions[1]); expect(host.lastAction).toBeNull();
   });
-  it('usa item mobile opcional com mesmos dados, acoes, expansao e paginator', () => {
+  it('usa item mobile opcional com mesmos dados, acoes, expansao e paginação', () => {
     host.mobile = true; host.expandable = true; fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('table')).toBeTruthy();
     viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('table')).toBeNull();
     expect(fixture.nativeElement.querySelector('.mobile-name').textContent).toBe('Panfleto');
-    expect(fixture.nativeElement.querySelector('mat-paginator')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.data-table-mobile-pagination')).toBeTruthy();
     fixture.nativeElement.querySelector('.mobile-action').click(); expect(host.lastAction?.action).toBe('edit');
     fixture.nativeElement.querySelector('.mobile-expand').click(); fixture.detectChanges();
     expect(table.isExpanded(host.data[0])).toBeTrue();
@@ -301,22 +303,48 @@ describe('DataTableComponent', () => {
     expect(fixture.nativeElement.querySelector('table')).toBeTruthy();
   });
 
-  it('compacta paginação somente por opt-in no mobile e conserva o contrato de página', () => {
-    host.mobile = true; host.compact = true;
+  it('pagina no mobile por controles compartilhados e conserva o MatPaginator desktop', () => {
+    host.mobile = true;
     host.pagination = { pageIndex: 1, pageSize: 10, totalItems: 42, pageSizeOptions: [10, 20] };
     viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.data-table-page').textContent).toContain('Página 2 de 5');
-    const paginator = fixture.debugElement.query(By.css('mat-paginator')).componentInstance;
-    expect(paginator.pageSizeOptions).toEqual([10, 20]);
-    expect(paginator.showFirstLastButtons).toBeFalse();
-    paginator.nextPage();
-    expect(host.lastPage).toEqual(jasmine.objectContaining({ pageIndex: 2, pageSize: 10, length: 42 }));
-    host.refreshing = true; fixture.detectChanges(); expect(paginator.disabled).toBeTrue();
+    expect(fixture.nativeElement.textContent).toContain('11–20 de 42 registros');
+    expect(fixture.nativeElement.querySelector('mat-paginator')).toBeNull();
+    fixture.nativeElement.querySelector('[aria-label="Próxima página"]').click();
+    expect(host.lastPage).toEqual({ pageIndex: 2, pageSize: 10, length: 42, previousPageIndex: 1 });
+    table.onMobilePageSize(20);
+    expect(host.lastPage).toEqual({ pageIndex: 0, pageSize: 20, length: 42, previousPageIndex: 1 });
+    host.refreshing = true; fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[aria-label="Próxima página"]').disabled).toBeTrue();
+    const before = host.lastPage; table.onMobilePage(1); expect(host.lastPage).toBe(before);
     host.refreshing = false;
     viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.data-table-page')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.data-table-mobile-pagination')).toBeNull();
     expect(fixture.nativeElement.querySelector('table')).toBeTruthy();
-    expect(paginator.showFirstLastButtons).toBeTrue();
+    const paginator = fixture.debugElement.query(By.css('mat-paginator')).componentInstance;
+    expect(paginator.showFirstLastButtons).toBeTrue(); expect(paginator.pageSizeOptions).toEqual([10, 20]);
+  });
+
+  it('mostra vazio e paginação sem dados sem apresentar cabeçalho de tabela no mobile', () => {
+    host.data = []; host.pagination = { pageIndex: 0, pageSize: 10, totalItems: 0, pageSizeOptions: [10, 20] };
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('table')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Nenhum cadastro');
+    expect(fixture.nativeElement.textContent).toContain('Cadastre um item.');
+    fixture.nativeElement.querySelector('[data-table-empty-actions]').click(); expect(host.emptyClicks).toBe(1);
+    expect(fixture.nativeElement.textContent).toContain('Página 1 de 1');
+    expect(fixture.nativeElement.textContent).toContain('0–0 de 0 registros');
+    expect(fixture.nativeElement.querySelector('[aria-label="Página anterior"]').disabled).toBeTrue();
+    expect(fixture.nativeElement.querySelector('[aria-label="Próxima página"]').disabled).toBeTrue();
+    table.onMobilePage(1); expect(host.lastPage).toBeNull();
+  });
+
+  it('preserva âncora do primeiro item ao mudar tamanho de página e rejeita tamanhos inválidos', () => {
+    host.pagination = { pageIndex: 3, pageSize: 10, totalItems: 92, pageSizeOptions: [10, 20] }; fixture.detectChanges();
+    table.onMobilePageSize(20);
+    expect(host.lastPage).toEqual({ pageIndex: 1, pageSize: 20, length: 92, previousPageIndex: 3 });
+    const before = host.lastPage; table.onMobilePageSize(0); expect(host.lastPage).toBe(before);
+    table.onMobilePageSize(99); expect(host.lastPage).toBe(before);
   });
 
   it('oferece a ordenação das mesmas colunas no item mobile sem ordenar outra fonte', () => {
@@ -339,5 +367,17 @@ describe('DataTableComponent', () => {
     table.onClearFilters();
     expect(host.lastFilters).toEqual({});
   });
+
+  it('integra aplicar filtros do painel com o mesmo adaptador tipado do DataTable', fakeAsync(() => {
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.list-mobile-toolbar__title')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Importar');
+    table.filterBar!.openMobileFilters(); tick(); fixture.detectChanges();
+    table.filterBar!.onFieldChange('materialId', 10);
+    expect(host.lastFilters).toBeNull();
+    table.filterBar!.applyMobileFilters(); tick(500); fixture.detectChanges();
+    expect(host.lastFilters).toEqual({ materialId: 10 });
+    expect(table.filterBar!.mobileFiltersOpen).toBeFalse();
+  }));
 
 });

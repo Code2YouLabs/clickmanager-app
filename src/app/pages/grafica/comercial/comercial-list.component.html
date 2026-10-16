@@ -10,7 +10,6 @@
         ? 'A busca por texto considera somente os cards carregados. O filtro de status consulta todos os registros.'
         : 'A busca por texto considera os registros da página atual. O filtro de status consulta todos os registros.' }}</p>
       <app-data-table
-        [mobileCompact]="tipo === 'pedidos'"
         [columns]="columns"
         [data]="itensFiltrados"
         [search]="{ enabled: true, label: isMobile && viewMode === 'kanban' ? 'Buscar nos cards carregados' : 'Buscar nesta página', placeholder: isMobile && viewMode === 'kanban' ? 'Referência, cliente ou status nos cards carregados' : 'Referência, cliente ou status nesta página', debounceMs: 250, value: busca }"
@@ -33,7 +32,6 @@
 
         <div data-table-toolbar-actions class="view-mode-actions" *ngIf="podeAlternarKanban">
           <app-view-mode-toggle
-            [mobileCompact]="tipo === 'pedidos'"
             [appTutorialTarget]="tipo === 'pedidos' ? primeiroPedidoTargets.alternarKanban : ''"
             [value]="viewMode"
             [options]="viewModeOptions"

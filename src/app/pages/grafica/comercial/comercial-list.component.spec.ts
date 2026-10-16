@@ -239,7 +239,7 @@ describe('ComercialListComponent', () => {
       expect(router.navigate).toHaveBeenCalledOnceWith(['/page/grafica/comercial', 'pedidos', 'novo']);
       expect(fixture.nativeElement.querySelector('app-view-mode-toggle')).toBeTruthy();
       expect(fixture.nativeElement.querySelector('input[type=search]')).toBeTruthy();
-      expect(fixture.nativeElement.querySelector(mode === 'lista' ? 'mat-paginator' : 'app-kanban-board')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector(mode === 'lista' ? '.data-table-mobile-pagination' : 'app-kanban-board')).toBeTruthy();
     }
     viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).toBeNull();

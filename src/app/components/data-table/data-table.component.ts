@@ -55,7 +55,10 @@ import {
 export class DataTableComponent<T = unknown>
   implements AfterContentInit, OnChanges, OnDestroy {
 
-  @Input() mobileCompact = false;
+  @Input() mobileCompact = true;
+  @Input() mobileFilterPresentation: 'sheet' | 'inline' = 'sheet';
+  @Input() mobileShowToolbarTitle = false;
+  @Input() mobilePagination: 'compact' | 'material' = 'compact';
   @Input() columns: DataTableColumn<T>[] = [];
   @Input() data: T[] = [];
   @Input() filters: DataTableFilter[] = [];
@@ -117,6 +120,25 @@ export class DataTableComponent<T = unknown>
   get useMobileItems(): boolean { return this.isMobile && !!this.mobileTemplate; }
   get sortableColumns(): DataTableColumn<T>[] { return this.columns.filter(column => column.sortable); }
   get pageCount(): number { return this.pagination ? Math.max(1, Math.ceil(this.pagination.totalItems / this.pagination.pageSize)) : 1; }
+  get pageRangeStart(): number { return this.pagination?.totalItems ? Math.min(this.pagination.pageIndex * this.pagination.pageSize + 1, this.pagination.totalItems) : 0; }
+  get pageRangeEnd(): number { return this.pagination ? Math.min((this.pagination.pageIndex + 1) * this.pagination.pageSize, this.pagination.totalItems) : 0; }
+  get mobilePageSizes(): number[] {
+    return [...new Set([...(this.pagination?.pageSizeOptions || [10, 20, 50]), ...(this.pagination ? [this.pagination.pageSize] : [])])].sort((a, b) => a - b);
+  }
+  get canPreviousPage(): boolean { return !!this.pagination && this.pagination.pageIndex > 0; }
+  get canNextPage(): boolean { return !!this.pagination && (this.pagination.pageIndex + 1) * this.pagination.pageSize < this.pagination.totalItems; }
+  onMobilePage(offset: -1 | 1): void {
+    const page = this.pagination;
+    if (!page || this.busy || this.forbidden || (offset < 0 ? !this.canPreviousPage : !this.canNextPage)) return;
+    this.onPageChange({ pageIndex: page.pageIndex + offset, pageSize: page.pageSize, length: page.totalItems, previousPageIndex: page.pageIndex });
+  }
+  onMobilePageSize(pageSize: number): void {
+    const page = this.pagination;
+    if (!page || this.busy || this.forbidden || !this.mobilePageSizes.includes(pageSize) || pageSize === page.pageSize) return;
+    // Same anchor rule as MatPaginator._changePageSize: preserve the first visible item.
+    this.onPageChange({ pageIndex: Math.floor(page.pageIndex * page.pageSize / pageSize), pageSize,
+      length: page.totalItems, previousPageIndex: page.pageIndex });
+  }
   onMobileSort(active: string): void {
     this.onSortChange({ active, direction: this.sort.direction || 'asc' });
   }

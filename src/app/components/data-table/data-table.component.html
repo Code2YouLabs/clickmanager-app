@@ -1,5 +1,5 @@
 <app-list-filter-bar presentation="section"
-  [mobileCompact]="mobileCompact" [filters]="filters" [filterState]="filterState" [search]="search" [searchControl]="searchControl"
+  [mobileCompact]="mobileCompact" [mobileFilterPresentation]="mobileFilterPresentation" [mobileShowTitle]="mobileShowToolbarTitle" [filters]="filters" [filterState]="filterState" [search]="search" [searchControl]="searchControl"
   [filtersLabel]="filtersLabel" [clearFiltersLabel]="clearFiltersLabel" [hasCustomFilters]="hasCustomFilters"
   (searchChange)="onSearch($event)" (stateChange)="onFilterStateChange($event)" (clear)="clearFilters.emit()">
   <ng-content select="[data-table-toolbar-actions]" ngProjectAs="[list-filter-actions]"></ng-content>
@@ -7,7 +7,7 @@
 </app-list-filter-bar>
 
 @if (showTable) {
-<div [@.disabled]="reducedMotion" class="data-table-container" [class.data-table-container--mobile-compact]="mobileCompact" [attr.aria-busy]="!forbidden && busy">
+<div [@.disabled]="reducedMotion" class="data-table-container" [class.data-table-container--mobile-compact]="mobileCompact" [class.data-table-container--initial-loading]="initialLoading" [attr.aria-busy]="!forbidden && busy">
   @if (forbidden) {
     <div class="data-table-state" role="status"><strong>Acesso restrito</strong><p>{{ forbiddenMessage }}</p></div>
   } @else if (initialLoading) {
@@ -23,7 +23,9 @@
   }
 
   @if (canShowContent) {
-  @if (useMobileItems) {
+  @if (isMobile && !data.length) {
+    <ng-container [ngTemplateOutlet]="emptyNotice"></ng-container>
+  } @else if (useMobileItems) {
     @if (sortableColumns.length) {
       <div class="data-table-mobile-sort">
         <mat-form-field appearance="outline">
@@ -185,9 +187,26 @@
 
   }
   @if (pagination) {
-    @if (mobileCompact && isMobile) {
-      <div class="data-table-page" role="status">Página {{ pagination.pageIndex + 1 }} de {{ pageCount }}</div>
-    }
+    @if (isMobile && mobilePagination === 'compact') {
+      <nav class="data-table-mobile-pagination" aria-label="Paginação dos resultados">
+        <div class="data-table-mobile-pagination__summary" aria-live="polite">
+          <strong class="data-table-page">Página {{ pagination.pageIndex + 1 }} de {{ pageCount }}</strong>
+          <span>{{ pageRangeStart }}–{{ pageRangeEnd }} de {{ pagination.totalItems }} registros</span>
+        </div>
+        <div class="data-table-mobile-pagination__controls">
+          <button mat-icon-button type="button" aria-label="Página anterior" [disabled]="busy || !canPreviousPage" (click)="onMobilePage(-1)"><mat-icon>chevron_left</mat-icon></button>
+          <button mat-icon-button type="button" aria-label="Próxima página" [disabled]="busy || !canNextPage" (click)="onMobilePage(1)"><mat-icon>chevron_right</mat-icon></button>
+          @if (mobilePageSizes.length > 1) {
+            <button mat-icon-button type="button" [attr.aria-label]="'Itens por página: ' + pagination.pageSize" [disabled]="busy" [matMenuTriggerFor]="pageSizeMenu"><mat-icon>more_vert</mat-icon></button>
+            <mat-menu #pageSizeMenu="matMenu">
+              @for (size of mobilePageSizes; track size) {
+                <button mat-menu-item type="button" [disabled]="size === pagination.pageSize" (click)="onMobilePageSize(size)">{{ size }} por página</button>
+              }
+            </mat-menu>
+          }
+        </div>
+      </nav>
+    } @else {
     <mat-paginator
       [length]="pagination.totalItems"
       [pageIndex]="pagination.pageIndex"
@@ -195,9 +214,11 @@
       [pageSizeOptions]="pagination.pageSizeOptions || [10, 20, 50]"
       [disabled]="busy"
       aria-label="Paginação dos resultados"
-      [showFirstLastButtons]="!(mobileCompact && isMobile)"
+      showFirstLastButtons
       (page)="onPageChange($event)">
     </mat-paginator>
+    }
+
   }
   }
 </div>
@@ -214,6 +235,7 @@
   <div class="data-table-empty" role="status">
     <strong>{{ isFilteredEmpty ? (emptyState.filteredTitle || emptyState.title || 'Nenhum resultado encontrado') : (emptyState.title || 'Nenhum registro encontrado') }}</strong>
     <span>{{ isFilteredEmpty ? (emptyState.filteredDescription || emptyState.description || 'Altere a busca ou os filtros.') : (emptyState.description || 'Os registros aparecerão aqui quando forem adicionados.') }}</span>
+    <div class="data-table-empty__actions"><ng-content select="[data-table-empty-actions]"></ng-content></div>
   </div>
 </ng-template>
 
