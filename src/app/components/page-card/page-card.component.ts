@@ -1,4 +1,8 @@
-import { Component, ContentChildren, Input, Output, EventEmitter, QueryList } from '@angular/core';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { Subscription } from 'rxjs';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { MobileFabActionComponent } from '../mobile-fab-action/mobile-fab-action.component';
+import { signal, Optional, OnDestroy, Component, ContentChildren, Input, Output, EventEmitter, QueryList } from '@angular/core';
 import { FormGroupDirective } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { PageFormState } from './page-form-state';
@@ -8,6 +12,13 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatButtonModule } from '@angular/material/button';
 import { CardHeaderComponent } from '../card-header/card-header.component';
 import { TutorialTargetDirective } from 'src/app/shared/tutorial/tutorial-target.directive';
+
+export interface PageCardMobileAction {
+  label: string;
+  icon?: string;
+  disabled?: boolean;
+  tutorialTarget?: string;
+}
 
 export type PageCardAction = { id: string; disabled?: boolean } & (
   { type: 'submit'; form: string; intent?: never; label?: string; icon?: string;
@@ -25,13 +36,35 @@ type ResolvedPageCardAction = {
 @Component({
   selector: 'app-page-card',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatDividerModule, MatButtonModule, MatIconModule, CardHeaderComponent, TutorialTargetDirective],
+  imports: [CommonModule, MatCardModule, MatDividerModule, MatButtonModule, MatIconModule, CardHeaderComponent, TutorialTargetDirective, MobileFabActionComponent],
+  host: { '[class.page-card-host--mobile-fab]': 'isMobile() && !!mobilePrimaryAction' },
   templateUrl: './page-card.component.html',
   styleUrls: ['./page-card.component.scss'],
 })
-export class PageCardComponent {
+export class PageCardComponent implements OnDestroy {
   /** Opt-in compact mobile layout; projected actions remain owned by the consumer. */
   @Input() mobileCompact = false;
+  /** Hide subtitle, internal header actions and divider only on small screens. */
+  @Input() mobileTitleOnly = false;
+  /** Visibility/authorization remains with the consumer, just like projected actions. */
+  @Input() mobilePrimaryAction: PageCardMobileAction | null = null;
+  @Output() mobilePrimaryActionClick = new EventEmitter<void>();
+  readonly isMobile = signal(false);
+  private readonly layoutChanges?: Subscription;
+
+  // Keep direct construction used by existing form-state consumers compatible.
+  constructor(@Optional() breakpoints?: BreakpointObserver) {
+    this.layoutChanges = breakpoints?.observe(MOBILE_FOUNDATION_QUERY)
+      .subscribe(state => this.isMobile.set(state.matches));
+  }
+  ngOnDestroy(): void { this.layoutChanges?.unsubscribe(); }
+
+  get mobilePrimaryActionDisabled(): boolean {
+    return this.saving || this.actionsDisabled || this.headerActionDisabled || !!this.mobilePrimaryAction?.disabled;
+  }
+  onMobilePrimaryAction(): void {
+    if (this.isMobile() && this.mobilePrimaryAction && !this.mobilePrimaryActionDisabled) this.mobilePrimaryActionClick.emit();
+  }
   @Input() saving = false;
   @Input() savingText = 'Salvando...';
   @Input() actionsDisabled = false;

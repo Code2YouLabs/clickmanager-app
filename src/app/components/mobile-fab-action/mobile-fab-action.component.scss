@@ -1,3 +1,4 @@
+@use "../../shared/responsive/mobile-foundation" as mobile;
 :host {
   display: contents;
 }
@@ -30,5 +31,19 @@
 
   .mobile-fab-action--compact span {
     display: none;
+  }
+}
+
+@include mobile.mobile-foundation {
+  .mobile-fab-action--page {
+    right: max(16px, env(safe-area-inset-right, 0px));
+    bottom: calc(var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px))) + 16px);
+    background: var(--mat-sys-primary);
+    color: var(--mat-sys-on-primary);
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    mat-icon { margin: 0; }
   }
 }

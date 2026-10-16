@@ -1,18 +1,21 @@
 <app-page-card
   [mobileCompact]="tipo === 'pedidos'"
+  [mobileTitleOnly]="tipo === 'pedidos'"
+  [mobilePrimaryAction]="tipo === 'pedidos' ? { label: configuracao.novo, tutorialTarget: primeiroPedidoTargets.novo } : null"
+  (mobilePrimaryActionClick)="novo()"
   [appTutorialTarget]="tipo === 'pedidos' ? primeiroPedidoTargets.lista : ''"
   [titulo]="titulo"
   [subtitulo]="subtitulo"
   [mostrarDivisor]="true"
   [class.comercial-kanban-expanded]="kanbanExpandedActive">
-      <button page-header-actions [attr.page-header-primary]="tipo === 'pedidos' ? '' : null" mat-flat-button color="primary" type="button"
+      <button *ngIf="tipo !== 'pedidos' || !isMobile" page-header-actions [attr.page-header-primary]="tipo === 'pedidos' ? '' : null" mat-flat-button color="primary" type="button"
         [appTutorialTarget]="tipo === 'pedidos' ? primeiroPedidoTargets.novo : ''"
         (click)="novo()">
         <mat-icon>add</mat-icon>
         {{ configuracao.novo }}
       </button>
 
-      <p class="search-scope">{{ isMobile && viewMode === 'kanban'
+      <p *ngIf="tipo !== 'pedidos' || !isMobile" class="search-scope">{{ isMobile && viewMode === 'kanban'
         ? 'A busca por texto considera somente os cards carregados. O filtro de status consulta todos os registros.'
         : 'A busca por texto considera os registros da página atual. O filtro de status consulta todos os registros.' }}</p>
       <app-data-table

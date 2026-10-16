@@ -1,6 +1,7 @@
 <mat-card class="cardWithShadow page-card" [class.page-card--mobile-compact]="mobileCompact" [attr.aria-busy]="saving">
   <app-card-header
     [titulo]="titulo"
+    [titleOnly]="mobileTitleOnly && isMobile()"
     [mobileCompact]="mobileCompact"
     [actionDisabled]="headerActionDisabled"
     [subtitulo]="subtitulo"
@@ -49,3 +50,15 @@
     </mat-card-actions>
   </ng-container>
 </mat-card>
+
+@if (isMobile() && mobilePrimaryAction) {
+  <app-mobile-fab-action
+    placement="page"
+    [compact]="true"
+    [label]="mobilePrimaryAction.label"
+    [icon]="mobilePrimaryAction.icon || 'add'"
+    [disabled]="mobilePrimaryActionDisabled"
+    [tutorialTarget]="mobilePrimaryAction.tutorialTarget || ''"
+    (action)="onMobilePrimaryAction()">
+  </app-mobile-fab-action>
+}

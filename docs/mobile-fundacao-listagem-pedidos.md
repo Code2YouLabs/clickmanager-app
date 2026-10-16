@@ -107,3 +107,7 @@ Orçamentos, Rascunhos, Clientes e Produtos podem adotar os mesmos inputs e `app
 - [src/app/shared/responsive/mobile-foundation.ts](../src/app/shared/responsive/mobile-foundation.ts)
 
 Além destes arquivos: este relatório e as evidências em `docs/validation/mobile-fundacao-listagem-pedidos/`.
+
+## Refinamento posterior: cabeçalho e ação principal mobile
+
+O piloto passou a exibir somente o título e a oferecer Novo pedido pelo FAB compartilhado, mantendo a apresentação desktop. Consulte os [contratos, arquivos e validação do refinamento](mobile-pedidos-header-fab.md).

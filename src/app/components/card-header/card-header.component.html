@@ -3,12 +3,12 @@
         <div role="heading" aria-level="2" class="f-s-20 f-w-600 text-primary-dark">
             {{ titulo }}
         </div>
-        <div class="f-s-13 text-muted" *ngIf="subtitulo">
+        <div class="f-s-13 text-muted" *ngIf="subtitulo && !titleOnly">
             {{ subtitulo }}
         </div>
     </div>
 
-    <div class="card-header__actions d-flex align-items-center gap-8 flex-wrap">
+    <div *ngIf="!titleOnly" class="card-header__actions d-flex align-items-center gap-8 flex-wrap">
         <!-- Botão de ajuda -->
         <ng-container *ngIf="helpRota">
             <ng-container *ngIf="helpExterno; else helpInterno">
@@ -58,4 +58,4 @@
     </div>
 </div>
 
-<mat-divider *ngIf="mostrarDivisor" class="m-b-24"></mat-divider>
+<mat-divider *ngIf="mostrarDivisor && !titleOnly" class="m-b-24"></mat-divider>

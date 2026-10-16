@@ -1,3 +1,5 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { BehaviorSubject } from 'rxjs';
 import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -5,7 +7,7 @@ import { PageFormState } from './page-form-state';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MaterialModule } from 'src/app/material.module';
-import { PageCardComponent, PageCardAction } from './page-card.component';
+import { PageCardComponent, PageCardAction, PageCardMobileAction } from './page-card.component';
 
 @Component({
   standalone: true,
@@ -15,6 +17,9 @@ import { PageCardComponent, PageCardAction } from './page-card.component';
       titulo="Produtos gráficos"
       subtitulo="Configuração de venda"
       [mobileCompact]="compact"
+      [mobileTitleOnly]="titleOnly"
+      [mobilePrimaryAction]="primaryAction"
+      (mobilePrimaryActionClick)="primaryClicks = primaryClicks + 1"
       [showFooter]="showFooter"
       [headerDivider]="headerDivider"
       [footerDivider]="footerDivider">
@@ -27,6 +32,9 @@ import { PageCardComponent, PageCardAction } from './page-card.component';
 })
 class PageCardHostComponent {
   compact = false;
+  titleOnly = false;
+  primaryAction: PageCardMobileAction | null = null;
+  primaryClicks = 0;
   showFooter = false;
   headerDivider = true;
   footerDivider = true;
@@ -35,10 +43,13 @@ class PageCardHostComponent {
 describe('PageCardComponent', () => {
   let fixture: ComponentFixture<PageCardHostComponent>;
   let host: PageCardHostComponent;
+  let viewport: BehaviorSubject<any>;
 
   beforeEach(() => {
+    viewport = new BehaviorSubject({ matches: false, breakpoints: {} });
     TestBed.configureTestingModule({
       imports: [PageCardHostComponent, NoopAnimationsModule],
+      providers: [{ provide: BreakpointObserver, useValue: { observe: () => viewport } }],
     });
 
     fixture = TestBed.createComponent(PageCardHostComponent);
@@ -66,6 +77,38 @@ describe('PageCardComponent', () => {
     expect(fixture.nativeElement.querySelector('.card-header--mobile-compact')).toBeTruthy();
     expect(fixture.nativeElement.querySelectorAll('[page-header-actions]').length).toBe(1);
     expect(fixture.nativeElement.querySelectorAll('.body-content').length).toBe(1);
+  });
+
+  it('exibe somente o título e o FAB no mobile, restaurando header completo no desktop', () => {
+    host.titleOnly = true;
+    host.primaryAction = { label: 'Novo produto', tutorialTarget: 'novo-produto' };
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    const header = fixture.nativeElement.querySelector('app-card-header');
+    expect(header.textContent.trim()).toBe('Produtos gráficos');
+    expect(header.querySelector('.card-header__actions')).toBeNull();
+    expect(header.querySelector('mat-divider')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.body-content')).toBeTruthy();
+    const fab = fixture.nativeElement.querySelector('.mobile-fab-action--page');
+    expect(fab.getAttribute('aria-label')).toBe('Novo produto');
+    expect(fab.getAttribute('data-tutorial-target')).toBe('novo-produto');
+    fab.click(); expect(host.primaryClicks).toBe(1);
+    viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
+    expect(header.textContent).toContain('Configuração de venda');
+    expect(header.textContent).toContain('Nova ação');
+    expect(header.querySelector('mat-divider')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).toBeNull();
+  });
+
+  it('mantém o header legado no mobile sem opt-in e respeita visibilidade e bloqueio da ação', () => {
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Configuração de venda');
+    expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).toBeNull();
+    host.primaryAction = { label: 'Novo', disabled: true }; fixture.detectChanges();
+    const page = fixture.debugElement.query(By.directive(PageCardComponent)).componentInstance as PageCardComponent;
+    expect(fixture.nativeElement.querySelector('.mobile-fab-action').disabled).toBeTrue();
+    page.onMobilePrimaryAction(); expect(host.primaryClicks).toBe(0);
+    host.primaryAction = null; fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).toBeNull();
   });
 
   it('renderiza footer em areas esquerda e direita quando habilitado', () => {

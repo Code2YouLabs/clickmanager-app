@@ -24,6 +24,7 @@ import { MatDivider } from "@angular/material/divider";
 })
 export class CardHeaderComponent {
   @Input() mobileCompact = false;
+  @Input() titleOnly = false;
   @Input() actionDisabled = false;
   @Input() actionPending = false;
   @Input() actionPendingText = 'Aguarde...';

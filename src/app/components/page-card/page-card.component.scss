@@ -84,3 +84,13 @@
     .page-card__footer { gap: 8px; padding: 12px; }
   }
 }
+
+@include mobile.mobile-foundation {
+  // Reserve only the space not already provided by the surrounding mobile shell.
+  :host(.page-card-host--mobile-fab) {
+    padding-bottom: max(0px, calc(
+      var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))
+      + 88px - var(--mobile-safe-bottom-space, 0px)
+    ));
+  }
+}

@@ -222,4 +222,30 @@ describe('ComercialListComponent', () => {
     expect(primeiroPedidoTutorial.iniciarSeNecessario).toHaveBeenCalled();
   });
 
+  it('Novo pedido aparece uma vez como FAB no mobile em Lista e Kanban com a mesma navegação', () => {
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    for (const mode of ['lista', 'kanban'] as const) {
+      component.alterarVisualizacao(mode); fixture.detectChanges();
+      const header = fixture.nativeElement.querySelector('app-card-header');
+      expect(header.textContent.trim()).toBe('Pedidos');
+      expect(header.querySelector('button')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.search-scope')).toBeNull();
+      const fabs = fixture.nativeElement.querySelectorAll('.mobile-fab-action');
+      expect(fabs.length).toBe(1);
+      expect(fabs[0].getAttribute('aria-label')).toBe('Novo pedido');
+      expect(fabs[0].getAttribute('data-tutorial-target')).toBe(component.primeiroPedidoTargets.novo);
+      expect(fixture.nativeElement.querySelectorAll('[data-tutorial-target="' + component.primeiroPedidoTargets.novo + '"]').length).toBe(1);
+      router.navigate.calls.reset(); fabs[0].click();
+      expect(router.navigate).toHaveBeenCalledOnceWith(['/page/grafica/comercial', 'pedidos', 'novo']);
+      expect(fixture.nativeElement.querySelector('app-view-mode-toggle')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('input[type=search]')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector(mode === 'lista' ? 'mat-paginator' : 'app-kanban-board')).toBeTruthy();
+    }
+    viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-card-header').textContent).toContain(component.subtitulo);
+    expect(fixture.nativeElement.querySelector('app-card-header button').textContent).toContain('Novo pedido');
+    expect(fixture.nativeElement.querySelector('.search-scope')).toBeTruthy();
+  });
+
 });
