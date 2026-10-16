@@ -1,0 +1,4 @@
+Extrato do runner, sem progresso repetido. Exit: 0
+> clickmanager-app@4.0.0 test
+> ng test --watch=false --browsers=ChromeHeadless --include=src/app/components/kanban-board/**/*.spec.ts --include=src/app/components/dialog/confirm-dialog/**/*.spec.ts
+TOTAL: 14 SUCCESS

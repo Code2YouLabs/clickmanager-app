@@ -1,0 +1,13 @@
+Extrato do runner, sem progresso repetido. Exit: 1
+> clickmanager-app@4.0.0 test
+> ng test --watch=false --browsers=ChromeHeadless
+Chrome Headless 155.0.0.0 (Mac OS 10.15.7) Narrativa do onboarding acomoda stepper, árvore e ações em 360px sem rolagem horizontal FAILED
+	Expected 303 to be less than or equal 298.
+	    at <Jasmine>
+	    at UserContext.<anonymous> (src/app/pages/onboarding-v2/onboarding-flow.spec.ts:333:33)
+	    at Generator.next (<anonymous>)
+	    at asyncGeneratorStep (node_modules/@babel/runtime/helpers/esm/asyncToGenerator.js:3:1)
+	    at _next (node_modules/@babel/runtime/helpers/esm/asyncToGenerator.js:17:1)
+TOTAL: 1 FAILED, 1036 SUCCESS
+✔ Browser application bundle generation complete.
+✔ Browser application bundle generation complete.
