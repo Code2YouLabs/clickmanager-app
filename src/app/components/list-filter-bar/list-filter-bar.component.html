@@ -1,4 +1,4 @@
-@if (useMobileSheet) {
+@if (useMobilePanel) {
   <div class="list-mobile-toolbar">
     @if (mobileShowTitle) { <div class="list-mobile-toolbar__title">{{ toolbarTitle }}</div> }
     @if (search.enabled) {
@@ -10,7 +10,7 @@
         (valorAlterado)="onSearchChange($event)"></app-input-pesquisa>
     }
     <div class="list-mobile-toolbar__controls">
-      @if (filters.length || hasCustomFilters) {
+      @if (filters.length || hasCustomFilters || customFilterTemplate) {
         <button #mobileFilterTrigger mat-stroked-button type="button" class="list-mobile-toolbar__filter-button"
           aria-haspopup="dialog" [attr.aria-expanded]="mobileFiltersOpen" (click)="openMobileFilters()">
           <mat-icon>filter_list</mat-icon>{{ filtersLabel }}{{ activeFilterCount ? ' (' + activeFilterCount + ')' : '' }}
@@ -21,7 +21,7 @@
   </div>
 } @else {
 @if (presentation === "section") {
-@if (search.enabled || filters.length || hasCustomFilters) {
+@if (search.enabled || filters.length || hasCustomFilters || customFilterTemplate) {
 <app-section-card
   [mobilePlain]="mobileCompact"
   [class.data-table-toolbar-card--mobile-compact]="mobileCompact"
@@ -45,7 +45,7 @@
     </div>
     }
 
-    @if (filters.length || hasCustomFilters) {
+    @if (filters.length || hasCustomFilters || customFilterTemplate) {
     <div class="data-table-toolbar__section">
       <div class="data-table-toolbar__filters-header">
         <button
@@ -141,20 +141,26 @@
             }
           </div>
 </ng-template>
-<ng-template #mobileFilterSheet>
-  <section class="list-filter-sheet">
-    <header class="list-filter-sheet__header">
-      <app-mobile-sheet-header [title]="filtersLabel"></app-mobile-sheet-header>
-      <button mat-icon-button type="button" aria-label="Fechar filtros" (click)="closeMobileFilters()"><mat-icon>close</mat-icon></button>
-    </header>
-    <div class="list-filter-sheet__body"><ng-container [ngTemplateOutlet]="filterFields"></ng-container></div>
-    <footer class="list-filter-sheet__footer">
-      @if (hasActiveFilters || hasDraftFilters) {
-        <button mat-stroked-button type="button" (click)="clearMobileFilters()">{{ clearFiltersLabel }}</button>
+<ng-template #mobileFilterPanel>
+  <section class="list-filter-panel">
+    <header class="list-filter-panel__header">
+      <button mat-icon-button type="button" aria-label="Voltar à listagem" (click)="closeMobileFilters()"><mat-icon>arrow_back</mat-icon></button>
+      <h2>{{ filtersLabel }}</h2>
+      @if (hasDraftFilters) {
+        <button mat-button type="button" aria-label="Limpar filtros" (click)="clearMobileFilters()">Limpar</button>
       }
-      <button mat-flat-button type="button" color="primary" (click)="applyMobileFilters()">Aplicar</button>
+    </header>
+    <div class="list-filter-panel__body"><ng-container [ngTemplateOutlet]="filterFields"></ng-container></div>
+    <footer class="list-filter-panel__footer">
+      <button mat-flat-button type="button" color="primary" (click)="applyMobileFilters()">Aplicar filtros</button>
     </footer>
   </section>
 </ng-template>
 
-<ng-template #customFilters><ng-content select="[list-filter-custom]"></ng-content></ng-template>
+<ng-template #customFilters>
+  @if (customFilterTemplate) {
+    <ng-container [ngTemplateOutlet]="customFilterTemplate" [ngTemplateOutletContext]="customFilterContext"></ng-container>
+  } @else {
+    <ng-content select="[list-filter-custom]"></ng-content>
+  }
+</ng-template>

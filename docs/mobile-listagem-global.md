@@ -25,16 +25,31 @@ Debounce, trim e deduplicação permanecem os anteriores: modo `section` preserv
 
 ## Painel de filtros
 
-Foi avaliado o MobileSummarySheet existente. Para os filtros foi utilizado o **MatBottomSheet já exportado pelo MaterialModule**, que oferece gerenciamento de foco, Escape, backdrop e bloqueio de scroll, combinado com o **MobileSheetHeader existente**. Nenhum desses componentes auxiliares foi modificado; não há biblioteca nova nem painel específico de Pedidos.
+O **ListFilterBar** utiliza um **MatDialog de tela inteira**, substituindo o bottom sheet. Não há biblioteca nova nem conteúdo específico de Pedidos. O overlay Material fica acima do shell, bloqueia interação/scroll subjacentes, contém e restaura o foco e fecha com Escape/backdrop. `closeOnNavigation` fecha na navegação de histórico suportada pelo Material, inclusive Voltar do Android; abrir não adiciona entradas ao histórico nem altera a rota.
 
-O painel tem título, fechamento explícito, corpo rolável e footer com Aplicar e Limpar filtros quando há valores ativos ou em edição. O footer considera safe area e o painel limita sua altura por viewport dinâmica. A estilização do overlay está restrita à classe `list-filter-mobile-panel` e ao breakpoint mobile.
+A superfície entra pela direita com `translateX(100%) → translateX(0)` em 180 ms; a preferência por movimento reduzido desativa a animação. Cabeçalho com Voltar, título e Limpar, corpo rolável e rodapé com **Aplicar filtros**. Safe areas são consideradas nas quatro bordas. A altura acompanha `visualViewport` (inclusive teclado), com fallback `100dvh`; listeners são removidos ao fechar/destruir. Cabeçalho e rodapé ficam fora da área central de scroll. A validação real em dispositivo continua manual.
 
-- Filtros declarativos são copiados para um rascunho ao abrir. As escolhas preservam strings, números, zero, booleanos, `null` e arrays. **Aplicar** emite o mesmo estado tipado uma vez; no modo flat, mantém também o evento string legado dos campos alterados. Aplicar sem alterações apenas fecha, sem nova emissão.
-- **Fechar**, Escape e backdrop descartam escolhas declarativas não aplicadas. O foco retorna ao botão Filtros. Ao voltar para desktop ou destruir o componente, o painel é fechado sem aplicar.
-- **Limpar filtros** usa os eventos existentes de limpeza e fecha o painel.
-- A projeção de filtros de domínio é reutilizada no mesmo painel. Seus bindings/eventos continuam sob controle do consumidor. Atualizações externas são mescladas sem perder as escolhas declarativas em edição.
+- Abrir copia os filtros aplicados para o rascunho, sem emissão/consulta. Um ou vários filtros declarativos usam a mesma grade de uma coluna, sem preenchimento artificial.
+- Editar preserva strings, números, zero, booleanos, `null` e arrays, sem emitir até Aplicar. Aplicar emite o estado tipado; o modo flat mantém também o evento string legado. Sem alterações, apenas fecha.
+- Voltar, Escape, backdrop, navegação, resize para desktop e destruição descartam edições não confirmadas. Reabrir reflete o estado aplicado.
+- **Limpar** altera somente o rascunho e mantém o painel aberto. Aplicar confirma a limpeza pelos eventos `clear` e `stateChange` existentes. Cancelar a limpeza preserva os filtros aplicados. Limpar e depois editar aplica o novo rascunho.
+- Atualizações externas são mescladas com campos editados; uma limpeza explícita mantém o rascunho limpo até a confirmação.
 
-**Limite do contrato projetado:** os eventos próprios de controles projetados continuam imediatos, como já eram. Fechar o painel não desfaz alterações que a feature já aplicou por esses eventos. Uma transação única envolvendo controles arbitrários exigiria um contrato futuro explícito com o consumidor; não foi simulada interceptando eventos ou alterando regras de dados.
+Filtros declarativos continuam fornecidos por `filters`/`filterState`. A projeção `[list-filter-custom]` é compatível. A investigação não encontrou consumidores de produção com controles customizados próprios emitindo consultas imediatamente. Para controles futuros, `customFilterTemplate` oferece o contexto `{ $implicit: valores, change }`, usando **o mesmo rascunho** do componente; `change(chave, valor)` fica imediato no desktop e pendente no painel. Esse input pertence ao ListFilterBar; não foi adicionada API no DataTable. Conteúdo arbitrário legado continua responsável pelos próprios eventos; para participar de Aplicar/Cancelar deve usar o callback compartilhado, sem emitir consultas diretamente.
+
+```html
+<app-list-filter-bar presentation="section" [filters]="filters"
+  [filterState]="state" [customFilterTemplate]="periodo"
+  (stateChange)="onFiltersChange($event)"></app-list-filter-bar>
+<ng-template #periodo let-values let-change="change">
+  <label>Período
+    <input type="date" [value]="values.period || ''"
+      (input)="change('period', $any($event.target).value)" />
+  </label>
+</ng-template>
+```
+
+Grupos podem ser compostos nesse template com os controles e expansões Material existentes. Nenhum filtro de domínio ou agrupamento artificial foi acrescentado. A estilização do overlay é restrita a `list-filter-mobile-panel` e ao breakpoint mobile; o ramo desktop foi preservado.
 
 ## Paginação e vazio
 
@@ -53,7 +68,7 @@ No mobile vazio, o componente omite o cabeçalho de tabela e apresenta a mensage
 
 | Componente / opção | Padrão | Uso |
 |---|---|---|
-| DataTable / ListFilterBar `mobileFilterPresentation` | `sheet` | `inline` preserva a apresentação de filtros inline quando necessária. |
+| DataTable / ListFilterBar `mobileFilterPresentation` | `sheet` | `sheet` é um alias legado que agora abre somente o painel lateral; `inline` preserva filtros inline quando necessário. |
 | DataTable `mobileShowToolbarTitle` / ListFilterBar `mobileShowTitle` | `false` | Permite título visual em contexto mobile especial. |
 | DataTable `mobilePagination` | `compact` | `material` mantém o paginator Material no mobile quando necessário. |
 | `mobileCompact` dos componentes envolvidos | `true` | Mantido como override de apresentação; não muda o comportamento desktop. |
@@ -62,7 +77,7 @@ As colunas, sort, ações, expansão, `appDataTableItem`, filtros e fontes de da
 
 Nenhum arquivo de PageCard, shell, Dashboard, SmartCalc, onboarding, backend ou serviço foi alterado. Não houve alteração de endpoints, regras comerciais, permissões ou lógica de Kanban.
 
-## Validação
+## Validação anterior da fundação
 
 - Suíte completa final: **1.082 passaram de 1.083**; exit 1 somente pela falha preexistente do onboarding em 360 px (`Expected 303 to be less than or equal 298`). Nenhuma falha nova.
 - Build de produção: **exit 0**, os mesmos 38 avisos existentes, nenhum erro.
@@ -84,3 +99,12 @@ Nenhum arquivo de PageCard, shell, Dashboard, SmartCalc, onboarding, backend ou 
 ## Refinamento manual posterior
 
 Validar em 360/390/430/768 px e desktop: teclado real e foco por toque, labels extensos, quebra da segunda linha, painel com muitos filtros, footer sob teclado, retorno de foco, rolagem e safe areas. Com dados reais, revisar faixa/total e navegação em páginas intermediárias/finais, além do menu de tamanhos. Não se declara aprovação visual ou operação em aparelho real nesta entrega.
+
+## Validação do painel lateral — 16/10/2026
+
+- **17 casos do ListFilterBar aprovados** na suíte completa, incluindo o contrato customizado nos modos section e flat. A execução isolada anterior também passou (16 casos antes da adição do caso flat customizado).
+- `npm test -- --watch=false --browsers=ChromeHeadless`: **1.088/1.089 passaram**; única falha é a preexistente do onboarding (`onboarding-flow.spec.ts:333`, `Expected 303 to be less than or equal 298`).
+- Cobertura: um/vários filtros, projeção/template customizado, tipos/arrays, abertura sem emissão, Aplicar, Limpar pendente, cancelar/reabrir, foco inicial/contido/restaurado, Escape/backdrop, navegação Material, viewport do teclado e limpeza de listeners, resize e compatibilidade desktop/flat. Integração DataTable e consumidores foi verificada pela suíte existente, sem modificar esses arquivos.
+- `npm run build:prod`: concluído com sucesso, sem erros; avisos existentes de orçamento/otimização/depreciação permanecem.
+- Sem testes visuais ou screenshots. Teclado, animação e safe areas em aparelho real dependem da validação manual solicitada.
+- Arquivos desta entrega: `src/app/components/list-filter-bar/list-filter-bar.component.{ts,html,scss,spec.ts}` e este documento. Nenhum arquivo de DataTable, paginação, Kanban, PageCard, FAB, shell, API ou regra de negócio foi alterado.

@@ -1,7 +1,9 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { OverlayContainer } from '@angular/cdk/overlay';
 import { BehaviorSubject } from 'rxjs';
-import { Component } from '@angular/core';
+import { ApplicationRef, Component } from '@angular/core';
+import { Location } from '@angular/common';
+import { provideLocationMocks, SpyLocation } from '@angular/common/testing';
 import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { By } from '@angular/platform-browser';
@@ -9,11 +11,14 @@ import { ListFilterBarComponent } from './list-filter-bar.component';
 import { DataTableFilter, DataTableFilterState } from '../data-table/data-table.models';
 
 @Component({ standalone: true, imports: [ListFilterBarComponent], template: `
-  <app-list-filter-bar presentation="section" [filters]="filters" [filterState]="state" [search]="search"
-    [hasCustomFilters]="true" (stateChange)="last = $event" (searchChange)="searches.push($event)" (clear)="clears = clears + 1">
+  <app-list-filter-bar [presentation]="presentation" [filters]="filters" [filterState]="state" [search]="search"
+    [hasCustomFilters]="true" [customFilterTemplate]="useCustomTemplate ? periodFields : undefined" (stateChange)="last = $event" (searchChange)="searches.push($event)" (clear)="clears = clears + 1">
     <button list-filter-actions>Biblioteca</button>
     <label list-filter-custom>Período<input type="date" /></label>
-  </app-list-filter-bar>` })
+  </app-list-filter-bar>
+  <ng-template #periodFields let-values let-change="change">
+    <label>Período<input type="date" [value]="values.period || ''" (input)="change('period', $any($event.target).value)" /></label>
+  </ng-template>` })
 class Host {
   filters: DataTableFilter[] = [
     { key: 'active', label: 'Status', type: 'select', options: [{ value: false, label: 'Inativo' }, { value: true, label: 'Ativo' }] },
@@ -23,6 +28,8 @@ class Host {
   last: DataTableFilterState = {};
   searches: string[] = [];
   clears = 0;
+  useCustomTemplate = false;
+  presentation: 'section' | 'flat' = 'section';
   search = { enabled: true, value: '', debounceMs: 300 };
 }
 describe('ListFilterBarComponent', () => {
@@ -31,7 +38,7 @@ describe('ListFilterBarComponent', () => {
   let viewport: BehaviorSubject<any>;
   beforeEach(() => {
     viewport = new BehaviorSubject({ matches: false, breakpoints: {} });
-    TestBed.configureTestingModule({ imports: [Host, NoopAnimationsModule], providers: [{ provide: BreakpointObserver, useValue: { observe: () => viewport, isMatched: () => false } }] });
+    TestBed.configureTestingModule({ imports: [Host, NoopAnimationsModule], providers: [provideLocationMocks(), { provide: BreakpointObserver, useValue: { observe: () => viewport, isMatched: () => false } }] });
     fixture = TestBed.createComponent(Host); fixture.detectChanges();
     bar = fixture.debugElement.query(By.directive(ListFilterBarComponent)).componentInstance;
   });
@@ -83,13 +90,20 @@ describe('ListFilterBarComponent', () => {
     const state = spyOn(bar.stateChange, 'emit');
     fixture.nativeElement.querySelector('.list-mobile-toolbar__filter-button').click(); tick(); fixture.detectChanges();
     const overlay = TestBed.inject(OverlayContainer).getContainerElement();
-    expect(overlay.querySelector('mat-bottom-sheet-container')).toBeTruthy();
+    expect(overlay.querySelector('mat-dialog-container')).toBeTruthy();
+    expect(overlay.querySelector('mat-bottom-sheet-container')).toBeNull();
+    const pane = overlay.querySelector<HTMLElement>('.cdk-overlay-pane')!;
+    expect(pane.style.width).toBe('100vw'); expect(pane.style.maxWidth).toBe('100vw');
+    expect(pane.parentElement?.style.justifyContent).toBe('flex-start'); // CDK flushes a 100vw overlay to both edges.
+    expect(overlay.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe('Filtros');
+    expect(overlay.querySelector('.list-filter-panel__header h2')?.textContent).toBe('Filtros');
+    expect(overlay.querySelector('.list-filter-panel__footer')?.textContent).toContain('Aplicar filtros');
     expect(overlay.querySelector('input[type=date]')).toBeTruthy();
     expect(overlay.querySelectorAll('mat-select').length).toBe(2);
     bar.onFieldChange('active', false); bar.onFieldChange('ids', [0, 2]); fixture.detectChanges();
     expect(state).not.toHaveBeenCalled();
     expect(bar.selectedFilterValue(bar.definitions[0])).toBe(false);
-    const buttons = overlay.querySelectorAll<HTMLButtonElement>('.list-filter-sheet__footer button');
+    const buttons = overlay.querySelectorAll<HTMLButtonElement>('.list-filter-panel__footer button');
     buttons[buttons.length - 1].click(); tick(500); fixture.detectChanges();
     expect(state).toHaveBeenCalledOnceWith({ active: false, ids: [0, 2] });
     expect(bar.mobileFiltersOpen).toBeFalse();
@@ -97,33 +111,56 @@ describe('ListFilterBarComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Biblioteca');
   }));
 
-  it('fecha sem aplicar o rascunho e restaura o foco no botão de filtros', fakeAsync(() => {
+  it('fecha sem aplicar o rascunho e restaura o foco no botão de filtros', async () => {
     viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
     document.body.appendChild(fixture.nativeElement);
     const trigger: HTMLButtonElement = fixture.nativeElement.querySelector('.list-mobile-toolbar__filter-button');
-    trigger.focus(); trigger.click(); tick(); fixture.detectChanges();
+    trigger.focus(); trigger.click(); fixture.detectChanges(); await fixture.whenStable(); TestBed.inject(ApplicationRef).tick();
     const emit = spyOn(bar.stateChange, 'emit');
+    expect(document.activeElement?.getAttribute('aria-label')).withContext(document.activeElement?.outerHTML || '').toBe('Voltar à listagem');
+    expect(TestBed.inject(OverlayContainer).getContainerElement().querySelectorAll('.cdk-focus-trap-anchor').length).toBe(2);
     bar.onFieldChange('active', true);
     const overlay = TestBed.inject(OverlayContainer).getContainerElement();
-    overlay.querySelector<HTMLButtonElement>('[aria-label="Fechar filtros"]')!.click(); tick(500); fixture.detectChanges();
+    overlay.querySelector<HTMLButtonElement>('[aria-label="Voltar à listagem"]')!.click();
+    fixture.detectChanges(); await fixture.whenStable();
     expect(emit).not.toHaveBeenCalled(); expect(document.activeElement).toBe(trigger);
-    bar.openMobileFilters(); tick(); fixture.detectChanges();
+    expect(overlay.querySelector('[role="dialog"]')).toBeNull();
+    bar.openMobileFilters(); fixture.detectChanges(); await fixture.whenStable();
     expect(bar.selectedFilterValue(bar.definitions[0])).toBeNull();
-    bar.closeMobileFilters(); tick(500); fixture.nativeElement.remove();
-  }));
+    bar.closeMobileFilters(); fixture.detectChanges(); await fixture.whenStable(); fixture.nativeElement.remove();
+  });
 
-  it('limpa pelo contrato existente e fecha o painel; resize fecha sem aplicar', fakeAsync(() => {
+  it('Limpar edita apenas o rascunho; Aplicar confirma pelo contrato existente', fakeAsync(() => {
     fixture.componentInstance.state = { active: false, ids: [0] }; fixture.detectChanges();
     viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
     bar.openMobileFilters(); tick(); fixture.detectChanges();
+    const state = spyOn(bar.stateChange, 'emit');
     const overlay = TestBed.inject(OverlayContainer).getContainerElement();
-    overlay.querySelector<HTMLButtonElement>('.list-filter-sheet__footer button')!.click(); tick(500); fixture.detectChanges();
-    expect(fixture.componentInstance.last).toEqual({}); expect(fixture.componentInstance.clears).toBe(1);
-    bar.openMobileFilters(); tick(); bar.onFieldChange('active', true);
+    overlay.querySelector<HTMLButtonElement>('[aria-label="Limpar filtros"]')!.click(); fixture.detectChanges();
+    expect(bar.mobileFiltersOpen).toBeTrue(); expect(bar.hasDraftFilters).toBeFalse();
+    expect(bar.activeFilterCount).toBe(2);
+    expect(state).not.toHaveBeenCalled(); expect(fixture.componentInstance.clears).toBe(0);
+    overlay.querySelector<HTMLButtonElement>('.list-filter-panel__footer button')!.click(); tick(500); fixture.detectChanges();
+    expect(state).toHaveBeenCalledOnceWith({}); expect(fixture.componentInstance.clears).toBe(1);
+    bar.openMobileFilters(); tick(); fixture.detectChanges();
+    expect(bar.selectedFilterValue(bar.definitions[0])).toBeNull();
+    expect(bar.selectedFilterValue(bar.definitions[1])).toEqual([]);
+  }));
+
+  it('cancelar Limpar e mudar para desktop descartam o rascunho', fakeAsync(() => {
+    fixture.componentInstance.state = { active: false, ids: [0] }; fixture.detectChanges();
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    bar.openMobileFilters(); tick(); bar.clearMobileFilters(); bar.closeMobileFilters(); tick(500);
+    bar.openMobileFilters(); tick(); fixture.detectChanges();
+    expect(bar.selectedFilterValue(bar.definitions[0])).toBeFalse();
+    expect(bar.selectedFilterValue(bar.definitions[1])).toEqual([0]);
+    bar.onFieldChange('active', true);
     viewport.next({ matches: false, breakpoints: {} }); tick(500); fixture.detectChanges();
     expect(bar.mobileFiltersOpen).toBeFalse();
     expect(fixture.nativeElement.querySelector('app-section-card')).toBeTruthy();
-    expect(fixture.componentInstance.last).toEqual({});
+    expect(TestBed.inject(OverlayContainer).getContainerElement().querySelector('[role="dialog"]')).toBeNull();
+    expect(fixture.componentInstance.clears).toBe(0);
+    expect(bar.internalFilters).toEqual({ active: false, ids: [0] });
   }));
 
   it('preserva projeção e mescla atualizações externas sem perder seleções em edição', fakeAsync(() => {
@@ -147,6 +184,86 @@ describe('ListFilterBarComponent', () => {
     bar.mobileFilterPresentation = 'inline'; fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('app-section-card')).toBeTruthy();
     bar.toggleFilters(); expect(bar.filtersExpanded).toBeTrue();
+  }));
+
+  it('suporta um filtro e reabre com o valor aplicado sem nova emissão', fakeAsync(() => {
+    fixture.componentInstance.filters = [fixture.componentInstance.filters[0]];
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    const emit = spyOn(bar.stateChange, 'emit');
+    bar.openMobileFilters(); tick(); fixture.detectChanges();
+    expect(TestBed.inject(OverlayContainer).getContainerElement().querySelectorAll('mat-select').length).toBe(1);
+    expect(emit).not.toHaveBeenCalled();
+    bar.onFieldChange('active', false); bar.applyMobileFilters(); tick(500);
+    bar.openMobileFilters(); tick(); fixture.detectChanges();
+    expect(bar.selectedFilterValue(bar.definitions[0])).toBeFalse();
+    bar.applyMobileFilters(); tick(500); expect(emit).toHaveBeenCalledTimes(1);
+  }));
+
+  it('controles de template customizado editam o mesmo rascunho e preservam emissão imediata no desktop', fakeAsync(() => {
+    fixture.componentInstance.useCustomTemplate = true; fixture.componentInstance.filters = [];
+    fixture.componentInstance.state = { period: '2026-10-01' }; fixture.detectChanges();
+    const emit = spyOn(bar.stateChange, 'emit');
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    const edit = (root: ParentNode, value: string) => {
+      const input = root.querySelector<HTMLInputElement>('input[type=date]')!;
+      input.value = value; input.dispatchEvent(new Event('input')); fixture.detectChanges();
+    };
+    const overlay = TestBed.inject(OverlayContainer).getContainerElement();
+    bar.openMobileFilters(); tick(); fixture.detectChanges();
+    edit(overlay, '2026-10-16'); expect(emit).not.toHaveBeenCalled();
+    bar.closeMobileFilters(); tick(500); bar.openMobileFilters(); tick(); fixture.detectChanges();
+    expect(overlay.querySelector<HTMLInputElement>('input[type=date]')!.value).toBe('2026-10-01');
+    bar.clearMobileFilters(); fixture.detectChanges();
+    expect(overlay.querySelector<HTMLInputElement>('input[type=date]')!.value).toBe('');
+    edit(overlay, '2026-10-20'); bar.applyMobileFilters(); tick(500);
+    expect(emit).toHaveBeenCalledOnceWith({ period: '2026-10-20' });
+    viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges(); bar.toggleFilters(); fixture.detectChanges();
+    edit(fixture.nativeElement, '2026-10-21');
+    expect(emit).toHaveBeenCalledWith({ period: '2026-10-21' });
+  }));
+
+  it('template customizado flat também abre com o estado aplicado e confirma pelo contrato string', fakeAsync(() => {
+    fixture.componentInstance.presentation = 'flat'; fixture.componentInstance.useCustomTemplate = true;
+    fixture.componentInstance.filters = []; fixture.componentInstance.state = { period: '2026-10-01' }; fixture.detectChanges();
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    const legacy = spyOn(bar.filterChange, 'emit');
+    const emit = spyOn(bar.stateChange, 'emit');
+    bar.openMobileFilters(); tick(); fixture.detectChanges();
+    const input = TestBed.inject(OverlayContainer).getContainerElement().querySelector<HTMLInputElement>('input[type=date]')!;
+    expect(input.value).toBe('2026-10-01');
+    input.value = '2026-10-16'; input.dispatchEvent(new Event('input')); fixture.detectChanges();
+    expect(emit).not.toHaveBeenCalled(); expect(legacy).not.toHaveBeenCalled();
+    bar.applyMobileFilters(); tick(500);
+    expect(legacy).toHaveBeenCalledOnceWith({ key: 'period', value: '2026-10-16' });
+    expect(emit).toHaveBeenCalledOnceWith({ period: '2026-10-16' });
+  }));
+
+  it('acompanha o teclado pela viewport visível e remove listeners ao fechar', fakeAsync(() => {
+    const visible = Object.assign(new EventTarget(), { height: 640, offsetTop: 0 });
+    spyOnProperty(window, 'visualViewport', 'get').and.returnValue(visible as VisualViewport);
+    const remove = spyOn(visible, 'removeEventListener').and.callThrough();
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    bar.openMobileFilters(); tick(); fixture.detectChanges();
+    const pane = TestBed.inject(OverlayContainer).getContainerElement().querySelector<HTMLElement>('.cdk-overlay-pane')!;
+    expect(pane.style.height).toBe('640px');
+    visible.height = 280; visible.offsetTop = 40; visible.dispatchEvent(new Event('resize'));
+    expect(pane.style.height).toBe('280px');
+    expect(pane.parentElement?.style.alignItems).toBe('flex-start');
+    bar.closeMobileFilters(); tick(500);
+    expect(remove).toHaveBeenCalledWith('resize', jasmine.any(Function), undefined);
+    expect(remove).toHaveBeenCalledWith('scroll', jasmine.any(Function), undefined);
+  }));
+
+  it('não muda a rota ao abrir e descarta o rascunho na navegação Voltar do Material', fakeAsync(() => {
+    const location = TestBed.inject(Location) as SpyLocation;
+    const originalPath = location.path();
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    const emit = spyOn(bar.stateChange, 'emit');
+    bar.openMobileFilters(); tick(); fixture.detectChanges();
+    expect(location.path()).toBe(originalPath);
+    bar.onFieldChange('active', false);
+    location.simulateUrlPop('/anterior'); tick(500); fixture.detectChanges();
+    expect(bar.mobileFiltersOpen).toBeFalse(); expect(emit).not.toHaveBeenCalled();
   }));
 
   it('flat mobile conserva o evento string ao aplicar e não emite ao fechar sem mudanças', fakeAsync(() => {

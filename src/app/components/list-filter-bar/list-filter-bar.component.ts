@@ -1,8 +1,7 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { MatBottomSheet, MatBottomSheetRef } from '@angular/material/bottom-sheet';
-import { Subject, takeUntil } from 'rxjs';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { fromEvent, merge, Subject, takeUntil } from 'rxjs';
 import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
-import { MobileSheetHeaderComponent } from '../mobile-sheet-header/mobile-sheet-header.component';
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild, TemplateRef, ViewContainerRef, ElementRef, inject } from '@angular/core';
 import { FormControl } from '@angular/forms';
@@ -15,29 +14,41 @@ import { DataTableFilter, DataTableFilterValue, DataTableFilterState, DataTableS
 export type ListFilterOption = { value: string; label: string };
 export type ListFilterDefinition = { key: string; label: string; value: string; options: ListFilterOption[] };
 export type ListFilterChange = { key: string; value: string };
+export interface ListFilterTemplateContext {
+  $implicit: DataTableFilterState;
+  change: (key: string, value: DataTableFilterValue) => void;
+}
+
 export interface ListFilterChip { filterKey: string; filterLabel: string; value: string | number | boolean; optionLabel: string; }
 
 @Component({
   selector: 'app-list-filter-bar', standalone: true,
-  imports: [CommonModule, MaterialModule, SectionCardComponent, InputPesquisaComponent, MobileSheetHeaderComponent],
+  imports: [CommonModule, MaterialModule, SectionCardComponent, InputPesquisaComponent],
   templateUrl: './list-filter-bar.component.html', styleUrl: './list-filter-bar.component.scss',
 })
 export class ListFilterBarComponent implements OnChanges, OnDestroy {
   @Input() mobileCompact = true;
+  // 'sheet' remains an API alias for consumers; the only overlay presentation is the full-screen panel.
   @Input() mobileFilterPresentation: 'sheet' | 'inline' = 'sheet';
+  @Input() customFilterTemplate?: TemplateRef<ListFilterTemplateContext>;
+  readonly changeCustomFilter = (key: string, value: DataTableFilterValue): void => this.onFieldChange(key, value);
+  get customFilterContext(): ListFilterTemplateContext {
+    return { $implicit: this.mobileFiltersOpen ? this.draftFilters : this.internalFilters, change: this.changeCustomFilter };
+  }
   @Input() mobileShowTitle = false;
   @ViewChild('mobileFilterTrigger', { read: ElementRef }) private mobileFilterTrigger?: ElementRef<HTMLButtonElement>;
-  @ViewChild('mobileFilterSheet', { static: true }) private mobileFilterSheet!: TemplateRef<unknown>;
+  @ViewChild('mobileFilterPanel', { static: true }) private mobileFilterPanel!: TemplateRef<unknown>;
   private readonly viewContainerRef = inject(ViewContainerRef);
-  private readonly bottomSheet = inject(MatBottomSheet);
+  private readonly dialog = inject(MatDialog);
   private readonly breakpoints = inject(BreakpointObserver);
   private readonly destroy$ = new Subject<void>();
-  private sheetRef: MatBottomSheetRef<unknown> | null = null;
+  private panelRef: MatDialogRef<unknown> | null = null;
   private draftFilters: DataTableFilterState = {};
+  private draftCleared = false;
   private readonly draftKeys = new Set<string>();
   isMobile = false;
-  get useMobileSheet(): boolean { return this.isMobile && this.mobileFilterPresentation === 'sheet'; }
-  get mobileFiltersOpen(): boolean { return !!this.sheetRef; }
+  get useMobilePanel(): boolean { return this.isMobile && this.mobileFilterPresentation === 'sheet'; }
+  get mobileFiltersOpen(): boolean { return !!this.panelRef; }
   get hasDraftFilters(): boolean { return Object.keys(this.withoutEmptyFilters(this.draftFilters)).length > 0; }
 
   constructor() {
@@ -53,33 +64,49 @@ export class ListFilterBarComponent implements OnChanges, OnDestroy {
     return Object.fromEntries(Object.entries(state).map(([key, value]) => [key, Array.isArray(value) ? [...value] : value]));
   }
   openMobileFilters(): void {
-    if (!this.useMobileSheet || this.sheetRef) return;
-    this.draftFilters = this.copyState(this.internalFilters); this.draftKeys.clear();
+    if (!this.useMobilePanel || this.panelRef) return;
+    this.draftFilters = this.copyState(this.internalFilters); this.draftKeys.clear(); this.draftCleared = false;
     this.mobileFilterTrigger?.nativeElement.focus({ preventScroll: true });
-    const ref = this.bottomSheet.open(this.mobileFilterSheet, {
+    const ref = this.dialog.open(this.mobileFilterPanel, {
       viewContainerRef: this.viewContainerRef, panelClass: 'list-filter-mobile-panel', ariaLabel: this.filtersLabel,
-      autoFocus: 'first-tabbable', restoreFocus: true,
+      autoFocus: 'first-tabbable', delayFocusTrap: false, restoreFocus: true, closeOnNavigation: true,
+      width: '100vw', maxWidth: '100vw', height: '100dvh', maxHeight: '100dvh',
+      position: { top: '0', right: '0' }, enterAnimationDuration: 0, exitAnimationDuration: 0,
     });
-    this.sheetRef = ref;
-    ref.afterDismissed().pipe(takeUntil(this.destroy$)).subscribe(() => {
-      if (this.sheetRef === ref) { this.sheetRef = null; this.draftKeys.clear(); }
+    this.panelRef = ref;
+    // Virtual keyboards resize the visual viewport even when the layout viewport stays unchanged.
+    const viewport = window.visualViewport;
+    if (viewport) {
+      const fitViewport = () => ref.updateSize('100vw', `${viewport.height}px`).updatePosition({ top: `${viewport.offsetTop}px`, right: '0' });
+      fitViewport();
+      merge(fromEvent(viewport, 'resize'), fromEvent(viewport, 'scroll'))
+        .pipe(takeUntil(merge(ref.afterClosed(), this.destroy$))).subscribe(fitViewport);
+    }
+    ref.afterClosed().pipe(takeUntil(this.destroy$)).subscribe(() => {
+      if (this.panelRef === ref) { this.panelRef = null; this.draftKeys.clear(); }
     });
   }
   closeMobileFilters(): void {
-    const ref = this.sheetRef; this.sheetRef = null; ref?.dismiss(); this.draftKeys.clear();
+    const ref = this.panelRef; this.panelRef = null; ref?.close(); this.draftKeys.clear();
   }
   applyMobileFilters(): void {
-    if (!this.sheetRef) return;
+    if (!this.panelRef) return;
     const changed = [...this.draftKeys];
+    const cleared = this.draftCleared;
     const next = this.copyState(this.draftFilters);
     this.closeMobileFilters(); this.internalFilters = next;
-    if (!changed.length) return;
+    if (!changed.length && !cleared) return;
+    if (cleared) this.clear.emit();
     if (this.presentation === 'flat') {
       changed.forEach(key => { const value = next[key]; if (typeof value === 'string') this.filterChange.emit({ key, value }); });
     }
     this.emitState();
   }
-  clearMobileFilters(): void { this.onClearFilters(); this.closeMobileFilters(); }
+  clearMobileFilters(): void {
+    if (!this.mobileFiltersOpen) return;
+    Object.keys(this.draftFilters).forEach(key => this.draftKeys.add(key));
+    this.draftFilters = {}; this.draftCleared = true;
+  }
   onFieldChange(key: string, value: DataTableFilterValue): void {
     if (this.presentation === 'flat') this.onFilterChange(key, value);
     else this.onFilterValueChange(key, value);
@@ -108,13 +135,13 @@ export class ListFilterBarComponent implements OnChanges, OnDestroy {
   }
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['mobileFilterPresentation'] && this.mobileFilterPresentation === 'inline') this.closeMobileFilters();
-    if (changes['filterState'] || changes['filters']) {
+    if (changes['filterState'] || changes['filters'] || changes['customFilterTemplate']) {
       this.internalFilters = this.presentation === 'flat'
-        ? Object.fromEntries(this.filters.map(filter => [filter.key, 'value' in filter ? filter.value : this.filterState[filter.key]]))
+        ? { ...(this.customFilterTemplate ? this.filterState : {}), ...Object.fromEntries(this.filters.map(filter => [filter.key, 'value' in filter ? filter.value : this.filterState[filter.key]])) }
         : { ...this.filterState };
       if (this.mobileFiltersOpen) {
         const pending = Object.fromEntries([...this.draftKeys].map(key => [key, this.draftFilters[key]]));
-        this.draftFilters = { ...this.copyState(this.internalFilters), ...pending };
+        this.draftFilters = this.draftCleared ? { ...this.draftFilters } : { ...this.copyState(this.internalFilters), ...pending };
       }
     }
   }
@@ -163,7 +190,7 @@ export class ListFilterBarComponent implements OnChanges, OnDestroy {
   }
 
   toggleFilters(): void {
-    if (this.useMobileSheet) {
+    if (this.useMobilePanel) {
       if (this.mobileFiltersOpen) this.closeMobileFilters(); else this.openMobileFilters();
       return;
     }
