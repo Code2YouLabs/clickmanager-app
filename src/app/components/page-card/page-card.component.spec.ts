@@ -86,7 +86,7 @@ describe('PageCardComponent', () => {
     const header = fixture.nativeElement.querySelector('app-card-header');
     expect(header.textContent.trim()).toBe('Produtos gráficos');
     expect(header.querySelector('.card-header__actions')).toBeNull();
-    expect(header.querySelector('mat-divider')).toBeNull();
+    expect(header.querySelector('mat-divider')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.body-content')).toBeTruthy();
     const fab = fixture.nativeElement.querySelector('.mobile-fab-action--page');
     expect(fab.getAttribute('aria-label')).toBe('Novo produto');

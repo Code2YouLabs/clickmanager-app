@@ -44,7 +44,7 @@ type ResolvedPageCardAction = {
 export class PageCardComponent implements OnDestroy {
   /** Opt-in compact mobile layout; projected actions remain owned by the consumer. */
   @Input() mobileCompact = false;
-  /** Hide subtitle, internal header actions and divider only on small screens. */
+  /** Hide subtitle and internal header actions only on small screens; preserve divider settings. */
   @Input() mobileTitleOnly = false;
   /** Visibility/authorization remains with the consumer, just like projected actions. */
   @Input() mobilePrimaryAction: PageCardMobileAction | null = null;

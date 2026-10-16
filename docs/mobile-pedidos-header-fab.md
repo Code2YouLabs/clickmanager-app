@@ -4,7 +4,7 @@ Refinamento na branch `feature/mobile-fundacao-listagem-pedidos`. Somente Pedido
 
 ## Contratos reutilizáveis
 
-- `PageCard.mobileTitleOnly` (padrão `false`): encaminha `CardHeader.titleOnly` somente até 760 px. O cabeçalho exibe apenas o título, sem subtítulo, ações ou divisor. No desktop os valores originais continuam sendo apresentados.
+- `PageCard.mobileTitleOnly` (padrão `false`): encaminha `CardHeader.titleOnly` somente até 760 px. O cabeçalho exibe apenas o título, sem subtítulo ou ações; a linha divisória permanece conforme a configuração existente. No desktop os valores originais continuam sendo apresentados.
 - `PageCard.mobilePrimaryAction` (padrão `null`): recebe `label`, `icon`, `disabled` e `tutorialTarget`; emite `mobilePrimaryActionClick`. O consumidor continua responsável pela autorização e pela ação real. `null` omite a ação; saving/bloqueios impedem a emissão.
 - `MobileFabAction.placement='page'`: variante opt-in do componente existente. Sua apresentação legada permanece como padrão. Foram acrescentados `disabled` e `tutorialTarget`, aplicado no botão real.
 
