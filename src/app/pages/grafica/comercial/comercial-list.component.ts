@@ -81,6 +81,8 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   tipo: ComercialTipo = 'rascunhos';
   statusFiltro: string | null = null;
   viewMode: ComercialViewMode = 'lista';
+  private desktopViewMode: ComercialViewMode = 'lista';
+  private desktopKanbanExpanded = false;
   kanbanExpanded = false;
   kanbanColumns: PedidoKanbanColumn[] = [];
   pedidosMovendo = new Set<number>();
@@ -193,7 +195,18 @@ export class ComercialListComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.breakpoints.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => {
+      const wasMobile = this.isMobile;
       this.isMobile = state.matches;
+      if (this.tipo === 'pedidos' && wasMobile !== this.isMobile) {
+        if (this.isMobile) {
+          this.desktopViewMode = this.viewMode;
+          this.desktopKanbanExpanded = this.kanbanExpanded;
+          this.alterarVisualizacao('lista', false);
+        } else {
+          this.alterarVisualizacao(this.desktopViewMode, false);
+          if (this.desktopViewMode === 'kanban') this.setKanbanExpanded(this.desktopKanbanExpanded);
+        }
+      }
       this.syncKanbanFocusClass();
     });
     combineLatest([this.route.data, this.route.queryParamMap]).pipe(takeUntil(this.destroy$)).subscribe(([data, params]) => {
@@ -283,18 +296,19 @@ export class ComercialListComponent implements OnInit, OnDestroy {
     }
   }
 
-  alterarVisualizacao(value: ComercialViewMode): void {
+  alterarVisualizacao(value: ComercialViewMode, registerTutorial = true): void {
     if (!this.podeAlternarKanban || !value || value === this.viewMode) {
       return;
     }
 
     this.viewMode = value;
+    if (!this.isMobile) this.desktopViewMode = value;
     this.pagina = 0;
     if (this.viewMode !== 'kanban') {
       this.setKanbanExpanded(false);
     } else {
       this.syncKanbanFocusClass();
-      this.primeiroPedidoTutorial.registrarKanbanSelecionado();
+      if (registerTutorial) this.primeiroPedidoTutorial.registrarKanbanSelecionado();
     }
     this.carregar();
   }

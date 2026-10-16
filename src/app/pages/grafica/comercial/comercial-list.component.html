@@ -6,6 +6,18 @@
   [subtitulo]="subtitulo"
   [mostrarDivisor]="true"
   [class.comercial-kanban-expanded]="kanbanExpandedActive">
+      <div page-mobile-header-actions *ngIf="isMobile && podeAlternarKanban">
+        <button mat-icon-button type="button" aria-label="Opções de visualização"
+          [appTutorialTarget]="primeiroPedidoTargets.alternarKanban" [matMenuTriggerFor]="mobileViewMenu">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #mobileViewMenu="matMenu">
+          <button mat-menu-item (click)="alterarVisualizacao(viewMode === 'lista' ? 'kanban' : 'lista')">
+            <mat-icon>{{ viewMode === 'lista' ? 'view_kanban' : 'view_list' }}</mat-icon>
+            {{ viewMode === 'lista' ? 'Abrir Kanban' : 'Voltar à lista' }}
+          </button>
+        </mat-menu>
+      </div>
       <p *ngIf="tipo !== 'pedidos' || !isMobile" class="search-scope">{{ isMobile && viewMode === 'kanban'
         ? 'A busca por texto considera somente os cards carregados. O filtro de status consulta todos os registros.'
         : 'A busca por texto considera os registros da página atual. O filtro de status consulta todos os registros.' }}</p>
@@ -30,7 +42,7 @@
         (pageChange)="paginar($event)"
         (action)="onAction($event)">
 
-        <div data-table-toolbar-actions class="view-mode-actions" *ngIf="podeAlternarKanban">
+        <div data-table-toolbar-actions class="view-mode-actions" *ngIf="podeAlternarKanban && !isMobile">
           <app-view-mode-toggle
             [appTutorialTarget]="tipo === 'pedidos' ? primeiroPedidoTargets.alternarKanban : ''"
             [value]="viewMode"
