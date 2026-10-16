@@ -77,3 +77,11 @@ npm run build:prod
 Removido o menu mobile Abrir Kanban conforme solicitação posterior. Botão Filtros refinado com tokens da skin, contraste de estado ativo, ícone de ajustes de 20 px e texto de 14 px. Painel lateral, FAB e desktop preservados. Movimentação de status continua acessível pelo editor aberto em Ver pedido.
 
 Validação: **103/103 testes direcionados aprovados**, incluindo integração do cabeçalho e preservação do Kanban desktop. Build de produção com sucesso, 38 avisos existentes e nenhum erro. Sem testes visuais ou screenshots.
+
+## Estado vazio mobile — 16/10/2026
+
+DataTable apresenta vazio centralizado no mobile, com título de 18 px, descrição de 14 px com largura de leitura limitada e espaçamento vertical maior. O campo opcional `DataTableEmptyState.icon` permite um ícone decorativo somente nessa apresentação; quando há busca/filtros sem resultados, o ícone muda para pesquisa sem resultados. Ações de vazio existentes continuam disponíveis e a composição desktop é preservada.
+
+Pedidos declara “Nenhum pedido encontrado” e “Quando houver pedidos, eles aparecerão aqui.” com ícone de prancheta (`assignment`) apenas no mobile. Desktop, Orçamentos e Rascunhos preservam seus textos atuais. Não houve mudança de consultas, estados de erro/loading, paginação ou FAB. A mensagem filtrada permanece “Nenhum resultado encontrado”, com orientação para alterar a busca.
+
+Validação deste ajuste: **48/48 testes direcionados aprovados**, build de produção com sucesso (38 avisos existentes, nenhum erro). Sem testes visuais ou screenshots.

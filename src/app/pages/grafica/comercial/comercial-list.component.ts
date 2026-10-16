@@ -113,6 +113,12 @@ export class ComercialListComponent implements OnInit, OnDestroy {
     filteredTitle: 'Nenhum resultado encontrado',
     filteredDescription: 'Altere a busca para localizar outros registros.',
   };
+  readonly pedidoMobileEmptyState = {
+    ...this.emptyState,
+    title: 'Nenhum pedido encontrado',
+    description: 'Quando houver pedidos, eles aparecerão aqui.',
+    icon: 'assignment',
+  };
   rowKey = (item: any) => item.id || item.pedidoId || item.orcamentoId || item.protocolo || item.numero;
   kanbanTrackBy = (pedido: PedidoComercialResumo) => pedido.id || pedido.pedidoId || pedido.numero;
   pedidoCardAriaLabel = (pedido: PedidoComercialResumo): string =>

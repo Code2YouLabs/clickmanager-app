@@ -99,9 +99,10 @@
 @include mobile.mobile-foundation {
   .data-table-container { min-height: 0; }
   .data-table-container--initial-loading { min-height: 180px; }
-  .data-table-empty { padding: 16px 12px; text-align: left; display: grid; gap: 4px; }
-  .data-table-empty strong { margin: 0; font-size: 16px; line-height: 24px; }
-  .data-table-empty span { font-size: 14px; line-height: 20px; }
+  .data-table-empty { padding: 32px 16px; text-align: center; display: grid; justify-items: center; gap: 8px; }
+  .data-table-empty__icon { width: 40px; height: 40px; font-size: 40px; line-height: 40px; margin-bottom: 8px; color: var(--mat-sys-on-surface-variant); }
+  .data-table-empty strong { margin: 0; max-width: 100%; font-size: 18px; line-height: 26px; font-weight: 600; overflow-wrap: anywhere; }
+  .data-table-empty span { max-width: 30ch; font-size: 14px; line-height: 22px; text-wrap: pretty; }
   .data-table-empty__actions:empty { display: none; }
   .data-table-empty__actions { margin-top: 8px; }
   .data-table-mobile-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; }

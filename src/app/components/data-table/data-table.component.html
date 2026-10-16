@@ -233,6 +233,9 @@
 </ng-template>
 <ng-template #emptyNotice>
   <div class="data-table-empty" role="status">
+    @if (isMobile && emptyState.icon) {
+      <mat-icon class="data-table-empty__icon" aria-hidden="true">{{ isFilteredEmpty ? 'search_off' : emptyState.icon }}</mat-icon>
+    }
     <strong>{{ isFilteredEmpty ? (emptyState.filteredTitle || emptyState.title || 'Nenhum resultado encontrado') : (emptyState.title || 'Nenhum registro encontrado') }}</strong>
     <span>{{ isFilteredEmpty ? (emptyState.filteredDescription || emptyState.description || 'Altere a busca ou os filtros.') : (emptyState.description || 'Os registros aparecerão aqui quando forem adicionados.') }}</span>
     <div class="data-table-empty__actions"><ng-content select="[data-table-empty-actions]"></ng-content></div>

@@ -183,12 +183,30 @@ describe('ComercialListComponent', () => {
     expect(fixture.nativeElement.querySelector('table').textContent).toContain('Total Pago');
   });
 
+  it('apresenta vazio mobile de Pedidos com ícone e texto próprios sem alterar busca ou desktop', () => {
+    service.listarPedidosComerciais.and.returnValue(of({ content: [], totalElements: 0 } as any));
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    const empty = () => fixture.nativeElement.querySelector('.data-table-empty');
+    expect(empty().querySelector('strong').textContent).toBe('Nenhum pedido encontrado');
+    expect(empty().textContent).toContain('Quando houver pedidos, eles aparecerão aqui.');
+    expect(empty().querySelector('mat-icon').textContent).toBe('assignment');
+    expect(empty().querySelector('mat-icon').getAttribute('aria-hidden')).toBe('true');
+    component.buscar('papel'); fixture.detectChanges();
+    expect(empty().querySelector('strong').textContent).toBe('Nenhum resultado encontrado');
+    expect(empty().textContent).toContain('Altere a busca');
+    expect(empty().querySelector('mat-icon').textContent).toBe('search_off');
+    component.buscar(''); viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
+    expect(empty().querySelector('strong').textContent).toBe('Nenhum registro encontrado');
+    expect(empty().textContent).toContain('Crie um novo registro comercial para começar.');
+    expect(empty().querySelector('mat-icon')).toBeNull();
+  });
+
   it('preserva estados no item mobile: loading, vazio, erro, retry, refresh e 403', () => {
     viewport.next({ matches: true, breakpoints: {} });
     const response = new Subject<any>(); service.listarPedidosComerciais.and.returnValue(response);
     fixture.detectChanges(); expect(fixture.nativeElement.textContent).toContain('Carregando registros');
     response.next({ content: [], totalElements: 0 }); fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Nenhum registro encontrado');
+    expect(fixture.nativeElement.textContent).toContain('Nenhum pedido encontrado');
     component.carregar(); response.error({ status: 500 }); fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role=alert]')).toBeTruthy();
     service.listarPedidosComerciais.and.returnValue(of(page as any));

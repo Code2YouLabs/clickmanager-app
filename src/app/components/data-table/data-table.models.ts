@@ -60,6 +60,8 @@ export interface DataTableActionEvent<T> {
 export type DataTableActionsMode = 'menu' | 'buttons';
 
 export interface DataTableEmptyState {
+  /** Decorative icon in the mobile presentation only. */
+  icon?: string;
   title?: string;
   description?: string;
   filteredTitle?: string;

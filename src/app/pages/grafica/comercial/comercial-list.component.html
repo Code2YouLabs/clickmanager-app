@@ -24,7 +24,7 @@
         actionsMode="buttons"
         [expandable]="true"
         expandAriaLabel="Expandir detalhes"
-        [emptyState]="emptyState"
+        [emptyState]="isMobile && tipo === 'pedidos' ? pedidoMobileEmptyState : emptyState"
         [rowKey]="rowKey"
         (searchChange)="buscar($event)"
         (pageChange)="paginar($event)"
