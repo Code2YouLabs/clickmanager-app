@@ -111,9 +111,11 @@ Validar em 360/390/430/768 px e desktop: teclado real e foco por toque, labels e
 
 ## Refinamento da transição lateral — 16/10/2026
 
-A abertura e o fechamento agora usam a duração do ciclo Material (360/300 ms). Foi removida a animação isolada de entrada que concorria com o transform padrão do dialog. O overlay permanece montado durante a saída, mantendo o rascunho visível; Aplicar repetido durante o recolhimento não emite novamente. Movimento reduzido usa duração zero e nenhuma transição CSS.
+A abertura e o fechamento agora usam a duração do ciclo Material (360/300 ms). A entrada utiliza keyframes no container interno durante a classe `mdc-dialog--opening`, garantindo a posição inicial fora da tela mesmo se o navegador ainda não tiver pintado o overlay. O transform padrão da superfície Material permanece desativado; o fechamento mantém a transição já validada. O overlay permanece montado durante a saída, mantendo o rascunho visível; Aplicar repetido durante o recolhimento não emite novamente. Movimento reduzido usa duração zero e nenhuma transição CSS.
 
 - Teste isolado do ListFilterBar: **21/21 passaram**, incluindo o ciclo real de animação para Voltar, Escape, Aplicar e movimento reduzido.
 - Suíte completa: **1.092/1.093 passaram**, somente a falha preexistente do onboarding em 360 px.
 - Build de produção: sucesso, sem erros, com os 38 avisos existentes.
 - Sem testes visuais ou screenshots; comportamento desktop preservado.
+
+Correção do primeiro frame da abertura: validação isolada repetida com **21/21 testes aprovados** e build de produção concluído (38 avisos existentes, nenhum erro). Fechamento preservado; sem testes visuais ou screenshots.
