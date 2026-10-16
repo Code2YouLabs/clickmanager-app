@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -52,7 +52,7 @@ type Acabamento = { id: string; nome: string };
   templateUrl: './smart-calc.component.html',
   styleUrls: ['./smart-calc.component.scss'],
 })
-export class SmartCalcComponent implements OnInit, AfterViewInit, OnDestroy {
+export class SmartCalcComponent implements OnInit, OnDestroy {
   // =========================
   // INIT (tela)
   // =========================
@@ -185,10 +185,19 @@ export class SmartCalcComponent implements OnInit, AfterViewInit, OnDestroy {
     this.carregarInit();
   }
 
-  ngAfterViewInit(): void {
-    const bar = this.host.nativeElement.querySelector('.mobile-total-bar');
-    const controls = this.host.nativeElement.querySelector('.mobile-total-bar__controls');
-    const handle = this.host.nativeElement.querySelector('.mobile-total-bar__handle-toggle');
+  @ViewChild(MobileTotalBarComponent, { read: ElementRef })
+  set mobileTotalBar(element: ElementRef<HTMLElement> | undefined) {
+    this.totalBarObserver?.disconnect();
+    if (!element) {
+      this.resultadoMobileAberto.set(false);
+      for (const variable of ['--smartcalc-mobile-total-bar-height', '--smartcalc-mobile-summary-height', '--smartcalc-mobile-handle-height']) {
+        this.host.nativeElement.style.removeProperty(variable);
+      }
+      return;
+    }
+    const bar = element.nativeElement.querySelector('.mobile-total-bar');
+    const controls = element.nativeElement.querySelector('.mobile-total-bar__controls');
+    const handle = element.nativeElement.querySelector('.mobile-total-bar__handle-toggle');
     if (!bar || !controls || typeof ResizeObserver === 'undefined') return;
     this.totalBarObserver = new ResizeObserver(entries => {
       for (const entry of entries) {
