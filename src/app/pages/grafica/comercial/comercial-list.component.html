@@ -6,17 +6,17 @@
   [subtitulo]="subtitulo"
   [mostrarDivisor]="true"
   [class.comercial-kanban-expanded]="kanbanExpandedActive">
-      <p *ngIf="tipo !== 'pedidos' || !isMobile" class="search-scope">{{ isMobile && viewMode === 'kanban'
+      <p *ngIf="!isMobile" class="search-scope">{{ isMobile && viewMode === 'kanban'
         ? 'A busca por texto considera somente os cards carregados. O filtro de status consulta todos os registros.'
         : 'A busca por texto considera os registros da página atual. O filtro de status consulta todos os registros.' }}</p>
       <app-data-table
         [columns]="columns"
         [data]="itensFiltrados"
-        [search]="{ enabled: true, label: isMobile && viewMode === 'kanban' ? 'Buscar nos cards carregados' : 'Buscar nesta página', mobileHint: progressiveList ? 'A busca considera apenas os pedidos carregados.' : undefined, placeholder: progressiveList ? 'Pesquisar pedidos carregados' : isMobile && viewMode === 'kanban' ? 'Referência, cliente ou status nos cards carregados' : 'Referência, cliente ou status nesta página', debounceMs: 250, value: busca }"
+        [search]="{ enabled: true, label: isMobile && viewMode === 'kanban' ? 'Buscar nos cards carregados' : 'Buscar nesta página', mobileHint: progressiveList ? 'A busca considera apenas os ' + configuracao.plural + ' carregados.' : undefined, placeholder: progressiveList ? 'Pesquisar ' + configuracao.plural + ' carregados' : isMobile && viewMode === 'kanban' ? 'Referência, cliente ou status nos cards carregados' : 'Referência, cliente ou status nesta página', debounceMs: 250, value: busca }"
         [pagination]="pagination"
-        [mobileLoadMode]="tipo === 'pedidos' ? 'progressive' : 'paged'"
-        [progressiveState]="{ loadedCount: itens.length, loading: carregandoMais, error: erroMais, restartRequired: reiniciarLista }"
-        loadMoreLabel="Carregar mais pedidos" itemsLabel="pedidos"
+        mobileLoadMode="progressive"
+        [progressiveState]="{ contextKey: tipo, loadedCount: itens.length, loading: carregandoMais, error: erroMais, restartRequired: reiniciarLista }"
+        [loadMoreLabel]="'Carregar mais ' + configuracao.plural" [itemsLabel]="configuracao.plural"
         [loading]="carregando && !itens.length"
         [refreshing]="carregando && !!itens.length"
         [showTable]="viewMode === 'lista'"
@@ -27,7 +27,7 @@
         actionsMode="buttons"
         [expandable]="true"
         expandAriaLabel="Expandir detalhes"
-        [emptyState]="isMobile && tipo === 'pedidos' ? pedidoMobileEmptyState : emptyState"
+        [emptyState]="isMobile ? mobileEmptyState : emptyState"
         [rowKey]="rowKey"
         (searchChange)="buscar($event)"
         (pageChange)="paginar($event)"
@@ -76,34 +76,44 @@
         <ng-template appDataTableCell="__expandedDetail" let-item>
           <ng-container [ngTemplateOutlet]="pedidoFinanceiro" [ngTemplateOutletContext]="{ $implicit: item }"></ng-container>
         </ng-template>
-        @if (tipo === 'pedidos') {
           <ng-template [appDataTableItem]="itensFiltrados" let-item let-itemActions="actions" let-emit="emitAction" let-expanded="expanded" let-toggle="toggle">
-            <article class="pedido-mobile-item" [attr.aria-label]="'Pedido ' + referencia(item)">
-              <header><strong>{{ referencia(item) }}</strong><span class="status-pill" [attr.title]="statusLabel(item.status)" [attr.aria-label]="statusLabel(item.status)">{{ statusMobileLabel(item.status) }}</span></header>
-              <p class="pedido-mobile-item__cliente">{{ cliente(item) || 'Balcão' }}</p>
+            <article class="pedido-mobile-item" [attr.aria-label]="(tipo === 'pedidos' ? 'Pedido' : tipo === 'orcamentos' ? 'Orçamento' : 'Rascunho') + ' ' + referencia(item)">
+              <header><strong>{{ referencia(item) }}</strong>@if (tipo === 'pedidos' || item.status) {<span class="status-pill" [attr.title]="statusLabel(item.status)" [attr.aria-label]="statusLabel(item.status)">{{ statusMobileLabel(item.status) }}</span>}</header>
+              <p class="pedido-mobile-item__cliente">{{ cliente(item) || (tipo === 'pedidos' ? 'Balcão' : 'Sem cliente informado') }}</p>
               <div class="pedido-mobile-item__summary">
-                <time [attr.datetime]="dataCriacao(item) || null">{{ dataCriacao(item) | date:'dd/MM/yyyy HH:mm' }}</time>
-                <strong>{{ total(item) | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
+                @if (tipo === 'pedidos' || dataCriacao(item)) {
+                  <time [attr.datetime]="dataCriacao(item) || null">{{ dataCriacao(item) | date:'dd/MM/yyyy HH:mm' }}</time>
+                }
+                <strong [class.pedido-mobile-item__total]="tipo !== 'pedidos'">
+                  @if (tipo !== 'pedidos' && mobileValueLabel(item); as valueLabel) { <span class="pedido-mobile-item__value-label">{{ valueLabel }}</span> }
+                  @if (tipo === 'pedidos' || item.total != null || item.totalEstimado != null) {
+                    {{ total(item) | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
+                  } @else { — }
+                </strong>
               </div>
+              @if (tipo === 'orcamentos' && item.validoAte) {
+                <time class="pedido-mobile-item__validade" [attr.datetime]="item.validoAte">Validade: {{ item.validoAte | date:'dd/MM/yyyy' }}</time>
+              }
               <div class="pedido-mobile-item__actions">
                 @for (itemAction of itemActions; track itemAction.id) {
                   <button mat-stroked-button type="button" [disabled]="itemAction.disabled?.(item)" (click)="emit(item, itemAction.id)">
-                    <mat-icon>{{ itemAction.icon }}</mat-icon>{{ itemAction.label }} pedido
+                    <mat-icon>{{ itemAction.icon }}</mat-icon>{{ itemAction.label }} {{ configuracao.singular }}
                   </button>
                 }
+                @if (tipo === 'pedidos') {
                 <button mat-button type="button" [attr.aria-expanded]="expanded"
                   [attr.aria-controls]="'pedido-financeiro-' + rowKey(item)" (click)="toggle(item)">
                   <mat-icon>{{ expanded ? 'expand_less' : 'expand_more' }}</mat-icon>Financeiro
                 </button>
+                }
               </div>
-              @if (expanded) {
+              @if (tipo === 'pedidos' && expanded) {
                 <div [id]="'pedido-financeiro-' + rowKey(item)">
                   <ng-container [ngTemplateOutlet]="pedidoFinanceiro" [ngTemplateOutletContext]="{ $implicit: item }"></ng-container>
                 </div>
               }
             </article>
           </ng-template>
-        }
       </app-data-table>
 
       <ng-template #pedidoFinanceiro let-item>

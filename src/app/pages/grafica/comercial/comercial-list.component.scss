@@ -59,6 +59,9 @@
     &__summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
     time { color: var(--mat-sys-on-surface-variant); font-size: 12px; line-height: 16px; }
     &__summary > strong { min-width: 0; max-width: 100%; font-size: 16px; line-height: 24px; font-weight: 600; overflow-wrap: anywhere; }
+    &__summary > strong.pedido-mobile-item__total { margin-left: auto; text-align: right; }
+    &__value-label { display: block; color: var(--mat-sys-on-surface-variant); font-size: 12px; line-height: 16px; font-weight: 400; }
+    &__validade { display: block; margin-top: 4px; }
     &__actions { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 8px; }
     &__actions button { min-height: 44px; flex: 1 1 auto; }
     .expanded-detail { grid-template-columns: 1fr; margin: 8px 0 0; padding: 0; gap: 0; border: 0; border-radius: 0; background: transparent; }

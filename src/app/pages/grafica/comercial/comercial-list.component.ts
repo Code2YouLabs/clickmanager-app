@@ -79,7 +79,8 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   erroMais: string | null = null;
   reiniciarLista = false;
   private listRequestVersion = 0;
-  get progressiveList(): boolean { return this.isMobile && this.tipo === 'pedidos' && this.viewMode === 'lista'; }
+  private listInitialized = false;
+  get progressiveList(): boolean { return this.isMobile && this.viewMode === 'lista'; }
   acessoNegado = false;
   private request?: Subscription;
   private readonly destroy$ = new Subject<void>();
@@ -118,16 +119,17 @@ export class ComercialListComponent implements OnInit, OnDestroy {
     filteredTitle: 'Nenhum resultado encontrado',
     filteredDescription: 'Altere a busca para localizar outros registros.',
   };
-  get pedidoMobileEmptyState() {
+  get mobileEmptyState() {
+    const { singular, plural, emptyIcon } = this.configuracao;
     return {
       ...this.emptyState,
-      title: 'Nenhum pedido encontrado',
-      description: 'Quando houver pedidos, eles aparecerão aqui.',
-      filteredTitle: this.busca.trim() ? 'Nenhum resultado encontrado' : 'Nenhum pedido encontrado',
+      title: `Nenhum ${singular} encontrado`,
+      description: `Quando houver ${plural}, eles aparecerão aqui.`,
+      filteredTitle: this.busca.trim() ? 'Nenhum resultado encontrado' : `Nenhum ${singular} encontrado`,
       filteredDescription: this.busca.trim()
-        ? 'Nenhum resultado nos pedidos carregados. Altere a busca para tentar novamente.'
-        : 'Não há pedidos com o status selecionado.',
-      icon: 'assignment',
+        ? `Nenhum resultado nos ${plural} carregados. Altere a busca para tentar novamente.`
+        : `Não há ${plural} com o status selecionado.`,
+      icon: emptyIcon,
     };
   }
   rowKey = (item: any) => item.id || item.pedidoId || item.orcamentoId || item.protocolo || item.numero;
@@ -214,10 +216,12 @@ export class ComercialListComponent implements OnInit, OnDestroy {
     this.breakpoints.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => {
       const wasMobile = this.isMobile;
       this.isMobile = state.matches;
-      if (this.tipo === 'pedidos' && wasMobile !== this.isMobile) {
+      if (this.listInitialized && wasMobile !== this.isMobile) {
         const previousMode = this.viewMode;
         this.itens = []; this.totalItens = 0; this.pagina = 0;
-        if (this.isMobile) {
+        if (this.tipo !== 'pedidos') {
+          this.carregar();
+        } else if (this.isMobile) {
           this.desktopViewMode = this.viewMode;
           this.desktopKanbanExpanded = this.kanbanExpanded;
           this.alterarVisualizacao('lista', false);
@@ -225,7 +229,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
           this.alterarVisualizacao(this.desktopViewMode, false);
           if (this.desktopViewMode === 'kanban') this.setKanbanExpanded(this.desktopKanbanExpanded);
         }
-        if (this.viewMode === previousMode && this.viewMode === 'lista') this.carregar();
+        if (this.tipo === 'pedidos' && this.viewMode === previousMode && this.viewMode === 'lista') this.carregar();
       }
       this.syncKanbanFocusClass();
     });
@@ -242,6 +246,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
       }
       this.syncKanbanFocusClass();
       this.resetKanbanSeContextoMudou();
+      this.listInitialized = true;
       this.carregar();
       if (this.tipo === 'pedidos') {
         const primeiroPedidoId = Number(params.get('primeiroPedidoId') || 0);
@@ -274,13 +279,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
     this.carregando = true;
     this.erro = null;
     this.acessoNegado = false;
-    const source: Observable<GraficaPagina<any>> = this.tipo === 'pedidos'
-      ? this.graficaService.listarPedidosComerciais(this.pagina, this.tamanho, this.statusFiltroPedido())
-      : this.tipo === 'orcamentos'
-        ? this.graficaService.listarOrcamentosComerciais(this.pagina, this.tamanho, this.statusFiltroOrcamento())
-        : this.graficaService.listarRascunhosComerciais(this.pagina, this.tamanho, this.statusFiltro);
-
-    this.request = source.subscribe({
+    this.request = this.listarPagina(this.pagina).subscribe({
       next: (page: any) => {
         if (version !== this.listRequestVersion) return;
         this.carregando = false;
@@ -312,12 +311,20 @@ export class ComercialListComponent implements OnInit, OnDestroy {
 
   paginar(event: PageEvent): void {
     if (this.progressiveList) {
-      if (event.pageIndex === this.pagina + 1 && event.pageSize === this.tamanho) this.carregarMaisPedidos();
+      if (event.pageIndex === this.pagina + 1 && event.pageSize === this.tamanho) this.carregarMaisRegistros();
       return;
     }
     this.pagina = event.pageIndex;
     this.tamanho = event.pageSize;
     this.carregar();
+  }
+
+  private listarPagina(page: number): Observable<GraficaPagina<any>> {
+    return this.tipo === 'pedidos'
+      ? this.graficaService.listarPedidosComerciais(page, this.tamanho, this.statusFiltroPedido())
+      : this.tipo === 'orcamentos'
+        ? this.graficaService.listarOrcamentosComerciais(page, this.tamanho, this.statusFiltroOrcamento())
+        : this.graficaService.listarRascunhosComerciais(page, this.tamanho, this.statusFiltro);
   }
 
   private validateFirstBatch(items: any[]): any[] {
@@ -330,17 +337,17 @@ export class ComercialListComponent implements OnInit, OnDestroy {
       }
       if (key != null && !unique.has(key)) unique.set(key, item);
     }
-    if (items.length && !unique.size) this.erro = 'Não foi possível apresentar os pedidos recebidos. Tente novamente.';
+    if (items.length && !unique.size) this.erro = `Não foi possível apresentar os ${this.configuracao.plural} recebidos. Tente novamente.`;
     return [...unique.values()];
   }
 
-  private carregarMaisPedidos(): void {
+  private carregarMaisRegistros(): void {
     if (!this.progressiveList || this.carregando || this.carregandoMais || this.acessoNegado || this.erro || this.reiniciarLista ||
       (this.pagina + 1) * this.tamanho >= this.totalItens) return;
     const nextPage = this.pagina + 1;
     const version = this.listRequestVersion;
     this.carregandoMais = true; this.erroMais = null;
-    this.request = this.graficaService.listarPedidosComerciais(nextPage, this.tamanho, this.statusFiltroPedido()).subscribe({
+    this.request = this.listarPagina(nextPage).subscribe({
       next: page => {
         if (version !== this.listRequestVersion) return;
         this.carregandoMais = false;
@@ -355,7 +362,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
         }
         if (inconsistent) {
           this.reiniciarLista = true;
-          this.erroMais = 'A lista mudou durante o carregamento. Atualize para continuar com os pedidos atuais.';
+          this.erroMais = `A lista mudou durante o carregamento. Atualize para continuar com os ${this.configuracao.plural} atuais.`;
           return;
         }
         this.itens = [...this.itens, ...batch];
@@ -368,7 +375,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
           this.acessoNegado = true; this.itens = []; this.totalItens = 0;
           return;
         }
-        this.erroMais = 'Não foi possível carregar mais pedidos. Tente novamente.';
+        this.erroMais = `Não foi possível carregar mais ${this.configuracao.plural}. Tente novamente.`;
       },
     });
   }
@@ -640,6 +647,11 @@ export class ComercialListComponent implements OnInit, OnDestroy {
 
   total(item: any): number {
     return Number(item.total ?? item.totalEstimado ?? 0);
+  }
+
+  mobileValueLabel(item: any): string | null {
+    if (item.total == null && item.totalEstimado != null) return 'Estimado';
+    return this.tipo === 'rascunhos' ? 'Em composição' : null;
   }
 
   statusLabel(status: string | null | undefined): string {

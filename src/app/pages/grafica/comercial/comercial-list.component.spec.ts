@@ -393,14 +393,193 @@ describe('ComercialListComponent', () => {
     expect(fixture.nativeElement.querySelector('.pedido-mobile-item')).toBeNull();
   });
 
-  for (const tipo of ['orcamentos', 'rascunhos'] as const) {
-    it(`não migra ${tipo} para a apresentação de item`, () => {
-      viewport.next({ matches: true, breakpoints: {} }); data.next({ tipo }); fixture.detectChanges();
-      expect(fixture.nativeElement.querySelector('table')).toBeTruthy();
+  for (const [tipo, method, singular, plural, status] of [
+    ['orcamentos', 'listarOrcamentosComerciais', 'orçamento', 'orçamentos', 'ENVIADO'],
+    ['rascunhos', 'listarRascunhosComerciais', 'rascunho', 'rascunhos', 'ABERTO'],
+  ] as const) {
+    const commercialPage = (index = 0, total = 21) => ({
+      number: index, totalElements: total,
+      content: batch(index * 10 + 1, Math.min(10, Math.max(0, total - index * 10))).map(item => tipo === 'orcamentos'
+        ? { id: item.id, protocolo: `ORC-2026-${item.id}`, nomeCliente: 'Gráfica São José', status,
+          createdAt: '2026-10-16T10:30:00', validoAte: '2026-11-10', total: 1250.50 }
+        : { id: item.id, clienteNome: null, status, total: 51.25 }),
+    });
+    const startMobile = () => {
+      data.next({ tipo }); viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    };
+    const more = () => fixture.nativeElement.querySelector('.data-table-progressive__more') as HTMLButtonElement;
+
+    it(`${tipo}: reutiliza card, ação e FAB com dados reais e sem financeiro artificial`, () => {
+      service[method].and.returnValue(of(commercialPage(0, 1) as any)); startMobile();
+      expect(service[method]).toHaveBeenCalledOnceWith(0, 10, null);
+      expect(service.listarPedidosComerciais).not.toHaveBeenCalled();
+      const card = fixture.nativeElement.querySelector('.pedido-mobile-item');
+      expect(card.querySelector('header strong').textContent).toBe(tipo === 'orcamentos' ? 'ORC-2026-1' : '#1');
+      expect(card.querySelector('.status-pill').textContent).toBe(tipo === 'orcamentos' ? 'Enviado' : 'Aberto');
+      expect(card.querySelector('.pedido-mobile-item__cliente').textContent).toBe(tipo === 'orcamentos' ? 'Gráfica São José' : 'Sem cliente informado');
+      expect(card.querySelector('.pedido-mobile-item__summary strong').textContent).toContain(tipo === 'orcamentos' ? '1.250,50' : '51,25');
+      if (tipo === 'orcamentos') {
+        expect(card.querySelector('time').textContent).toContain('16/10/2026');
+        expect(card.querySelector('.pedido-mobile-item__validade').textContent).toContain('10/11/2026');
+      } else {
+        expect(card.querySelector('time')).toBeNull();
+        expect(card.textContent).toContain('Em composição');
+      }
+      const buttons = card.querySelectorAll('button'); expect(buttons.length).toBe(1);
+      expect(buttons[0].textContent).toContain(`Ver ${singular}`);
+      buttons[0].click(); expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial', tipo, 1]);
+      expect(card.textContent).not.toContain('Financeiro');
+      expect(fixture.nativeElement.querySelector('table')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.search-scope')).toBeNull();
+      expect(fixture.nativeElement.querySelectorAll('.mobile-fab-action').length).toBe(1);
+      expect(primeiroPedidoTutorial.iniciarSeNecessario).not.toHaveBeenCalled();
+    });
+
+    it(`${tipo}: diferencia estimativa, valor ausente e status ausente`, () => {
+      const item: any = { ...commercialPage(0, 1).content[0], total: null, totalEstimado: 84.32, status: null };
+      service[method].and.returnValue(of({ content: [item], totalElements: 1 } as any)); startMobile();
+      const card = fixture.nativeElement.querySelector('.pedido-mobile-item');
+      expect(card.textContent).toContain('Estimado'); expect(card.textContent).toContain('84,32');
+      expect(card.querySelector('.status-pill')).toBeNull();
+      delete item.totalEstimado; component.carregar(); fixture.detectChanges();
+      expect(card.querySelector('.pedido-mobile-item__summary strong').textContent).toContain('—');
+      expect(card.textContent).not.toContain('0,00');
+    });
+
+    it(`${tipo}: acumula sem recriar itens, bloqueia concorrência e termina na última página`, () => {
+      const pending = new Subject<any>();
+      service[method].and.callFake((index: number) => index === 1 ? pending : of(commercialPage(index) as any)); startMobile();
+      const first = component.itens[0], node = fixture.nativeElement.querySelector('.pedido-mobile-item');
+      more().click(); more().click(); fixture.detectChanges();
+      expect(service[method].calls.count()).toBe(2); expect(more().disabled).toBeTrue();
+      expect(component.pagina).toBe(0); expect(component.itens.length).toBe(10);
+      pending.next(commercialPage(1)); pending.complete(); fixture.detectChanges();
+      expect(component.itens.length).toBe(20); expect(component.itens[0]).toBe(first);
+      expect(fixture.nativeElement.querySelector('.pedido-mobile-item')).toBe(node);
+      expect(fixture.nativeElement.textContent).toContain(`Carregados 20 de 21 ${plural}`);
+      more().click(); fixture.detectChanges();
+      expect(service[method].calls.mostRecent().args).toEqual([2, 10, null]);
+      expect(component.itens.length).toBe(21); expect(more()).toBeNull();
+      expect(fixture.nativeElement.querySelector('mat-paginator')).toBeNull();
+    });
+
+    it(`${tipo}: erro adicional mantém coleção, retry repete página e 403 bloqueia acesso`, () => {
+      let pending = new Subject<any>();
+      service[method].and.callFake((index: number) => index ? pending : of(commercialPage() as any)); startMobile();
+      const previous = component.itens; more().click(); pending.error({ status: 500 }); fixture.detectChanges();
+      expect(component.itens).toBe(previous); expect(component.pagina).toBe(0);
+      expect(fixture.nativeElement.querySelector('.data-table-progressive__error').textContent).toContain(`carregar mais ${plural}`);
+      pending = new Subject<any>(); fixture.nativeElement.querySelector('.data-table-progressive__error button').click(); fixture.detectChanges();
+      expect(service[method].calls.mostRecent().args).toEqual([1, 10, null]);
+      pending.next(commercialPage(1)); pending.complete(); fixture.detectChanges();
+      expect(component.itens.length).toBe(20);
+      pending = new Subject<any>(); more().click(); pending.error({ status: 403 }); fixture.detectChanges();
+      expect(component.itens).toEqual([]); expect(fixture.nativeElement.textContent).toContain('Acesso restrito');
       expect(fixture.nativeElement.querySelector('.pedido-mobile-item')).toBeNull();
-      expect(fixture.nativeElement.querySelector('.page-card--mobile-compact')).toBeTruthy();
+    });
+
+    it(`${tipo}: pesquisa somente nos registros carregados e não consulta o servidor`, () => {
+      service[method].and.callFake((index: number) => of(commercialPage(index) as any)); startMobile();
+      component.buscar(tipo === 'orcamentos' ? 'ORC-2026-15' : '#15'); fixture.detectChanges();
+      expect(component.itensFiltrados).toEqual([]); expect(service[method].calls.count()).toBe(1);
+      expect(fixture.nativeElement.textContent).toContain(`Nenhum resultado nos ${plural} carregados`);
+      expect(fixture.nativeElement.textContent).toContain(`A busca considera apenas os ${plural} carregados.`);
+      more().click(); fixture.detectChanges();
+      expect(component.itensFiltrados.map(item => item.id)).toEqual([15]);
+      expect(service[method].calls.count()).toBe(2);
+    });
+
+    it(`${tipo}: mantém filtros reais no cabeçalho e reinicia status sem aceitar resposta obsoleta`, async () => {
+      const pending = new Subject<any>();
+      service[method].and.callFake((index: number, _size: number, filter?: string | null) =>
+        filter ? of(commercialPage(0, 1) as any) : index ? pending : of(commercialPage() as any)); startMobile();
+      await fixture.whenStable(); fixture.detectChanges();
+      const table = fixture.debugElement.query(By.directive(DataTableComponent)).componentInstance as DataTableComponent;
+      expect(table.filterBar?.filterTriggerInHeader).toBeTrue();
+      expect(fixture.nativeElement.querySelector('app-card-header .list-mobile-toolbar__filter-button')).toBeTruthy();
+      expect(table.filters[0].options?.map(option => option.value)).toEqual(component.configuracao.status);
+      more().click(); fixture.detectChanges(); expect(pending.observed).toBeTrue();
+      table.filterChange.emit({ status });
+      expect(router.navigate).toHaveBeenCalledWith([], jasmine.objectContaining({ queryParams: { status }, queryParamsHandling: 'merge' }));
+      params.next(convertToParamMap({ status })); fixture.detectChanges();
+      expect(pending.observed).toBeFalse(); expect(service[method].calls.mostRecent().args).toEqual([0, 10, status]);
+      pending.next(commercialPage(1)); expect(component.itens.length).toBe(1); expect(component.pagina).toBe(0);
+      component.filtrar({}); expect(router.navigate).toHaveBeenCalledWith([], jasmine.objectContaining({ queryParams: { status: null } }));
+    });
+
+    it(`${tipo}: usa estados globais com vazio contextual, erro inicial, retry e refresh`, () => {
+      const pending = new Subject<any>(); service[method].and.returnValue(pending); startMobile();
+      expect(fixture.nativeElement.textContent).toContain('Carregando registros');
+      pending.next(commercialPage(0, 0)); pending.complete(); fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain(`Nenhum ${singular} encontrado`);
+      expect(fixture.nativeElement.textContent).toContain(`Quando houver ${plural}, eles aparecerão aqui.`);
+      expect(more()).toBeNull();
+      service[method].and.returnValue(of(commercialPage(0, 0) as any));
+      params.next(convertToParamMap({ status })); fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain(`Não há ${plural} com o status selecionado.`);
+      service[method].and.returnValue(throwError(() => ({ status: 500 }))); component.carregar(); fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('[role=alert]')).toBeTruthy();
+      service[method].and.returnValue(of(commercialPage(0, 1) as any));
+      fixture.nativeElement.querySelector('[role=alert] button').click(); fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.pedido-mobile-item')).toBeTruthy();
+      const refresh = new Subject<any>(); service[method].and.returnValue(refresh); component.carregar(); fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('Atualizando registros');
+      expect(fixture.nativeElement.querySelector('.pedido-mobile-item')).toBeTruthy();
+      refresh.error({ status: 403 }); fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('Acesso restrito');
+      expect(fixture.nativeElement.querySelector('.pedido-mobile-item')).toBeNull();
+    });
+
+    it(`${tipo}: recusa lote repetido e oferece reinício explícito`, () => {
+      const duplicate = commercialPage(1); duplicate.content[0].id = 1;
+      service[method].and.callFake((index: number) => of((index ? duplicate : commercialPage()) as any)); startMobile();
+      more().click(); fixture.detectChanges();
+      expect(component.itens.length).toBe(10); expect(component.reiniciarLista).toBeTrue();
+      const reset = fixture.nativeElement.querySelector('.data-table-progressive__error button');
+      expect(reset.textContent).toContain('Atualizar lista'); reset.click(); fixture.detectChanges();
+      expect(service[method].calls.mostRecent().args).toEqual([0, 10, null]); expect(component.reiniciarLista).toBeFalse();
+    });
+
+    it(`${tipo}: preserva tabela, paginação, ações e pesquisa desktop ao alternar viewport`, () => {
+      service[method].and.callFake((index: number) => of(commercialPage(index) as any)); startMobile();
+      more().click(); fixture.detectChanges(); expect(component.itens.length).toBe(20);
+      viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
+      expect(component.itens.length).toBe(10); expect(component.pagina).toBe(0);
+      expect(fixture.nativeElement.querySelector('.pedido-mobile-item')).toBeNull();
+      expect(fixture.nativeElement.querySelector('mat-paginator')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('table').textContent).toContain('Total Pago');
+      expect(fixture.nativeElement.querySelector('.data-table-progressive')).toBeNull();
+      component.paginar({ pageIndex: 1, pageSize: 20, length: 21 }); fixture.detectChanges();
+      expect(service[method].calls.mostRecent().args).toEqual([1, 20, null]);
+      expect(component.itens.length).toBe(10);
+      const calls = service[method].calls.count(); component.buscar('inexistente'); fixture.detectChanges();
+      expect(service[method].calls.count()).toBe(calls);
+      expect(fixture.nativeElement.textContent).toContain('página atual');
+      viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+      expect(service[method].calls.mostRecent().args).toEqual([0, 20, null]);
+      viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+      expect(service[method].calls.count()).toBe(calls + 1);
     });
   }
+
+  it('troca a fonte durante Carregar mais sem misturar tipos nem manter a trava anterior', () => {
+    const stale = new Subject<any>();
+    service.listarPedidosComerciais.and.callFake((index: number) => index ? stale : of(responsePage(0) as any));
+    service.listarOrcamentosComerciais.and.returnValue(of(responsePage(0) as any));
+    service.listarRascunhosComerciais.and.returnValue(of(responsePage(0) as any));
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    const more = () => fixture.nativeElement.querySelector('.data-table-progressive__more') as HTMLButtonElement;
+    more().click(); fixture.detectChanges(); expect(more().disabled).toBeTrue();
+    component.buscar('Maria'); data.next({ tipo: 'orcamentos' }); fixture.detectChanges();
+    expect(stale.observed).toBeFalse(); expect(component.busca).toBe(''); expect(component.pagina).toBe(0);
+    expect(more().disabled).toBeFalse();
+    stale.next(responsePage(1)); expect(component.itens.length).toBe(10);
+    service.listarOrcamentosComerciais.and.returnValue(stale); more().click(); fixture.detectChanges();
+    data.next({ tipo: 'rascunhos' }); fixture.detectChanges();
+    expect(stale.observed).toBeFalse(); expect(more().disabled).toBeFalse();
+    expect(component.itens.length).toBe(10); expect(component.pagina).toBe(0);
+    expect(service.listarRascunhosComerciais).toHaveBeenCalledOnceWith(0, 10, null);
+  });
 
   it('preserva as âncoras de lista e novo sem oferecer Kanban no mobile', () => {
     viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
