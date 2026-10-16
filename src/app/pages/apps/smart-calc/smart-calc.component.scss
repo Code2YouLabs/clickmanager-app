@@ -531,12 +531,14 @@
     flex-direction: column;
     align-items: stretch;
     gap: 0;
-    --mobile-total-details-max-height: max(0px, calc(100dvh - var(--mobile-bottom-nav-height, 60px) - var(--smartcalc-mobile-summary-height, 56px) - var(--smartcalc-mobile-handle-height, 44px) - 80px));
-    padding: 0 max(12px, env(safe-area-inset-right)) 8px max(12px, env(safe-area-inset-left));
+    --smartcalc-panel-bottom-padding: 8px;
+    --mobile-total-details-max-height: max(0px, calc(100dvh - var(--mobile-bottom-nav-height, 60px) - var(--smartcalc-mobile-summary-height, 56px) - var(--smartcalc-mobile-handle-height, 44px) - 72px - var(--smartcalc-panel-bottom-padding)));
+    padding: 0 max(12px, env(safe-area-inset-right)) var(--smartcalc-panel-bottom-padding) max(12px, env(safe-area-inset-left));
     border-radius: 12px 12px 0 0;
     background: var(--mat-sys-surface, #fff);
     box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.06);
   }
+  :host ::ng-deep app-mobile-total-bar .mobile-total-bar.mobile-total-bar--expanded { --smartcalc-panel-bottom-padding: 16px; }
   :host ::ng-deep app-mobile-total-bar .mobile-total-bar::before,
   :host ::ng-deep app-mobile-total-bar .mobile-total-bar__handle { display: none; }
   :host ::ng-deep app-mobile-total-bar .mobile-total-bar__summary {
@@ -575,14 +577,14 @@
   }
 
   .mobile-calculation-details { padding: 0 0 16px; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; }
-  .mobile-calculation-details h2 { margin: 0 0 16px; font-size: 1rem; font-weight: 600; }
+  .mobile-calculation-details h2 { text-align: center; margin: 0 0 16px; font-size: 1rem; font-weight: 600; }
   .mobile-calculation-details__clear { min-height: 44px; width: 100%; margin-top: 16px; }
   .mobile-calculation-details .empty-state { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; min-height: 0; padding: 8px 0; border: 0; }
   .mobile-calculation-details .empty-state span { grid-column: 2; }
   .result-table { min-width: 0; table-layout: fixed; }
   .result-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .result-table tbody { display: block; }
-  .result-table tr { display: grid; grid-template-columns: minmax(0, 1fr); padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
+  .result-table tr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 12px; padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
   .result-table td { min-width: 0; padding: 4px 0; border: 0; overflow-wrap: anywhere; }
   .result-table td.num { display: flex; justify-content: space-between; gap: 12px; text-align: right; white-space: normal; }
   .result-table td.num::before { content: attr(data-label); color: #64748b; text-align: left; }
@@ -595,21 +597,26 @@
   .mobile-calculation-details .result-table tr:first-child { padding-top: 0; }
   .mobile-calculation-details .result-table tr:last-child { padding-bottom: 0; border-bottom: 0; }
   .mobile-calculation-details .result-table td { padding: 6px 0; }
-  .mobile-calculation-details .result-table td:first-child { padding: 0 0 8px; }
+  .mobile-calculation-details .result-table td:first-child { grid-column: 1 / -1; padding: 0 0 8px; }
   .mobile-calculation-details .result-table td.num {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: baseline;
-    gap: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 4px;
+    min-width: 0;
     padding: 4px 0;
+    text-align: left;
+    font-size: 0.875rem;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
-  .mobile-calculation-details .result-table td.num::before { font-size: 0.75rem; font-weight: 400; }
+  .mobile-calculation-details .result-table td.num::before { content: attr(data-short-label); white-space: nowrap; font-size: 0.75rem; font-weight: 400; }
   .mobile-production__indicators { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
   .mobile-production__indicators > div { display: grid; align-content: start; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
   .mobile-production__indicators dt { min-height: 20px; color: #64748b; font-size: 0.75rem; line-height: 20px; }
   .mobile-production__indicators dd { display: grid; gap: 4px; margin: 0; color: #475569; font-size: 0.875rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .mobile-production__indicators abbr { text-decoration: none; }
   .mobile-production__value { min-height: 20px; line-height: 20px; }
   .mobile-production__indicators small { font-weight: 400; color: #64748b; font-size: 0.75rem; line-height: 1.4; }
   .mobile-calculation-details .distribution-list { gap: 0; }

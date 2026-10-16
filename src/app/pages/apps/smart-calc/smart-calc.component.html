@@ -256,9 +256,9 @@
                       <div class="result-item-spec">{{ it.descricao }}</div>
                     }
                   </td>
-                  <td class="num" data-label="Quantidade">{{ it.quantidade }}</td>
-                  <td class="num" data-label="Valor unitário">{{ it.valor | currency:'BRL':'symbol-narrow':'1.2-2' }}</td>
-                  <td class="num" data-label="Subtotal">{{ it.subTotal | currency:'BRL':'symbol-narrow':'1.2-2' }}</td>
+                  <td class="num" data-label="Quantidade" [attr.data-short-label]="mobile ? 'Qtd' : null">{{ it.quantidade }}</td>
+                  <td class="num" data-label="Valor unitário" [attr.data-short-label]="mobile ? 'Vlr un.' : null">{{ it.valor | currency:'BRL':'symbol-narrow':'1.2-2' }}</td>
+                  <td class="num" data-label="Subtotal" [attr.data-short-label]="mobile ? 'Subtotal' : null">{{ it.subTotal | currency:'BRL':'symbol-narrow':'1.2-2' }}</td>
                 </tr>
               }
             </tbody>
@@ -274,25 +274,25 @@
               <dl class="mobile-production__indicators">
                 @if (resumo.produzido != null || resumo.custoUnitarioProduzido != null) {
                   <div>
-                    <dt>Produzido</dt>
+                    <dt><abbr title="Produzido">Prod.</abbr></dt>
                     <dd>
                       @if (resumo.produzido != null) { <span class="mobile-production__value">{{ resumo.produzido }}</span> }
-                      @if (resumo.custoUnitarioProduzido != null) { <small>{{ detalheCusto('Custo unit.', resumo.custoUnitarioProduzido) }}</small> }
+                      @if (resumo.custoUnitarioProduzido != null) { <small>{{ detalheCusto('Custo un.', resumo.custoUnitarioProduzido) }}</small> }
                     </dd>
                   </div>
                 }
                 @if (resumo.solicitado != null || resumo.custoUnitarioSolicitado != null) {
                   <div>
-                    <dt>Solicitado</dt>
+                    <dt><abbr title="Solicitado">Solic.</abbr></dt>
                     <dd>
                       @if (resumo.solicitado != null) { <span class="mobile-production__value">{{ resumo.solicitado }}</span> }
-                      @if (resumo.custoUnitarioSolicitado != null) { <small>{{ detalheCusto('Custo unit.', resumo.custoUnitarioSolicitado) }}</small> }
+                      @if (resumo.custoUnitarioSolicitado != null) { <small>{{ detalheCusto('Custo un.', resumo.custoUnitarioSolicitado) }}</small> }
                     </dd>
                   </div>
                 }
                 @if (resumo.sobraUtil != null) {
                   <div>
-                    <dt>Sobra útil</dt>
+                    <dt><abbr title="Sobra útil">Sobra</abbr></dt>
                     <dd><span class="mobile-production__value">{{ resumo.sobraUtil }}</span><small>{{ detalheSobra(resumo.sobraUtil) }}</small></dd>
                   </div>
                 }

@@ -222,7 +222,7 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     const total = text('.mobile-total-bar__summary .value');
     openDetails();
     const content = text('#smartcalc-mobile-details');
-    ['Cartão de visita / Couchê', '9 × 5 cm', '500', '123.45', 'Produzido', '504', 'Sobra útil', '4', 'A3', '12 folha(s) × 42 por folha'].forEach(value => expect(content).toContain(value));
+    ['Cartão de visita / Couchê', '9 × 5 cm', '500', '123.45', 'Prod.', '504', 'Sobra', '4', 'A3', '12 folha(s) × 42 por folha'].forEach(value => expect(content).toContain(value));
     expect(text('.mobile-total-bar__summary .value')).toBe(total);
     query('.mobile-total-bar__expand--button').click(); fixture.detectChanges(); tick(0);
     expect(component.resultadoMobileAberto()).toBeFalse();
@@ -329,17 +329,29 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     expect(query('#smartcalc-mobile-details .total-summary')).toBeNull();
     expect(text('.mobile-total-bar__summary .value')).toContain('123.45');
     expect(text('#smartcalc-mobile-details [data-label="Subtotal"]')).toContain('123.45');
+    const row = query<HTMLTableRowElement>('#smartcalc-mobile-details tbody tr');
+    expect(row.cells.length).toBe(4);
+    expect(row.cells[0].textContent).toContain('Cartão de visita / Couchê');
+    expect(row.cells[0].textContent).toContain('9 × 5 cm');
+    expect(Array.from(row.querySelectorAll('td.num')).map(cell => cell.getAttribute('data-short-label'))).toEqual(['Qtd', 'Vlr un.', 'Subtotal']);
+    expect(row.cells[1].textContent?.trim()).toBe('500');
+    expect(row.cells[2].textContent).toContain('0.25');
     expect(fixture.nativeElement.querySelectorAll('.mobile-total-bar__summary').length).toBe(1);
     expect(query('.smartcalc-layout__sidebar .total-summary')).not.toBeNull();
+    expect(query('.smartcalc-layout__sidebar td[data-short-label]')).toBeNull();
+    expect(text('.smartcalc-layout__sidebar')).toContain('Produzido');
+    expect(text('.smartcalc-layout__sidebar')).toContain('Solicitado');
+    expect(text('.smartcalc-layout__sidebar')).toContain('Sobra útil');
   }));
 
   it('agrupa aproveitamento em indicadores compactos na ordem produzido, solicitado e sobra', fakeAsync(() => {
     render(); fill(); openDetails();
     const labels = Array.from(fixture.nativeElement.querySelectorAll('.mobile-production dt') as NodeListOf<HTMLElement>).map(item => item.textContent?.trim());
-    expect(labels).toEqual(['Produzido', 'Solicitado', 'Sobra útil']);
+    expect(labels).toEqual(['Prod.', 'Solic.', 'Sobra']);
+    expect(Array.from(fixture.nativeElement.querySelectorAll('.mobile-production abbr') as NodeListOf<HTMLElement>).map(item => item.title)).toEqual(['Produzido', 'Solicitado', 'Sobra útil']);
     const values = Array.from(fixture.nativeElement.querySelectorAll('.mobile-production__value') as NodeListOf<HTMLElement>).map(item => item.textContent?.trim());
     expect(values).toEqual(['504', '500', '4']);
-    expect(text('.mobile-production')).toContain('Custo unit. R$ 0,25');
+    expect(text('.mobile-production')).toContain('Custo un. R$ 0,25');
     expect(text('.mobile-production')).toContain('+4 sem alterar o custo');
     expect(query('#smartcalc-mobile-details app-metric-card')).toBeNull();
     expect(text('#smartcalc-mobile-details')).toContain('Aproveitamento da produção');
@@ -375,8 +387,8 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     data.calcularSmartCalc.and.returnValue(of({ ...resultado, observacaoResumo: { solicitado: 0, sobraUtil: 0, custoUnitarioSolicitado: 0 } }));
     render(); fill(); openDetails();
     expect(text('.mobile-production')).toContain('Sem sobra útil');
-    expect(text('.mobile-production')).toContain('Custo unit. R$ 0,00');
-    expect(text('.mobile-production')).not.toContain('Produzido');
+    expect(text('.mobile-production')).toContain('Custo un. R$ 0,00');
+    expect(text('.mobile-production')).not.toContain('Prod.');
     expect(text('.mobile-production')).not.toContain('undefined');
     expect(fixture.nativeElement.querySelectorAll('.mobile-production dd').length).toBe(2);
   }));
@@ -558,6 +570,10 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     expect(query('.smartcalc-page--has-mobile-panel')).toBeNull();
     expect(fixture.nativeElement.querySelectorAll('.smartcalc-layout__sidebar app-metric-card').length).toBe(3);
     expect(query('.smartcalc-layout__sidebar .total-summary')).not.toBeNull();
+    expect(query('.smartcalc-layout__sidebar td[data-short-label]')).toBeNull();
+    expect(text('.smartcalc-layout__sidebar')).toContain('Produzido');
+    expect(text('.smartcalc-layout__sidebar')).toContain('Solicitado');
+    expect(text('.smartcalc-layout__sidebar')).toContain('Sobra útil');
     query<HTMLButtonElement>('.smartcalc-layout__sidebar button[mat-flat-button]').click();
     expect(data.criarRascunhoSmartCalc).toHaveBeenCalledTimes(1);
     expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial/rascunhos', 42]);
