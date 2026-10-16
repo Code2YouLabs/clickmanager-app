@@ -96,7 +96,8 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     expectAwaitingPanel();
     expect(query('.smartcalc-page--has-mobile-panel')).not.toBeNull();
     expect(text('.mobile-total-bar__waiting strong')).toBe('Aguardando cálculo');
-    expect(text('.mobile-total-bar__waiting')).toContain('O resultado aparecerá aqui.');
+    expect(text('.mobile-total-bar__waiting > div')).toBe('Aguardando cálculo');
+    expect(query('.mobile-total-bar__waiting span')).toBeNull();
     expect(query('.mobile-total-bar__waiting mat-progress-spinner')).toBeNull();
     expect(query('.mobile-result-state')).toBeNull();
     expect(query('form.smartcalc-layout').textContent).not.toContain('Resumo do cálculo');
@@ -267,7 +268,7 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     expect(component.etapaMobileAberta()).toBe(1);
     expect(component.form.controls.produtoId.value).toBeNull();
     expect(component.total()).toBe(0);
-    expect(text('.mobile-total-bar__waiting')).toContain('O resultado aparecerá aqui');
+    expect(text('.mobile-total-bar__waiting > div')).toBe('Aguardando cálculo');
     expect(query('.mobile-total-bar__waiting mat-progress-spinner')).toBeNull();
     expectAwaitingPanel();
     expect(query('.smartcalc-page--has-mobile-panel')).not.toBeNull();
@@ -466,7 +467,7 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
   it('mantém orientação parcial somente no painel inferior, sem spinner, total ou CTA', fakeAsync(() => {
     render(); component.form.controls.produtoId.setValue(1); fixture.detectChanges(); tick(300);
     expect(component.form.controls.materialId.value).toBe(20);
-    expect(text('.mobile-total-bar__waiting')).toContain('O resultado aparecerá aqui');
+    expect(text('.mobile-total-bar__waiting > div')).toBe('Aguardando cálculo');
     expect(query('.mobile-total-bar__waiting mat-progress-spinner')).toBeNull();
     expect(query('.mobile-total-bar__waiting .value')).toBeNull();
     expect(query('.mobile-total-bar__waiting button')).toBeNull();

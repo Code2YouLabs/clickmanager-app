@@ -119,7 +119,8 @@ describe('MobileTotalBarComponent — detalhes internos opcionais', () => {
     fixture.componentInstance.awaitingResult = true; fixture.detectChanges(); tick(0);
     expect(query('.mobile-total-bar')).toBe(bar);
     expect(query('.mobile-total-bar__waiting').textContent).toContain('Aguardando cálculo');
-    expect(query('.mobile-total-bar__waiting').textContent).toContain('O resultado aparecerá aqui.');
+    expect(query('.mobile-total-bar__waiting > div').textContent?.trim()).toBe('Aguardando cálculo');
+    expect(query('.mobile-total-bar__waiting span')).toBeNull();
     expect(query('.mobile-total-bar__summary')).toBeNull(); expect(query('.mobile-total-bar__cta')).toBeNull();
     expect(query('.mobile-total-bar__expand--button')).toBeNull(); expect(query('#test-details')).toBeNull();
     expect(query<HTMLButtonElement>('.mobile-total-bar__handle-toggle').disabled).toBeTrue();
