@@ -538,7 +538,7 @@
     background: var(--mat-sys-surface, #fff);
     box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.06);
   }
-  :host ::ng-deep app-mobile-total-bar .mobile-total-bar.mobile-total-bar--expanded { --smartcalc-panel-bottom-padding: 16px; }
+  :host ::ng-deep app-mobile-total-bar .mobile-total-bar:not(.mobile-total-bar--awaiting-result) { --smartcalc-panel-bottom-padding: 16px; }
   :host ::ng-deep app-mobile-total-bar .mobile-total-bar::before,
   :host ::ng-deep app-mobile-total-bar .mobile-total-bar__handle { display: none; }
   :host ::ng-deep app-mobile-total-bar .mobile-total-bar__summary {
