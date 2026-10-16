@@ -4,7 +4,7 @@
 
 DataTable recebe `data` e `pagination` (`pageIndex`, `pageSize`, `totalItems`, opções), renderiza a coleção e emite `pageChange: PageEvent`. As páginas consumidoras fazem as consultas. `appDataTableItem` continua fornecendo a apresentação por item, ações e expansão. A API de Pedidos permanece `listarPedidosComerciais(page, size, status)`, sem busca textual, novo endpoint, mudança de ordenação ou alteração dos limites. O lote do piloto continua em 10 registros por padrão, preservando um tamanho selecionado anteriormente no desktop.
 
-**A página acumula e reinicia.** A única coleção é `ComercialListComponent.itens`; `itensFiltrados` é uma projeção para pesquisa local, não um segundo armazenamento. DataTable não copia resultados, não acumula páginas e não conhece serviços do Comercial. Outros consumidores de DataTable permanecem paginados porque a adoção é opt-in. Orçamentos, Rascunhos, Clientes e Produtos não foram migrados.
+**A página acumula e reinicia.** A única coleção é `ComercialListComponent.itens`; `itensFiltrados` é uma projeção para pesquisa local, não um segundo armazenamento. DataTable não copia resultados, não acumula páginas e não conhece serviços do Comercial. Outros consumidores de DataTable permanecem paginados porque a adoção é opt-in. Orçamentos e Rascunhos foram migrados posteriormente conforme [relatório da migração](mobile-orcamentos-rascunhos.md); Clientes e Produtos continuam fora do piloto. As seções abaixo registram a implementação original de Pedidos.
 
 ## Contrato compartilhado
 
