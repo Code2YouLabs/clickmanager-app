@@ -12,8 +12,11 @@
       <app-data-table
         [columns]="columns"
         [data]="itensFiltrados"
-        [search]="{ enabled: true, label: isMobile && viewMode === 'kanban' ? 'Buscar nos cards carregados' : 'Buscar nesta página', placeholder: isMobile && viewMode === 'kanban' ? 'Referência, cliente ou status nos cards carregados' : 'Referência, cliente ou status nesta página', debounceMs: 250, value: busca }"
+        [search]="{ enabled: true, label: isMobile && viewMode === 'kanban' ? 'Buscar nos cards carregados' : 'Buscar nesta página', mobileHint: progressiveList ? 'A busca considera apenas os pedidos carregados.' : undefined, placeholder: progressiveList ? 'Pesquisar pedidos carregados' : isMobile && viewMode === 'kanban' ? 'Referência, cliente ou status nos cards carregados' : 'Referência, cliente ou status nesta página', debounceMs: 250, value: busca }"
         [pagination]="pagination"
+        [mobileLoadMode]="tipo === 'pedidos' ? 'progressive' : 'paged'"
+        [progressiveState]="{ loadedCount: itens.length, loading: carregandoMais, error: erroMais, restartRequired: reiniciarLista }"
+        loadMoreLabel="Carregar mais pedidos" itemsLabel="pedidos"
         [loading]="carregando && !itens.length"
         [refreshing]="carregando && !!itens.length"
         [showTable]="viewMode === 'lista'"

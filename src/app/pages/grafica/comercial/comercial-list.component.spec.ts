@@ -183,6 +183,27 @@ describe('ComercialListComponent', () => {
     expect(fixture.nativeElement.querySelector('table').textContent).toContain('Total Pago');
   });
 
+  it('mantém referência completa, nome longo e valores reais nas ações e no financeiro mobile', () => {
+    const number = 'PED-2026-000000000000000000000000000000000123';
+    const name = 'Associação Comercial e Industrial de São José dos Campos';
+    service.listarPedidosComerciais.and.returnValue(of({ content: [{ ...page.content[0], numero: number,
+      clienteNome: name, total: 9999999.99, totalPago: 100, restaPagar: 9999899.99,
+      responsavelNome: 'Responsável pelo atendimento', createdAt: '2026-10-16T10:30:00' }], totalElements: 1 } as any));
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    const card = fixture.nativeElement.querySelector('.pedido-mobile-item');
+    expect(card.querySelector('header strong').textContent).toBe(number);
+    expect(card.querySelector('.status-pill').textContent).toContain('Pendente');
+    expect(card.querySelector('.pedido-mobile-item__cliente').textContent).toBe(name);
+    expect(card.querySelector('time').textContent).toContain('16/10/2026');
+    expect(card.textContent).toContain('9.999.999,99');
+    const buttons = card.querySelectorAll('button'); buttons[0].click();
+    expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial', 'pedidos', 1]);
+    buttons[1].click(); fixture.detectChanges();
+    expect(card.querySelector('.expanded-detail').textContent).toContain('Responsável pelo atendimento');
+    expect(card.querySelector('.expanded-detail').textContent).toContain('100,00');
+    buttons[1].click(); fixture.detectChanges(); expect(card.querySelector('.expanded-detail')).toBeNull();
+  });
+
   it('apresenta vazio mobile de Pedidos com ícone e texto próprios sem alterar busca ou desktop', () => {
     service.listarPedidosComerciais.and.returnValue(of({ content: [], totalElements: 0 } as any));
     viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
@@ -201,12 +222,151 @@ describe('ComercialListComponent', () => {
     expect(empty().querySelector('mat-icon')).toBeNull();
   });
 
+  const batch = (start: number, count: number) => Array.from({ length: count }, (_, index) => ({
+    id: start + index, numero: `PED-${start + index}`, clienteNome: 'Maria', status: 'PENDENTE', total: 15,
+  }));
+  const responsePage = (index: number, total = 25) => ({ content: batch(index * 10 + 1, Math.min(10, Math.max(0, total - index * 10))), totalElements: total, number: index });
+
+  it('primeiro lote também recusa duplicações silenciosas e mantém os itens únicos na ordem recebida', () => {
+    const first = responsePage(0); first.content[1].id = 1;
+    service.listarPedidosComerciais.and.returnValue(of(first as any));
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    expect(component.itens.length).toBe(9); expect(component.itens[0].id).toBe(1);
+    expect(component.reiniciarLista).toBeTrue();
+    expect(fixture.nativeElement.querySelector('.data-table-progressive__error').textContent).toContain('repetidos');
+    expect(fixture.nativeElement.querySelector('.data-table-progressive__more')).toBeNull();
+  });
+
+  it('carrega lotes sequenciais, mantém identidade/expansão e encerra no total real', () => {
+    const pending = new Subject<any>();
+    service.listarPedidosComerciais.and.callFake((index: number) => index === 1 ? pending : of(responsePage(index) as any));
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    const firstItem = component.itens[0]; const firstNode = fixture.nativeElement.querySelector('.pedido-mobile-item');
+    fixture.nativeElement.querySelector('.pedido-mobile-item__actions button[mat-button]').click(); fixture.detectChanges();
+    const more = () => fixture.nativeElement.querySelector('.data-table-progressive__more');
+    more().click(); more().click(); fixture.detectChanges();
+    expect(service.listarPedidosComerciais.calls.count()).toBe(2);
+    expect(service.listarPedidosComerciais).toHaveBeenCalledWith(1, 10, null);
+    expect(component.pagina).toBe(0); expect(component.itens.length).toBe(10);
+    expect(more().disabled).toBeTrue(); expect(firstNode.querySelector('.expanded-detail')).toBeTruthy();
+    pending.next(responsePage(1)); pending.complete(); fixture.detectChanges();
+    expect(component.itens.length).toBe(20); expect(component.itens[0]).toBe(firstItem);
+    expect(fixture.nativeElement.querySelector('.pedido-mobile-item')).toBe(firstNode);
+    expect(firstNode.querySelector('.expanded-detail')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('Carregados 20 de 25 pedidos');
+    more().click(); fixture.detectChanges();
+    expect(service.listarPedidosComerciais).toHaveBeenCalledWith(2, 10, null);
+    expect(component.itens.length).toBe(25); expect(component.pagina).toBe(2);
+    expect(new Set(component.itens.map(item => item.id)).size).toBe(25);
+    expect(more()).toBeNull(); expect(fixture.nativeElement.querySelector('mat-paginator')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Carregados 25 de 25 pedidos');
+  });
+
+  it('falha adicional preserva dados e retry solicita a mesma página; 403 esconde os pedidos', () => {
+    let pending = new Subject<any>();
+    service.listarPedidosComerciais.and.callFake((index: number) => index === 0 ? of(responsePage(0) as any) : pending);
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    const previous = component.itens;
+    fixture.nativeElement.querySelector('.data-table-progressive__more').click(); pending.error({ status: 500 }); fixture.detectChanges();
+    expect(component.itens).toBe(previous); expect(component.pagina).toBe(0); expect(component.erro).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('.pedido-mobile-item').length).toBe(10);
+    pending = new Subject<any>();
+    fixture.nativeElement.querySelector('.data-table-progressive__error button').click(); fixture.detectChanges();
+    expect(service.listarPedidosComerciais.calls.mostRecent().args).toEqual([1, 10, null]);
+    pending.next(responsePage(1)); pending.complete(); fixture.detectChanges(); expect(component.itens.length).toBe(20);
+    pending = new Subject<any>();
+    fixture.nativeElement.querySelector('.data-table-progressive__more').click(); pending.error({ status: 403 }); fixture.detectChanges();
+    expect(component.acessoNegado).toBeTrue(); expect(component.itens).toEqual([]);
+    expect(fixture.nativeElement.querySelector('.pedido-mobile-item')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Acesso restrito');
+    expect(fixture.nativeElement.querySelector('.data-table-progressive')).toBeNull();
+  });
+
+  it('busca apenas no conjunto carregado sem pedir páginas automaticamente e permite ampliar esse conjunto', () => {
+    service.listarPedidosComerciais.and.callFake((index: number) => of(responsePage(index) as any));
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    component.buscar('PED-15'); fixture.detectChanges();
+    expect(component.itensFiltrados).toEqual([]); expect(service.listarPedidosComerciais.calls.count()).toBe(1);
+    expect(fixture.nativeElement.textContent).toContain('Nenhum resultado nos pedidos carregados');
+    expect(fixture.nativeElement.textContent).toContain('A busca considera apenas os pedidos carregados.');
+    fixture.nativeElement.querySelector('.data-table-progressive__more').click(); fixture.detectChanges();
+    expect(component.itens.length).toBe(20); expect(component.itensFiltrados.map(item => item.id)).toEqual([15]);
+    expect(fixture.nativeElement.textContent).toContain('Carregados 20 de 25 pedidos');
+    expect(service.listarPedidosComerciais.calls.count()).toBe(2);
+  });
+
+  it('mudança de status cancela lote antigo e reinicia na página zero sem misturar consultas', () => {
+    const stale = new Subject<any>(); const filtered = new Subject<any>();
+    service.listarPedidosComerciais.and.callFake((index: number, _size: number, status?: string | null) =>
+      status ? filtered : index === 1 ? stale : of(responsePage(0) as any));
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    fixture.nativeElement.querySelector('.data-table-progressive__more').click(); fixture.detectChanges();
+    component.buscar('Maria'); params.next(convertToParamMap({ status: 'PRONTO' })); fixture.detectChanges();
+    expect(stale.observed).toBeFalse(); expect(component.itens).toEqual([]); expect(component.carregandoMais).toBeFalse();
+    expect(service.listarPedidosComerciais.calls.mostRecent().args).toEqual([0, 10, 'PRONTO']);
+    stale.next(responsePage(1)); expect(component.itens).toEqual([]);
+    filtered.next({ content: batch(101, 10), totalElements: 12, number: 0 }); fixture.detectChanges();
+    expect(component.itens.map(item => item.id)).toEqual(batch(101, 10).map(item => item.id));
+    expect(component.busca).toBe('Maria'); expect(component.pagina).toBe(0);
+  });
+
+  for (const inconsistency of ['total', 'overlap', 'batch-duplicate', 'short', 'page'] as const) {
+    it(`não concatena silenciosamente lote inconsistente (${inconsistency}) e oferece atualização`, () => {
+      const shifted = responsePage(1);
+      if (inconsistency === 'total') shifted.totalElements++;
+      if (inconsistency === 'overlap') shifted.content[0].id = 1;
+      if (inconsistency === 'batch-duplicate') shifted.content[1].id = shifted.content[0].id;
+      if (inconsistency === 'short') shifted.content.pop();
+      if (inconsistency === 'page') shifted.number = 0;
+      service.listarPedidosComerciais.and.callFake((index: number) => of((index === 0 ? responsePage(0) : shifted) as any));
+      viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+      const previous = component.itens;
+      fixture.nativeElement.querySelector('.data-table-progressive__more').click(); fixture.detectChanges();
+      expect(component.itens).toBe(previous); expect(component.pagina).toBe(0); expect(component.reiniciarLista).toBeTrue();
+      expect(new Set(component.itens.map(item => item.id)).size).toBe(10);
+      const reset = fixture.nativeElement.querySelector('.data-table-progressive__error button');
+      expect(reset.textContent).toContain('Atualizar lista'); reset.click(); fixture.detectChanges();
+      expect(service.listarPedidosComerciais.calls.mostRecent().args).toEqual([0, 10, null]);
+      expect(component.reiniciarLista).toBeFalse(); expect(component.erroMais).toBeNull();
+    });
+  }
+
+  it('lote inicial incompleto não permite avançar deixando lacunas silenciosas', () => {
+    service.listarPedidosComerciais.and.callFake((index: number) => of({ ...responsePage(index),
+      content: index === 0 ? batch(1, 5) : batch(11, 10) } as any));
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    fixture.nativeElement.querySelector('.data-table-progressive__more').click(); fixture.detectChanges();
+    expect(component.itens.length).toBe(5); expect(component.pagina).toBe(0);
+    expect(component.reiniciarLista).toBeTrue();
+    expect(fixture.nativeElement.querySelector('.data-table-progressive__error button').textContent).toContain('Atualizar lista');
+  });
+
+  it('viewport descarta acúmulo, cancela lote em voo e retorna à página desktop tradicional', () => {
+    let pending: Subject<any> | null = null;
+    service.listarPedidosComerciais.and.callFake((index: number) => pending && index > 0 ? pending : of(responsePage(index) as any));
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    fixture.nativeElement.querySelector('.data-table-progressive__more').click(); fixture.detectChanges();
+    expect(component.itens.length).toBe(20);
+    pending = new Subject<any>(); fixture.nativeElement.querySelector('.data-table-progressive__more').click(); fixture.detectChanges();
+    component.buscar('Maria'); viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
+    expect(pending.observed).toBeFalse(); expect(component.itens.length).toBe(10); expect(component.pagina).toBe(0);
+    expect(component.carregandoMais).toBeFalse(); expect(component.busca).toBe('Maria');
+    expect(fixture.nativeElement.querySelector('mat-paginator')).toBeTruthy(); expect(fixture.nativeElement.querySelector('.data-table-progressive')).toBeNull();
+    const calls = service.listarPedidosComerciais.calls.count();
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    expect(service.listarPedidosComerciais.calls.count()).toBe(calls + 1); expect(component.itens.length).toBe(10);
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges(); expect(service.listarPedidosComerciais.calls.count()).toBe(calls + 1);
+    pending.next(responsePage(2)); expect(component.itens.length).toBe(10);
+  });
+
   it('preserva estados no item mobile: loading, vazio, erro, retry, refresh e 403', () => {
     viewport.next({ matches: true, breakpoints: {} });
     const response = new Subject<any>(); service.listarPedidosComerciais.and.returnValue(response);
     fixture.detectChanges(); expect(fixture.nativeElement.textContent).toContain('Carregando registros');
     response.next({ content: [], totalElements: 0 }); fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Nenhum pedido encontrado');
+    expect(fixture.nativeElement.querySelector('.data-table-progressive')).toBeNull();
+    expect(fixture.nativeElement.querySelector('mat-paginator')).toBeNull();
     component.carregar(); response.error({ status: 500 }); fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role=alert]')).toBeTruthy();
     service.listarPedidosComerciais.and.returnValue(of(page as any));
@@ -277,7 +437,7 @@ describe('ComercialListComponent', () => {
       expect(router.navigate).toHaveBeenCalledOnceWith(['/page/grafica/comercial', 'pedidos', 'novo']);
       expect(fixture.nativeElement.querySelector('app-view-mode-toggle')).toBeNull();
       expect(fixture.nativeElement.querySelector('input[type=search]')).toBeTruthy();
-      expect(fixture.nativeElement.querySelector(mode === 'lista' ? '.data-table-mobile-pagination' : 'app-kanban-board')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector(mode === 'lista' ? '.data-table-progressive' : 'app-kanban-board')).toBeTruthy();
     }
     viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).toBeNull();
