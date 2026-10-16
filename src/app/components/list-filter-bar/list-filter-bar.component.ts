@@ -1,5 +1,5 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef, MatDialogState } from '@angular/material/dialog';
 import { fromEvent, merge, Subject, takeUntil } from 'rxjs';
 import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { CommonModule } from '@angular/common';
@@ -67,11 +67,12 @@ export class ListFilterBarComponent implements OnChanges, OnDestroy {
     if (!this.useMobilePanel || this.panelRef) return;
     this.draftFilters = this.copyState(this.internalFilters); this.draftKeys.clear(); this.draftCleared = false;
     this.mobileFilterTrigger?.nativeElement.focus({ preventScroll: true });
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const ref = this.dialog.open(this.mobileFilterPanel, {
       viewContainerRef: this.viewContainerRef, panelClass: 'list-filter-mobile-panel', ariaLabel: this.filtersLabel,
       autoFocus: 'first-tabbable', delayFocusTrap: false, restoreFocus: true, closeOnNavigation: true,
       width: '100vw', maxWidth: '100vw', height: '100dvh', maxHeight: '100dvh',
-      position: { top: '0', right: '0' }, enterAnimationDuration: 0, exitAnimationDuration: 0,
+      position: { top: '0', right: '0' }, enterAnimationDuration: reducedMotion ? 0 : 360, exitAnimationDuration: reducedMotion ? 0 : 300,
     });
     this.panelRef = ref;
     // Virtual keyboards resize the visual viewport even when the layout viewport stays unchanged.
@@ -87,10 +88,10 @@ export class ListFilterBarComponent implements OnChanges, OnDestroy {
     });
   }
   closeMobileFilters(): void {
-    const ref = this.panelRef; this.panelRef = null; ref?.close(); this.draftKeys.clear();
+    this.panelRef?.close();
   }
   applyMobileFilters(): void {
-    if (!this.panelRef) return;
+    if (!this.panelRef || this.panelRef.getState() !== MatDialogState.OPEN) return;
     const changed = [...this.draftKeys];
     const cleared = this.draftCleared;
     const next = this.copyState(this.draftFilters);

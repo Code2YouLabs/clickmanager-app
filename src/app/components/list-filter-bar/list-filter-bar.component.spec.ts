@@ -5,7 +5,7 @@ import { ApplicationRef, Component } from '@angular/core';
 import { Location } from '@angular/common';
 import { provideLocationMocks, SpyLocation } from '@angular/common/testing';
 import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { BrowserAnimationsModule, NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { By } from '@angular/platform-browser';
 import { ListFilterBarComponent } from './list-filter-bar.component';
 import { DataTableFilter, DataTableFilterState } from '../data-table/data-table.models';
@@ -282,4 +282,56 @@ describe('ListFilterBarComponent', () => {
     expect(state).toHaveBeenCalledTimes(1); flat.destroy();
   }));
 
+});
+
+// Check lifecycle/timing without visual assertions or screenshots.
+describe('ListFilterBarComponent — transição lateral', () => {
+  let fixture: ComponentFixture<Host>;
+  let bar: ListFilterBarComponent;
+  let overlay: HTMLElement;
+  beforeEach(() => {
+    TestBed.configureTestingModule({ imports: [Host, BrowserAnimationsModule], providers: [
+      { provide: BreakpointObserver, useValue: { observe: () => new BehaviorSubject({ matches: true, breakpoints: {} }), isMatched: () => true } },
+    ] });
+    fixture = TestBed.createComponent(Host); fixture.detectChanges();
+    bar = fixture.debugElement.query(By.directive(ListFilterBarComponent)).componentInstance;
+    overlay = TestBed.inject(OverlayContainer).getContainerElement();
+  });
+  afterEach(() => TestBed.resetTestingModule());
+
+  for (const close of ['voltar', 'Escape', 'aplicar'] as const) {
+    it(`aguarda o recolhimento antes de remover o painel por ${close}`, fakeAsync(() => {
+      spyOn(window, 'matchMedia').and.returnValue({ matches: false } as MediaQueryList);
+      const emit = spyOn(bar.stateChange, 'emit');
+      bar.openMobileFilters(); fixture.detectChanges(); tick(400); fixture.detectChanges();
+      const container = overlay.querySelector<HTMLElement>('mat-dialog-container')!;
+      expect(container.classList.contains('mdc-dialog--open')).toBeTrue();
+      bar.onFieldChange('active', false); fixture.detectChanges();
+      if (close === 'Escape') {
+        overlay.querySelector('.cdk-overlay-pane')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
+      } else if (close === 'aplicar') {
+        bar.applyMobileFilters(); bar.applyMobileFilters();
+      } else {
+        bar.closeMobileFilters();
+      }
+      tick(20); fixture.detectChanges();
+      expect(container.classList.contains('mdc-dialog--closing')).toBeTrue();
+      expect(overlay.querySelector('mat-dialog-container')).toBe(container);
+      expect(bar.selectedFilterValue(bar.definitions[0])).toBeFalse();
+      tick(279); expect(overlay.querySelector('mat-dialog-container')).toBe(container);
+      tick(2); fixture.detectChanges();
+      expect(overlay.querySelector('mat-dialog-container')).toBeNull();
+      expect(bar.mobileFiltersOpen).toBeFalse();
+      if (close === 'aplicar') expect(emit).toHaveBeenCalledOnceWith({ active: false });
+      else expect(emit).not.toHaveBeenCalled();
+    }));
+  }
+
+  it('não aguarda a transição quando movimento reduzido está ativado', fakeAsync(() => {
+    spyOn(window, 'matchMedia').and.returnValue({ matches: true } as MediaQueryList);
+    bar.openMobileFilters(); fixture.detectChanges(); tick();
+    bar.closeMobileFilters(); tick(); fixture.detectChanges();
+    expect(overlay.querySelector('mat-dialog-container')).toBeNull();
+    expect(bar.mobileFiltersOpen).toBeFalse();
+  }));
 });

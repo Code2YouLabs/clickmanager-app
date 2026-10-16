@@ -27,7 +27,7 @@ Debounce, trim e deduplicação permanecem os anteriores: modo `section` preserv
 
 O **ListFilterBar** utiliza um **MatDialog de tela inteira**, substituindo o bottom sheet. Não há biblioteca nova nem conteúdo específico de Pedidos. O overlay Material fica acima do shell, bloqueia interação/scroll subjacentes, contém e restaura o foco e fecha com Escape/backdrop. `closeOnNavigation` fecha na navegação de histórico suportada pelo Material, inclusive Voltar do Android; abrir não adiciona entradas ao histórico nem altera a rota.
 
-A superfície entra pela direita com `translateX(100%) → translateX(0)` em 180 ms; a preferência por movimento reduzido desativa a animação. Cabeçalho com Voltar, título e Limpar, corpo rolável e rodapé com **Aplicar filtros**. Safe areas são consideradas nas quatro bordas. A altura acompanha `visualViewport` (inclusive teclado), com fallback `100dvh`; listeners são removidos ao fechar/destruir. Cabeçalho e rodapé ficam fora da área central de scroll. A validação real em dispositivo continua manual.
+O painel entra pela direita com `translateX(100%) → translateX(0)` em 360 ms e recolhe para a direita em 300 ms, com aceleração/desaceleração suave. As transições acompanham as classes de abertura/fechamento do Material, que mantém o overlay até terminar a saída. Os valores em edição permanecem visíveis durante o recolhimento. A preferência por movimento reduzido desativa a transição e a espera de fechamento. Cabeçalho com Voltar, título e Limpar, corpo rolável e rodapé com **Aplicar filtros**. Safe areas são consideradas nas quatro bordas. A altura acompanha `visualViewport` (inclusive teclado), com fallback `100dvh`; listeners são removidos ao fechar/destruir. Cabeçalho e rodapé ficam fora da área central de scroll. A validação real em dispositivo continua manual.
 
 - Abrir copia os filtros aplicados para o rascunho, sem emissão/consulta. Um ou vários filtros declarativos usam a mesma grade de uma coluna, sem preenchimento artificial.
 - Editar preserva strings, números, zero, booleanos, `null` e arrays, sem emitir até Aplicar. Aplicar emite o estado tipado; o modo flat mantém também o evento string legado. Sem alterações, apenas fecha.
@@ -108,3 +108,12 @@ Validar em 360/390/430/768 px e desktop: teclado real e foco por toque, labels e
 - `npm run build:prod`: concluído com sucesso, sem erros; avisos existentes de orçamento/otimização/depreciação permanecem.
 - Sem testes visuais ou screenshots. Teclado, animação e safe areas em aparelho real dependem da validação manual solicitada.
 - Arquivos desta entrega: `src/app/components/list-filter-bar/list-filter-bar.component.{ts,html,scss,spec.ts}` e este documento. Nenhum arquivo de DataTable, paginação, Kanban, PageCard, FAB, shell, API ou regra de negócio foi alterado.
+
+## Refinamento da transição lateral — 16/10/2026
+
+A abertura e o fechamento agora usam a duração do ciclo Material (360/300 ms). Foi removida a animação isolada de entrada que concorria com o transform padrão do dialog. O overlay permanece montado durante a saída, mantendo o rascunho visível; Aplicar repetido durante o recolhimento não emite novamente. Movimento reduzido usa duração zero e nenhuma transição CSS.
+
+- Teste isolado do ListFilterBar: **21/21 passaram**, incluindo o ciclo real de animação para Voltar, Escape, Aplicar e movimento reduzido.
+- Suíte completa: **1.092/1.093 passaram**, somente a falha preexistente do onboarding em 360 px.
+- Build de produção: sucesso, sem erros, com os 38 avisos existentes.
+- Sem testes visuais ou screenshots; comportamento desktop preservado.
