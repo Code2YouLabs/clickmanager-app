@@ -212,17 +212,17 @@ describe('ComercialListComponent', () => {
     });
   }
 
-  it('preserva as âncoras de lista, novo e alternância no mobile', () => {
+  it('preserva as âncoras de lista e novo sem oferecer Kanban no mobile', () => {
     viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
     const targets = fixture.debugElement.queryAll(By.directive(TutorialTargetDirective));
     const ids = targets.map(target => target.injector.get(TutorialTargetDirective).targetId);
     expect(ids).toContain(component.primeiroPedidoTargets.lista);
     expect(ids).toContain(component.primeiroPedidoTargets.novo);
-    expect(ids).toContain(component.primeiroPedidoTargets.alternarKanban);
+    expect(ids).not.toContain(component.primeiroPedidoTargets.alternarKanban);
     expect(primeiroPedidoTutorial.iniciarSeNecessario).toHaveBeenCalled();
   });
 
-  it('mobile inicia em Lista, oferece Kanban secundário e restaura a preferência desktop', () => {
+  it('mobile inicia em Lista sem menu Kanban e restaura a preferência desktop', () => {
     fixture.detectChanges(); component.alterarVisualizacao('kanban'); fixture.detectChanges();
     primeiroPedidoTutorial.registrarKanbanSelecionado.calls.reset();
     viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
@@ -230,18 +230,15 @@ describe('ComercialListComponent', () => {
     expect(fixture.nativeElement.querySelector('app-view-mode-toggle')).toBeNull();
     expect(fixture.nativeElement.querySelector('.pedido-mobile-item')).toBeTruthy();
     expect(primeiroPedidoTutorial.registrarKanbanSelecionado).not.toHaveBeenCalled();
-    fixture.nativeElement.querySelector('[aria-label="Opções de visualização"]').click(); fixture.detectChanges();
-    const menu = document.querySelector('.mat-mdc-menu-panel')!;
-    expect(menu.textContent).toContain('Abrir Kanban');
-    (menu.querySelector('button') as HTMLButtonElement).click(); fixture.detectChanges();
-    expect(component.viewMode).toBe('kanban');
-    expect(fixture.nativeElement.querySelector('app-kanban-board')).toBeTruthy();
-    component.alterarVisualizacao('lista'); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[aria-label="Opções de visualização"]')).toBeNull();
+    const abrir = fixture.nativeElement.querySelector('.pedido-mobile-item__actions button');
+    abrir.click();
+    expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial', 'pedidos', 1]);
     viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
     expect(component.viewMode).toBe('kanban');
     expect(fixture.nativeElement.querySelector('app-view-mode-toggle')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[aria-label="Opções de visualização"]')).toBeNull();
-    expect(primeiroPedidoTutorial.registrarKanbanSelecionado).toHaveBeenCalledTimes(1);
+    expect(primeiroPedidoTutorial.registrarKanbanSelecionado).not.toHaveBeenCalled();
   });
 
   it('Novo pedido aparece uma vez como FAB no mobile em Lista e Kanban com a mesma navegação', () => {
@@ -251,7 +248,7 @@ describe('ComercialListComponent', () => {
       const header = fixture.nativeElement.querySelector('app-card-header');
       expect(header.querySelector('[role=heading]').textContent.trim()).toBe('Pedidos');
       expect(header.querySelector('.card-header__primary-action')).toBeNull();
-      expect(header.querySelector('[aria-label="Opções de visualização"]')).toBeTruthy();
+      expect(header.querySelector('[aria-label="Opções de visualização"]')).toBeNull();
       expect(fixture.nativeElement.querySelector('.search-scope')).toBeNull();
       const fabs = fixture.nativeElement.querySelectorAll('.mobile-fab-action');
       expect(fabs.length).toBe(1);

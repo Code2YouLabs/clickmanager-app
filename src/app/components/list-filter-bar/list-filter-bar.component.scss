@@ -220,7 +220,22 @@
   .list-mobile-toolbar { display: grid; gap: 8px; margin-bottom: 12px; min-width: 0; }
   .list-mobile-toolbar__title { font-size: 14px; line-height: 20px; font-weight: 600; }
   .list-mobile-toolbar__controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-  .list-mobile-toolbar__filter-button { min-height: 44px; flex: 0 0 auto; padding: 0 8px; }
+  .list-mobile-toolbar__filter-button {
+    min-height: 44px; flex: 0 0 auto; padding: 0 14px;
+    --mdc-outlined-button-container-shape: 12px;
+    --mdc-outlined-button-outline-color: transparent;
+    --mdc-outlined-button-label-text-color: var(--mat-sys-on-primary-container);
+    --mat-outlined-button-state-layer-color: var(--mat-sys-on-primary-container);
+    border-radius: 12px; border-color: transparent;
+    background: var(--mat-sys-primary-container); color: var(--mat-sys-on-primary-container);
+    font-size: 14px; font-weight: 600; letter-spacing: 0;
+    mat-icon { width: 20px; height: 20px; font-size: 20px; margin-right: 6px; }
+    &--active {
+      --mdc-outlined-button-label-text-color: var(--mat-sys-on-primary);
+      --mat-outlined-button-state-layer-color: var(--mat-sys-on-primary);
+      background: var(--mat-sys-primary); color: var(--mat-sys-on-primary);
+    }
+  }
   .list-mobile-toolbar__actions { flex: 1 1 156px; min-width: 0; }
   .list-mobile-toolbar__actions:empty { display: none; }
   .list-mobile-toolbar__actions ::ng-deep [list-filter-actions],

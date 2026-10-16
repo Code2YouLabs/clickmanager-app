@@ -29,9 +29,9 @@ Busca/debounce, escopo local, tabela/itens, estados, paginação e filtros deskt
 
 Pedidos abre em Lista no mobile; o seletor Lista/Kanban permanece apenas no desktop. A pesquisa é o primeiro conteúdo operacional, com seu placeholder, foco e debounce de 250 ms preservados. Ao entrar no mobile, o modo desktop e a ampliação do Kanban ficam guardados apenas em memória; ao retornar ao desktop são restaurados, recarregando a apresentação quando necessário. Mudança de viewport não registra uma seleção de Kanban no tutorial. Não foi criada preferência persistida, rota ou tela nova.
 
-**Limitação atual:** movimentação de status ainda depende do Kanban, não está disponível nos itens da Lista. Para preservar essa operação essencial, há acesso secundário pelo menu **Opções de visualização → Abrir Kanban**, no cabeçalho mobile; no Kanban o mesmo menu oferece **Voltar à lista**. Essa é uma exceção temporária expressamente prevista no pedido. O menu usa `alterarVisualizacao` existente; o botão **Mover pedido** do Kanban continua usando o mesmo fluxo, permissões, validação, confirmação de cancelamento, persistência e rollback. Nenhum endpoint ou regra de transição foi adicionado.
+O menu secundário **Abrir Kanban** foi removido do mobile a pedido do responsável. O Kanban e a movimentação por cards permanecem no desktop. A Lista mantém **Ver pedido**, que abre o editor existente com **Fluxo do pedido**, seleção de status e ações operacionais, respeitando `permissoesFluxo.alterarStatus`, transições e validações já implementadas. Não foi criada uma nova operação de movimentação na Lista nem alterada a lógica do editor.
 
-O tutorial conserva seu alvo no acionador do menu; Novo pedido e o FAB não mudaram. O contrato genérico de ações contextuais permite evoluir esse acesso secundário futuramente.
+O alvo de tutorial de alternância permanece no seletor desktop; não há mais acionador de Kanban no mobile. Novo pedido e o FAB não mudaram. O slot genérico continua disponível para outras ações contextuais futuras. O botão Filtros usa ícone `tune`, fundo de tom primário suave, tipografia mais legível, cantos de 12 px e área de toque de 44 px. Quando existem filtros ativos, usa cor primária preenchida e mantém o contador. Estilos limitados ao breakpoint mobile.
 
 ## Adoção e exceções
 
@@ -71,3 +71,9 @@ npm test -- --watch=false --browsers=ChromeHeadless --include='src/app/component
 npm test -- --watch=false --browsers=ChromeHeadless
 npm run build:prod
 ```
+
+## Refinamento do cabeçalho — 16/10/2026
+
+Removido o menu mobile Abrir Kanban conforme solicitação posterior. Botão Filtros refinado com tokens da skin, contraste de estado ativo, ícone de ajustes de 20 px e texto de 14 px. Painel lateral, FAB e desktop preservados. Movimentação de status continua acessível pelo editor aberto em Ver pedido.
+
+Validação: **103/103 testes direcionados aprovados**, incluindo integração do cabeçalho e preservação do Kanban desktop. Build de produção com sucesso, 38 avisos existentes e nenhum erro. Sem testes visuais ou screenshots.

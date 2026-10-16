@@ -162,9 +162,9 @@
 
 <ng-template #mobileFilterAction>
       @if (useMobilePanel && hasFilterFields) {
-        <button #mobileFilterTrigger mat-stroked-button type="button" class="list-mobile-toolbar__filter-button"
+        <button #mobileFilterTrigger mat-stroked-button type="button" class="list-mobile-toolbar__filter-button" [class.list-mobile-toolbar__filter-button--active]="hasActiveFilters"
           aria-haspopup="dialog" [attr.aria-expanded]="mobileFiltersOpen" (click)="openMobileFilters()">
-          <mat-icon>filter_list</mat-icon>{{ filtersLabel }}{{ activeFilterCount ? ' (' + activeFilterCount + ')' : '' }}
+          <mat-icon>tune</mat-icon>{{ filtersLabel }}{{ activeFilterCount ? ' (' + activeFilterCount + ')' : '' }}
         </button>
       }
 </ng-template>
