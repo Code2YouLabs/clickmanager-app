@@ -18,6 +18,7 @@ export interface ListFilterChip { filterKey: string; filterLabel: string; value:
   templateUrl: './list-filter-bar.component.html', styleUrl: './list-filter-bar.component.scss',
 })
 export class ListFilterBarComponent implements OnChanges {
+  @Input() mobileCompact = false;
   @Input() placeholder = 'Digite para pesquisar...';
   @Input() searchValue = '';
   @Input() showSearchLabel = false;

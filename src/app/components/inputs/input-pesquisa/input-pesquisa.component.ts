@@ -9,10 +9,13 @@ import { Subject, Subscription, debounce, timer, takeUntil, map, distinctUntilCh
 @Component({
   selector: 'app-input-pesquisa', standalone: true,
   templateUrl: './input-pesquisa.component.html',
+  styleUrl: './input-pesquisa.component.scss',
+  host: { '[class.input-pesquisa--mobile-compact]': 'mobileCompact' },
   imports: [CommonModule, MatFormFieldModule, MatInputModule, MatIconModule, ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class InputPesquisaComponent implements OnChanges, OnInit, OnDestroy {
+  @Input() mobileCompact = false;
   @Input() placeholder = 'Digite para pesquisar...';
   @Input() showLabel = true;
   @Input() value = '';

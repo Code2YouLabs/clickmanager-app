@@ -13,10 +13,12 @@ export interface ViewModeToggleOption<T extends string = string> {
   selector: 'app-view-mode-toggle',
   standalone: true,
   imports: [CommonModule, MaterialModule],
+  host: { '[class.view-mode-toggle--mobile-compact]': 'mobileCompact' },
   templateUrl: './view-mode-toggle.component.html',
   styleUrl: './view-mode-toggle.component.scss',
 })
 export class ViewModeToggleComponent<T extends string = string> {
+  @Input() mobileCompact = false;
   @Input() value: T | null = null;
   @Input() options: ViewModeToggleOption<T>[] = [];
   @Input() ariaLabel = 'Alternar visualização';

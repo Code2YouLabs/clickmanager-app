@@ -20,6 +20,7 @@ import { Sort } from '@angular/material/sort';
 import { Subject, takeUntil } from 'rxjs';
 import { MaterialModule } from 'src/app/material.module';
 import { ListFilterBarComponent, ListFilterChip } from '../list-filter-bar/list-filter-bar.component';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { DataTableItemDirective } from './data-table-item.directive';
 import { DataTableCellDirective } from './data-table-cell.directive';
@@ -54,6 +55,7 @@ import {
 export class DataTableComponent<T = unknown>
   implements AfterContentInit, OnChanges, OnDestroy {
 
+  @Input() mobileCompact = false;
   @Input() columns: DataTableColumn<T>[] = [];
   @Input() data: T[] = [];
   @Input() filters: DataTableFilter[] = [];
@@ -105,14 +107,22 @@ export class DataTableComponent<T = unknown>
 
   private readonly destroy$ = new Subject<void>();
   constructor() {
-    this.breakpoints.observe(['(max-width: 760px)', '(prefers-reduced-motion: reduce)']).pipe(takeUntil(this.destroy$))
+    this.breakpoints.observe([MOBILE_FOUNDATION_QUERY, '(prefers-reduced-motion: reduce)']).pipe(takeUntil(this.destroy$))
       .subscribe(result => {
-        this.isMobile = result.breakpoints['(max-width: 760px)'] ?? result.matches;
+        this.isMobile = result.breakpoints[MOBILE_FOUNDATION_QUERY] ?? result.matches;
         this.reducedMotion = result.breakpoints['(prefers-reduced-motion: reduce)'] ?? false;
       });
   }
   get mobileTemplate(): DataTableItemDirective<T> | undefined { return this.itemTemplates?.first; }
   get useMobileItems(): boolean { return this.isMobile && !!this.mobileTemplate; }
+  get sortableColumns(): DataTableColumn<T>[] { return this.columns.filter(column => column.sortable); }
+  get pageCount(): number { return this.pagination ? Math.max(1, Math.ceil(this.pagination.totalItems / this.pagination.pageSize)) : 1; }
+  onMobileSort(active: string): void {
+    this.onSortChange({ active, direction: this.sort.direction || 'asc' });
+  }
+  toggleMobileSortDirection(): void {
+    if (this.sort.active) this.onSortChange({ active: this.sort.active, direction: this.sort.direction === 'asc' ? 'desc' : 'asc' });
+  }
   get busy(): boolean { return this.loading || this.refreshing; }
   get initialLoading(): boolean { return this.busy && !this.data.length; }
   get hasBlockingError(): boolean { return !!this.error && !this.data.length; }

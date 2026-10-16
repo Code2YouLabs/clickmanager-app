@@ -1,3 +1,4 @@
+@use "../../shared/responsive/mobile-foundation" as mobile;
 .list-filter-bar {
   display: grid;
   grid-template-columns: minmax(260px, 1fr) repeat(3, minmax(150px, 190px)) auto;
@@ -200,5 +201,17 @@
 
   .data-table-toolbar__filter {
     width: 100%;
+  }
+}
+
+@include mobile.mobile-foundation {
+  .data-table-toolbar-card--mobile-compact {
+    margin: 0 0 12px;
+    &.data-table-toolbar-card--compact ::ng-deep .section-card { padding: 0; }
+    .data-table-toolbar__filter-toggle,
+    .data-table-toolbar__clear { min-height: 44px; }
+    .data-table-toolbar__filters-header { flex-direction: row; flex-wrap: wrap; align-items: center; }
+    .data-table-toolbar__actions { display: block; min-width: 0; }
+    .data-table-toolbar__section--search { gap: 8px; }
   }
 }

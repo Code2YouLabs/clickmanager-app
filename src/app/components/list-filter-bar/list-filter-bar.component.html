@@ -1,6 +1,8 @@
 @if (presentation === "section") {
 @if (search.enabled || filters.length || hasCustomFilters) {
 <app-section-card
+  [mobilePlain]="mobileCompact"
+  [class.data-table-toolbar-card--mobile-compact]="mobileCompact"
   class="data-table-toolbar-card"
   [class.data-table-toolbar-card--compact]="!hasActiveFilters && !filtersExpanded"
   [class.data-table-toolbar-card--collapsed]="!filtersExpanded"
@@ -10,7 +12,7 @@
     @if (search.enabled) {
     <div class="data-table-toolbar__section data-table-toolbar__section--search">
       <app-input-pesquisa class="data-table-toolbar__search"
-        [compact]="true" [showLabel]="false" [trim]="true"
+        [mobileCompact]="mobileCompact" [compact]="true" [showLabel]="false" [trim]="true"
         [placeholder]="search.placeholder || 'Pesquisar'" [value]="search.value || ''"
         [pesquisaControl]="searchControl" [debounceMs]="search.debounceMs ?? 300"
         (valorAlterado)="onSearchChange($event)"></app-input-pesquisa>

@@ -1,6 +1,7 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { BehaviorSubject } from 'rxjs';
 import { DataTableItemDirective } from './data-table-item.directive';
+import { By } from '@angular/platform-browser';
 import { Component } from '@angular/core';
 import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -21,6 +22,7 @@ interface TestRow extends Record<string, unknown> {
   imports: [DataTableComponent, DataTableCellDirective, DataTableItemDirective],
   template: `
     <app-data-table
+      [mobileCompact]="compact"
       [columns]="columns"
       [data]="data"
       [filters]="filters"
@@ -88,6 +90,7 @@ class HostComponent {
   error: string | null = null;
   forbidden = false;
   expandable = false;
+  compact = false;
   mobile = false;
   retries = 0;
   sort: Sort = { active: '', direction: '' };
@@ -296,6 +299,45 @@ describe('DataTableComponent', () => {
   it('mantem tabela no mobile quando nao existe item projetado', () => {
     viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('table')).toBeTruthy();
+  });
+
+  it('compacta paginação somente por opt-in no mobile e conserva o contrato de página', () => {
+    host.mobile = true; host.compact = true;
+    host.pagination = { pageIndex: 1, pageSize: 10, totalItems: 42, pageSizeOptions: [10, 20] };
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.data-table-page').textContent).toContain('Página 2 de 5');
+    const paginator = fixture.debugElement.query(By.css('mat-paginator')).componentInstance;
+    expect(paginator.pageSizeOptions).toEqual([10, 20]);
+    expect(paginator.showFirstLastButtons).toBeFalse();
+    paginator.nextPage();
+    expect(host.lastPage).toEqual(jasmine.objectContaining({ pageIndex: 2, pageSize: 10, length: 42 }));
+    host.refreshing = true; fixture.detectChanges(); expect(paginator.disabled).toBeTrue();
+    host.refreshing = false;
+    viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.data-table-page')).toBeNull();
+    expect(fixture.nativeElement.querySelector('table')).toBeTruthy();
+    expect(paginator.showFirstLastButtons).toBeTrue();
+  });
+
+  it('oferece a ordenação das mesmas colunas no item mobile sem ordenar outra fonte', () => {
+    host.mobile = true; viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.data-table-mobile-sort')).toBeTruthy();
+    table.onMobileSort('name');
+    expect(host.lastSort).toEqual({ active: 'name', direction: 'asc' });
+    host.sort = { active: 'name', direction: 'asc' }; fixture.detectChanges();
+    fixture.nativeElement.querySelector('.data-table-mobile-sort button').click();
+    expect(host.lastSort).toEqual({ active: 'name', direction: 'desc' });
+    expect(host.data[0].name).toBe('Panfleto');
+  });
+
+  it('encaminha opt-in à barra de pesquisa e seção sem mudar filtros tipados', () => {
+    host.compact = true; fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.section-card--mobile-plain')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.input-pesquisa--mobile-compact')).toBeTruthy();
+    table.onFilterStateChange({ status: false, zero: 0, none: null });
+    expect(host.lastFilters).toEqual({ status: false, zero: 0 });
+    table.onClearFilters();
+    expect(host.lastFilters).toEqual({});
   });
 
 });

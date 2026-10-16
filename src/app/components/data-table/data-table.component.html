@@ -1,5 +1,5 @@
 <app-list-filter-bar presentation="section"
-  [filters]="filters" [filterState]="filterState" [search]="search" [searchControl]="searchControl"
+  [mobileCompact]="mobileCompact" [filters]="filters" [filterState]="filterState" [search]="search" [searchControl]="searchControl"
   [filtersLabel]="filtersLabel" [clearFiltersLabel]="clearFiltersLabel" [hasCustomFilters]="hasCustomFilters"
   (searchChange)="onSearch($event)" (stateChange)="onFilterStateChange($event)" (clear)="clearFilters.emit()">
   <ng-content select="[data-table-toolbar-actions]" ngProjectAs="[list-filter-actions]"></ng-content>
@@ -7,7 +7,7 @@
 </app-list-filter-bar>
 
 @if (showTable) {
-<div [@.disabled]="reducedMotion" class="data-table-container" [attr.aria-busy]="!forbidden && busy">
+<div [@.disabled]="reducedMotion" class="data-table-container" [class.data-table-container--mobile-compact]="mobileCompact" [attr.aria-busy]="!forbidden && busy">
   @if (forbidden) {
     <div class="data-table-state" role="status"><strong>Acesso restrito</strong><p>{{ forbiddenMessage }}</p></div>
   } @else if (initialLoading) {
@@ -24,6 +24,21 @@
 
   @if (canShowContent) {
   @if (useMobileItems) {
+    @if (sortableColumns.length) {
+      <div class="data-table-mobile-sort">
+        <mat-form-field appearance="outline">
+          <mat-label>Ordenar por</mat-label>
+          <mat-select [value]="sort.active" [disabled]="busy" (selectionChange)="onMobileSort($event.value)">
+            @for (column of sortableColumns; track column.key) {
+              <mat-option [value]="column.sortKey || column.key">{{ column.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <button mat-icon-button type="button" [disabled]="busy || !sort.active"
+          [attr.aria-label]="sort.direction === 'asc' ? 'Ordenar decrescente' : 'Ordenar crescente'"
+          (click)="toggleMobileSortDirection()"><mat-icon>{{ sort.direction === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon></button>
+      </div>
+    }
     <div class="data-table-items" role="list" [attr.aria-label]="tableLabel">
       @for (row of data; track trackByRow($index, row)) {
         <div role="listitem">
@@ -170,6 +185,9 @@
 
   }
   @if (pagination) {
+    @if (mobileCompact && isMobile) {
+      <div class="data-table-page" role="status">Página {{ pagination.pageIndex + 1 }} de {{ pageCount }}</div>
+    }
     <mat-paginator
       [length]="pagination.totalItems"
       [pageIndex]="pagination.pageIndex"
@@ -177,7 +195,7 @@
       [pageSizeOptions]="pagination.pageSizeOptions || [10, 20, 50]"
       [disabled]="busy"
       aria-label="Paginação dos resultados"
-      showFirstLastButtons
+      [showFirstLastButtons]="!(mobileCompact && isMobile)"
       (page)="onPageChange($event)">
     </mat-paginator>
   }
