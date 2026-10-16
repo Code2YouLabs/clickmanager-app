@@ -1,8 +1,25 @@
+@if (isMobile) {
+<header class="dashboard-mobile-toolbar" appDashboardMobileSticky aria-label="Ações do dashboard">
+  <h2>Visão geral</h2>
+  <div class="dashboard-mobile-toolbar__actions">
+    <button mat-icon-button type="button" class="dashboard-mobile-toolbar__refresh" aria-label="Atualizar dashboard"
+      [disabled]="loading || atualizando" [attr.aria-busy]="loading || atualizando" (click)="atualizarDashboard()">
+      <mat-icon>{{ loading || atualizando ? 'sync' : 'refresh' }}</mat-icon>
+    </button>
+    @if (podeCriarPedido) {
+    <button mat-flat-button color="primary" type="button" class="dashboard-mobile-toolbar__new"
+      (click)="navegar('/page/grafica/comercial/pedidos/novo')">Novo pedido</button>
+    }
+  </div>
+</header>
+}
+
 <app-page-card
   class="dashboard-page"
-  titulo="Dashboard"
-  subtitulo="Acompanhe receita, atendimento e operação da gráfica.">
+  [titulo]="isMobile ? '' : 'Dashboard'"
+  [subtitulo]="isMobile ? undefined : 'Acompanhe receita, atendimento e operação da gráfica.'">
   <div page-header-actions class="dashboard-actions">
+    @if (!isMobile) {
     <button mat-stroked-button type="button" (click)="atualizarDashboard()" [disabled]="loading || atualizando">
       {{ atualizando ? 'Atualizando...' : 'Atualizar' }}
     </button>
@@ -10,6 +27,7 @@
     <button mat-flat-button color="primary" type="button" (click)="navegar('/page/grafica/comercial/pedidos/novo')">
       Novo pedido
     </button>
+    }
     }
   </div>
 
@@ -62,18 +80,20 @@
       subtitle="Compare pedidos e receita por período."
       [divider]="true">
       <app-comparativo-pedidos
+        [compactMobile]="isMobile"
         [refreshToken]="refreshToken"
         (refreshState)="onWidgetRefreshState($event)">
       </app-comparativo-pedidos>
     </app-section-card>
 
+    @if (!isMobile) {
     <app-section-card
       class="dashboard-quick-section"
       title="Atalhos"
       subtitle="Ações frequentes da operação."
       [divider]="true">
       <div class="quick-actions">
-        @for (action of quickActions; track action.route) {
+        @for (action of visibleQuickActions; track action.route) {
           <button type="button" class="quick-action" (click)="navegar(action.route)">
             <span class="quick-action__icon">
               <mat-icon>{{ action.icon }}</mat-icon>
@@ -86,10 +106,12 @@
         }
       </div>
     </app-section-card>
+    }
   </section>
 
   <section class="dashboard-secondary-grid">
     <app-status-grid
+      [compactMobile]="isMobile"
       [refreshToken]="refreshToken"
       (refreshState)="onWidgetRefreshState($event)">
     </app-status-grid>

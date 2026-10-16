@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, OnDestroy, OnInit, computed, signal } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -79,12 +79,13 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
   carregandoAdd = false;
   needsRecalcular = signal(false);
   mobileViewport = signal(false);
+  etapaMobileAberta = signal(1);
   resultadoMobileAberto = signal(false);
   private readonly recalculo$ = new Subject<void>();
   private readonly destroy$ = new Subject<void>();
   private calculoRequestId = 0;
   private focoInicialAplicado = false;
-  private gestoSheetStartY: number | null = null;
+  private totalBarObserver?: ResizeObserver;
 
   // =========================
   // FORM
@@ -184,8 +185,37 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
     this.carregarInit();
   }
 
+  @ViewChild(MobileTotalBarComponent, { read: ElementRef })
+  set mobileTotalBar(element: ElementRef<HTMLElement> | undefined) {
+    this.totalBarObserver?.disconnect();
+    if (!element) {
+      this.resultadoMobileAberto.set(false);
+      for (const variable of ['--smartcalc-mobile-total-bar-height', '--smartcalc-mobile-summary-height', '--smartcalc-mobile-handle-height']) {
+        this.host.nativeElement.style.removeProperty(variable);
+      }
+      return;
+    }
+    const bar = element.nativeElement.querySelector('.mobile-total-bar');
+    const controls = element.nativeElement.querySelector('.mobile-total-bar__controls');
+    const handle = element.nativeElement.querySelector('.mobile-total-bar__handle-toggle');
+    if (!bar || !controls || typeof ResizeObserver === 'undefined') return;
+    this.totalBarObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const height = entry.borderBoxSize?.[0]?.blockSize;
+        if (!height || height <= 0) continue;
+        const variable = entry.target === bar
+          ? '--smartcalc-mobile-total-bar-height'
+          : entry.target === handle ? '--smartcalc-mobile-handle-height' : '--smartcalc-mobile-summary-height';
+        this.host.nativeElement.style.setProperty(variable, `${height}px`);
+      }
+    });
+    this.totalBarObserver.observe(bar);
+    this.totalBarObserver.observe(controls);
+    if (handle) this.totalBarObserver.observe(handle);
+  }
+
   ngOnDestroy(): void {
-    document.body.style.overflow = '';
+    this.totalBarObserver?.disconnect();
     this.destroy$.next();
     this.destroy$.complete();
     this.recalculo$.complete();
@@ -423,7 +453,8 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
     this.calculoRequestId++;
     this.carregandoCalculo = false;
     this.focoInicialAplicado = false;
-    this.resultadoMobileAberto.set(false);
+    this.etapaMobileAberta.set(1);
+    this.fecharResultadoMobile();
     this.form.reset({
       largura: null,
       altura: null,
@@ -443,6 +474,10 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
 
   detalheCusto(label: string, valor?: number | null): string {
     return valor == null ? '' : `${label} ${this.formatarMoeda(valor)}`;
+  }
+
+  detalheCustoUnitarioMobile(valor: number): string {
+    return `${this.formatarMoeda(valor)}/un.`;
   }
 
   detalheSobra(sobra?: number | null): string {
@@ -526,9 +561,76 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
     ) as HTMLElement | null;
   }
 
+  // Estado de apresentação: consulta os controles existentes, sem validar ou calcular novamente.
+  etapaMobileConcluida(etapa: number): boolean {
+    if (etapa === 1) {
+      return !!this.form.controls.produtoId.value && this.form.controls.produtoId.valid &&
+        this.form.controls.materialId.valid;
+    }
+    if (etapa === 2) {
+      return this.etapaMobileConcluida(1) &&
+        [this.form.controls.largura, this.form.controls.altura, this.form.controls.quantidade]
+          .every(control => control.disabled || control.valid);
+    }
+    return this.form.controls.acabamentosIds.value.length > 0;
+  }
+
+  etapaMobileComErro(etapa: number): boolean {
+    const controls = etapa === 1
+      ? [this.form.controls.produtoId, this.form.controls.materialId]
+      : etapa === 2
+        ? [this.form.controls.largura, this.form.controls.altura, this.form.controls.quantidade]
+        : [this.form.controls.acabamentosIds];
+    return controls.some(control => control.invalid && control.touched);
+  }
+
+  etapaMobileExpandida(etapa: number): boolean {
+    return !this.mobileViewport() || this.etapaMobileAberta() === etapa || this.etapaMobileComErro(etapa);
+  }
+
+  abrirEtapaMobile(etapa: number): void {
+    this.etapaMobileAberta.set(etapa);
+    setTimeout(() => this.host.nativeElement.querySelector<HTMLButtonElement>(`#smartcalc-step-toggle-${etapa}`)?.focus());
+  }
+
+  alternarEtapaMobile(etapa: number): void {
+    this.etapaMobileAberta.set(this.etapaMobileAberta() === etapa ? 0 : etapa);
+  }
+
+  resumoEtapaMobile(etapa: number): string {
+    if (this.etapaMobileComErro(etapa)) return 'Revise os campos indicados';
+    if (etapa === 1) {
+      if (!this.produtoInitSelecionado) return 'Comece por aqui';
+      const material = this.materiais.find(item => item.id === this.form.controls.materialId.value);
+      const formatos = this.produtoInitSelecionado.variacoes.length;
+      return [this.produtoInitSelecionado.nome, material?.nome, formatos ? `${formatos} formatos disponíveis` : null]
+        .filter(Boolean).join(' · ');
+    }
+    if (etapa === 2) {
+      if (!this.etapaMobileConcluida(2)) return 'Informe largura, altura e quantidade';
+      const values = this.form.getRawValue();
+      return `${values.largura} × ${values.altura} cm · ${values.quantidade} un.`;
+    }
+    const quantidade = this.form.controls.acabamentosIds.value.length;
+    if (quantidade) return `${quantidade} selecionado(s)`;
+    return this.acabamentos.length ? 'Opcional · escolha se precisar' : 'Sem opções para este produto';
+  }
+
+  orientacaoMobile(): string {
+    if (!this.configAtiva) return 'Aguarde a disponibilidade do SmartCalc.';
+    if (this.erroCalculo) return 'Revise os dados para continuar.';
+    if (!this.etapaMobileConcluida(1)) return 'Comece escolhendo produto e material.';
+    if (!this.etapaMobileConcluida(2)) return 'Agora informe medidas e quantidade.';
+    if (this.carregandoCalculo || this.needsRecalcular()) return 'Atualizando o total do cálculo...';
+    return this.temResultado() ? 'Cálculo pronto. Revise os acabamentos ou crie o rascunho.' : 'Revise os dados do cálculo.';
+  }
+
+  resultadoMobileAtual(): boolean {
+    return this.temResultado() && !this.needsRecalcular() && !this.carregandoCalculo;
+  }
+
   abrirResultadoMobile(): void {
     this.resultadoMobileAberto.set(true);
-    document.body.style.overflow = 'hidden';
   }
 
   alternarResultadoMobile(): void {
@@ -541,25 +643,10 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
   }
 
   fecharResultadoMobile(): void {
+    const estavaAberto = this.resultadoMobileAberto();
     this.resultadoMobileAberto.set(false);
-    document.body.style.overflow = '';
-  }
-
-  iniciarGestoSheet(event: TouchEvent): void {
-    this.gestoSheetStartY = event.changedTouches[0]?.clientY ?? null;
-  }
-
-  finalizarGestoSheet(event: TouchEvent): void {
-    if (this.gestoSheetStartY == null) {
-      return;
-    }
-
-    const endY = event.changedTouches[0]?.clientY ?? this.gestoSheetStartY;
-    const deltaY = endY - this.gestoSheetStartY;
-    this.gestoSheetStartY = null;
-
-    if (deltaY > 24) {
-      this.fecharResultadoMobile();
+    if (estavaAberto && this.mobileViewport()) {
+      this.host.nativeElement.querySelector<HTMLElement>('.mobile-total-bar__expand--button')?.focus();
     }
   }
 
@@ -584,7 +671,6 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
 
     if (!mobile) {
       this.resultadoMobileAberto.set(false);
-      document.body.style.overflow = '';
     }
   }
 }

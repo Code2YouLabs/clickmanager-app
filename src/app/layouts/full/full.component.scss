@@ -385,13 +385,18 @@
 
 .mobile-sheet__content--more {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
   padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
 }
 
 .mobile-sheet--more {
   gap: 8px;
   max-height: min(88vh, 760px);
+  max-height: min(88dvh, 760px);
+  overflow: hidden;
 }
 
 .mobile-sheet--more .mobile-nav-group__title {
@@ -468,6 +473,65 @@
 
 .mobile-sheet--more .mobile-action-link--danger {
   color: #b91c1c;
+}
+
+// Drawer-only interaction states; preserve the desktop and other sheet styles.
+.mobile-sheet--more {
+  .mobile-sheet__top--sheet {
+    display: flex;
+    align-items: center;
+  }
+
+  app-mobile-sheet-header { flex: 1; min-width: 0; }
+
+  .mobile-menu-close {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: #64748b;
+  }
+
+  .mobile-nav-group__toggle {
+    width: 100%;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    text-align: left;
+  }
+
+  [hidden] { display: none !important; }
+
+  .mobile-nav-item--active,
+  .mobile-nav-child--active {
+    color: #2563eb;
+    background: rgba(239, 246, 255, 0.96);
+  }
+
+  .mobile-nav-item--active .mobile-nav-item__icon,
+  .mobile-nav-group--active > .mobile-nav-group__title { color: #2563eb; }
+
+  .mobile-nav-item__label { overflow-wrap: anywhere; }
+
+  button:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: -2px;
+  }
+
+  button:disabled { opacity: 0.5; }
 }
 
 .mobile-sheet__title {
