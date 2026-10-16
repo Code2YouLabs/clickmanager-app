@@ -52,9 +52,9 @@
     border-radius: 8px;
     background: var(--mat-sys-surface);
     min-width: 0;
-    header { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 8px; }
-    header > strong { flex: 1 1 auto; min-width: 0; max-width: 100%; font-size: 16px; line-height: 24px; overflow-wrap: anywhere; }
-    .status-pill { flex: 0 1 auto; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+    header { display: grid; grid-template-columns: minmax(0, 1fr) fit-content(48%); align-items: center; gap: 8px; }
+    header > strong { min-width: 0; font-size: 14px; line-height: 20px; overflow-wrap: anywhere; }
+    .status-pill { min-width: 0; max-width: 100%; justify-self: end; line-height: 16px; white-space: normal; overflow-wrap: anywhere; }
     &__cliente { margin: 6px 0; overflow-wrap: anywhere; font-size: 15px; line-height: 22px; }
     &__summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
     time { color: var(--mat-sys-on-surface-variant); font-size: 12px; line-height: 16px; }
