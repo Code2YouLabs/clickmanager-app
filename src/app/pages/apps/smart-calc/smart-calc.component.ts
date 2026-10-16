@@ -1,6 +1,5 @@
 import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { A11yModule } from '@angular/cdk/a11y';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
@@ -38,7 +37,6 @@ type Acabamento = { id: string; nome: string };
   standalone: true,
   imports: [
     CommonModule,
-    A11yModule,
     ReactiveFormsModule,
     MatButtonModule,
     MatCheckboxModule,
@@ -88,7 +86,6 @@ export class SmartCalcComponent implements OnInit, AfterViewInit, OnDestroy {
   private calculoRequestId = 0;
   private focoInicialAplicado = false;
   private totalBarObserver?: ResizeObserver;
-  private gestoSheetStartY: number | null = null;
 
   // =========================
   // FORM
@@ -190,19 +187,24 @@ export class SmartCalcComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     const bar = this.host.nativeElement.querySelector('.mobile-total-bar');
-    if (!bar || typeof ResizeObserver === 'undefined') return;
+    const controls = this.host.nativeElement.querySelector('.mobile-total-bar__controls');
+    if (!bar || !controls || typeof ResizeObserver === 'undefined') return;
     this.totalBarObserver = new ResizeObserver(entries => {
-      const height = entries[0]?.borderBoxSize?.[0]?.blockSize;
-      if (height && height > 0) {
-        this.host.nativeElement.style.setProperty('--smartcalc-mobile-total-bar-height', `${height}px`);
+      for (const entry of entries) {
+        const height = entry.borderBoxSize?.[0]?.blockSize;
+        if (!height || height <= 0) continue;
+        const variable = entry.target === bar
+          ? '--smartcalc-mobile-total-bar-height'
+          : '--smartcalc-mobile-summary-height';
+        this.host.nativeElement.style.setProperty(variable, `${height}px`);
       }
     });
     this.totalBarObserver.observe(bar);
+    this.totalBarObserver.observe(controls);
   }
 
   ngOnDestroy(): void {
     this.totalBarObserver?.disconnect();
-    document.body.style.overflow = '';
     this.destroy$.next();
     this.destroy$.complete();
     this.recalculo$.complete();
@@ -610,7 +612,6 @@ export class SmartCalcComponent implements OnInit, AfterViewInit, OnDestroy {
 
   abrirResultadoMobile(): void {
     this.resultadoMobileAberto.set(true);
-    document.body.style.overflow = 'hidden';
   }
 
   alternarResultadoMobile(): void {
@@ -625,27 +626,8 @@ export class SmartCalcComponent implements OnInit, AfterViewInit, OnDestroy {
   fecharResultadoMobile(): void {
     const estavaAberto = this.resultadoMobileAberto();
     this.resultadoMobileAberto.set(false);
-    document.body.style.overflow = '';
     if (estavaAberto && this.mobileViewport()) {
-      this.host.nativeElement.querySelector<HTMLElement>('.mobile-total-bar')?.focus();
-    }
-  }
-
-  iniciarGestoSheet(event: TouchEvent): void {
-    this.gestoSheetStartY = event.changedTouches[0]?.clientY ?? null;
-  }
-
-  finalizarGestoSheet(event: TouchEvent): void {
-    if (this.gestoSheetStartY == null) {
-      return;
-    }
-
-    const endY = event.changedTouches[0]?.clientY ?? this.gestoSheetStartY;
-    const deltaY = endY - this.gestoSheetStartY;
-    this.gestoSheetStartY = null;
-
-    if (deltaY > 24) {
-      this.fecharResultadoMobile();
+      this.host.nativeElement.querySelector<HTMLElement>('.mobile-total-bar__expand--button')?.focus();
     }
   }
 
@@ -670,7 +652,6 @@ export class SmartCalcComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (!mobile) {
       this.resultadoMobileAberto.set(false);
-      document.body.style.overflow = '';
     }
   }
 }

@@ -165,45 +165,34 @@
     </aside>
   </form>
 
-  <div class="smartcalc-mobile-result"
-    [attr.role]="mobileViewport() && resultadoMobileAberto() ? 'dialog' : null"
-    [attr.aria-modal]="mobileViewport() && resultadoMobileAberto() ? 'true' : null"
-    [attr.aria-labelledby]="mobileViewport() && resultadoMobileAberto() ? 'smartcalc-details-title' : null"
-    [cdkTrapFocus]="mobileViewport() && resultadoMobileAberto()"
-    [cdkTrapFocusAutoCapture]="mobileViewport() && resultadoMobileAberto()"
-    (keydown.escape)="fecharResultadoMobile(); $event.stopPropagation()">
-    <app-mobile-total-bar
-      label="Total"
-      [valueText]="(total() | currency:'BRL':'symbol-narrow':'1.2-2') ?? ''"
-      detailText="Detalhes"
-      [expanded]="resultadoMobileAberto()"
-      [loading]="carregandoCalculo"
-      [actionText]="carregandoAdd ? 'Criando...' : 'Criar rascunho'"
-      [actionDisabled]="!temResultado() || carregandoAdd || needsRecalcular() || carregandoCalculo"
-      bottomOffset="var(--mobile-bottom-nav-height, 0px)"
-      [attachedToBottomNav]="true"
-      expandAriaLabel="Ver detalhes do cálculo"
-      actionAriaLabel="Criar rascunho"
-      (expand)="alternarResultadoMobile()"
-      (action)="adicionarAoPedido()">
-    </app-mobile-total-bar>
-
-    @if (mobileViewport() && resultadoMobileAberto()) {
-      <div class="mobile-result-sheet-backdrop" (click)="fecharResultadoMobile()" aria-hidden="true"></div>
-      <section class="mobile-result-sheet mobile-result-sheet--open" aria-labelledby="smartcalc-details-title">
-        <div class="mobile-result-sheet__top" (touchstart)="iniciarGestoSheet($event)" (touchend)="finalizarGestoSheet($event)">
-          <h2 id="smartcalc-details-title">Detalhes do cálculo</h2>
-          <button mat-icon-button type="button" cdkFocusInitial aria-label="Fechar detalhes do cálculo" (click)="fecharResultadoMobile()"><mat-icon>close</mat-icon></button>
-        </div>
-        <div class="mobile-result-sheet__body">
+  <app-mobile-total-bar
+    label="Total"
+    [valueText]="(total() | currency:'BRL':'symbol-narrow':'1.2-2') ?? ''"
+    [detailText]="resultadoMobileAberto() ? 'Ocultar detalhes' : 'Detalhes'"
+    [inlineDetails]="true"
+    detailsPanelId="smartcalc-mobile-details"
+    [expanded]="resultadoMobileAberto()"
+    [loading]="carregandoCalculo"
+    [actionText]="carregandoAdd ? 'Criando...' : 'Criar rascunho'"
+    [actionDisabled]="!temResultado() || carregandoAdd || needsRecalcular() || carregandoCalculo"
+    bottomOffset="var(--mobile-bottom-nav-height, 0px)"
+    [attachedToBottomNav]="true"
+    [expandAriaLabel]="resultadoMobileAberto() ? 'Ocultar detalhes do cálculo' : 'Ver detalhes do cálculo'"
+    actionAriaLabel="Criar rascunho"
+    (keydown.escape)="fecharResultadoMobile(); $event.stopPropagation()"
+    (expand)="alternarResultadoMobile()"
+    (action)="adicionarAoPedido()">
+    <div total-bar-details>
+      @if (mobileViewport()) {
+        <div class="mobile-calculation-details">
+          <h2>Detalhes do cálculo</h2>
           <ng-container [ngTemplateOutlet]="resultContentTpl"></ng-container>
+          <button mat-stroked-button type="button" class="mobile-calculation-details__clear"
+            (click)="limpar()" [disabled]="carregandoCalculo || carregandoAdd">Limpar cálculo</button>
         </div>
-        <div class="mobile-result-sheet__footer">
-          <button mat-stroked-button type="button" (click)="limpar()" [disabled]="carregandoCalculo || carregandoAdd">Limpar cálculo</button>
-        </div>
-      </section>
-    }
-  </div>
+      }
+    </div>
+  </app-mobile-total-bar>
 
   <ng-template #mobileStepHeader let-step let-title="title">
     @if (mobileViewport()) {

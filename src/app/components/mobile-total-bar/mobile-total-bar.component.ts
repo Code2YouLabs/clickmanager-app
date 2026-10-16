@@ -17,6 +17,8 @@ export class MobileTotalBarComponent {
   @Input() detailText = 'Ver detalhes';
   @Input() expandable = true;
   @Input() expanded = false;
+  @Input() inlineDetails = false;
+  @Input() detailsPanelId = '';
   @Input() loading = false;
   @Input() secondaryActionText = '';
   @Input() secondaryActionDisabled = false;
@@ -35,14 +37,14 @@ export class MobileTotalBarComponent {
   private touchStartY: number | null = null;
 
   onRootClick(): void {
-    if (!this.expandable) {
+    if (!this.expandable || this.inlineDetails) {
       return;
     }
     this.expand.emit();
   }
 
   onRootKeydown(event: KeyboardEvent): void {
-    if (!this.expandable) {
+    if (!this.expandable || this.inlineDetails) {
       return;
     }
 
@@ -55,11 +57,12 @@ export class MobileTotalBarComponent {
   }
 
   onTouchStart(event: TouchEvent): void {
+    if (this.inlineDetails) return;
     this.touchStartY = event.changedTouches[0]?.clientY ?? null;
   }
 
   onTouchEnd(event: TouchEvent): void {
-    if (!this.expandable) {
+    if (!this.expandable || this.inlineDetails) {
       this.touchStartY = null;
       return;
     }
@@ -75,6 +78,11 @@ export class MobileTotalBarComponent {
     if (deltaY > 24) {
       this.expand.emit();
     }
+  }
+
+  onExpandClick(event: Event): void {
+    event.stopPropagation();
+    if (this.expandable) this.expand.emit();
   }
 
   onActionClick(event: Event): void {

@@ -45,7 +45,7 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     tick(300); fixture.detectChanges();
   };
   const openDetails = () => {
-    query('.mobile-total-bar').click(); fixture.detectChanges(); tick(0); fixture.detectChanges();
+    query('.mobile-total-bar__expand--button').click(); fixture.detectChanges(); tick(0); fixture.detectChanges();
   };
 
   beforeEach(async () => {
@@ -80,6 +80,8 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     expect(query('#smartcalc-step-3').hidden).toBeTrue();
     expect(text('.mobile-total-bar__summary .value')).toContain('0.00');
     expect(cta().disabled).toBeTrue();
+    expect(query('#smartcalc-mobile-details').getAttribute('aria-hidden')).toBe('true');
+    expect(query('#smartcalc-mobile-details').hasAttribute('inert')).toBeTrue();
     expect(query('[role="dialog"]')).toBeNull();
     expect(data.calcularSmartCalc).not.toHaveBeenCalled();
     expect(initService.carregarInit$).toHaveBeenCalledTimes(1);
@@ -167,59 +169,75 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     expect(cta().disabled).toBeTrue();
   }));
 
-  it('abre detalhes vazios e fecha por Escape, liberando a rolagem', fakeAsync(() => {
-    render(); openDetails();
-    expect(query('[role="dialog"]').getAttribute('aria-modal')).toBe('true');
-    expect(text('[role="dialog"]')).toContain('Pronto para calcular');
-    expect(document.body.style.overflow).toBe('hidden');
-    query('[role="dialog"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    fixture.detectChanges(); tick(0);
+  it('expande os detalhes vazios na mesma barra e recolhe por Escape sem bloquear a página', fakeAsync(() => {
+    render();
+    const bar = query('.mobile-total-bar'); const button = cta();
+    openDetails();
+    expect(query('.mobile-total-bar')).toBe(bar);
+    expect(cta()).toBe(button);
+    expect(bar.contains(query('#smartcalc-mobile-details'))).toBeTrue();
+    expect(text('#smartcalc-mobile-details')).toContain('Pronto para calcular');
+    expect(query('.mobile-total-bar__expand--button').getAttribute('aria-expanded')).toBe('true');
+    expect(text('.mobile-total-bar__expand--button')).toContain('Ocultar detalhes');
     expect(query('[role="dialog"]')).toBeNull();
+    expect(query('.mobile-result-sheet')).toBeNull();
+    expect(query('.mobile-result-sheet-backdrop')).toBeNull();
     expect(document.body.style.overflow).toBe('');
+    bar.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    fixture.detectChanges(); tick(0);
+    expect(query('#smartcalc-mobile-details').getAttribute('aria-hidden')).toBe('true');
+    expect(query('#smartcalc-mobile-details').hasAttribute('inert')).toBeTrue();
+    expect(component.resultadoMobileAberto()).toBeFalse();
+    expect(document.activeElement).toBe(query('.mobile-total-bar__expand--button'));
   }));
 
-  it('exibe informações reais de itens, composição e produção nos detalhes sem recalcular', fakeAsync(() => {
-    render(); fill(); openDetails();
-    const content = text('[role="dialog"]');
+  it('mantém dados de itens e produção nos detalhes e recolhe pela mesma ação sem recalcular', fakeAsync(() => {
+    render(); fill();
+    const total = text('.mobile-total-bar__summary .value');
+    openDetails();
+    const content = text('#smartcalc-mobile-details');
     ['Cartão de visita / Couchê', '9 × 5 cm', '500', '123.45', 'Produzido', '504', 'Sobra útil', '4', 'A3', '12 folha(s) × 42 por folha'].forEach(value => expect(content).toContain(value));
-    query<HTMLButtonElement>('[aria-label="Fechar detalhes do cálculo"]').click(); fixture.detectChanges(); tick(0);
-    expect(query('[role="dialog"]')).toBeNull();
+    expect(text('.mobile-total-bar__summary .value')).toBe(total);
+    query('.mobile-total-bar__expand--button').click(); fixture.detectChanges(); tick(0);
+    expect(component.resultadoMobileAberto()).toBeFalse();
+    expect(query('#smartcalc-mobile-details').getAttribute('aria-hidden')).toBe('true');
+    expect(text('.mobile-total-bar__expand--button')).toContain('Detalhes');
     expect(data.calcularSmartCalc).toHaveBeenCalledTimes(1);
   }));
 
-  it('mantém o CTA no mesmo diálogo acessível dos detalhes e permite criar por ele', fakeAsync(() => {
-    render(); fill(); openDetails();
-    expect(query('[role="dialog"] .mobile-total-bar__cta')).toBe(cta());
-    cta().click(); fixture.detectChanges();
+  it('preserva o único CTA e sua ação nos dois estados da barra', fakeAsync(() => {
+    render(); fill();
+    const button = cta();
+    openDetails();
+    expect(cta()).toBe(button);
+    expect(fixture.nativeElement.querySelectorAll('app-mobile-total-bar .mobile-total-bar__cta').length).toBe(1);
+    expect(button.disabled).toBeFalse();
+    button.click(); fixture.detectChanges();
     expect(data.criarRascunhoSmartCalc).toHaveBeenCalledTimes(1);
     expect(component.resultadoMobileAberto()).toBeTrue();
   }));
 
-  it('preserva gestos da barra e do painel, fechamento pelo fundo e retorno do foco', fakeAsync(() => {
-    render();
-    const touch = (element: HTMLElement, type: string, clientY: number) => {
-      const event = new Event(type, { bubbles: true });
-      Object.defineProperty(event, 'changedTouches', { value: [{ clientY }] });
-      element.dispatchEvent(event);
-    };
-    touch(query('.mobile-total-bar'), 'touchstart', 400);
-    touch(query('.mobile-total-bar'), 'touchend', 350);
-    fixture.detectChanges(); tick(0);
+  it('não recolhe ao interagir com detalhes, limpar bloqueado ou rolar seu conteúdo', fakeAsync(() => {
+    render(); fill(); openDetails();
+    query('.mobile-calculation-details h2').click(); fixture.detectChanges();
     expect(component.resultadoMobileAberto()).toBeTrue();
-    touch(query('.mobile-result-sheet__top'), 'touchstart', 200);
-    touch(query('.mobile-result-sheet__top'), 'touchend', 250);
-    fixture.detectChanges(); tick(0);
-    expect(component.resultadoMobileAberto()).toBeFalse();
-    expect(document.activeElement).toBe(query('.mobile-total-bar'));
-    openDetails(); query('.mobile-result-sheet-backdrop').click(); fixture.detectChanges(); tick(0);
-    expect(query('[role="dialog"]')).toBeNull();
-    expect(document.body.style.overflow).toBe('');
+    component.carregandoCalculo = true; fixture.detectChanges();
+    query<HTMLButtonElement>('.mobile-calculation-details__clear').click(); fixture.detectChanges();
+    expect(component.resultadoMobileAberto()).toBeTrue();
+    expect(cta().disabled).toBeTrue();
+    const event = new Event('touchstart', { bubbles: true });
+    Object.defineProperty(event, 'changedTouches', { value: [{ clientY: 200 }] });
+    query('.mobile-total-bar__details-content').dispatchEvent(event);
+    const end = new Event('touchend', { bubbles: true });
+    Object.defineProperty(end, 'changedTouches', { value: [{ clientY: 100 }] });
+    query('.mobile-total-bar__details-content').dispatchEvent(end); fixture.detectChanges();
+    expect(component.resultadoMobileAberto()).toBeTrue();
   }));
 
   it('limpa pelo painel e restaura etapa inicial, total e rolagem', fakeAsync(() => {
     render(); fill(); openDetails();
-    query<HTMLButtonElement>('.mobile-result-sheet__footer button').click(); tick(300); fixture.detectChanges();
-    expect(query('[role="dialog"]')).toBeNull();
+    query<HTMLButtonElement>('.mobile-calculation-details__clear').click(); tick(300); fixture.detectChanges();
+    expect(query('#smartcalc-mobile-details').getAttribute('aria-hidden')).toBe('true');
     expect(document.body.style.overflow).toBe('');
     expect(component.etapaMobileAberta()).toBe(1);
     expect(component.form.controls.produtoId.value).toBeNull();

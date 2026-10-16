@@ -387,11 +387,6 @@
   }
 }
 
-.mobile-result-sheet,
-.mobile-result-sheet-backdrop {
-  display: none;
-}
-
 @media (max-width: 1200px) {
   .smartcalc-layout {
     grid-template-columns: 1fr;
@@ -438,70 +433,7 @@
     }
   }
 
-  .mobile-result-sheet-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 54;
-    background: rgba(15, 23, 42, 0.28);
-  }
 
-  .mobile-result-sheet {
-    display: flex;
-    flex-direction: column;
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: calc(var(--mobile-bottom-nav-height, 60px) + var(--smartcalc-mobile-total-bar-height) - 2px);
-    z-index: 55;
-    max-height: min(calc(100dvh - 116px - var(--mobile-bottom-nav-height, 60px)), 760px);
-    background: #fff;
-    border-radius: 18px 18px 0 0;
-    box-shadow: 0 -16px 34px rgba(14, 23, 38, 0.12);
-    opacity: 0;
-    transform: translateY(18px);
-    transition: transform 0.22s ease, opacity 0.18s ease;
-    overflow: hidden;
-    pointer-events: none;
-    visibility: hidden;
-  }
-
-  .mobile-result-sheet--open {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
-    visibility: visible;
-  }
-
-  .mobile-result-sheet__top {
-    cursor: pointer;
-  }
-
-  .mobile-result-sheet__pull {
-    display: grid;
-    place-items: center;
-    padding: 10px 0 2px;
-  }
-
-  .mobile-result-sheet__pull-handle {
-    width: 48px;
-    height: 5px;
-    border-radius: 999px;
-    background: #cbd5e1;
-  }
-
-  .mobile-result-sheet__body {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow: auto;
-    padding: 12px 14px;
-  }
-
-  .mobile-result-sheet__footer {
-    flex-shrink: 0;
-    padding: 0 14px 14px;
-    background: #fff;
-  }
 }
 
 // Extra wrappers leave the desktop grid and its section cards unchanged.
@@ -594,10 +526,11 @@
 
   // Scope all footer refinements to SmartCalc; other consumers keep their current skin.
   :host ::ng-deep app-mobile-total-bar .mobile-total-bar {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas: 'summary cta';
-    align-items: center;
-    gap: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    --mobile-total-details-max-height: max(0px, calc(100dvh - var(--mobile-bottom-nav-height, 60px) - var(--smartcalc-mobile-summary-height, 80px) - 96px));
     padding: 12px max(12px, env(safe-area-inset-right)) 12px max(12px, env(safe-area-inset-left));
     border-radius: 12px 12px 0 0;
     background: var(--mat-sys-surface, #fff);
@@ -612,17 +545,11 @@
   :host ::ng-deep app-mobile-total-bar .mobile-total-bar__actions { min-width: 0; }
   :host ::ng-deep app-mobile-total-bar .mobile-total-bar__cta { min-height: 48px; border-radius: 8px; padding: 8px; font-size: 0.875rem; font-weight: 600; box-shadow: none; }
 
-  .mobile-result-sheet {
-    max-height: calc(100dvh - var(--mobile-bottom-nav-height, 60px) - var(--smartcalc-mobile-total-bar-height, 104px) - 72px);
-    border-radius: 12px 12px 0 0;
-  }
-  .mobile-result-sheet__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-bottom: 1px solid #e2e8f0; }
-  .mobile-result-sheet__top h2 { margin: 0; font-size: 1rem; font-weight: 600; }
-  .mobile-result-sheet__body { padding: 12px; }
-  .mobile-result-sheet__footer { padding: 8px 12px; border-top: 1px solid #e2e8f0; }
-  .mobile-result-sheet__footer button { min-height: 44px; width: 100%; }
-  .mobile-result-sheet .empty-state { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; min-height: 0; padding: 8px 0; border: 0; }
-  .mobile-result-sheet .empty-state span { grid-column: 2; }
+  .mobile-calculation-details { padding: 0 0 12px; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; }
+  .mobile-calculation-details h2 { margin: 0 0 12px; font-size: 1rem; font-weight: 600; }
+  .mobile-calculation-details__clear { min-height: 44px; width: 100%; }
+  .mobile-calculation-details .empty-state { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; min-height: 0; padding: 8px 0; border: 0; }
+  .mobile-calculation-details .empty-state span { grid-column: 2; }
   .result-table { min-width: 0; table-layout: fixed; }
   .result-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .result-table tbody { display: block; }
@@ -630,6 +557,6 @@
   .result-table td { min-width: 0; padding: 4px 0; border: 0; overflow-wrap: anywhere; }
   .result-table td.num { display: flex; justify-content: space-between; gap: 12px; text-align: right; white-space: normal; }
   .result-table td.num::before { content: attr(data-label); color: #64748b; text-align: left; }
-  :host ::ng-deep .mobile-result-sheet .metric-grid .metric-card { min-height: 0; padding: 12px; }
+  :host ::ng-deep .mobile-calculation-details .metric-grid .metric-card { min-height: 0; padding: 12px; }
   .total-summary strong { white-space: normal; overflow-wrap: anywhere; }
 }
