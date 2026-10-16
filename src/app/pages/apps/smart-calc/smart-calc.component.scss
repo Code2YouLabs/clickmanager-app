@@ -577,7 +577,7 @@
   }
 
   .mobile-calculation-details { padding: 0 0 16px; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; }
-  .mobile-calculation-details h2 { text-align: center; margin: 0 0 16px; font-size: 1rem; font-weight: 600; }
+  .mobile-calculation-details__title { flex-shrink: 0; text-align: center; margin: 0; padding-bottom: 16px; font-size: 1rem; font-weight: 600; line-height: 24px; }
   .mobile-calculation-details__clear { min-height: 44px; width: 100%; margin-top: 16px; }
   .mobile-calculation-details .empty-state { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; min-height: 0; padding: 8px 0; border: 0; }
   .mobile-calculation-details .empty-state span { grid-column: 2; }
@@ -608,17 +608,19 @@
     padding: 4px 0;
     text-align: left;
     font-size: 0.875rem;
+    line-height: 20px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
-  .mobile-calculation-details .result-table td.num::before { content: attr(data-short-label); white-space: nowrap; font-size: 0.75rem; font-weight: 400; }
+  .mobile-calculation-details .result-table td.num::before { content: attr(data-short-label); white-space: nowrap; font-size: 0.75rem; line-height: 16px; font-weight: 400; }
+  .mobile-item-value { display: block; min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
   .mobile-production__indicators { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
   .mobile-production__indicators > div { display: grid; align-content: start; gap: 4px; min-width: 0; overflow-wrap: anywhere; }
   .mobile-production__indicators dt { min-height: 20px; color: #64748b; font-size: 0.75rem; line-height: 20px; }
-  .mobile-production__indicators dd { display: grid; gap: 4px; margin: 0; color: #475569; font-size: 0.875rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .mobile-production__indicators dd { display: grid; align-content: start; gap: 4px; min-width: 0; margin: 0; color: #475569; font-size: 0.875rem; font-weight: 500; font-variant-numeric: tabular-nums; }
   .mobile-production__indicators abbr { text-decoration: none; }
   .mobile-production__value { min-height: 20px; line-height: 20px; }
-  .mobile-production__indicators small { font-weight: 400; color: #64748b; font-size: 0.75rem; line-height: 1.4; }
+  .mobile-production__indicators small { min-height: 16px; overflow-wrap: anywhere; font-weight: 400; color: #64748b; font-size: 0.75rem; line-height: 16px; }
   .mobile-calculation-details .distribution-list { gap: 0; }
   .mobile-calculation-details .distribution-row { padding: 12px 0; border: 0; border-bottom: 1px solid #e2e8f0; border-radius: 0; background: transparent; }
   .mobile-calculation-details .distribution-row:last-child { padding-bottom: 0; border-bottom: 0; }

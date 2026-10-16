@@ -187,10 +187,10 @@
       (collapse)="resultadoMobileAberto.set(false)"
       (expand)="alternarResultadoMobile()"
       (action)="adicionarAoPedido()">
+      <h2 total-bar-details-header class="mobile-calculation-details__title">Detalhes do cálculo</h2>
       <div total-bar-details>
         @if (resultadoMobileAtual()) {
           <div class="mobile-calculation-details">
-            <h2>Detalhes do cálculo</h2>
             <ng-container [ngTemplateOutlet]="resultContentTpl" [ngTemplateOutletContext]="{ mobile: true }"></ng-container>
             <button mat-stroked-button type="button" class="mobile-calculation-details__clear"
               (click)="limpar()" [disabled]="carregandoCalculo || carregandoAdd">Limpar cálculo</button>
@@ -256,9 +256,9 @@
                       <div class="result-item-spec">{{ it.descricao }}</div>
                     }
                   </td>
-                  <td class="num" data-label="Quantidade" [attr.data-short-label]="mobile ? 'Qtd' : null">{{ it.quantidade }}</td>
-                  <td class="num" data-label="Valor unitário" [attr.data-short-label]="mobile ? 'Vlr un.' : null">{{ it.valor | currency:'BRL':'symbol-narrow':'1.2-2' }}</td>
-                  <td class="num" data-label="Subtotal" [attr.data-short-label]="mobile ? 'Subtotal' : null">{{ it.subTotal | currency:'BRL':'symbol-narrow':'1.2-2' }}</td>
+                  <td class="num" data-label="Quantidade" [attr.data-short-label]="mobile ? 'Qtd' : null">@if (mobile) { <span class="mobile-item-value">{{ it.quantidade }}</span> } @else { {{ it.quantidade }} }</td>
+                  <td class="num" data-label="Valor unitário" [attr.data-short-label]="mobile ? 'Vlr un.' : null">@if (mobile) { <span class="mobile-item-value">{{ it.valor | currency:'BRL':'symbol-narrow':'1.2-2' }}</span> } @else { {{ it.valor | currency:'BRL':'symbol-narrow':'1.2-2' }} }</td>
+                  <td class="num" data-label="Subtotal" [attr.data-short-label]="mobile ? 'Subtotal' : null">@if (mobile) { <span class="mobile-item-value">{{ it.subTotal | currency:'BRL':'symbol-narrow':'1.2-2' }}</span> } @else { {{ it.subTotal | currency:'BRL':'symbol-narrow':'1.2-2' }} }</td>
                 </tr>
               }
             </tbody>
@@ -276,8 +276,8 @@
                   <div>
                     <dt><abbr title="Produzido">Prod.</abbr></dt>
                     <dd>
-                      @if (resumo.produzido != null) { <span class="mobile-production__value">{{ resumo.produzido }}</span> }
-                      @if (resumo.custoUnitarioProduzido != null) { <small>{{ detalheCusto('Un', resumo.custoUnitarioProduzido) }}</small> }
+                      <span class="mobile-production__value">{{ resumo.produzido }}</span>
+                      @if (resumo.custoUnitarioProduzido != null) { <small>{{ detalheCustoUnitarioMobile(resumo.custoUnitarioProduzido) }}</small> }
                     </dd>
                   </div>
                 }
@@ -285,15 +285,15 @@
                   <div>
                     <dt><abbr title="Solicitado">Solic.</abbr></dt>
                     <dd>
-                      @if (resumo.solicitado != null) { <span class="mobile-production__value">{{ resumo.solicitado }}</span> }
-                      @if (resumo.custoUnitarioSolicitado != null) { <small>{{ detalheCusto('Un', resumo.custoUnitarioSolicitado) }}</small> }
+                      <span class="mobile-production__value">{{ resumo.solicitado }}</span>
+                      @if (resumo.custoUnitarioSolicitado != null) { <small>{{ detalheCustoUnitarioMobile(resumo.custoUnitarioSolicitado) }}</small> }
                     </dd>
                   </div>
                 }
                 @if (resumo.sobraUtil != null) {
                   <div>
                     <dt><abbr title="Sobra útil">Sobra</abbr></dt>
-                    <dd><span class="mobile-production__value">{{ resumo.sobraUtil }}</span><small>{{ resumo.sobraUtil > 0 ? 'Sem alt. custo' : detalheSobra(resumo.sobraUtil) }}</small></dd>
+                    <dd><span class="mobile-production__value">{{ resumo.sobraUtil }}</span><small>{{ resumo.sobraUtil > 0 ? 'Sem custo extra' : detalheSobra(resumo.sobraUtil) }}</small></dd>
                   </div>
                 }
               </dl>

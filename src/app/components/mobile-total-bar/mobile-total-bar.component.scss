@@ -300,7 +300,13 @@
   .mobile-total-bar__details--expanded { grid-template-rows: 1fr; }
   .mobile-total-bar__details-clip { min-height: 0; overflow: hidden; }
   .mobile-total-bar__details-content {
+    display: flex;
+    flex-direction: column;
     max-height: var(--mobile-total-details-max-height, 50dvh);
+    overflow: hidden;
+  }
+  .mobile-total-bar__details-body {
+    min-height: 0;
     overflow-y: auto;
     overscroll-behavior-y: contain;
   }

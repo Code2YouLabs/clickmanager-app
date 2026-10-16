@@ -32,7 +32,10 @@
       [id]="detailsPanelId" [attr.aria-hidden]="!expanded" [attr.inert]="expanded ? null : ''">
       <div class="mobile-total-bar__details-clip">
         <div class="mobile-total-bar__details-content">
-          <ng-content select="[total-bar-details]"></ng-content>
+          <ng-content select="[total-bar-details-header]"></ng-content>
+          <div class="mobile-total-bar__details-body">
+            <ng-content select="[total-bar-details]"></ng-content>
+          </div>
         </div>
       </div>
     </div>

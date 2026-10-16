@@ -12,6 +12,7 @@ import { MobileTotalBarComponent } from './mobile-total-bar.component';
       secondaryActionText="Revisar" [detailText]="expanded ? 'Ocultar detalhes' : 'Detalhes'"
       (collapse)="expanded = false" (expand)="expanded = !expanded; expansions = expansions + 1"
       (action)="actions = actions + 1" (secondaryAction)="secondaryActions = secondaryActions + 1">
+      <h2 total-bar-details-header>Detalhes do cálculo</h2>
       <div total-bar-details><p>Distribuição da produção</p><button type="button" class="clear" (click)="clears = clears + 1">Limpar cálculo</button></div>
     </app-mobile-total-bar>`,
 })
@@ -153,6 +154,10 @@ describe('MobileTotalBarComponent — detalhes internos opcionais', () => {
 
   it('expande e recolhe pela ação sem recriar resumo, CTA ou conteúdo projetado', () => {
     const bar = query('.mobile-total-bar'); const cta = query('.mobile-total-bar__cta'); const clear = query('.clear');
+    const title = query('[total-bar-details-header]');
+    expect(query('.mobile-total-bar__details-body').contains(title)).toBeFalse();
+    expect(query('#test-details').contains(title)).toBeTrue();
+    expect(query('.mobile-total-bar__details-body').contains(clear)).toBeTrue();
     query('.mobile-total-bar__expand--button').click(); fixture.detectChanges();
     expect(query('#test-details').hasAttribute('inert')).toBeFalse();
     expect(query('#test-details').getAttribute('aria-hidden')).toBe('false');
@@ -164,6 +169,7 @@ describe('MobileTotalBarComponent — detalhes internos opcionais', () => {
     expect(query('.mobile-total-bar')).toBe(bar);
     expect(query('.mobile-total-bar__cta')).toBe(cta);
     expect(query('.clear')).toBe(clear);
+    expect(query('[total-bar-details-header]')).toBe(title);
     expect(bar.textContent).toContain('R$ 123,45');
   });
 

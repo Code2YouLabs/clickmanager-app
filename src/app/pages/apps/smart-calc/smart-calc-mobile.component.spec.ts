@@ -245,7 +245,7 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
 
   it('não recolhe ao interagir com detalhes, limpar bloqueado ou rolar seu conteúdo', fakeAsync(() => {
     render(); fill(); openDetails();
-    query('.mobile-calculation-details h2').click(); fixture.detectChanges();
+    query('.mobile-calculation-details__title').click(); fixture.detectChanges();
     expect(component.resultadoMobileAberto()).toBeTrue();
     component.carregandoAdd = true; fixture.detectChanges();
     query<HTMLButtonElement>('.mobile-calculation-details__clear').click(); fixture.detectChanges();
@@ -253,10 +253,10 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     expect(cta().disabled).toBeTrue();
     const event = new Event('touchstart', { bubbles: true });
     Object.defineProperty(event, 'changedTouches', { value: [{ clientY: 200 }] });
-    query('.mobile-total-bar__details-content').dispatchEvent(event);
+    query('.mobile-total-bar__details-body').dispatchEvent(event);
     const end = new Event('touchend', { bubbles: true });
     Object.defineProperty(end, 'changedTouches', { value: [{ clientY: 100 }] });
-    query('.mobile-total-bar__details-content').dispatchEvent(end); fixture.detectChanges();
+    query('.mobile-total-bar__details-body').dispatchEvent(end); fixture.detectChanges();
     expect(component.resultadoMobileAberto()).toBeTrue();
   }));
 
@@ -351,8 +351,8 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     expect(Array.from(fixture.nativeElement.querySelectorAll('.mobile-production abbr') as NodeListOf<HTMLElement>).map(item => item.title)).toEqual(['Produzido', 'Solicitado', 'Sobra útil']);
     const values = Array.from(fixture.nativeElement.querySelectorAll('.mobile-production__value') as NodeListOf<HTMLElement>).map(item => item.textContent?.trim());
     expect(values).toEqual(['504', '500', '4']);
-    expect(text('.mobile-production')).toContain('Un R$ 0,25');
-    expect(text('.mobile-production')).toContain('Sem alt. custo');
+    expect(text('.mobile-production')).toContain('R$ 0,25/un.');
+    expect(text('.mobile-production')).toContain('Sem custo extra');
     expect(query('#smartcalc-mobile-details app-metric-card')).toBeNull();
     expect(text('#smartcalc-mobile-details')).toContain('Aproveitamento da produção');
     expect(text('#smartcalc-mobile-details')).toContain('Distribuição da produção');
@@ -372,6 +372,22 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     expect(text('.mobile-total-bar__summary .value')).toContain('198.45');
   }));
 
+  it('preserva valores monetários longos e sua ordem nos indicadores de múltiplos itens', fakeAsync(() => {
+    data.calcularSmartCalc.and.returnValue(of({
+      total: 123456789.12,
+      itens: [resultado.itens[0], { ...resultado.itens[0], id: 99, nomeComposto: 'Item de valor elevado',
+        quantidade: 999999, valor: 123456.78, subTotal: 123456789.12 }],
+    }));
+    render(); fill(); openDetails();
+    const rows = fixture.nativeElement.querySelectorAll('#smartcalc-mobile-details tbody tr') as NodeListOf<HTMLElement>;
+    const values = Array.from(rows[1].querySelectorAll('.mobile-item-value')).map(value => value.textContent?.trim());
+    expect(values[0]).toBe('999999');
+    expect(values[1]).toContain('R$'); expect(values[1]).toContain('123,456.78');
+    expect(values[2]).toContain('R$'); expect(values[2]).toContain('123,456,789.12');
+    expect(text('.smartcalc-layout__sidebar')).toContain('Item de valor elevado');
+    expect(query('.smartcalc-layout__sidebar .mobile-item-value')).toBeNull();
+  }));
+
   it('não inventa folhas ou indicadores quando a distribuição contém somente formato e orientação', fakeAsync(() => {
     data.calcularSmartCalc.and.returnValue(of({ ...resultado, observacaoResumo: {
       distribuicao: [{ formato: 'Rolo de lona', orientacao: 'PAISAGEM' }],
@@ -387,7 +403,7 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     data.calcularSmartCalc.and.returnValue(of({ ...resultado, observacaoResumo: { solicitado: 0, sobraUtil: 0, custoUnitarioSolicitado: 0 } }));
     render(); fill(); openDetails();
     expect(text('.mobile-production')).toContain('Sem sobra útil');
-    expect(text('.mobile-production')).toContain('Un R$ 0,00');
+    expect(text('.mobile-production')).toContain('R$ 0,00/un.');
     expect(text('.mobile-production')).not.toContain('Prod.');
     expect(text('.mobile-production')).not.toContain('undefined');
     expect(fixture.nativeElement.querySelectorAll('.mobile-production dd').length).toBe(2);
@@ -464,8 +480,16 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
       ],
     } }));
     render(); fill(); openDetails();
-    const scroll = query('.mobile-total-bar__details-content');
+    const scroll = query('.mobile-total-bar__details-body');
     expect(scroll.contains(query('.mobile-calculation-details__clear'))).toBeTrue();
+    const title = query('.mobile-calculation-details__title');
+    expect(title.textContent?.trim()).toBe('Detalhes do cálculo');
+    expect(query('#smartcalc-mobile-details').contains(title)).toBeTrue();
+    expect(scroll.contains(title)).toBeFalse();
+    expect(scroll.contains(query('.mobile-total-bar__handle-toggle'))).toBeFalse();
+    scroll.dispatchEvent(new Event('scroll')); fixture.detectChanges();
+    expect(query('.mobile-calculation-details__title')).toBe(title);
+    expect(component.resultadoMobileAberto()).toBeTrue();
     expect(scroll.contains(cta())).toBeFalse();
     expect(scroll.contains(query('.mobile-total-bar__summary'))).toBeFalse();
     expect(Array.from(scroll.querySelectorAll('.block-title')).map(element => element.textContent?.trim())).toEqual([

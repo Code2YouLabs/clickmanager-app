@@ -476,6 +476,10 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
     return valor == null ? '' : `${label} ${this.formatarMoeda(valor)}`;
   }
 
+  detalheCustoUnitarioMobile(valor: number): string {
+    return `${this.formatarMoeda(valor)}/un.`;
+  }
+
   detalheSobra(sobra?: number | null): string {
     const valor = Number(sobra || 0);
     return valor > 0 ? `+${valor} sem alterar o custo` : 'Sem sobra útil';
