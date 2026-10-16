@@ -23,6 +23,7 @@ import { MatDivider } from "@angular/material/divider";
   styleUrls: ['./card-header.component.scss'],
 })
 export class CardHeaderComponent {
+  @Input() mobileCompact = false;
   @Input() actionDisabled = false;
   @Input() actionPending = false;
   @Input() actionPendingText = 'Aguarde...';

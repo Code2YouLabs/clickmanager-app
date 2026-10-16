@@ -14,6 +14,7 @@ import { PageCardComponent, PageCardAction } from './page-card.component';
     <app-page-card
       titulo="Produtos gráficos"
       subtitulo="Configuração de venda"
+      [mobileCompact]="compact"
       [showFooter]="showFooter"
       [headerDivider]="headerDivider"
       [footerDivider]="footerDivider">
@@ -25,6 +26,7 @@ import { PageCardComponent, PageCardAction } from './page-card.component';
   `,
 })
 class PageCardHostComponent {
+  compact = false;
   showFooter = false;
   headerDivider = true;
   footerDivider = true;
@@ -54,6 +56,16 @@ describe('PageCardComponent', () => {
     expect(text).toContain('Nova ação');
     expect(text).toContain('Conteúdo principal');
     expect(fixture.debugElement.query(By.css('.page-card__footer'))).toBeNull();
+  });
+
+  it('encaminha a variante mobile ao header sem duplicar ações ou conteúdo', () => {
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.page-card--mobile-compact')).toBeNull();
+    host.compact = true; fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.page-card--mobile-compact')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.card-header--mobile-compact')).toBeTruthy();
+    expect(fixture.nativeElement.querySelectorAll('[page-header-actions]').length).toBe(1);
+    expect(fixture.nativeElement.querySelectorAll('.body-content').length).toBe(1);
   });
 
   it('renderiza footer em areas esquerda e direita quando habilitado', () => {

@@ -27,6 +27,8 @@ import { MatDividerModule } from '@angular/material/divider';
   styleUrls: ['./section-card.component.scss'],
 })
 export class SectionCardComponent {
+  /** Remove nested card chrome on small screens only. */
+  @Input() mobilePlain = false;
   @Input() title?: string;
   @Input() titulo?: string;
   @Input() subtitle?: string;

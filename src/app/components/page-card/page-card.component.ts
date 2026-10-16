@@ -30,6 +30,8 @@ type ResolvedPageCardAction = {
   styleUrls: ['./page-card.component.scss'],
 })
 export class PageCardComponent {
+  /** Opt-in compact mobile layout; projected actions remain owned by the consumer. */
+  @Input() mobileCompact = false;
   @Input() saving = false;
   @Input() savingText = 'Salvando...';
   @Input() actionsDisabled = false;

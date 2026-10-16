@@ -1,6 +1,7 @@
-<mat-card class="cardWithShadow page-card" [attr.aria-busy]="saving">
+<mat-card class="cardWithShadow page-card" [class.page-card--mobile-compact]="mobileCompact" [attr.aria-busy]="saving">
   <app-card-header
     [titulo]="titulo"
+    [mobileCompact]="mobileCompact"
     [actionDisabled]="headerActionDisabled"
     [subtitulo]="subtitulo"
     [botaoTexto]="botaoTexto"
