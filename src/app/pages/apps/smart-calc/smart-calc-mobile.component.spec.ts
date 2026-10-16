@@ -351,8 +351,8 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     expect(Array.from(fixture.nativeElement.querySelectorAll('.mobile-production abbr') as NodeListOf<HTMLElement>).map(item => item.title)).toEqual(['Produzido', 'Solicitado', 'Sobra útil']);
     const values = Array.from(fixture.nativeElement.querySelectorAll('.mobile-production__value') as NodeListOf<HTMLElement>).map(item => item.textContent?.trim());
     expect(values).toEqual(['504', '500', '4']);
-    expect(text('.mobile-production')).toContain('Custo un. R$ 0,25');
-    expect(text('.mobile-production')).toContain('+4 sem alterar o custo');
+    expect(text('.mobile-production')).toContain('Un R$ 0,25');
+    expect(text('.mobile-production')).toContain('Sem alt. custo');
     expect(query('#smartcalc-mobile-details app-metric-card')).toBeNull();
     expect(text('#smartcalc-mobile-details')).toContain('Aproveitamento da produção');
     expect(text('#smartcalc-mobile-details')).toContain('Distribuição da produção');
@@ -387,7 +387,7 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
     data.calcularSmartCalc.and.returnValue(of({ ...resultado, observacaoResumo: { solicitado: 0, sobraUtil: 0, custoUnitarioSolicitado: 0 } }));
     render(); fill(); openDetails();
     expect(text('.mobile-production')).toContain('Sem sobra útil');
-    expect(text('.mobile-production')).toContain('Custo un. R$ 0,00');
+    expect(text('.mobile-production')).toContain('Un R$ 0,00');
     expect(text('.mobile-production')).not.toContain('Prod.');
     expect(text('.mobile-production')).not.toContain('undefined');
     expect(fixture.nativeElement.querySelectorAll('.mobile-production dd').length).toBe(2);
