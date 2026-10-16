@@ -76,6 +76,10 @@ export class ListFilterBarComponent implements OnChanges, OnDestroy {
       position: { top: '0', right: '0' }, enterAnimationDuration: reducedMotion ? 0 : 360, exitAnimationDuration: reducedMotion ? 0 : 300,
     });
     this.panelRef = ref;
+    // beforeClosed runs before Material removes --open; start the exit without a hidden frame.
+    ref.beforeClosed().pipe(takeUntil(this.destroy$)).subscribe(() => {
+      ref.addPanelClass('list-filter-mobile-panel--closing');
+    });
     // Virtual keyboards resize the visual viewport even when the layout viewport stays unchanged.
     const viewport = window.visualViewport;
     if (viewport) {

@@ -111,7 +111,7 @@ Validar em 360/390/430/768 px e desktop: teclado real e foco por toque, labels e
 
 ## Refinamento da transição lateral — 16/10/2026
 
-A abertura e o fechamento agora usam a duração do ciclo Material (360/300 ms). A entrada utiliza keyframes no container interno durante todo o estado `mdc-dialog--open`, com o último frame preservado e a transição de transform desativada enquanto aberto. A remoção da classe temporária `mdc-dialog--opening` não troca mais a animação nem reinicia uma transição. O foco inicial fica no próprio dialog, que não é deslocado, evitando scroll causado por focar controles ainda fora da tela. O transform padrão da superfície Material permanece desativado; o fechamento mantém a transição já validada. O overlay permanece montado durante a saída, mantendo o rascunho visível; Aplicar repetido durante o recolhimento não emite novamente. Movimento reduzido usa duração zero e nenhuma transição CSS.
+A abertura e o fechamento agora usam a duração do ciclo Material (360/300 ms). A entrada utiliza keyframes no container interno durante todo o estado `mdc-dialog--open`, com o último frame preservado e a transição de transform desativada enquanto aberto. A remoção da classe temporária `mdc-dialog--opening` não troca mais a animação nem reinicia uma transição. O foco inicial fica no próprio dialog, que não é deslocado, evitando scroll causado por focar controles ainda fora da tela. O transform padrão da superfície Material permanece desativado; o fechamento usa keyframes próprios, iniciados pela classe de saída adicionada em `beforeClosed`, antes de o Material remover o estado aberto. O overlay permanece montado durante a saída, mantendo o rascunho visível; Aplicar repetido durante o recolhimento não emite novamente. Movimento reduzido usa duração zero e nenhuma transição CSS.
 
 - Teste isolado do ListFilterBar: **21/21 passaram**, incluindo o ciclo real de animação para Voltar, Escape, Aplicar e movimento reduzido.
 - Suíte completa: **1.092/1.093 passaram**, somente a falha preexistente do onboarding em 360 px.
@@ -127,3 +127,11 @@ A animação e a transição não disputam mais o transform durante a abertura. 
 - Testes isolados do ListFilterBar: **22/22 passaram**, incluindo três ciclos consecutivos de abrir/fechar, manutenção do mesmo container/foco após a retirada da classe temporária, Aplicar, cancelar e movimento reduzido.
 - Sem testes visuais ou screenshots. O teste de ciclo verifica estado e foco; não declara aprovação visual dos frames em aparelho real.
 - Build de produção: sucesso, 38 avisos existentes e nenhum erro.
+
+## Recolhimento explícito — 16/10/2026
+
+A entrada foi preservada. O fechamento agora seleciona `list-filter-slide-out` (0 → 100% para a direita, 300 ms) usando uma classe do overlay aplicada em `beforeClosed`. A saída começa antes da remoção de `mdc-dialog--open`, evitando o frame intermediário escondido. Não depende de uma transição inferida após retirar a animação preenchida de entrada. O overlay permanece até o fim do ciclo Material; movimento reduzido desativa ambas as animações.
+
+- Testes isolados: **23/23 passaram**, incluindo acionamento síncrono da saída por Voltar, Escape, backdrop e Aplicar, remoção ao final, abertura repetida e movimento reduzido.
+- Sem testes visuais ou screenshots; confirmação visual em dispositivo permanece manual.
+- Build de produção: sucesso, com 38 avisos existentes e nenhum erro.

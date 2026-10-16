@@ -321,7 +321,7 @@ describe('ListFilterBarComponent — transição lateral', () => {
     }
   }));
 
-  for (const close of ['voltar', 'Escape', 'aplicar'] as const) {
+  for (const close of ['voltar', 'Escape', 'backdrop', 'aplicar'] as const) {
     it(`aguarda o recolhimento antes de remover o painel por ${close}`, fakeAsync(() => {
       spyOn(window, 'matchMedia').and.returnValue({ matches: false } as MediaQueryList);
       const emit = spyOn(bar.stateChange, 'emit');
@@ -331,11 +331,16 @@ describe('ListFilterBarComponent — transição lateral', () => {
       bar.onFieldChange('active', false); fixture.detectChanges();
       if (close === 'Escape') {
         overlay.querySelector('.cdk-overlay-pane')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
+      } else if (close === 'backdrop') {
+        overlay.querySelector<HTMLElement>('.cdk-overlay-backdrop')!.click();
       } else if (close === 'aplicar') {
         bar.applyMobileFilters(); bar.applyMobileFilters();
       } else {
         bar.closeMobileFilters();
       }
+      // The exit must already be selected synchronously, before Material's next frame.
+      expect(overlay.querySelector('.list-filter-mobile-panel--closing')).toBeTruthy();
+      expect(overlay.querySelector('mat-dialog-container')).toBe(container);
       tick(20); fixture.detectChanges();
       expect(container.classList.contains('mdc-dialog--closing')).toBeTrue();
       expect(overlay.querySelector('mat-dialog-container')).toBe(container);
