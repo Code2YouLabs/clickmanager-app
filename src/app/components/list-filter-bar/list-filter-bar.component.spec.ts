@@ -1,3 +1,6 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { OverlayContainer } from '@angular/cdk/overlay';
+import { BehaviorSubject } from 'rxjs';
 import { Component } from '@angular/core';
 import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -25,8 +28,10 @@ class Host {
 describe('ListFilterBarComponent', () => {
   let fixture: ComponentFixture<Host>;
   let bar: ListFilterBarComponent;
+  let viewport: BehaviorSubject<any>;
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [Host, NoopAnimationsModule] });
+    viewport = new BehaviorSubject({ matches: false, breakpoints: {} });
+    TestBed.configureTestingModule({ imports: [Host, NoopAnimationsModule], providers: [{ provide: BreakpointObserver, useValue: { observe: () => viewport, isMatched: () => false } }] });
     fixture = TestBed.createComponent(Host); fixture.detectChanges();
     bar = fixture.debugElement.query(By.directive(ListFilterBarComponent)).componentInstance;
   });
@@ -70,4 +75,94 @@ describe('ListFilterBarComponent', () => {
     expect(spy).toHaveBeenCalledWith({ key: 'status', value: 'FECHADO' });
     expect(flat.nativeElement.querySelector('.list-filter-bar')).toBeTruthy(); flat.destroy();
   });
+  it('abre painel mobile sem título redundante e aplica os filtros tipados uma única vez', fakeAsync(() => {
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-section-card')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.list-mobile-toolbar__title')).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('input[type=search]').length).toBe(1);
+    const state = spyOn(bar.stateChange, 'emit');
+    fixture.nativeElement.querySelector('.list-mobile-toolbar__filter-button').click(); tick(); fixture.detectChanges();
+    const overlay = TestBed.inject(OverlayContainer).getContainerElement();
+    expect(overlay.querySelector('mat-bottom-sheet-container')).toBeTruthy();
+    expect(overlay.querySelector('input[type=date]')).toBeTruthy();
+    expect(overlay.querySelectorAll('mat-select').length).toBe(2);
+    bar.onFieldChange('active', false); bar.onFieldChange('ids', [0, 2]); fixture.detectChanges();
+    expect(state).not.toHaveBeenCalled();
+    expect(bar.selectedFilterValue(bar.definitions[0])).toBe(false);
+    const buttons = overlay.querySelectorAll<HTMLButtonElement>('.list-filter-sheet__footer button');
+    buttons[buttons.length - 1].click(); tick(500); fixture.detectChanges();
+    expect(state).toHaveBeenCalledOnceWith({ active: false, ids: [0, 2] });
+    expect(bar.mobileFiltersOpen).toBeFalse();
+    expect(fixture.nativeElement.querySelector('.list-mobile-toolbar__filter-button').textContent).toContain('(3)');
+    expect(fixture.nativeElement.textContent).toContain('Biblioteca');
+  }));
+
+  it('fecha sem aplicar o rascunho e restaura o foco no botão de filtros', fakeAsync(() => {
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    document.body.appendChild(fixture.nativeElement);
+    const trigger: HTMLButtonElement = fixture.nativeElement.querySelector('.list-mobile-toolbar__filter-button');
+    trigger.focus(); trigger.click(); tick(); fixture.detectChanges();
+    const emit = spyOn(bar.stateChange, 'emit');
+    bar.onFieldChange('active', true);
+    const overlay = TestBed.inject(OverlayContainer).getContainerElement();
+    overlay.querySelector<HTMLButtonElement>('[aria-label="Fechar filtros"]')!.click(); tick(500); fixture.detectChanges();
+    expect(emit).not.toHaveBeenCalled(); expect(document.activeElement).toBe(trigger);
+    bar.openMobileFilters(); tick(); fixture.detectChanges();
+    expect(bar.selectedFilterValue(bar.definitions[0])).toBeNull();
+    bar.closeMobileFilters(); tick(500); fixture.nativeElement.remove();
+  }));
+
+  it('limpa pelo contrato existente e fecha o painel; resize fecha sem aplicar', fakeAsync(() => {
+    fixture.componentInstance.state = { active: false, ids: [0] }; fixture.detectChanges();
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    bar.openMobileFilters(); tick(); fixture.detectChanges();
+    const overlay = TestBed.inject(OverlayContainer).getContainerElement();
+    overlay.querySelector<HTMLButtonElement>('.list-filter-sheet__footer button')!.click(); tick(500); fixture.detectChanges();
+    expect(fixture.componentInstance.last).toEqual({}); expect(fixture.componentInstance.clears).toBe(1);
+    bar.openMobileFilters(); tick(); bar.onFieldChange('active', true);
+    viewport.next({ matches: false, breakpoints: {} }); tick(500); fixture.detectChanges();
+    expect(bar.mobileFiltersOpen).toBeFalse();
+    expect(fixture.nativeElement.querySelector('app-section-card')).toBeTruthy();
+    expect(fixture.componentInstance.last).toEqual({});
+  }));
+
+  it('preserva projeção e mescla atualizações externas sem perder seleções em edição', fakeAsync(() => {
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    bar.openMobileFilters(); tick(); bar.onFieldChange('active', false);
+    fixture.componentInstance.state = { period: '2026-10-16' }; fixture.detectChanges();
+    bar.applyMobileFilters(); tick(500);
+    expect(fixture.componentInstance.last).toEqual({ period: '2026-10-16', active: false });
+  }));
+
+  it('Escape e backdrop fecham sem aplicar; inline permanece uma exceção explícita', fakeAsync(() => {
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    const emit = spyOn(bar.stateChange, 'emit');
+    bar.openMobileFilters(); tick(); fixture.detectChanges();
+    const overlay = TestBed.inject(OverlayContainer).getContainerElement();
+    overlay.querySelector('.cdk-overlay-pane')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
+    tick(500); expect(bar.mobileFiltersOpen).toBeFalse(); expect(emit).not.toHaveBeenCalled();
+    bar.openMobileFilters(); tick(); fixture.detectChanges();
+    overlay.querySelector<HTMLElement>('.cdk-overlay-backdrop')!.click(); tick(500);
+    expect(bar.mobileFiltersOpen).toBeFalse(); expect(emit).not.toHaveBeenCalled();
+    bar.mobileFilterPresentation = 'inline'; fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-section-card')).toBeTruthy();
+    bar.toggleFilters(); expect(bar.filtersExpanded).toBeTrue();
+  }));
+
+  it('flat mobile conserva o evento string ao aplicar e não emite ao fechar sem mudanças', fakeAsync(() => {
+    viewport.next({ matches: true, breakpoints: {} });
+    const flat = TestBed.createComponent(ListFilterBarComponent);
+    flat.componentRef.setInput('filters', [{ key: 'status', label: 'Status', value: 'ABERTO', options: [{ value: 'ABERTO', label: 'Aberto' }, { value: 'FECHADO', label: 'Fechado' }] }]);
+    flat.detectChanges();
+    const legacy = spyOn(flat.componentInstance.filterChange, 'emit');
+    const state = spyOn(flat.componentInstance.stateChange, 'emit');
+    flat.componentInstance.openMobileFilters(); tick();
+    flat.componentInstance.onFieldChange('status', 'FECHADO'); expect(legacy).not.toHaveBeenCalled();
+    flat.componentInstance.applyMobileFilters(); tick(500);
+    expect(legacy).toHaveBeenCalledOnceWith({ key: 'status', value: 'FECHADO' });
+    expect(state).toHaveBeenCalledOnceWith({ status: 'FECHADO' });
+    flat.componentInstance.openMobileFilters(); tick(); flat.componentInstance.applyMobileFilters(); tick(500);
+    expect(state).toHaveBeenCalledTimes(1); flat.destroy();
+  }));
+
 });

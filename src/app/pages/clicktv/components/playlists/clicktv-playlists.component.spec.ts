@@ -1,3 +1,4 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
@@ -77,6 +78,7 @@ describe('ClickTvPlaylistsComponent', () => {
     TestBed.configureTestingModule({
       imports: [ClickTvPlaylistsComponent],
       providers: [
+        { provide: BreakpointObserver, useValue: { observe: () => of({ matches: false, breakpoints: {} }), isMatched: () => false } },
         provideNoopAnimations(),
         { provide: ClickTvService, useValue: service },
         { provide: MatDialog, useValue: dialog },

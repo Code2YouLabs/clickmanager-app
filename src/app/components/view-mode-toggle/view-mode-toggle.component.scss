@@ -58,6 +58,6 @@
 @include mobile.mobile-foundation {
   :host(.view-mode-toggle--mobile-compact) {
     .view-mode-toggle, mat-button-toggle { height: 44px; }
-    ::ng-deep .mat-button-toggle-label-content { padding: 0 12px; }
+    ::ng-deep .mat-button-toggle-label-content { padding: 0 8px; gap: 4px; font-size: 14px; }
   }
 }

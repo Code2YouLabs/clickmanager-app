@@ -1,3 +1,25 @@
+@if (useMobileSheet) {
+  <div class="list-mobile-toolbar">
+    @if (mobileShowTitle) { <div class="list-mobile-toolbar__title">{{ toolbarTitle }}</div> }
+    @if (search.enabled) {
+      <app-input-pesquisa class="list-mobile-toolbar__search"
+        [mobileCompact]="mobileCompact" [compact]="presentation === 'section'" [showLabel]="false" [trim]="presentation === 'section'"
+        [placeholder]="presentation === 'section' ? (search.placeholder || 'Pesquisar') : placeholder"
+        [value]="presentation === 'section' ? (search.value || '') : searchValue"
+        [pesquisaControl]="searchControl" [debounceMs]="search.debounceMs ?? (presentation === 'section' ? 300 : 400)"
+        (valorAlterado)="onSearchChange($event)"></app-input-pesquisa>
+    }
+    <div class="list-mobile-toolbar__controls">
+      @if (filters.length || hasCustomFilters) {
+        <button #mobileFilterTrigger mat-stroked-button type="button" class="list-mobile-toolbar__filter-button"
+          aria-haspopup="dialog" [attr.aria-expanded]="mobileFiltersOpen" (click)="openMobileFilters()">
+          <mat-icon>filter_list</mat-icon>{{ filtersLabel }}{{ activeFilterCount ? ' (' + activeFilterCount + ')' : '' }}
+        </button>
+      }
+      <div class="list-mobile-toolbar__actions"><ng-container [ngTemplateOutlet]="toolbarActions"></ng-container></div>
+    </div>
+  </div>
+} @else {
 @if (presentation === "section") {
 @if (search.enabled || filters.length || hasCustomFilters) {
 <app-section-card
@@ -18,7 +40,7 @@
         (valorAlterado)="onSearchChange($event)"></app-input-pesquisa>
 
       <div class="data-table-toolbar__actions">
-        <ng-content select="[list-filter-actions]"></ng-content>
+        <ng-container [ngTemplateOutlet]="toolbarActions"></ng-container>
       </div>
     </div>
     }
@@ -63,25 +85,7 @@
           class="data-table-toolbar__panel"
           hideToggle
           [expanded]="filtersExpanded">
-          <div class="data-table-toolbar__filters" [attr.aria-label]="filtersLabel">
-            <ng-container [ngTemplateOutlet]="customFilters"></ng-container>
-            @for (filter of definitions; track filter.key) {
-              <mat-form-field appearance="outline" class="data-table-toolbar__filter" [style.flex-basis]="filterWidth(filter)">
-                <mat-label>{{ filter.label }}</mat-label>
-                <mat-select
-                  [multiple]="isMultiSelectFilter(filter)"
-                  [value]="selectedFilterValue(filter)"
-                  (selectionChange)="onFilterValueChange(filter.key, $event.value)">
-                  @if (filter.type === 'select') {
-                    <mat-option [value]="null">Todos</mat-option>
-                  }
-                  @for (option of filter.options; track option.value) {
-                    <mat-option [value]="option.value" [disabled]="option.disabled">{{ option.label }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
-            }
-          </div>
+          <ng-container [ngTemplateOutlet]="filterFields"></ng-container>
         </mat-expansion-panel>
       </mat-accordion>
     </div>
@@ -111,4 +115,46 @@
   <button mat-stroked-button type="button" (click)="onClearFilters()" *ngIf="showClear"><mat-icon>filter_alt_off</mat-icon>Limpar</button>
 </div>
 }
+
+
+}
+
+<ng-template #toolbarActions><ng-content select="[list-filter-actions]"></ng-content></ng-template>
+<ng-template #filterFields>
+          <div class="data-table-toolbar__filters" [attr.aria-label]="filtersLabel">
+            <ng-container [ngTemplateOutlet]="customFilters"></ng-container>
+            @for (filter of definitions; track filter.key) {
+              <mat-form-field appearance="outline" class="data-table-toolbar__filter" [style.flex-basis]="filterWidth(filter)">
+                <mat-label>{{ filter.label }}</mat-label>
+                <mat-select
+                  [multiple]="isMultiSelectFilter(filter)"
+                  [value]="selectedFilterValue(filter)"
+                  (selectionChange)="onFieldChange(filter.key, $event.value)">
+                  @if (presentation === 'section' && filter.type === 'select') {
+                    <mat-option [value]="null">Todos</mat-option>
+                  }
+                  @for (option of filter.options; track option.value) {
+                    <mat-option [value]="option.value" [disabled]="option.disabled">{{ option.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            }
+          </div>
+</ng-template>
+<ng-template #mobileFilterSheet>
+  <section class="list-filter-sheet">
+    <header class="list-filter-sheet__header">
+      <app-mobile-sheet-header [title]="filtersLabel"></app-mobile-sheet-header>
+      <button mat-icon-button type="button" aria-label="Fechar filtros" (click)="closeMobileFilters()"><mat-icon>close</mat-icon></button>
+    </header>
+    <div class="list-filter-sheet__body"><ng-container [ngTemplateOutlet]="filterFields"></ng-container></div>
+    <footer class="list-filter-sheet__footer">
+      @if (hasActiveFilters || hasDraftFilters) {
+        <button mat-stroked-button type="button" (click)="clearMobileFilters()">{{ clearFiltersLabel }}</button>
+      }
+      <button mat-flat-button type="button" color="primary" (click)="applyMobileFilters()">Aplicar</button>
+    </footer>
+  </section>
+</ng-template>
+
 <ng-template #customFilters><ng-content select="[list-filter-custom]"></ng-content></ng-template>

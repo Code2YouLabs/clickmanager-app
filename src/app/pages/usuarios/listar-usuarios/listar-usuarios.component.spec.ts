@@ -1,3 +1,4 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -32,7 +33,8 @@ describe('Usuários — listagem compartilhada', () => {
     service.excluir.and.returnValue(of(undefined));
     auth = jasmine.createSpyObj('AuthService', ['temPermissao']); auth.temPermissao.and.returnValue(true);
     dialog = jasmine.createSpyObj('MatDialog', ['open']); dialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
-    TestBed.configureTestingModule({ imports: [ListarUsuariosComponent, NoopAnimationsModule], providers: [provideRouter([]),
+    TestBed.configureTestingModule({ imports: [ListarUsuariosComponent, NoopAnimationsModule], providers: [
+        { provide: BreakpointObserver, useValue: { observe: () => of({ matches: false, breakpoints: {} }), isMatched: () => false } },provideRouter([]),
       { provide: UsuarioService, useValue: service }, { provide: AuthService, useValue: auth },
       { provide: ToastrService, useValue: jasmine.createSpyObj('Toastr', ['success', 'error']) }]
     });

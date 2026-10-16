@@ -1,4 +1,7 @@
-import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, OnInit, OnDestroy, SimpleChanges } from '@angular/core';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { ElementRef, ViewChild, inject, Component, Input, Output, EventEmitter, ChangeDetectionStrategy, OnChanges, OnInit, OnDestroy, SimpleChanges } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -15,7 +18,17 @@ import { Subject, Subscription, debounce, timer, takeUntil, map, distinctUntilCh
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class InputPesquisaComponent implements OnChanges, OnInit, OnDestroy {
-  @Input() mobileCompact = false;
+  @Input() mobileCompact = true;
+  @ViewChild('searchInput') private searchInput?: ElementRef<HTMLInputElement>;
+  readonly isMobile = toSignal(inject(BreakpointObserver).observe(MOBILE_FOUNDATION_QUERY)
+    .pipe(map(state => state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches)), { initialValue: false });
+  focusFromPointer(event: PointerEvent): void {
+    const input = this.searchInput?.nativeElement;
+    if (this.isMobile() && input && event.target !== input && !input.disabled) {
+      // Synchronous in the trusted pointer gesture, so mobile browsers can open the keyboard.
+      input.focus({ preventScroll: true });
+    }
+  }
   @Input() placeholder = 'Digite para pesquisar...';
   @Input() showLabel = true;
   @Input() value = '';

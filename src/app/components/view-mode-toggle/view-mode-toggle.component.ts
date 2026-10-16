@@ -18,7 +18,7 @@ export interface ViewModeToggleOption<T extends string = string> {
   styleUrl: './view-mode-toggle.component.scss',
 })
 export class ViewModeToggleComponent<T extends string = string> {
-  @Input() mobileCompact = false;
+  @Input() mobileCompact = true;
   @Input() value: T | null = null;
   @Input() options: ViewModeToggleOption<T>[] = [];
   @Input() ariaLabel = 'Alternar visualização';
