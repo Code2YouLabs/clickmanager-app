@@ -204,7 +204,10 @@ export class DataTableComponent<T = unknown>
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    const filterKey = JSON.stringify(this.filterState);
+    if (changes['progressiveState'] && changes['progressiveState'].previousValue?.contextKey !== this.progressiveState?.contextKey) {
+      this.expandedRow = null;
+    }
+    const filterKey = JSON.stringify([this.filterState, this.progressiveState?.contextKey]);
     if (filterKey !== this.progressiveFilterKey || !this.useProgressiveLoading ||
       this.progressiveState?.error || (this.progressiveLoadedCount === 0 && !this.progressiveState?.loading) ||
       (this.requestedProgressivePage !== null && (this.pagination?.pageIndex ?? -1) >= this.requestedProgressivePage)) {

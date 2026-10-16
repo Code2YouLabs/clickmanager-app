@@ -75,6 +75,8 @@ export type DataTableSort = Sort;
 
 /** The consumer owns the accumulated collection and commits pagination only after success. */
 export interface DataTableProgressiveState {
+  /** Optional source identity; changing it releases any pending request for the previous collection. */
+  contextKey?: string;
   loadedCount: number;
   loading?: boolean;
   error?: string | null;

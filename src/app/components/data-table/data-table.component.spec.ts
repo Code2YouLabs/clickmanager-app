@@ -200,6 +200,21 @@ describe('DataTableComponent', () => {
     table.loadNextBatch(); expect(emit).toHaveBeenCalledTimes(3);
   });
 
+  it('troca a fonte progressiva sem manter a requisição pendente anterior com os mesmos filtros e contagens', () => {
+    host.loadMode = 'progressive'; host.expandable = true; host.progressive = { contextKey: 'source-a', loadedCount: 1 };
+    host.pagination = { pageIndex: 0, pageSize: 1, totalItems: 3, pageSizeOptions: [1] };
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    table.toggleRow(host.data[0]); expect(table.expandedRow).toBe(host.data[0]);
+    const emit = spyOn(table.pageChange, 'emit'); table.loadNextBatch(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.data-table-progressive__more').disabled).toBeTrue();
+    host.progressive = { contextKey: 'source-b', loadedCount: 1 };
+    host.data = [{ id: 7, name: 'Outra fonte', status: 'Ativo' }]; fixture.detectChanges();
+    expect(table.expandedRow).toBeNull();
+    expect(fixture.nativeElement.querySelector('.data-table-progressive__more').disabled).toBeFalse();
+    table.loadNextBatch(); expect(emit).toHaveBeenCalledTimes(2);
+    expect(emit.calls.mostRecent().args[0]?.pageIndex).toBe(1);
+  });
+
   it('renderiza colunas, dados e template customizado', () => {
     expect(fixture.nativeElement.textContent).toContain('Nome');
     expect(fixture.nativeElement.textContent).toContain('Status');
