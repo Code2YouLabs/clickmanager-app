@@ -1,6 +1,6 @@
 <app-page-card
   class="smartcalc-page"
-  [class.smartcalc-page--has-result]="mobileViewport() && temResultado()"
+  [class.smartcalc-page--has-result]="mobileViewport() && resultadoMobileAtual()"
   [titulo]="mobileViewport() ? 'SmartCalc' : 'SmartCalc – Calculadora Inteligente'"
   [subtitulo]="mobileViewport() ? 'Calcule e crie seu rascunho.' : 'Calcule automaticamente o melhor aproveitamento de produção.'">
   <div page-header-actions class="header-actions">
@@ -11,7 +11,7 @@
       </span>
     }
 
-    @if (carregandoCalculo) {
+    @if (carregandoCalculo && !mobileViewport()) {
       <span class="status-chip">
         <mat-progress-spinner diameter="16" mode="indeterminate"></mat-progress-spinner>
         Calculando
@@ -39,7 +39,7 @@
     </div>
   }
 
-  @if (mobileViewport() && configAtiva && !carregandoProdutos && !erroProdutos) {
+  @if (mobileViewport() && configAtiva && !carregandoProdutos && !erroProdutos && !needsRecalcular() && !carregandoCalculo) {
     <p class="mobile-flow-status" role="status">{{ orientacaoMobile() }}</p>
   }
   @if (mobileViewport() && erroCalculo) {
@@ -166,7 +166,7 @@
     </aside>
   </form>
 
-  @if (mobileViewport() && temResultado()) {
+  @if (mobileViewport() && resultadoMobileAtual()) {
     <app-mobile-total-bar
       label="Total"
       [valueText]="(total() | currency:'BRL':'symbol-narrow':'1.2-2') ?? ''"
@@ -195,6 +195,24 @@
         }
       </div>
     </app-mobile-total-bar>
+  } @else if (mobileViewport()) {
+    <section class="mobile-result-state" aria-labelledby="smartcalc-result-state-title">
+      <h2 id="smartcalc-result-state-title">Resumo do cálculo</h2>
+      <div class="mobile-result-state__message" role="status" [attr.aria-busy]="carregandoCalculo">
+        @if (carregandoCalculo) {
+          <mat-progress-spinner diameter="18" mode="indeterminate" aria-label="Calculando"></mat-progress-spinner>
+          <p>Calculando o resultado...</p>
+        } @else if (erroProdutos || (!carregandoConfig && !configAtiva)) {
+          <p>O resumo será exibido quando o SmartCalc estiver disponível.</p>
+        } @else if (erroCalculo) {
+          <p>Revise os dados para calcular novamente.</p>
+        } @else if (needsRecalcular()) {
+          <p>O resumo será atualizado com os dados informados.</p>
+        } @else {
+          <p>O resultado aparecerá aqui após preencher os dados necessários.</p>
+        }
+      </div>
+    </section>
   }
 
   <ng-template #mobileStepHeader let-step let-title="title">

@@ -621,6 +621,10 @@ export class SmartCalcComponent implements OnInit, OnDestroy {
     return this.temResultado() ? 'Cálculo pronto. Revise os acabamentos ou crie o rascunho.' : 'Revise os dados do cálculo.';
   }
 
+  resultadoMobileAtual(): boolean {
+    return this.temResultado() && !this.needsRecalcular() && !this.carregandoCalculo;
+  }
+
   abrirResultadoMobile(): void {
     this.resultadoMobileAberto.set(true);
   }
