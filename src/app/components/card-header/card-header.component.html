@@ -3,12 +3,24 @@
         <div role="heading" aria-level="2" class="f-s-20 f-w-600 text-primary-dark">
             {{ titulo }}
         </div>
-        <div class="f-s-13 text-muted" *ngIf="subtitulo && !titleOnly">
+        <div class="f-s-13 text-muted" [class.card-header__subtitle--semantic]="titleOnly" *ngIf="subtitulo">
             {{ subtitulo }}
         </div>
     </div>
 
-    <div *ngIf="!titleOnly" class="card-header__actions d-flex align-items-center gap-8 flex-wrap">
+    <ng-container *ngIf="!titleOnly" [ngTemplateOutlet]="headerActions"></ng-container>
+
+</div>
+
+<mat-divider *ngIf="mostrarDivisor" class="m-b-24"></mat-divider>
+
+@if (titleOnly) {
+  <div class="card-header__mobile-actions">
+    <ng-container [ngTemplateOutlet]="headerActions"></ng-container>
+  </div>
+}
+<ng-template #headerActions>
+    <div class="card-header__actions d-flex align-items-center gap-8 flex-wrap">
         <!-- Botão de ajuda -->
         <ng-container *ngIf="helpRota">
             <ng-container *ngIf="helpExterno; else helpInterno">
@@ -55,7 +67,19 @@
                 </button>
             </ng-template>
         </ng-container>
+        @if (primaryAction; as action) {
+          @if (action.permission) {
+            <ng-container *temPermissao="action.permission"><ng-container [ngTemplateOutlet]="declaredPrimaryAction"></ng-container></ng-container>
+          } @else {
+            <ng-container [ngTemplateOutlet]="declaredPrimaryAction"></ng-container>
+          }
+        }
     </div>
-</div>
-
-<mat-divider *ngIf="mostrarDivisor" class="m-b-24"></mat-divider>
+</ng-template>
+<ng-template #declaredPrimaryAction>
+  <button class="card-header__primary-action" mat-flat-button [color]="primaryAction!.color || 'primary'" type="button"
+    [disabled]="actionDisabled || actionPending || primaryAction!.disabled"
+    [appTutorialTarget]="primaryAction!.tutorialTarget || ''" (click)="onPrimaryAction()">
+    <mat-icon>{{ primaryAction!.icon || 'add' }}</mat-icon>{{ primaryAction!.label }}
+  </button>
+</ng-template>

@@ -1,9 +1,11 @@
-<mat-card class="cardWithShadow page-card" [class.page-card--mobile-compact]="mobileCompact" [attr.aria-busy]="saving">
+<mat-card class="cardWithShadow page-card" [class.page-card--mobile-compact]="compactMobileHeader" [attr.aria-busy]="saving">
   <app-card-header
     [titulo]="titulo"
-    [titleOnly]="mobileTitleOnly && isMobile()"
-    [mobileCompact]="mobileCompact"
-    [actionDisabled]="headerActionDisabled"
+    [titleOnly]="titleOnlyMobileHeader && isMobile()"
+    [mobileCompact]="compactMobileHeader"
+    [primaryAction]="showMobilePrimaryAction ? null : primaryAction"
+    (primaryActionClick)="onPrimaryAction()"
+    [actionDisabled]="headerActionDisabled || (!!primaryAction && (saving || actionsDisabled))"
     [subtitulo]="subtitulo"
     [botaoTexto]="botaoTexto"
     [botaoIcone]="botaoIcone"
@@ -51,14 +53,21 @@
   </ng-container>
 </mat-card>
 
-@if (isMobile() && mobilePrimaryAction) {
+@if (showMobilePrimaryAction && floatingPrimaryAction; as action) {
+  @if (action.permission) {
+    <ng-container *temPermissao="action.permission"><ng-container [ngTemplateOutlet]="primaryFab"></ng-container></ng-container>
+  } @else {
+    <ng-container [ngTemplateOutlet]="primaryFab"></ng-container>
+  }
+}
+<ng-template #primaryFab>
   <app-mobile-fab-action
     placement="page"
     [compact]="true"
-    [label]="mobilePrimaryAction.label"
-    [icon]="mobilePrimaryAction.icon || 'add'"
+    [label]="floatingPrimaryAction!.label"
+    [icon]="floatingPrimaryAction!.icon || 'add'"
     [disabled]="mobilePrimaryActionDisabled"
-    [tutorialTarget]="mobilePrimaryAction.tutorialTarget || ''"
+    [tutorialTarget]="floatingPrimaryAction!.tutorialTarget || ''"
     (action)="onMobilePrimaryAction()">
   </app-mobile-fab-action>
-}
+</ng-template>

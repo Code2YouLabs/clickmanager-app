@@ -1,3 +1,4 @@
+import { AuthService } from 'src/app/services/auth.service';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { BehaviorSubject } from 'rxjs';
 import { Component } from '@angular/core';
@@ -7,7 +8,7 @@ import { PageFormState } from './page-form-state';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MaterialModule } from 'src/app/material.module';
-import { PageCardComponent, PageCardAction, PageCardMobileAction } from './page-card.component';
+import { PageCardComponent, PageCardAction, PageCardMobileAction, PageCardPrimaryAction } from './page-card.component';
 
 @Component({
   standalone: true,
@@ -16,6 +17,9 @@ import { PageCardComponent, PageCardAction, PageCardMobileAction } from './page-
     <app-page-card
       titulo="Produtos gráficos"
       subtitulo="Configuração de venda"
+      [mobileHeaderMode]="mode"
+      [primaryAction]="declaredAction"
+      (primaryActionClick)="declaredClicks = declaredClicks + 1"
       [mobileCompact]="compact"
       [mobileTitleOnly]="titleOnly"
       [mobilePrimaryAction]="primaryAction"
@@ -31,8 +35,11 @@ import { PageCardComponent, PageCardAction, PageCardMobileAction } from './page-
   `,
 })
 class PageCardHostComponent {
-  compact = false;
-  titleOnly = false;
+  mode: 'standard' | 'legacy' = 'standard';
+  compact: boolean | undefined;
+  titleOnly: boolean | undefined;
+  declaredAction: PageCardPrimaryAction | null = null;
+  declaredClicks = 0;
   primaryAction: PageCardMobileAction | null = null;
   primaryClicks = 0;
   showFooter = false;
@@ -44,12 +51,14 @@ describe('PageCardComponent', () => {
   let fixture: ComponentFixture<PageCardHostComponent>;
   let host: PageCardHostComponent;
   let viewport: BehaviorSubject<any>;
+  let allowed: boolean;
 
   beforeEach(() => {
+    allowed = true;
     viewport = new BehaviorSubject({ matches: false, breakpoints: {} });
     TestBed.configureTestingModule({
       imports: [PageCardHostComponent, NoopAnimationsModule],
-      providers: [{ provide: BreakpointObserver, useValue: { observe: () => viewport } }],
+      providers: [{ provide: BreakpointObserver, useValue: { observe: () => viewport } }, { provide: AuthService, useValue: { temPermissao: () => allowed } }],
     });
 
     fixture = TestBed.createComponent(PageCardHostComponent);
@@ -70,7 +79,7 @@ describe('PageCardComponent', () => {
   });
 
   it('encaminha a variante mobile ao header sem duplicar ações ou conteúdo', () => {
-    fixture.detectChanges();
+    host.compact = false; fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.page-card--mobile-compact')).toBeNull();
     host.compact = true; fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.page-card--mobile-compact')).toBeTruthy();
@@ -84,8 +93,9 @@ describe('PageCardComponent', () => {
     host.primaryAction = { label: 'Novo produto', tutorialTarget: 'novo-produto' };
     viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
     const header = fixture.nativeElement.querySelector('app-card-header');
-    expect(header.textContent.trim()).toBe('Produtos gráficos');
-    expect(header.querySelector('.card-header__actions')).toBeNull();
+    expect(header.querySelector('[role=heading]').textContent.trim()).toBe('Produtos gráficos');
+    expect(header.querySelector('.card-header .card-header__actions')).toBeNull();
+    expect(header.querySelector('.card-header__mobile-actions').textContent).toContain('Nova ação');
     expect(header.querySelector('mat-divider')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.body-content')).toBeTruthy();
     const fab = fixture.nativeElement.querySelector('.mobile-fab-action--page');
@@ -99,15 +109,63 @@ describe('PageCardComponent', () => {
     expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).toBeNull();
   });
 
-  it('mantém o header legado no mobile sem opt-in e respeita visibilidade e bloqueio da ação', () => {
+  it('mantém o header legado na exceção explícita e respeita visibilidade e bloqueio da ação', () => {
+    host.mode = 'legacy';
     viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Configuração de venda');
     expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).toBeNull();
-    host.primaryAction = { label: 'Novo', disabled: true }; fixture.detectChanges();
+    host.mode = 'standard'; host.primaryAction = { label: 'Novo', disabled: true }; fixture.detectChanges();
     const page = fixture.debugElement.query(By.directive(PageCardComponent)).componentInstance as PageCardComponent;
     expect(fixture.nativeElement.querySelector('.mobile-fab-action').disabled).toBeTrue();
     page.onMobilePrimaryAction(); expect(host.primaryClicks).toBe(0);
     host.primaryAction = null; fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).toBeNull();
+  });
+
+  it('simplifica o título automaticamente sem criar FAB e preserva ações secundárias fora do header', () => {
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    const header = fixture.nativeElement.querySelector('.card-header');
+    expect(header.querySelector('[role=heading]').textContent.trim()).toBe('Produtos gráficos');
+    expect(fixture.nativeElement.querySelector('.card-header__subtitle--semantic').textContent).toContain('Configuração de venda');
+    expect(fixture.nativeElement.querySelector('.card-header__mobile-actions button').textContent).toContain('Nova ação');
+    expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('[page-header-actions]').length).toBe(1);
+    host.mode = 'legacy'; fixture.detectChanges();
+    expect(header.textContent).toContain('Configuração de venda');
+    expect(header.querySelector('[page-header-actions]')).toBeTruthy();
+  });
+
+  it('declara uma única ação com o mesmo evento no header desktop e FAB mobile', () => {
+    host.declaredAction = { label: 'Criar', tutorialTarget: 'criar-item', disabled: false };
+    fixture.detectChanges();
+    let button = fixture.nativeElement.querySelector('.card-header__primary-action');
+    expect(button.textContent).toContain('Criar'); button.click(); expect(host.declaredClicks).toBe(1);
+    expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).toBeNull();
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.card-header__primary-action')).toBeNull();
+    button = fixture.nativeElement.querySelector('.mobile-fab-action');
+    expect(button.getAttribute('data-tutorial-target')).toBe('criar-item');
+    button.click(); expect(host.declaredClicks).toBe(2);
+    expect(fixture.nativeElement.querySelectorAll('[data-tutorial-target="criar-item"]').length).toBe(1);
+    host.declaredAction = { label: 'Criar', disabled: true }; fixture.detectChanges();
+    expect(button.disabled).toBeTrue(); button.click(); expect(host.declaredClicks).toBe(2);
+  });
+
+  for (const mobile of [true, false]) {
+    it(`preserva permissão da ação principal em ${mobile ? 'mobile' : 'desktop'}`, () => {
+      allowed = false; host.declaredAction = { label: 'Restrita', permission: 'CRIAR' };
+      viewport.next({ matches: mobile, breakpoints: {} }); fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.card-header__primary-action')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.mobile-fab-action')).toBeNull();
+      expect(fixture.nativeElement.querySelector('[page-header-actions]')).toBeTruthy();
+    });
+  }
+
+  it('suporta página sem subtítulo e exceção com ações especiais sem FAB', () => {
+    host.mode = 'legacy'; viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    const page = fixture.debugElement.query(By.directive(PageCardComponent)).componentInstance as PageCardComponent;
+    page.subtitulo = undefined; fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.card-header').textContent).toContain('Nova ação');
     expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).toBeNull();
   });
 

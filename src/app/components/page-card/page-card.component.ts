@@ -1,3 +1,6 @@
+import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
+import { PageCardPrimaryAction } from './page-card-primary-action';
+export type { PageCardPrimaryAction } from './page-card-primary-action';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { Subscription } from 'rxjs';
 import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
@@ -36,16 +39,28 @@ type ResolvedPageCardAction = {
 @Component({
   selector: 'app-page-card',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatDividerModule, MatButtonModule, MatIconModule, CardHeaderComponent, TutorialTargetDirective, MobileFabActionComponent],
-  host: { '[class.page-card-host--mobile-fab]': 'isMobile() && !!mobilePrimaryAction' },
+  imports: [CommonModule, MatCardModule, MatDividerModule, MatButtonModule, MatIconModule, CardHeaderComponent, TutorialTargetDirective, MobileFabActionComponent, TemPermissaoDirective],
+  host: { '[class.page-card-host--mobile-fab]': 'showMobilePrimaryAction' },
   templateUrl: './page-card.component.html',
   styleUrls: ['./page-card.component.scss'],
 })
 export class PageCardComponent implements OnDestroy {
-  /** Opt-in compact mobile layout; projected actions remain owned by the consumer. */
-  @Input() mobileCompact = false;
-  /** Hide subtitle and internal header actions only on small screens; preserve divider settings. */
-  @Input() mobileTitleOnly = false;
+  /** Legacy is an explicit exception for pages with an independently designed mobile shell. */
+  @Input() mobileHeaderMode: 'standard' | 'legacy' = 'standard';
+  /** Compatibility overrides; common pages need neither input. */
+  @Input() mobileCompact?: boolean;
+  @Input() mobileTitleOnly?: boolean;
+  @Input() primaryAction: PageCardPrimaryAction | null = null;
+  @Output() primaryActionClick = new EventEmitter<void>();
+  get compactMobileHeader(): boolean { return this.mobileCompact ?? this.mobileHeaderMode === 'standard'; }
+  get titleOnlyMobileHeader(): boolean { return this.mobileTitleOnly ?? this.mobileHeaderMode === 'standard'; }
+  get floatingPrimaryAction(): PageCardPrimaryAction | null { return this.primaryAction || this.mobilePrimaryAction; }
+  get showMobilePrimaryAction(): boolean {
+    return this.isMobile() && this.mobileHeaderMode === 'standard' && !!this.floatingPrimaryAction;
+  }
+  onPrimaryAction(): void {
+    if (this.primaryAction && !this.mobilePrimaryActionDisabled) this.primaryActionClick.emit();
+  }
   /** Visibility/authorization remains with the consumer, just like projected actions. */
   @Input() mobilePrimaryAction: PageCardMobileAction | null = null;
   @Output() mobilePrimaryActionClick = new EventEmitter<void>();
@@ -60,10 +75,12 @@ export class PageCardComponent implements OnDestroy {
   ngOnDestroy(): void { this.layoutChanges?.unsubscribe(); }
 
   get mobilePrimaryActionDisabled(): boolean {
-    return this.saving || this.actionsDisabled || this.headerActionDisabled || !!this.mobilePrimaryAction?.disabled;
+    return this.saving || this.actionsDisabled || this.headerActionDisabled || !!this.floatingPrimaryAction?.disabled;
   }
   onMobilePrimaryAction(): void {
-    if (this.isMobile() && this.mobilePrimaryAction && !this.mobilePrimaryActionDisabled) this.mobilePrimaryActionClick.emit();
+    if (!this.showMobilePrimaryAction || this.mobilePrimaryActionDisabled) return;
+    if (this.primaryAction) this.onPrimaryAction();
+    else this.mobilePrimaryActionClick.emit();
   }
   @Input() saving = false;
   @Input() savingText = 'Salvando...';

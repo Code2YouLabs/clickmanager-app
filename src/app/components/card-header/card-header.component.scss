@@ -45,3 +45,25 @@
     + mat-divider { margin-bottom: 0; }
   }
 }
+
+@include mobile.mobile-foundation {
+  // Keep secondary commands accessible outside the title-only header; never infer a primary action.
+  .card-header__mobile-actions {
+    padding: 0 12px 12px;
+    .card-header__actions { gap: 8px; flex-wrap: wrap; }
+    &:has(.card-header__actions:empty) { display: none; }
+  }
+}
+
+// Keep contextual descriptions available to assistive technology without adding mobile header height.
+.card-header__subtitle--semantic {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

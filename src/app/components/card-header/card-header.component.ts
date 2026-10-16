@@ -1,4 +1,7 @@
-import { Component, Input } from '@angular/core';
+import { PageCardPrimaryAction } from '../page-card/page-card-primary-action';
+import { TutorialTargetDirective } from 'src/app/shared/tutorial/tutorial-target.directive';
+import { NgTemplateOutlet } from '@angular/common';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { NgIf } from '@angular/common';
 import { MatButtonModule } from '@angular/material/button';
@@ -12,6 +15,8 @@ import { MatDivider } from "@angular/material/divider";
   standalone: true,
   imports: [
     RouterLink,
+    NgTemplateOutlet,
+    TutorialTargetDirective,
     NgIf,
     MatButtonModule,
     MatIconModule,
@@ -25,6 +30,11 @@ import { MatDivider } from "@angular/material/divider";
 export class CardHeaderComponent {
   @Input() mobileCompact = false;
   @Input() titleOnly = false;
+  @Input() primaryAction: PageCardPrimaryAction | null = null;
+  @Output() primaryActionClick = new EventEmitter<void>();
+  onPrimaryAction(): void {
+    if (this.primaryAction && !this.actionDisabled && !this.actionPending && !this.primaryAction.disabled) this.primaryActionClick.emit();
+  }
   @Input() actionDisabled = false;
   @Input() actionPending = false;
   @Input() actionPendingText = 'Aguarde...';
