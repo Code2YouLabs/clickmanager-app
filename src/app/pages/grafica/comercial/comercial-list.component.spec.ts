@@ -208,7 +208,7 @@ describe('ComercialListComponent', () => {
       viewport.next({ matches: true, breakpoints: {} }); data.next({ tipo }); fixture.detectChanges();
       expect(fixture.nativeElement.querySelector('table')).toBeTruthy();
       expect(fixture.nativeElement.querySelector('.pedido-mobile-item')).toBeNull();
-      expect(fixture.nativeElement.querySelector('.page-card--mobile-compact')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.page-card--mobile-compact')).toBeTruthy();
     });
   }
 
@@ -227,7 +227,7 @@ describe('ComercialListComponent', () => {
     for (const mode of ['lista', 'kanban'] as const) {
       component.alterarVisualizacao(mode); fixture.detectChanges();
       const header = fixture.nativeElement.querySelector('app-card-header');
-      expect(header.textContent.trim()).toBe('Pedidos');
+      expect(header.querySelector('[role=heading]').textContent.trim()).toBe('Pedidos');
       expect(header.querySelector('button')).toBeNull();
       expect(fixture.nativeElement.querySelector('.search-scope')).toBeNull();
       const fabs = fixture.nativeElement.querySelectorAll('.mobile-fab-action');
@@ -247,5 +247,22 @@ describe('ComercialListComponent', () => {
     expect(fixture.nativeElement.querySelector('app-card-header button').textContent).toContain('Novo pedido');
     expect(fixture.nativeElement.querySelector('.search-scope')).toBeTruthy();
   });
+
+  for (const [tipo, label] of [['pedidos', 'Novo pedido'], ['orcamentos', 'Novo orçamento'], ['rascunhos', 'Novo rascunho']] as const) {
+    it(`${tipo} usa a mesma declaração de ação no desktop e no mobile`, () => {
+      data.next({ tipo }); fixture.detectChanges();
+      const desktopButton = fixture.nativeElement.querySelector('.card-header__primary-action');
+      expect(desktopButton.textContent).toContain(label);
+      expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).toBeNull();
+      desktopButton.click(); expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial', tipo, 'novo']);
+      viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.card-header [role=heading]').textContent.trim()).toBe(component.titulo);
+      expect(fixture.nativeElement.querySelector('.card-header__primary-action')).toBeNull();
+      const fabs = fixture.nativeElement.querySelectorAll('.mobile-fab-action');
+      expect(fabs.length).toBe(1); expect(fabs[0].getAttribute('aria-label')).toBe(label);
+      router.navigate.calls.reset(); fabs[0].click();
+      expect(router.navigate).toHaveBeenCalledOnceWith(['/page/grafica/comercial', tipo, 'novo']);
+    });
+  }
 
 });
