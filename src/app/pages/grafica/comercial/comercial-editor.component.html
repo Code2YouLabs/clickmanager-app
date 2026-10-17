@@ -1,7 +1,7 @@
 <app-page-card
       [titulo]="titulo"
       [subtitulo]="subtitulo"
-      botaoTexto="Voltar"
+      [botaoTexto]="mobilePedidoNovo ? '' : 'Voltar'"
       botaoIcone="arrow_back"
       botaoCor="primary"
       [botaoRota]="['/page/grafica/comercial', tipo]"

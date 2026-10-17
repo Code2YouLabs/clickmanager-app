@@ -59,6 +59,9 @@ describe('Editor Novo Pedido mobile', () => {
     expect(body('revisao').hidden).toBeFalse();
     expect(fixture.nativeElement.querySelector('app-card-header [role=heading]').textContent.trim()).toBe('Novo Pedido');
     expect(fixture.nativeElement.querySelector('app-card-header [page-mobile-header-actions]').textContent).toContain('Voltar');
+    const backButtons = Array.from(fixture.nativeElement.querySelectorAll('app-card-header button') as NodeListOf<HTMLButtonElement>)
+      .filter(button => button.textContent?.includes('Voltar'));
+    expect(backButtons.length).toBe(1);
     expect(fixture.nativeElement.querySelectorAll('button[form="comercial-editor-form"]').length).toBe(1);
     expect(fixture.nativeElement.querySelector('.page-card__footer')).toBeNull();
     expect(fixture.nativeElement.querySelector('.mobile-total-bar--compact')).toBeTruthy();
