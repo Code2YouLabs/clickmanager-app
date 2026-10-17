@@ -41,6 +41,7 @@ describe('SmartCalc — composição mobile com formulário e cálculo reais da 
   const text = (selector: string) => query(selector)?.textContent?.replace(/\s+/g, ' ').trim();
   const expectAwaitingPanel = () => {
     expect(query('app-mobile-total-bar')).not.toBeNull();
+    expect(query('.mobile-total-bar--compact')).not.toBeNull();
     expect(query('.mobile-total-bar--awaiting-result')).not.toBeNull();
     expect(query('.mobile-total-bar__summary')).toBeNull();
     expect(cta()).toBeNull();

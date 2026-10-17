@@ -1,4 +1,5 @@
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild, signal } from '@angular/core';
+import { TutorialTargetDirective } from 'src/app/shared/tutorial/tutorial-target.directive';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -7,11 +8,47 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
 @Component({
   selector: 'app-mobile-total-bar',
   standalone: true,
-  imports: [MatButtonModule, MatIconModule, MatProgressSpinnerModule, StatusBadgeComponent],
+  imports: [MatButtonModule, MatIconModule, MatProgressSpinnerModule, StatusBadgeComponent, TutorialTargetDirective],
   templateUrl: './mobile-total-bar.component.html',
   styleUrls: ['./mobile-total-bar.component.scss'],
 })
-export class MobileTotalBarComponent implements OnChanges {
+export class MobileTotalBarComponent implements OnChanges, AfterViewInit, OnDestroy {
+  @Input() appearance: 'default' | 'compact' = 'default';
+  @Input() actionType: 'button' | 'submit' = 'button';
+  @Input() actionForm: string | null = null;
+  @Input() actionTutorialTarget = '';
+  @Input() reserveSpace = false;
+  @Input() avoidKeyboard = false;
+  @ViewChild('bar', { static: true }) private bar!: ElementRef<HTMLElement>;
+  readonly reservedHeight = signal(112);
+  readonly keyboardInset = signal(0);
+  readonly visibleHeight = signal<string | null>(null);
+  private resizeObserver?: ResizeObserver;
+  private viewportCleanup?: () => void;
+  private viewReady = false;
+  get resolvedBottomOffset(): string {
+    return this.avoidKeyboard
+      ? `max(${this.bottomOffset}, env(safe-area-inset-bottom, 0px), ${this.keyboardInset()}px)` : this.bottomOffset;
+  }
+  ngAfterViewInit(): void { this.viewReady = true; this.syncLayout(); }
+  private syncLayout(): void {
+    if (this.viewReady && this.reserveSpace && !this.resizeObserver && typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(() => this.reservedHeight.set(Math.ceil(this.bar.nativeElement.getBoundingClientRect().height) + 16));
+      this.resizeObserver.observe(this.bar.nativeElement);
+    } else if (!this.reserveSpace) { this.resizeObserver?.disconnect(); this.resizeObserver = undefined; }
+    if (!this.avoidKeyboard) {
+      this.viewportCleanup?.(); this.viewportCleanup = undefined; this.keyboardInset.set(0); this.visibleHeight.set(null);
+    } else if (!this.viewportCleanup && typeof window !== 'undefined' && window.visualViewport) {
+      const viewport = window.visualViewport;
+      const measure = () => {
+        this.keyboardInset.set(Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop));
+        this.visibleHeight.set(`${viewport.height}px`);
+      };
+      viewport.addEventListener('resize', measure); viewport.addEventListener('scroll', measure); measure();
+      this.viewportCleanup = () => { viewport.removeEventListener('resize', measure); viewport.removeEventListener('scroll', measure); };
+    }
+  }
+  ngOnDestroy(): void { this.resizeObserver?.disconnect(); this.viewportCleanup?.(); }
   @Input() label = 'Total estimado';
   @Input() valueText = '';
   @Input() status: string | null | undefined = null;
@@ -43,6 +80,7 @@ export class MobileTotalBarComponent implements OnChanges {
   private suppressHandleClick = false;
 
   ngOnChanges(changes: SimpleChanges): void {
+    this.syncLayout();
     if (changes['awaitingResult']?.currentValue) {
       this.handlePointer = null;
       this.touchStartY = null;

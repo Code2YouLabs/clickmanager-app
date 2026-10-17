@@ -2,12 +2,15 @@ import { Component } from '@angular/core';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MobileTotalBarComponent } from './mobile-total-bar.component';
+import { provideRouter } from '@angular/router';
 
 @Component({
   standalone: true,
   imports: [MobileTotalBarComponent],
   template: `
+    <form id="test-form" (submit)="submits = submits + 1; $event.preventDefault()"></form>
     <app-mobile-total-bar [inlineDetails]="inlineDetails" [awaitingResult]="awaitingResult" [loading]="loading" [expanded]="expanded" detailsPanelId="test-details"
+      [appearance]="appearance" [actionType]="actionType" [actionForm]="actionForm" [actionTutorialTarget]="tutorialTarget" [reserveSpace]="reserveSpace" [avoidKeyboard]="avoidKeyboard"
       [expandable]="expandable" valueText="R$ 123,45" actionText="Criar rascunho" [actionDisabled]="disabled"
       secondaryActionText="Revisar" [detailText]="expanded ? 'Ocultar detalhes' : 'Detalhes'"
       (collapse)="expanded = false" (expand)="expanded = !expanded; expansions = expansions + 1"
@@ -17,6 +20,13 @@ import { MobileTotalBarComponent } from './mobile-total-bar.component';
     </app-mobile-total-bar>`,
 })
 class HostComponent {
+  appearance: 'default' | 'compact' = 'default';
+  actionType: 'button' | 'submit' = 'button';
+  actionForm: string | null = null;
+  tutorialTarget = '';
+  reserveSpace = false;
+  avoidKeyboard = false;
+  submits = 0;
   inlineDetails = true;
   awaitingResult = false;
   loading = false;
@@ -33,8 +43,31 @@ describe('MobileTotalBarComponent — detalhes internos opcionais', () => {
   let fixture: ComponentFixture<HostComponent>;
   const query = <T extends HTMLElement = HTMLElement>(selector: string): T => fixture.nativeElement.querySelector(selector);
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [HostComponent, NoopAnimationsModule] });
+    TestBed.configureTestingModule({ imports: [HostComponent, NoopAnimationsModule], providers: [provideRouter([])] });
     fixture = TestBed.createComponent(HostComponent); fixture.detectChanges();
+  });
+
+  it('adota a aparência compacta compartilhada e preserva submit nativo e alvo do tutorial', () => {
+    const host = fixture.componentInstance;
+    expect(query('.mobile-total-bar--compact')).toBeNull();
+    host.appearance = 'compact'; host.actionType = 'submit'; host.actionForm = 'test-form'; host.tutorialTarget = 'salvar-formulario';
+    fixture.detectChanges(); expect(query('.mobile-total-bar--compact')).toBeTruthy();
+    const button = query<HTMLButtonElement>('.mobile-total-bar__cta');
+    expect(button.type).toBe('submit'); expect(button.form?.id).toBe('test-form');
+    expect(button.getAttribute('data-tutorial-target')).toBe('salvar-formulario');
+    button.click(); expect(host.submits).toBe(1); expect(host.actions).toBe(1);
+    host.disabled = true; fixture.detectChanges(); button.click(); expect(host.submits).toBe(1);
+  });
+
+  it('oferece reserva de rolagem e acompanhamento do teclado como opções genéricas', () => {
+    const visible = Object.assign(new EventTarget(), { height: window.innerHeight, offsetTop: 0 });
+    spyOnProperty(window, 'visualViewport', 'get').and.returnValue(visible as VisualViewport);
+    const host = fixture.componentInstance; host.reserveSpace = true; host.avoidKeyboard = true; fixture.detectChanges();
+    expect(query('.mobile-total-bar__clearance').getAttribute('aria-hidden')).toBe('true');
+    visible.height = window.innerHeight - 250; visible.dispatchEvent(new Event('resize')); fixture.detectChanges();
+    expect(query('.mobile-total-bar').style.bottom).toContain('250px');
+    host.reserveSpace = false; host.avoidKeyboard = false; fixture.detectChanges();
+    expect(query('.mobile-total-bar__clearance')).toBeNull(); expect(query('.mobile-total-bar').style.bottom).toBe('0px');
   });
 
   const pointer = (type: string, x: number, y: number, options: PointerEventInit = {}) => {

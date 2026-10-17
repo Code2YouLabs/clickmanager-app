@@ -169,6 +169,7 @@
 
   @if (mobileViewport()) {
     <app-mobile-total-bar
+      appearance="compact"
       label="Total"
       [valueText]="(total() | currency:'BRL':'symbol-narrow':'1.2-2') ?? ''"
       [detailText]="resultadoMobileAberto() ? 'Ocultar detalhes' : 'Detalhes'"

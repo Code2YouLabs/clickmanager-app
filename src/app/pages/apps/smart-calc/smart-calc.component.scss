@@ -400,6 +400,8 @@
 @media (max-width: 900px) {
   :host {
     --smartcalc-mobile-total-bar-height: 96px;
+    --mobile-total-summary-height: var(--smartcalc-mobile-summary-height, 56px);
+    --mobile-total-handle-height: var(--smartcalc-mobile-handle-height, 44px);
   }
 
   .smartcalc-page {
@@ -524,57 +526,6 @@
   .empty-inline mat-icon { flex-shrink: 0; }
   .acabamento-option { min-height: 48px; padding: 4px 8px; gap: 8px; }
   .acabamento-option span { white-space: normal; overflow-wrap: anywhere; }
-
-  // Scope all footer refinements to SmartCalc; other consumers keep their current skin.
-  :host ::ng-deep app-mobile-total-bar .mobile-total-bar {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
-    --smartcalc-panel-bottom-padding: 8px;
-    --mobile-total-details-max-height: max(0px, calc(100dvh - var(--mobile-bottom-nav-height, 60px) - var(--smartcalc-mobile-summary-height, 56px) - var(--smartcalc-mobile-handle-height, 44px) - 72px - var(--smartcalc-panel-bottom-padding)));
-    padding: 0 max(12px, env(safe-area-inset-right)) var(--smartcalc-panel-bottom-padding) max(12px, env(safe-area-inset-left));
-    border-radius: 12px 12px 0 0;
-    background: var(--mat-sys-surface, #fff);
-    box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.06);
-  }
-  :host ::ng-deep app-mobile-total-bar .mobile-total-bar:not(.mobile-total-bar--awaiting-result) { --smartcalc-panel-bottom-padding: 16px; }
-  :host ::ng-deep app-mobile-total-bar .mobile-total-bar::before,
-  :host ::ng-deep app-mobile-total-bar .mobile-total-bar__handle { display: none; }
-  :host ::ng-deep app-mobile-total-bar .mobile-total-bar__summary {
-    padding: 0;
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-areas: 'meta meta' 'label value';
-    align-items: center;
-    gap: 0 8px;
-  }
-  :host ::ng-deep app-mobile-total-bar .mobile-total-bar.mobile-total-bar--inline-details .mobile-total-bar__controls {
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 12px;
-  }
-  :host ::ng-deep app-mobile-total-bar .mobile-total-bar__meta { grid-area: meta; }
-  :host ::ng-deep app-mobile-total-bar .mobile-total-bar__waiting { padding: 4px 0 8px; gap: 8px; }
-  :host ::ng-deep app-mobile-total-bar .mobile-total-bar.mobile-total-bar--inline-details .mobile-total-bar__expand.mobile-total-bar__expand--button {
-    min-height: 32px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    line-height: 1.3;
-  }
-  :host ::ng-deep app-mobile-total-bar .mobile-total-bar.mobile-total-bar--inline-details .mobile-total-bar__summary .label { grid-area: label; font-size: 0.75rem; line-height: 1; text-transform: uppercase; letter-spacing: normal; }
-  :host ::ng-deep app-mobile-total-bar .mobile-total-bar.mobile-total-bar--inline-details .mobile-total-bar__summary .value { grid-area: value; font-size: 1.125rem; line-height: 1.25; overflow-wrap: anywhere; }
-  :host ::ng-deep app-mobile-total-bar .mobile-total-bar__expand { min-height: 24px; font-size: 0.75rem; }
-  :host ::ng-deep app-mobile-total-bar .mobile-total-bar__actions { min-width: 0; width: auto; justify-self: end; }
-  :host ::ng-deep app-mobile-total-bar .mobile-total-bar.mobile-total-bar--inline-details .mobile-total-bar__cta {
-    min-height: 44px;
-    width: auto;
-    flex: 0 0 auto;
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 0.875rem;
-    font-weight: 600;
-    line-height: 1.2;
-    box-shadow: none;
-  }
 
   .mobile-calculation-details { padding: 0 0 16px; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; }
   .mobile-calculation-details__title { flex-shrink: 0; text-align: center; margin: 0; padding-bottom: 16px; font-size: 1rem; font-weight: 600; line-height: 24px; }

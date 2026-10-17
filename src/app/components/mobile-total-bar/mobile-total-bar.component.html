@@ -1,10 +1,13 @@
-<div class="mobile-total-bar"
+@if (reserveSpace) { <div class="mobile-total-bar__clearance" aria-hidden="true" [style.height.px]="reservedHeight()"></div> }
+<div #bar class="mobile-total-bar"
+  [class.mobile-total-bar--compact]="appearance === 'compact'"
   [class.mobile-total-bar--expanded]="expanded && !awaitingResult"
   [class.mobile-total-bar--awaiting-result]="awaitingResult"
   [class.mobile-total-bar--inline-details]="inlineDetails"
   [class.mobile-total-bar--attached]="attachedToBottomNav"
   [class.mobile-total-bar--static]="!expandable"
-  [style.bottom]="bottomOffset"
+  [style.bottom]="resolvedBottomOffset"
+  [style.--mobile-total-visible-height]="visibleHeight()"
   [attr.role]="expandable && !inlineDetails ? 'button' : null"
   [attr.tabindex]="expandable && !inlineDetails ? 0 : null"
   [attr.aria-label]="expandable && !inlineDetails ? expandAriaLabel : null"
@@ -97,7 +100,9 @@
 
     <button mat-flat-button
       color="primary"
-      type="button"
+      [type]="actionType"
+      [attr.form]="actionForm"
+      [appTutorialTarget]="actionTutorialTarget"
       class="mobile-total-bar__cta"
       [attr.aria-label]="actionAriaLabel"
       [disabled]="actionDisabled"
