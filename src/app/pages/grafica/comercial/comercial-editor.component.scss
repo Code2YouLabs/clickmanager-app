@@ -117,6 +117,10 @@
 .editor-state { padding: 16px 0; }
 
 @include mobile.mobile-foundation {
+  // The desktop divider utility adds 24px on top of the card's content padding.
+  :host ::ng-deep .editor-page--mobile-progressive app-card-header > mat-divider {
+    margin-bottom: 0 !important;
+  }
   .mobile-order-details-title { margin: 0; padding-bottom: 16px; font-size: 16px; line-height: 24px; font-weight: 600; text-align: center; }
   .mobile-order-details { display: grid; gap: 8px; padding-bottom: 16px; }
   .mobile-order-details > div { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; line-height: 20px; }
@@ -129,6 +133,7 @@
     .main-column > app-itens-pedido-section,
     .main-column > app-section-card,
     .summary-sticky > app-section-card { display: block; border-bottom: 1px solid var(--mat-sys-outline-variant); padding: 8px 0; }
+    .main-column > app-cliente-selector-card:first-child { padding-top: 0; }
     .summary-sticky > .submit-card { border: 0; }
     .financial-adjustments { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 8px 0; }
     .summary-row { color: var(--mat-sys-on-surface); margin-bottom: 8px; gap: 8px; }
