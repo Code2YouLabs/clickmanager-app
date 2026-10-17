@@ -32,6 +32,10 @@ A branch parte da base mobile atual, incluindo os commits locais aprovados.
   no mobile. Desktop mantém as colunas, com paginação conforme a altura útil.
 - Busca rápida continua existente; seus resultados abrem os respectivos wizards
   no painel mobile. A apresentação da busca rápida não foi migrada nesta fase.
+- Preço no mobile usa cards compactos, sem a altura mínima desktop. No preço
+  fixo, quantidade e Calcular ficam lado a lado; item, regra e total permanecem
+  no corpo, com o rodapé acessível. Não há corte de conteúdo por overflow:
+  teclado aberto ou conteúdo excepcional ainda permitem rolagem de segurança.
 
 ## Fluxo e tutorial
 

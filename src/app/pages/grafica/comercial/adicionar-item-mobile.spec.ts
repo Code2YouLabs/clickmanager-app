@@ -106,6 +106,49 @@ describe('Adicionar item no painel mobile compartilhado', () => {
     expect(tutorial.registrarItemAdicionado).toHaveBeenCalledTimes(1);
   }));
 
+  for (const [width, height] of [[360, 740], [390, 844], [320, 700]]) {
+    it(`acomoda item, quantidade e resumo do preço fixo sem rolagem em ${width}x${height}`, fakeAsync(() => {
+      service.precificar.and.returnValue(of({ status: 'PRECO_CALCULADO', quantidadeSolicitada: 1, valorUnitario: 10, valorTotal: 10, regraAplicadaNome: 'Preço principal', detalhes: [], selecoesResolvidas: [] } as any));
+      const wizard = open();
+      spyOnProperty(wizard, 'itemSelecionadoResumo', 'get').and.returnValue('Couchê Adesivo / A4 / Colorido Frente (4x0)');
+      dialog.openDialogs[0].updateSize(`${width}px`, `${height}px`);
+      query('.mobile-side-panel').style.maxHeight = `${height}px`;
+      query('.funnel-option').click(); render(); tick(400); render();
+      if (wizard.isFirstStep) next();
+      expect(wizard.stepper?.selectedIndex).toBe(1);
+      const body = query('.wizard-body');
+      body.scrollTop = 0;
+      const summary = query('.price-summary-card').getBoundingClientRect();
+      const field = query('.price-config-card--fixed mat-form-field').getBoundingClientRect();
+      const calculate = query('.price-config-card--fixed button');
+      const button = calculate.getBoundingClientRect();
+      expect(body.scrollHeight).withContext('o conteúdo completo deve caber sem ocultação').toBeLessThanOrEqual(body.clientHeight + 1);
+      expect(summary.bottom).toBeLessThanOrEqual(body.getBoundingClientRect().bottom);
+      expect(button.top).toBeLessThan(field.bottom);
+      expect(button.left).toBeGreaterThanOrEqual(field.right);
+      expect(button.height).toBeGreaterThanOrEqual(44);
+      expect(query('.price-product-card').textContent).toContain(product.catalogoProdutoNome);
+      expect(query('.summary-rule').textContent).toContain('Preço principal');
+      expect(query('.summary-price-total').textContent).toContain('10,00');
+      service.precificar.calls.reset(); calculate.click(); render(); tick(300); render();
+      expect(service.precificar).toHaveBeenCalledTimes(1);
+      expect(query('.wizard-footer .primary-action').hasAttribute('disabled')).toBeFalse();
+      dialog.closeAll(); tick(400);
+    }));
+  }
+
+  it('preserva a apresentação desktop do preço fixo', fakeAsync(() => {
+    viewport.next({ matches: false, breakpoints: {} }); render();
+    const wizard = open();
+    query('.funnel-option').click(); render(); tick(400); render();
+    if (wizard.isFirstStep) next();
+    expect(wizard.stepper?.selectedIndex).toBe(1);
+    expect(getComputedStyle(query('.price-config-card')).display).toBe('flex');
+    expect(getComputedStyle(query('.price-config-card')).minHeight).toBe('330px');
+    expect(getComputedStyle(query('.price-product-card .rev-title')).display).not.toBe('none');
+    dialog.closeAll(); tick(400);
+  }));
+
   it('mostra um quadro por vez, desliza pelas variações e permite revisar escolhas', fakeAsync(() => {
     const variants: any[] = [];
     for (const material of [{ id: 1, nome: 'Couchê' }, { id: 2, nome: 'Adesivo' }]) {

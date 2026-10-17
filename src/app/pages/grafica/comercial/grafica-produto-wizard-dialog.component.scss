@@ -246,6 +246,7 @@
     .title-stack h2 { margin: 0; padding: 0; font-size: 18px; line-height: 24px; }
     .title-stack h2::before { display: none; }
     .wizard-mobile-step-title { margin: 0 0 8px; font-size: 14px; line-height: 20px; font-weight: 600; overflow-wrap: anywhere; }
+    .wizard-mobile-step-title--price { display: none; }
     .wizard-stepper { height: auto; display: block; min-width: 0; }
     .wizard-stepper ::ng-deep .mat-horizontal-stepper-wrapper { height: auto; display: block; }
     .wizard-stepper ::ng-deep .mat-horizontal-content-container { display: block; height: auto; }
@@ -259,6 +260,27 @@
     .wizard-stepper ::ng-deep .mat-step-text-label { white-space: normal; overflow: visible; }
     .step-inner, .price-step, .services-step, .review-step { padding: 0; min-width: 0; }
     .price-shell, .services-shell, .review-shell { width: 100%; min-width: 0; }
+    .price-shell, .price-config-grid { gap: 10px; }
+    .price-config-grid { grid-template-columns: minmax(0, 1fr); }
+    .price-product-card { padding: 12px; gap: 6px; }
+    .price-product-card .rev-title { display: none; }
+    .price-product-card h3 { margin: 0 0 4px; font-size: 16px; line-height: 20px; }
+    .price-variation { font-size: 12px; line-height: 16px; }
+    .price-type { padding: 3px 8px; font-size: 10px; line-height: 16px; }
+    .price-config-card, .price-summary-card { padding: 12px; gap: 8px; }
+    .price-summary-card { gap: 6px; }
+    .summary-price-kind { display: none; }
+    .price-config-card { min-height: 0; }
+    .price-config-card h3, .price-summary-card h3 { margin: 0; font-size: 14px; line-height: 20px; }
+    .price-config-card--fixed { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+    .price-config-card--fixed h3, .price-fixed { grid-column: 1 / -1; }
+    .price-fixed { font-size: 13px; line-height: 18px; }
+    .price-config-card--fixed mat-form-field { width: 100%; min-width: 0; --mat-form-field-container-height: 44px; --mat-form-field-container-vertical-padding: 10px; }
+    .price-config-card--fixed button { min-height: 44px; }
+    .summary-price-row { font-size: 12px; line-height: 18px; }
+    .summary-price-total { margin: 0; padding: 8px 12px; font-size: 16px; line-height: 20px; }
+    .summary-rule { font-size: 11px; line-height: 16px; }
+    .summary-rule mat-icon { width: 16px; height: 16px; font-size: 16px; }
     .funnel-grid { width: 100%; height: auto; grid-template-columns: minmax(0, 1fr); gap: 16px; }
     .funnel-column { height: auto; min-height: 0; display: flex; flex-direction: column; overflow: visible; }
     .funnel-list { overflow: visible; }

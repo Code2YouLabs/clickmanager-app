@@ -15,7 +15,7 @@
       <mat-divider></mat-divider>
 
       <mat-dialog-content class="wizard-body mobile-side-panel__body" [class.wizard-body--funnel]="data?.mobilePanel && isFirstStep">
-        <p *ngIf="data?.mobilePanel" class="wizard-mobile-step-title" aria-live="polite">{{ currentStepLabel }}</p>
+        <p *ngIf="data?.mobilePanel" class="wizard-mobile-step-title" [class.wizard-mobile-step-title--price]="stepper.selectedIndex === 1" aria-live="polite">{{ currentStepLabel }}</p>
         <mat-horizontal-stepper labelPosition="bottom" [linear]="true" #stepper class="wizard-stepper" (selectionChange)="onStepSelectionChange($event)">
           <mat-step [stepControl]="produtoForm" [label]="stepLabels[0]">
             <form [formGroup]="produtoForm" class="step-inner step-full produto-step">
@@ -217,7 +217,7 @@
                 </section>
 
                 <div class="price-config-grid">
-                  <section class="price-config-card">
+                  <section class="price-config-card" [class.price-config-card--fixed]="tipoPrecoAtual === 'FIXO'">
                     <ng-container *ngIf="tipoPrecoAtual === 'POR_LOTE'">
                       <h3>Escolha a quantidade</h3>
                       <div class="lot-grid">
@@ -242,7 +242,7 @@
                       <div class="price-fixed">
                         Valor definido: <strong>{{ politicaPrecoAtual?.valorFixo | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
                       </div>
-                      <mat-form-field appearance="outline" *ngIf="mostraQuantidadePreco">
+                      <mat-form-field appearance="outline" *ngIf="mostraQuantidadePreco" [subscriptSizing]="data?.mobilePanel ? 'dynamic' : 'fixed'">
                         <mat-label>Quantidade</mat-label>
                         <input matInput type="number" min="1" formControlName="quantidade" />
                       </mat-form-field>
@@ -405,7 +405,7 @@
 
                   <aside class="price-summary-card">
                     <h3>Resumo da precificação</h3>
-                    <div class="summary-price-row">
+                    <div class="summary-price-row summary-price-kind">
                       <span>Tipo</span>
                       <strong>{{ tipoPrecoLabel }}</strong>
                     </div>
