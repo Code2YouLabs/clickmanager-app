@@ -339,7 +339,7 @@ describe('ListFilterBarComponent — transição lateral', () => {
         bar.closeMobileFilters();
       }
       // The exit must already be selected synchronously, before Material's next frame.
-      expect(overlay.querySelector('.list-filter-mobile-panel--closing')).toBeTruthy();
+      expect(overlay.querySelector('.mobile-side-panel--closing')).toBeTruthy();
       expect(overlay.querySelector('mat-dialog-container')).toBe(container);
       tick(20); fixture.detectChanges();
       expect(container.classList.contains('mdc-dialog--closing')).toBeTrue();

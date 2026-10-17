@@ -1,3 +1,5 @@
+import { ClienteResponse } from 'src/app/models/cliente/cliente-response.model';
+import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild, Optional, effect, signal } from '@angular/core';
 import { BreakpointObserver } from '@angular/cdk/layout';
@@ -1375,11 +1377,12 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
       }
     }
 
-    const dialogRef = this.dialog.open(ClienteCreateDialogComponent, {
-      width: '760px',
-      maxWidth: '96vw',
-      data,
-    });
+    const dialogRef = this.isMobile
+      ? openMobileSidePanel<ClienteCreateDialogComponent, ClienteCreateDialogData, ClienteResponse | null>(
+          this.dialog, ClienteCreateDialogComponent, { data, ariaLabel: 'Novo cliente' })
+      : this.dialog.open(ClienteCreateDialogComponent, {
+          width: '760px', maxWidth: '96vw', data,
+        });
 
     dialogRef.afterClosed().pipe(take(1)).subscribe((cliente) => {
       if (!cliente) {

@@ -128,3 +128,14 @@
     margin-bottom: 0;
   }
 }
+
+// Only the full-screen presentation opts into the shared panel layout.
+:host-context(.mobile-side-panel) {
+  display: block;
+  height: 100%;
+  min-height: 0;
+
+  .dialog-head::before { display: none; }
+  .dialog-head { align-items: center; }
+  .dialog-head__copy strong { color: var(--mat-sys-on-surface); }
+}

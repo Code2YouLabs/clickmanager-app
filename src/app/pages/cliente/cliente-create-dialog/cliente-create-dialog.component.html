@@ -1,5 +1,5 @@
-<div class="cliente-dialog-shell" [appTutorialTarget]="data?.tutorialTarget || ''">
-  <div mat-dialog-title class="dialog-head">
+<div class="cliente-dialog-shell mobile-side-panel__layout" [appTutorialTarget]="data?.tutorialTarget || ''">
+  <div mat-dialog-title class="dialog-head mobile-side-panel__header">
     <span class="dialog-head__copy">
       <strong>Novo cliente</strong>
       <span>Cadastre os dados essenciais para vincular ao pedido.</span>
@@ -11,7 +11,7 @@
 
   <mat-divider></mat-divider>
 
-  <mat-dialog-content class="dialog-content">
+  <mat-dialog-content class="dialog-content mobile-side-panel__body">
     <form id="novo-cliente-dialog-form" [formGroup]="form" class="cliente-dialog-form" (ngSubmit)="salvar()">
       <section class="cliente-dialog-section" aria-labelledby="novo-cliente-dados-basicos">
         <header class="cliente-dialog-section__header">
@@ -111,7 +111,7 @@
     </form>
   </mat-dialog-content>
 
-  <mat-dialog-actions align="end" class="dialog-actions">
+  <mat-dialog-actions align="end" class="dialog-actions mobile-side-panel__footer">
     <button mat-stroked-button color="primary" type="button" (click)="cancelar()" [disabled]="salvando">
       Cancelar
     </button>

@@ -1,3 +1,4 @@
+import { ClienteCreateDialogComponent } from '../../cliente/cliente-create-dialog/cliente-create-dialog.component';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { registerLocaleData } from '@angular/common';
 import ptBr from '@angular/common/locales/pt';
@@ -8,7 +9,7 @@ import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ActivatedRoute, provideRouter, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
-import { BehaviorSubject, of } from 'rxjs';
+import { BehaviorSubject, of, EMPTY } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { ClienteSelectorCardComponent } from 'src/app/components/cliente-selector-card/cliente-selector-card.component';
 import { ItensPedidoSectionComponent } from 'src/app/components/itens-pedido-section/itens-pedido-section.component';
@@ -42,8 +43,8 @@ describe('Editor Novo Pedido mobile', () => {
       { provide: ActivatedRoute, useValue: { data: of({ tipo: 'pedidos' }), paramMap: of(new Map()) } },
       { provide: BreakpointObserver, useValue: { observe: () => viewport } },
       { provide: GraficaProdutoService, useValue: { listarFormasPagamento: () => of(['PIX', 'DINHEIRO']) } },
-      { provide: ClienteService, useValue: { buscarPorId: jasmine.createSpy().and.returnValue(of(client)), buscarPorNome: () => of({ content: [client] }) } },
-      { provide: ToastrService, useValue: { error: jasmine.createSpy() } },
+      { provide: ClienteService, useValue: { buscarPorId: jasmine.createSpy().and.returnValue(of(client)), buscarPorNome: () => of({ content: [client] }), salvar: jasmine.createSpy().and.returnValue(of(client)) } },
+      { provide: ToastrService, useValue: { error: jasmine.createSpy(), success: jasmine.createSpy() } },
       { provide: AuthService, useValue: { getUsuario: () => ({ nome: 'Maria Atendimento', proprietario: true }), temPermissao: () => true } },
       { provide: PrimeiroPedidoTutorialService, useValue: jasmine.createSpyObj('PrimeiroPedido', ['iniciarSeNecessario', 'registrarNovoPedido', 'registrarClienteSelecionado', 'registrarConfiguradorAberto', 'registrarItemAdicionado']) },
       { provide: TutorialService, useValue: { currentStep: step, registerTarget: () => () => {}, refreshTarget: jasmine.createSpy() } },
@@ -88,7 +89,7 @@ describe('Editor Novo Pedido mobile', () => {
   });
 
   it('preserva Novo cliente e ações reais de produto, busca rápida e remoção', () => {
-    const dialog = fixture.debugElement.injector.get(MatDialog); const open = spyOn(dialog, 'open').and.returnValue({ afterClosed: () => of(client) } as any);
+    const dialog = fixture.debugElement.injector.get(MatDialog); const open = spyOn(dialog, 'open').and.returnValue({ afterClosed: () => of(client), beforeClosed: () => EMPTY, updateSize: () => ({ updatePosition: () => {} }) } as any);
     const selector = fixture.debugElement.query(By.directive(ClienteSelectorCardComponent)).componentInstance as ClienteSelectorCardComponent;
     selector.onCriarCliente(); fixture.detectChanges(); expect(open).toHaveBeenCalled(); expect(editor.clienteConfirmado?.id).toBe(7);
     const wizard = spyOn(editor, 'abrirWizard'), quick = spyOn(editor, 'abrirBuscaRapida');
@@ -99,6 +100,46 @@ describe('Editor Novo Pedido mobile', () => {
     expect(root('itens').querySelector('.section-card__toggle')?.textContent).toContain('1 item adicionado');
     const section = fixture.debugElement.query(By.directive(ItensPedidoSectionComponent)).componentInstance as ItensPedidoSectionComponent;
     section.removerItem.emit(0); fixture.detectChanges(); expect(editor.itens).toEqual([]);
+  });
+
+  it('abre Novo cliente no painel global, preserva nome e cancela sem selecionar', fakeAsync(() => {
+    editor.clienteControl.setValue('  Pedro  ');
+    const dialog = fixture.debugElement.injector.get(MatDialog);
+    editor.onCriarCliente(); fixture.detectChanges(); tick(400);
+    const ref = dialog.openDialogs[0];
+    const form = ref.componentInstance as ClienteCreateDialogComponent;
+    expect(form.nomeControl.value).toBe('Pedro');
+    expect(form.data?.tutorialTarget).toBe(PRIMEIRO_PEDIDO_TARGETS.cliente);
+    expect(document.querySelector('.mobile-side-panel .mobile-side-panel__body form')).toBeTruthy();
+    expect(document.querySelector('.mobile-side-panel .mobile-side-panel__footer button[form="novo-cliente-dialog-form"]')).toBeTruthy();
+    form.cancelar(); tick(400);
+    expect(document.querySelector('.mobile-side-panel')).toBeNull();
+    expect(editor.clienteConfirmado).toBeFalsy();
+  }));
+
+  it('mantém validações e seleciona o cliente cadastrado pelo painel', fakeAsync(() => {
+    const service = TestBed.inject(ClienteService);
+    const dialog = fixture.debugElement.injector.get(MatDialog);
+    editor.onCriarCliente(); fixture.detectChanges(); tick(400);
+    const form = dialog.openDialogs[0].componentInstance as ClienteCreateDialogComponent;
+    form.salvar(); expect(service.salvar).not.toHaveBeenCalled();
+    form.nomeControl.setValue('Pedro de Lara'); form.telefoneControl.setValue('31987531233');
+    form.salvar(); tick(400); fixture.detectChanges();
+    expect(service.salvar).toHaveBeenCalledTimes(1);
+    expect(editor.clienteConfirmado?.id).toBe(7);
+    expect(document.querySelector('.mobile-side-panel')).toBeNull();
+  }));
+
+  it('mantém o modal desktop e respeita os bloqueios de edição', () => {
+    viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
+    const dialog = fixture.debugElement.injector.get(MatDialog);
+    const open = spyOn(dialog, 'open').and.returnValue({ afterClosed: () => of(null) } as any);
+    editor.onCriarCliente();
+    expect(open).toHaveBeenCalledWith(ClienteCreateDialogComponent, jasmine.objectContaining({ width: '760px', maxWidth: '96vw' }));
+    expect(open.calls.mostRecent().args[1]?.panelClass).toBeUndefined();
+    open.calls.reset();
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    spyOnProperty(editor, 'somenteLeitura', 'get').and.returnValue(true); editor.onCriarCliente(); expect(open).not.toHaveBeenCalled();
   });
 
   it('usa Detalhes e o puxador globais sem duplicar o formulário financeiro', () => {

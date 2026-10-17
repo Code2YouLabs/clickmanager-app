@@ -1,0 +1,62 @@
+.mobile-side-panel {
+  overflow: hidden;
+  .mat-mdc-dialog-container { padding: 0; --mdc-dialog-container-shape: 0; }
+  // Follow Material's opening/closing lifecycle so disposal waits for the slide.
+  .mat-mdc-dialog-container .mat-mdc-dialog-inner-container {
+    opacity: 1;
+    transform: translateX(100%);
+    transition: none;
+  }
+  // Keep the final animation frame for the entire open state. Material removes
+  // --opening on a timer, which can precede the animation's last rendered frame.
+  .mat-mdc-dialog-container.mdc-dialog--open:not(.mdc-dialog--closing) .mat-mdc-dialog-inner-container {
+    transform: translateX(0);
+    transition: none;
+    animation: mobile-side-panel-slide-in var(--mat-dialog-transition-duration, 360ms) cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  // Use an explicit exit keyframe: removing the filled entry animation does not
+  // establish a reliable starting value for a CSS transition.
+  &.mobile-side-panel--closing .mat-mdc-dialog-container .mat-mdc-dialog-inner-container {
+    animation: mobile-side-panel-slide-out var(--mat-dialog-transition-duration, 300ms) cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  &.mobile-side-panel--closing { pointer-events: none; }
+  .mat-mdc-dialog-container .mat-mdc-dialog-surface {
+    border-radius: 0; padding: 0; overflow: hidden;
+    background: var(--mat-sys-surface); color: var(--mat-sys-on-surface);
+    transform: none; transition: none;
+  }
+
+  .mat-mdc-dialog-surface .mobile-side-panel__layout {
+    display: flex; flex-direction: column; height: 100%; min-width: 0; min-height: 0; overflow: hidden;
+  }
+  .mat-mdc-dialog-surface .mobile-side-panel__header {
+    box-sizing: border-box; flex-shrink: 0; margin: 0;
+    padding: calc(8px + env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px));
+  }
+  .mat-mdc-dialog-surface .mobile-side-panel__body {
+    flex: 1; width: 100%; min-height: 0; max-height: none;
+    overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
+    padding: 16px max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px)) !important;
+  }
+  .mat-mdc-dialog-surface .mobile-side-panel__footer {
+    flex-shrink: 0; margin: 0;
+    padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  }
+  .mat-mdc-dialog-surface .mobile-side-panel__header button, .mat-mdc-dialog-surface .mobile-side-panel__footer button { min-height: 44px; }
+}
+
+@keyframes mobile-side-panel-slide-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes mobile-side-panel-slide-out {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-side-panel .mat-mdc-dialog-container .mat-mdc-dialog-inner-container { transition: none; }
+  .mobile-side-panel .mat-mdc-dialog-container.mdc-dialog--open:not(.mdc-dialog--closing) .mat-mdc-dialog-inner-container,
+  .mobile-side-panel.mobile-side-panel--closing .mat-mdc-dialog-container .mat-mdc-dialog-inner-container { animation: none; }
+}
