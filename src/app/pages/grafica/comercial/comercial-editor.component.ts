@@ -17,6 +17,7 @@ import { InputMoedaComponent } from 'src/app/components/inputs/input-moeda/input
 import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
 import { ObservacoesCardComponent } from 'src/app/components/observacoes-card/observacoes-card.component';
 import { PageCardAction, PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
 import { PedidoFluxoControlesComponent } from 'src/app/components/pedido-fluxo-controles/pedido-fluxo-controles.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { StatusBadgeComponent } from 'src/app/components/status-badge/status-badge.component';
@@ -163,6 +164,7 @@ export class GraficaServicoWizardDialogComponent {
     MaterialModule,
     ReactiveFormsModule,
     PageCardComponent,
+    MobileTotalBarComponent,
     SectionCardComponent,
     ClienteSelectorCardComponent,
     ItensPedidoSectionComponent,
@@ -182,6 +184,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   isMobile = false;
   get mobilePedidoNovo(): boolean { return this.isMobile && this.tipo === 'pedidos' && !this.pedidoId; }
   readonly mobileSections = signal<Record<EditorMobileSection, boolean>>({ cliente: true, itens: true, observacoes: false, financeiro: false, revisao: true });
+  readonly mobileTotalExpanded = signal(false);
   mobileValidationAttempted = false;
   private tutorialRevealTimer?: ReturnType<typeof setTimeout>;
   private focusTimer?: ReturnType<typeof setTimeout>;

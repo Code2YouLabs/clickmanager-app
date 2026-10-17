@@ -60,8 +60,9 @@ describe('Editor Novo Pedido mobile', () => {
     expect(fixture.nativeElement.querySelector('app-card-header [role=heading]').textContent.trim()).toBe('Novo Pedido');
     expect(fixture.nativeElement.querySelector('app-card-header [page-mobile-header-actions]').textContent).toContain('Voltar');
     expect(fixture.nativeElement.querySelectorAll('button[form="comercial-editor-form"]').length).toBe(1);
-    expect(fixture.nativeElement.querySelector('.page-card__footer--mobile-sticky')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('.page-card__footer-clearance')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.page-card__footer')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.mobile-total-bar--compact')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.mobile-total-bar__clearance')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.required-alert')).toBeNull();
     expect(fixture.nativeElement.querySelector('.responsavel-card')).toBeNull();
     expect(fixture.nativeElement.querySelector('.mobile-responsavel').textContent).toContain('Maria Atendimento');
@@ -97,6 +98,18 @@ describe('Editor Novo Pedido mobile', () => {
     section.removerItem.emit(0); fixture.detectChanges(); expect(editor.itens).toEqual([]);
   });
 
+  it('usa Detalhes e o puxador globais sem duplicar o formulário financeiro', () => {
+    editor.clienteConfirmado = client; editor.itens = [item()] as any; fixture.detectChanges();
+    const details = fixture.nativeElement.querySelector('.mobile-total-bar__details');
+    expect(details.getAttribute('aria-hidden')).toBe('true');
+    fixture.nativeElement.querySelector('.mobile-total-bar__expand--button').click(); fixture.detectChanges();
+    expect(details.getAttribute('aria-hidden')).toBe('false'); expect(details.textContent).toContain('Pedro de Lara');
+    expect(details.textContent).toContain('Saldo'); expect(details.querySelector('input')).toBeNull();
+    fixture.nativeElement.querySelector('.mobile-total-bar__handle-toggle').click(); fixture.detectChanges();
+    expect(details.getAttribute('aria-hidden')).toBe('true');
+    expect(fixture.nativeElement.querySelectorAll('.financial-adjustments').length).toBe(1);
+  });
+
   it('recolhe sem destruir campos nem perder observações em edição', () => {
     toggle('observacoes');
     const cards = fixture.debugElement.queryAll(By.directive(ObservacoesCardComponent));
@@ -118,7 +131,7 @@ describe('Editor Novo Pedido mobile', () => {
     editor.itens = [item()] as any; toggle('financeiro');
     editor.ajustesFinanceirosForm.setValue({ acrescimo: 10, frete: 5, desconto: 3 }); fixture.detectChanges();
     expect(editor.resumoFinanceiroView.total).toBe(62);
-    expect(fixture.nativeElement.querySelector('.mobile-editor-total').textContent).toContain('62,00');
+    expect(fixture.nativeElement.querySelector('.mobile-total-bar__summary .value').textContent).toContain('62,00');
     expect(root('financeiro').querySelector('.summary-row.total')).toBeNull();
     expect(root('financeiro').querySelectorAll('input[inputmode=decimal]').length).toBe(4);
     editor.pagamentoForm.setValue({ formaPagamento: 'PIX', valor: 12 }); fixture.detectChanges();
@@ -172,12 +185,12 @@ describe('Editor Novo Pedido mobile', () => {
     for (const tipo of ['orcamentos', 'rascunhos'] as const) {
       editor.tipo = tipo; fixture.detectChanges();
       expect(fixture.nativeElement.querySelector('.editor--mobile-progressive')).toBeNull();
-      expect(fixture.nativeElement.querySelector('.page-card__footer-clearance')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.mobile-total-bar__clearance')).toBeNull();
       expect(fixture.nativeElement.querySelector('.responsavel-card')).toBeTruthy();
       expect(editor.footerActions[0].id).toBe('cancelar');
     }
     editor.tipo = 'pedidos'; editor.pedidoId = 22; editor.pedido = { id: 22 } as any; fixture.detectChanges();
-    expect(editor.mobilePedidoNovo).toBeFalse(); expect(fixture.nativeElement.querySelector('.mobile-editor-total')).toBeNull();
+    expect(editor.mobilePedidoNovo).toBeFalse(); expect(fixture.nativeElement.querySelector('.mobile-total-bar__summary .value')).toBeNull();
     editor.pedidoId = null; viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.section-card__toggle')).toBeNull();
     expect(fixture.nativeElement.querySelector('.responsavel-card')).toBeTruthy();

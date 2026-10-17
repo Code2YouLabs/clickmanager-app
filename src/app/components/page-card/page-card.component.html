@@ -37,8 +37,7 @@
   <span class="page-card__saving" role="status" *ngIf="saving">{{ savingText }}</span>
   <ng-container *ngIf="showFooter || resolvedFooterActions.length">
     <mat-divider *ngIf="footerDivider" class="page-card__footer-divider"></mat-divider>
-    <mat-card-actions #footerElement class="page-card__footer" [class.page-card__footer--mobile-sticky]="mobileStickyFooter"
-      [style.--page-card-keyboard-inset]="footerKeyboardInset() + 'px'">
+    <mat-card-actions class="page-card__footer">
       <div class="page-card__footer-left">
         <ng-content select="[page-footer-left]"></ng-content>
       </div>
@@ -62,10 +61,6 @@
     </mat-card-actions>
   </ng-container>
 </mat-card>
-
-@if (mobileStickyFooter && isMobile() && (showFooter || resolvedFooterActions.length)) {
-  <div class="page-card__footer-clearance" aria-hidden="true" [style.height.px]="stickyFooterHeight()"></div>
-}
 
 @if (showMobilePrimaryAction && floatingPrimaryAction; as action) {
   @if (action.permission) {

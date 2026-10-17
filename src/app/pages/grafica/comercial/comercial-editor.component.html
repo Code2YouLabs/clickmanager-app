@@ -5,14 +5,10 @@
       botaoIcone="arrow_back"
       botaoCor="primary"
       [botaoRota]="['/page/grafica/comercial', tipo]"
-      [mostrarDivisor]="true" [saving]="salvando" [footerActions]="footerActions"
-      [mobileStickyFooter]="mobilePedidoNovo"
+      [mostrarDivisor]="true" [saving]="salvando" [footerActions]="mobilePedidoNovo ? [] : footerActions"
       (footerAction)="onFooterAction($event)">
 
       <button *ngIf="mobilePedidoNovo" page-mobile-header-actions mat-button type="button" (click)="voltar()"><mat-icon>arrow_back</mat-icon>Voltar</button>
-      <div *ngIf="mobilePedidoNovo" page-footer-left class="mobile-editor-total">
-        <span>Total do pedido</span><strong>{{ resumoFinanceiroView.total | currency:'BRL':'symbol':'1.2-2' }}</strong>
-      </div>
 
       <div class="editor-state" role="status" *ngIf="acessoNegado">Você não possui permissão para visualizar este registro.</div>
       <div class="editor-state" role="status" *ngIf="carregando && !acessoNegado">
@@ -359,3 +355,26 @@
         </div>
       </form>
     </app-page-card>
+
+    <app-mobile-total-bar *ngIf="mobilePedidoNovo && !acessoNegado && !carregando"
+      appearance="compact" label="Total" [valueText]="(resumoFinanceiroView.total | currency:'BRL':'symbol-narrow':'1.2-2') || ''"
+      [inlineDetails]="true" [expanded]="mobileTotalExpanded()" [detailText]="mobileTotalExpanded() ? 'Ocultar detalhes' : 'Detalhes'"
+      detailsPanelId="pedido-mobile-total-details" [expandAriaLabel]="mobileTotalExpanded() ? 'Ocultar detalhes do pedido' : 'Ver detalhes do pedido'"
+      [actionText]="salvando ? 'Salvando...' : 'Salvar'" actionAriaLabel="Salvar pedido" [actionDisabled]="!podeSalvar || salvando"
+      actionType="submit" actionForm="comercial-editor-form" [actionTutorialTarget]="primeiroPedidoTargets.salvar"
+      bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+      [reserveSpace]="true" [avoidKeyboard]="true"
+      (expand)="mobileTotalExpanded.set(!mobileTotalExpanded())" (collapse)="mobileTotalExpanded.set(false)"
+      (keydown.escape)="mobileTotalExpanded.set(false); $event.stopPropagation()">
+      <h2 total-bar-details-header class="mobile-order-details-title">Detalhes do pedido</h2>
+      <div total-bar-details class="mobile-order-details">
+        <div><span>Cliente</span><strong>{{ clienteConfirmado?.nome || 'Não informado' }}</strong></div>
+        <div><span>Itens</span><strong>{{ itens.length }}</strong></div>
+        <div><span>Subtotal</span><strong>{{ resumoFinanceiroView.subtotal | currency:'BRL':'symbol':'1.2-2' }}</strong></div>
+        <div><span>Acréscimos</span><strong>{{ resumoFinanceiroView.acrescimo | currency:'BRL':'symbol':'1.2-2' }}</strong></div>
+        <div><span>Frete</span><strong>{{ resumoFinanceiroView.frete | currency:'BRL':'symbol':'1.2-2' }}</strong></div>
+        <div><span>Descontos</span><strong>{{ resumoFinanceiroView.desconto | currency:'BRL':'symbol':'1.2-2' }}</strong></div>
+        <div><span>Pago</span><strong>{{ resumoFinanceiroView.totalRecebido | currency:'BRL':'symbol':'1.2-2' }}</strong></div>
+        <div><span>Saldo</span><strong>{{ resumoFinanceiroView.saldoAberto | currency:'BRL':'symbol':'1.2-2' }}</strong></div>
+      </div>
+    </app-mobile-total-bar>

@@ -25,7 +25,6 @@ import { PageCardComponent, PageCardAction, PageCardMobileAction, PageCardPrimar
       [mobilePrimaryAction]="primaryAction"
       (mobilePrimaryActionClick)="primaryClicks = primaryClicks + 1"
       [showFooter]="showFooter"
-      [mobileStickyFooter]="stickyFooter"
       [headerDivider]="headerDivider"
       [footerDivider]="footerDivider">
       <button page-header-actions mat-button>Nova ação</button>
@@ -44,7 +43,6 @@ class PageCardHostComponent {
   primaryAction: PageCardMobileAction | null = null;
   primaryClicks = 0;
   showFooter = false;
-  stickyFooter = false;
   headerDivider = true;
   footerDivider = true;
 }
@@ -68,20 +66,6 @@ describe('PageCardComponent', () => {
   });
 
   afterEach(() => TestBed.resetTestingModule());
-
-  it('reserva espaço apenas no footer mobile opt-in e acompanha o teclado sem mudar desktop', () => {
-    const visible = Object.assign(new EventTarget(), { height: window.innerHeight, offsetTop: 0 });
-    spyOnProperty(window, 'visualViewport', 'get').and.returnValue(visible as VisualViewport);
-    host.showFooter = true; host.stickyFooter = true; viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
-    const footer = fixture.nativeElement.querySelector('.page-card__footer--mobile-sticky');
-    expect(footer).toBeTruthy(); expect(fixture.nativeElement.querySelector('.page-card__footer-clearance')).toBeTruthy();
-    visible.height = window.innerHeight - 250; visible.dispatchEvent(new Event('resize')); fixture.detectChanges();
-    expect(footer.style.getPropertyValue('--page-card-keyboard-inset')).toBe('250px');
-    viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.page-card__footer-clearance')).toBeNull();
-    expect(footer.style.getPropertyValue('--page-card-keyboard-inset')).toBe('0px');
-    host.stickyFooter = false; fixture.detectChanges(); expect(footer.classList.contains('page-card__footer--mobile-sticky')).toBeFalse();
-  });
 
   it('projeta titulo, subtitulo, acoes de header e conteudo principal', () => {
     fixture.detectChanges();

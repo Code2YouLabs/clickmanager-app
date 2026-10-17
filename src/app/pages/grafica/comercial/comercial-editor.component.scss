@@ -117,11 +117,10 @@
 .editor-state { padding: 16px 0; }
 
 @include mobile.mobile-foundation {
-  .mobile-editor-total {
-    min-width: 0;
-    span { display: block; color: var(--mat-sys-on-surface-variant); font-size: 12px; line-height: 16px; }
-    strong { display: block; font-size: 18px; line-height: 28px; font-weight: 600; overflow-wrap: anywhere; }
-  }
+  .mobile-order-details-title { margin: 0; padding-bottom: 16px; font-size: 16px; line-height: 24px; font-weight: 600; text-align: center; }
+  .mobile-order-details { display: grid; gap: 8px; padding-bottom: 16px; }
+  .mobile-order-details > div { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; line-height: 20px; }
+  .mobile-order-details strong { min-width: 0; text-align: right; overflow-wrap: anywhere; font-weight: 600; }
   .editor--mobile-progressive {
     .pedido-layout { display: flex; flex-direction: column; gap: 0; }
     .main-column, .summary-column { width: 100%; gap: 0; }
