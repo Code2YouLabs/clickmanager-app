@@ -316,7 +316,7 @@
 		                          <div class="form-grid price-inputs">
 		                            <app-input-numerico [control]="quantidadeForm.controls.largura" [label]="'Largura (' + unidadeDimensaoAtualSimbolo + ')'" [decimal]="mobileMetroQuadrado" [errorText]="mobileMetroQuadrado ? erroMedida('largura') : ''"></app-input-numerico>
 		                            <app-input-numerico [control]="quantidadeForm.controls.altura" [label]="'Altura (' + unidadeDimensaoAtualSimbolo + ')'" [decimal]="mobileMetroQuadrado" [errorText]="mobileMetroQuadrado ? erroMedida('altura') : ''"></app-input-numerico>
-		                            <app-input-numerico [control]="quantidadeForm.controls.quantidade" label="Quantidade"></app-input-numerico>
+		                            <app-input-numerico [control]="quantidadeForm.controls.quantidade" label="Quantidade" [subscriptSizing]="mobileMetroQuadrado ? 'dynamic' : 'fixed'"></app-input-numerico>
 		                          </div>
 		                          <button mat-flat-button color="primary" type="button" [disabled]="quantidadeForm.invalid || precificando" (click)="precificar()">
 		                            {{ precificando ? 'Calculando...' : 'Calcular' }}

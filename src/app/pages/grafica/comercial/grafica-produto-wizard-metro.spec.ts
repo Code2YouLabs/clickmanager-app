@@ -222,7 +222,12 @@ describe('Wizard: metro quadrado mobile', () => {
         const [left, right, quantity] = fields.map(field => field.getBoundingClientRect());
         expect(left.top).toBe(right.top); expect(right.left).toBeGreaterThan(left.left);
         expect(left.width).toBeGreaterThanOrEqual(100); expect(right.width).toBeGreaterThanOrEqual(100);
-        expect(quantity.top).toBeGreaterThan(left.top); expect(quantity.width).toBeGreaterThan(left.width);
+        expect(quantity.top).toBeGreaterThan(left.top); expect(quantity.width).toBeCloseTo(left.width, 0);
+        const calculateButton = query('.measure-entry-panel > button').getBoundingClientRect();
+        const quantityInput = fields[2].querySelector('.mat-mdc-text-field-wrapper')!.getBoundingClientRect();
+        expect(calculateButton.left).toBeGreaterThan(quantity.right);
+        expect(Math.abs(calculateButton.bottom - quantityInput.bottom)).toBeLessThanOrEqual(2);
+        expect(calculateButton.height).toBeGreaterThanOrEqual(44);
         expect(query('.wizard-body').scrollWidth).toBeLessThanOrEqual(query('.wizard-body').clientWidth);
         const details = query('.measure-area-details') as HTMLDetailsElement;
         details.querySelector('summary')!.click(); render();

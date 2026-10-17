@@ -304,7 +304,12 @@
       .price-inputs > :last-child:nth-child(3) { grid-column: 1 / -1; }
       .measure-entry-panel > button { min-height: 44px; align-self: flex-end; }
       .measure-layout--area-mobile {
-        .price-inputs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .measure-entry-panel { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: end; }
+        .measure-entry-panel h3 { grid-column: 1 / -1; }
+        .price-inputs { display: contents; }
+        .price-inputs > app-input-numerico { align-self: start; }
+        .price-inputs > :last-child:nth-child(3) { grid-column: 1; }
+        .measure-entry-panel > button { grid-column: 2; width: 100%; min-width: 0; }
         .measure-area-rate { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 8px; font-size: 13px; line-height: 20px; }
         .measure-area-rate strong { color: #0f172a; font-weight: 600; font-variant-numeric: tabular-nums; }
         .measure-area-details summary { display: flex; align-items: center; gap: 6px; min-height: 44px; width: fit-content; color: var(--mat-sys-primary); font-size: 12px; cursor: pointer; }

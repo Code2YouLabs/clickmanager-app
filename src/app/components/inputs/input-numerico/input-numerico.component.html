@@ -3,7 +3,7 @@
     {{ label }} <span *ngIf="isRequired" style="color: #ff110094">*</span>
   </mat-label>
 
-  <mat-form-field appearance="outline" class="w-100" [subscriptSizing]="decimal ? 'dynamic' : 'fixed'">
+  <mat-form-field appearance="outline" class="w-100" [subscriptSizing]="decimal ? 'dynamic' : subscriptSizing">
     @if (decimal) {
     <input matInput type="number" inputmode="decimal" step="any" [formControl]="control" />
     } @else {
