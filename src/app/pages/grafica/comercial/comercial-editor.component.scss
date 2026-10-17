@@ -121,10 +121,11 @@
   :host ::ng-deep .editor-page--mobile-progressive app-card-header > mat-divider {
     margin-bottom: 0 !important;
   }
-  .mobile-order-details-title { margin: 0; padding-bottom: 16px; font-size: 16px; line-height: 24px; font-weight: 600; text-align: center; }
-  .mobile-order-details { display: grid; gap: 8px; padding-bottom: 16px; }
-  .mobile-order-details > div { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; line-height: 20px; }
-  .mobile-order-details strong { min-width: 0; text-align: right; overflow-wrap: anywhere; font-weight: 600; }
+  .mobile-order-details-title { margin: 0; padding-bottom: 12px; font-size: 16px; line-height: 24px; font-weight: 600; text-align: center; }
+  .mobile-order-details { display: grid; gap: 6px; padding-bottom: 12px; }
+  .mobile-order-details > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 13px; line-height: 20px; }
+  .mobile-order-details strong { min-width: 0; text-align: right; overflow-wrap: anywhere; font-weight: 600; font-variant-numeric: tabular-nums; }
+  :host ::ng-deep app-mobile-total-bar .mobile-total-bar__expand--button { padding-inline: 6px; color: var(--mat-sys-primary); border-radius: 4px; }
   .editor--mobile-progressive {
     .pedido-layout { display: flex; flex-direction: column; gap: 0; }
     .main-column, .summary-column { width: 100%; gap: 0; }

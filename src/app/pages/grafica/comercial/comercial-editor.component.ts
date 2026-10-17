@@ -192,8 +192,9 @@ export class GraficaServicoWizardDialogComponent {
 })
 export class ComercialEditorComponent implements OnInit, OnDestroy {
   isMobile = false;
+  get mobileCriacao(): boolean { return this.isMobile && !this.pedidoId; }
   get mobilePedidoNovo(): boolean { return this.isMobile && this.tipo === 'pedidos' && !this.pedidoId; }
-  readonly mobileSections = signal<Record<EditorMobileSection, boolean>>({ cliente: true, itens: true, observacoes: false, financeiro: false, revisao: true });
+  readonly mobileSections = signal<Record<EditorMobileSection, boolean>>({ cliente: true, itens: true, observacoes: false, financeiro: false, revisao: false });
   readonly mobileTotalExpanded = signal(false);
   mobileValidationAttempted = false;
   private tutorialRevealTimer?: ReturnType<typeof setTimeout>;
@@ -208,6 +209,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   revisarPendencias(): void {
     if (!this.mobilePedidoNovo) return;
     this.mobileValidationAttempted = true;
+    this.setMobileSection('revisao', true);
     const section: EditorMobileSection = !this.clienteConfirmado?.id ? 'cliente' : !this.itens.length ? 'itens' : 'financeiro';
     this.setMobileSection(section, true);
     if (this.ajustesFinanceirosForm.invalid) this.ajustesFinanceirosForm.markAllAsTouched();
@@ -1553,9 +1555,11 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
       valorContexto,
       subtotalResumo,
       quantidade: Number(item.quantidade || 1),
+      unidade: item.unidadeVenda,
       valor: Number(item.valorUnitario || 0),
       subTotal: Number(item.valorTotal || 0),
       sourceIndex: index,
+      viewKey: item,
     };
   }
 

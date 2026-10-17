@@ -310,8 +310,8 @@
               </ng-template>
 
               <app-section-card class="submit-card" *ngIf="mostrarAcoesCriacao" data-editor-section="revisao"
-                [titulo]="mobilePedidoNovo ? 'Revisão e conclusão' : ''" [mobilePlain]="mobilePedidoNovo" [mobileCollapsible]="mobilePedidoNovo"
-                [mobileExpanded]="mobileSections().revisao" [mobileSummary]="mobilePedidoNovo ? (pendenciasSalvar.length ? 'Há informações pendentes' : 'Pronto para salvar') : ''"
+                [titulo]="mobileCriacao ? 'Revisão e conclusão' : ''" [mobilePlain]="mobileCriacao" [mobileCollapsible]="mobileCriacao"
+                [mobileExpanded]="mobileSections().revisao" [mobileSummary]="mobileCriacao ? (pendenciasSalvar.length ? 'Há informações pendentes' : 'Pronto para salvar') : ''"
                 (mobileExpandedChange)="setMobileSection('revisao', $event)">
                 @if (mobilePedidoNovo) {
                   <p class="mobile-responsavel">Atendente: <strong>{{ responsavelNome }}</strong></p>

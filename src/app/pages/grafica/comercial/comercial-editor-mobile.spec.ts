@@ -57,7 +57,7 @@ describe('Editor Novo Pedido mobile', () => {
     expect(fixture.nativeElement.querySelectorAll('[data-editor-section]').length).toBe(5);
     expect(body('cliente').hidden).toBeFalse(); expect(body('itens').hidden).toBeFalse();
     expect(body('observacoes').hidden).toBeTrue(); expect(body('financeiro').hidden).toBeTrue();
-    expect(body('revisao').hidden).toBeFalse();
+    expect(body('revisao').hidden).toBeTrue();
     expect(fixture.nativeElement.querySelector('app-card-header [role=heading]').textContent.trim()).toBe('Novo Pedido');
     expect(fixture.nativeElement.querySelector('app-card-header [page-mobile-header-actions]').textContent).toContain('Voltar');
     const backButtons = Array.from(fixture.nativeElement.querySelectorAll('app-card-header button') as NodeListOf<HTMLButtonElement>)
@@ -200,6 +200,7 @@ describe('Editor Novo Pedido mobile', () => {
     const save = fixture.nativeElement.querySelector('button[form="comercial-editor-form"]'); expect(save.disabled).toBeTrue();
     toggle('cliente'); editor.revisarPendencias(); fixture.detectChanges(); tick();
     expect(body('cliente').hidden).toBeFalse(); expect(document.activeElement).toBe(root('cliente').querySelector('.editor input'));
+    expect(body('revisao').hidden).toBeFalse();
     expect(fixture.nativeElement.querySelector('.mobile-validation').textContent).toContain('Informe o cliente.');
     editor.clienteConfirmado = client; toggle('itens'); editor.salvarFormulario(); fixture.detectChanges(); tick();
     expect(body('itens').hidden).toBeFalse(); expect(document.activeElement).toBe(root('itens').querySelector('.add-item-button'));
@@ -213,6 +214,7 @@ describe('Editor Novo Pedido mobile', () => {
     const navigate = spyOn(TestBed.inject(Router), 'navigate');
     const button = fixture.nativeElement.querySelector('button[form="comercial-editor-form"]');
     expect(button.disabled).toBeFalse(); button.click(); expect(save).toHaveBeenCalledTimes(1);
+    toggle('revisao');
     const cancelButton = Array.from(root('revisao').querySelectorAll('button')).find(value => value.textContent?.trim() === 'Cancelar')!;
     cancelButton.click(); expect(cancel).toHaveBeenCalledWith('cancelar'); expect(navigate).toHaveBeenCalled();
     editor.salvando = true; fixture.detectChanges(); expect(button.disabled).toBeTrue(); expect(button.textContent).toContain('Salvando');
@@ -229,6 +231,65 @@ describe('Editor Novo Pedido mobile', () => {
     expect(TestBed.inject(PrimeiroPedidoTutorialService).registrarClienteSelecionado).not.toHaveBeenCalled();
     expect(TestBed.inject(PrimeiroPedidoTutorialService).registrarItemAdicionado).not.toHaveBeenCalled();
   }));
+
+  for (const tipo of ['pedidos', 'orcamentos', 'rascunhos'] as const) {
+    it(`inicia revisão recolhida em ${tipo} e preserva os registros individuais e o total`, () => {
+      editor.tipo = tipo;
+      editor.itens = [item(), { ...item(), nomeProduto: 'Acabamento: Corte', unidadeVenda: 'FOLHA', quantidade: 2, valorUnitario: 3, valorTotal: 6, snapshotComercial: JSON.stringify({ tipo: 'ACABAMENTO' }) }] as any;
+      fixture.detectChanges();
+      expect(body('revisao').hidden).toBeTrue();
+      expect(root('revisao').querySelector('.section-card__toggle')?.textContent).toContain('Revisão e conclusão');
+      toggle('revisao'); expect(body('revisao').hidden).toBeFalse();
+      toggle('revisao'); expect(body('revisao').hidden).toBeTrue();
+      expect(editor.itens.length).toBe(2); expect(editor.itensView.length).toBe(2);
+      expect(editor.itensView[1].unidade).toBe('FOLHA');
+      expect(editor.itensView[1].subTotal).toBe(6);
+      expect(editor.total).toBe(56);
+      expect(root('itens').querySelectorAll('.order-items__row').length).toBe(2);
+    });
+  }
+
+  it('recolhe os itens sem perda nem mudança automática da seção após remover', () => {
+    editor.itens = [item(), item()] as any; fixture.detectChanges(); toggle('itens');
+    expect(body('itens').hidden).toBeTrue();
+    const section = fixture.debugElement.query(By.directive(ItensPedidoSectionComponent)).componentInstance as ItensPedidoSectionComponent;
+    section.removerItem.emit(0); fixture.detectChanges();
+    expect(body('itens').hidden).toBeTrue(); expect(editor.itens.length).toBe(1);
+    expect(root('itens').querySelector('.section-card__toggle')?.textContent).toContain('1 item adicionado');
+    toggle('itens'); expect(root('itens').querySelectorAll('.order-items__row').length).toBe(1);
+  });
+
+  it('mantém detalhes do preço abertos em atualizações e após recolher a seção', () => {
+    editor.itens = [{ ...item(), unidadeVenda: 'UN' }, { ...item(), unidadeVenda: 'UN' }] as any; fixture.detectChanges();
+    const details = root('itens').querySelector('details') as HTMLDetailsElement;
+    details.open = true; fixture.detectChanges();
+    expect(root('itens').querySelector('details')).toBe(details);
+    toggle('itens'); toggle('itens');
+    expect(root('itens').querySelector('details')).toBe(details); expect(details.open).toBeTrue();
+    editor.remover(1); fixture.detectChanges();
+    expect(root('itens').querySelector('details')).toBe(details); expect(details.open).toBeTrue();
+  });
+
+  it('preserva descrições e valores resolvidos nas políticas fixa, faixa, lote e metro', () => {
+    const cases = [
+      { tipo: 'FIXO', quantidade: 1, unitario: 13.5, total: 13.5, contexto: 'fixo' },
+      { tipo: 'POR_FAIXA_QUANTIDADE', quantidade: 10, unitario: 4, total: 40, contexto: '/un' },
+      { tipo: 'POR_LOTE', quantidade: 50, unitario: 2, total: 100, contexto: 'por lote' },
+      { tipo: 'POR_METRO_QUADRADO', quantidade: 1, unitario: 10, total: 25, contexto: '/m²' },
+    ];
+    for (const value of cases) {
+      const description = 'Couchê A3 · Colorido Frente · Corte reto e corte eletrônico, conforme a descrição original.';
+      editor.itens = [{ ...item(), quantidade: value.quantidade, valorUnitario: value.unitario, valorTotal: value.total,
+        caracteristicasResumo: description, snapshotComercial: JSON.stringify({ precificacao: { tipo: value.tipo, areaFaturada: 2.5 } }),
+      }] as any;
+      const original = JSON.stringify(editor.itens); fixture.detectChanges();
+      expect(editor.itensView[0].valorContexto).toContain(value.contexto);
+      expect(editor.itensView[0].subTotal).toBe(value.total);
+      expect(editor.itensView[0].valor).toBe(value.unitario);
+      expect(editor.itensView[0].especificacao).toBe(description);
+      expect(JSON.stringify(editor.itens)).toBe(original);
+    }
+  });
 
   it('preserva desktop, outros tipos e detalhe sem ativar o piloto', () => {
     editor.itens = [item()] as any;
