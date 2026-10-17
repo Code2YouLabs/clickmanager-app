@@ -2056,9 +2056,31 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
     return !!this.data?.mobilePanel && this.tipoPrecoAtual === 'POR_LOTE';
   }
 
+  get mobilePrecoFaixa(): boolean {
+    return !!this.data?.mobilePanel && this.tipoPrecoAtual === 'POR_FAIXA_QUANTIDADE';
+  }
+
+  get faixaAplicadaMobile(): GraficaPrecoFaixa | null {
+    if (!this.mobilePrecoFaixa || !this.precoValido) return null;
+    // The API reports the selected interval; do not infer it from the current input.
+    const intervalos = (this.preco?.detalhes || [])
+      .map(detalhe => /^Faixa aplicada:\s*(\d+)–(\d+|∞)$/.exec(detalhe.trim()))
+      .filter((match): match is RegExpExecArray => match !== null);
+    if (intervalos.length !== 1) return null;
+    const [, inicio, fim] = intervalos[0];
+    const correspondentes = this.faixasPreco.filter(faixa => Number(faixa.inicio) === Number(inicio)
+      && (fim === '∞' ? faixa.fim == null : faixa.fim != null && Number(faixa.fim) === Number(fim)));
+    return correspondentes.length === 1 ? correspondentes[0] : null;
+  }
+
+  get notasFaixaMobile(): string[] {
+    return [...new Set([this.preco?.mensagem || '', ...(this.preco?.detalhes || [])].filter(Boolean))];
+  }
+
   get mostrarResumoPreco(): boolean {
     if (this.mobileMetroQuadrado) return this.precoValido;
     if (this.mobilePrecoLote) return !!this.loteSelecionado && this.precoValido;
+    if (this.mobilePrecoFaixa) return this.precoValido;
     return true;
   }
 
@@ -2687,6 +2709,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   }
 
   faixaPrecoAplicada(faixa: GraficaPrecoFaixa): boolean {
+    if (this.mobilePrecoFaixa) return this.faixaAplicadaMobile === faixa;
     const quantidade = Number(this.preco?.quantidadeSolicitada || this.quantidadeForm.value.quantidade || 0);
     const inicio = Number(faixa.inicio || 0);
     const fim = faixa.fim === null || faixa.fim === undefined ? null : Number(faixa.fim);

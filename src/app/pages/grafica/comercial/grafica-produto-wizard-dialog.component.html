@@ -253,13 +253,14 @@
                     </ng-container>
 
                     <ng-container *ngIf="tipoPrecoAtual === 'POR_FAIXA_QUANTIDADE'">
-                      <div class="quantity-range-layout">
+                      <div class="quantity-range-layout" [class.quantity-range-layout--mobile]="mobilePrecoFaixa">
                         <div class="quantity-entry-panel" #quantidadeWizardInputContainer>
                           <h3>Informe a quantidade</h3>
                           <div class="quantity-entry-row">
                             <app-input-numerico
                               class="quantity-input"
                               [control]="quantidadeForm.controls.quantidade"
+                              [subscriptSizing]="mobilePrecoFaixa ? 'dynamic' : 'fixed'"
                               label="Quantidade">
                             </app-input-numerico>
                             <button mat-flat-button color="primary" type="button" [disabled]="quantidadeForm.invalid || precificando" (click)="precificar()">
@@ -275,7 +276,22 @@
                           </div>
                         </div>
 
-                        <div class="quantity-ranges-panel">
+                        <section class="quantity-ranges-panel" *ngIf="mobilePrecoFaixa">
+                          <div class="quantity-applied-range" *ngIf="faixaAplicadaMobile as aplicada">
+                            <span>Faixa aplicada</span><strong>{{ faixaPrecoLabel(aplicada) }}</strong>
+                          </div>
+                          <details class="quantity-range-details">
+                            <summary><span class="ranges-open-label">Ver todas as faixas</span><span class="ranges-close-label">Ocultar faixas</span></summary>
+                            <ul class="quantity-range-list" *ngIf="faixasPreco.length; else semFaixasMobile">
+                              <li class="price-range-row" *ngFor="let faixa of faixasPreco" [class.active]="faixaPrecoAplicada(faixa)">
+                                <span>{{ faixaPrecoLabel(faixa) }} <small *ngIf="faixaPrecoAplicada(faixa)">Faixa atual</small></span>
+                                <strong>{{ faixa.valorUnitario | currency:'BRL':'symbol':'1.2-20':'pt-BR' }}</strong>
+                              </li>
+                            </ul>
+                            <ng-template #semFaixasMobile><p class="quantity-range-empty">Nenhuma faixa cadastrada.</p></ng-template>
+                          </details>
+                        </section>
+                        <div class="quantity-ranges-panel" *ngIf="!mobilePrecoFaixa">
                           <div class="quantity-ranges-title">
                             <div>
                               <strong>Faixas de preço</strong>
@@ -422,6 +438,9 @@
                   <ng-container *ngIf="mobileMetroQuadrado && preco && !precoValido">
                     <p class="measure-area-feedback" role="status" *ngFor="let nota of notasMetroQuadrado">{{ nota }}</p>
                   </ng-container>
+                  <ng-container *ngIf="mobilePrecoFaixa && preco && !precoValido">
+                    <p class="quantity-range-feedback" role="status" *ngFor="let nota of notasFaixaMobile">{{ nota }}</p>
+                  </ng-container>
                   <aside class="price-summary-card" *ngIf="mostrarResumoPreco">
                     <h3>{{ data?.mobilePanel ? 'Resumo do preço' : 'Resumo da precificação' }}</h3>
                     <div class="summary-price-row summary-price-kind">
@@ -446,7 +465,7 @@
                     </div>
                     <div class="summary-price-row" *ngIf="preco?.valorUnitario !== null && preco?.valorUnitario !== undefined">
                       <span>{{ data?.mobilePanel ? 'Preço unitário' : 'Valor unitário' }}</span>
-                      <strong>{{ preco?.valorUnitario | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
+                      <strong>{{ preco?.valorUnitario | currency:'BRL':'symbol':(mobilePrecoFaixa ? '1.2-20' : '1.2-2'):'pt-BR' }}</strong>
                     </div>
                     <div class="summary-price-row" *ngIf="!mobileMetroQuadrado && preco?.areaFaturada">
                       <span>{{ medidaFaturadaLabel }}</span>

@@ -81,6 +81,28 @@ describe('Adicionar item no painel mobile compartilhado', () => {
       expect(editor.observacaoClienteControl.value).toBe('Entregar à tarde');
     }));
 
+    it(`preserva o resultado por faixa ao retornar para ${type}`, fakeAsync(() => {
+      editor.tipo = type;
+      service.listarPrecos.and.returnValue(of([{ ...policy, tipo: 'POR_FAIXA_QUANTIDADE', faixas: [
+        { inicio: 1, fim: 10, valorUnitario: 0.9 }, { inicio: 50, fim: 299, valorUnitario: 0.45 },
+      ] }] as any));
+      service.precificar.and.callFake((_id, body) => of({ status: 'PRECO_CALCULADO', quantidadeSolicitada: body.quantidade,
+        valorUnitario: body.quantidade === 250 ? 0.45 : 0.9, valorTotal: body.quantidade === 250 ? 112.5 : 0.9,
+        detalhes: [body.quantidade === 250 ? 'Faixa aplicada: 50–299' : 'Faixa aplicada: 1–10'], selecoesResolvidas: [],
+      } as any));
+      const wizard = open(); query('.funnel-option').click(); render(); tick(300); render();
+      if (wizard.isFirstStep) next();
+      const input = query('.quantity-input input') as HTMLInputElement;
+      input.value = '250'; input.dispatchEvent(new Event('input')); render(); tick(300); render();
+      expect(query('.quantity-applied-range').textContent).toContain('50 a 299 un');
+      expect(query('.price-step .summary-price-total').textContent).toContain('112,50');
+      next(); composition.next({ itens: [{ ...added, quantidade: 250, valorUnitario: 0.45, valorTotal: 112.5 }] });
+      composition.complete(); tick(300); render(); expect(wizard.stepper?.selectedIndex).toBe(3);
+      next(); tick(400); render();
+      expect(editor.itens[1]).toEqual(jasmine.objectContaining({ quantidade: 250, valorUnitario: 0.45, valorTotal: 112.5 }));
+      expect(service.precificar).toHaveBeenCalledTimes(2); expect(editor.tipo).toBe(type);
+    }));
+
     it(`preserva o preço fechado do lote ao retornar para ${type}`, fakeAsync(() => {
       editor.tipo = type;
       service.listarPrecos.and.returnValue(of([{ ...policy, tipo: 'POR_LOTE', lotes: [{ quantidade: 250, valorLote: 145 }] }] as any));
@@ -241,6 +263,7 @@ describe('Adicionar item no painel mobile compartilhado', () => {
         faixas: [{ inicio: 1, fim: 100, valorUnitario: 10 }],
         lotes: [{ quantidade: 50, valorLote: 500 }],
       }] as any));
+      if (tipo === 'POR_FAIXA_QUANTIDADE') service.precificar.and.returnValue(of({ status: 'PRECO_CALCULADO', quantidadeSolicitada: 1, valorUnitario: 10, valorTotal: 10, detalhes: ['Faixa aplicada: 1–100'], selecoesResolvidas: [] } as any));
       const wizard = open();
       dialog.openDialogs[0].updateSize('360px', '800px');
       query('.mobile-side-panel').style.maxHeight = '800px';

@@ -240,7 +240,7 @@ describe(`Wizard comercial: calcular preço (${mobile ? 'mobile' : 'desktop'})`,
 
   it('preserva a faixa aplicada e a regra sem duplicar o cálculo', fakeAsync(() => {
     service.listarPrecos.and.returnValue(of([politica('POR_FAIXA_QUANTIDADE')] as any));
-    service.precificar.and.callFake((_id, body) => of({ ...resultado(body.quantidade ?? 1), regraAplicadaNome: 'Faixa principal' } as any));
+    service.precificar.and.callFake((_id, body) => of({ ...resultado(body.quantidade ?? 1), regraAplicadaNome: 'Faixa principal', detalhes: ['Faixa aplicada: 1–100'] } as any));
     entrar();
     expect(priceCard().querySelector('.price-range-row.active')!.textContent).toContain('1 a 100 un');
     expect(fixture.nativeElement.querySelector('.summary-rule').textContent).toContain('Faixa principal');
