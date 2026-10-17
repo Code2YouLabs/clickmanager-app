@@ -57,6 +57,7 @@ interface AcabamentoComercialCalculado {
 }
 
 interface GraficaServicoWizardData {
+  mobilePanel?: boolean;
   cliente: {
     clienteId?: number | null;
     clienteNome?: string | null;
@@ -995,14 +996,16 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   }
 
   private abrirWizardProduto(produtoPreSelecionado?: GraficaProduto): void {
-    const dialogRef = this.dialog.open(GraficaProdutoWizardDialogComponent, {
-      width: 'min(1720px, calc(100vw - 104px))',
-      height: 'min(900px, calc(100dvh - 96px))',
-      maxWidth: '96vw',
-      maxHeight: '92vh',
-      panelClass: ['dialog-grande', 'grafica-produto-wizard-panel'],
-      data: { cliente: this.clientePayload(), produtoPreSelecionado },
-    });
+    const data = { cliente: this.clientePayload(), produtoPreSelecionado };
+    const dialogRef = this.isMobile
+      ? openMobileSidePanel<GraficaProdutoWizardDialogComponent, typeof data & { mobilePanel: boolean }, ComposicaoComercialResolvida>(
+          this.dialog, GraficaProdutoWizardDialogComponent, { data: { ...data, mobilePanel: true }, ariaLabel: 'Adicionar item' })
+      : this.dialog.open(GraficaProdutoWizardDialogComponent, {
+          width: 'min(1720px, calc(100vw - 104px))',
+          height: 'min(900px, calc(100dvh - 96px))',
+          maxWidth: '96vw', maxHeight: '92vh',
+          panelClass: ['dialog-grande', 'grafica-produto-wizard-panel'], data,
+        });
     if (this.tipo === 'pedidos' && !this.pedidoId) {
       this.primeiroPedidoTutorial.registrarConfiguradorAberto();
     }
@@ -1017,14 +1020,14 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   }
 
   private abrirWizardServico(servico: GraficaServico): void {
-    const dialogRef = this.dialog.open(GraficaServicoWizardDialogComponent, {
-      width: '560px',
-      maxWidth: '96vw',
-      panelClass: ['grafica-servico-wizard-panel'],
-      autoFocus: true,
-      restoreFocus: false,
-      data: { cliente: this.clientePayload(), servico },
-    });
+    const data: GraficaServicoWizardData = { cliente: this.clientePayload(), servico };
+    const dialogRef = this.isMobile
+      ? openMobileSidePanel<GraficaServicoWizardDialogComponent, GraficaServicoWizardData, ComposicaoComercialResolvida>(
+          this.dialog, GraficaServicoWizardDialogComponent, { data: { ...data, mobilePanel: true }, ariaLabel: 'Adicionar item' })
+      : this.dialog.open(GraficaServicoWizardDialogComponent, {
+          width: '560px', maxWidth: '96vw', panelClass: ['grafica-servico-wizard-panel'],
+          autoFocus: true, restoreFocus: false, data,
+        });
     if (this.tipo === 'pedidos' && !this.pedidoId) {
       this.primeiroPedidoTutorial.registrarConfiguradorAberto();
     }

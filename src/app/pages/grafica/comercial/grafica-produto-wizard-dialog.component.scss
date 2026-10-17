@@ -230,3 +230,42 @@
       .wizard-footer .right { flex: 1; justify-content: flex-end; }
       .resolved-actions button { flex: 1 1 180px; }
     }
+
+// The wizard keeps its desktop dialog; only the shared mobile panel opts in.
+  :host-context(.mobile-side-panel) {
+    min-width: 0;
+    .dialog-header { flex-shrink: 0; }
+    .title-stack { min-width: 0; }
+    .title-stack h2 { margin: 0; padding: 0; font-size: 18px; line-height: 24px; }
+    .title-stack h2::before { display: none; }
+    .wizard-mobile-step-title { margin: 0 0 8px; font-size: 14px; line-height: 20px; font-weight: 600; overflow-wrap: anywhere; }
+    .wizard-stepper { height: auto; display: block; min-width: 0; }
+    .wizard-stepper ::ng-deep .mat-horizontal-stepper-wrapper { height: auto; display: block; }
+    .wizard-stepper ::ng-deep .mat-horizontal-content-container { display: block; height: auto; }
+    .wizard-stepper ::ng-deep .mat-horizontal-stepper-content[aria-expanded='true'] { display: block; height: auto; }
+    .wizard-stepper ::ng-deep .mat-horizontal-stepper-header-container { position: static; padding: 0 0 12px; }
+    .wizard-stepper ::ng-deep .mat-horizontal-stepper-header { flex: 1; min-width: 0; height: auto; min-height: 44px; padding: 8px 2px; }
+    .wizard-stepper ::ng-deep .mat-stepper-horizontal-line { min-width: 0; flex: 0 0 8px; margin: 20px 0 0; align-self: flex-start; }
+    .wizard-stepper ::ng-deep .mat-horizontal-stepper-header::before,
+    .wizard-stepper ::ng-deep .mat-horizontal-stepper-header::after { top: 20px; }
+    .wizard-stepper ::ng-deep .mat-step-label { min-width: 0; padding-top: 8px; white-space: normal; overflow-wrap: anywhere; font-size: 12px; }
+    .wizard-stepper ::ng-deep .mat-step-text-label { white-space: normal; overflow: visible; }
+    .step-inner, .price-step, .services-step, .review-step { padding: 0; min-width: 0; }
+    .price-shell, .services-shell, .review-shell { width: 100%; min-width: 0; }
+    .funnel-grid { width: 100%; height: auto; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+    .funnel-column { height: auto; min-height: 0; display: flex; flex-direction: column; overflow: visible; }
+    .funnel-list { overflow: visible; }
+    .funnel-option { height: auto; min-height: 44px; padding: 8px; }
+    .funnel-option span { white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+    .funnel-option-label { flex: 1; flex-wrap: wrap; }
+    .funnel-option-label small { white-space: nowrap; }
+    .funnel-pager button { width: 44px; height: 44px; }
+    .form-grid, .services-list, .opt-grid, .lot-grid, .rev-header, .quantity-entry-row, .quantity-range-layout { grid-template-columns: minmax(0, 1fr); }
+    .price-config-grid > *, .review-grid > *, .services-grid > *, .form-grid > * { min-width: 0; }
+    .price-ranges-list { max-height: none; overflow: visible; }
+    .rev-row { grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; overflow-wrap: anywhere; }
+    .wizard-footer { position: static; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .wizard-footer .right { display: contents; }
+    .wizard-footer button { min-width: 0; min-height: 44px; padding-inline: 8px; white-space: nowrap; }
+    .wizard-footer > button:not(:disabled) { background: transparent; color: var(--mat-sys-primary); box-shadow: none; }
+  }

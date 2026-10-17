@@ -1,10 +1,10 @@
-<div class="wizard-shell" [appTutorialTarget]="primeiroPedidoTargets.configurador">
-      <div class="dialog-header">
+<div class="wizard-shell mobile-side-panel__layout" [appTutorialTarget]="primeiroPedidoTargets.configurador">
+      <div class="dialog-header mobile-side-panel__header">
         <div class="title-stack">
           <h2 mat-dialog-title class="m-b-0">
             <span class="title-main">Adicionar item</span>
-            <span class="title-divider">-</span>
-            <span class="title-step" aria-live="polite">{{ currentStepLabel }}</span>
+            <span *ngIf="!data?.mobilePanel" class="title-divider">-</span>
+            <span *ngIf="!data?.mobilePanel" class="title-step" aria-live="polite">{{ currentStepLabel }}</span>
           </h2>
         </div>
         <button mat-icon-button mat-dialog-close aria-label="Fechar">
@@ -14,9 +14,10 @@
       <app-tutorial-overlay [embeddedForTarget]="primeiroPedidoTargets.configurador" />
       <mat-divider></mat-divider>
 
-      <mat-dialog-content class="wizard-body">
-        <mat-horizontal-stepper [linear]="true" #stepper class="wizard-stepper" (selectionChange)="onStepSelectionChange($event)">
-          <mat-step [stepControl]="produtoForm" label="Produto/Serviço e Variação">
+      <mat-dialog-content class="wizard-body mobile-side-panel__body">
+        <p *ngIf="data?.mobilePanel" class="wizard-mobile-step-title" aria-live="polite">{{ currentStepLabel }}</p>
+        <mat-horizontal-stepper [labelPosition]="data?.mobilePanel ? 'bottom' : 'end'" [linear]="true" #stepper class="wizard-stepper" (selectionChange)="onStepSelectionChange($event)">
+          <mat-step [stepControl]="produtoForm" [label]="data?.mobilePanel ? 'Seleção' : 'Produto/Serviço e Variação'">
             <form [formGroup]="produtoForm" class="step-inner step-full produto-step">
                     <div class="funnel-grid">
                       <section class="funnel-column">
@@ -197,7 +198,7 @@
             </form>
           </mat-step>
 
-          <mat-step [stepControl]="quantidadeForm" label="Configurar Preço">
+          <mat-step [stepControl]="quantidadeForm" [label]="data?.mobilePanel ? 'Preço' : 'Configurar Preço'">
             <form [formGroup]="quantidadeForm" class="step-inner step-wide price-step">
               <div class="price-shell">
                 <section class="price-product-card">
@@ -428,7 +429,7 @@
             </form>
           </mat-step>
 
-          <mat-step label="Acabamentos" [optional]="!possuiAdicionaisDisponiveis" [completed]="!possuiAdicionaisDisponiveis">
+          <mat-step [label]="data?.mobilePanel ? 'Adicionais' : 'Acabamentos'" [optional]="!possuiAdicionaisDisponiveis" [completed]="!possuiAdicionaisDisponiveis">
             <div class="step-inner step-wide services-step">
               <div class="services-shell">
                 <section class="price-product-card">
@@ -539,7 +540,7 @@
         </mat-horizontal-stepper>
       </mat-dialog-content>
 
-      <div class="wizard-footer">
+      <div class="wizard-footer mobile-side-panel__footer">
         <button mat-flat-button color="accent" type="button" [disabled]="isFirstStep" (click)="voltarStep()">
           Voltar
         </button>
