@@ -364,6 +364,7 @@
       actionType="submit" actionForm="comercial-editor-form" [actionTutorialTarget]="primeiroPedidoTargets.salvar"
       bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
       [reserveSpace]="true" [avoidKeyboard]="true"
+      bottomAnchorSelector=".mobile-bottom-nav"
       (expand)="mobileTotalExpanded.set(!mobileTotalExpanded())" (collapse)="mobileTotalExpanded.set(false)"
       (keydown.escape)="mobileTotalExpanded.set(false); $event.stopPropagation()">
       <h2 total-bar-details-header class="mobile-order-details-title">Detalhes do pedido</h2>

@@ -3,6 +3,19 @@
 }
 
 @media (max-width: 900px) {
+  .mobile-total-bar--managed {
+    max-height: max(0px, calc(var(--mobile-total-visible-height, 100dvh) - var(--mobile-total-bottom-offset, 0px) + var(--mobile-total-keyboard-inset, 0px) - 8px));
+    overflow: hidden;
+    .mobile-total-bar__handle-toggle, .mobile-total-bar__controls { flex-shrink: 0; }
+    .mobile-total-bar__details { flex: 0 1 auto; min-height: 0; overflow: hidden; }
+    .mobile-total-bar__details-clip { display: flex; flex-direction: column; min-height: 0; }
+    .mobile-total-bar__details-content { flex: 1 1 auto; min-height: 0; max-height: none; }
+    .mobile-total-bar__details-header { flex: 0 0 auto; }
+    .mobile-total-bar__details-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  }
+}
+
+@media (max-width: 900px) {
   :host {
     display: block;
   }
@@ -259,6 +272,7 @@
 
 // Opt-in composition: projected details and persistent controls share one fixed surface.
 .mobile-total-bar__controls { display: contents; }
+.mobile-total-bar__details-header { flex: 0 0 auto; }
 
 @media (max-width: 900px) {
   .mobile-total-bar--inline-details {

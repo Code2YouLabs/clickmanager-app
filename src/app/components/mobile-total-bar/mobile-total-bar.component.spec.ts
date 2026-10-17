@@ -3,24 +3,29 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { MobileTotalBarComponent } from './mobile-total-bar.component';
 import { provideRouter } from '@angular/router';
+import { By } from '@angular/platform-browser';
 
 @Component({
   standalone: true,
   imports: [MobileTotalBarComponent],
   template: `
-    <form id="test-form" (submit)="submits = submits + 1; $event.preventDefault()"></form>
+    <div class="form-scroll-port" [style.overflow-y]="scrollable ? 'auto' : null">
+    <form id="test-form" (submit)="submits = submits + 1; $event.preventDefault()"><input class="form-field" value="Dados preservados"><button type="button" class="form-action">Adicionar produto</button></form>
     <app-mobile-total-bar [inlineDetails]="inlineDetails" [awaitingResult]="awaitingResult" [loading]="loading" [expanded]="expanded" detailsPanelId="test-details"
       [appearance]="appearance" [actionType]="actionType" [actionForm]="actionForm" [actionTutorialTarget]="tutorialTarget" [reserveSpace]="reserveSpace" [avoidKeyboard]="avoidKeyboard"
+      [bottomAnchorSelector]="anchorSelector"
       [expandable]="expandable" valueText="R$ 123,45" actionText="Criar rascunho" [actionDisabled]="disabled"
       secondaryActionText="Revisar" [detailText]="expanded ? 'Ocultar detalhes' : 'Detalhes'"
       (collapse)="expanded = false" (expand)="expanded = !expanded; expansions = expansions + 1"
       (action)="actions = actions + 1" (secondaryAction)="secondaryActions = secondaryActions + 1">
       <h2 total-bar-details-header>Detalhes do cálculo</h2>
       <div total-bar-details><p>Distribuição da produção</p><button type="button" class="clear" (click)="clears = clears + 1">Limpar cálculo</button></div>
-    </app-mobile-total-bar>`,
+    </app-mobile-total-bar></div><nav class="test-bottom-anchor"></nav>`,
 })
 class HostComponent {
   appearance: 'default' | 'compact' = 'default';
+  scrollable = false;
+  anchorSelector = '';
   actionType: 'button' | 'submit' = 'button';
   actionForm: string | null = null;
   tutorialTarget = '';
@@ -68,6 +73,100 @@ describe('MobileTotalBarComponent — detalhes internos opcionais', () => {
     expect(query('.mobile-total-bar').style.bottom).toContain('250px');
     host.reserveSpace = false; host.avoidKeyboard = false; fixture.detectChanges();
     expect(query('.mobile-total-bar__clearance')).toBeNull(); expect(query('.mobile-total-bar').style.bottom).toBe('0px');
+  });
+
+  describe('integração com a superfície real de rolagem', () => {
+    let originalObserver: typeof ResizeObserver;
+    let notifyResize: ResizeObserverCallback;
+    let observer: ResizeObserver;
+
+    beforeEach(() => {
+      originalObserver = window.ResizeObserver;
+      observer = { observe: jasmine.createSpy(), unobserve: jasmine.createSpy(), disconnect: jasmine.createSpy() };
+      window.ResizeObserver = class {
+        constructor(callback: ResizeObserverCallback) { notifyResize = callback; return observer; }
+      } as any;
+    });
+    afterEach(() => { fixture.destroy(); window.ResizeObserver = originalObserver; });
+
+    // Deterministic layout metrics exercise the arithmetic without visual testing or screenshots.
+    const prepare = (tail = 50) => {
+      const host = fixture.componentInstance;
+      host.scrollable = true; host.reserveSpace = true; host.actionForm = 'test-form'; host.anchorSelector = '.test-bottom-anchor';
+      const component = fixture.debugElement.query(By.directive(MobileTotalBarComponent)).componentInstance as MobileTotalBarComponent;
+      const port = query('.form-scroll-port'), form = query('#test-form');
+      const viewportHeight = window.innerHeight;
+      port.style.scrollPaddingBottom = '24px';
+      Object.defineProperties(port, {
+        clientHeight: { configurable: true, value: viewportHeight },
+        scrollHeight: { configurable: true, get: () => viewportHeight + 400 + (parseFloat(query('.mobile-total-bar__clearance')?.style.height || '0') || 0) },
+        scrollTop: { configurable: true, writable: true, value: 123 },
+      });
+      spyOn(port, 'getBoundingClientRect').and.callFake(() => new DOMRect(0, 0, 360, viewportHeight));
+      spyOn(form, 'getBoundingClientRect').and.callFake(() => new DOMRect(0, -port.scrollTop, 360, viewportHeight + 400 - tail));
+      spyOn(query('.test-bottom-anchor'), 'getBoundingClientRect').and.returnValue(new DOMRect(0, viewportHeight - 72, 360, 72));
+      spyOn(query('.mobile-total-bar'), 'getBoundingClientRect').and.callFake(() => {
+        const height = 112 + (host.expanded ? 240 : 0);
+        return new DOMRect(0, viewportHeight - Math.max(72, component.keyboardInset()) - height, 360, height);
+      });
+      spyOn(query('.mobile-total-bar__details'), 'getBoundingClientRect').and.callFake(() => new DOMRect(0, 0, 360, host.expanded ? 240 : 0));
+      fixture.detectChanges();
+      spyOn(query('.mobile-total-bar__clearance'), 'getBoundingClientRect').and.callFake(() => new DOMRect(0, 0, 360, parseFloat(query('.mobile-total-bar__clearance').style.height) || 0));
+      return { host, component, port, form };
+    };
+
+    it('mede a navegação e reserva apenas o déficit, sem inflar o espaço ao expandir', fakeAsync(() => {
+      const { port, component, host } = prepare(); tick(40); fixture.detectChanges();
+      expect(component.anchorOffset()).toBe(72);
+      expect(query('.mobile-total-bar').style.bottom).toBe('72px');
+      expect(port.style.scrollPaddingBottom).toContain('192px');
+      expect(component.reservedHeight()).toBe(142);
+      host.expanded = true; fixture.detectChanges(); tick(20); fixture.detectChanges();
+      expect(component.reservedHeight()).toBe(142); expect(port.scrollTop).toBe(123);
+      expect(query('.mobile-total-bar__details-header').contains(query('[total-bar-details-header]'))).toBeTrue();
+      expect(query('.mobile-total-bar__details-body').contains(query('[total-bar-details-header]'))).toBeFalse();
+      expect(query('.mobile-total-bar__details').contains(query('.mobile-total-bar__controls'))).toBeFalse();
+      expect(document.body.style.overflow).toBe('');
+      query('.mobile-total-bar__details-body').dispatchEvent(new Event('scroll')); tick();
+      expect(host.expanded).toBeTrue();
+      port.dispatchEvent(new Event('scroll')); tick(); fixture.detectChanges();
+      expect(host.expanded).toBeFalse(); // Native tutorial/form scrolling reveals the original surface.
+      fixture.destroy(); expect(port.style.scrollPaddingBottom).toBe('24px'); expect(observer.disconnect).toHaveBeenCalled();
+    }));
+
+    it('reutiliza o espaço existente do shell sem duplicar a reserva inferior', fakeAsync(() => {
+      const { component, port } = prepare(300); tick(40); fixture.detectChanges();
+      expect(component.reservedHeight()).toBe(0); expect(port.style.scrollPaddingBottom).toContain('192px');
+    }));
+
+    it('mantém o campo focado acessível com teclado e recolhe detalhes sem perder dados', fakeAsync(() => {
+      const visible = Object.assign(new EventTarget(), { height: window.innerHeight, offsetTop: 0 });
+      spyOnProperty(window, 'visualViewport', 'get').and.returnValue(visible as VisualViewport);
+      const { component, host, port } = prepare(); host.avoidKeyboard = true; fixture.detectChanges(); tick(40); fixture.detectChanges();
+      host.expanded = true; fixture.detectChanges(); tick(20);
+      const field = query<HTMLInputElement>('.form-field');
+      spyOn(field, 'getBoundingClientRect').and.returnValue(new DOMRect(0, window.innerHeight - 100, 160, 32));
+      const reveal = spyOn(field, 'scrollIntoView'); field.focus(); tick(40); fixture.detectChanges();
+      expect(host.expanded).toBeFalse(); expect(field.value).toBe('Dados preservados');
+      expect(reveal).toHaveBeenCalledWith({ block: 'nearest', inline: 'nearest', behavior: 'auto' });
+      visible.height -= 250; visible.dispatchEvent(new Event('resize')); tick(20); fixture.detectChanges();
+      expect(component.keyboardInset()).toBe(250); expect(port.style.scrollPaddingBottom).toContain('370px');
+      expect(query('.mobile-total-bar').style.bottom).toContain('250px');
+      visible.height = window.innerHeight; visible.dispatchEvent(new Event('resize')); tick(20); fixture.detectChanges();
+      expect(component.keyboardInset()).toBe(0); expect(port.style.scrollPaddingBottom).toContain('192px');
+      expect(field.value).toBe('Dados preservados');
+      reveal.calls.reset(); visible.dispatchEvent(new Event('scroll')); tick(20);
+      expect(reveal).not.toHaveBeenCalled();
+    }));
+
+    it('acompanha redimensionamento sem bloquear ações nem alterar o proprietário externo', fakeAsync(() => {
+      const { port, component, host } = prepare(); tick(40); fixture.detectChanges();
+      host.disabled = false; host.actionType = 'submit'; fixture.detectChanges();
+      notifyResize([], observer); tick(20); fixture.detectChanges();
+      query<HTMLButtonElement>('.mobile-total-bar__cta').click(); expect(host.submits).toBe(1);
+      host.reserveSpace = false; fixture.detectChanges(); tick(20);
+      expect(port.style.scrollPaddingBottom).toBe('24px'); expect(component.anchorOffset()).toBe(0);
+    }));
   });
 
   const pointer = (type: string, x: number, y: number, options: PointerEventInit = {}) => {
