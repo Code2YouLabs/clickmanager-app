@@ -20,6 +20,13 @@
 - O contrato não possui flag específica de preço mínimo aplicado. A interface
   mostra mensagens e detalhes reais da API, sem concluir aplicação do mínimo a
   partir da política ou do total. Duplicatas textuais exatas não são repetidas.
+- No resultado mobile válido, o sucesso genérico e as entradas técnicas completas
+  conhecidas de `mensagem`/`detalhes` não aparecem abaixo do Total. A filtragem é
+  conservadora: alertas, textos desconhecidos ou mistos continuam visíveis.
+  Resultados inválidos exibem mensagem e detalhes sem essa filtragem.
+- Ordem do resumo: medidas, área faturada, área geométrica quando distinta,
+  quantidade, unitário e Total. Não há cálculo novo de área ou valor financeiro.
+  A resposta original e seus detalhes continuam intactos no snapshot comercial.
 
 Validação automatizada sem screenshots: unidades m/cm/mm, decimais, campos
 obrigatórios, limites, regras expansíveis, retorno válido/inválido, mínimo

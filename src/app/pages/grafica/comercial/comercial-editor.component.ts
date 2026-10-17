@@ -2068,7 +2068,12 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   }
 
   get notasMetroQuadrado(): string[] {
-    return [...new Set([this.preco?.mensagem || '', ...(this.preco?.detalhes || [])].filter(Boolean))];
+    const notas = [...new Set([this.preco?.mensagem || '', ...(this.preco?.detalhes || [])].filter(Boolean))];
+    if (!this.mobileMetroQuadrado || !this.precoValido) return notas;
+    // Only known, complete metadata entries from the pricing response are redundant.
+    // Unknown or mixed messages stay visible so operational warnings are not discarded.
+    const metadado = /^(?:Modo:\s*QUADRADO|(?:Largura|Altura):\s*[\d.,]+\s*(?:METRO|CENTIMETRO|MILIMETRO)|Área:\s*[\d.,]+\s*m²|(?:Preço\/m²|Mínimo por item|Total):\s*R\$\s*[\d.,]+|Quantidade:\s*\d+)\.?$/i;
+    return notas.filter(nota => !/^Preço calculado\.?$/i.test(nota.trim()) && !metadado.test(nota.trim()));
   }
 
   get mostraLarguraPreco(): boolean {

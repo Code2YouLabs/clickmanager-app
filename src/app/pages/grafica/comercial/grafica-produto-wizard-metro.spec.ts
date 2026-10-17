@@ -110,7 +110,7 @@ describe('Wizard: metro quadrado mobile', () => {
     expect(query('.measure-area-notes').querySelectorAll('p').length).toBe(1);
     expect(query('.summary-price-total').textContent).toContain('800,00');
     service.precificar.and.returnValue(of({ ...result, areaReal: null, areaFaturada: null, detalhes: [] } as any));
-    calculate(); expect(query('.price-summary-card').textContent).not.toContain('Área calculada');
+    calculate(); expect(query('.price-summary-card').textContent).not.toContain('Área geométrica');
     expect(query('.price-summary-card').textContent).not.toContain('Área faturada');
   }));
 
@@ -144,6 +144,70 @@ describe('Wizard: metro quadrado mobile', () => {
     expect(inputs()[0].getAttribute('inputmode')).toBe('numeric');
     expect(query('.price-step .price-summary-card')).not.toBeNull();
   }));
+
+  it('oculta apenas o detalhamento técnico conhecido, preservando resultado e snapshot', fakeAsync(() => {
+    const technical = ['Modo: QUADRADO', 'Largura: 1 METRO', 'Altura: 1METRO', 'Área: 1 m²', 'Preço/m²: R$ 87.00', 'Mínimo por item: R$ 30.00', 'Quantidade: 1', 'Total: R$ 87.00'];
+    const response = { ...result, mensagem: 'Preço calculado.', largura: 1, altura: 1, quantidadeSolicitada: 1, areaReal: 1, areaFaturada: 1, valorUnitario: 87, valorTotal: 87, detalhes: technical };
+    const original = JSON.stringify(response);
+    service.precificar.and.returnValue(of(response as any));
+    enter(); fill(['1', '1', '1']); calculate();
+    expect(query('.measure-area-notes')).toBeNull();
+    const summary = query('.price-summary-card');
+    const labels = Array.from(summary.querySelectorAll('.summary-price-row:not(.summary-price-kind) > span, .summary-price-total > span')).map(element => element.textContent?.trim());
+    expect(labels).toEqual(['Medidas informadas', 'Área faturada', 'Quantidade', 'Preço unitário', 'Total']);
+    expect(summary.textContent).toContain('1 × 1 m'); expect(summary.textContent).toContain('1,00 m²');
+    expect(summary.textContent).not.toContain('Modo:'); expect(summary.textContent).not.toContain('Mínimo por item:');
+    expect(summary.querySelectorAll('.summary-price-total').length).toBe(1);
+    expect(wizard.preco).toBe(response as any); expect(JSON.stringify(response)).toBe(original);
+    const snapshot = JSON.parse((wizard as any).composicaoDaPrecificacao().itens[0].snapshotComercial);
+    expect(snapshot.precificacao.mensagem).toBe('Preço calculado.');
+    expect(snapshot.precificacao.detalhes).toEqual(technical);
+    wizard.data.mobilePanel = false;
+    expect(wizard.notasMetroQuadrado).toEqual(['Preço calculado.', ...technical]);
+  }));
+
+  it('preserva alertas desconhecidos, mensagens mistas e erros fornecidos em detalhes', fakeAsync(() => {
+    const warning = 'Atenção: conferir o material antes da impressão.';
+    const mixed = 'Largura: 1 METRO. Atenção: conferir a instalação.';
+    service.precificar.and.returnValue(of({ ...result, mensagem: warning, detalhes: ['Modo: QUADRADO', mixed, 'Preço mínimo aplicado'] } as any));
+    enter(); fill(); calculate();
+    expect(query('.measure-area-notes').textContent).toContain(warning);
+    expect(query('.measure-area-notes').textContent).toContain(mixed);
+    expect(query('.measure-area-notes').textContent).toContain('Preço mínimo aplicado');
+    expect(query('.measure-area-notes').textContent).not.toContain('Modo: QUADRADO');
+    service.precificar.and.returnValue(of({ ...result, status: 'CONFIGURACAO_INVALIDA', mensagem: '', detalhes: ['Largura máxima excedida'] } as any));
+    calculate(); expect(query('.measure-area-feedback').textContent).toContain('Largura máxima excedida');
+    expect(wizard.nextDisabled).toBeTrue();
+  }));
+
+  it('distingue área geométrica da faturada sem duplicar ou converter os valores', fakeAsync(() => {
+    enter(); fill(); calculate();
+    const labels = Array.from(query('.price-summary-card').querySelectorAll('.summary-price-row:not(.summary-price-kind) > span')).map(element => element.textContent?.trim());
+    expect(labels).toEqual(['Medidas informadas', 'Área faturada', 'Área geométrica', 'Quantidade', 'Preço unitário']);
+    expect(query('.price-summary-card').textContent).toContain('3,125 m²');
+    expect(query('.price-summary-card').textContent).toContain('6,25 m²');
+    expect(wizard.preco?.areaReal).toBe(3.125); expect(wizard.preco?.areaFaturada).toBe(6.25);
+  }));
+
+  for (const [index, value] of [[0, '1.5'], [1, '3'], [2, '3']] as const) {
+    it(`invalida imediatamente ao alterar ${['largura', 'altura', 'quantidade'][index]} sem consulta automática`, fakeAsync(() => {
+      enter(); fill(); calculate(); expect(wizard.nextDisabled).toBeFalse();
+      const input = inputs()[index]; input.value = value; input.dispatchEvent(new Event('input')); render();
+      expect(wizard.preco).toBeNull(); expect(wizard.nextDisabled).toBeTrue();
+      expect(query('.price-step .price-summary-card')).toBeNull();
+      expect((query('.measure-entry-panel > button') as HTMLButtonElement).disabled).toBeFalse();
+      tick(300); expect(service.precificar).toHaveBeenCalledTimes(1);
+    }));
+  }
+
+  for (const tipo of ['FIXO', 'POR_FAIXA_QUANTIDADE', 'POR_LOTE']) {
+    it(`não aplica a filtragem técnica a ${tipo}`, fakeAsync(() => {
+      policy.tipo = tipo; enter();
+      wizard.preco = { ...result, mensagem: 'Preço calculado.', detalhes: ['Modo: QUADRADO'] } as any;
+      render(); expect(wizard.notasMetroQuadrado).toEqual(['Preço calculado.', 'Modo: QUADRADO']);
+      expect(query('.measure-area-notes')).toBeNull();
+    }));
+  }
 
   for (const width of [320, 360]) {
     it(`mantém largura e altura lado a lado e regras sem rolagem interna em ${width}px`, fakeAsync(() => {
