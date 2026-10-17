@@ -1792,6 +1792,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   mobileFunnelStage: FunilColuna = 'produto';
   readonly mobileFunnelPageSize = signal(6);
   private mobileOptionHeight = 44;
+  private mobileRowMeasurementKey = '';
   private focusedMobileFunnelStage: FunilColuna = 'produto';
   private funnelResizeObserver?: ResizeObserver;
   @ViewChild('funnelGrid', { read: ElementRef }) private funnelGrid?: ElementRef<HTMLElement>;
@@ -1820,11 +1821,21 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
       this.funnelResizeObserver.observe(grid);
     }
     const list = grid.querySelector<HTMLElement>('.funnel-column--current .funnel-list');
-    if (!list?.clientHeight) return;
+    if (!list?.clientHeight || !list.clientWidth) return;
+    // Layout widths can change while the panel/stepper settles. Do not keep
+    // a wrapped row's old height after its available width has changed.
+    const measurementKey = `${this.mobileFunnelStage}:${list.clientWidth}`;
+    if (measurementKey !== this.mobileRowMeasurementKey) {
+      this.mobileRowMeasurementKey = measurementKey;
+      this.mobileOptionHeight = 44;
+    }
     list.querySelectorAll<HTMLElement>('.funnel-option').forEach(option => {
-      this.mobileOptionHeight = Math.max(this.mobileOptionHeight, option.getBoundingClientRect().height);
+      this.mobileOptionHeight = Math.max(this.mobileOptionHeight, option.offsetHeight);
     });
-    const size = Math.max(1, Math.min(6, Math.floor((list.clientHeight - 14) / (this.mobileOptionHeight + 6))));
+    const style = getComputedStyle(list);
+    const gap = parseFloat(style.rowGap) || 0;
+    const padding = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
+    const size = Math.max(1, Math.floor((list.clientHeight - padding + gap) / (this.mobileOptionHeight + gap)));
     const previous = this.mobileFunnelPageSize();
     if (size === previous) return;
     (Object.keys(this.paginasFunil) as FunilColuna[]).forEach(column => {

@@ -22,6 +22,8 @@ A branch parte da base mobile atual, incluindo os commits locais aprovados.
   quadro ativo sem abrir o teclado. Movimento reduzido desativa a transição.
 - A seleção ocupa a altura central, sem empilhar quadros ou rolar verticalmente.
   A quantidade de opções por página acompanha o espaço e a altura dos nomes,
+  sem o antigo limite de seis itens no mobile. A medição reinicia quando muda
+  a largura do quadro, e etapas inativas não reduzem a largura do quadro ativo,
   mantendo o primeiro resultado acessível quando a altura disponível muda.
 - Busca vazia não remove o quadro; novas escolhas limpam pesquisas dependentes
   no mobile. Desktop mantém as colunas e as seis opções por página originais.

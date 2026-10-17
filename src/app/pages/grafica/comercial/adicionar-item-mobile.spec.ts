@@ -151,14 +151,22 @@ describe('Adicionar item no painel mobile compartilhado', () => {
     render();
     const list = query('.funnel-column--current .funnel-list');
     Object.defineProperty(list, 'clientHeight', { configurable: true, value: 126 });
-    list.querySelectorAll<HTMLElement>('.funnel-option').forEach(option => spyOn(option, 'getBoundingClientRect').and.returnValue({ height: 44 } as DOMRect));
-    (wizard as any).mobileOptionHeight = 44;
+    Object.defineProperty(list, 'clientWidth', { configurable: true, value: 300 });
+    list.querySelectorAll<HTMLElement>('.funnel-option').forEach(option => Object.defineProperty(option, 'offsetHeight', { configurable: true, value: 44 }));
+    // A narrow initial layout must not permanently reserve oversized rows.
+    (wizard as any).mobileRowMeasurementKey = 'produto:180';
+    (wizard as any).mobileOptionHeight = 144;
     (wizard as any).fitMobileFunnel();
     expect(wizard.itensPorPaginaFunil).toBe(2); expect(wizard.totalPaginasFunil('produto')).toBe(4);
     wizard.proximaPaginaFunil('produto'); expect(wizard.opcoesPaginadas('produto')[0].label).toBe('Produto 3');
     Object.defineProperty(list, 'clientHeight', { configurable: true, value: 76 });
     (wizard as any).fitMobileFunnel();
     expect(wizard.itensPorPaginaFunil).toBe(1); expect(wizard.opcoesPaginadas('produto')[0].label).toBe('Produto 3');
+    Object.defineProperty(list, 'clientHeight', { configurable: true, value: 516 });
+    (wizard as any).fitMobileFunnel();
+    expect(wizard.itensPorPaginaFunil).toBe(10);
+    expect(wizard.opcoesPaginadas('produto').length).toBe(7);
+    expect(wizard.opcoesPaginadas('produto').some(option => option.label === 'Produto 3')).toBeTrue();
     dialog.closeAll(); tick(400);
   }));
 
