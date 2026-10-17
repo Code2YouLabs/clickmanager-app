@@ -94,12 +94,55 @@ describe('Adicionar item no painel mobile compartilhado', () => {
       expect(wizard.acabamentoSelecionado(1)).toBeTrue();
       next(); composition.next({ itens: [added] }); composition.complete(); tick(300); render();
       expect(wizard.stepper?.selectedIndex).toBe(3);
+      expect(query('.wizard-footer .primary-action').textContent?.trim()).toBe('Adicionar item');
       next(); tick(400); render();
       expect(editor.tipo).toBe(type);
       expect(editor.itens.length).toBe(3);
       expect(editor.itens[2]).toEqual(jasmine.objectContaining({ nomeProduto: 'Acabamento: Corte', quantidade: 1, valorUnitario: 10, valorTotal: 10 }));
       expect(editor.clienteConfirmado?.id).toBe(7);
       expect(dialog.openDialogs.length).toBe(0);
+    }));
+  }
+
+  for (const [width, height] of [[320, 700], [360, 740], [390, 844]]) {
+    it(`mantém revisão extensa acessível na rolagem principal em ${width}x${height}`, fakeAsync(() => {
+      const wizard = open();
+      dialog.openDialogs[0].updateSize(`${width}px`, `${height}px`);
+      query('.mobile-side-panel').style.maxHeight = `${height}px`;
+      query('.funnel-option').click(); render(); tick(300); render();
+      if (wizard.isFirstStep) next();
+      next();
+      const items = Array.from({ length: 20 }, (_, index) => ({
+        nomeProduto: `Item ${index + 1} com descrição longa para revisão completa`,
+        caracteristicasResumo: 'Configuração completa, incluindo material, formato, cor e outras opções selecionadas.',
+        unidadeVenda: 'M2', quantidade: 1.25, valorUnitario: 10, valorTotal: 12.5,
+      }));
+      composition.next({ itens: items }); composition.complete(); tick(300); render();
+      expect(wizard.stepper?.selectedIndex).toBe(3);
+      const body = query('.wizard-body');
+      const list = query('.review-mobile-list');
+      expect(list.children.length).toBe(20);
+      expect(body.scrollWidth).toBeLessThanOrEqual(body.clientWidth);
+      expect(body.scrollHeight).toBeGreaterThan(body.clientHeight);
+      expect(getComputedStyle(list).overflowY).toBe('visible');
+      expect(getComputedStyle(query('.review-items-card')).overflowY).toBe('visible');
+      body.scrollTop = body.scrollHeight;
+      const last = list.lastElementChild!.getBoundingClientRect();
+      const summary = query('.review-step .price-summary-card').getBoundingClientRect();
+      expect(last.top).toBeGreaterThanOrEqual(body.getBoundingClientRect().top);
+      expect(last.bottom).toBeLessThanOrEqual(body.getBoundingClientRect().bottom);
+      expect(summary.bottom).toBeLessThanOrEqual(body.getBoundingClientRect().bottom);
+      expect(query('.wizard-footer').getBoundingClientRect().top).toBeGreaterThanOrEqual(body.getBoundingClientRect().bottom);
+      expect(query('.dialog-header').getBoundingClientRect().bottom).toBeLessThanOrEqual(body.getBoundingClientRect().top);
+      const label = query('.primary-action .mdc-button__label');
+      expect(label.textContent?.trim()).toBe('Adicionar item');
+      expect(label.getBoundingClientRect().width).toBeLessThanOrEqual(query('.primary-action').clientWidth - 16);
+      expect(query('.review-step .summary-price-total').textContent).toContain('250,00');
+      expect(document.querySelectorAll('.review-step .summary-price-total').length).toBe(1);
+      expect(list.lastElementChild!.textContent).toContain('1,25 M2');
+      expect(list.lastElementChild!.textContent).toContain('12,50');
+      query('.wizard-footer button[mat-dialog-close]').click(); tick(400); render();
+      expect(editor.itens).toEqual([existing] as any);
     }));
   }
 

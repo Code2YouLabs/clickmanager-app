@@ -55,6 +55,16 @@ A branch parte da base mobile atual, incluindo os commits locais aprovados.
   de valor. Seleção múltipla continua no Set de IDs e a composição segue intacta.
   O contrato atual não fornece flags de obrigatório/incompatível/desabilitado;
   nenhuma regra foi inventada. O controle mantém o comportamento disabled Material.
+- Revisão mobile apresenta a mesma coleção `itensRevisao` em lista, na ordem
+  original, com nome, descrição, quantidade, unidade, unitário e total de cada
+  registro. Desktop mantém a tabela. Não há rolagem interna na composição.
+- O resumo mobile destaca apenas o `totalComposicao` existente, evitando tratar
+  quantidade e unitário do último produto como resumo de toda a composição.
+  Produto/configuração usam o bloco compacto e o título Revisão não se repete.
+- Adicionar mais itens permanece secundário e conserva o handler que acumula a
+  composição antes de retornar à seleção. A ação final mobile usa Adicionar item,
+  com espaço maior no rodapé apenas na Revisão; desktop mantém Concluir.
+  O retorno ao Editor continua por `afterClosed`, sem salvar o documento.
 
 ## Fluxo e tutorial
 
@@ -67,7 +77,7 @@ As âncoras `PRIMEIRO_PEDIDO_TARGETS`, o overlay embutido e os checkpoints
 ## Fase 2 e validação manual
 
 Refinar o conteúdo das etapas e as relações entre colunas do funil, sem alterar
-as dependências reais. O rodapé final conserva o rótulo original Concluir.
+as dependências reais. O rodapé final desktop conserva o rótulo original Concluir.
 Aparência, teclado virtual, paisagem e animações devem ser conferidos manualmente
 em 360, 390 e 430px. Não foram executados testes visuais ou screenshots.
 

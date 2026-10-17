@@ -15,7 +15,7 @@
       <mat-divider></mat-divider>
 
       <mat-dialog-content class="wizard-body mobile-side-panel__body" [class.wizard-body--funnel]="data?.mobilePanel && isFirstStep">
-        <p *ngIf="data?.mobilePanel" class="wizard-mobile-step-title" [class.wizard-mobile-step-title--redundant]="stepper.selectedIndex === 1 || stepper.selectedIndex === 2" aria-live="polite">{{ currentStepLabel }}</p>
+        <p *ngIf="data?.mobilePanel" class="wizard-mobile-step-title" [class.wizard-mobile-step-title--redundant]="stepper.selectedIndex > 0" aria-live="polite">{{ currentStepLabel }}</p>
         <mat-horizontal-stepper labelPosition="bottom" [linear]="true" #stepper class="wizard-stepper" (selectionChange)="onStepSelectionChange($event)">
           <mat-step [stepControl]="produtoForm" [label]="data?.mobilePanel ? 'Produto' : stepLabels[0]">
             <form [formGroup]="produtoForm" class="step-inner step-full produto-step">
@@ -501,7 +501,7 @@
                   <div>
                     <div class="rev-title">Item selecionado</div>
                     <h3>{{ itemSelecionadoNome }}</h3>
-                    <div class="price-variation">{{ itemSelecionadoResumo }}</div>
+                    <div class="price-variation">{{ data?.mobilePanel && produtoSelecionado ? resumoProdutoResolvido : itemSelecionadoResumo }}</div>
                   </div>
                   <span class="price-type">{{ tipoPrecoLabel }}</span>
                 </section>
@@ -509,7 +509,20 @@
                 <div class="review-grid">
                   <section class="review-card review-items-card">
                     <h3>Itens da composição</h3>
-                    <div class="rev-table">
+                    <ul class="review-mobile-list" *ngIf="data?.mobilePanel">
+                      <li *ngFor="let item of itensRevisao">
+                        <strong class="review-mobile-name">{{ item.nomeProduto }}</strong>
+                        <p class="review-mobile-description" *ngIf="item.caracteristicasResumo">{{ item.caracteristicasResumo }}</p>
+                        <div class="review-mobile-values">
+                          <span>{{ item.quantidade | number:'1.0-3':'pt-BR' }} {{ item.unidadeVenda || 'un' }}</span>
+                          <strong>{{ item.valorTotal | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
+                        </div>
+                        <small class="review-mobile-unit" *ngIf="item.valorUnitario !== null && item.valorUnitario !== undefined">
+                          Unitário: {{ item.valorUnitario | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
+                        </small>
+                      </li>
+                    </ul>
+                    <div class="rev-table" *ngIf="!data?.mobilePanel">
                       <div class="rev-row rev-head">
                         <span>Item</span>
                         <span class="text-center">Qtd</span>
@@ -535,11 +548,11 @@
 
                   <aside class="price-summary-card">
                     <h3>Resumo</h3>
-                    <div class="summary-price-row">
+                    <div class="summary-price-row" *ngIf="!data?.mobilePanel">
                       <span>Quantidade</span>
                       <strong>{{ preco?.quantidadeSolicitada || quantidadeForm.value.quantidade || 1 }}</strong>
                     </div>
-                    <div class="summary-price-row" *ngIf="preco?.valorUnitario !== null && preco?.valorUnitario !== undefined">
+                    <div class="summary-price-row" *ngIf="!data?.mobilePanel && preco?.valorUnitario !== null && preco?.valorUnitario !== undefined">
                       <span>Valor unitário</span>
                       <strong>{{ preco?.valorUnitario | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
                     </div>
@@ -561,14 +574,14 @@
         </mat-horizontal-stepper>
       </mat-dialog-content>
 
-      <div class="wizard-footer mobile-side-panel__footer">
+      <div class="wizard-footer mobile-side-panel__footer" [class.wizard-footer--review]="data?.mobilePanel && isLastStep">
         <button mat-flat-button color="accent" type="button" [disabled]="isFirstStep && !canGoBackMobileFunnel" (click)="voltarStep()">
           Voltar
         </button>
         <div class="right">
           <button mat-stroked-button color="primary" type="button" mat-dialog-close>Cancelar</button>
           <button mat-flat-button color="primary" class="primary-action" type="button" [disabled]="nextDisabled" (click)="avancarStep()">
-            <span>{{ nextLabel }}</span>
+            <span>{{ data?.mobilePanel && isLastStep ? 'Adicionar item' : nextLabel }}</span>
           </button>
         </div>
       </div>

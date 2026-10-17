@@ -281,7 +281,7 @@
     .summary-price-total { margin: 0; padding: 8px 12px; font-size: 16px; line-height: 20px; }
     .summary-rule { font-size: 11px; line-height: 16px; }
     .summary-rule mat-icon { width: 16px; height: 16px; font-size: 16px; }
-    .price-step, .services-step {
+    .price-step, .services-step, .review-step {
       .price-product-card { border: 0; border-bottom: 1px solid #e2e8f0; border-radius: 0; padding: 0 0 12px; }
       .price-product-card h3, .price-variation { overflow-wrap: anywhere; }
       .price-type { text-transform: none; font-weight: 600; }
@@ -331,6 +331,24 @@
       .service-mobile-price strong { color: #0f172a; font-weight: 600; font-variant-numeric: tabular-nums; }
       .empty-state.compact { border: 0; border-radius: 0; padding: 12px 0; min-height: 0; text-align: left; }
     }
+    .review-step {
+      .review-shell { gap: 12px; padding-bottom: 8px; }
+      .review-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+      .review-items-card { min-height: 0; border: 0; border-radius: 0; padding: 0; }
+      .review-items-card h3 { margin: 0 0 4px; font-size: 14px; line-height: 20px; }
+      .review-mobile-list { list-style: none; padding: 0; margin: 0; }
+      .review-mobile-list li { padding: 12px 0; border-bottom: 1px solid #e2e8f0; overflow-wrap: anywhere; }
+      .review-mobile-name { display: block; font-size: 14px; line-height: 20px; font-weight: 600; }
+      .review-mobile-description { margin: 4px 0 0; color: #64748b; font-size: 12px; line-height: 18px; }
+      .review-mobile-values { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin-top: 8px; font-size: 13px; line-height: 20px; }
+      .review-mobile-values > span { color: #64748b; }
+      .review-mobile-values strong { color: #0f172a; font-weight: 600; font-variant-numeric: tabular-nums; }
+      .review-mobile-unit { display: block; margin-top: 2px; color: #64748b; font-size: 12px; line-height: 18px; }
+      .review-actions { justify-content: flex-start; margin-top: 8px; }
+      .review-actions button { min-height: 44px; border-color: transparent; padding-inline: 8px; white-space: normal; }
+      .price-summary-card { border: 0; border-top: 1px solid #e2e8f0; border-radius: 0; padding: 12px 0 0; }
+      .summary-price-total strong { font-size: 20px; font-variant-numeric: tabular-nums; }
+    }
     .funnel-grid { width: 100%; height: auto; grid-template-columns: minmax(0, 1fr); gap: 16px; }
     .funnel-column { height: auto; min-height: 0; display: flex; flex-direction: column; overflow: visible; }
     .funnel-list { overflow: visible; }
@@ -348,6 +366,7 @@
     .wizard-footer button { min-width: 0; min-height: 44px; padding-inline: 8px; white-space: nowrap; }
     .wizard-footer > button:not(:disabled) { background: transparent; color: var(--mat-sys-primary); box-shadow: none; }
     .wizard-footer button[mat-dialog-close] { border-color: transparent; background: transparent; }
+    .wizard-footer--review { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(128px, 1.5fr); }
   }
 
 @media (max-width: 340px) {
