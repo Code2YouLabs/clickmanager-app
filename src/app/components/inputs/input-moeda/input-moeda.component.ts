@@ -1,11 +1,14 @@
 import {
   Component,
+  inject,
   Input,
   OnInit,
+  DoCheck,
   AfterViewInit,
   ViewChild,
   ElementRef,
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   OnDestroy,
   SimpleChanges,
   OnChanges
@@ -13,7 +16,8 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
+import { MatInput, MatInputModule } from '@angular/material/input';
+import { ErrorStateMatcher } from '@angular/material/core';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -28,14 +32,22 @@ import { Subscription } from 'rxjs';
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class InputMoedaComponent implements OnInit, AfterViewInit, OnDestroy, OnChanges {
+export class InputMoedaComponent implements OnInit, AfterViewInit, OnDestroy, OnChanges, DoCheck {
+  @Input() showControlErrors = false;
+  readonly defaultErrorMatcher = inject(ErrorStateMatcher);
+  readonly controlErrorMatcher: ErrorStateMatcher = {
+    isErrorState: () => !!this.control?.invalid && this.control.touched,
+  };
   @Input() inputMode: 'decimal' | 'numeric' | null = null;
   @Input() control!: FormControl;
   @Input() label: string = 'Valor';
+  @ViewChild(MatInput) private materialInput?: MatInput;
   @ViewChild('inputRef') inputRef!: ElementRef<HTMLInputElement>;
 
   valorFormatado = '';
   private sub?: Subscription;
+  private stateSub?: Subscription;
+  private readonly changeDetector = inject(ChangeDetectorRef);
   private atualizando = false;
 
   ngOnInit(): void {
@@ -49,6 +61,11 @@ export class InputMoedaComponent implements OnInit, AfterViewInit, OnDestroy, On
     }
   }
 
+  ngDoCheck(): void {
+    // This masked input intentionally has no NgControl on the native input.
+    if (this.showControlErrors) this.materialInput?.updateErrorState();
+  }
+
   ngAfterViewInit(): void {
     // garante que o input mostra o estado atual
     this.inputRef.nativeElement.value = this.valorFormatado;
@@ -56,11 +73,13 @@ export class InputMoedaComponent implements OnInit, AfterViewInit, OnDestroy, On
 
   ngOnDestroy(): void {
     this.sub?.unsubscribe();
+    this.stateSub?.unsubscribe();
   }
 
   private bindControl(ctrl: FormControl) {
     // desfaz inscrição anterior
     this.sub?.unsubscribe();
+    this.stateSub?.unsubscribe();
 
     // reaplica validators e evita loops
     const existing = ctrl.validator ? [ctrl.validator] : [];
@@ -69,6 +88,9 @@ export class InputMoedaComponent implements OnInit, AfterViewInit, OnDestroy, On
 
     // atualiza refs
     this.control = ctrl;
+    this.stateSub = ctrl.events.subscribe(() => {
+      if (this.showControlErrors) this.changeDetector.markForCheck();
+    });
     this.valorFormatado = this.formatarParaMoeda(ctrl.value);
     if (this.inputRef) this.inputRef.nativeElement.value = this.valorFormatado;
 
@@ -81,6 +103,10 @@ export class InputMoedaComponent implements OnInit, AfterViewInit, OnDestroy, On
         this.inputRef.nativeElement.value = display;
       }
     });
+  }
+
+  onBlur(): void {
+    if (this.showControlErrors) this.control.markAsTouched();
   }
 
   onInput(event: Event): void {

@@ -169,17 +169,19 @@
                 [mobileSummary]="mobilePedidoNovo ? 'Pago ' + (resumoFinanceiroView.totalRecebido | currency:'BRL':'symbol':'1.2-2') + ' · Saldo ' + (resumoFinanceiroView.saldoAberto | currency:'BRL':'symbol':'1.2-2') : ''"
                 (mobileExpandedChange)="setMobileSection('financeiro', $event)"
                 [divider]="true"
-                class="summary-card"
+                class="summary-card" [class.summary-card--mobile]="isMobile"
                 [appTutorialTarget]="tipo === 'pedidos' && !pedidoId && itens.length ? primeiroPedidoTargets.revisao : ''"
               >
-                <div class="summary-row">
+                <h3 class="mobile-financial-title" *ngIf="isMobile">Valores do {{ itemContextoLabel }}</h3>
+                <div class="summary-row subtotal">
                   <span>Subtotal</span>
                   <strong class="value align-right">{{ resumoFinanceiroView.subtotal | currency:'BRL':'symbol':'1.2-2' }}</strong>
                 </div>
+                <h4 class="mobile-adjustments-title" *ngIf="isMobile">Ajustes</h4>
                 <div class="financial-adjustments" (keydown.enter)="evitarSubmitDaSecao($event)" [formGroup]="ajustesFinanceirosForm" *ngIf="podeEditarAjustesFinanceiros; else ajustesFinanceirosLeitura">
-                  <app-input-moeda [inputMode]="mobilePedidoNovo ? 'decimal' : null" [control]="acrescimoControl" label="Acréscimos"></app-input-moeda>
-                  <app-input-moeda [inputMode]="mobilePedidoNovo ? 'decimal' : null" [control]="freteControl" label="Frete"></app-input-moeda>
-                  <app-input-moeda [inputMode]="mobilePedidoNovo ? 'decimal' : null" [control]="descontoControl" label="Descontos"></app-input-moeda>
+                  <app-input-moeda [showControlErrors]="isMobile" [inputMode]="isMobile ? 'decimal' : null" [control]="acrescimoControl" label="Acréscimos"></app-input-moeda>
+                  <app-input-moeda [showControlErrors]="isMobile" [inputMode]="isMobile ? 'decimal' : null" [control]="freteControl" label="Frete"></app-input-moeda>
+                  <app-input-moeda [showControlErrors]="isMobile" [inputMode]="isMobile ? 'decimal' : null" [control]="descontoControl" label="Descontos"></app-input-moeda>
                   <button
                     *ngIf="pedidoId"
                     mat-stroked-button
@@ -210,6 +212,7 @@
                   <span>Total</span>
                   <strong class="value highlight">{{ resumoFinanceiroView.total | currency:'BRL':'symbol':'1.2-2' }}</strong>
                 </div>
+                <h3 class="mobile-financial-title mobile-financial-title--divided" *ngIf="isMobile && tipo === 'pedidos'">Situação financeira</h3>
                 <div class="summary-row pago" *ngIf="tipo === 'pedidos'">
                   <span>Pago</span>
                   <strong class="value success">{{ resumoFinanceiroView.totalRecebido | currency:'BRL':'symbol':'1.2-2' }}</strong>
@@ -251,26 +254,26 @@
 
               <ng-container *ngIf="!mobilePedidoNovo" [ngTemplateOutlet]="pagamentosConteudo"></ng-container>
               <ng-template #pagamentosConteudo>
-              <app-section-card *ngIf="mostrarPagamentos" [titulo]="mobilePedidoNovo ? '' : 'Pagamentos'" [divider]="!mobilePedidoNovo" [mobilePlain]="mobilePedidoNovo" class="payments-card">
+              <app-section-card *ngIf="mostrarPagamentos" [titulo]="mobilePedidoNovo ? '' : 'Pagamentos'" [divider]="!mobilePedidoNovo" [mobilePlain]="mobilePedidoNovo" class="payments-card" [class.payments-card--mobile]="isMobile">
                 <h3 class="mobile-payment-title" *ngIf="mobilePedidoNovo">Pagamentos</h3>
                 <div class="payment-entry">
-                  <div class="payment-form" (keydown.enter)="evitarSubmitDaSecao($event)" [formGroup]="pagamentoForm">
+                  <div class="payment-form" [attr.aria-busy]="isMobile ? salvandoPagamento : null" (keydown.enter)="evitarSubmitDaSecao($event)" [formGroup]="pagamentoForm">
                     <app-input-options
                       [control]="pagamentoFormaControl"
-                      label="Forma"
+                      [label]="isMobile ? 'Forma de pagamento' : 'Forma'"
                       placeholder="Selecione"
                       [options]="formasPagamento"
                       [showNull]="true"
                       nullLabel="Selecione">
                     </app-input-options>
-                    <app-input-moeda [inputMode]="mobilePedidoNovo ? 'decimal' : null" [control]="pagamentoValorControl" label="Valor"></app-input-moeda>
+                    <app-input-moeda [showControlErrors]="isMobile" [inputMode]="isMobile ? 'decimal' : null" [control]="pagamentoValorControl" label="Valor"></app-input-moeda>
                     <button mat-flat-button color="primary" type="button" [disabled]="pagamentoForm.invalid || pagamentoExcedeSaldo || salvandoPagamento || !permissoesFluxo.pagamentos" (click)="adicionarPagamento()">
                       <mat-icon>add</mat-icon>
-                      Adicionar pagamento
+                      {{ isMobile && salvandoPagamento ? 'Adicionando pagamento...' : 'Adicionar pagamento' }}
                     </button>
                   </div>
 
-                  <div class="payment-error" *ngIf="pagamentoExcedeSaldo">
+                  <div class="payment-error" role="alert" *ngIf="pagamentoExcedeSaldo">
                     Valor não pode exceder o saldo em aberto.
                   </div>
                 </div>
@@ -291,11 +294,13 @@
                     <div class="payment-item" *ngFor="let pagamento of pagamentosView; let i = index" [class.cancelado]="pagamento.status === 'CANCELADO'">
                       <div class="payment-main">
                         <strong>{{ formaPagamentoLabel(pagamento.formaPagamento) }}</strong>
+                        <span class="payment-date" *ngIf="isMobile && pagamento.dataRecebimento">{{ pagamento.dataRecebimento | date:'dd/MM/yyyy' }}</span>
                         <app-status-badge class="payment-status" [status]="pagamento.status"></app-status-badge>
                       </div>
                       <div class="payment-value">{{ pagamento.valor | currency:'BRL':'symbol':'1.2-2' }}</div>
                       <button class="payment-cancel" mat-icon-button color="warn" type="button" matTooltip="Cancelar pagamento"
                         *ngIf="pagamento.status !== 'CANCELADO' && permissoesFluxo.pagamentos"
+                        [disabled]="isMobile && salvandoPagamento"
                         aria-label="Cancelar pagamento"
                         (click)="cancelarPagamento(pagamento, i)">
                         <mat-icon>block</mat-icon>
