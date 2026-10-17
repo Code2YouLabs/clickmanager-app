@@ -106,6 +106,62 @@ describe('Adicionar item no painel mobile compartilhado', () => {
     expect(tutorial.registrarItemAdicionado).toHaveBeenCalledTimes(1);
   }));
 
+  it('mostra um quadro por vez, desliza pelas variações e permite revisar escolhas', fakeAsync(() => {
+    const variants: any[] = [];
+    for (const material of [{ id: 1, nome: 'Couchê' }, { id: 2, nome: 'Adesivo' }]) {
+      for (const formato of [{ id: 3, nome: 'A5' }, { id: 4, nome: 'A6' }]) {
+        for (const cor of [{ id: 5, nome: '4x0' }, { id: 6, nome: '4x4' }]) {
+          variants.push({ ...product, id: 77 + variants.length, material, formato, cor });
+        }
+      }
+    }
+    service.listar.and.returnValue(of({ content: variants, last: true } as any));
+    const wizard = open();
+    expect(wizard.mobileFunnelStage).toBe('produto');
+    query('.funnel-column--current .funnel-option').click(); render(); tick(300); render();
+    expect(wizard.mobileFunnelStage).toBe('material');
+    expect(query('.funnel-track').style.transform).toBe('translateX(-100%)');
+    expect(query('[data-funnel-stage="produto"]').hasAttribute('inert')).toBeTrue();
+    expect(document.activeElement).toBe(query('.funnel-column--current .rev-title'));
+    const materialSearch = query('.funnel-column--current input') as HTMLInputElement;
+    materialSearch.value = 'inexistente'; materialSearch.dispatchEvent(new Event('input', { bubbles: true })); render();
+    expect(wizard.mobileFunnelStage).toBe('material');
+    expect(query('.funnel-column--current').textContent).toContain('Nenhum material encontrado');
+    materialSearch.value = ''; materialSearch.dispatchEvent(new Event('input', { bubbles: true })); render();
+    query('.funnel-column--current .funnel-option').click(); render(); tick(300); render();
+    expect(wizard.mobileFunnelStage).toBe('formato');
+    query('.funnel-column--current .funnel-option').click(); render(); tick(300); render();
+    expect(wizard.mobileFunnelStage).toBe('cor');
+    query('.wizard-footer > button').click(); render(); tick(300); render();
+    expect(wizard.mobileFunnelStage).toBe('formato');
+    query('.wizard-footer > button').click(); render(); tick(300); render();
+    expect(wizard.mobileFunnelStage).toBe('material');
+    wizard.selecionarMaterialFunil(wizard.opcoesFunil('material')[1]); render(); tick(300); render();
+    expect(wizard.formatoSelecionadoId).toBeNull(); expect(wizard.corSelecionadaId).toBeNull();
+    expect(wizard.mobileFunnelStage).toBe('formato');
+    query('.funnel-column--current .funnel-option').click(); render(); tick(300); render();
+    query('.funnel-column--current .funnel-option').click(); render(); tick(300); render();
+    expect(wizard.stepper?.selectedIndex).toBe(1);
+    dialog.closeAll(); tick(400);
+  }));
+
+  it('ajusta a paginação à altura disponível sem perder o acesso às opções', fakeAsync(() => {
+    const wizard = open();
+    wizard.produtosFunil = Array.from({ length: 7 }, (_, i) => ({ ...product, id: i + 1, catalogoProdutoNome: `Produto ${i + 1}` } as any));
+    render();
+    const list = query('.funnel-column--current .funnel-list');
+    Object.defineProperty(list, 'clientHeight', { configurable: true, value: 126 });
+    list.querySelectorAll<HTMLElement>('.funnel-option').forEach(option => spyOn(option, 'getBoundingClientRect').and.returnValue({ height: 44 } as DOMRect));
+    (wizard as any).mobileOptionHeight = 44;
+    (wizard as any).fitMobileFunnel();
+    expect(wizard.itensPorPaginaFunil).toBe(2); expect(wizard.totalPaginasFunil('produto')).toBe(4);
+    wizard.proximaPaginaFunil('produto'); expect(wizard.opcoesPaginadas('produto')[0].label).toBe('Produto 3');
+    Object.defineProperty(list, 'clientHeight', { configurable: true, value: 76 });
+    (wizard as any).fitMobileFunnel();
+    expect(wizard.itensPorPaginaFunil).toBe(1); expect(wizard.opcoesPaginadas('produto')[0].label).toBe('Produto 3');
+    dialog.closeAll(); tick(400);
+  }));
+
   for (const close of ['X', 'Escape'] as const) {
     it(`fecha por ${close} sem incluir item e mantém âncora do tutorial`, fakeAsync(() => {
       open();

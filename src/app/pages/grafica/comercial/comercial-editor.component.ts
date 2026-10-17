@@ -1,7 +1,7 @@
 import { ClienteResponse } from 'src/app/models/cliente/cliente-response.model';
 import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild, Optional, effect, signal } from '@angular/core';
+import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild, Optional, effect, signal, afterRender, Injector } from '@angular/core';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { TutorialService } from 'src/app/shared/tutorial/tutorial.service';
@@ -1789,7 +1789,57 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   corSelecionadaId: number | null = null;
   paginasFunil: Record<FunilColuna, number> = { produto: 0, material: 0, formato: 0, cor: 0 };
   filtrosFunil: Record<FunilColuna, string> = { produto: '', material: '', formato: '', cor: '' };
-  readonly itensPorPaginaFunil = 6;
+  mobileFunnelStage: FunilColuna = 'produto';
+  readonly mobileFunnelPageSize = signal(6);
+  private mobileOptionHeight = 44;
+  private focusedMobileFunnelStage: FunilColuna = 'produto';
+  private funnelResizeObserver?: ResizeObserver;
+  @ViewChild('funnelGrid', { read: ElementRef }) private funnelGrid?: ElementRef<HTMLElement>;
+  get itensPorPaginaFunil(): number { return this.data?.mobilePanel ? this.mobileFunnelPageSize() : 6; }
+  get mobileFunnelStages(): FunilColuna[] {
+    // Searching within a frame must not remove that frame from navigation.
+    const material = !!this.produtoNomeSelecionado && this.opcoesFunil('material', false).length > 0;
+    const materialReady = this.materialSelecionadoId !== null || !material;
+    const formato = !!this.produtoNomeSelecionado && materialReady && this.opcoesFunil('formato', false).length > 0;
+    const formatoReady = this.formatoSelecionadoId !== null || !formato;
+    const cor = !!this.produtoNomeSelecionado && materialReady && formatoReady && this.opcoesFunil('cor', false).length > 0;
+    return ['produto', ...(material ? ['material'] : []), ...(formato ? ['formato'] : []), ...(cor ? ['cor'] : [])] as FunilColuna[];
+  }
+  get mobileFunnelIndex(): number { return Math.max(0, this.mobileFunnelStages.indexOf(this.mobileFunnelStage)); }
+  get canGoBackMobileFunnel(): boolean { return !!this.data?.mobilePanel && this.isFirstStep && this.mobileFunnelIndex > 0; }
+
+  private fitMobileFunnel(): void {
+    const grid = this.funnelGrid?.nativeElement;
+    if (!grid || !this.isFirstStep || this.wizardDestruido) return;
+    if (this.focusedMobileFunnelStage !== this.mobileFunnelStage) {
+      this.focusedMobileFunnelStage = this.mobileFunnelStage;
+      grid.querySelector<HTMLElement>('.funnel-column--current .rev-title')?.focus({ preventScroll: true });
+    }
+    if (!this.funnelResizeObserver && typeof ResizeObserver !== 'undefined') {
+      this.funnelResizeObserver = new ResizeObserver(() => this.fitMobileFunnel());
+      this.funnelResizeObserver.observe(grid);
+    }
+    const list = grid.querySelector<HTMLElement>('.funnel-column--current .funnel-list');
+    if (!list?.clientHeight) return;
+    list.querySelectorAll<HTMLElement>('.funnel-option').forEach(option => {
+      this.mobileOptionHeight = Math.max(this.mobileOptionHeight, option.getBoundingClientRect().height);
+    });
+    const size = Math.max(1, Math.min(6, Math.floor((list.clientHeight - 14) / (this.mobileOptionHeight + 6))));
+    const previous = this.mobileFunnelPageSize();
+    if (size === previous) return;
+    (Object.keys(this.paginasFunil) as FunilColuna[]).forEach(column => {
+      this.paginasFunil[column] = Math.floor(this.paginasFunil[column] * previous / size);
+    });
+    this.mobileFunnelPageSize.set(size);
+  }
+
+  private advanceMobileFunnel(): void {
+    if (!this.data?.mobilePanel) return;
+    const selected = { produto: this.produtoNomeSelecionado, material: this.materialSelecionadoId,
+      formato: this.formatoSelecionadoId, cor: this.corSelecionadaId };
+    const pending = this.mobileFunnelStages.find(stage => stage !== 'produto' && selected[stage] === null);
+    this.mobileFunnelStage = pending ?? this.mobileFunnelStages[this.mobileFunnelStages.length - 1];
+  }
   readonly tecladoQuantidade = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'backspace'];
   produtoBusca = '';
   acabamentosSelecionados = new Set<number>();
@@ -1824,7 +1874,12 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
 	    private readonly dialogRef: MatDialogRef<GraficaProdutoWizardDialogComponent>,
 	    private readonly toastr: ToastrService,
 	    @Inject(MAT_DIALOG_DATA) readonly data: any,
-	  ) {}
+        @Optional() private readonly renderInjector?: Injector,
+	  ) {
+        if (this.data?.mobilePanel && this.renderInjector) {
+          afterRender(() => this.fitMobileFunnel(), { injector: this.renderInjector });
+        }
+      }
 
   ngOnInit(): void {
     this.quantidadeForm.valueChanges.pipe(
@@ -1856,6 +1911,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.wizardDestruido = true;
+    this.funnelResizeObserver?.disconnect();
     this.destroyWizard$.next();
     this.destroyWizard$.complete();
     this.precificacaoRequest?.unsubscribe();
@@ -2097,8 +2153,8 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
     this.buscaProdutos$.next((termo || '').trim());
   }
 
-  opcoesFunil(coluna: FunilColuna): FunilOpcao[] {
-    const filtrar = (opcoes: FunilOpcao[]) => this.filtrarOpcoesFunil(coluna, opcoes);
+  opcoesFunil(coluna: FunilColuna, applySearch = true): FunilOpcao[] {
+    const filtrar = (opcoes: FunilOpcao[]) => applySearch ? this.filtrarOpcoesFunil(coluna, opcoes) : opcoes;
     if (coluna === 'produto') {
       return filtrar([
         ...this.agruparOpcoes(this.produtosFunil, (produto) => this.produtoNome(produto)),
@@ -2168,8 +2224,10 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
     this.formatoSelecionadoId = null;
     this.corSelecionadaId = null;
     this.resetarPaginasFunil('material', 'formato', 'cor');
+    if (this.data?.mobilePanel) (['material', 'formato', 'cor'] as FunilColuna[]).forEach(column => this.filtrosFunil[column] = '');
     this.limparProdutoResolvido();
     this.avancarFunilAutomaticamente();
+    this.advanceMobileFunnel();
   }
 
   selecionarMaterialFunil(opcao: FunilOpcao): void {
@@ -2177,16 +2235,20 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
     this.formatoSelecionadoId = null;
     this.corSelecionadaId = null;
     this.resetarPaginasFunil('formato', 'cor');
+    if (this.data?.mobilePanel) (['formato', 'cor'] as FunilColuna[]).forEach(column => this.filtrosFunil[column] = '');
     this.limparProdutoResolvido();
     this.avancarFunilAutomaticamente();
+    this.advanceMobileFunnel();
   }
 
   selecionarFormatoFunil(opcao: FunilOpcao): void {
     this.formatoSelecionadoId = Number(opcao.key);
     this.corSelecionadaId = null;
     this.resetarPaginasFunil('cor');
+    if (this.data?.mobilePanel) (['cor'] as FunilColuna[]).forEach(column => this.filtrosFunil[column] = '');
     this.limparProdutoResolvido();
     this.avancarFunilAutomaticamente();
+    this.advanceMobileFunnel();
   }
 
   selecionarCorFunil(opcao: FunilOpcao): void {
@@ -2442,6 +2504,10 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   }
 
   voltarStep(): void {
+    if (this.canGoBackMobileFunnel) {
+      this.mobileFunnelStage = this.mobileFunnelStages[this.mobileFunnelIndex - 1];
+      return;
+    }
     if ((this.stepper?.selectedIndex || 0) === 3 && !this.possuiAdicionaisDisponiveis) {
       if (this.stepper) {
         this.stepper.selectedIndex = 1;
@@ -3039,6 +3105,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   }
 
   limparProdutoSelecionado(): void {
+    this.mobileFunnelStage = 'produto';
     this.produtoSelecionado = null;
     this.servicoAtual = null;
     this.produtoForm.reset({ produtoGraficoId: null });
@@ -3252,6 +3319,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   }
 
   private resetarItemAtual(): void {
+    this.mobileFunnelStage = 'produto';
     this.produtoSelecionado = null;
     this.servicoAtual = null;
     this.produtoForm.reset({ produtoGraficoId: null });

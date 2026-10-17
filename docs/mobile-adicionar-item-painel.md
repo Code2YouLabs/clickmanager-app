@@ -15,7 +15,16 @@ A branch parte da base mobile atual, incluindo os commits locais aprovados.
   continuam sob responsabilidade do painel compartilhado, que não foi alterado.
 - O stepper Material mantém as mesmas etapas, controles, conclusão e navegação.
   No painel, usa labels compactas e mostra o nome completo da etapa atual.
-- Funil em uma coluna, opções com nomes completos e listas sem rolagem própria.
+- Funil mobile com um quadro por vez e transição lateral entre Produto/Serviço,
+  Material, Formato e Cor, conforme as opções reais. Escolhas únicas continuam
+  seguindo o avanço automático existente. Voltar revisita o quadro anterior.
+- Quadros fora de vista usam aria-hidden e inert; o foco acompanha o título do
+  quadro ativo sem abrir o teclado. Movimento reduzido desativa a transição.
+- A seleção ocupa a altura central, sem empilhar quadros ou rolar verticalmente.
+  A quantidade de opções por página acompanha o espaço e a altura dos nomes,
+  mantendo o primeiro resultado acessível quando a altura disponível muda.
+- Busca vazia não remove o quadro; novas escolhas limpam pesquisas dependentes
+  no mobile. Desktop mantém as colunas e as seis opções por página originais.
 - Busca rápida continua existente; seus resultados abrem os respectivos wizards
   no painel mobile. A apresentação da busca rápida não foi migrada nesta fase.
 

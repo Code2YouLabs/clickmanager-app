@@ -14,15 +14,17 @@
       <app-tutorial-overlay [embeddedForTarget]="primeiroPedidoTargets.configurador" />
       <mat-divider></mat-divider>
 
-      <mat-dialog-content class="wizard-body mobile-side-panel__body">
+      <mat-dialog-content class="wizard-body mobile-side-panel__body" [class.wizard-body--funnel]="data?.mobilePanel && isFirstStep">
         <p *ngIf="data?.mobilePanel" class="wizard-mobile-step-title" aria-live="polite">{{ currentStepLabel }}</p>
         <mat-horizontal-stepper [labelPosition]="data?.mobilePanel ? 'bottom' : 'end'" [linear]="true" #stepper class="wizard-stepper" (selectionChange)="onStepSelectionChange($event)">
           <mat-step [stepControl]="produtoForm" [label]="data?.mobilePanel ? 'Seleção' : 'Produto/Serviço e Variação'">
             <form [formGroup]="produtoForm" class="step-inner step-full produto-step">
-                    <div class="funnel-grid">
-                      <section class="funnel-column">
+                    <div class="funnel-grid" #funnelGrid>
+                      <div class="funnel-track" [style.transform]="data?.mobilePanel ? 'translateX(-' + (mobileFunnelIndex * 100) + '%)' : null">
+                      <section class="funnel-column" data-funnel-stage="produto" [class.funnel-column--current]="mobileFunnelStage === 'produto'"
+                        [attr.aria-hidden]="data?.mobilePanel && mobileFunnelStage !== 'produto' ? 'true' : null" [attr.inert]="data?.mobilePanel && mobileFunnelStage !== 'produto' ? '' : null">
                         <div class="funnel-header">
-                          <div class="rev-title">Produto ou serviço</div>
+                          <div class="rev-title" role="heading" aria-level="3" [attr.tabindex]="data?.mobilePanel ? -1 : null">Produto ou serviço</div>
                           <mat-form-field appearance="outline" class="funnel-search" subscriptSizing="dynamic">
                             <input
                               matInput
@@ -69,9 +71,10 @@
                         </div>
                       </section>
 
-                      <section class="funnel-column" *ngIf="exibeColunaMaterial">
+                      <section class="funnel-column" *ngIf="data?.mobilePanel ? mobileFunnelStages.includes('material') : exibeColunaMaterial" data-funnel-stage="material" [class.funnel-column--current]="mobileFunnelStage === 'material'"
+                        [attr.aria-hidden]="data?.mobilePanel && mobileFunnelStage !== 'material' ? 'true' : null" [attr.inert]="data?.mobilePanel && mobileFunnelStage !== 'material' ? '' : null">
                         <div class="funnel-header">
-                          <div class="rev-title">Material</div>
+                          <div class="rev-title" role="heading" aria-level="3" [attr.tabindex]="data?.mobilePanel ? -1 : null">Material</div>
                           <mat-form-field appearance="outline" class="funnel-search" subscriptSizing="dynamic">
                             <input
                               matInput
@@ -111,9 +114,10 @@
                         </div>
                       </section>
 
-                      <section class="funnel-column" *ngIf="exibeColunaFormato">
+                      <section class="funnel-column" *ngIf="data?.mobilePanel ? mobileFunnelStages.includes('formato') : exibeColunaFormato" data-funnel-stage="formato" [class.funnel-column--current]="mobileFunnelStage === 'formato'"
+                        [attr.aria-hidden]="data?.mobilePanel && mobileFunnelStage !== 'formato' ? 'true' : null" [attr.inert]="data?.mobilePanel && mobileFunnelStage !== 'formato' ? '' : null">
                         <div class="funnel-header">
-                          <div class="rev-title">Formato</div>
+                          <div class="rev-title" role="heading" aria-level="3" [attr.tabindex]="data?.mobilePanel ? -1 : null">Formato</div>
                           <mat-form-field appearance="outline" class="funnel-search" subscriptSizing="dynamic">
                             <input
                               matInput
@@ -153,9 +157,10 @@
                         </div>
                       </section>
 
-                      <section class="funnel-column" *ngIf="exibeColunaCor">
+                      <section class="funnel-column" *ngIf="data?.mobilePanel ? mobileFunnelStages.includes('cor') : exibeColunaCor" data-funnel-stage="cor" [class.funnel-column--current]="mobileFunnelStage === 'cor'"
+                        [attr.aria-hidden]="data?.mobilePanel && mobileFunnelStage !== 'cor' ? 'true' : null" [attr.inert]="data?.mobilePanel && mobileFunnelStage !== 'cor' ? '' : null">
                         <div class="funnel-header">
-                          <div class="rev-title">Cor</div>
+                          <div class="rev-title" role="heading" aria-level="3" [attr.tabindex]="data?.mobilePanel ? -1 : null">Cor</div>
                           <mat-form-field appearance="outline" class="funnel-search" subscriptSizing="dynamic">
                             <input
                               matInput
@@ -194,6 +199,7 @@
                           </button>
                         </div>
                       </section>
+                    </div>
                     </div>
             </form>
           </mat-step>
@@ -541,7 +547,7 @@
       </mat-dialog-content>
 
       <div class="wizard-footer mobile-side-panel__footer">
-        <button mat-flat-button color="accent" type="button" [disabled]="isFirstStep" (click)="voltarStep()">
+        <button mat-flat-button color="accent" type="button" [disabled]="isFirstStep && !canGoBackMobileFunnel" (click)="voltarStep()">
           Voltar
         </button>
         <div class="right">
