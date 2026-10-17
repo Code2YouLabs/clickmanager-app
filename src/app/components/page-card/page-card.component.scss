@@ -97,6 +97,17 @@
 }
 
 @include mobile.mobile-foundation {
+  .page-card .page-card__footer--mobile-sticky {
+    position: fixed; z-index: 90; left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px));
+    bottom: max(var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px))), calc(env(safe-area-inset-bottom, 0px) + 8px), calc(var(--page-card-keyboard-inset, 0px) + 8px));
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px;
+    padding: 12px; border: 1px solid var(--mat-sys-outline-variant); border-radius: 12px;
+    background: var(--mat-sys-surface); box-shadow: 0 4px 16px rgb(0 0 0 / 12%);
+    .page-card__footer-left, .page-card__footer-right { width: auto; min-width: 0; }
+    .page-card__footer-right { justify-content: flex-end; }
+    button { min-height: 44px; }
+  }
+  .page-card__footer-clearance { flex-shrink: 0; }
   .page-card__contextual-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
   .page-card__contextual-actions:empty { display: none; }
   .page-card__contextual-actions ::ng-deep button,

@@ -1,4 +1,8 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter, Optional, OnDestroy } from '@angular/core';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { Subscription } from 'rxjs';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
@@ -22,11 +26,25 @@ import { MatDividerModule } from '@angular/material/divider';
 @Component({
   selector: 'app-section-card',
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatDividerModule],
+  imports: [CommonModule, MatCardModule, MatDividerModule, MatIconModule],
   templateUrl: './section-card.component.html',
   styleUrls: ['./section-card.component.scss'],
 })
-export class SectionCardComponent {
+export class SectionCardComponent implements OnDestroy {
+  private static nextId = 0;
+  readonly bodyId = `section-card-body-${SectionCardComponent.nextId++}`;
+  @Input() mobileCollapsible = false;
+  @Input() mobileExpanded = true;
+  @Input() mobileSummary = '';
+  @Output() mobileExpandedChange = new EventEmitter<boolean>();
+  isMobile = false;
+  private readonly layoutChanges?: Subscription;
+  constructor(@Optional() breakpoints?: BreakpointObserver) {
+    this.layoutChanges = breakpoints?.observe(MOBILE_FOUNDATION_QUERY).subscribe(state => this.isMobile = state.matches);
+  }
+  ngOnDestroy(): void { this.layoutChanges?.unsubscribe(); }
+  get collapsible(): boolean { return this.isMobile && this.mobileCollapsible; }
+  toggle(): void { this.mobileExpandedChange.emit(!this.mobileExpanded); }
   /** Remove nested card chrome on small screens only. */
   @Input() mobilePlain = false;
   @Input() title?: string;

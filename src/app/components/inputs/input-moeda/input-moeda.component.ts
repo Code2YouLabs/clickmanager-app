@@ -29,6 +29,7 @@ import { Subscription } from 'rxjs';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class InputMoedaComponent implements OnInit, AfterViewInit, OnDestroy, OnChanges {
+  @Input() inputMode: 'decimal' | 'numeric' | null = null;
   @Input() control!: FormControl;
   @Input() label: string = 'Valor';
   @ViewChild('inputRef') inputRef!: ElementRef<HTMLInputElement>;

@@ -6,7 +6,7 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { Subscription } from 'rxjs';
 import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { MobileFabActionComponent } from '../mobile-fab-action/mobile-fab-action.component';
-import { forwardRef, signal, Optional, OnDestroy, Component, ContentChildren, Input, Output, EventEmitter, QueryList } from '@angular/core';
+import { forwardRef, signal, Optional, OnDestroy, OnChanges, Component, ContentChildren, Input, Output, EventEmitter, QueryList, ViewChild, ElementRef } from '@angular/core';
 import { FormGroupDirective } from '@angular/forms';
 import { MatIconModule } from '@angular/material/icon';
 import { PageFormState } from './page-form-state';
@@ -46,7 +46,26 @@ type ResolvedPageCardAction = {
   templateUrl: './page-card.component.html',
   styleUrls: ['./page-card.component.scss'],
 })
-export class PageCardComponent implements OnDestroy, MobileHeaderActionsHost {
+export class PageCardComponent implements OnDestroy, OnChanges, MobileHeaderActionsHost {
+  /** Opt-in form actions above the mobile navigation. Desktop keeps its existing footer. */
+  @Input() mobileStickyFooter = false;
+  readonly footerKeyboardInset = signal(0);
+  readonly stickyFooterHeight = signal(88);
+  private footerResize?: ResizeObserver;
+  private footerNode?: HTMLElement;
+  private footerViewportCleanup?: () => void;
+  @ViewChild('footerElement', { read: ElementRef }) set footerElement(value: ElementRef<HTMLElement> | undefined) {
+    this.footerResize?.disconnect();
+    this.footerResize = undefined; this.footerNode = value?.nativeElement;
+    this.observeFooter();
+  }
+  private observeFooter(): void {
+    if (!this.mobileStickyFooter || !this.isMobile()) { this.footerResize?.disconnect(); this.footerResize = undefined; return; }
+    if (!this.footerNode || this.footerResize || typeof ResizeObserver === 'undefined') return;
+    const node = this.footerNode;
+    this.footerResize = new ResizeObserver(() => this.stickyFooterHeight.set(Math.ceil(node.getBoundingClientRect().height) + 16));
+    this.footerResize.observe(node);
+  }
   readonly contextualActions = signal<MobileHeaderAction[]>([]);
   enabled(): boolean { return this.isMobile() && this.mobileHeaderMode === 'standard'; }
   register(action: MobileHeaderAction): () => void {
@@ -78,9 +97,22 @@ export class PageCardComponent implements OnDestroy, MobileHeaderActionsHost {
   // Keep direct construction used by existing form-state consumers compatible.
   constructor(@Optional() breakpoints?: BreakpointObserver) {
     this.layoutChanges = breakpoints?.observe(MOBILE_FOUNDATION_QUERY)
-      .subscribe(state => this.isMobile.set(state.matches));
+      .subscribe(state => { this.isMobile.set(state.matches); this.syncFooterViewport(); });
   }
-  ngOnDestroy(): void { this.layoutChanges?.unsubscribe(); }
+  ngOnChanges(): void { this.syncFooterViewport(); }
+  private syncFooterViewport(): void {
+    this.observeFooter();
+    if (!this.mobileStickyFooter || !this.isMobile()) {
+      this.footerViewportCleanup?.(); this.footerViewportCleanup = undefined;
+      this.footerKeyboardInset.set(0); return;
+    }
+    if (this.footerViewportCleanup || typeof window === 'undefined' || !window.visualViewport) return;
+    const viewport = window.visualViewport;
+    const measure = () => this.footerKeyboardInset.set(Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop));
+    viewport.addEventListener('resize', measure); viewport.addEventListener('scroll', measure); measure();
+    this.footerViewportCleanup = () => { viewport.removeEventListener('resize', measure); viewport.removeEventListener('scroll', measure); };
+  }
+  ngOnDestroy(): void { this.layoutChanges?.unsubscribe(); this.footerResize?.disconnect(); this.footerViewportCleanup?.(); }
 
   get mobilePrimaryActionDisabled(): boolean {
     return this.saving || this.actionsDisabled || this.headerActionDisabled || !!this.floatingPrimaryAction?.disabled;
@@ -105,7 +137,8 @@ export class PageCardComponent implements OnDestroy, MobileHeaderActionsHost {
       .filter(action => action.intent !== 'cancel')
       .map(action => action.type === 'submit'
         ? { id: action.id, type: 'submit', form: action.form, disabled: action.disabled,
-            label: 'Salvar', icon: 'save', primary: true, color: 'primary', tutorialTarget: action.tutorialTarget }
+            label: 'Salvar', icon: 'save', primary: true, color: 'primary', tutorialTarget: action.tutorialTarget,
+            pendingLabel: this.mobileStickyFooter ? action.pendingLabel : undefined }
         : action);
     return this.formState
       ? [{ id: 'cancel', label: 'Cancelar', intent: 'cancel' }, ...actions]

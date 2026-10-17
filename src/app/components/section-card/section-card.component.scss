@@ -91,6 +91,18 @@
 }
 
 @include mobile.mobile-foundation {
+  .section-card__body[hidden] { display: none; }
+  .section-card__header--collapsible { margin-bottom: 0; }
+  .section-card__toggle {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    width: 100%; min-height: 44px; padding: 8px 0; border: 0; background: transparent;
+    color: var(--mat-sys-on-surface); text-align: left; cursor: pointer; font: inherit;
+    span { min-width: 0; }
+    strong { display: block; font-size: 16px; line-height: 24px; font-weight: 600; }
+    small { display: block; font-size: 12px; line-height: 16px; color: var(--mat-sys-on-surface-variant); overflow-wrap: anywhere; }
+    mat-icon { flex-shrink: 0; }
+    &:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: 2px; border-radius: 4px; }
+  }
   .section-card--mobile-plain {
     padding: 0;
     border: 0;
