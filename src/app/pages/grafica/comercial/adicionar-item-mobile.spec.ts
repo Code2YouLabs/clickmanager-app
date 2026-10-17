@@ -229,11 +229,11 @@ describe('Adicionar item no painel mobile compartilhado', () => {
       if (wizard.isFirstStep) next();
       const body = query('.wizard-body');
       expect(body.scrollWidth).toBeLessThanOrEqual(body.clientWidth);
-      document.querySelectorAll<HTMLElement>('.price-config-card input').forEach(input => {
+      document.querySelectorAll<HTMLElement>('.price-config-card input').forEach((input, index) => {
         const rect = input.getBoundingClientRect();
         expect(rect.width).toBeGreaterThanOrEqual(100);
         expect(rect.right).toBeLessThanOrEqual(body.getBoundingClientRect().right);
-        expect(input.getAttribute('inputmode')).toBe('numeric');
+        expect(input.getAttribute('inputmode')).toBe(tipo === 'POR_METRO_QUADRADO' && index < 2 ? 'decimal' : 'numeric');
       });
       if (tipo === 'POR_FAIXA_QUANTIDADE') {
         expect(query('.price-range-row.active').textContent).toContain('1 a 100 un');

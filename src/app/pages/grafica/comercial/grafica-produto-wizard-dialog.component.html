@@ -310,19 +310,34 @@
                     </ng-container>
 
 		                    <ng-container *ngIf="tipoPrecoAtual === 'POR_METRO_QUADRADO'">
-		                      <div class="measure-layout">
+		                      <div class="measure-layout" [class.measure-layout--area-mobile]="mobileMetroQuadrado">
 		                        <div class="measure-entry-panel">
 		                          <h3>Informe as medidas</h3>
 		                          <div class="form-grid price-inputs">
-		                            <app-input-numerico [control]="quantidadeForm.controls.largura" [label]="'Largura (' + unidadeDimensaoAtualSimbolo + ')'"></app-input-numerico>
-		                            <app-input-numerico [control]="quantidadeForm.controls.altura" [label]="'Altura (' + unidadeDimensaoAtualSimbolo + ')'"></app-input-numerico>
+		                            <app-input-numerico [control]="quantidadeForm.controls.largura" [label]="'Largura (' + unidadeDimensaoAtualSimbolo + ')'" [decimal]="mobileMetroQuadrado" [errorText]="mobileMetroQuadrado ? erroMedida('largura') : ''"></app-input-numerico>
+		                            <app-input-numerico [control]="quantidadeForm.controls.altura" [label]="'Altura (' + unidadeDimensaoAtualSimbolo + ')'" [decimal]="mobileMetroQuadrado" [errorText]="mobileMetroQuadrado ? erroMedida('altura') : ''"></app-input-numerico>
 		                            <app-input-numerico [control]="quantidadeForm.controls.quantidade" label="Quantidade"></app-input-numerico>
 		                          </div>
 		                          <button mat-flat-button color="primary" type="button" [disabled]="quantidadeForm.invalid || precificando" (click)="precificar()">
 		                            {{ precificando ? 'Calculando...' : 'Calcular' }}
 		                          </button>
 		                        </div>
-		                        <div class="measure-rules-panel">
+		                        <section class="measure-rules-panel measure-area-rules" *ngIf="mobileMetroQuadrado">
+                              <div class="measure-area-rate">
+                                <span>Preço por m²</span>
+                                <strong *ngIf="politicaPrecoAtual?.precoMetroQuadrado != null; else semPrecoArea">{{ politicaPrecoAtual?.precoMetroQuadrado | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
+                                <ng-template #semPrecoArea><span>Não configurado</span></ng-template>
+                              </div>
+                              <details class="measure-area-details">
+                                <summary><span class="rules-open-label">Ver regras</span><span class="rules-close-label">Ocultar regras</span></summary>
+                                <dl>
+                                  <div *ngFor="let regra of regrasMetroQuadradoMobile">
+                                    <dt>{{ regra.label }}</dt><dd>{{ regra.value }}</dd>
+                                  </div>
+                                </dl>
+                              </details>
+                            </section>
+		                        <div class="measure-rules-panel" *ngIf="!mobileMetroQuadrado">
 		                          <div class="measure-rules-title">
 		                            <div>
 		                              <strong>Regras da medida</strong>
@@ -403,7 +418,8 @@
                     </ng-container>
                   </section>
 
-                  <aside class="price-summary-card">
+                  <p class="measure-area-feedback" role="status" *ngIf="mobileMetroQuadrado && preco && !precoValido && preco.mensagem">{{ preco.mensagem }}</p>
+                  <aside class="price-summary-card" *ngIf="!mobileMetroQuadrado || precoValido">
                     <h3>{{ data?.mobilePanel ? 'Resumo do preço' : 'Resumo da precificação' }}</h3>
                     <div class="summary-price-row summary-price-kind">
                       <span>Tipo</span>
@@ -421,6 +437,15 @@
                       <span>{{ medidaFaturadaLabel }}</span>
                       <strong>{{ preco?.areaFaturada | number:'1.2-2':'pt-BR' }} {{ medidaFaturadaUnidade }}</strong>
                     </div>
+                    <ng-container *ngIf="mobileMetroQuadrado">
+                      <div class="summary-price-row" *ngIf="preco?.largura != null && preco?.altura != null && preco?.unidadeDimensao">
+                        <span>Medidas informadas</span>
+                        <strong>{{ formatarMedida(preco!.largura) }} × {{ formatarMedida(preco!.altura) }} {{ simboloUnidadeResultado(preco!.unidadeDimensao!) }}</strong>
+                      </div>
+                      <div class="summary-price-row" *ngIf="preco?.areaReal != null && preco?.areaReal !== preco?.areaFaturada">
+                        <span>Área calculada</span><strong>{{ preco!.areaReal | number:'1.2-3':'pt-BR' }} m²</strong>
+                      </div>
+                    </ng-container>
                     <div class="summary-price-total" *ngIf="preco?.valorTotal !== null && preco?.valorTotal !== undefined">
                       <span>Total</span>
                       <strong>{{ preco?.valorTotal | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
@@ -428,6 +453,9 @@
                     <div class="summary-rule" *ngIf="preco?.regraAplicadaNome">
                       <mat-icon>verified_user</mat-icon>
                       <span>Regra aplicada: {{ preco?.regraAplicadaNome }}</span>
+                    </div>
+                    <div class="measure-area-notes" *ngIf="mobileMetroQuadrado && notasMetroQuadrado.length">
+                      <p *ngFor="let nota of notasMetroQuadrado">{{ nota }}</p>
                     </div>
                   </aside>
                 </div>

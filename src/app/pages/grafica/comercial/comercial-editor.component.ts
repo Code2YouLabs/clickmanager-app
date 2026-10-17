@@ -2048,6 +2048,29 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
       || this.tipoPrecoAtual === 'METRO_LINEAR';
   }
 
+  get mobileMetroQuadrado(): boolean {
+    return !!this.data?.mobilePanel && this.tipoPrecoAtual === 'POR_METRO_QUADRADO';
+  }
+
+  get regrasMetroQuadradoMobile(): Array<{ label: string; value: string }> {
+    const politica = this.politicaPrecoAtual;
+    return [
+      { label: 'Unidade de entrada', value: this.unidadeDimensaoAtualSimbolo },
+      { label: 'Unidade de cobrança', value: 'm²' },
+      { label: 'Preço por m²', value: politica?.precoMetroQuadrado == null ? 'Não configurado' : this.formatarMoeda(politica.precoMetroQuadrado) },
+      { label: 'Preço mínimo', value: politica?.minimoMetroQuadrado == null ? 'Não configurado' : this.formatarMoeda(politica.minimoMetroQuadrado) },
+      ...this.regrasMedida.slice(3),
+    ];
+  }
+
+  simboloUnidadeResultado(unidade: string): string {
+    return ({ METRO: 'm', CENTIMETRO: 'cm', MILIMETRO: 'mm' } as Record<string, string>)[unidade] || unidade;
+  }
+
+  get notasMetroQuadrado(): string[] {
+    return [...new Set([this.preco?.mensagem || '', ...(this.preco?.detalhes || [])].filter(Boolean))];
+  }
+
   get mostraLarguraPreco(): boolean {
     return this.tipoPrecoAtual === 'POR_METRO_QUADRADO';
   }

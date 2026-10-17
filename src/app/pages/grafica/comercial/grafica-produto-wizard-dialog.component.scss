@@ -303,6 +303,25 @@
       .price-inputs { width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
       .price-inputs > :last-child:nth-child(3) { grid-column: 1 / -1; }
       .measure-entry-panel > button { min-height: 44px; align-self: flex-end; }
+      .measure-layout--area-mobile {
+        .price-inputs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .measure-area-rate { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 8px; font-size: 13px; line-height: 20px; }
+        .measure-area-rate strong { color: #0f172a; font-weight: 600; font-variant-numeric: tabular-nums; }
+        .measure-area-details summary { display: flex; align-items: center; gap: 6px; min-height: 44px; width: fit-content; color: var(--mat-sys-primary); font-size: 12px; cursor: pointer; }
+        .measure-area-details summary::after { content: '+'; font-size: 16px; }
+        .measure-area-details[open] summary::after { content: '−'; }
+        .rules-close-label { display: none; }
+        .measure-area-details[open] .rules-open-label { display: none; }
+        .measure-area-details[open] .rules-close-label { display: inline; }
+        .measure-area-details summary:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: 2px; border-radius: 4px; }
+        .measure-area-details dl { display: grid; gap: 8px; margin: 0; padding: 0 0 8px; font-size: 12px; line-height: 18px; }
+        .measure-area-details dl > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+        .measure-area-details dt { color: #64748b; }
+        .measure-area-details dd { min-width: 0; margin: 0; text-align: right; overflow-wrap: anywhere; font-weight: 600; }
+        app-input-numerico { --mat-form-field-container-height: 44px; --mat-form-field-container-vertical-padding: 10px; }
+      }
+      .measure-area-feedback, .measure-area-notes { margin: 0; font-size: 12px; line-height: 18px; color: #64748b; overflow-wrap: anywhere; }
+      .measure-area-notes p { margin: 4px 0 0; }
       .lot-grid { width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
       .lot-card { min-height: 64px; padding: 8px; gap: 4px; }
       .lot-card strong, .lot-card span { font-size: 14px; }
