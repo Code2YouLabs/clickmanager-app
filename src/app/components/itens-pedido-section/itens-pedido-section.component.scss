@@ -72,6 +72,9 @@
   min-width: 0;
 }
 
+.item-values { display: contents; }
+.item-unit, .item-multiply, .item-price-details { display: none; }
+
 .item-title-line {
   display: flex;
   align-items: center;
@@ -259,21 +262,40 @@
 }
 
 @media (max-width: 760px) {
-  .itens-wrapper--mobile-compact {
+  .itens-wrapper {
     gap: 8px;
     .itens-actions { display: flex; flex-wrap: wrap; gap: 8px; }
     .add-item-button { flex: 1 1 auto; }
     .add-item-button, .secondary-item-button { min-height: 44px; padding: 0 12px; border-radius: 8px; }
-    .order-items { border: 0; border-radius: 0; background: transparent; }
-    .order-items__row, .order-items__row.with-actions { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px; gap: 8px; min-height: 0; padding: 12px 0; background: transparent; }
+    .order-items { border: 0; border-radius: 0; background: transparent; overflow: visible; }
+    .order-items__row, .order-items__row.with-actions { grid-template-columns: minmax(0, 1fr) 48px; gap: 6px 8px; min-height: 0; padding: 12px 0; background: transparent; }
     .item-main { grid-column: 1 / -1; min-width: 0; overflow-wrap: anywhere; }
-    .item-title-line strong { font-size: 14px; line-height: 20px; font-weight: 600; }
-    .item-qtd { grid-column: 1; }
-    .item-qtd::before { content: 'Qtd: '; font-size: 12px; }
+    .with-actions .item-main { grid-column: 1; }
+    .item-title-line { display: block; }
+    .item-title-line strong { display: inline; font-size: 14px; line-height: 20px; font-weight: 600; }
+    .item-badge { display: inline; margin-right: 6px; padding: 2px 5px; font-weight: 600; }
+    .item-spec { margin-top: 4px; font-size: 12px; line-height: 18px; }
+    .item-details { display: none; }
+    .item-values { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; min-width: 0; grid-column: 1 / -1; }
+    .item-qtd { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px; font-size: 13px; text-align: left; }
+    .item-unit, .item-multiply { display: inline; }
+    .item-money strong { display: inline; font-variant-numeric: tabular-nums; }
+    .item-money small { display: none; }
+    .item-unit-price--same-total { display: none; }
+    .item-subtotal { margin-left: auto; text-align: right; }
+    .item-price-details { display: block; grid-column: 1 / -1; min-width: 0; font-size: 12px; line-height: 18px; color: #64748b; overflow-wrap: anywhere; }
+    .item-price-details summary { min-height: 44px; display: flex; align-items: center; gap: 6px; width: fit-content; cursor: pointer; }
+    .item-price-details summary::after { content: '+'; font-size: 16px; }
+    .item-price-details[open] summary::after { content: '−'; }
+    .item-price-details summary:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: 2px; border-radius: 4px; }
+    .item-price-details > div { display: grid; gap: 4px; }
     .item-money { min-width: 0; overflow-wrap: anywhere; font-size: 14px; line-height: 20px; }
-    .item-actions { grid-column: 3; grid-row: 2 / 4; }
-    .remove-item-button { width: 44px; height: 44px; }
-    .subtotal-inline { display: none; }
+    .item-actions { grid-column: 2; grid-row: 1; align-self: start; }
+    .remove-item-button { width: 48px; height: 48px; }
+    .qty-input { min-height: 44px; width: 72px; box-sizing: border-box; }
+    .subtotal-inline { flex-direction: row; padding: 12px 0; gap: 8px; font-size: 13px; }
+    .subtotal-value { min-width: 0; width: auto; padding: 4px 8px; }
     .empty-itens { padding: 8px 0; border: 0; border-radius: 0; background: transparent; }
   }
+  .itens-wrapper--mobile-compact .subtotal-inline { display: none; }
 }

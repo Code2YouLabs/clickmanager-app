@@ -27,7 +27,7 @@
         <span *ngIf="mostrarAcoes">Ações</span>
       </div>
 
-      <div class="order-items__row" [class.with-actions]="mostrarAcoes" *ngFor="let item of itens; let i = index">
+      <div class="order-items__row" [class.with-actions]="mostrarAcoes" *ngFor="let item of itens; let i = index; trackBy: trackItem">
         <div class="item-main">
           <div class="item-title-line">
             <span class="item-badge" *ngIf="item.tipoLinha && item.tipoLinha !== 'PRINCIPAL'">{{ item.tipoLinha === 'SERVICO' ? 'Serviço' : item.tipoLinha === 'ACABAMENTO' ? 'Acabamento' : 'Adicional' }}</span>
@@ -38,6 +38,7 @@
             <span *ngFor="let detalhe of item.detalhes">{{ detalhe }}</span>
           </div>
         </div>
+        <div class="item-values">
         <div class="item-qtd">
             <ng-container *ngIf="permitirAlterarQuantidade; else qtdText">
               <input
@@ -53,8 +54,10 @@
             <ng-template #qtdText>
               <span>{{ item.quantidade }}</span>
             </ng-template>
+            <span class="item-unit" *ngIf="item.unidade">{{ item.unidade }}</span>
         </div>
-        <div class="item-money">
+        <div class="item-money item-unit-price" [class.item-unit-price--same-total]="item.valor === (item.subTotal ?? item.quantidade * item.valor)">
+          <span class="item-multiply" aria-hidden="true">× </span>
           <strong>{{ item.valor | currency:'BRL':'symbol':'1.2-2' }}</strong>
           <small *ngIf="item.valorContexto">{{ item.valorContexto }}</small>
         </div>
@@ -62,6 +65,11 @@
           <strong>{{ (item.subTotal ?? item.quantidade * item.valor) | currency:'BRL':'symbol':'1.2-2' }}</strong>
           <small *ngIf="item.subtotalResumo">{{ item.subtotalResumo }}</small>
         </div>
+        </div>
+        <details class="item-price-details" *ngIf="item.detalhes?.length || item.valorContexto || item.subtotalResumo">
+          <summary>Detalhes do preço</summary>
+          <div><span *ngFor="let detalhe of detalhesPreco(item)">{{ detalhe }}</span></div>
+        </details>
         <div class="item-actions" *ngIf="mostrarAcoes">
             <button
               mat-icon-button
@@ -72,6 +80,7 @@
               (pointerup)="onRemoverItem(item, i, $event)"
               (click)="onRemoverItem(item, i, $event)"
               matTooltip="Remover item"
+              [attr.aria-label]="'Remover item: ' + item.descricao"
               [disabled]="inativo">
               <mat-icon>delete</mat-icon>
             </button>

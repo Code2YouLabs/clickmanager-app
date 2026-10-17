@@ -15,9 +15,11 @@ export interface ItemPedidoView {
   valorContexto?: string | null;
   subtotalResumo?: string | null;
   quantidade: number;
+  unidade?: string | null;
   valor: number;
   subTotal?: number;
   sourceIndex?: number;
+  viewKey?: object;
 }
 
 @Component({
@@ -75,6 +77,18 @@ export class ItensPedidoSectionComponent {
     if (!this.permitirAlterarQuantidade) return;
     const qtd = Math.max(1, Number(valor) || 1);
     this.alterarQuantidade.emit({ index, quantidade: qtd });
+  }
+
+  detalhesPreco(item: ItemPedidoView): string[] {
+    return [...new Set([
+      ...(item.detalhes || []),
+      ...(item.valorContexto ? [`Cobrança: ${item.valorContexto}`] : []),
+      ...(item.subtotalResumo ? [item.subtotalResumo] : []),
+    ])];
+  }
+
+  trackItem(_index: number, item: ItemPedidoView): object {
+    return item.viewKey ?? item;
   }
 
   onRemoverItem(item: ItemPedidoView, index: number, event: Event): void {
