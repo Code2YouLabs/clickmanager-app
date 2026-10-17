@@ -220,18 +220,19 @@
                   <section class="price-config-card" [class.price-config-card--fixed]="tipoPrecoAtual === 'FIXO'">
                     <ng-container *ngIf="tipoPrecoAtual === 'POR_LOTE'">
                       <h3>Escolha a quantidade</h3>
-                      <div class="lot-grid">
+                      <div class="lot-grid" [class.lot-grid--mobile]="mobilePrecoLote">
                         <button
                           type="button"
                           class="lot-card"
                           *ngFor="let lote of lotesPreco"
                           [class.active]="loteSelecionado?.quantidade === lote.quantidade"
+                          [attr.aria-pressed]="mobilePrecoLote ? loteSelecionado?.quantidade === lote.quantidade : null"
                           (click)="selecionarLotePreco(lote)">
-                          <strong>{{ lote.quantidade | number:'1.0-0':'pt-BR' }} un</strong>
+                          <strong><mat-icon class="lot-selection-icon" aria-hidden="true" *ngIf="mobilePrecoLote && loteSelecionado?.quantidade === lote.quantidade">check_circle</mat-icon>{{ lote.quantidade | number:'1.0-0':'pt-BR' }} un</strong>
                           <span>{{ lote.valorLote | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
                         </button>
                       </div>
-                      <div class="price-hint">
+                      <div class="price-hint" *ngIf="!mobilePrecoLote">
                         <mat-icon>info</mat-icon>
                         <span>Selecione um lote para continuar.</span>
                       </div>
@@ -421,7 +422,7 @@
                   <ng-container *ngIf="mobileMetroQuadrado && preco && !precoValido">
                     <p class="measure-area-feedback" role="status" *ngFor="let nota of notasMetroQuadrado">{{ nota }}</p>
                   </ng-container>
-                  <aside class="price-summary-card" *ngIf="!mobileMetroQuadrado || precoValido">
+                  <aside class="price-summary-card" *ngIf="mostrarResumoPreco">
                     <h3>{{ data?.mobilePanel ? 'Resumo do preço' : 'Resumo da precificação' }}</h3>
                     <div class="summary-price-row summary-price-kind">
                       <span>Tipo</span>
@@ -441,7 +442,7 @@
                     </ng-container>
                     <div class="summary-price-row" *ngIf="preco?.quantidadeSolicitada">
                       <span>{{ data?.mobilePanel && tipoPrecoAtual === 'POR_LOTE' ? 'Quantidade do lote' : 'Quantidade' }}</span>
-                      <strong>{{ preco?.quantidadeSolicitada | number:'1.0-3':'pt-BR' }}</strong>
+                      <strong>{{ preco?.quantidadeSolicitada | number:'1.0-3':'pt-BR' }}<span *ngIf="mobilePrecoLote"> unidades</span></strong>
                     </div>
                     <div class="summary-price-row" *ngIf="preco?.valorUnitario !== null && preco?.valorUnitario !== undefined">
                       <span>{{ data?.mobilePanel ? 'Preço unitário' : 'Valor unitário' }}</span>

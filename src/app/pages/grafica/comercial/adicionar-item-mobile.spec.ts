@@ -81,6 +81,25 @@ describe('Adicionar item no painel mobile compartilhado', () => {
       expect(editor.observacaoClienteControl.value).toBe('Entregar à tarde');
     }));
 
+    it(`preserva o preço fechado do lote ao retornar para ${type}`, fakeAsync(() => {
+      editor.tipo = type;
+      service.listarPrecos.and.returnValue(of([{ ...policy, tipo: 'POR_LOTE', lotes: [{ quantidade: 250, valorLote: 145 }] }] as any));
+      service.precificar.and.returnValue(of({ status: 'PRECO_CALCULADO', quantidadeSolicitada: 250, valorUnitario: 0.58, valorTotal: 145, detalhes: [], selecoesResolvidas: [] } as any));
+      const wizard = open();
+      query('.funnel-option').click(); render(); tick(300); render();
+      if (wizard.isFirstStep) next();
+      expect(document.querySelector('.price-step .price-summary-card')).toBeNull();
+      query('.lot-card').click(); render(); tick(300); render();
+      expect(query('.price-step .summary-price-total').textContent).toContain('145,00');
+      next();
+      composition.next({ itens: [{ ...added, quantidade: 250, valorUnitario: 0.58, valorTotal: 145 }] });
+      composition.complete(); tick(300); render();
+      expect(wizard.stepper?.selectedIndex).toBe(3); next(); tick(400); render();
+      expect(editor.itens[1]).toEqual(jasmine.objectContaining({ quantidade: 250, valorUnitario: 0.58, valorTotal: 145 }));
+      expect(editor.itens.length).toBe(2); expect(service.precificar).toHaveBeenCalledTimes(1);
+      expect(editor.tipo).toBe(type);
+    }));
+
     it(`inclui o acabamento selecionado na composição de ${type}`, fakeAsync(() => {
       editor.tipo = type;
       service.detalhar.and.returnValue(of({ ...product, acabamentos: [

@@ -2052,6 +2052,16 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
     return !!this.data?.mobilePanel && this.tipoPrecoAtual === 'POR_METRO_QUADRADO';
   }
 
+  get mobilePrecoLote(): boolean {
+    return !!this.data?.mobilePanel && this.tipoPrecoAtual === 'POR_LOTE';
+  }
+
+  get mostrarResumoPreco(): boolean {
+    if (this.mobileMetroQuadrado) return this.precoValido;
+    if (this.mobilePrecoLote) return !!this.loteSelecionado && this.precoValido;
+    return true;
+  }
+
   get regrasMetroQuadradoMobile(): Array<{ label: string; value: string }> {
     const politica = this.politicaPrecoAtual;
     return [

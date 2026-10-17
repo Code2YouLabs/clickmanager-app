@@ -330,6 +330,15 @@
       .lot-grid { width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
       .lot-card { min-height: 64px; padding: 8px; gap: 4px; }
       .lot-card strong, .lot-card span { font-size: 14px; }
+      .lot-grid--mobile {
+        .lot-card { min-width: 0; text-align: center; overflow-wrap: anywhere; }
+        .lot-card strong { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px; max-width: 100%; line-height: 20px; }
+        .lot-card > span { max-width: 100%; line-height: 20px; font-variant-numeric: tabular-nums; }
+        .lot-card.active { border-color: var(--mat-sys-primary); background: #e8f2ff; color: var(--mat-sys-primary); box-shadow: inset 0 0 0 1px var(--mat-sys-primary); }
+        .lot-card:not(.active):hover { border-color: #e2e8f0; background: #fff; color: #0f172a; }
+        .lot-card:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: 2px; }
+        .lot-selection-icon { width: 16px; height: 16px; font-size: 16px; flex-shrink: 0; }
+      }
       .summary-price-total strong { font-size: 20px; font-variant-numeric: tabular-nums; }
       .summary-price-row strong { text-align: right; font-variant-numeric: tabular-nums; }
     }
