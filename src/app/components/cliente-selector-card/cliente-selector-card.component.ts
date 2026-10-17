@@ -23,6 +23,10 @@ import { TelefonePipe } from 'src/app/pipe/telefone.pipe';
   styleUrls: ['./cliente-selector-card.component.scss']
 })
 export class ClienteSelectorCardComponent {
+  @Input() mobileCompact = false;
+  @Input() mobileExpanded = true;
+  @Input() mobileSummary = '';
+  @Output() mobileExpandedChange = new EventEmitter<boolean>();
 
   @Input({ required: true }) control!: FormControl;
   @Input({ required: true }) buscarFn!: (termo: string) => Observable<any[]>;

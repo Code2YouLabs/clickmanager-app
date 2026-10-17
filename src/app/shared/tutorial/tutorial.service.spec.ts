@@ -287,6 +287,17 @@ describe('TutorialService', () => {
     expect(fixture.nativeElement.querySelector('.guided-tutorial-popover')).toBeTruthy();
   }));
 
+  it('retoma um alvo já registrado após revelar sua seção, mantendo o passo atual', fakeAsync(() => {
+    const button = fixture.nativeElement.querySelector('[data-tutorial-target="primary-action"]') as HTMLElement;
+    button.style.display = 'none';
+    service.start(definition); flushMicrotasks();
+    expect(service.state().status).toBe('waiting');
+    button.style.display = 'block'; service.refreshTarget('primary-action'); tick(20); fixture.detectChanges();
+    expect(service.state().status).toBe('active'); expect(service.currentStep()?.id).toBe('primary');
+    expect(events.filter(event => event.type === 'stepChanged').length).toBe(1);
+    service.stop(); tick(600);
+  }));
+
   it('emite erro e limpa estado quando o alvo nao aparece no tempo limite', fakeAsync(() => {
     fixture.componentInstance.showPrimary = false;
     fixture.detectChanges();

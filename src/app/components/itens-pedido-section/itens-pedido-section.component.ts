@@ -36,6 +36,10 @@ export interface ItemPedidoView {
   styleUrls: ['./itens-pedido-section.component.scss']
 })
 export class ItensPedidoSectionComponent {
+  @Input() mobileCompact = false;
+  @Input() mobileExpanded = true;
+  @Input() mobileSummary = '';
+  @Output() mobileExpandedChange = new EventEmitter<boolean>();
   @Input() titulo = 'Itens do pedido';
   @Input() itemContextoLabel = 'pedido';
   @Input() itens: ItemPedidoView[] = [];

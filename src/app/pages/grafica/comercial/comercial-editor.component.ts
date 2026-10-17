@@ -1,5 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild, Optional, effect, signal } from '@angular/core';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { TutorialService } from 'src/app/shared/tutorial/tutorial.service';
 import { AbstractControl, FormBuilder, FormControl, FormsModule, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { MatStepper } from '@angular/material/stepper';
@@ -32,6 +35,7 @@ import { PRIMEIRO_PEDIDO_TARGETS, PrimeiroPedidoTutorialService } from './primei
 
 import { ComercialTipo } from './comercial.models';
 type FunilColuna = 'produto' | 'material' | 'formato' | 'cor';
+type EditorMobileSection = 'cliente' | 'itens' | 'observacoes' | 'financeiro' | 'revisao';
 
 interface FunilOpcao {
   key: string;
@@ -175,6 +179,34 @@ export class GraficaServicoWizardDialogComponent {
   styleUrl: './comercial-editor.component.scss',
 })
 export class ComercialEditorComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  get mobilePedidoNovo(): boolean { return this.isMobile && this.tipo === 'pedidos' && !this.pedidoId; }
+  readonly mobileSections = signal<Record<EditorMobileSection, boolean>>({ cliente: true, itens: true, observacoes: false, financeiro: false, revisao: true });
+  mobileValidationAttempted = false;
+  private tutorialRevealTimer?: ReturnType<typeof setTimeout>;
+  private focusTimer?: ReturnType<typeof setTimeout>;
+  setMobileSection(section: EditorMobileSection, expanded: boolean): void {
+    this.mobileSections.update(value => ({ ...value, [section]: expanded }));
+  }
+  get mobileObservacoesResumo(): string {
+    const count = [this.observacaoClienteControl.value, this.observacaoInternaControl.value].filter(value => value?.trim()).length;
+    return count ? `${count} ${count === 1 ? 'observação preenchida' : 'observações preenchidas'}` : 'Opcional · cliente e equipe';
+  }
+  revisarPendencias(): void {
+    if (!this.mobilePedidoNovo) return;
+    this.mobileValidationAttempted = true;
+    const section: EditorMobileSection = !this.clienteConfirmado?.id ? 'cliente' : !this.itens.length ? 'itens' : 'financeiro';
+    this.setMobileSection(section, true);
+    if (this.ajustesFinanceirosForm.invalid) this.ajustesFinanceirosForm.markAllAsTouched();
+    clearTimeout(this.focusTimer);
+    this.focusTimer = setTimeout(() => {
+      const root = this.elementRef?.nativeElement.querySelector<HTMLElement>(`[data-editor-section="${section}"]`);
+      const selector = section === 'cliente' ? '.editor input:not(:disabled)' : section === 'itens' ? '.add-item-button'
+        : `.financial-adjustments app-input-moeda:nth-child(${this.acrescimoControl.invalid ? 1 : this.freteControl.invalid ? 2 : 3}) input`;
+      const target = root?.querySelector<HTMLElement>(selector) || root?.querySelector<HTMLElement>('.section-card__toggle');
+      target?.focus({ preventScroll: true }); target?.scrollIntoView({ block: 'center', behavior: 'auto' });
+    });
+  }
   readonly primeiroPedidoTargets = PRIMEIRO_PEDIDO_TARGETS;
   private primeiroPedidoCriacaoRegistrada = false;
   tipo: ComercialTipo = 'rascunhos';
@@ -232,7 +264,27 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     private readonly toastr: ToastrService,
     private readonly authService: AuthService,
     private readonly primeiroPedidoTutorial: PrimeiroPedidoTutorialService,
-  ) {}
+    @Optional() private readonly breakpoints?: BreakpointObserver,
+    @Optional() private readonly tutorial?: TutorialService,
+    @Optional() private readonly elementRef?: ElementRef<HTMLElement>,
+  ) {
+    if (breakpoints) breakpoints.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => {
+      if (this.isMobile === state.matches) return;
+      this.isMobile = state.matches;
+      this.mobileSections.update(value => ({ ...value }));
+    });
+    if (tutorial) effect(() => {
+      const target = tutorial.currentStep()?.targetId;
+      const section: EditorMobileSection | undefined = target === PRIMEIRO_PEDIDO_TARGETS.cliente ? 'cliente'
+        : target === PRIMEIRO_PEDIDO_TARGETS.adicionarItem ? 'itens'
+        : target === PRIMEIRO_PEDIDO_TARGETS.revisao ? 'financeiro'
+        : target === PRIMEIRO_PEDIDO_TARGETS.salvar ? 'revisao' : undefined;
+      if (!section || !this.mobilePedidoNovo || this.mobileSections()[section]) return;
+      this.setMobileSection(section, true);
+      clearTimeout(this.tutorialRevealTimer);
+      this.tutorialRevealTimer = setTimeout(() => tutorial.refreshTarget(target!));
+    });
+  }
 
   get titulo(): string {
     if (this.pedidoId && this.tipo === 'pedidos') {
@@ -342,7 +394,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
       { id: 'orcamentos', label: 'Criar orçamento', disabled: !this.podeConcluirRascunho },
       { id: 'pedidos', label: 'Criar pedido', primary: true, disabled: !this.podeConcluirRascunho },
     ];
-    return [cancelar, { id: 'salvar', label: this.acaoSalvar, pendingLabel: 'Salvando...', primary: true,
+    return [...(this.mobilePedidoNovo ? [] : [cancelar]), { id: 'salvar', label: this.acaoSalvar, pendingLabel: 'Salvando...', primary: true,
       type: 'submit', form: 'comercial-editor-form', disabled: !this.podeSalvar,
       tutorialTarget: this.tipo === 'pedidos' ? PRIMEIRO_PEDIDO_TARGETS.salvar : '' }];
   }
@@ -356,6 +408,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     if ((event.target as HTMLElement | null)?.tagName === 'INPUT') event.preventDefault();
   }
   salvarFormulario(): void {
+    if (this.mobilePedidoNovo && (!this.podeSalvar || this.ajustesFinanceirosForm.invalid)) this.revisarPendencias();
     if (this.tipo !== 'rascunhos' && this.mostrarAcoesCriacao && !this.salvando) this.salvar();
   }
   recarregar(): void {
@@ -656,6 +709,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    clearTimeout(this.tutorialRevealTimer); clearTimeout(this.focusTimer);
     this.destroy$.next();
     this.destroy$.complete();
   }

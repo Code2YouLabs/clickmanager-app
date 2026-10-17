@@ -1,5 +1,6 @@
-<app-section-card [titulo]="titulo" [divider]="true">
-  <div class="itens-wrapper" [class.inativo]="inativo">
+<app-section-card [titulo]="titulo" [divider]="true" [mobilePlain]="mobileCompact" [mobileCollapsible]="mobileCompact"
+  [mobileExpanded]="mobileExpanded" [mobileSummary]="mobileSummary" (mobileExpandedChange)="mobileExpandedChange.emit($event)">
+  <div class="itens-wrapper" [class.itens-wrapper--mobile-compact]="mobileCompact" [class.inativo]="inativo">
     <div class="itens-actions" actions *ngIf="mostrarAcoes">
       <button mat-flat-button color="primary" class="add-item-button" type="button"
         [appTutorialTarget]="buscarProdutosTutorialTarget"

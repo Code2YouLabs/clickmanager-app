@@ -14,6 +14,7 @@ import { InputTextareaComponent } from '../inputs/input-textarea/input-textarea.
   styleUrls: ['./observacoes-card.component.scss']
 })
 export class ObservacoesCardComponent implements OnChanges {
+  @Input() mobileCompact = false;
   @Input() titulo = 'Observações';
   @Input() renderCard = true;
   @Input() divider = true;

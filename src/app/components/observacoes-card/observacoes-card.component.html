@@ -1,12 +1,12 @@
 <ng-container *ngIf="renderCard; else content">
-  <app-section-card [titulo]="titulo" [divider]="divider">
+  <app-section-card [titulo]="titulo" [divider]="divider" [mobilePlain]="mobileCompact">
     <ng-container [ngTemplateOutlet]="content"></ng-container>
   </app-section-card>
 </ng-container>
 
 <ng-template #content>
   <div class="obs-block" [class.border]="!renderCard" [class.inativo]="inativo">
-    <div class="empty-alert" *ngIf="!textoSalvo && !editando">
+    <div class="empty-alert" *ngIf="!textoSalvo && !editando && !mobileCompact">
       <mat-icon>info</mat-icon>
       <span>{{ emptyMessage }}</span>
     </div>

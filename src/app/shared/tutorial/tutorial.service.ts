@@ -45,6 +45,12 @@ export class TutorialService {
   });
   readonly events$ = this.eventsSubject.asObservable();
 
+  /** A registered target became visible after its owning section was expanded. */
+  refreshTarget(targetId: string): void {
+    this.targetChangesSubject.next(targetId);
+    this.remeasureActiveTarget(targetId);
+  }
+
   registerTarget(targetId: string, element: HTMLElement): () => void {
     const id = targetId.trim();
     const elements = this.targets.get(id) ?? new Set<HTMLElement>();

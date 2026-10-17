@@ -1,11 +1,12 @@
 <ng-container *ngIf="renderCard; else content">
-  <app-section-card [titulo]="titulo" [divider]="divider">
+  <app-section-card [titulo]="titulo" [divider]="divider" [mobilePlain]="mobileCompact" [mobileCollapsible]="mobileCompact"
+    [mobileExpanded]="mobileExpanded" [mobileSummary]="mobileSummary" (mobileExpandedChange)="mobileExpandedChange.emit($event)">
     <ng-container [ngTemplateOutlet]="content"></ng-container>
   </app-section-card>
 </ng-container>
 
 <ng-template #content>
-  <div class="cliente-block" [class.border]="!renderCard" [class.inativo]="inativo">
+  <div class="cliente-block" [class.cliente-block--mobile-compact]="mobileCompact" [class.border]="!renderCard" [class.inativo]="inativo">
     <div *ngIf="cliente; else semCliente" class="cliente-info">
       <div class="info-grid">
         <div class="info-column">
@@ -59,10 +60,10 @@
 
       <div class="actions-row">
         <div class="actions">
-          <button mat-stroked-button color="primary" (click)="onCancelarEdicao()" *ngIf="editando" [disabled]="inativo">
+          <button [attr.type]="mobileCompact ? 'button' : null" mat-stroked-button color="primary" (click)="onCancelarEdicao()" *ngIf="editando" [disabled]="inativo">
             Cancelar
           </button>
-          <button mat-stroked-button color="primary" (click)="onEditarCliente()" *ngIf="!editando" [disabled]="inativo">
+          <button [attr.type]="mobileCompact ? 'button' : null" mat-stroked-button color="primary" (click)="onEditarCliente()" *ngIf="!editando" [disabled]="inativo">
             Trocar cliente
           </button>
         </div>
@@ -90,6 +91,7 @@
       <div class="editor-actions">
         <button
           mat-flat-button
+          [attr.type]="mobileCompact ? 'button' : null"
           color="primary"
           (click)="onSalvarCliente()"
           [disabled]="salvando || inativo">
