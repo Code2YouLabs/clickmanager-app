@@ -15,7 +15,7 @@
       <mat-divider></mat-divider>
 
       <mat-dialog-content class="wizard-body mobile-side-panel__body" [class.wizard-body--funnel]="data?.mobilePanel && isFirstStep">
-        <p *ngIf="data?.mobilePanel" class="wizard-mobile-step-title" [class.wizard-mobile-step-title--price]="stepper.selectedIndex === 1" aria-live="polite">{{ currentStepLabel }}</p>
+        <p *ngIf="data?.mobilePanel" class="wizard-mobile-step-title" [class.wizard-mobile-step-title--redundant]="stepper.selectedIndex === 1 || stepper.selectedIndex === 2" aria-live="polite">{{ currentStepLabel }}</p>
         <mat-horizontal-stepper labelPosition="bottom" [linear]="true" #stepper class="wizard-stepper" (selectionChange)="onStepSelectionChange($event)">
           <mat-step [stepControl]="produtoForm" [label]="data?.mobilePanel ? 'Produto' : stepLabels[0]">
             <form [formGroup]="produtoForm" class="step-inner step-full produto-step">
@@ -450,11 +450,25 @@
                 <div class="services-grid">
                   <section class="services-card">
                     <div class="services-card-head">
-                      <h3>Acabamentos disponíveis</h3>
+                      <h3>{{ data?.mobilePanel ? 'Acabamentos' : 'Acabamentos disponíveis' }}</h3>
                       <span>{{ produtoSelecionado?.acabamentos?.length || 0 }}</span>
                     </div>
                     <div class="services-list" *ngIf="produtoSelecionado?.acabamentos?.length; else semAcabamentosServicos">
-                      <label class="opt-card service-option" *ngFor="let acabamento of produtoSelecionado?.acabamentos">
+                      <ng-container *ngFor="let acabamento of produtoSelecionado?.acabamentos">
+                      <mat-checkbox
+                        *ngIf="data?.mobilePanel"
+                        class="service-mobile-option"
+                        [checked]="acabamentoSelecionado(acabamento.id)"
+                        (change)="alternarAcabamento(acabamento.id, $event.checked)">
+                        <span class="opt-name">{{ acabamento.nome }}</span>
+                        <span class="opt-desc" *ngIf="acabamento.descricao">{{ acabamento.descricao }}</span>
+                        <span class="service-mobile-price" *ngIf="apresentacaoPrecoAdicional(acabamento) as precoAdicional">
+                          <span>{{ precoAdicional.unidade }}</span>
+                          <strong *ngIf="precoAdicional.valor; else adicionalSemValor">{{ precoAdicional.valor }}</strong>
+                          <ng-template #adicionalSemValor><span>Sem valor configurado</span></ng-template>
+                        </span>
+                      </mat-checkbox>
+                      <label *ngIf="!data?.mobilePanel" class="opt-card service-option">
                         <mat-checkbox
                           class="opt-check"
                           [checked]="acabamentoSelecionado(acabamento.id)"
@@ -466,6 +480,7 @@
                         </span>
                         <span class="opt-price">{{ precoResumoAdicional(acabamento) }}</span>
                       </label>
+                      </ng-container>
                     </div>
                     <ng-template #semAcabamentosServicos>
                       <div class="empty-state compact">

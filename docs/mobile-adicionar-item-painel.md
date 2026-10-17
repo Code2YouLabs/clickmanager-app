@@ -46,6 +46,15 @@ A branch parte da base mobile atual, incluindo os commits locais aprovados.
   341px, uma em telas menores. Máscaras e validações não foram alteradas.
 - Voltar e Próximo mantêm os handlers existentes; Cancelar ganha aparência
   discreta apenas no mobile. Nenhum cálculo ou agendamento novo foi criado.
+- Adicionais mobile reutiliza o bloco compacto do produto e apresenta Acabamentos
+  em lista com divisores. Cada opção é um checkbox Material com nome, descrição
+  completa e unidade/valor no próprio rótulo; não há clique adicional no contêiner.
+  O título acima do indicador não se repete nessa etapa. Desktop mantém os cards.
+- A apresentação de unidade e valor usa o cálculo comercial existente, sem gerar
+  subtotais novos nem assumir cobrança por folha. Sem política, informa ausência
+  de valor. Seleção múltipla continua no Set de IDs e a composição segue intacta.
+  O contrato atual não fornece flags de obrigatório/incompatível/desabilitado;
+  nenhuma regra foi inventada. O controle mantém o comportamento disabled Material.
 
 ## Fluxo e tutorial
 

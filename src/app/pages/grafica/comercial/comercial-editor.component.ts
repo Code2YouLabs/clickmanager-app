@@ -2890,6 +2890,14 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
     return `${this.labelFormaAplicacao(item.formaAplicacao)} · ${this.moeda(calculo.valorUnitario)}`;
   }
 
+  apresentacaoPrecoAdicional(item: GraficaProdutoAcabamento): { unidade: string; valor: string | null } {
+    const calculo = this.calcularAcabamentoComercial(item);
+    return {
+      unidade: this.labelFormaAplicacao(item.formaAplicacao),
+      valor: calculo.politica ? this.moeda(calculo.valorUnitario) : null,
+    };
+  }
+
   private composicaoDaPrecificacao(): ComposicaoComercialResolvida | null {
     if (!this.preco || !this.precoValido || !this.produtoSelecionado) return null;
     const quantidade = Number(this.preco.quantidadeSolicitada || this.quantidadeForm.value.quantidade || 1);

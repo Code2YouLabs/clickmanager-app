@@ -80,6 +80,27 @@ describe('Adicionar item no painel mobile compartilhado', () => {
       expect(editor.itens).toEqual([existing] as any); expect(editor.clienteConfirmado?.id).toBe(7);
       expect(editor.observacaoClienteControl.value).toBe('Entregar à tarde');
     }));
+
+    it(`inclui o acabamento selecionado na composição de ${type}`, fakeAsync(() => {
+      editor.tipo = type;
+      service.detalhar.and.returnValue(of({ ...product, acabamentos: [
+        { id: 1, nome: 'Corte', descricao: 'Corte reto', formaAplicacao: 'POR_FOLHA', ativo: true, ordem: 0, politicas: [policy] },
+      ] } as any));
+      const wizard = open();
+      query('.funnel-option').click(); render(); tick(300); render();
+      if (wizard.isFirstStep) next();
+      next(); expect(wizard.stepper?.selectedIndex).toBe(2);
+      query('.service-mobile-option .opt-name').click(); render();
+      expect(wizard.acabamentoSelecionado(1)).toBeTrue();
+      next(); composition.next({ itens: [added] }); composition.complete(); tick(300); render();
+      expect(wizard.stepper?.selectedIndex).toBe(3);
+      next(); tick(400); render();
+      expect(editor.tipo).toBe(type);
+      expect(editor.itens.length).toBe(3);
+      expect(editor.itens[2]).toEqual(jasmine.objectContaining({ nomeProduto: 'Acabamento: Corte', quantidade: 1, valorUnitario: 10, valorTotal: 10 }));
+      expect(editor.clienteConfirmado?.id).toBe(7);
+      expect(dialog.openDialogs.length).toBe(0);
+    }));
   }
 
   it('mantém busca, seleção, navegação, espera da revisão e adição única', fakeAsync(() => {

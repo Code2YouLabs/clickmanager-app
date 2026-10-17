@@ -246,7 +246,7 @@
     .title-stack h2 { margin: 0; padding: 0; font-size: 18px; line-height: 24px; }
     .title-stack h2::before { display: none; }
     .wizard-mobile-step-title { margin: 0 0 8px; font-size: 14px; line-height: 20px; font-weight: 600; overflow-wrap: anywhere; }
-    .wizard-mobile-step-title--price { display: none; }
+    .wizard-mobile-step-title--redundant { display: none; }
     .wizard-stepper { height: auto; display: block; min-width: 0; }
     .wizard-stepper ::ng-deep .mat-horizontal-stepper-wrapper { height: auto; display: block; }
     .wizard-stepper ::ng-deep .mat-horizontal-content-container { display: block; height: auto; }
@@ -281,13 +281,15 @@
     .summary-price-total { margin: 0; padding: 8px 12px; font-size: 16px; line-height: 20px; }
     .summary-rule { font-size: 11px; line-height: 16px; }
     .summary-rule mat-icon { width: 16px; height: 16px; font-size: 16px; }
-    .price-step {
+    .price-step, .services-step {
       .price-product-card { border: 0; border-bottom: 1px solid #e2e8f0; border-radius: 0; padding: 0 0 12px; }
+      .price-product-card h3, .price-variation { overflow-wrap: anywhere; }
+      .price-type { text-transform: none; font-weight: 600; }
+    }
+    .price-step {
       .price-config-grid { gap: 12px; }
       .price-config-card { border: 0; border-radius: 0; padding: 0; overflow: visible; }
       .price-summary-card { border: 0; border-top: 1px solid #e2e8f0; border-radius: 0; padding: 12px 0 0; }
-      .price-product-card h3, .price-variation { overflow-wrap: anywhere; }
-      .price-type { text-transform: none; font-weight: 600; }
       .quantity-range-layout, .measure-layout { grid-template-columns: minmax(0, 1fr); gap: 12px; }
       .quantity-entry-panel, .measure-entry-panel { width: 100%; gap: 8px; }
       .quantity-entry-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
@@ -306,6 +308,28 @@
       .lot-card strong, .lot-card span { font-size: 14px; }
       .summary-price-total strong { font-size: 20px; font-variant-numeric: tabular-nums; }
       .summary-price-row strong { text-align: right; font-variant-numeric: tabular-nums; }
+    }
+    .services-step {
+      .services-shell { gap: 12px; }
+      .services-grid { grid-template-columns: minmax(0, 1fr); gap: 0; }
+      .services-card { min-height: 0; border: 0; border-radius: 0; padding: 0; }
+      .services-card-head { margin-bottom: 4px; }
+      .services-card-head h3 { font-size: 14px; line-height: 20px; }
+      .services-card-head > span { min-width: 0; height: auto; padding: 0; background: transparent; color: #64748b; font-weight: 400; }
+      .services-list { display: flex; flex-direction: column; gap: 0; }
+      .service-mobile-option { display: block; width: 100%; min-width: 0; border-bottom: 1px solid #e2e8f0; }
+      .service-mobile-option:last-child { border-bottom: 0; }
+      .service-mobile-option.mat-mdc-checkbox-checked .opt-name { color: var(--mat-sys-primary); }
+      .service-mobile-option ::ng-deep .mdc-form-field { display: flex; width: 100%; align-items: flex-start; }
+      .service-mobile-option ::ng-deep .mdc-checkbox { flex-shrink: 0; margin-top: 2px; }
+      .service-mobile-option ::ng-deep .mdc-label { flex: 1; min-width: 0; min-height: 48px; margin: 0; padding: 12px 0; cursor: pointer; }
+      .service-mobile-option ::ng-deep .mdc-checkbox--disabled + .mdc-label { cursor: default; }
+      .service-mobile-option:focus-within { outline: 2px solid var(--mat-sys-primary); outline-offset: 2px; }
+      .opt-name { font-size: 14px; line-height: 20px; font-weight: 600; overflow-wrap: anywhere; }
+      .opt-desc { margin-top: 4px; font-size: 12px; line-height: 18px; overflow-wrap: anywhere; }
+      .service-mobile-price { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 6px; font-size: 12px; line-height: 18px; color: #64748b; }
+      .service-mobile-price strong { color: #0f172a; font-weight: 600; font-variant-numeric: tabular-nums; }
+      .empty-state.compact { border: 0; border-radius: 0; padding: 12px 0; min-height: 0; text-align: left; }
     }
     .funnel-grid { width: 100%; height: auto; grid-template-columns: minmax(0, 1fr); gap: 16px; }
     .funnel-column { height: auto; min-height: 0; display: flex; flex-direction: column; overflow: visible; }
