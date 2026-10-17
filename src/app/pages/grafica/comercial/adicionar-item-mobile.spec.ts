@@ -145,6 +145,30 @@ describe('Adicionar item no painel mobile compartilhado', () => {
     dialog.closeAll(); tick(400);
   }));
 
+  it('preenche a área do painel com opções sem depender da altura inicial da lista', fakeAsync(() => {
+    const wizard = open();
+    wizard.produtosFunil = Array.from({ length: 90 }, (_, i) => ({ ...product, id: i + 1, catalogoProdutoNome: `Adesivo ${String(i + 1).padStart(2, '0')}` } as any));
+    dialog.openDialogs[0].updateSize('360px', '840px');
+    // Override the headless browser's 100dvh cap to model the phone's usable height.
+    query('.mobile-side-panel').style.maxHeight = '840px';
+    render(); tick(500); render();
+    const body = query('.wizard-body');
+    const step = query('.mat-horizontal-stepper-content:not(.mat-horizontal-stepper-content-inactive)');
+    const grid = query('.funnel-grid');
+    const list = query('.funnel-column--current .funnel-list');
+    expect(grid.clientHeight).withContext('quadro deve ocupar a área central, independente de quantas opções existiam').toBeGreaterThan(400);
+    expect(list.clientHeight).toBeGreaterThan(300);
+    expect(step.clientHeight).toBeGreaterThan(body.clientHeight * 0.6);
+    expect(wizard.itensPorPaginaFunil).toBeGreaterThan(6);
+    expect(query('.funnel-column--current .funnel-pager').getBoundingClientRect().bottom)
+      .toBeGreaterThan(body.getBoundingClientRect().bottom - 24);
+    const originalHeight = grid.clientHeight;
+    wizard.proximaPaginaFunil('produto'); render(); tick(400); render();
+    expect(grid.clientHeight).toBe(originalHeight);
+    expect(wizard.itensPorPaginaFunil).toBeGreaterThan(6);
+    dialog.closeAll(); tick(400);
+  }));
+
   it('ajusta a paginação à altura disponível sem perder o acesso às opções', fakeAsync(() => {
     const wizard = open();
     wizard.produtosFunil = Array.from({ length: 7 }, (_, i) => ({ ...product, id: i + 1, catalogoProdutoNome: `Produto ${i + 1}` } as any));

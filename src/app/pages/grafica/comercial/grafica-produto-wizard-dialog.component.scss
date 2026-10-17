@@ -243,7 +243,7 @@
     .wizard-stepper { height: auto; display: block; min-width: 0; }
     .wizard-stepper ::ng-deep .mat-horizontal-stepper-wrapper { height: auto; display: block; }
     .wizard-stepper ::ng-deep .mat-horizontal-content-container { display: block; height: auto; }
-    .wizard-stepper ::ng-deep .mat-horizontal-stepper-content[aria-expanded='true'] { display: block; height: auto; }
+    .wizard-stepper ::ng-deep .mat-horizontal-stepper-content:not(.mat-horizontal-stepper-content-inactive) { display: block; height: auto; }
     .wizard-stepper ::ng-deep .mat-horizontal-stepper-header-container { position: static; padding: 0 0 12px; }
     .wizard-stepper ::ng-deep .mat-horizontal-stepper-header { flex: 1; min-width: 0; height: auto; min-height: 44px; padding: 8px 2px; }
     .wizard-stepper ::ng-deep .mat-stepper-horizontal-line { min-width: 0; flex: 0 0 8px; margin: 20px 0 0; align-self: flex-start; }
@@ -278,12 +278,13 @@
   .wizard-stepper { display: flex; flex: 1; min-height: 0; }
   .wizard-stepper ::ng-deep .mat-horizontal-stepper-wrapper { display: flex; flex: 1; min-height: 0; }
   .wizard-stepper ::ng-deep .mat-horizontal-stepper-header-container { flex-shrink: 0; padding-bottom: 8px; }
-  // Inactive Material steps have zero height, but can still take width in a flex row.
-  .wizard-stepper ::ng-deep .mat-horizontal-content-container { display: block; flex: 1; min-height: 0; overflow: hidden; }
-  .wizard-stepper ::ng-deep .mat-horizontal-stepper-content[aria-expanded='true'] { display: flex; flex: 1; height: 100%; min-height: 0; }
-  .produto-step { flex: 1; height: 100%; min-height: 0; }
-  .funnel-grid { display: block; flex: 1; min-height: 0; overflow: hidden; }
-  .funnel-track { display: flex; width: 100%; height: 100%; transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1); }
+  // Material identifies the active panel by class, not aria-expanded.
+  // A column flex chain reserves the viewport independently of the option count.
+  .wizard-stepper ::ng-deep .mat-horizontal-content-container { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+  .wizard-stepper ::ng-deep .mat-horizontal-stepper-content:not(.mat-horizontal-stepper-content-inactive) { display: flex; flex: 1; width: 100%; height: auto; min-height: 0; }
+  .produto-step { flex: 1; height: auto; min-height: 0; }
+  .funnel-grid { position: relative; display: block; flex: 1; min-height: 0; overflow: hidden; }
+  .funnel-track { position: absolute; inset: 0; display: flex; width: 100%; height: 100%; transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1); }
   .funnel-column { flex: 0 0 100%; box-sizing: border-box; height: 100%; overflow: hidden; }
   .funnel-header, .funnel-separator, .funnel-pager { flex-shrink: 0; }
   .funnel-header { padding: 10px 12px 8px; }
