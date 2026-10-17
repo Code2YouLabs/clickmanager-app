@@ -119,6 +119,8 @@ describe('Editor Novo Pedido mobile', () => {
 
   it('mantém validações e seleciona o cliente cadastrado pelo painel', fakeAsync(() => {
     const service = TestBed.inject(ClienteService);
+    const originalItems = [item()]; editor.itens = originalItems as any;
+    editor.observacaoClienteControl.setValue('Entregar à tarde');
     const dialog = fixture.debugElement.injector.get(MatDialog);
     editor.onCriarCliente(); fixture.detectChanges(); tick(400);
     const form = dialog.openDialogs[0].componentInstance as ClienteCreateDialogComponent;
@@ -126,6 +128,10 @@ describe('Editor Novo Pedido mobile', () => {
     form.nomeControl.setValue('Pedro de Lara'); form.telefoneControl.setValue('31987531233');
     form.salvar(); tick(400); fixture.detectChanges();
     expect(service.salvar).toHaveBeenCalledTimes(1);
+    expect(form.quickMobile).toBeTrue();
+    expect(editor.itens).toBe(originalItems as any);
+    expect(editor.observacaoClienteControl.value).toBe('Entregar à tarde');
+    expect(TestBed.inject(PrimeiroPedidoTutorialService).registrarClienteSelecionado).toHaveBeenCalled();
     expect(editor.clienteConfirmado?.id).toBe(7);
     expect(document.querySelector('.mobile-side-panel')).toBeNull();
   }));

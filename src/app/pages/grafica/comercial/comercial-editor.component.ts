@@ -1379,7 +1379,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
 
     const dialogRef = this.isMobile
       ? openMobileSidePanel<ClienteCreateDialogComponent, ClienteCreateDialogData, ClienteResponse | null>(
-          this.dialog, ClienteCreateDialogComponent, { data, ariaLabel: 'Novo cliente' })
+          this.dialog, ClienteCreateDialogComponent, { data: { ...data, mobileMode: 'quick' }, ariaLabel: 'Novo cliente' })
       : this.dialog.open(ClienteCreateDialogComponent, {
           width: '760px', maxWidth: '96vw', data,
         });
