@@ -25,14 +25,14 @@ O subtotal dos itens deixa de ser repetido em uma caixa interna; continua no res
 - **SectionCard:** `mobileCollapsible`, `mobileExpanded`, `mobileSummary` e `mobileExpandedChange`, todos opt-in. O botão possui `aria-expanded`, `aria-controls` e área mínima de 44 px. Usa `mobilePlain` existente para retirar a moldura interna. Desktop continua com o cabeçalho e corpo originais, mesmo com o grupo recolhido no mobile.
 - **Cliente e Itens:** encaminham as opções mobile ao seu SectionCard. Demais consumidores permanecem com os valores padrão. A seleção automática já configurada no editor (`salvarAoSelecionar=true`) foi preservada; não foi introduzida nova confirmação automática. Somente no piloto, os botões do seletor recebem `type="button"` para não submeter o formulário principal.
 - **Observações:** `mobileCompact` opt-in usa o SectionCard sem moldura e suprime o alerta vazio. Cada observação mantém seu componente, FormControl e confirmação.
-- **PageCard:** `mobileStickyFooter` opt-in mantém a infraestrutura de `footerActions` e o submit associado ao formulário. Total é conteúdo projetado em `page-footer-left`; não há regra comercial no PageCard. O rótulo pendente da ação é respeitado nesse modo. Outros consumidores continuam iguais.
+- **Rodapé global:** `MobileTotalBarComponent`, o mesmo do SmartCalc, utiliza a aparência compartilhada `compact`. O contrato experimental `PageCard.mobileStickyFooter` foi removido. No piloto o PageCard não renderiza ações finais; a barra global fornece o único submit associado ao formulário, preservando o handler e alvo do tutorial. Ver [contrato da barra global](mobile-total-bar.md).
 - **InputMoeda:** `inputMode` opcional permite teclado decimal no piloto sem alterar máscara, parsing, validação ou valor. Padrão sem atributo adicional, preservando os consumidores existentes.
 
 ## Rodapé e validação
 
 Voltar usa o slot contextual existente do PageCard. Há um único Salvar, vinculado a `comercial-editor-form`, com os handlers originais. Cancelar permanece na revisão e chama o comando existente. O disabled por ausência de cliente/itens e o estado de salvamento são preservados; não se exige pagamento para criar o pedido.
 
-O rodapé fica acima de `--mobile-bottom-nav-height`, respeita safe areas e acompanha a área visível do teclado por `visualViewport`. `ResizeObserver` mede sua altura para reservar espaço de rolagem fora da superfície do cartão. Os listeners e o observer são removidos ao desativar o modo ou destruir o componente. Não houve alteração no shell ou navegação inferior.
+O rodapé global fica acima de `--mobile-bottom-nav-height`, respeita safe areas e acompanha a área visível do teclado por `visualViewport`. `ResizeObserver` mede sua altura para reservar espaço de rolagem fora da superfície do cartão. As opções `reserveSpace` e `avoidKeyboard` pertencem à barra global, não ao PageCard. Detalhes apresenta uma revisão consultiva de cliente, quantidade de itens e valores reais, usando o mesmo puxador/expansão do SmartCalc. Não há formulário financeiro duplicado. Não houve alteração no shell ou navegação inferior.
 
 Como Salvar inválido permanece desabilitado, **Revisar pendências** oferece uma ação explícita: abre Cliente ou Itens conforme as regras existentes; direciona o foco à busca ou Adicionar produto e mostra a mensagem correspondente. Uma tentativa de submit também revela a pendência. Para ajustes financeiros inválidos, abre Financeiro, marca os controles existentes como tocados e direciona o foco. Pagamentos incompletos não se tornam uma obrigação de conclusão. Erros de persistência continuam com o tratamento original.
 
@@ -57,7 +57,7 @@ Relativos à raiz do repositório; as extensões entre chaves representam os arq
 - `src/app/shared/tutorial/tutorial.service.{ts,spec.ts}`.
 - `docs/mobile-editor-pedidos.md` (este relatório).
 
-## Validação e pendências
+## Validação original do piloto e pendências
 
 - Baseline antes da implementação: **72/72** testes de editor, Primeiro Pedido, PageCard, SectionCard e Itens aprovados.
 - Testes direcionados finais: **86/86** aprovados, incluindo formulário nativo, integração mobile, preservação de campos, cliente, itens, observações, financeiro/pagamentos, validação/foco, submit único, Cancelar, loading, teclado e tutorial.
@@ -67,3 +67,5 @@ Relativos à raiz do repositório; as extensões entre chaves representam os arq
 - A composição nova fica restrita à criação mobile de Pedidos; eventual adoção nos detalhes, Orçamentos ou Rascunhos é futura. Estado de apresentação dos grupos não é persistido ao sair da rota.
 
 Sem alterações em endpoints, serviços comerciais, DTOs, cálculos financeiros, preços, regras de recebimento ou progresso do tutorial. Sem push, PR ou merge.
+
+A troca posterior do rodapé e sua validação estão registradas em [MobileTotalBar global](mobile-total-bar.md).
