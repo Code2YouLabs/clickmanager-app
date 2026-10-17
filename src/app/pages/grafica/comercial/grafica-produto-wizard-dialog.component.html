@@ -41,7 +41,7 @@
                           <button
                             mat-button
                             type="button"
-                            class="funnel-option"
+                            class="funnel-option" [attr.data-funnel-option-key]="opcao.key"
                             *ngFor="let opcao of opcoesPaginadas('produto')"
                             [class.active]="opcao.servico ? servicoAtual?.id === opcao.servico.id : produtoNomeSelecionado === opcao.label"
                             (click)="selecionarProdutoFunil(opcao)">
@@ -91,7 +91,7 @@
                           <button
                             mat-button
                             type="button"
-                            class="funnel-option"
+                            class="funnel-option" [attr.data-funnel-option-key]="opcao.key"
                             *ngFor="let opcao of opcoesPaginadas('material')"
                             [class.active]="materialSelecionadoId === +opcao.key"
                             (click)="selecionarMaterialFunil(opcao)">
@@ -134,7 +134,7 @@
                           <button
                             mat-button
                             type="button"
-                            class="funnel-option"
+                            class="funnel-option" [attr.data-funnel-option-key]="opcao.key"
                             *ngFor="let opcao of opcoesPaginadas('formato')"
                             [class.active]="formatoSelecionadoId === +opcao.key"
                             (click)="selecionarFormatoFunil(opcao)">
@@ -177,7 +177,7 @@
                           <button
                             mat-button
                             type="button"
-                            class="funnel-option"
+                            class="funnel-option" [attr.data-funnel-option-key]="opcao.key"
                             *ngFor="let opcao of opcoesPaginadas('cor')"
                             [class.active]="corSelecionadaId === +opcao.key"
                             (click)="selecionarCorFunil(opcao)">

@@ -116,6 +116,11 @@
               "src/styles.scss"
             ],
             "scripts": []
+          },
+          "configurations": {
+            "application-theme": {
+              "styles": ["src/styles.scss", "src/assets/scss/style.scss"]
+            }
           }
         }
       }

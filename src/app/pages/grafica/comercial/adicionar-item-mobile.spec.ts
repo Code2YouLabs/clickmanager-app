@@ -162,6 +162,11 @@ describe('Adicionar item no painel mobile compartilhado', () => {
     expect(wizard.itensPorPaginaFunil).toBeGreaterThan(6);
     expect(query('.funnel-column--current .funnel-pager').getBoundingClientRect().bottom)
       .toBeGreaterThan(body.getBoundingClientRect().bottom - 24);
+    const rows = Array.from(list.querySelectorAll<HTMLElement>('.funnel-option'));
+    const listStyle = getComputedStyle(list);
+    const used = rows.reduce((total, row) => total + row.offsetHeight, 0) + Math.max(0, rows.length - 1) * (parseFloat(listStyle.rowGap) || 0);
+    const available = list.clientHeight - parseFloat(listStyle.paddingTop) - parseFloat(listStyle.paddingBottom);
+    expect(available - used).withContext(`espaço vazio: ${available - used}px; opções: ${rows.length}; alturas: ${rows.map(row => row.offsetHeight)}`).toBeLessThan(48);
     const originalHeight = grid.clientHeight;
     wizard.proximaPaginaFunil('produto'); render(); tick(400); render();
     expect(grid.clientHeight).toBe(originalHeight);
@@ -178,19 +183,34 @@ describe('Adicionar item no painel mobile compartilhado', () => {
     Object.defineProperty(list, 'clientWidth', { configurable: true, value: 300 });
     list.querySelectorAll<HTMLElement>('.funnel-option').forEach(option => Object.defineProperty(option, 'offsetHeight', { configurable: true, value: 44 }));
     // A narrow initial layout must not permanently reserve oversized rows.
-    (wizard as any).mobileRowMeasurementKey = 'produto:180';
-    (wizard as any).mobileOptionHeight = 144;
-    (wizard as any).fitMobileFunnel();
+
+    (wizard as any).fitFunnel();
     expect(wizard.itensPorPaginaFunil).toBe(2); expect(wizard.totalPaginasFunil('produto')).toBe(4);
     wizard.proximaPaginaFunil('produto'); expect(wizard.opcoesPaginadas('produto')[0].label).toBe('Produto 3');
     Object.defineProperty(list, 'clientHeight', { configurable: true, value: 76 });
-    (wizard as any).fitMobileFunnel();
+    (wizard as any).fitFunnel();
     expect(wizard.itensPorPaginaFunil).toBe(1); expect(wizard.opcoesPaginadas('produto')[0].label).toBe('Produto 3');
     Object.defineProperty(list, 'clientHeight', { configurable: true, value: 516 });
-    (wizard as any).fitMobileFunnel();
-    expect(wizard.itensPorPaginaFunil).toBe(10);
+    (wizard as any).fitFunnel();
+    expect(wizard.itensPorPaginaFunil).toBe(7);
     expect(wizard.opcoesPaginadas('produto').length).toBe(7);
     expect(wizard.opcoesPaginadas('produto').some(option => option.label === 'Produto 3')).toBeTrue();
+    dialog.closeAll(); tick(400);
+  }));
+
+  it('mede cada opção sem reservar a altura de um nome longo para todas as linhas', fakeAsync(() => {
+    const wizard = open();
+    wizard.produtosFunil = Array.from({ length: 20 }, (_, i) => ({ ...product, id: i + 1,
+      catalogoProdutoNome: `Adesivo ${String(i + 1).padStart(2, '0')}` } as any)); render();
+    const list = query('.funnel-column--current .funnel-list');
+    Object.defineProperty(list, 'clientHeight', { configurable: true, value: 300 });
+    const row = list.querySelector<HTMLElement>('.funnel-option')!;
+    Object.defineProperty(row, 'offsetHeight', { configurable: true, value: 140 });
+    (wizard as any).fitFunnel();
+    expect(wizard.opcoesPaginadas('produto').length).toBe(4);
+    Object.defineProperty(row, 'offsetHeight', { configurable: true, value: 44 });
+    (wizard as any).fitFunnel();
+    expect(wizard.opcoesPaginadas('produto').length).toBe(6);
     dialog.closeAll(); tick(400);
   }));
 
@@ -204,6 +224,24 @@ describe('Adicionar item no painel mobile compartilhado', () => {
       expect(document.querySelector('.mobile-side-panel')).toBeNull(); expect(editor.itens).toEqual([existing] as any);
     }));
   }
+
+  it('aproveita a altura da lista desktop em vez de limitar a seis opções', fakeAsync(() => {
+    viewport.next({ matches: false, breakpoints: {} }); render();
+    service.listar.and.returnValue(of({ content: Array.from({ length: 90 }, (_, i) => ({ ...product,
+      id: i + 1, catalogoProdutoNome: `Adesivo ${String(i + 1).padStart(2, '0')}` })), last: true } as any));
+    const wizard = open(); render(); tick(400); render();
+    const list = query('.funnel-list');
+    const rows = Array.from(list.querySelectorAll<HTMLElement>('.funnel-option'));
+    const style = getComputedStyle(list);
+    const gap = parseFloat(style.rowGap) || 0;
+    const available = list.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+    const used = rows.reduce((total, row) => total + row.offsetHeight, 0) + (rows.length - 1) * gap;
+    expect(rows.length).toBeGreaterThan(6);
+    expect(available - used).toBeLessThan(rows[0].offsetHeight + gap);
+    expect(list.scrollHeight).toBeLessThanOrEqual(list.clientHeight);
+    expect(wizard.totalPaginasFunil('produto')).toBeLessThan(15);
+    dialog.closeAll(); tick(400);
+  }));
 
   it('mantém modal e dimensões desktop do produto', () => {
     viewport.next({ matches: false, breakpoints: {} }); render();

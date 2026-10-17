@@ -38,6 +38,13 @@ import { PRIMEIRO_PEDIDO_TARGETS, PrimeiroPedidoTutorialService } from './primei
 
 import { ComercialTipo } from './comercial.models';
 type FunilColuna = 'produto' | 'material' | 'formato' | 'cor';
+interface FunilViewport {
+  width: number;
+  available: number;
+  gap: number;
+  minimum: number;
+  heights: Record<string, number>;
+}
 type EditorMobileSection = 'cliente' | 'itens' | 'observacoes' | 'financeiro' | 'revisao';
 
 interface FunilOpcao {
@@ -1790,13 +1797,11 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   paginasFunil: Record<FunilColuna, number> = { produto: 0, material: 0, formato: 0, cor: 0 };
   filtrosFunil: Record<FunilColuna, string> = { produto: '', material: '', formato: '', cor: '' };
   mobileFunnelStage: FunilColuna = 'produto';
-  readonly mobileFunnelPageSize = signal(6);
-  private mobileOptionHeight = 44;
-  private mobileRowMeasurementKey = '';
+  private readonly funnelViewports = signal<Partial<Record<FunilColuna, FunilViewport>>>({});
   private focusedMobileFunnelStage: FunilColuna = 'produto';
   private funnelResizeObserver?: ResizeObserver;
   @ViewChild('funnelGrid', { read: ElementRef }) private funnelGrid?: ElementRef<HTMLElement>;
-  get itensPorPaginaFunil(): number { return this.data?.mobilePanel ? this.mobileFunnelPageSize() : 6; }
+  get itensPorPaginaFunil(): number { return this.opcoesPaginadas('produto').length; }
   get mobileFunnelStages(): FunilColuna[] {
     // Searching within a frame must not remove that frame from navigation.
     const material = !!this.produtoNomeSelecionado && this.opcoesFunil('material', false).length > 0;
@@ -1809,7 +1814,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   get mobileFunnelIndex(): number { return Math.max(0, this.mobileFunnelStages.indexOf(this.mobileFunnelStage)); }
   get canGoBackMobileFunnel(): boolean { return !!this.data?.mobilePanel && this.isFirstStep && this.mobileFunnelIndex > 0; }
 
-  private fitMobileFunnel(): void {
+  private fitFunnel(): void {
     const grid = this.funnelGrid?.nativeElement;
     if (!grid || !this.isFirstStep || this.wizardDestruido) return;
     if (this.focusedMobileFunnelStage !== this.mobileFunnelStage) {
@@ -1817,31 +1822,55 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
       grid.querySelector<HTMLElement>('.funnel-column--current .rev-title')?.focus({ preventScroll: true });
     }
     if (!this.funnelResizeObserver && typeof ResizeObserver !== 'undefined') {
-      this.funnelResizeObserver = new ResizeObserver(() => this.fitMobileFunnel());
+      this.funnelResizeObserver = new ResizeObserver(() => this.fitFunnel());
       this.funnelResizeObserver.observe(grid);
     }
-    const list = grid.querySelector<HTMLElement>('.funnel-column--current .funnel-list');
-    if (!list?.clientHeight || !list.clientWidth) return;
-    // Layout widths can change while the panel/stepper settles. Do not keep
-    // a wrapped row's old height after its available width has changed.
-    const measurementKey = `${this.mobileFunnelStage}:${list.clientWidth}`;
-    if (measurementKey !== this.mobileRowMeasurementKey) {
-      this.mobileRowMeasurementKey = measurementKey;
-      this.mobileOptionHeight = 44;
-    }
-    list.querySelectorAll<HTMLElement>('.funnel-option').forEach(option => {
-      this.mobileOptionHeight = Math.max(this.mobileOptionHeight, option.offsetHeight);
+    grid.querySelectorAll<HTMLElement>('[data-funnel-stage]').forEach(frame => {
+      if (this.data?.mobilePanel && !frame.classList.contains('funnel-column--current')) return;
+      const column = frame.dataset['funnelStage'] as FunilColuna;
+      const list = frame.querySelector<HTMLElement>('.funnel-list');
+      if (!list?.clientHeight || !list.clientWidth) return;
+      const old = this.funnelViewports()[column];
+      const visible = this.opcoesPaginadas(column);
+      const anchor = visible[0]?.key;
+      const style = getComputedStyle(list);
+      const heights = old?.width === list.clientWidth ? { ...old.heights } : {};
+      list.querySelectorAll<HTMLElement>('.funnel-option').forEach(row => {
+        const key = row.dataset['funnelOptionKey'];
+        if (key && row.offsetHeight) heights[key] = row.offsetHeight;
+      });
+      const viewport: FunilViewport = {
+        width: list.clientWidth,
+        available: list.clientHeight - (parseFloat(style.paddingTop) || 0) - (parseFloat(style.paddingBottom) || 0),
+        gap: parseFloat(style.rowGap) || 0,
+        minimum: this.data?.mobilePanel ? 44 : 38,
+        heights,
+      };
+      if (JSON.stringify(old) === JSON.stringify(viewport)) return;
+      this.funnelViewports.update(current => ({ ...current, [column]: viewport }));
+      // Keep the first visible choice accessible when resizing or learning row heights.
+      const page = anchor ? this.paginasDeOpcoesFunil(column).findIndex(options => options.some(option => option.key === anchor)) : 0;
+      this.paginasFunil[column] = Math.max(0, page);
     });
-    const style = getComputedStyle(list);
-    const gap = parseFloat(style.rowGap) || 0;
-    const padding = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
-    const size = Math.max(1, Math.floor((list.clientHeight - padding + gap) / (this.mobileOptionHeight + gap)));
-    const previous = this.mobileFunnelPageSize();
-    if (size === previous) return;
-    (Object.keys(this.paginasFunil) as FunilColuna[]).forEach(column => {
-      this.paginasFunil[column] = Math.floor(this.paginasFunil[column] * previous / size);
+  }
+
+  private paginasDeOpcoesFunil(column: FunilColuna): FunilOpcao[][] {
+    const viewport = this.funnelViewports()[column];
+    const options = this.opcoesFunil(column);
+    const pages: FunilOpcao[][] = [];
+    let page: FunilOpcao[] = [];
+    let used = 0;
+    options.forEach(option => {
+      const height = viewport?.heights[option.key] ?? viewport?.minimum ?? 44;
+      const gap = page.length ? viewport?.gap ?? 0 : 0;
+      if (page.length && (viewport ? used + gap + height > viewport.available : page.length >= 6)) {
+        pages.push(page); page = []; used = 0;
+      }
+      used += (page.length ? viewport?.gap ?? 0 : 0) + height;
+      page.push(option);
     });
-    this.mobileFunnelPageSize.set(size);
+    if (page.length || !pages.length) pages.push(page);
+    return pages;
   }
 
   private advanceMobileFunnel(): void {
@@ -1887,8 +1916,8 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
 	    @Inject(MAT_DIALOG_DATA) readonly data: any,
         @Optional() private readonly renderInjector?: Injector,
 	  ) {
-        if (this.data?.mobilePanel && this.renderInjector) {
-          afterRender(() => this.fitMobileFunnel(), { injector: this.renderInjector });
+        if (this.renderInjector) {
+          afterRender(() => this.fitFunnel(), { injector: this.renderInjector });
         }
       }
 
@@ -2189,8 +2218,8 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   }
 
   opcoesPaginadas(coluna: FunilColuna): FunilOpcao[] {
-    const inicio = this.paginasFunil[coluna] * this.itensPorPaginaFunil;
-    return this.opcoesFunil(coluna).slice(inicio, inicio + this.itensPorPaginaFunil);
+    const pages = this.paginasDeOpcoesFunil(coluna);
+    return pages[Math.min(this.paginasFunil[coluna], pages.length - 1)];
   }
 
   paginaAtualFunil(coluna: FunilColuna): number {
@@ -2198,7 +2227,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   }
 
   totalPaginasFunil(coluna: FunilColuna): number {
-    return Math.max(1, Math.ceil(this.opcoesFunil(coluna).length / this.itensPorPaginaFunil));
+    return this.paginasDeOpcoesFunil(coluna).length;
   }
 
   podePaginarAnterior(coluna: FunilColuna): boolean {
