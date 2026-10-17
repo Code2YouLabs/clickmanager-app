@@ -130,6 +130,9 @@ describe('Adicionar item no painel mobile compartilhado', () => {
       expect(query('.price-product-card').textContent).toContain(product.catalogoProdutoNome);
       expect(query('.summary-rule').textContent).toContain('Preço principal');
       expect(query('.summary-price-total').textContent).toContain('10,00');
+      document.querySelectorAll<HTMLElement>('.mat-step-text-label').forEach(label => {
+        expect(label.getBoundingClientRect().height).withContext('rótulos mobile devem ocupar uma linha').toBeLessThanOrEqual(22);
+      });
       service.precificar.calls.reset(); calculate.click(); render(); tick(300); render();
       expect(service.precificar).toHaveBeenCalledTimes(1);
       expect(query('.wizard-footer .primary-action').hasAttribute('disabled')).toBeFalse();
@@ -148,6 +151,45 @@ describe('Adicionar item no painel mobile compartilhado', () => {
     expect(getComputedStyle(query('.price-product-card .rev-title')).display).not.toBe('none');
     dialog.closeAll(); tick(400);
   }));
+
+  for (const tipo of ['POR_FAIXA_QUANTIDADE', 'POR_LOTE', 'POR_METRO_QUADRADO']) {
+    it(`mantém campos e detalhes de ${tipo} dentro da largura mobile`, fakeAsync(() => {
+      service.listarPrecos.and.returnValue(of([{ ...policy, tipo,
+        faixas: [{ inicio: 1, fim: 100, valorUnitario: 10 }],
+        lotes: [{ quantidade: 50, valorLote: 500 }],
+      }] as any));
+      const wizard = open();
+      dialog.openDialogs[0].updateSize('360px', '800px');
+      query('.mobile-side-panel').style.maxHeight = '800px';
+      query('.funnel-option').click(); render(); tick(400); render();
+      if (wizard.isFirstStep) next();
+      const body = query('.wizard-body');
+      expect(body.scrollWidth).toBeLessThanOrEqual(body.clientWidth);
+      document.querySelectorAll<HTMLElement>('.price-config-card input').forEach(input => {
+        const rect = input.getBoundingClientRect();
+        expect(rect.width).toBeGreaterThanOrEqual(100);
+        expect(rect.right).toBeLessThanOrEqual(body.getBoundingClientRect().right);
+        expect(input.getAttribute('inputmode')).toBe('numeric');
+      });
+      if (tipo === 'POR_FAIXA_QUANTIDADE') {
+        expect(query('.price-range-row.active').textContent).toContain('1 a 100 un');
+        expect(getComputedStyle(query('.quantity-keypad')).display).toBe('none');
+        const field = query('.quantity-entry-row app-input-numerico').getBoundingClientRect();
+        expect(query('.quantity-entry-row button').getBoundingClientRect().left).toBeGreaterThanOrEqual(field.right);
+      } else if (tipo === 'POR_LOTE') {
+        query('.lot-card').click(); render(); tick(300); render();
+        expect(wizard.quantidadeForm.controls.quantidade.value).toBe(50);
+        expect(query('.price-summary-card').textContent).toContain('Quantidade do lote');
+      } else {
+        expect(document.querySelectorAll('.price-inputs input').length).toBe(3);
+        expect(query('.price-inputs').textContent).toContain('Largura');
+        expect(query('.price-inputs').textContent).toContain('Altura');
+        expect(query('.measure-rules-panel')).toBeTruthy();
+        expect(query('.wizard-footer .primary-action').hasAttribute('disabled')).toBeTrue();
+      }
+      dialog.closeAll(); tick(400);
+    }));
+  }
 
   it('mostra um quadro por vez, desliza pelas variações e permite revisar escolhas', fakeAsync(() => {
     const variants: any[] = [];
@@ -290,7 +332,7 @@ describe('Adicionar item no painel mobile compartilhado', () => {
     it(`mantém nomes e estado corretos em todas as etapas no ${mobile ? 'mobile' : 'desktop'}`, fakeAsync(() => {
       viewport.next({ matches: mobile, breakpoints: {} }); render();
       const wizard = open();
-      const labels = ['Produto/serviço', 'Preço', 'Adicionais', 'Revisão'];
+      const labels = [mobile ? 'Produto' : 'Produto/serviço', 'Preço', 'Adicionais', 'Revisão'];
       const selected = () => Array.from(document.querySelectorAll('.mat-step-header')).map((header, index) => header.getAttribute('aria-selected') === 'true' ? index : -1).filter(index => index >= 0);
       expect(wizard.stepper?.steps.map(step => step.label)).toEqual(labels);
       expect(wizard.stepper?.labelPosition).toBe('bottom');

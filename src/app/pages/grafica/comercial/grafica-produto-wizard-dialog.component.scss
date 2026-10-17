@@ -256,8 +256,8 @@
     .wizard-stepper ::ng-deep .mat-stepper-horizontal-line { min-width: 0; flex: 0 0 8px; top: 20px; margin: 0; align-self: flex-start; }
     .wizard-stepper ::ng-deep .mat-horizontal-stepper-header::before,
     .wizard-stepper ::ng-deep .mat-horizontal-stepper-header::after { top: 20px; }
-    .wizard-stepper ::ng-deep .mat-step-label { min-width: 0; padding-top: 8px; white-space: normal; overflow-wrap: anywhere; font-size: 12px; }
-    .wizard-stepper ::ng-deep .mat-step-text-label { white-space: normal; overflow: visible; }
+    .wizard-stepper ::ng-deep .mat-step-label { min-width: 0; padding-top: 8px; white-space: nowrap; overflow-wrap: normal; font-size: 12px; }
+    .wizard-stepper ::ng-deep .mat-step-text-label { white-space: nowrap; overflow: visible; }
     .step-inner, .price-step, .services-step, .review-step { padding: 0; min-width: 0; }
     .price-shell, .services-shell, .review-shell { width: 100%; min-width: 0; }
     .price-shell, .price-config-grid { gap: 10px; }
@@ -281,6 +281,32 @@
     .summary-price-total { margin: 0; padding: 8px 12px; font-size: 16px; line-height: 20px; }
     .summary-rule { font-size: 11px; line-height: 16px; }
     .summary-rule mat-icon { width: 16px; height: 16px; font-size: 16px; }
+    .price-step {
+      .price-product-card { border: 0; border-bottom: 1px solid #e2e8f0; border-radius: 0; padding: 0 0 12px; }
+      .price-config-grid { gap: 12px; }
+      .price-config-card { border: 0; border-radius: 0; padding: 0; overflow: visible; }
+      .price-summary-card { border: 0; border-top: 1px solid #e2e8f0; border-radius: 0; padding: 12px 0 0; }
+      .price-product-card h3, .price-variation { overflow-wrap: anywhere; }
+      .price-type { text-transform: none; font-weight: 600; }
+      .quantity-range-layout, .measure-layout { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+      .quantity-entry-panel, .measure-entry-panel { width: 100%; gap: 8px; }
+      .quantity-entry-row { grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+      .quantity-entry-row button { min-height: 44px; padding-inline: 16px; }
+      .quantity-keypad { display: none; }
+      .quantity-ranges-panel, .measure-rules-panel { min-height: 0; border-left: 0; padding: 12px 0 0; gap: 8px; }
+      .quantity-ranges-title strong, .measure-rules-title strong { font-size: 14px; }
+      .price-range-row { min-height: 44px; padding: 8px; font-size: 12px; }
+      .price-range-row small { margin-left: 0; }
+      .price-ranges-head { padding-inline: 8px; font-size: 11px; }
+      .price-inputs { width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .price-inputs > :last-child:nth-child(3) { grid-column: 1 / -1; }
+      .measure-entry-panel > button { min-height: 44px; align-self: flex-end; }
+      .lot-grid { width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .lot-card { min-height: 64px; padding: 8px; gap: 4px; }
+      .lot-card strong, .lot-card span { font-size: 14px; }
+      .summary-price-total strong { font-size: 20px; font-variant-numeric: tabular-nums; }
+      .summary-price-row strong { text-align: right; font-variant-numeric: tabular-nums; }
+    }
     .funnel-grid { width: 100%; height: auto; grid-template-columns: minmax(0, 1fr); gap: 16px; }
     .funnel-column { height: auto; min-height: 0; display: flex; flex-direction: column; overflow: visible; }
     .funnel-list { overflow: visible; }
@@ -297,7 +323,12 @@
     .wizard-footer .right { display: contents; }
     .wizard-footer button { min-width: 0; min-height: 44px; padding-inline: 8px; white-space: nowrap; }
     .wizard-footer > button:not(:disabled) { background: transparent; color: var(--mat-sys-primary); box-shadow: none; }
+    .wizard-footer button[mat-dialog-close] { border-color: transparent; background: transparent; }
   }
+
+@media (max-width: 340px) {
+  :host-context(.mobile-side-panel) .price-step .price-inputs { grid-template-columns: minmax(0, 1fr); }
+}
 
 :host-context(.mobile-side-panel) .wizard-body--funnel {
   display: flex; flex-direction: column; overflow: hidden !important;

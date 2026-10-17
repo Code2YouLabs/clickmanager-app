@@ -17,7 +17,7 @@
       <mat-dialog-content class="wizard-body mobile-side-panel__body" [class.wizard-body--funnel]="data?.mobilePanel && isFirstStep">
         <p *ngIf="data?.mobilePanel" class="wizard-mobile-step-title" [class.wizard-mobile-step-title--price]="stepper.selectedIndex === 1" aria-live="polite">{{ currentStepLabel }}</p>
         <mat-horizontal-stepper labelPosition="bottom" [linear]="true" #stepper class="wizard-stepper" (selectionChange)="onStepSelectionChange($event)">
-          <mat-step [stepControl]="produtoForm" [label]="stepLabels[0]">
+          <mat-step [stepControl]="produtoForm" [label]="data?.mobilePanel ? 'Produto' : stepLabels[0]">
             <form [formGroup]="produtoForm" class="step-inner step-full produto-step">
                     <div class="funnel-grid" #funnelGrid>
                       <div class="funnel-track" [style.transform]="data?.mobilePanel ? 'translateX(-' + (mobileFunnelIndex * 100) + '%)' : null">
@@ -239,12 +239,12 @@
 
                     <ng-container *ngIf="tipoPrecoAtual === 'FIXO'">
                       <h3>Confirme a quantidade</h3>
-                      <div class="price-fixed">
+                      <div class="price-fixed" *ngIf="!data?.mobilePanel || preco?.valorUnitario == null">
                         Valor definido: <strong>{{ politicaPrecoAtual?.valorFixo | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
                       </div>
                       <mat-form-field appearance="outline" *ngIf="mostraQuantidadePreco" [subscriptSizing]="data?.mobilePanel ? 'dynamic' : 'fixed'">
                         <mat-label>Quantidade</mat-label>
-                        <input matInput type="number" min="1" formControlName="quantidade" />
+                        <input matInput type="number" min="1" [attr.inputmode]="data?.mobilePanel ? 'decimal' : null" formControlName="quantidade" />
                       </mat-form-field>
                       <button mat-flat-button color="primary" type="button" [disabled]="quantidadeForm.invalid || precificando" (click)="precificar()">
                         {{ precificando ? 'Calculando...' : 'Calcular' }}
@@ -404,17 +404,17 @@
                   </section>
 
                   <aside class="price-summary-card">
-                    <h3>Resumo da precificação</h3>
+                    <h3>{{ data?.mobilePanel ? 'Resumo do preço' : 'Resumo da precificação' }}</h3>
                     <div class="summary-price-row summary-price-kind">
                       <span>Tipo</span>
                       <strong>{{ tipoPrecoLabel }}</strong>
                     </div>
                     <div class="summary-price-row" *ngIf="preco?.quantidadeSolicitada">
-                      <span>Quantidade</span>
+                      <span>{{ data?.mobilePanel && tipoPrecoAtual === 'POR_LOTE' ? 'Quantidade do lote' : 'Quantidade' }}</span>
                       <strong>{{ preco?.quantidadeSolicitada | number:'1.0-3':'pt-BR' }}</strong>
                     </div>
                     <div class="summary-price-row" *ngIf="preco?.valorUnitario !== null && preco?.valorUnitario !== undefined">
-                      <span>Valor unitário</span>
+                      <span>{{ data?.mobilePanel ? 'Preço unitário' : 'Valor unitário' }}</span>
                       <strong>{{ preco?.valorUnitario | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
                     </div>
                     <div class="summary-price-row" *ngIf="preco?.areaFaturada">

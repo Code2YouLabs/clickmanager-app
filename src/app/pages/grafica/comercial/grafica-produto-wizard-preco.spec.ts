@@ -12,7 +12,8 @@ import { GraficaProdutoWizardDialogComponent } from './comercial-editor.componen
 
 registerLocaleData(localePt);
 
-describe('Wizard comercial: calcular preço', () => {
+for (const mobile of [false, true]) {
+describe(`Wizard comercial: calcular preço (${mobile ? 'mobile' : 'desktop'})`, () => {
   let fixture: ComponentFixture<GraficaProdutoWizardDialogComponent>;
   let component: GraficaProdutoWizardDialogComponent;
   let service: jasmine.SpyObj<GraficaProdutoService>;
@@ -39,7 +40,7 @@ describe('Wizard comercial: calcular preço', () => {
       provideNoopAnimations(),
       { provide: GraficaProdutoService, useValue: service },
       { provide: MatDialogRef, useValue: { close: jasmine.createSpy('close') } },
-      { provide: MAT_DIALOG_DATA, useValue: { produtoPreSelecionado: produto } },
+      { provide: MAT_DIALOG_DATA, useValue: { produtoPreSelecionado: produto, mobilePanel: mobile } },
       { provide: ToastrService, useValue: { error: jasmine.createSpy('error') } },
       { provide: TutorialService, useValue: { registerTarget: () => () => {}, state: signal({ definition: null }), isActive: signal(false), currentStep: signal(null), rect: signal(null), currentIndex: signal(0), totalSteps: signal(0), canGoBack: signal(false), isLastStep: signal(false) } },
     ] }).compileComponents();
@@ -62,6 +63,8 @@ describe('Wizard comercial: calcular preço', () => {
     expect(priceCard().textContent).toContain('Calcular');
     expect(priceCard().textContent).not.toContain('Confirmar preço');
     expect(fixture.nativeElement.querySelector('.summary-price-total')?.textContent).toContain('13,50');
+    expect(priceCard().querySelector('.price-fixed') === null).toBe(mobile);
+    expect(fixture.nativeElement.querySelector('.price-summary-card').textContent).toContain(mobile ? 'Preço unitário' : 'Valor unitário');
     component.onStepSelectionChange({ selectedIndex: 1 });
     expect(service.precificar).toHaveBeenCalledTimes(1);
   }));
@@ -128,6 +131,7 @@ describe('Wizard comercial: calcular preço', () => {
       fixture.detectChanges();
       expect(service.precificar).toHaveBeenCalledOnceWith(77, jasmine.objectContaining({ altura: 1, largura: 1, quantidade: 2 }));
       component.quantidadeForm.controls.quantidade.setValue(3);
+      expect(component.nextDisabled).toBeTrue();
       tick(250);
       expect(component.preco).toBeNull();
       expect(service.precificar).toHaveBeenCalledTimes(1);
@@ -186,6 +190,7 @@ describe('Wizard comercial: calcular preço', () => {
     entrar();
     expect(component.precificando).toBeFalse();
     expect(component.preco).toBeNull();
+    expect(component.nextDisabled).toBeTrue();
     expect(TestBed.inject(ToastrService).error).toHaveBeenCalled();
     service.precificar.and.returnValue(of(resultado() as any));
     priceCard().querySelector<HTMLButtonElement>('button')!.click();
@@ -215,4 +220,52 @@ describe('Wizard comercial: calcular preço', () => {
     expect(component.precificando).toBeFalse();
     expect(service.precificar).toHaveBeenCalledTimes(1);
   }));
+
+  it('mantém quantidade, unitário e total do lote retornados pela API', fakeAsync(() => {
+    const lote = { quantidade: 50, valorLote: 100 };
+    service.listarPrecos.and.returnValue(of([{ ...politica('POR_LOTE'), lotes: [lote] }] as any));
+    service.precificar.and.returnValue(of({ ...resultado(50), valorUnitario: 2, valorTotal: 100 } as any));
+    entrar();
+    expect(service.precificar).not.toHaveBeenCalled();
+    priceCard().querySelector<HTMLButtonElement>('.lot-card')!.click();
+    tick(250); fixture.detectChanges();
+    expect(service.precificar).toHaveBeenCalledOnceWith(77, jasmine.objectContaining({ quantidade: 50 }));
+    const resumo = fixture.nativeElement.querySelector('.price-summary-card') as HTMLElement;
+    expect(resumo.textContent).toContain(mobile ? 'Quantidade do lote' : 'Quantidade');
+    expect(resumo.textContent).toContain('50');
+    expect(resumo.textContent).toContain('2,00');
+    expect(resumo.querySelector('.summary-price-total')!.textContent).toContain('100,00');
+    expect(component.nextDisabled).toBeFalse();
+  }));
+
+  it('preserva a faixa aplicada e a regra sem duplicar o cálculo', fakeAsync(() => {
+    service.listarPrecos.and.returnValue(of([politica('POR_FAIXA_QUANTIDADE')] as any));
+    service.precificar.and.callFake((_id, body) => of({ ...resultado(body.quantidade ?? 1), regraAplicadaNome: 'Faixa principal' } as any));
+    entrar();
+    expect(priceCard().querySelector('.price-range-row.active')!.textContent).toContain('1 a 100 un');
+    expect(fixture.nativeElement.querySelector('.summary-rule').textContent).toContain('Faixa principal');
+    expect(service.precificar).toHaveBeenCalledTimes(1);
+  }));
+
+  it('preserva área faturada e bloqueia avanço enquanto calcula ou as medidas são inválidas', fakeAsync(() => {
+    service.listarPrecos.and.returnValue(of([politica('POR_METRO_QUADRADO')] as any));
+    const request = new Subject<any>();
+    service.precificar.and.returnValue(request);
+    entrar();
+    expect(component.nextDisabled).toBeTrue();
+    component.quantidadeForm.patchValue({ largura: 2, altura: 3, quantidade: 1 });
+    tick(250); fixture.detectChanges();
+    const button = priceCard().querySelector<HTMLButtonElement>('.measure-entry-panel > button')!;
+    button.click(); fixture.detectChanges();
+    expect(component.nextDisabled).toBeTrue(); expect(button.disabled).toBeTrue();
+    expect(button.textContent).toContain('Calculando...');
+    request.next({ ...resultado(), areaFaturada: 6, valorTotal: 81 }); request.complete(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.price-summary-card').textContent).toContain('6,00 m²');
+    expect(fixture.nativeElement.querySelector('.summary-price-total').textContent).toContain('81,00');
+    expect(component.nextDisabled).toBeFalse();
+    component.quantidadeForm.controls.altura.setValue(null); tick(250); fixture.detectChanges();
+    expect(component.nextDisabled).toBeTrue(); expect(component.preco).toBeNull();
+    expect(service.precificar).toHaveBeenCalledTimes(1);
+  }));
 });
+}

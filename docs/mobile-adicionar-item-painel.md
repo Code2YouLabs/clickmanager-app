@@ -14,8 +14,8 @@ A branch parte da base mobile atual, incluindo os commits locais aprovados.
 - Safe areas, visualViewport, foco, Escape, navegação e movimento reduzido
   continuam sob responsabilidade do painel compartilhado, que não foi alterado.
 - O stepper Material mantém as mesmas etapas, controles, conclusão e navegação.
-  Mobile e desktop usam os mesmos rótulos e posição inferior: Produto/serviço,
-  Preço, Adicionais e Revisão. Adicionais não começa concluído; o indicador
+  Mobile usa Produto, Preço, Adicionais e Revisão em uma linha; desktop mantém
+  Produto/serviço. Ambos usam a posição inferior. Adicionais não começa concluído; o indicador
   acompanha a etapa ativa e reinicia os estados ao configurar outro item.
 - Funil mobile com um quadro por vez e transição lateral entre Produto/Serviço,
   Material, Formato e Cor, conforme as opções reais. Escolhas únicas continuam
@@ -36,6 +36,16 @@ A branch parte da base mobile atual, incluindo os commits locais aprovados.
   fixo, quantidade e Calcular ficam lado a lado; item, regra e total permanecem
   no corpo, com o rodapé acessível. Não há corte de conteúdo por overflow:
   teclado aberto ou conteúdo excepcional ainda permitem rolagem de segurança.
+- O conteúdo do Preço mobile usa divisores em vez de cards aninhados. O valor
+  fixo de referência aparece antes do cálculo ou quando não há unitário na
+  resposta; com resultado, o resumo exibe preço unitário e Total em destaque.
+  Quantidade de lote, faixa aplicada, área faturada e regra continuam disponíveis.
+- Quantidade e Calcular ficam lado a lado também por faixa. O teclado numérico
+  na página fica restrito ao desktop; mobile usa o teclado nativo dos inputs.
+  Medidas mantêm unidade, largura, altura e quantidade; duas colunas a partir de
+  341px, uma em telas menores. Máscaras e validações não foram alteradas.
+- Voltar e Próximo mantêm os handlers existentes; Cancelar ganha aparência
+  discreta apenas no mobile. Nenhum cálculo ou agendamento novo foi criado.
 
 ## Fluxo e tutorial
 
