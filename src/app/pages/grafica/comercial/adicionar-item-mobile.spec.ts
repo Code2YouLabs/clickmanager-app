@@ -243,6 +243,39 @@ describe('Adicionar item no painel mobile compartilhado', () => {
     dialog.closeAll(); tick(400);
   }));
 
+  for (const mobile of [true, false]) {
+    it(`mantém nomes e estado corretos em todas as etapas no ${mobile ? 'mobile' : 'desktop'}`, fakeAsync(() => {
+      viewport.next({ matches: mobile, breakpoints: {} }); render();
+      const wizard = open();
+      const labels = ['Produto/serviço', 'Preço', 'Adicionais', 'Revisão'];
+      const selected = () => Array.from(document.querySelectorAll('.mat-step-header')).map((header, index) => header.getAttribute('aria-selected') === 'true' ? index : -1).filter(index => index >= 0);
+      expect(wizard.stepper?.steps.map(step => step.label)).toEqual(labels);
+      expect(wizard.stepper?.labelPosition).toBe('bottom');
+      expect(selected()).toEqual([0]); expect(wizard.stepper?.steps.get(2)?.completed).toBeFalse();
+      document.querySelectorAll<HTMLElement>('.mat-step-header').forEach(header => {
+        const label = header.querySelector<HTMLElement>('.mat-step-text-label')!;
+        expect(label.getBoundingClientRect().bottom).toBeLessThanOrEqual(header.getBoundingClientRect().bottom + 1);
+      });
+      expect(document.querySelectorAll('.mat-step-icon-state-edit').length).toBe(0);
+      const withExtras = { ...product, acabamentos: [{ id: 1, nome: 'Corte', ativo: true, ordem: 0, formaAplicacao: 'POR_SERVICO', politicas: [] }] };
+      service.detalhar.and.returnValue(of(withExtras as any));
+      wizard.selecionarProduto(withExtras as any, true); render(); next();
+      expect(selected()).toEqual([1]); expect(wizard.currentStepLabel).toBe('Preço');
+      expect(wizard.stepper?.steps.get(2)?.completed).toBeFalse();
+      next();
+      expect(selected()).toEqual([2]); expect(wizard.currentStepLabel).toBe('Adicionais');
+      expect(wizard.stepper?.steps.get(0)?.completed).toBeTrue();
+      expect(wizard.stepper?.steps.get(1)?.completed).toBeTrue();
+      next(); composition.next({ itens: [added] }); composition.complete(); tick(300); render();
+      expect(selected()).toEqual([3]); expect(wizard.currentStepLabel).toBe('Revisão');
+      expect(wizard.stepper?.steps.get(2)?.completed).toBeTrue();
+      wizard.adicionarMaisItens(); tick(300); render();
+      expect(selected()).toEqual([0]); expect(wizard.currentStepLabel).toBe('Produto/serviço');
+      expect(wizard.stepper?.steps.toArray().every(step => !step.completed)).toBeTrue();
+      dialog.closeAll(); tick(400);
+    }));
+  }
+
   it('mantém modal e dimensões desktop do produto', () => {
     viewport.next({ matches: false, breakpoints: {} }); render();
     const spy = spyOn(dialog, 'open').and.returnValue({ afterClosed: () => of(null) } as any);

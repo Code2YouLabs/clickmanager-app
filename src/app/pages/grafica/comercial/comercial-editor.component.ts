@@ -1778,6 +1778,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
 })
 export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   readonly primeiroPedidoTargets = PRIMEIRO_PEDIDO_TARGETS;
+  readonly stepLabels = ['Produto/serviço', 'Preço', 'Adicionais', 'Revisão'] as const;
   @ViewChild('stepper') stepper?: MatStepper;
   @ViewChild('quantidadeWizardInputContainer') quantidadeWizardInputContainer?: ElementRef<HTMLElement>;
   produtos: GraficaProduto[] = [];
@@ -1970,8 +1971,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   }
 
   get currentStepLabel(): string {
-    const labels = ['Produto/Serviço e Variação', 'Configurar Preço', 'Acabamentos', 'Revisão'];
-    return labels[this.stepper?.selectedIndex || 0] || labels[0];
+    return this.stepLabels[this.stepper?.selectedIndex || 0] || this.stepLabels[0];
   }
 
   get itemSelecionadoNome(): string {
@@ -2515,7 +2515,9 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
     if (this.stepper) {
       this.stepper.selectedIndex = 0;
       this.stepper.steps.forEach((step, index) => {
-        step.completed = index === 0 ? false : step.completed;
+        // Form-backed steps derive completion from validity and interaction.
+        // Only Adicionais has an explicit completion flag for the resolved composition.
+        if (index === 2) step.completed = false;
         step.interacted = false;
       });
     }
@@ -2562,7 +2564,6 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
 	    const stepPreco = this.stepper.steps.get(1);
 	    const stepAdicionais = this.stepper.steps.get(2);
 	    if (stepPreco) {
-	      stepPreco.completed = true;
 	      stepPreco.interacted = true;
 	    }
 	    if (stepAdicionais) {
@@ -2581,7 +2582,6 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
 	    const stepPreco = this.stepper.steps.get(1);
 	    const stepAdicionais = this.stepper.steps.get(2);
 	    if (stepPreco) {
-	      stepPreco.completed = true;
 	      stepPreco.interacted = true;
 	    }
 	    if (stepAdicionais) {

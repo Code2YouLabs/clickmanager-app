@@ -14,7 +14,9 @@ A branch parte da base mobile atual, incluindo os commits locais aprovados.
 - Safe areas, visualViewport, foco, Escape, navegação e movimento reduzido
   continuam sob responsabilidade do painel compartilhado, que não foi alterado.
 - O stepper Material mantém as mesmas etapas, controles, conclusão e navegação.
-  No painel, usa labels compactas e mostra o nome completo da etapa atual.
+  Mobile e desktop usam os mesmos rótulos e posição inferior: Produto/serviço,
+  Preço, Adicionais e Revisão. Adicionais não começa concluído; o indicador
+  acompanha a etapa ativa e reinicia os estados ao configurar outro item.
 - Funil mobile com um quadro por vez e transição lateral entre Produto/Serviço,
   Material, Formato e Cor, conforme as opções reais. Escolhas únicas continuam
   seguindo o avanço automático existente. Voltar revisita o quadro anterior.

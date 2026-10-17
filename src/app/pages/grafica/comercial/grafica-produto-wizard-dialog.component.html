@@ -16,8 +16,8 @@
 
       <mat-dialog-content class="wizard-body mobile-side-panel__body" [class.wizard-body--funnel]="data?.mobilePanel && isFirstStep">
         <p *ngIf="data?.mobilePanel" class="wizard-mobile-step-title" aria-live="polite">{{ currentStepLabel }}</p>
-        <mat-horizontal-stepper [labelPosition]="data?.mobilePanel ? 'bottom' : 'end'" [linear]="true" #stepper class="wizard-stepper" (selectionChange)="onStepSelectionChange($event)">
-          <mat-step [stepControl]="produtoForm" [label]="data?.mobilePanel ? 'Seleção' : 'Produto/Serviço e Variação'">
+        <mat-horizontal-stepper labelPosition="bottom" [linear]="true" #stepper class="wizard-stepper" (selectionChange)="onStepSelectionChange($event)">
+          <mat-step [stepControl]="produtoForm" [label]="stepLabels[0]">
             <form [formGroup]="produtoForm" class="step-inner step-full produto-step">
                     <div class="funnel-grid" #funnelGrid>
                       <div class="funnel-track" [style.transform]="data?.mobilePanel ? 'translateX(-' + (mobileFunnelIndex * 100) + '%)' : null">
@@ -204,7 +204,7 @@
             </form>
           </mat-step>
 
-          <mat-step [stepControl]="quantidadeForm" [label]="data?.mobilePanel ? 'Preço' : 'Configurar Preço'">
+          <mat-step [stepControl]="quantidadeForm" [label]="stepLabels[1]">
             <form [formGroup]="quantidadeForm" class="step-inner step-wide price-step">
               <div class="price-shell">
                 <section class="price-product-card">
@@ -435,7 +435,7 @@
             </form>
           </mat-step>
 
-          <mat-step [label]="data?.mobilePanel ? 'Adicionais' : 'Acabamentos'" [optional]="!possuiAdicionaisDisponiveis" [completed]="!possuiAdicionaisDisponiveis">
+          <mat-step [label]="stepLabels[2]" [optional]="!possuiAdicionaisDisponiveis">
             <div class="step-inner step-wide services-step">
               <div class="services-shell">
                 <section class="price-product-card">
@@ -479,7 +479,7 @@
             </div>
           </mat-step>
 
-          <mat-step label="Revisão">
+          <mat-step [label]="stepLabels[3]">
             <div class="step-inner step-wide review-step">
               <div class="review-shell" *ngIf="composicao; else semComposicao">
                 <section class="price-product-card">
