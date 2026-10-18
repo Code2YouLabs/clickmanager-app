@@ -10,6 +10,7 @@ import { JornadaService } from '../jornadas/jornada.service';
 
 export interface PrimeiroPedidoBoasVindasData {
   empresaNome?: string | null;
+  mobilePanel?: boolean;
 }
 
 @Component({

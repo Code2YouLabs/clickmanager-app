@@ -1,3 +1,4 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { BehaviorSubject, Observable, Subject, of, throwError } from 'rxjs';
@@ -14,6 +15,7 @@ import { PrimeiroPedidoBoasVindasService } from './primeiro-pedido-boas-vindas.s
 
 describe('PrimeiroPedidoBoasVindasService', () => {
   let service: PrimeiroPedidoBoasVindasService;
+  let breakpoints: jasmine.SpyObj<BreakpointObserver>;
   let auth: {
     usuario$: BehaviorSubject<Usuario | null>;
     getTipoEmpresa: jasmine.Spy;
@@ -55,6 +57,8 @@ describe('PrimeiroPedidoBoasVindasService', () => {
   });
 
   beforeEach(() => {
+    breakpoints = jasmine.createSpyObj('BreakpointObserver', ['isMatched']);
+    breakpoints.isMatched.and.returnValue(false);
     auth = {
       usuario$: new BehaviorSubject<Usuario | null>(null),
       getTipoEmpresa: jasmine.createSpy('getTipoEmpresa').and.callFake((usuario: Usuario) => usuario.empresa?.tipoEmpresa ?? TipoEmpresa.GRAFICA),
@@ -76,6 +80,7 @@ describe('PrimeiroPedidoBoasVindasService', () => {
     TestBed.configureTestingModule({
       providers: [
         PrimeiroPedidoBoasVindasService,
+        { provide: BreakpointObserver, useValue: breakpoints },
         { provide: AuthService, useValue: auth },
         { provide: OnboardingV2Service, useValue: onboarding },
         { provide: JornadaService, useValue: jornada },
@@ -116,6 +121,25 @@ describe('PrimeiroPedidoBoasVindasService', () => {
       maxWidth: 'calc(100vw - 32px)',
       panelClass: 'primeiro-pedido-welcome-dialog',
     }));
+  }));
+
+  it('abre o painel lateral global no mobile sem alterar elegibilidade e fecha com a animação compartilhada', fakeAsync(() => {
+    breakpoints.isMatched.and.returnValue(true);
+    const beforeClosed = new Subject<void>();
+    const ref = { ...dialogRef, beforeClosed: () => beforeClosed, addPanelClass: jasmine.createSpy('addPanelClass'),
+      updatePosition: jasmine.createSpy('updatePosition') } as any;
+    ref.updateSize = jasmine.createSpy('updateSize').and.returnValue(ref);
+    dialog.open.and.returnValue(ref);
+    const usuario = usuarioGrafica(); flow.marcarOnboardingConcluido(usuario);
+    service.avaliarEExibir(usuario); tick();
+    expect(dialog.open).toHaveBeenCalledOnceWith(jasmine.any(Function), jasmine.objectContaining({
+      width: '100vw', height: '100dvh', maxWidth: '100vw', maxHeight: '100dvh',
+      position: { top: '0', right: '0' }, panelClass: ['mobile-side-panel'], disableClose: true,
+      autoFocus: 'dialog', restoreFocus: true, data: { empresaNome: 'Grafica Azul', mobilePanel: true },
+    }));
+    service.avaliarEExibir(usuario); expect(dialog.open).toHaveBeenCalledTimes(1);
+    beforeClosed.next(); expect(ref.addPanelClass).toHaveBeenCalledWith('mobile-side-panel--closing');
+    afterClosed$.next(undefined); afterClosed$.complete();
   }));
 
   it('nao exibe para empresa antiga que ja aparece com onboarding v2 concluido', fakeAsync(() => {

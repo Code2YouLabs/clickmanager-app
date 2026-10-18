@@ -3,7 +3,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ToastrService } from 'ngx-toastr';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { PRIMEIRO_PEDIDO_JORNADA } from '../jornadas/jornada.constants';
 import { JornadaService } from '../jornadas/jornada.service';
 import { PrimeiroPedidoBoasVindasComponent } from './primeiro-pedido-boas-vindas.component';
@@ -141,6 +141,35 @@ describe('PrimeiroPedidoBoasVindasComponent', () => {
     expect(buttons.map((button) => button.textContent?.trim()).join(' ')).toContain('Criar meu primeiro pedido');
     expect(buttons.length).toBe(2);
     expect(buttons.every((button) => button.disabled === false)).toBeTrue();
+  });
+
+  function createMobile(): void {
+    TestBed.overrideProvider(MAT_DIALOG_DATA, { useValue: { mobilePanel: true } }); create();
+  }
+
+  it('usa header, conteúdo e rodapé do painel global com as mesmas ações no mobile', () => {
+    createMobile();
+    expect(fixture.nativeElement.querySelector('.primeiro-pedido-welcome')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.mobile-side-panel__header').textContent).toContain('Bem-vindo ao ClickManager');
+    expect(fixture.nativeElement.querySelector('.mobile-side-panel__body').textContent).toContain('Sua gráfica está pronta');
+    const buttons = fixture.nativeElement.querySelectorAll('.mobile-side-panel__footer button');
+    expect(buttons.length).toBe(2);
+    (buttons[0] as HTMLButtonElement).click(); fixture.detectChanges();
+    expect(jornada.iniciar).toHaveBeenCalledOnceWith(PRIMEIRO_PEDIDO_JORNADA, { etapa: PRIMEIRO_PEDIDO_JORNADA.etapaInicial });
+    expect(dialogRef.close).toHaveBeenCalledWith('iniciado');
+    expect(router.navigateByUrl).toHaveBeenCalledWith(PRIMEIRO_PEDIDO_JORNADA.rotaInicial);
+  });
+
+  it('mantém loading, erro e retry no painel mobile sem duplicar a ação', () => {
+    const pending = new Subject<any>(); jornada.ignorar.and.returnValue(pending); createMobile();
+    const primary = fixture.nativeElement.querySelector('.primeiro-pedido-welcome__primary') as HTMLButtonElement;
+    const skip = fixture.nativeElement.querySelector('.primeiro-pedido-welcome__secondary') as HTMLButtonElement;
+    skip.click(); fixture.detectChanges(); skip.click();
+    expect(jornada.ignorar).toHaveBeenCalledTimes(1); expect(primary.disabled).toBeTrue(); expect(skip.disabled).toBeTrue();
+    pending.error(new Error('falha')); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role=alert]')).not.toBeNull(); expect(skip.disabled).toBeFalse();
+    jornada.ignorar.and.returnValue(of({ ...response, status: 'IGNORADO' })); skip.click();
+    expect(dialogRef.close).toHaveBeenCalledWith('ignorado'); expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 
   function text(): string {
