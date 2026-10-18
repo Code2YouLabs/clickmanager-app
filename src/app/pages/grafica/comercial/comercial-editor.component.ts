@@ -1,7 +1,7 @@
 import { ClienteResponse } from 'src/app/models/cliente/cliente-response.model';
 import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild, Optional, effect, signal, afterRender, Injector } from '@angular/core';
+import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild, Optional, effect, signal, untracked, afterRender, Injector } from '@angular/core';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { TutorialService } from 'src/app/shared/tutorial/tutorial.service';
@@ -294,7 +294,10 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
         : target === PRIMEIRO_PEDIDO_TARGETS.adicionarItem ? 'itens'
         : target === PRIMEIRO_PEDIDO_TARGETS.revisao ? 'financeiro'
         : target === PRIMEIRO_PEDIDO_TARGETS.salvar ? 'revisao' : undefined;
-      if (!section || !this.mobilePedidoNovo || this.mobileSections()[section]) return;
+      if (!section || !this.mobilePedidoNovo) return;
+      // An in-flight client checkpoint must not undo a successful confirmation's collapse.
+      const expanded = section === 'cliente' ? untracked(() => this.mobileSections().cliente) : this.mobileSections()[section];
+      if (expanded) return;
       this.setMobileSection(section, true);
       clearTimeout(this.tutorialRevealTimer);
       this.tutorialRevealTimer = setTimeout(() => tutorial.refreshTarget(target!));
@@ -1329,6 +1332,15 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     this.clienteConfirmado = this.normalizarClienteCard(cliente);
     this.clienteControl.setValue(this.clienteConfirmado, { emitEvent: false });
     this.trocandoCliente = false;
+    if (this.isMobile && this.clienteConfirmado?.id) {
+      this.setMobileSection('cliente', false);
+      clearTimeout(this.focusTimer);
+      this.focusTimer = setTimeout(() => {
+        const target = this.tutorial?.currentStep()?.targetId;
+        if (target && target !== PRIMEIRO_PEDIDO_TARGETS.cliente) return;
+        this.elementRef?.nativeElement.querySelector<HTMLElement>('[data-editor-section="cliente"] .section-card__toggle')?.focus({ preventScroll: true });
+      });
+    }
     if (this.tipo === 'pedidos' && !this.pedidoId) {
       this.primeiroPedidoTutorial.registrarClienteSelecionado();
     }

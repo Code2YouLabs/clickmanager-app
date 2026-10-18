@@ -77,9 +77,9 @@
             </app-section-card>
 
             <app-cliente-selector-card
-              [titulo]="mobilePedidoNovo ? 'Cliente' : 'Dados do cliente'"
+              [titulo]="isMobile ? 'Cliente' : 'Dados do cliente'"
               data-editor-section="cliente"
-              [mobileCompact]="mobilePedidoNovo" [mobileExpanded]="mobileSections().cliente"
+              [mobileCompact]="isMobile" [mobileExpanded]="mobileSections().cliente"
               [mobileSummary]="clienteConfirmado?.nome || 'Selecione ou cadastre um cliente'"
               (mobileExpandedChange)="setMobileSection('cliente', $event)"
               [appTutorialTarget]="tipo === 'pedidos' && !pedidoId ? primeiroPedidoTargets.cliente : ''"
