@@ -213,3 +213,14 @@
 .adjustments-panel__fields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .adjustments-panel .mobile-side-panel__footer { display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--mat-sys-outline-variant); }
 .adjustments-panel .mobile-side-panel__footer button { flex: 1 1 0; min-height: 44px; min-width: 0; white-space: normal; }
+
+@include mobile.mobile-foundation {
+  .mobile-observations-empty, .mobile-observations-hint { margin: 0 0 8px; font-size: 12px; line-height: 16px; color: var(--mat-sys-on-surface-variant); }
+  .mobile-observations-hint { margin: 8px 0 0; }
+  .mobile-observation-summary { margin-bottom: 12px; }
+  .mobile-observation-summary + .mobile-observation-summary { padding-top: 12px; border-top: 1px solid var(--mat-sys-outline-variant); }
+  .mobile-observation-summary h3 { margin: 0 0 4px; font-size: 14px; line-height: 20px; font-weight: 600; }
+  .mobile-observation-summary p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; font-size: 14px; line-height: 20px; }
+  .mobile-observation-actions { display: flex; gap: 8px; }
+  .mobile-observation-actions button { flex: 1 1 0; min-width: 0; min-height: 44px; padding-inline: 8px; }
+}

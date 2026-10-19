@@ -13,7 +13,6 @@ import { BehaviorSubject, of, EMPTY } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { ClienteSelectorCardComponent } from 'src/app/components/cliente-selector-card/cliente-selector-card.component';
 import { ItensPedidoSectionComponent } from 'src/app/components/itens-pedido-section/itens-pedido-section.component';
-import { ObservacoesCardComponent } from 'src/app/components/observacoes-card/observacoes-card.component';
 import { AuthService } from 'src/app/services/auth.service';
 import { TutorialService } from 'src/app/shared/tutorial/tutorial.service';
 import { TutorialStep } from 'src/app/shared/tutorial/tutorial.model';
@@ -161,22 +160,22 @@ describe('Editor Novo Pedido mobile', () => {
     expect(fixture.nativeElement.querySelectorAll('.financial-adjustments').length).toBe(0);
   });
 
-  it('recolhe sem destruir campos nem perder observações em edição', () => {
+  it('recolhe sem perder observações confirmadas e mantém a edição no painel', fakeAsync(() => {
     toggle('observacoes');
-    const cards = fixture.debugElement.queryAll(By.directive(ObservacoesCardComponent));
-    const note = cards[0].componentInstance as ObservacoesCardComponent;
-    note.iniciarEdicao(); editor.observacaoClienteControl.setValue('Texto para o cliente'); fixture.detectChanges();
-    const field = root('observacoes').querySelector('textarea');
+    editor.abrirObservacaoMobile('cliente'); fixture.detectChanges(); tick(400);
+    editor.observacaoMobileControl.setValue('Texto para o cliente'); fixture.detectChanges();
+    (document.querySelector('.apply-observation') as HTMLButtonElement).click(); tick(400); fixture.detectChanges();
+    expect(editor.observacaoClienteSalva).toBe('Texto para o cliente');
     toggle('observacoes'); expect(body('observacoes').hidden).toBeTrue(); expect(body('observacoes').hasAttribute('inert')).toBeTrue();
-    toggle('observacoes'); expect(root('observacoes').querySelector('textarea')).toBe(field);
-    expect(note.editando).toBeTrue(); expect(editor.observacaoClienteControl.value).toBe('Texto para o cliente');
-    note.onSalvar(); fixture.detectChanges(); expect(editor.observacaoClienteSalva).toBe('Texto para o cliente');
-    const internal = cards[1].componentInstance as ObservacoesCardComponent;
-    internal.iniciarEdicao(); editor.observacaoInternaControl.setValue('Somente equipe'); internal.onSalvar(); fixture.detectChanges();
+    toggle('observacoes'); expect(root('observacoes').querySelector('textarea')).toBeNull();
+    expect(root('observacoes').textContent).toContain('Texto para o cliente');
+    editor.abrirObservacaoMobile('interna'); fixture.detectChanges(); tick(400);
+    editor.observacaoMobileControl.setValue('Somente equipe'); fixture.detectChanges();
+    (document.querySelector('.apply-observation') as HTMLButtonElement).click(); tick(400); fixture.detectChanges();
     expect(editor.observacaoInternaSalva).toBe('Somente equipe');
-    expect(root('observacoes').textContent).toContain('Observação para o cliente');
+    expect(root('observacoes').textContent).toContain('Para o cliente');
     expect(root('observacoes').textContent).toContain('Observação interna');
-  });
+  }));
 
   it('mantém cálculos, teclado decimal e pagamentos opcionais com histórico e cancelamento', () => {
     editor.itens = [item()] as any; toggle('financeiro');

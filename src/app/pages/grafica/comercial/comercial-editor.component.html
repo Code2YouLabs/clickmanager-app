@@ -122,10 +122,21 @@
               (removerItem)="remover($event)">
             </app-itens-pedido-section>
 
-            @if (mobilePedidoNovo) {
+            @if (isMobile) {
               <app-section-card titulo="Observações" data-editor-section="observacoes" [mobilePlain]="true" [mobileCollapsible]="true"
                 [mobileExpanded]="mobileSections().observacoes" [mobileSummary]="mobileObservacoesResumo" (mobileExpandedChange)="setMobileSection('observacoes', $event)">
-                <ng-container [ngTemplateOutlet]="observacoesConteudo"></ng-container>
+                <p class="mobile-observations-empty" *ngIf="!(observacaoClienteControl.value || '').trim() && !(observacaoInternaControl.value || '').trim()">Nenhuma observação informada.</p>
+                <div class="mobile-observation-summary" *ngIf="(observacaoClienteControl.value || '').trim()">
+                  <h3>Para o cliente</h3><p>{{ observacaoClienteControl.value }}</p>
+                </div>
+                <div class="mobile-observation-summary" *ngIf="(observacaoInternaControl.value || '').trim()">
+                  <h3>Observação interna</h3><p>{{ observacaoInternaControl.value }}</p>
+                </div>
+                <div class="mobile-observation-actions">
+                  <button class="mobile-observation-cliente" mat-stroked-button type="button" aria-label="Ver ou editar observação para o cliente" [disabled]="carregando || (!podeEditarObservacaoMobile && !(observacaoClienteControl.value || '').trim())" (click)="abrirObservacaoMobile('cliente')">Cliente</button>
+                  <button class="mobile-observation-interna" mat-stroked-button type="button" aria-label="Ver ou editar observação interna" [disabled]="carregando || (!podeEditarObservacaoMobile && !(observacaoInternaControl.value || '').trim())" (click)="abrirObservacaoMobile('interna')">Interna</button>
+                </div>
+                <p class="mobile-observations-hint" *ngIf="(observacaoClienteControl.value || '').trim() || (observacaoInternaControl.value || '').trim()">Toque em Cliente ou Interna para ver o texto completo.</p>
               </app-section-card>
             } @else {
               <ng-container [ngTemplateOutlet]="observacoesConteudo"></ng-container>
@@ -353,6 +364,14 @@
             </div>
           </div>
         </div>
+<ng-template #observacaoMobile>
+  <app-observacoes-card [panelEditor]="true" [titulo]="observacaoMobileTitulo"
+    [label]="observacaoTipoMobile === 'cliente' ? 'Texto para o cliente' : 'Texto interno'"
+    [control]="observacaoMobileControl" [salvando]="observacaoSalvandoMobile" [inativo]="!podeEditarObservacaoMobile"
+    [placeholder]="observacaoTipoMobile === 'cliente' ? 'Texto que pode aparecer no PDF e no WhatsApp...' : 'Anotação visível somente dentro do ClickManager...'"
+    (aplicarTexto)="aplicarObservacaoMobile($event)" (fecharEditor)="fecharObservacaoMobile()">
+  </app-observacoes-card>
+</ng-template>
 <ng-template #ajustesMobile>
   <section class="mobile-side-panel__layout adjustments-panel">
     <header class="mobile-side-panel__header payments-panel__header">

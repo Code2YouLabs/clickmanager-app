@@ -126,3 +126,10 @@
     grid-template-columns: 1fr;
   }
 }
+
+:host(.observacoes-panel-editor) { display: block; height: 100%; min-width: 0; min-height: 0; }
+.observacoes-panel__header { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--mat-sys-outline-variant); }
+.observacoes-panel__header h2 { margin: 0; padding: 0; font-size: 20px; line-height: 28px; font-weight: 600; }
+.observacoes-panel .mobile-side-panel__footer { display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--mat-sys-outline-variant); }
+.observacoes-panel .mobile-side-panel__footer button { flex: 1 1 0; min-width: 0; min-height: 44px; white-space: normal; }
+.observacoes-panel ::ng-deep textarea { white-space: pre-wrap; overflow-wrap: anywhere; resize: vertical; max-width: 100%; scroll-margin-block: 96px; }

@@ -6,7 +6,7 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { TutorialService } from 'src/app/shared/tutorial/tutorial.service';
 import { AbstractControl, FormBuilder, FormControl, FormsModule, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef, MatDialogState } from '@angular/material/dialog';
 import { MatStepper } from '@angular/material/stepper';
 import { ActivatedRoute, Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged, finalize, forkJoin, map, Observable, Subject, Subscription, switchMap, take, takeUntil, tap } from 'rxjs';
@@ -240,6 +240,45 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     this.ajustesFinanceirosForm.markAsDirty();
     this.ajustesPanelRef.close();
   }
+  @ViewChild('observacaoMobile') private observacaoMobile?: TemplateRef<unknown>;
+  private observacaoPanelRef?: MatDialogRef<unknown>;
+  observacaoTipoMobile: 'cliente' | 'interna' = 'cliente';
+  readonly observacaoMobileControl = new FormControl('', { nonNullable: true });
+  observacaoSalvandoMobile = false;
+  get observacaoMobileTitulo(): string { return this.observacaoTipoMobile === 'cliente' ? 'Observação para o cliente' : 'Observação interna'; }
+  get podeEditarObservacaoMobile(): boolean { return !this.somenteLeitura && this.permissoesFluxo.observacoes; }
+  abrirObservacaoMobile(tipo: 'cliente' | 'interna'): void {
+    if (!this.isMobile || this.acessoNegado || this.carregando || this.observacaoPanelRef || this.ajustesPanelRef || this.pagamentosPanelRef || !this.observacaoMobile) return;
+    const original = tipo === 'cliente' ? this.observacaoClienteControl : this.observacaoInternaControl;
+    if (!this.podeEditarObservacaoMobile && !original.value?.trim()) return;
+    this.observacaoTipoMobile = tipo;
+    this.observacaoMobileControl.setValidators(original.validator);
+    this.observacaoMobileControl.setAsyncValidators(original.asyncValidator);
+    this.observacaoMobileControl.reset(original.value || '');
+    this.mobileTotalExpanded.set(false);
+    this.elementRef?.nativeElement.querySelector<HTMLElement>(`.mobile-observation-${tipo}`)?.focus({ preventScroll: true });
+    this.observacaoPanelRef = openMobileSidePanel(this.dialog, this.observacaoMobile, { ariaLabel: this.observacaoMobileTitulo, viewContainerRef: this.viewContainerRef });
+    this.observacaoPanelRef.afterOpened().pipe(take(1), takeUntil(this.destroy$)).subscribe(() => {
+      if (this.podeEditarObservacaoMobile && this.observacaoPanelRef) this.elementRef?.nativeElement.ownerDocument.getElementById(this.observacaoPanelRef.id)?.querySelector<HTMLTextAreaElement>('textarea')?.focus({ preventScroll: true });
+    });
+    this.observacaoPanelRef.afterClosed().pipe(take(1), takeUntil(this.destroy$)).subscribe(() => {
+      this.observacaoPanelRef = undefined; this.observacaoMobileControl.reset('');
+    });
+  }
+  fecharObservacaoMobile(): void { if (!this.observacaoSalvandoMobile) this.observacaoPanelRef?.close(); }
+  aplicarObservacaoMobile(texto: string): void {
+    if (!this.isMobile || !this.observacaoPanelRef || this.observacaoPanelRef.getState() !== MatDialogState.OPEN || !this.podeEditarObservacaoMobile || this.observacaoSalvandoMobile) return;
+    if (this.observacaoMobileControl.invalid || this.observacaoMobileControl.pending) { this.observacaoMobileControl.markAsTouched(); return; }
+    this.observacaoSalvandoMobile = this.tipo === 'orcamentos' && !!this.pedidoId;
+    this.observacaoPanelRef.disableClose = this.observacaoSalvandoMobile;
+    const fechar = () => this.observacaoPanelRef?.close();
+    if (this.observacaoTipoMobile === 'cliente') this.confirmarObservacaoCliente(texto, fechar);
+    else this.confirmarObservacaoInterna(texto, fechar);
+  }
+  private finalizarObservacaoMobile(): void {
+    this.observacaoSalvandoMobile = false;
+    if (this.observacaoPanelRef) this.observacaoPanelRef.disableClose = false;
+  }
   mobileValidationAttempted = false;
   private tutorialRevealTimer?: ReturnType<typeof setTimeout>;
   private focusTimer?: ReturnType<typeof setTimeout>;
@@ -248,7 +287,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   }
   get mobileObservacoesResumo(): string {
     const count = [this.observacaoClienteControl.value, this.observacaoInternaControl.value].filter(value => value?.trim()).length;
-    return count ? `${count} ${count === 1 ? 'observação preenchida' : 'observações preenchidas'}` : 'Opcional · cliente e equipe';
+    return count ? `${count} ${count === 1 ? 'observação preenchida' : 'observações preenchidas'}` : 'Nenhuma observação';
   }
   revisarPendencias(): void {
     if (!this.mobilePedidoNovo) return;
@@ -331,7 +370,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     if (breakpoints) breakpoints.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => {
       if (this.isMobile === state.matches) return;
       this.isMobile = state.matches;
-      if (!this.isMobile) { this.fecharPagamentosMobile(); this.ajustesPanelRef?.close(); }
+      if (!this.isMobile) { this.fecharPagamentosMobile(); this.ajustesPanelRef?.close(); this.observacaoPanelRef?.close(); }
       this.mobileSections.update(value => ({ ...value }));
     });
     if (tutorial) effect(() => {
@@ -773,7 +812,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.fecharPagamentosMobile(); this.ajustesPanelRef?.close();
+    this.fecharPagamentosMobile(); this.ajustesPanelRef?.close(); this.observacaoPanelRef?.close();
     clearTimeout(this.tutorialRevealTimer); clearTimeout(this.focusTimer);
     this.destroy$.next();
     this.destroy$.complete();
@@ -1481,38 +1520,46 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     });
   }
 
-  confirmarObservacaoCliente(): void {
+  confirmarObservacaoCliente(texto = this.observacaoClienteControl.value, aoAplicar?: () => void): void {
     if (!this.permissoesFluxo.observacoes) return;
     if (this.tipo === 'orcamentos' && this.pedidoId) {
-      this.graficaService.alterarObservacaoOrcamento(this.pedidoId, this.observacaoClienteControl.value || null)
+      this.graficaService.alterarObservacaoOrcamento(this.pedidoId, texto || null)
+        .pipe(finalize(() => this.finalizarObservacaoMobile()))
         .subscribe({
           next: (orcamento) => {
             this.aplicarOrcamento(orcamento);
             this.observacaoClienteSalvaFlag = true;
+            aoAplicar?.();
           },
           error: (error) => this.toastr.error(this.errorMessage(error, 'Não foi possível salvar a observação.')),
         });
       return;
     }
-    this.observacaoClienteSalva = this.observacaoClienteControl.value || '';
+    if (this.observacaoClienteControl.value !== (texto || '')) this.observacaoClienteControl.setValue(texto || '', { emitEvent: false });
+    this.observacaoClienteSalva = texto || '';
     this.observacaoClienteSalvaFlag = true;
+    aoAplicar?.();
   }
 
-  confirmarObservacaoInterna(): void {
+  confirmarObservacaoInterna(texto = this.observacaoInternaControl.value, aoAplicar?: () => void): void {
     if (!this.permissoesFluxo.observacoes) return;
     if (this.tipo === 'orcamentos' && this.pedidoId) {
-      this.graficaService.alterarObservacaoInternaOrcamento(this.pedidoId, this.observacaoInternaControl.value || null)
+      this.graficaService.alterarObservacaoInternaOrcamento(this.pedidoId, texto || null)
+        .pipe(finalize(() => this.finalizarObservacaoMobile()))
         .subscribe({
           next: (orcamento) => {
             this.aplicarOrcamento(orcamento);
             this.observacaoInternaSalvaFlag = true;
+            aoAplicar?.();
           },
           error: (error) => this.toastr.error(this.errorMessage(error, 'Não foi possível salvar a observação interna.')),
         });
       return;
     }
-    this.observacaoInternaSalva = this.observacaoInternaControl.value || '';
+    if (this.observacaoInternaControl.value !== (texto || '')) this.observacaoInternaControl.setValue(texto || '', { emitEvent: false });
+    this.observacaoInternaSalva = texto || '';
     this.observacaoInternaSalvaFlag = true;
+    aoAplicar?.();
   }
 
   alterarStatusSelecionado(): void {
