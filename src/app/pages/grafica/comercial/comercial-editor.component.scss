@@ -224,3 +224,25 @@
   .mobile-observation-actions { display: flex; gap: 8px; }
   .mobile-observation-actions button { flex: 1 1 0; min-width: 0; min-height: 44px; padding-inline: 8px; }
 }
+
+@include mobile.mobile-foundation {
+  :host ::ng-deep .editor-page--mobile-detail app-card-header > mat-divider { margin-bottom: 0 !important; }
+  :host ::ng-deep .editor--mobile-detail .section-card.section-card--mobile-plain {
+    padding: 0; border: 0; box-shadow: none; border-radius: 0; background: transparent;
+  }
+  :host ::ng-deep .editor--mobile-detail .section-card__header--collapsible { margin-bottom: 0; }
+  .editor--mobile-detail {
+    .pedido-layout { display: flex; flex-direction: column; gap: 0; }
+    .main-column, .summary-column { width: 100%; gap: 0; }
+    .summary-sticky { position: static; gap: 0; }
+    .main-column > app-pedido-fluxo-controles,
+    .main-column > app-cliente-selector-card,
+    .main-column > app-itens-pedido-section,
+    .main-column > app-section-card,
+    .summary-sticky > .summary-card,
+    .summary-sticky > .responsavel-card { display: block; border-bottom: 1px solid var(--mat-sys-outline-variant); padding: 8px 0; }
+    .main-column > app-pedido-fluxo-controles { padding-top: 0; }
+    .responsavel-content { display: block; }
+    .responsavel-content strong { margin: 0; font-size: 14px; line-height: 20px; font-weight: 600; color: var(--mat-sys-on-surface); overflow-wrap: anywhere; }
+  }
+}

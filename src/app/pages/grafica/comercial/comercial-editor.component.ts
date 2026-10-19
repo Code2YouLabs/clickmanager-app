@@ -194,6 +194,8 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   isMobile = false;
   get mobileCriacao(): boolean { return this.isMobile && !this.pedidoId; }
   get mobilePedidoNovo(): boolean { return this.isMobile && this.tipo === 'pedidos' && !this.pedidoId; }
+  get mobilePedidoDetalhe(): boolean { return this.isMobile && this.tipo === 'pedidos' && !!this.pedidoId; }
+  private mobileSecoesPedidoId: number | null = null;
   readonly mobileSections = signal<Record<EditorMobileSection, boolean>>({ cliente: true, itens: true, observacoes: false, financeiro: false, revisao: false });
   readonly mobileTotalExpanded = signal(false);
   @ViewChild('pagamentosMobile') private pagamentosMobile?: TemplateRef<unknown>;
@@ -446,7 +448,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
       return this.orcamento?.atendenteNomeSnapshot || this.orcamento?.responsavelNome || this.usuarioLogado?.nome || this.usuarioLogado?.username || '-';
     }
     if (this.tipo === 'pedidos') {
-      return this.pedido?.responsavelNome || this.usuarioLogado?.nome || this.usuarioLogado?.username || '-';
+      return this.pedido?.responsavelNome || (this.mobilePedidoDetalhe ? 'Não informado' : this.usuarioLogado?.nome || this.usuarioLogado?.username || '-');
     }
     return this.usuarioLogado?.nome || this.usuarioLogado?.username || '-';
   }
@@ -919,6 +921,11 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
       this.aplicarClienteConfirmado({ ...this.clienteConfirmado, ...clienteCompleto });
     } else {
       this.carregarClienteConfirmado(pedido.clienteId);
+    }
+    const pedidoId = pedido.id ?? this.pedidoId;
+    if (pedidoId && this.mobileSecoesPedidoId !== pedidoId) {
+      this.mobileSecoesPedidoId = pedidoId;
+      this.mobileSections.set({ cliente: !this.clienteConfirmado, itens: true, observacoes: false, financeiro: false, revisao: false });
     }
     this.observacaoClienteControl.setValue(pedido.observacaoCliente || '', { emitEvent: false });
     this.observacaoInternaControl.setValue(pedido.observacaoInterna || '', { emitEvent: false });

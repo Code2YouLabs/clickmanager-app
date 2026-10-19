@@ -55,9 +55,15 @@ const STATUS_UI: Record<string, { icon: string; tone: 'blue' | 'orange' | 'green
     StatusBadgeComponent
   ],
   templateUrl: './pedido-fluxo-controles.component.html',
-  styleUrls: ['./pedido-fluxo-controles.component.scss']
+  styleUrls: ['./pedido-fluxo-controles.component.scss'],
+  host: { '[class.pedido-fluxo--mobile]': 'mobileCompact' }
 })
 export class PedidoFluxoControlesComponent implements OnChanges {
+  private static nextId = 0;
+  readonly flowId = `pedido-flow-${PedidoFluxoControlesComponent.nextId++}`;
+  mobileFlowExpanded = false;
+  @Input() mobileCompact = false;
+  @Input() statusAtualLabel: string | null = null;
   STATUS_UI = STATUS_UI;
   @Input() titulo = 'Fluxo do pedido';
   @Input() renderCard = true;
@@ -194,7 +200,7 @@ export class PedidoFluxoControlesComponent implements OnChanges {
 
     this.vm = {
       helperText: this.descricaoStatus || helperText || STATUS_DESCRICAO[statusKey] || defaultHelper,
-      statusLabel: this.statusLabel(statusKey),
+      statusLabel: this.statusAtualLabel || this.statusLabel(statusKey),
       nextAction,
       showCancel,
       showAdvanced,
@@ -211,6 +217,7 @@ export class PedidoFluxoControlesComponent implements OnChanges {
         done: !!step.concluido
       }));
     }
+    if (this.mobileCompact) return [];
     return FLOW_STEPS.map((s, idx) => ({
       label: this.statusLabel(s),
       active: s === statusKey,
@@ -229,6 +236,14 @@ export class PedidoFluxoControlesComponent implements OnChanges {
       ? this.transicoes
       : (this.statusOptions || []).map(s => ({ status: s, bloqueado: false }));
     return lista.some(l => !l.bloqueado);
+  }
+
+  get mobileStatusBusy(): boolean { return this.inativo || this.trocandoStatus || this.carregandoStatus; }
+
+  avancarMobile(status: string): void {
+    const transicao = this.transicoes.find(opcao => opcao.status === status);
+    if (!this.mobileCompact || this.mobileStatusBusy || this.isReadOnly || !transicao || transicao.bloqueado) return;
+    this.abrirConfirmacaoTrocaStatus(status);
   }
 
   onNextAction(): void {
@@ -275,6 +290,7 @@ export class PedidoFluxoControlesComponent implements OnChanges {
   }
 
   private abrirConfirmacaoTrocaStatus(statusDestino?: string): void {
+    if (this.mobileCompact && this.mobileStatusBusy) return;
     const opcoes = (this.transicoes?.length ? this.transicoes : (this.statusOptions || []).map(s => ({ status: s, label: this.statusLabel(s), bloqueado: false })));
     if (this.inativo || this.isReadOnly || !opcoes.length) return;
 
@@ -290,6 +306,8 @@ export class PedidoFluxoControlesComponent implements OnChanges {
 
     ref.afterClosed().subscribe((novo: { status: string } | null | undefined) => {
       if (novo?.status) {
+        if (this.mobileCompact && (this.mobileStatusBusy || this.isReadOnly ||
+          !this.transicoes.some(opcao => opcao.status === novo.status && !opcao.bloqueado))) return;
         const selected = novo.status;
         this.statusControl?.setValue(selected);
         this.trocarStatusSelecionado.emit(selected);

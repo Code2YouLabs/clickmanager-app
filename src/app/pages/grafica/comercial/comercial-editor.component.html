@@ -1,15 +1,16 @@
 <app-page-card
       [class.editor-page--mobile-progressive]="mobilePedidoNovo"
+      [class.editor-page--mobile-detail]="mobilePedidoDetalhe"
       [titulo]="titulo"
       [subtitulo]="subtitulo"
-      [botaoTexto]="mobilePedidoNovo ? '' : 'Voltar'"
+      [botaoTexto]="mobilePedidoNovo || mobilePedidoDetalhe ? '' : 'Voltar'"
       botaoIcone="arrow_back"
       botaoCor="primary"
       [botaoRota]="['/page/grafica/comercial', tipo]"
       [mostrarDivisor]="true" [saving]="salvando" [footerActions]="mobilePedidoNovo ? [] : footerActions"
       (footerAction)="onFooterAction($event)">
 
-      <button *ngIf="mobilePedidoNovo" page-mobile-header-actions mat-button type="button" (click)="voltar()"><mat-icon>arrow_back</mat-icon>Voltar</button>
+      <button *ngIf="mobilePedidoNovo || mobilePedidoDetalhe" page-mobile-header-actions mat-button type="button" (click)="voltar()"><mat-icon>arrow_back</mat-icon>Voltar</button>
 
       <div class="editor-state" role="status" *ngIf="acessoNegado">Você não possui permissão para visualizar este registro.</div>
       <div class="editor-state" role="status" *ngIf="carregando && !acessoNegado">
@@ -21,12 +22,15 @@
         <button mat-stroked-button type="button" [disabled]="carregando" (click)="recarregar()">Tentar novamente</button>
       </div>
       <form id="comercial-editor-form" [formGroup]="form" (ngSubmit)="salvarFormulario()"
-        *ngIf="!acessoNegado && (!pedidoId || temRegistroCarregado)" [attr.aria-busy]="carregando" [class.editor--mobile-progressive]="mobilePedidoNovo">
+        *ngIf="!acessoNegado && (!pedidoId || temRegistroCarregado)" [attr.aria-busy]="carregando" [class.editor--mobile-progressive]="mobilePedidoNovo" [class.editor--mobile-detail]="mobilePedidoDetalhe">
         <div class="pedido-layout">
           <div class="main-column">
             <app-pedido-fluxo-controles
               *ngIf="mostrarFluxoPedido && fluxoPedido"
               [titulo]="'Fluxo do pedido'"
+              data-editor-section="fluxo"
+              [mobileCompact]="mobilePedidoDetalhe"
+              [statusAtualLabel]="fluxoPedido.label"
               [statusAtual]="fluxoPedido.statusAtual"
               [statusControl]="statusControl"
               [statusOptions]="statusOptionsFluxo"
@@ -35,7 +39,7 @@
               [descricaoStatus]="fluxoPedido.descricao"
               [hints]="hintsFluxo"
               [isReadOnly]="!permissoesFluxo.alterarStatus"
-              [inativo]="carregandoStatus"
+              [inativo]="carregandoStatus || (mobilePedidoDetalhe && carregando)"
               [restaPagar]="resumoFinanceiroView.saldoAberto"
               [totalPago]="resumoFinanceiroView.totalRecebido"
               [temPagamentos]="pagamentosView.length > 0"
@@ -103,7 +107,7 @@
 
             <app-itens-pedido-section
               data-editor-section="itens"
-              [mobileCompact]="mobilePedidoNovo" [mobileExpanded]="mobileSections().itens"
+              [mobileCompact]="mobilePedidoNovo || mobilePedidoDetalhe" [mobileExpanded]="mobileSections().itens"
               [mobileSummary]="itens.length + (itens.length === 1 ? ' item adicionado' : ' itens adicionados')"
               (mobileExpandedChange)="setMobileSection('itens', $event)"
               [titulo]="itensTitulo"
@@ -241,11 +245,11 @@
                 </div>
               </app-section-card>
 
-              <app-section-card *ngIf="!mobilePedidoNovo" titulo="Responsável" [divider]="true" class="responsavel-card">
+              <app-section-card *ngIf="!mobilePedidoNovo" titulo="Responsável" [divider]="true" [mobilePlain]="mobilePedidoDetalhe" data-editor-section="responsavel" class="responsavel-card">
                 <div class="responsavel-content">
-                  <mat-icon>person</mat-icon>
+                  <mat-icon *ngIf="!mobilePedidoDetalhe">person</mat-icon>
                   <div>
-                    <span>Atendente</span>
+                    <span *ngIf="!mobilePedidoDetalhe">Atendente</span>
                     <strong>{{ responsavelNome }}</strong>
                   </div>
                 </div>
