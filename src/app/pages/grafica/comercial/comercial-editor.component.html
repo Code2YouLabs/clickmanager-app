@@ -162,23 +162,21 @@
           <div class="summary-column">
             <div class="summary-sticky">
               <app-section-card
-                [titulo]="mobilePedidoNovo ? 'Financeiro e pagamentos' : resumoTitulo"
+                [titulo]="isMobile && tipo === 'pedidos' ? 'Financeiro e pagamentos' : resumoTitulo"
                 data-editor-section="financeiro"
-                [mobilePlain]="mobilePedidoNovo" [mobileCollapsible]="mobilePedidoNovo"
+                [mobilePlain]="isMobile" [mobileCollapsible]="isMobile"
                 [mobileExpanded]="mobileSections().financeiro"
-                [mobileSummary]="mobilePedidoNovo ? 'Pago ' + (resumoFinanceiroView.totalRecebido | currency:'BRL':'symbol':'1.2-2') + ' · Saldo ' + (resumoFinanceiroView.saldoAberto | currency:'BRL':'symbol':'1.2-2') : ''"
+                [mobileSummary]="isMobile && tipo === 'pedidos' ? 'Pago ' + (resumoFinanceiroView.totalRecebido | currency:'BRL':'symbol':'1.2-2') + ' · Saldo ' + (resumoFinanceiroView.saldoAberto | currency:'BRL':'symbol':'1.2-2') : isMobile ? 'Total ' + (resumoFinanceiroView.total | currency:'BRL':'symbol':'1.2-2') : ''"
                 (mobileExpandedChange)="setMobileSection('financeiro', $event)"
                 [divider]="true"
                 class="summary-card" [class.summary-card--mobile]="isMobile"
                 [appTutorialTarget]="tipo === 'pedidos' && !pedidoId && itens.length ? primeiroPedidoTargets.revisao : ''"
               >
-                <h3 class="mobile-financial-title" *ngIf="isMobile">Valores do {{ itemContextoLabel }}</h3>
                 <div class="summary-row subtotal">
                   <span>Subtotal</span>
                   <strong class="value align-right">{{ resumoFinanceiroView.subtotal | currency:'BRL':'symbol':'1.2-2' }}</strong>
                 </div>
-                <h4 class="mobile-adjustments-title" *ngIf="isMobile">Ajustes</h4>
-                <div class="financial-adjustments" (keydown.enter)="evitarSubmitDaSecao($event)" [formGroup]="ajustesFinanceirosForm" *ngIf="podeEditarAjustesFinanceiros; else ajustesFinanceirosLeitura">
+                <div class="financial-adjustments" (keydown.enter)="evitarSubmitDaSecao($event)" [formGroup]="ajustesFinanceirosForm" *ngIf="!isMobile && podeEditarAjustesFinanceiros; else ajustesFinanceirosLeitura">
                   <app-input-moeda [showControlErrors]="isMobile" [inputMode]="isMobile ? 'decimal' : null" [control]="acrescimoControl" label="Acréscimos"></app-input-moeda>
                   <app-input-moeda [showControlErrors]="isMobile" [inputMode]="isMobile ? 'decimal' : null" [control]="freteControl" label="Frete"></app-input-moeda>
                   <app-input-moeda [showControlErrors]="isMobile" [inputMode]="isMobile ? 'decimal' : null" [control]="descontoControl" label="Descontos"></app-input-moeda>
@@ -208,11 +206,10 @@
                   </div>
                 </ng-template>
                 <mat-divider class="m-t-8 m-b-8"></mat-divider>
-                <div class="summary-row total" *ngIf="!mobilePedidoNovo">
+                <div class="summary-row total">
                   <span>Total</span>
                   <strong class="value highlight">{{ resumoFinanceiroView.total | currency:'BRL':'symbol':'1.2-2' }}</strong>
                 </div>
-                <h3 class="mobile-financial-title mobile-financial-title--divided" *ngIf="isMobile && tipo === 'pedidos'">Situação financeira</h3>
                 <div class="summary-row pago" *ngIf="tipo === 'pedidos'">
                   <span>Pago</span>
                   <strong class="value success">{{ resumoFinanceiroView.totalRecebido | currency:'BRL':'symbol':'1.2-2' }}</strong>
@@ -223,11 +220,14 @@
                 </div>
                 <mat-progress-bar *ngIf="tipo === 'pedidos' && !mobilePedidoNovo" mode="determinate" [value]="percentualPagoView"></mat-progress-bar>
                 <div class="percentual" *ngIf="tipo === 'pedidos' && !mobilePedidoNovo">{{ percentualPagoView | number:'1.0-2' }}% pago</div>
-                <button class="mobile-payments-trigger" mat-stroked-button color="primary" type="button"
-                  *ngIf="isMobile && mostrarPagamentos && permissoesFluxo.pagamentos" [disabled]="salvandoPagamento || carregando"
-                  (click)="abrirPagamentosMobile()">
-                  {{ pagamentosView.length ? 'Gerenciar pagamentos' : 'Adicionar pagamento' }}
-                </button>
+                <mat-divider *ngIf="isMobile" class="mobile-financial-divider"></mat-divider>
+                <div class="mobile-financial-actions" *ngIf="isMobile">
+                  <button class="mobile-adjustments-trigger" mat-stroked-button color="primary" type="button" *ngIf="podeEditarAjustesFinanceiros"
+                    [disabled]="carregando || salvandoAjustesFinanceiros || salvandoPagamento" (click)="abrirAjustesMobile()">Ajustes</button>
+                  <button class="mobile-payments-trigger" mat-stroked-button color="primary" type="button"
+                    *ngIf="mostrarPagamentos && permissoesFluxo.pagamentos" [disabled]="salvandoPagamento || carregando || salvandoAjustesFinanceiros"
+                    (click)="abrirPagamentosMobile()">Pagamentos</button>
+                </div>
               </app-section-card>
 
               <app-section-card *ngIf="!mobilePedidoNovo" titulo="Responsável" [divider]="true" class="responsavel-card">
@@ -353,6 +353,25 @@
             </div>
           </div>
         </div>
+<ng-template #ajustesMobile>
+  <section class="mobile-side-panel__layout adjustments-panel">
+    <header class="mobile-side-panel__header payments-panel__header">
+      <h2 mat-dialog-title>Ajustes financeiros</h2>
+      <button mat-icon-button type="button" aria-label="Fechar ajustes" [disabled]="salvandoAjustesFinanceiros" (click)="fecharAjustesMobile()"><mat-icon>close</mat-icon></button>
+    </header>
+    <mat-dialog-content class="mobile-side-panel__body">
+      <div class="adjustments-panel__fields" [formGroup]="ajustesMobileForm" [attr.aria-busy]="salvandoAjustesFinanceiros" [attr.inert]="salvandoAjustesFinanceiros ? '' : null" (keydown.enter)="evitarSubmitDaSecao($event)">
+        <app-input-moeda [control]="ajustesMobileForm.controls.acrescimo" label="Acréscimos" inputMode="decimal" [showControlErrors]="true"></app-input-moeda>
+        <app-input-moeda [control]="ajustesMobileForm.controls.frete" label="Frete" inputMode="decimal" [showControlErrors]="true"></app-input-moeda>
+        <app-input-moeda [control]="ajustesMobileForm.controls.desconto" label="Descontos" inputMode="decimal" [showControlErrors]="true"></app-input-moeda>
+      </div>
+    </mat-dialog-content>
+    <mat-dialog-actions class="mobile-side-panel__footer">
+      <button mat-stroked-button type="button" [disabled]="salvandoAjustesFinanceiros" (click)="fecharAjustesMobile()">Cancelar</button>
+      <button class="apply-adjustments" mat-flat-button color="primary" type="button" [disabled]="ajustesMobileForm.invalid || ajustesMobileForm.pending || salvandoAjustesFinanceiros || !podeEditarAjustesFinanceiros" (click)="aplicarAjustesMobile()">{{ salvandoAjustesFinanceiros ? 'Aplicando...' : 'Aplicar ajustes' }}</button>
+    </mat-dialog-actions>
+  </section>
+</ng-template>
 <ng-template #pagamentosMobile>
   <section class="mobile-side-panel__layout payments-panel">
     <header class="mobile-side-panel__header payments-panel__header">

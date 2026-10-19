@@ -70,7 +70,7 @@ describe('Painel lateral de pagamentos mobile', () => {
   it('deixa só a ação no financeiro e abre um único painel com os controles compartilhados', () => {
     editor.itens = [item()] as any; toggle('financeiro');
     expect(financial().querySelector('.payment-form')).toBeNull(); expect(financial().querySelector('.payment-list')).toBeNull();
-    expect(trigger().textContent).toContain('Adicionar pagamento'); trigger().click(); render();
+    expect(trigger().textContent).toContain('Pagamentos'); trigger().click(); render();
     expect(panel()).not.toBeNull(); expect(document.querySelector('.mobile-side-panel')).not.toBeNull();
     expect(panel().querySelectorAll('h2').length).toBe(1); expect(panel().querySelector('h2')!.textContent).toBe('Pagamentos');
     expect(panel().querySelector('.payment-context')!.textContent).toContain('Saldo');
@@ -113,7 +113,7 @@ describe('Painel lateral de pagamentos mobile', () => {
     expect(q('.payment-context .highlight').textContent).toContain('111,10');
     expect(q('.pago').textContent).toContain('150,00'); expect(q('.resta').textContent).toContain('111,10');
     expect(q('.mobile-total-bar__summary .value').textContent).toContain('261,10');
-    expect(trigger().textContent).toContain('Gerenciar pagamentos'); expect(panel()).not.toBeNull();
+    expect(trigger().textContent).toContain('Pagamentos'); expect(panel()).not.toBeNull();
     close(); tick(400); render(); expect(editor.pagamentosPretendidos.length).toBe(2);
   }));
 

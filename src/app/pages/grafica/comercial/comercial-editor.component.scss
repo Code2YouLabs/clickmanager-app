@@ -201,3 +201,15 @@
   .payments-panel .payment-entry { border: 0; padding-bottom: 0; }
 }
 .payments-panel .payment-draft-note { margin: 0 0 16px; font-size: 12px; line-height: 16px; color: var(--mat-sys-on-surface-variant); }
+
+@include mobile.mobile-foundation {
+  .summary-card--mobile {
+    .summary-row { margin-bottom: 8px; font-size: 14px; line-height: 20px; }
+    .summary-row.total .highlight { font-size: 16px; line-height: 24px; font-weight: 600; }
+    .mobile-financial-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .mobile-financial-actions button { flex: 1 1 0; min-width: 0; min-height: 44px; margin: 0; padding-inline: 8px; }
+  }
+}
+.adjustments-panel__fields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.adjustments-panel .mobile-side-panel__footer { display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--mat-sys-outline-variant); }
+.adjustments-panel .mobile-side-panel__footer button { flex: 1 1 0; min-height: 44px; min-width: 0; white-space: normal; }

@@ -199,13 +199,47 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   @ViewChild('pagamentosMobile') private pagamentosMobile?: TemplateRef<unknown>;
   private pagamentosPanelRef?: MatDialogRef<unknown>;
   abrirPagamentosMobile(): void {
-    if (!this.isMobile || this.acessoNegado || !this.mostrarPagamentos || !this.permissoesFluxo.pagamentos || this.carregando || this.pagamentosPanelRef || !this.pagamentosMobile) return;
+    if (!this.isMobile || this.acessoNegado || !this.mostrarPagamentos || !this.permissoesFluxo.pagamentos || this.carregando || this.pagamentosPanelRef || this.ajustesPanelRef || !this.pagamentosMobile) return;
     this.mobileTotalExpanded.set(false);
     this.elementRef?.nativeElement.querySelector<HTMLElement>('.mobile-payments-trigger')?.focus({ preventScroll: true });
     this.pagamentosPanelRef = openMobileSidePanel(this.dialog, this.pagamentosMobile, { ariaLabel: 'Pagamentos', viewContainerRef: this.viewContainerRef });
     this.pagamentosPanelRef.afterClosed().pipe(take(1), takeUntil(this.destroy$)).subscribe(() => this.pagamentosPanelRef = undefined);
   }
   fecharPagamentosMobile(): void { this.pagamentosPanelRef?.close(); }
+  @ViewChild('ajustesMobile') private ajustesMobile?: TemplateRef<unknown>;
+  private ajustesPanelRef?: MatDialogRef<unknown>;
+  readonly ajustesMobileForm = this.fb.group({ acrescimo: [0], frete: [0], desconto: [0] });
+  abrirAjustesMobile(): void {
+    if (!this.isMobile || this.acessoNegado || this.carregando || !this.podeEditarAjustesFinanceiros || this.ajustesPanelRef || this.pagamentosPanelRef || !this.ajustesMobile) return;
+    for (const key of ['acrescimo', 'frete', 'desconto'] as const) {
+      const original = this.ajustesFinanceirosForm.controls[key];
+      this.ajustesMobileForm.controls[key].setValidators(original.validator);
+      this.ajustesMobileForm.controls[key].setAsyncValidators(original.asyncValidator);
+      if (original.disabled) this.ajustesMobileForm.controls[key].disable({ emitEvent: false });
+      else this.ajustesMobileForm.controls[key].enable({ emitEvent: false });
+    }
+    this.ajustesMobileForm.reset(this.ajustesFinanceirosForm.getRawValue());
+    this.mobileTotalExpanded.set(false);
+    this.elementRef?.nativeElement.querySelector<HTMLElement>('.mobile-adjustments-trigger')?.focus({ preventScroll: true });
+    this.ajustesPanelRef = openMobileSidePanel(this.dialog, this.ajustesMobile, { ariaLabel: 'Ajustes financeiros', viewContainerRef: this.viewContainerRef });
+    this.ajustesPanelRef.afterClosed().pipe(take(1), takeUntil(this.destroy$)).subscribe(() => {
+      this.ajustesPanelRef = undefined;
+      this.ajustesMobileForm.reset(this.ajustesFinanceirosForm.getRawValue());
+    });
+  }
+  fecharAjustesMobile(): void { if (!this.salvandoAjustesFinanceiros) this.ajustesPanelRef?.close(); }
+  aplicarAjustesMobile(): void {
+    if (!this.isMobile || !this.ajustesPanelRef || !this.podeEditarAjustesFinanceiros || this.salvandoAjustesFinanceiros) return;
+    if (this.ajustesMobileForm.invalid || this.ajustesMobileForm.pending) { this.ajustesMobileForm.markAllAsTouched(); return; }
+    if (this.pedidoId && this.tipo !== 'rascunhos') {
+      this.ajustesPanelRef.disableClose = true;
+      this.salvarAjustesFinanceiros(this.ajustesMobileForm, () => this.ajustesPanelRef?.close());
+      return;
+    }
+    this.aplicarAjustesFinanceirosForm(this.ajustesMobileForm.getRawValue(), false);
+    this.ajustesFinanceirosForm.markAsDirty();
+    this.ajustesPanelRef.close();
+  }
   mobileValidationAttempted = false;
   private tutorialRevealTimer?: ReturnType<typeof setTimeout>;
   private focusTimer?: ReturnType<typeof setTimeout>;
@@ -297,7 +331,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     if (breakpoints) breakpoints.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => {
       if (this.isMobile === state.matches) return;
       this.isMobile = state.matches;
-      if (!this.isMobile) this.fecharPagamentosMobile();
+      if (!this.isMobile) { this.fecharPagamentosMobile(); this.ajustesPanelRef?.close(); }
       this.mobileSections.update(value => ({ ...value }));
     });
     if (tutorial) effect(() => {
@@ -739,7 +773,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.fecharPagamentosMobile();
+    this.fecharPagamentosMobile(); this.ajustesPanelRef?.close();
     clearTimeout(this.tutorialRevealTimer); clearTimeout(this.focusTimer);
     this.destroy$.next();
     this.destroy$.complete();
@@ -971,11 +1005,11 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     }
   }
 
-  private ajustesFinanceirosPayload(): PedidoAjustesFinanceirosRequest {
+  private ajustesFinanceirosPayload(form = this.ajustesFinanceirosForm): PedidoAjustesFinanceirosRequest {
     return {
-      acrescimo: this.valorMoeda(this.ajustesFinanceirosForm.value.acrescimo),
-      frete: this.valorMoeda(this.ajustesFinanceirosForm.value.frete),
-      desconto: this.valorMoeda(this.ajustesFinanceirosForm.value.desconto),
+      acrescimo: this.valorMoeda(form.value.acrescimo),
+      frete: this.valorMoeda(form.value.frete),
+      desconto: this.valorMoeda(form.value.desconto),
     };
   }
 
@@ -1186,32 +1220,37 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     this.router.navigate(['/page/grafica/comercial', destino]);
   }
 
-  salvarAjustesFinanceiros(): void {
+  salvarAjustesFinanceiros(form = this.ajustesFinanceirosForm, aoAplicar?: () => void): void {
+    const finalizar = () => {
+      this.salvandoAjustesFinanceiros = false;
+      if (this.ajustesPanelRef) this.ajustesPanelRef.disableClose = false;
+    };
     if (this.tipo === 'orcamentos') {
-      if (!this.pedidoId || !this.orcamentoEditavel || this.ajustesFinanceirosForm.invalid) {
-        this.ajustesFinanceirosForm.markAllAsTouched();
+      if (!this.pedidoId || !this.orcamentoEditavel || form.invalid) {
+        form.markAllAsTouched();
         return;
       }
       this.salvandoAjustesFinanceiros = true;
-      this.graficaService.alterarAjustesComerciaisOrcamento(this.pedidoId, this.ajustesFinanceirosPayload())
-        .pipe(finalize(() => this.salvandoAjustesFinanceiros = false))
+      this.graficaService.alterarAjustesComerciaisOrcamento(this.pedidoId, this.ajustesFinanceirosPayload(form))
+        .pipe(finalize(finalizar))
         .subscribe({
-          next: (orcamento) => this.aplicarOrcamento(orcamento),
+          next: (orcamento) => { this.aplicarOrcamento(orcamento); aoAplicar?.(); },
           error: (error) => this.toastr.error(this.errorMessage(error, 'Não foi possível salvar os ajustes do orçamento.')),
         });
       return;
     }
-    if (!this.pedidoId || !this.permissoesFluxo.pagamentos || this.ajustesFinanceirosForm.invalid) {
-      this.ajustesFinanceirosForm.markAllAsTouched();
+    if (!this.pedidoId || !this.permissoesFluxo.pagamentos || form.invalid) {
+      form.markAllAsTouched();
       return;
     }
     this.salvandoAjustesFinanceiros = true;
-    this.graficaService.alterarAjustesFinanceirosPedido(this.pedidoId, this.ajustesFinanceirosPayload())
-      .pipe(finalize(() => this.salvandoAjustesFinanceiros = false))
+    this.graficaService.alterarAjustesFinanceirosPedido(this.pedidoId, this.ajustesFinanceirosPayload(form))
+      .pipe(finalize(finalizar))
       .subscribe({
         next: (pedido) => {
           this.aplicarPedido(pedido);
           this.carregarFinanceiroPedido(this.pedidoId!);
+          aoAplicar?.();
         },
         error: (error) => this.toastr.error(this.errorMessage(error, 'Não foi possível salvar os ajustes financeiros.')),
       });

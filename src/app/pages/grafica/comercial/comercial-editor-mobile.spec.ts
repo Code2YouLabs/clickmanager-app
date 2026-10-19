@@ -158,7 +158,7 @@ describe('Editor Novo Pedido mobile', () => {
     expect(details.textContent).toContain('Saldo'); expect(details.querySelector('input')).toBeNull();
     fixture.nativeElement.querySelector('.mobile-total-bar__handle-toggle').click(); fixture.detectChanges();
     expect(details.getAttribute('aria-hidden')).toBe('true');
-    expect(fixture.nativeElement.querySelectorAll('.financial-adjustments').length).toBe(1);
+    expect(fixture.nativeElement.querySelectorAll('.financial-adjustments').length).toBe(0);
   });
 
   it('recolhe sem destruir campos nem perder observações em edição', () => {
@@ -183,8 +183,8 @@ describe('Editor Novo Pedido mobile', () => {
     editor.ajustesFinanceirosForm.setValue({ acrescimo: 10, frete: 5, desconto: 3 }); fixture.detectChanges();
     expect(editor.resumoFinanceiroView.total).toBe(62);
     expect(fixture.nativeElement.querySelector('.mobile-total-bar__summary .value').textContent).toContain('62,00');
-    expect(root('financeiro').querySelector('.summary-row.total')).toBeNull();
-    expect(root('financeiro').querySelectorAll('input[inputmode=decimal]').length).toBe(3);
+    expect(root('financeiro').querySelector('.summary-row.total')!.textContent).toContain('62,00');
+    expect(root('financeiro').querySelectorAll('input[inputmode=decimal]').length).toBe(0);
     editor.abrirPagamentosMobile(); fixture.detectChanges();
     editor.pagamentoForm.setValue({ formaPagamento: 'PIX', valor: 12 }); fixture.detectChanges();
     (document.querySelector('.payments-panel .payment-add-button') as HTMLButtonElement).click(); fixture.detectChanges();

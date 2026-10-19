@@ -65,15 +65,15 @@ describe('Financeiro e pagamentos do editor mobile', () => {
 
   it('organiza valores, ajustes e situação sem duplicar Total nem formulário', () => {
     prepare();
-    expect(financial().textContent).toContain('Valores do pedido');
+    expect(financial().textContent).toContain('Subtotal');
     expect(financial().textContent).toContain('Ajustes');
-    expect(financial().textContent).toContain('Situação financeira');
+    expect(financial().textContent).toContain('Saldo');
     expect(q('.subtotal').textContent).toContain('261,10');
-    expect(financial().querySelector('.summary-row.total')).toBeNull();
-    expect(financial().querySelectorAll('.financial-adjustments').length).toBe(1);
+    expect(financial().querySelector('.summary-row.total')!.textContent).toContain('261,10');
+    expect(financial().querySelectorAll('.financial-adjustments').length).toBe(0);
     expect(q('.payment-form mat-select').getAttribute('aria-label')).toBe('Forma de pagamento');
     expect(q('.payment-form input').getAttribute('aria-label')).toBe('Valor');
-    expect(financial().querySelectorAll('input[inputmode=decimal]').length).toBe(3);
+    expect(financial().querySelectorAll('input[inputmode=decimal]').length).toBe(0);
     expect(financial().querySelector('.payment-form')).toBeNull();
     expect(q('.empty-payments').textContent).toContain('Nenhum pagamento informado.');
   });
@@ -83,10 +83,10 @@ describe('Financeiro e pagamentos do editor mobile', () => {
     expect(editor.resumoFinanceiroView.total).toBe(273.1);
     expect(q('.mobile-total-bar__summary .value').textContent).toContain('273,10');
     expect(q('.resta').textContent).toContain('273,10');
-    const field = q('.financial-adjustments input'); fill('PIX', 60);
+    const field = q('.summary-row.subtotal'); fill('PIX', 60);
     toggle('financeiro'); expect(body('financeiro').hidden).toBeTrue();
     expect(financial().querySelector('.section-card__toggle')!.textContent).toContain('Saldo');
-    toggle('financeiro'); expect(q('.financial-adjustments input')).toBe(field);
+    toggle('financeiro'); expect(q('.summary-row.subtotal')).toBe(field);
     expect(editor.pagamentoValorControl.value).toBe(60);
     expect(editor.ajustesFinanceirosForm.value).toEqual({ acrescimo: 10, frete: 5, desconto: 3 });
   });
@@ -194,7 +194,7 @@ describe('Financeiro e pagamentos do editor mobile', () => {
       inViewport(width, 520, win => {
         const form = q('.payment-form'); const method = q('.payment-form app-input-options'); const value = q('.payment-form app-input-moeda');
         expect(win.getComputedStyle(form).gridTemplateColumns.split(' ').length).toBe(1);
-        expect(win.getComputedStyle(q('.financial-adjustments')).gridTemplateColumns.split(' ').length).toBe(1);
+        expect(financial().querySelector('input')).toBeNull();
         expect(value.getBoundingClientRect().top).toBeGreaterThan(method.getBoundingClientRect().bottom - 1);
         expect(button().getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
         expect(form.scrollWidth).toBeLessThanOrEqual(form.clientWidth);
