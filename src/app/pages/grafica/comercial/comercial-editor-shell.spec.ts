@@ -1,3 +1,4 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { By } from '@angular/platform-browser';
 import { fakeAsync, tick } from '@angular/core/testing';
 import { AutoCompleteComponent } from 'src/app/components/inputs/auto-complete/auto-complete.component';
@@ -20,6 +21,7 @@ describe('ComercialEditorComponent shell e formulário nativo', () => {
     registerLocaleData(ptBr, 'pt-BR');
     TestBed.configureTestingModule({ imports: [ComercialEditorComponent, NoopAnimationsModule], providers: [
       provideRouter([]), provideHttpClient(),
+      { provide: BreakpointObserver, useValue: { observe: () => of({ matches: false, breakpoints: {} }) } },
       { provide: GraficaProdutoService, useValue: {} },
       { provide: ClienteService, useValue: { buscarPorNome: () => of({ content: [] }) } },
       { provide: ToastrService, useValue: { error: jasmine.createSpy() } },

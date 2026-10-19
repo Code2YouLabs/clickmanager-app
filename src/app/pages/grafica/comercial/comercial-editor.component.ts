@@ -1,7 +1,7 @@
 import { ClienteResponse } from 'src/app/models/cliente/cliente-response.model';
 import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild, Optional, effect, signal, untracked, afterRender, Injector } from '@angular/core';
+import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild, TemplateRef, ViewContainerRef, Optional, effect, signal, untracked, afterRender, Injector } from '@angular/core';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { TutorialService } from 'src/app/shared/tutorial/tutorial.service';
@@ -196,6 +196,16 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   get mobilePedidoNovo(): boolean { return this.isMobile && this.tipo === 'pedidos' && !this.pedidoId; }
   readonly mobileSections = signal<Record<EditorMobileSection, boolean>>({ cliente: true, itens: true, observacoes: false, financeiro: false, revisao: false });
   readonly mobileTotalExpanded = signal(false);
+  @ViewChild('pagamentosMobile') private pagamentosMobile?: TemplateRef<unknown>;
+  private pagamentosPanelRef?: MatDialogRef<unknown>;
+  abrirPagamentosMobile(): void {
+    if (!this.isMobile || this.acessoNegado || !this.mostrarPagamentos || !this.permissoesFluxo.pagamentos || this.carregando || this.pagamentosPanelRef || !this.pagamentosMobile) return;
+    this.mobileTotalExpanded.set(false);
+    this.elementRef?.nativeElement.querySelector<HTMLElement>('.mobile-payments-trigger')?.focus({ preventScroll: true });
+    this.pagamentosPanelRef = openMobileSidePanel(this.dialog, this.pagamentosMobile, { ariaLabel: 'Pagamentos', viewContainerRef: this.viewContainerRef });
+    this.pagamentosPanelRef.afterClosed().pipe(take(1), takeUntil(this.destroy$)).subscribe(() => this.pagamentosPanelRef = undefined);
+  }
+  fecharPagamentosMobile(): void { this.pagamentosPanelRef?.close(); }
   mobileValidationAttempted = false;
   private tutorialRevealTimer?: ReturnType<typeof setTimeout>;
   private focusTimer?: ReturnType<typeof setTimeout>;
@@ -282,10 +292,12 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     @Optional() private readonly breakpoints?: BreakpointObserver,
     @Optional() private readonly tutorial?: TutorialService,
     @Optional() private readonly elementRef?: ElementRef<HTMLElement>,
+    @Optional() private readonly viewContainerRef?: ViewContainerRef,
   ) {
     if (breakpoints) breakpoints.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => {
       if (this.isMobile === state.matches) return;
       this.isMobile = state.matches;
+      if (!this.isMobile) this.fecharPagamentosMobile();
       this.mobileSections.update(value => ({ ...value }));
     });
     if (tutorial) effect(() => {
@@ -727,6 +739,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.fecharPagamentosMobile();
     clearTimeout(this.tutorialRevealTimer); clearTimeout(this.focusTimer);
     this.destroy$.next();
     this.destroy$.complete();

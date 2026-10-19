@@ -223,7 +223,11 @@
                 </div>
                 <mat-progress-bar *ngIf="tipo === 'pedidos' && !mobilePedidoNovo" mode="determinate" [value]="percentualPagoView"></mat-progress-bar>
                 <div class="percentual" *ngIf="tipo === 'pedidos' && !mobilePedidoNovo">{{ percentualPagoView | number:'1.0-2' }}% pago</div>
-                <ng-container *ngIf="mobilePedidoNovo" [ngTemplateOutlet]="pagamentosConteudo"></ng-container>
+                <button class="mobile-payments-trigger" mat-stroked-button color="primary" type="button"
+                  *ngIf="isMobile && mostrarPagamentos && permissoesFluxo.pagamentos" [disabled]="salvandoPagamento || carregando"
+                  (click)="abrirPagamentosMobile()">
+                  {{ pagamentosView.length ? 'Gerenciar pagamentos' : 'Adicionar pagamento' }}
+                </button>
               </app-section-card>
 
               <app-section-card *ngIf="!mobilePedidoNovo" titulo="Responsável" [divider]="true" class="responsavel-card">
@@ -252,10 +256,11 @@
                 (whatsapp)="abrirWhatsAppOrcamento()">
               </app-pedido-documentos-acoes>
 
-              <ng-container *ngIf="!mobilePedidoNovo" [ngTemplateOutlet]="pagamentosConteudo"></ng-container>
+              <ng-container *ngIf="!isMobile" [ngTemplateOutlet]="pagamentosConteudo"></ng-container>
               <ng-template #pagamentosConteudo>
-              <app-section-card *ngIf="mostrarPagamentos" [titulo]="mobilePedidoNovo ? '' : 'Pagamentos'" [divider]="!mobilePedidoNovo" [mobilePlain]="mobilePedidoNovo" class="payments-card" [class.payments-card--mobile]="isMobile">
-                <h3 class="mobile-payment-title" *ngIf="mobilePedidoNovo">Pagamentos</h3>
+              <app-section-card *ngIf="mostrarPagamentos" [titulo]="isMobile ? '' : 'Pagamentos'" [divider]="!isMobile" [mobilePlain]="isMobile" class="payments-card" [class.payments-card--mobile]="isMobile">
+                <ng-container *ngIf="isMobile" [ngTemplateOutlet]="pagamentoResumo"></ng-container>
+                <p class="payment-draft-note" *ngIf="isMobile && !pedidoId">Os pagamentos informados serão incluídos ao salvar o pedido.</p>
                 <div class="payment-entry">
                   <div class="payment-form" [attr.aria-busy]="isMobile ? salvandoPagamento : null" (keydown.enter)="evitarSubmitDaSecao($event)" [formGroup]="pagamentoForm">
                     <app-input-options
@@ -267,10 +272,7 @@
                       nullLabel="Selecione">
                     </app-input-options>
                     <app-input-moeda [showControlErrors]="isMobile" [inputMode]="isMobile ? 'decimal' : null" [control]="pagamentoValorControl" label="Valor"></app-input-moeda>
-                    <button mat-flat-button color="primary" type="button" [disabled]="pagamentoForm.invalid || pagamentoExcedeSaldo || salvandoPagamento || !permissoesFluxo.pagamentos" (click)="adicionarPagamento()">
-                      <mat-icon>add</mat-icon>
-                      {{ isMobile && salvandoPagamento ? 'Adicionando pagamento...' : 'Adicionar pagamento' }}
-                    </button>
+                    <ng-container *ngIf="!isMobile" [ngTemplateOutlet]="pagamentoAdicionar"></ng-container>
                   </div>
 
                   <div class="payment-error" role="alert" *ngIf="pagamentoExcedeSaldo">
@@ -279,16 +281,8 @@
                 </div>
 
                 <div class="payment-history">
-                  <div class="payment-context" *ngIf="!mobilePedidoNovo">
-                    <div>
-                      <span>Pago</span>
-                      <strong class="success">{{ resumoFinanceiroView.totalRecebido | currency:'BRL':'symbol':'1.2-2' }}</strong>
-                    </div>
-                    <div>
-                      <span>Saldo</span>
-                      <strong class="highlight">{{ resumoFinanceiroView.saldoAberto | currency:'BRL':'symbol':'1.2-2' }}</strong>
-                    </div>
-                  </div>
+                  <ng-container *ngIf="!isMobile" [ngTemplateOutlet]="pagamentoResumo"></ng-container>
+                  <h3 class="mobile-payment-title" *ngIf="isMobile">Pagamentos informados</h3>
 
                   <div class="payment-list" *ngIf="pagamentosView.length; else semPagamentos">
                     <div class="payment-item" *ngFor="let pagamento of pagamentosView; let i = index" [class.cancelado]="pagamento.status === 'CANCELADO'">
@@ -359,6 +353,21 @@
             </div>
           </div>
         </div>
+<ng-template #pagamentosMobile>
+  <section class="mobile-side-panel__layout payments-panel">
+    <header class="mobile-side-panel__header payments-panel__header">
+      <h2 mat-dialog-title>Pagamentos</h2>
+      <button mat-icon-button type="button" aria-label="Fechar pagamentos" (click)="fecharPagamentosMobile()"><mat-icon>close</mat-icon></button>
+    </header>
+    <mat-dialog-content class="mobile-side-panel__body">
+      <ng-container [ngTemplateOutlet]="pagamentosConteudo"></ng-container>
+    </mat-dialog-content>
+    <mat-dialog-actions class="mobile-side-panel__footer">
+      <ng-container [ngTemplateOutlet]="pagamentoAdicionar"></ng-container>
+    </mat-dialog-actions>
+  </section>
+</ng-template>
+
       </form>
     </app-page-card>
 
@@ -385,3 +394,22 @@
         <div><span>Saldo</span><strong>{{ resumoFinanceiroView.saldoAberto | currency:'BRL':'symbol':'1.2-2' }}</strong></div>
       </div>
     </app-mobile-total-bar>
+
+<ng-template #pagamentoResumo>
+                  <div class="payment-context">
+                    <div>
+                      <span>Pago</span>
+                      <strong class="success">{{ resumoFinanceiroView.totalRecebido | currency:'BRL':'symbol':'1.2-2' }}</strong>
+                    </div>
+                    <div>
+                      <span>Saldo</span>
+                      <strong class="highlight">{{ resumoFinanceiroView.saldoAberto | currency:'BRL':'symbol':'1.2-2' }}</strong>
+                    </div>
+                  </div>
+</ng-template>
+<ng-template #pagamentoAdicionar>
+                    <button class="payment-add-button" mat-flat-button color="primary" type="button" [disabled]="pagamentoForm.invalid || pagamentoExcedeSaldo || salvandoPagamento || !permissoesFluxo.pagamentos" (click)="adicionarPagamento()">
+                      <mat-icon>add</mat-icon>
+                      {{ isMobile && salvandoPagamento ? 'Adicionando pagamento...' : 'Adicionar pagamento' }}
+                    </button>
+</ng-template>

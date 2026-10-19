@@ -187,3 +187,17 @@
   :host ::ng-deep .editor--mobile-progressive app-input-moeda,
   :host ::ng-deep .editor--mobile-progressive app-input-options { min-width: 0; }
 }
+
+// Only the mobile template uses these hooks; global panel owns viewport and motion.
+.payments-panel__header { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--mat-sys-outline-variant); }
+.payments-panel__header h2 { margin: 0; padding: 0; font-size: 20px; line-height: 28px; font-weight: 600; }
+.payments-panel .mobile-side-panel__footer { border-top: 1px solid var(--mat-sys-outline-variant); }
+.payments-panel .mobile-side-panel__footer button { width: 100%; min-height: 44px; white-space: normal; }
+.payments-panel .payment-context { grid-template-columns: minmax(0, 1fr); padding-bottom: 16px; }
+.payments-panel .payment-context strong { white-space: normal; overflow-wrap: anywhere; text-align: right; }
+.payments-panel .mobile-payment-title { margin: 16px 0 8px; font-size: 14px; line-height: 20px; font-weight: 600; }
+@include mobile.mobile-foundation {
+  .mobile-payments-trigger { min-height: 44px; margin-top: 8px; }
+  .payments-panel .payment-entry { border: 0; padding-bottom: 0; }
+}
+.payments-panel .payment-draft-note { margin: 0 0 16px; font-size: 12px; line-height: 16px; color: var(--mat-sys-on-surface-variant); }

@@ -51,7 +51,7 @@ describe('Editor Novo Pedido mobile', () => {
     ] });
     fixture = TestBed.createComponent(ComercialEditorComponent); editor = fixture.componentInstance; fixture.detectChanges();
   });
-  afterEach(() => TestBed.resetTestingModule());
+  afterEach(fakeAsync(() => { TestBed.inject(MatDialog).closeAll(); tick(400); TestBed.resetTestingModule(); }));
 
   it('organiza cinco grupos, mantém um Salvar e Voltar contextual, sem alertas permanentes', () => {
     expect(fixture.nativeElement.querySelectorAll('[data-editor-section]').length).toBe(5);
@@ -70,7 +70,8 @@ describe('Editor Novo Pedido mobile', () => {
     expect(fixture.nativeElement.querySelector('.required-alert')).toBeNull();
     expect(fixture.nativeElement.querySelector('.responsavel-card')).toBeNull();
     expect(fixture.nativeElement.querySelector('.mobile-responsavel').textContent).toContain('Maria Atendimento');
-    expect(fixture.nativeElement.querySelector('.summary-card .payments-card')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.summary-card .payments-card')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.mobile-payments-trigger')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('form form')).toBeNull();
   });
 
@@ -183,17 +184,18 @@ describe('Editor Novo Pedido mobile', () => {
     expect(editor.resumoFinanceiroView.total).toBe(62);
     expect(fixture.nativeElement.querySelector('.mobile-total-bar__summary .value').textContent).toContain('62,00');
     expect(root('financeiro').querySelector('.summary-row.total')).toBeNull();
-    expect(root('financeiro').querySelectorAll('input[inputmode=decimal]').length).toBe(4);
+    expect(root('financeiro').querySelectorAll('input[inputmode=decimal]').length).toBe(3);
+    editor.abrirPagamentosMobile(); fixture.detectChanges();
     editor.pagamentoForm.setValue({ formaPagamento: 'PIX', valor: 12 }); fixture.detectChanges();
-    (root('financeiro').querySelector('.payment-form button') as HTMLButtonElement).click(); fixture.detectChanges();
+    (document.querySelector('.payments-panel .payment-add-button') as HTMLButtonElement).click(); fixture.detectChanges();
     expect(editor.pagamentosPretendidos).toEqual([{ formaPagamento: 'PIX', valor: 12 }]);
     expect(editor.resumoFinanceiroView.saldoAberto).toBe(50);
     toggle('financeiro'); toggle('financeiro'); expect(editor.pagamentosPretendidos.length).toBe(1);
-    (root('financeiro').querySelector('.payment-cancel') as HTMLButtonElement).click(); fixture.detectChanges();
+    (document.querySelector('.payments-panel .payment-cancel') as HTMLButtonElement).click(); fixture.detectChanges();
     expect(editor.pagamentosPretendidos).toEqual([]); expect(editor.resumoFinanceiroView.saldoAberto).toBe(62);
     editor.pagamentoForm.setValue({ formaPagamento: 'PIX', valor: 63 }); fixture.detectChanges();
-    expect((root('financeiro').querySelector('.payment-form button') as HTMLButtonElement).disabled).toBeTrue();
-    expect(root('financeiro').textContent).toContain('Valor não pode exceder');
+    expect((document.querySelector('.payments-panel .payment-add-button') as HTMLButtonElement).disabled).toBeTrue();
+    expect(document.querySelector('.payments-panel')!.textContent).toContain('Valor não pode exceder');
   });
 
   it('abre a seção pendente e direciona o foco sem habilitar Salvar inválido', fakeAsync(() => {

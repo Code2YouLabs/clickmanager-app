@@ -51,16 +51,16 @@ describe('Financeiro e pagamentos do editor mobile', () => {
     ] });
     fixture = TestBed.createComponent(ComercialEditorComponent); editor = fixture.componentInstance; fixture.detectChanges();
   });
-  afterEach(() => TestBed.resetTestingModule());
+  afterEach(fakeAsync(() => { TestBed.inject(MatDialog).closeAll(); tick(400); TestBed.resetTestingModule(); }));
 
   const financial = () => root('financeiro');
-  const q = (selector: string) => fixture.nativeElement.querySelector(selector) as HTMLElement;
+  const q = (selector: string) => (fixture.nativeElement.querySelector(selector) || fixture.nativeElement.ownerDocument.querySelector(selector)) as HTMLElement;
   const render = () => fixture.detectChanges();
-  const button = () => q('.payment-form button') as HTMLButtonElement;
+  const button = () => q('.payment-add-button') as HTMLButtonElement;
   const fill = (forma: string | null, valor: number | null) => { editor.pagamentoForm.setValue({ formaPagamento: forma, valor }); render(); };
   function prepare() {
     editor.itens = [{ ...item(), valorTotal: 261.1 }] as any;
-    toggle('financeiro');
+    toggle('financeiro'); editor.abrirPagamentosMobile(); render();
   }
 
   it('organiza valores, ajustes e situação sem duplicar Total nem formulário', () => {
@@ -73,7 +73,8 @@ describe('Financeiro e pagamentos do editor mobile', () => {
     expect(financial().querySelectorAll('.financial-adjustments').length).toBe(1);
     expect(q('.payment-form mat-select').getAttribute('aria-label')).toBe('Forma de pagamento');
     expect(q('.payment-form input').getAttribute('aria-label')).toBe('Valor');
-    expect(financial().querySelectorAll('input[inputmode=decimal]').length).toBe(4);
+    expect(financial().querySelectorAll('input[inputmode=decimal]').length).toBe(3);
+    expect(financial().querySelector('.payment-form')).toBeNull();
     expect(q('.empty-payments').textContent).toContain('Nenhum pagamento informado.');
   });
 
@@ -113,7 +114,7 @@ describe('Financeiro e pagamentos do editor mobile', () => {
     expect(editor.resumoFinanceiroView.saldoAberto).toBe(0);
     expect(q('.pago').textContent).toContain('261,10');
     expect(q('.resta').textContent).toContain('0,00');
-    expect(fixture.nativeElement.querySelectorAll('.payment-item').length).toBe(2);
+    expect(document.querySelectorAll('.payment-item').length).toBe(2);
     (q('.payment-cancel') as HTMLButtonElement).click(); render();
     expect(editor.pagamentosPretendidos).toEqual([{ formaPagamento: 'DINHEIRO', valor: 200 }]);
     expect(editor.resumoFinanceiroView.saldoAberto).toBe(61.1);
@@ -142,7 +143,7 @@ describe('Financeiro e pagamentos do editor mobile', () => {
     editor.recebimentos = [{ id: 91, formaPagamento: 'PIX', valor: 20, status: 'CONFIRMADO', dataRecebimento: '2026-10-17T12:00:00' },
       { id: 92, formaPagamento: 'DINHEIRO', valor: 10, status: 'CANCELADO' }] as any; render();
     expect(q('.payment-date').textContent).toContain('17/10/2026');
-    expect(fixture.nativeElement.querySelectorAll('.payment-cancel').length).toBe(1);
+    expect(document.querySelectorAll('.payment-cancel').length).toBe(1);
     expect(q('.payment-item.cancelado')).not.toBeNull();
     const pending = new Subject<any>(); const service = TestBed.inject(GraficaProdutoService) as any;
     service.cancelarRecebimento.and.returnValue(pending);
@@ -180,10 +181,11 @@ describe('Financeiro e pagamentos do editor mobile', () => {
   function inViewport(width: number, height: number, assertions: (win: Window) => void) {
     const frame = document.createElement('iframe'); frame.style.width = `${width}px`; frame.style.height = `${height}px`; document.body.appendChild(frame);
     const host = fixture.nativeElement as HTMLElement; const parent = host.parentElement;
+    const overlay = document.querySelector('.cdk-overlay-container'); const overlayParent = overlay?.parentElement;
     try {
       const doc = frame.contentDocument!; document.head.querySelectorAll('style').forEach(style => doc.head.appendChild(style.cloneNode(true)));
-      doc.body.style.margin = '0'; doc.body.appendChild(host); assertions(frame.contentWindow!);
-    } finally { if (parent) parent.appendChild(host); frame.remove(); }
+      doc.body.style.margin = '0'; doc.body.appendChild(host); if (overlay) doc.body.appendChild(overlay); assertions(frame.contentWindow!);
+    } catch (error) { throw new Error(String(error)); } finally { if (parent) parent.appendChild(host); if (overlay && overlayParent) overlayParent.appendChild(overlay); frame.remove(); }
   }
 
   for (const width of [320, 360, 390]) {
@@ -200,7 +202,7 @@ describe('Financeiro e pagamentos do editor mobile', () => {
         const input = q('.payment-form input') as HTMLInputElement; input.focus(); input.scrollIntoView({ block: 'center' });
         expect(frameActive(win)).toBe(input);
         expect(q('.mobile-total-bar__clearance')).not.toBeNull();
-        expect(input.getBoundingClientRect().bottom).toBeLessThanOrEqual(q('.mobile-total-bar').getBoundingClientRect().top);
+        expect(input.getBoundingClientRect().bottom).toBeLessThanOrEqual(q('.payments-panel .mobile-side-panel__footer').getBoundingClientRect().top);
       });
     });
   }
