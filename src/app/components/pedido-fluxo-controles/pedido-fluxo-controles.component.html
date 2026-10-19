@@ -9,9 +9,14 @@
         [onlyIcon]="true">
       </app-manual-link>
 
+      @if (mobileCompact && mobileActionsPanel) {
+        <button class="mobile-order-actions-trigger" mat-icon-button type="button" aria-label="Ações do pedido" aria-haspopup="dialog"
+          [disabled]="mobileStatusBusy" (click)="abrirAcoesMobile.emit()"><mat-icon>more_vert</mat-icon></button>
+      } @else {
       <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Ações do fluxo" [disabled]="inativo || isReadOnly || !podeTrocarStatus || (mobileCompact && mobileStatusBusy)">
         <mat-icon>more_vert</mat-icon>
       </button>
+      }
       <mat-menu #menu="matMenu">
         <button mat-menu-item (click)="abrirMenuTrocarStatus()" [disabled]="inativo || isReadOnly || isOrcamento">
           <mat-icon>sync_alt</mat-icon>

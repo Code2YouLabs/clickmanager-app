@@ -246,3 +246,22 @@
     .responsavel-content strong { margin: 0; font-size: 14px; line-height: 20px; font-weight: 600; color: var(--mat-sys-on-surface); overflow-wrap: anywhere; }
   }
 }
+
+// Full-screen sizing, motion, safe areas and scrolling belong to the shared panel.
+.order-actions-panel__header { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--mat-sys-outline-variant); }
+.order-actions-panel__header h2 { margin: 0; padding: 0; font-size: 20px; line-height: 28px; font-weight: 600; }
+.order-actions-panel__header p { margin: 4px 0 0; font-size: 12px; line-height: 16px; color: var(--mat-sys-on-surface-variant); }
+.order-action-group { padding-block: 12px; }
+.order-action-group:first-child { padding-top: 0; }
+.order-action-group + .order-action-group { border-top: 1px solid var(--mat-sys-outline-variant); }
+.order-action-group h3 { margin: 0 0 4px; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--mat-sys-on-surface-variant); }
+.order-action-row { width: 100%; min-height: 56px; height: auto; padding: 12px 8px; text-align: left; border-radius: 8px; white-space: normal; color: var(--mat-sys-on-surface); }
+.order-action-row .action-content { display: grid; width: 100%; grid-template-columns: 24px minmax(0, 1fr) 20px; align-items: center; gap: 12px; }
+.order-action-row strong { display: block; font-size: 14px; line-height: 20px; font-weight: 500; text-align: left; overflow-wrap: anywhere; }
+.order-action-row small { display: block; margin-top: 4px; font-size: 12px; line-height: 16px; text-align: left; color: var(--mat-sys-on-surface-variant); overflow-wrap: anywhere; }
+.order-action-row mat-icon { margin: 0; width: 20px; height: 20px; font-size: 20px; color: var(--mat-sys-on-surface-variant); }
+.order-action-cancel:not(:disabled), .order-action-cancel:not(:disabled) mat-icon { color: var(--mat-sys-error); }
+.order-action-row:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: 2px; }
+.order-actions-feedback { margin: 8px 0 0; font-size: 14px; line-height: 20px; color: var(--mat-sys-on-surface-variant); }
+
+.order-actions-panel ::ng-deep .order-action-row .mdc-button__label { width: 100%; }

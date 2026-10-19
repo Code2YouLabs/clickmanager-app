@@ -8,59 +8,34 @@ import { SectionCardComponent } from 'src/app/components/section-card/section-ca
   selector: 'app-pedido-documentos-acoes',
   standalone: true,
   imports: [CommonModule, SectionCardComponent, MatButtonModule, MatIconModule],
-  template: `
-    <app-section-card titulo="Documentos e compartilhamento" [divider]="true" class="documents-card">
-      <div class="document-actions">
-        <button mat-flat-button color="primary" type="button" (click)="pedidoCompleto.emit()">
-          <mat-icon>description</mat-icon>
-          {{ contexto === 'orcamento' ? 'Orçamento PDF' : 'Pedido completo' }}
-        </button>
-        <button *ngIf="contexto === 'pedido'" mat-stroked-button color="primary" type="button" (click)="duasVias.emit()">
-          <mat-icon>content_copy</mat-icon>
-          Duas vias
-        </button>
-        <button *ngIf="contexto === 'pedido'" mat-stroked-button color="accent" type="button" (click)="etiqueta.emit()">
-          <mat-icon>label</mat-icon>
-          Etiqueta
-        </button>
-        <button mat-flat-button class="btn-whatsapp" type="button" (click)="whatsapp.emit()">
-          <mat-icon>chat</mat-icon>
-          WhatsApp
-        </button>
-      </div>
-    </app-section-card>
-  `,
-  styles: [`
-    .document-actions {
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 10px;
-    }
-
-    .document-actions button {
-      width: 100%;
-      min-height: 38px;
-      border-radius: 999px;
-    }
-
-    .document-actions mat-icon {
-      width: 18px;
-      height: 18px;
-      margin-right: 4px;
-      font-size: 18px;
-    }
-
-    .btn-whatsapp {
-      background: #25d366;
-      color: #0f172a;
-    }
-  `],
+  templateUrl: './pedido-documentos-acoes.component.html',
+  styleUrl: './pedido-documentos-acoes.component.scss',
 })
 export class PedidoDocumentosAcoesComponent {
   @Input() contexto: 'pedido' | 'orcamento' = 'pedido';
+  @Input() actionList = false;
+  @Input() disabled = false;
   @Output() pedidoCompleto = new EventEmitter<void>();
   @Output() duasVias = new EventEmitter<void>();
   @Output() etiqueta = new EventEmitter<void>();
   @Output() whatsapp = new EventEmitter<void>();
+
+  readonly documentActions = [
+    { id: 'completo', label: 'Pedido completo', icon: 'description', flat: true, color: 'primary' as const },
+    { id: 'duas-vias', label: 'Duas vias', icon: 'content_copy', flat: false, color: 'primary' as const },
+    { id: 'etiqueta', label: 'Etiqueta', icon: 'label', flat: false, color: 'accent' as const },
+    { id: 'whatsapp', label: 'WhatsApp', icon: 'chat', flat: true, color: undefined },
+  ] as const;
+
+  get actions() { return this.documentActions.filter(action => this.contexto === 'pedido' || action.id === 'completo' || action.id === 'whatsapp'); }
+
+  executarDocumento(id: string): void {
+    if (this.actionList && this.disabled) return;
+    switch (id) {
+      case 'completo': this.pedidoCompleto.emit(); break;
+      case 'duas-vias': this.duasVias.emit(); break;
+      case 'etiqueta': this.etiqueta.emit(); break;
+      case 'whatsapp': this.whatsapp.emit(); break;
+    }
+  }
 }

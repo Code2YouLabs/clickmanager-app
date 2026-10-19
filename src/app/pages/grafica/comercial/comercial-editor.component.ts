@@ -281,6 +281,50 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     this.observacaoSalvandoMobile = false;
     if (this.observacaoPanelRef) this.observacaoPanelRef.disableClose = false;
   }
+  @ViewChild('acoesPedidoMobile') private acoesPedidoMobile?: TemplateRef<unknown>;
+  @ViewChild(PedidoFluxoControlesComponent) private fluxoControles?: PedidoFluxoControlesComponent;
+  private acoesPedidoPanelRef?: MatDialogRef<unknown>;
+  private acoesPedidoConfirmacaoRef?: MatDialogRef<unknown>;
+  acoesPedidoNavegando = false;
+  get acoesPedidoOcupado(): boolean { return this.carregando || this.carregandoStatus || this.acoesPedidoNavegando || !!this.acoesPedidoConfirmacaoRef; }
+  get podeTrocarStatusAcoesMobile(): boolean { return this.permissoesFluxo.alterarStatus && this.transicoesFluxo.some(opcao => !opcao.bloqueado); }
+  get podeCancelarPedidoAcoesMobile(): boolean { return this.permissoesFluxo.alterarStatus && this.transicoesFluxo.some(opcao => opcao.status === 'CANCELADO' && !opcao.bloqueado); }
+  abrirAcoesPedidoMobile(): void {
+    if (!this.mobilePedidoDetalhe || !this.temRegistroCarregado || this.acessoNegado || this.acoesPedidoOcupado || this.acoesPedidoPanelRef || this.ajustesPanelRef || this.pagamentosPanelRef || this.observacaoPanelRef || !this.acoesPedidoMobile) return;
+    this.elementRef?.nativeElement.querySelector<HTMLElement>('.mobile-order-actions-trigger')?.focus({ preventScroll: true });
+    this.acoesPedidoPanelRef = openMobileSidePanel(this.dialog, this.acoesPedidoMobile, { ariaLabel: 'Ações do pedido', viewContainerRef: this.viewContainerRef });
+    this.acoesPedidoPanelRef.afterClosed().pipe(take(1), takeUntil(this.destroy$)).subscribe(() => {
+      this.acoesPedidoConfirmacaoRef?.close(); this.acoesPedidoConfirmacaoRef = undefined;
+      this.acoesPedidoPanelRef = undefined; this.acoesPedidoNavegando = false;
+    });
+  }
+  fecharAcoesPedidoMobile(): void { if (!this.acoesPedidoOcupado) this.acoesPedidoPanelRef?.close(); }
+  gerenciarPedidoMobile(cancelar = false): void {
+    if (!this.mobilePedidoDetalhe || !this.acoesPedidoPanelRef || this.acoesPedidoPanelRef.getState() !== MatDialogState.OPEN || this.acoesPedidoOcupado || !this.podeTrocarStatusAcoesMobile || (cancelar && !this.podeCancelarPedidoAcoesMobile)) return;
+    const ref = cancelar ? this.fluxoControles?.avancarMobile('CANCELADO') : this.fluxoControles?.abrirMenuTrocarStatus();
+    if (!ref) return;
+    this.acoesPedidoConfirmacaoRef = ref;
+    this.acoesPedidoPanelRef.disableClose = true;
+    ref.afterClosed().pipe(take(1), takeUntil(this.destroy$)).subscribe(() => {
+      this.acoesPedidoConfirmacaoRef = undefined;
+      if (this.acoesPedidoPanelRef) this.acoesPedidoPanelRef.disableClose = this.acoesPedidoOcupado;
+    });
+  }
+  executarDocumentoPedido(acao: 'completo' | 'duas-vias' | 'etiqueta' | 'whatsapp'): void {
+    const mobile = this.mobilePedidoDetalhe;
+    if (mobile && (!this.acoesPedidoPanelRef || this.acoesPedidoPanelRef.getState() !== MatDialogState.OPEN || this.acoesPedidoOcupado || this.acessoNegado || !this.mostrarDocumentosPedido)) return;
+    if (mobile) { this.acoesPedidoNavegando = true; this.acoesPedidoPanelRef!.disableClose = true; }
+    // Invoke navigation during the user's click; WhatsApp keeps its existing review route.
+    const navegacao = acao === 'whatsapp' ? this.abrirWhatsAppPedido() : this.abrirImpressaoPedido(acao);
+    if (!mobile) return;
+    const panel = this.acoesPedidoPanelRef;
+    Promise.resolve(navegacao).then(ok => { if (ok) panel?.close(); }, () => {
+      this.toastr.error('Não foi possível abrir a ação do pedido.');
+    }).finally(() => {
+      this.acoesPedidoNavegando = false;
+      if (panel === this.acoesPedidoPanelRef && panel) panel.disableClose = this.acoesPedidoOcupado;
+    });
+  }
   mobileValidationAttempted = false;
   private tutorialRevealTimer?: ReturnType<typeof setTimeout>;
   private focusTimer?: ReturnType<typeof setTimeout>;
@@ -372,7 +416,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     if (breakpoints) breakpoints.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => {
       if (this.isMobile === state.matches) return;
       this.isMobile = state.matches;
-      if (!this.isMobile) { this.fecharPagamentosMobile(); this.ajustesPanelRef?.close(); this.observacaoPanelRef?.close(); }
+      if (!this.isMobile) { this.fecharPagamentosMobile(); this.ajustesPanelRef?.close(); this.observacaoPanelRef?.close(); this.acoesPedidoConfirmacaoRef?.close(); this.acoesPedidoPanelRef?.close(); }
       this.mobileSections.update(value => ({ ...value }));
     });
     if (tutorial) effect(() => {
@@ -814,7 +858,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.fecharPagamentosMobile(); this.ajustesPanelRef?.close(); this.observacaoPanelRef?.close();
+    this.fecharPagamentosMobile(); this.ajustesPanelRef?.close(); this.observacaoPanelRef?.close(); this.acoesPedidoConfirmacaoRef?.close(); this.acoesPedidoPanelRef?.close();
     clearTimeout(this.tutorialRevealTimer); clearTimeout(this.focusTimer);
     this.destroy$.next();
     this.destroy$.complete();
@@ -1579,8 +1623,12 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   alterarStatus(status: string): void {
     if (!this.pedidoId || !this.permissoesFluxo.alterarStatus) return;
     this.carregandoStatus = true;
+    if (this.acoesPedidoPanelRef) this.acoesPedidoPanelRef.disableClose = true;
     this.graficaService.alterarStatusPedidoComercial(this.pedidoId, status)
-      .pipe(finalize(() => this.carregandoStatus = false))
+      .pipe(finalize(() => {
+        this.carregandoStatus = false;
+        if (this.acoesPedidoPanelRef) this.acoesPedidoPanelRef.disableClose = this.acoesPedidoOcupado;
+      }))
       .subscribe({
         next: (pedido) => {
           this.aplicarPedido(pedido);
@@ -1633,17 +1681,17 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
       });
   }
 
-  abrirImpressaoPedido(formato: 'completo' | 'duas-vias' | 'etiqueta'): void {
+  abrirImpressaoPedido(formato: 'completo' | 'duas-vias' | 'etiqueta'): Promise<boolean> | undefined {
     if (!this.pedidoId) return;
     const comandos = formato === 'completo'
       ? ['/page/grafica/comercial/pedidos', this.pedidoId, 'impressao']
       : ['/page/grafica/comercial/pedidos', this.pedidoId, 'impressao', formato];
-    this.router.navigate(comandos);
+    return this.router.navigate(comandos);
   }
 
-  abrirWhatsAppPedido(): void {
+  abrirWhatsAppPedido(): Promise<boolean> | undefined {
     if (!this.pedidoId) return;
-    this.router.navigate(['/page/grafica/comercial/pedidos', this.pedidoId, 'whatsapp']);
+    return this.router.navigate(['/page/grafica/comercial/pedidos', this.pedidoId, 'whatsapp']);
   }
 
   abrirImpressaoOrcamento(): void {

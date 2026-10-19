@@ -76,7 +76,7 @@ describe('Detalhes do Pedido mobile: organização e movimentação', () => {
     expect(body('itens').hidden).toBeFalse(); expect(body('observacoes').hidden).toBeTrue(); expect(body('financeiro').hidden).toBeTrue();
     expect(section('observacoes').textContent).toContain('2 observações preenchidas');
     expect(section('financeiro').textContent).toContain('Pago R$'); expect(section('financeiro').textContent).toContain('30,00');
-    expect(root().querySelector('app-pedido-documentos-acoes')!.compareDocumentPosition(section('responsavel')) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    expect(root().querySelector('app-pedido-documentos-acoes')).toBeNull();
     expect(root().querySelector('app-mobile-total-bar')).toBeNull();
   });
 
@@ -109,6 +109,7 @@ describe('Detalhes do Pedido mobile: organização e movimentação', () => {
     expect(section('responsavel').textContent).toContain('Ana Atendimento'); expect(section('responsavel').textContent).not.toContain('Usuário atual');
     expect(section('responsavel').querySelector('mat-icon')).toBeNull();
     const router = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
+    viewport.next({ matches: false, breakpoints: {} }); render();
     const documents = root().querySelector('app-pedido-documentos-acoes')!;
     const buttons = Array.from(documents.querySelectorAll<HTMLButtonElement>('button'));
     expect(buttons.length).toBe(4);

@@ -99,6 +99,20 @@ describe('PedidoFluxoControles mobile operacional', () => {
     component.abrirMenuTrocarStatus(); expect(openDialog).toHaveBeenCalledWith(PedidoTrocarStatusDialogComponent, jasmine.objectContaining({ data: jasmine.objectContaining({ opcoes: options, statusDestino: null }) }));
   });
 
+  it('oferece painel por opt-in sem bloquear documentos pela permissão de status', () => {
+    set('mobileActionsPanel', true); set('isReadOnly', true); set('transicoes', []); set('statusOptions', []);
+    const emitted = spyOn(component.abrirAcoesMobile, 'emit');
+    const button = root().querySelector<HTMLButtonElement>('.mobile-order-actions-trigger')!;
+    expect(button.disabled).toBeFalse(); expect(root().querySelector('[aria-label="Ações do fluxo"]')).toBeNull();
+    button.click(); expect(emitted).toHaveBeenCalledTimes(1); expect(openDialog).not.toHaveBeenCalled();
+    set('inativo', true); expect(button.disabled).toBeTrue();
+  });
+
+  it('o opt-in do painel não substitui o popover desktop', () => {
+    set('mobileActionsPanel', true); set('mobileCompact', false);
+    expect(root().querySelector('.mobile-order-actions-trigger')).toBeNull(); expect(root().querySelector('[aria-label="Ações do fluxo"]')).not.toBeNull();
+  });
+
   it('mantém a apresentação desktop, badge abreviado e fluxo sempre visível', () => {
     set('mobileCompact', false);
     expect(root().querySelector('.mobile-flow-toggle')).toBeNull(); expect(root().querySelector('.mobile-transitions')).toBeNull();

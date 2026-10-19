@@ -8,7 +8,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatOptionModule } from '@angular/material/core';
 import { RouterModule } from '@angular/router';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { SectionCardComponent } from '../section-card/section-card.component';
 import { ManualLinkComponent } from '../manual-link/manual-link.component';
@@ -63,6 +63,8 @@ export class PedidoFluxoControlesComponent implements OnChanges {
   readonly flowId = `pedido-flow-${PedidoFluxoControlesComponent.nextId++}`;
   mobileFlowExpanded = false;
   @Input() mobileCompact = false;
+  @Input() mobileActionsPanel = false;
+  @Output() abrirAcoesMobile = new EventEmitter<void>();
   @Input() statusAtualLabel: string | null = null;
   STATUS_UI = STATUS_UI;
   @Input() titulo = 'Fluxo do pedido';
@@ -240,10 +242,10 @@ export class PedidoFluxoControlesComponent implements OnChanges {
 
   get mobileStatusBusy(): boolean { return this.inativo || this.trocandoStatus || this.carregandoStatus; }
 
-  avancarMobile(status: string): void {
+  avancarMobile(status: string): MatDialogRef<PedidoTrocarStatusDialogComponent> | undefined {
     const transicao = this.transicoes.find(opcao => opcao.status === status);
     if (!this.mobileCompact || this.mobileStatusBusy || this.isReadOnly || !transicao || transicao.bloqueado) return;
-    this.abrirConfirmacaoTrocaStatus(status);
+    return this.abrirConfirmacaoTrocaStatus(status);
   }
 
   onNextAction(): void {
@@ -283,13 +285,13 @@ export class PedidoFluxoControlesComponent implements OnChanges {
     }
   }
 
-  abrirMenuTrocarStatus(): void {
+  abrirMenuTrocarStatus(): MatDialogRef<PedidoTrocarStatusDialogComponent> | undefined {
     const opcoes = (this.transicoes?.length ? this.transicoes : (this.statusOptions || []).map(s => ({ status: s, label: this.statusLabel(s), bloqueado: false })));
     if (this.inativo || this.isReadOnly || !opcoes.length) return;
-    this.abrirConfirmacaoTrocaStatus();
+    return this.abrirConfirmacaoTrocaStatus();
   }
 
-  private abrirConfirmacaoTrocaStatus(statusDestino?: string): void {
+  private abrirConfirmacaoTrocaStatus(statusDestino?: string): MatDialogRef<PedidoTrocarStatusDialogComponent> | undefined {
     if (this.mobileCompact && this.mobileStatusBusy) return;
     const opcoes = (this.transicoes?.length ? this.transicoes : (this.statusOptions || []).map(s => ({ status: s, label: this.statusLabel(s), bloqueado: false })));
     if (this.inativo || this.isReadOnly || !opcoes.length) return;
@@ -314,5 +316,6 @@ export class PedidoFluxoControlesComponent implements OnChanges {
         this.salvarStatus.emit();
       }
     });
+    return ref;
   }
 }

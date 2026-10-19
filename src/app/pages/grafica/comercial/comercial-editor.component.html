@@ -30,6 +30,7 @@
               [titulo]="'Fluxo do pedido'"
               data-editor-section="fluxo"
               [mobileCompact]="mobilePedidoDetalhe"
+              [mobileActionsPanel]="mobilePedidoDetalhe" (abrirAcoesMobile)="abrirAcoesPedidoMobile()"
               [statusAtualLabel]="fluxoPedido.label"
               [statusAtual]="fluxoPedido.statusAtual"
               [statusControl]="statusControl"
@@ -255,14 +256,7 @@
                 </div>
               </app-section-card>
 
-              <app-pedido-documentos-acoes
-                *ngIf="mostrarDocumentosPedido"
-                contexto="pedido"
-                (pedidoCompleto)="abrirImpressaoPedido('completo')"
-                (duasVias)="abrirImpressaoPedido('duas-vias')"
-                (etiqueta)="abrirImpressaoPedido('etiqueta')"
-                (whatsapp)="abrirWhatsAppPedido()">
-              </app-pedido-documentos-acoes>
+              <ng-container *ngIf="mostrarDocumentosPedido && !mobilePedidoDetalhe" [ngTemplateOutlet]="documentosPedidoConteudo" [ngTemplateOutletContext]="{ actionList: false }"></ng-container>
 
               <app-pedido-documentos-acoes
                 *ngIf="mostrarDocumentosOrcamento"
@@ -368,6 +362,39 @@
             </div>
           </div>
         </div>
+<ng-template #documentosPedidoConteudo let-actionList="actionList">
+  <app-pedido-documentos-acoes contexto="pedido" [actionList]="actionList" [disabled]="actionList && acoesPedidoOcupado"
+    (pedidoCompleto)="executarDocumentoPedido('completo')" (duasVias)="executarDocumentoPedido('duas-vias')"
+    (etiqueta)="executarDocumentoPedido('etiqueta')" (whatsapp)="executarDocumentoPedido('whatsapp')">
+  </app-pedido-documentos-acoes>
+</ng-template>
+<ng-template #acoesPedidoMobile>
+  <section class="mobile-side-panel__layout order-actions-panel">
+    <header class="mobile-side-panel__header order-actions-panel__header">
+      <div><h2 mat-dialog-title>Ações do pedido</h2><p>Pedido #{{ pedidoId }}</p></div>
+      <button mat-icon-button type="button" aria-label="Fechar ações do pedido" [disabled]="acoesPedidoOcupado" (click)="fecharAcoesPedidoMobile()"><mat-icon>close</mat-icon></button>
+    </header>
+    <mat-dialog-content class="mobile-side-panel__body" [attr.aria-busy]="acoesPedidoOcupado">
+      <section class="order-action-group" aria-label="Gerenciamento" *ngIf="permissoesFluxo.alterarStatus">
+        <h3>Gerenciamento</h3>
+        <button class="order-action-row order-action-status" mat-button type="button" [disabled]="acoesPedidoOcupado || !podeTrocarStatusAcoesMobile" (click)="gerenciarPedidoMobile()">
+          <span class="action-content"><mat-icon aria-hidden="true">sync_alt</mat-icon><span><strong>Trocar status</strong><small>Alterar o andamento do pedido</small></span><mat-icon aria-hidden="true">chevron_right</mat-icon></span>
+        </button>
+      </section>
+      <section class="order-action-group" aria-label="Documentos e compartilhamento" *ngIf="mostrarDocumentosPedido">
+        <h3>Documentos e compartilhamento</h3>
+        <ng-container [ngTemplateOutlet]="documentosPedidoConteudo" [ngTemplateOutletContext]="{ actionList: true }"></ng-container>
+      </section>
+      <section class="order-action-group" aria-label="Cancelamento" *ngIf="permissoesFluxo.alterarStatus && statusOptionsFluxo.includes('CANCELADO')">
+        <button class="order-action-row order-action-cancel" mat-button type="button" [disabled]="acoesPedidoOcupado || !podeCancelarPedidoAcoesMobile" (click)="gerenciarPedidoMobile(true)">
+          <span class="action-content"><mat-icon aria-hidden="true">cancel</mat-icon><span><strong>Cancelar pedido</strong></span><mat-icon aria-hidden="true">chevron_right</mat-icon></span>
+        </button>
+      </section>
+      <p class="order-actions-feedback" role="status" *ngIf="carregandoStatus">Atualizando pedido...</p>
+      <p class="order-actions-feedback" role="status" *ngIf="acoesPedidoNavegando">Abrindo...</p>
+    </mat-dialog-content>
+  </section>
+</ng-template>
 <ng-template #observacaoMobile>
   <app-observacoes-card [panelEditor]="true" [titulo]="observacaoMobileTitulo"
     [label]="observacaoTipoMobile === 'cliente' ? 'Texto para o cliente' : 'Texto interno'"
