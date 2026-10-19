@@ -117,3 +117,34 @@ rotas e contratos originais, incluindo ausência de telefone e erros da revisão
 - `src/app/pages/grafica/comercial/pedido-documentos-acoes.component.spec.ts` (novo)
 - `src/app/pages/grafica/comercial/pedido-comercial-whatsapp-page.component.spec.ts` (novo)
 - `docs/mobile-acoes-pedido-painel.md` (novo)
+
+## Refinamento final do painel
+
+- WhatsApp mobile reutiliza `IconBrandWhatsapp` da biblioteca Tabler já instalada,
+  registrado como SVG estático em MatIconRegistry (`comercial:whatsapp`). Não há
+  busca externa, dependência nova ou alteração no compartilhamento. O traço e a
+  cor são herdados pelo SVG; verde discreto `#15803d`, já usado no Comercial, afeta
+  somente o ícone ativo. Texto, fundo, dimensões e o botão desktop permanecem iguais.
+- As seis linhas compartilham a estrutura ícone / texto / indicador. Os slots
+  existentes de 24px e 20px, gap de 12px e padding foram preservados; os ícones
+  iniciais ancoram à esquerda e as setas à direita. Trocar status conserva descrição;
+  Cancelar mantém separação, vermelho semântico e confirmação.
+- A auditoria confirmou que não era necessário alterar handlers ou fechamento:
+  documentos e WhatsApp disparam a navegação no clique, bloqueiam duplicidade e
+  fecham após sucesso do Router. Navegação cancelada mantém o painel; rejeição
+  apresenta erro e permite retry. A página WhatsApp continua responsável pelo
+  destinatário, mensagem, validação e abertura externa.
+- Trocar status e Cancelar usam a confirmação existente, permanecem no painel
+  durante a requisição e atualizam somente após sucesso real. Fechar a confirmação
+  não opera o pedido; erro preserva status e permite nova tentativa. Depois de
+  sucesso, o painel permanece acessível até o usuário retornar pelo fechamento.
+- Cabeçalho, grupos, safe areas, foco, animação, fluxo e desktop não foram alterados.
+- Verificação do refinamento: **42 testes focados aprovados** (dois cenários novos),
+  incluindo estrutura, SVG, desktop, seis ações, confirmações, permissões, foco,
+  loading, erros e repetição. Sem testes visuais ou screenshots; validação de
+  aparência e abertura real de aplicativos/documentos permanece manual.
+- `npm run build:prod` do refinamento: aprovado, com 38 avisos existentes.
+  `git diff --check`: aprovado. Nenhum teste falhou nesta rodada focada.
+- Arquivos deste refinamento: `pedido-documentos-acoes.component.ts/.html/.scss/.spec.ts`,
+  `comercial-editor.component.html/.scss`, `comercial-editor-acoes-painel-mobile.spec.ts`
+  e este registro técnico. Os arquivos de handlers permanecem sem alteração.

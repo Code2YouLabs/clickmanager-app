@@ -88,6 +88,24 @@ describe('Ações do pedido em painel lateral mobile', () => {
     expect(section('fluxo').querySelector('.mobile-transition')).not.toBeNull();
   }));
 
+  it('mantém as seis ações na mesma estrutura de colunas e cancelamento separado', fakeAsync(() => {
+    open();
+    const rows = panel()!.querySelectorAll('.order-action-row, .document-action-row');
+    expect(rows.length).toBe(6);
+    rows.forEach(row => {
+      const content = row.querySelector('.action-content')!;
+      expect(content.children.length).toBe(3);
+      expect(content.children[0].classList.contains('action-leading-icon')).toBeTrue();
+      expect(content.children[2].classList.contains('action-indicator')).toBeTrue();
+      expect(content.children[2].textContent).toBe('chevron_right');
+      expect(row.getAttribute('type')).toBe('button');
+    });
+    expect(q('.order-action-status').querySelector('small')!.textContent).toBe('Alterar o andamento do pedido');
+    const cancelGroup = q('.order-action-cancel').closest('section')!;
+    expect(cancelGroup.classList.contains('order-action-group')).toBeTrue(); expect(cancelGroup.previousElementSibling!.getAttribute('aria-label')).toBe('Documentos e compartilhamento');
+    expect(panel()!.querySelectorAll('.whatsapp-icon').length).toBe(1);
+  }));
+
   for (const mode of ['X', 'Escape', 'backdrop']) {
     it(`fecha por ${mode} e restaura foco sem operar o pedido`, fakeAsync(() => {
       open();

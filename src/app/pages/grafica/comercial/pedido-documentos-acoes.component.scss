@@ -32,3 +32,8 @@
 .document-action-row:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: 2px; }
 
 :host ::ng-deep .document-action-row .mdc-button__label { width: 100%; }
+
+.document-action-row .action-leading-icon { justify-self: start; }
+.document-action-row .action-indicator { justify-self: end; }
+.document-action-row:not(:disabled) .whatsapp-icon { color: #15803d; }
+.document-action-row .whatsapp-icon { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }

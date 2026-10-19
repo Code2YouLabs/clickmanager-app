@@ -265,3 +265,6 @@
 .order-actions-feedback { margin: 8px 0 0; font-size: 14px; line-height: 20px; color: var(--mat-sys-on-surface-variant); }
 
 .order-actions-panel ::ng-deep .order-action-row .mdc-button__label { width: 100%; }
+
+.order-action-row .action-leading-icon { justify-self: start; }
+.order-action-row .action-indicator { justify-self: end; }

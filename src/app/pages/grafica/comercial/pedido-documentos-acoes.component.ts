@@ -1,7 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
+import { MatIconModule, MatIconRegistry } from '@angular/material/icon';
+import { DomSanitizer } from '@angular/platform-browser';
+import { IconBrandWhatsapp } from 'angular-tabler-icons/icons';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 
 @Component({
@@ -12,6 +14,10 @@ import { SectionCardComponent } from 'src/app/components/section-card/section-ca
   styleUrl: './pedido-documentos-acoes.component.scss',
 })
 export class PedidoDocumentosAcoesComponent {
+  constructor(iconRegistry: MatIconRegistry, sanitizer: DomSanitizer) {
+    // Reuse the installed Tabler asset through the existing Material icon renderer.
+    iconRegistry.addSvgIconLiteralInNamespace('comercial', 'whatsapp', sanitizer.bypassSecurityTrustHtml(IconBrandWhatsapp));
+  }
   @Input() contexto: 'pedido' | 'orcamento' = 'pedido';
   @Input() actionList = false;
   @Input() disabled = false;

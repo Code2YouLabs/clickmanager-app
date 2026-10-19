@@ -378,7 +378,7 @@
       <section class="order-action-group" aria-label="Gerenciamento" *ngIf="permissoesFluxo.alterarStatus">
         <h3>Gerenciamento</h3>
         <button class="order-action-row order-action-status" mat-button type="button" [disabled]="acoesPedidoOcupado || !podeTrocarStatusAcoesMobile" (click)="gerenciarPedidoMobile()">
-          <span class="action-content"><mat-icon aria-hidden="true">sync_alt</mat-icon><span><strong>Trocar status</strong><small>Alterar o andamento do pedido</small></span><mat-icon aria-hidden="true">chevron_right</mat-icon></span>
+          <span class="action-content"><mat-icon class="action-leading-icon" aria-hidden="true">sync_alt</mat-icon><span><strong>Trocar status</strong><small>Alterar o andamento do pedido</small></span><mat-icon class="action-indicator" aria-hidden="true">chevron_right</mat-icon></span>
         </button>
       </section>
       <section class="order-action-group" aria-label="Documentos e compartilhamento" *ngIf="mostrarDocumentosPedido">
@@ -387,7 +387,7 @@
       </section>
       <section class="order-action-group" aria-label="Cancelamento" *ngIf="permissoesFluxo.alterarStatus && statusOptionsFluxo.includes('CANCELADO')">
         <button class="order-action-row order-action-cancel" mat-button type="button" [disabled]="acoesPedidoOcupado || !podeCancelarPedidoAcoesMobile" (click)="gerenciarPedidoMobile(true)">
-          <span class="action-content"><mat-icon aria-hidden="true">cancel</mat-icon><span><strong>Cancelar pedido</strong></span><mat-icon aria-hidden="true">chevron_right</mat-icon></span>
+          <span class="action-content"><mat-icon class="action-leading-icon" aria-hidden="true">cancel</mat-icon><span><strong>Cancelar pedido</strong></span><mat-icon class="action-indicator" aria-hidden="true">chevron_right</mat-icon></span>
         </button>
       </section>
       <p class="order-actions-feedback" role="status" *ngIf="carregandoStatus">Atualizando pedido...</p>

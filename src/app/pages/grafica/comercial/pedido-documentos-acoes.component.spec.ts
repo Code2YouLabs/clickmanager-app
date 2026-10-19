@@ -13,6 +13,19 @@ describe('PedidoDocumentosAcoes compartilhado', () => {
     const spies = [spyOn(c.pedidoCompleto, 'emit'), spyOn(c.duasVias, 'emit'), spyOn(c.etiqueta, 'emit'), spyOn(c.whatsapp, 'emit')];
     root.querySelectorAll<HTMLButtonElement>('button').forEach(b => b.click()); spies.forEach(s => expect(s).toHaveBeenCalledTimes(1));
   });
+  it('reutiliza o SVG Tabler somente no WhatsApp da lista, mantendo texto e fundo neutros', () => {
+    const fixture = TestBed.createComponent(PedidoDocumentosAcoesComponent); fixture.componentRef.setInput('actionList', true); fixture.detectChanges();
+    const root = fixture.nativeElement as HTMLElement;
+    const button = root.querySelector<HTMLButtonElement>('[data-document-action="whatsapp"]')!;
+    expect(button.querySelector('.whatsapp-icon')!.getAttribute('svgIcon')).toBe('comercial:whatsapp');
+    expect(button.querySelector('.whatsapp-icon svg path')).not.toBeNull();
+    expect(root.querySelectorAll('.whatsapp-icon').length).toBe(1); expect(button.classList.contains('btn-whatsapp')).toBeFalse();
+    expect(button.querySelector('.action-label')!.textContent).toBe('WhatsApp');
+    expect(button.querySelector('.action-label')!.classList.contains('whatsapp-icon')).toBeFalse();
+    fixture.componentRef.setInput('actionList', false); fixture.detectChanges();
+    expect(root.querySelector('.whatsapp-icon')).toBeNull(); expect(root.querySelector('.btn-whatsapp mat-icon')!.textContent).toBe('chat');
+  });
+
   it('preserva Orçamento PDF e WhatsApp sem ações de pedido extras', () => {
     const fixture = TestBed.createComponent(PedidoDocumentosAcoesComponent); fixture.componentRef.setInput('contexto', 'orcamento'); fixture.detectChanges();
     const root = fixture.nativeElement as HTMLElement; expect(root.querySelectorAll('button').length).toBe(2);

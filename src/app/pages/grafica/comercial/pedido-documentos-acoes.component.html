@@ -2,7 +2,15 @@
   <div class="document-action-list">
     @for (action of actions; track action.id) {
       <button class="document-action-row" mat-button type="button" [attr.data-document-action]="action.id" [disabled]="disabled" (click)="executarDocumento(action.id)">
-        <span class="action-content"><mat-icon aria-hidden="true">{{ action.icon }}</mat-icon><span class="action-label">{{ action.id === 'completo' && contexto === 'orcamento' ? 'Orçamento PDF' : action.label }}</span><mat-icon aria-hidden="true">chevron_right</mat-icon></span>
+        <span class="action-content">
+          @if (action.id === 'whatsapp') {
+            <mat-icon class="action-leading-icon whatsapp-icon" svgIcon="comercial:whatsapp" aria-hidden="true"></mat-icon>
+          } @else {
+            <mat-icon class="action-leading-icon" aria-hidden="true">{{ action.icon }}</mat-icon>
+          }
+          <span class="action-label">{{ action.id === 'completo' && contexto === 'orcamento' ? 'Orçamento PDF' : action.label }}</span>
+          <mat-icon class="action-indicator" aria-hidden="true">chevron_right</mat-icon>
+        </span>
       </button>
     }
   </div>
