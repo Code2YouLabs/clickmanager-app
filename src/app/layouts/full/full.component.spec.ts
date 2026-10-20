@@ -187,6 +187,52 @@ describe('FullComponent — cabeçalho mobile global', () => {
     expect(query('.mobile-sheet--notifications')?.textContent).not.toContain('Enviar');
   });
 
+  it('não injeta Minha assinatura em Atalhos e preserva o cadastro legítimo e SmartCalc', async () => {
+    permitted = true;
+    config.set({ aplicativos: [{ aplicativo: 'SMARTCALC', ativo: true }], atalhos: [] }); fixture.detectChanges();
+    bottomButton('atalhos').click(); fixture.detectChanges();
+    const links = () => Array.from(fixture.nativeElement.querySelectorAll('.mobile-sheet--apps a')) as HTMLAnchorElement[];
+    expect(links().some(link => link.textContent?.includes('Minha assinatura'))).toBeFalse();
+    expect(byName('Minha assinatura')).toBeTruthy();
+    const custom = { id: 7, nome: 'Minha assinatura', url: '/billing/minha-assinatura', novaAba: false, ativo: true, ordem: 0 };
+    const saved: ConfiguracaoAplicativos = { aplicativos: [{ aplicativo: 'SMARTCALC', ativo: true }], atalhos: [custom] };
+    config.set(saved); fixture.detectChanges();
+    expect(links().filter(link => link.textContent?.includes('Minha assinatura')).length).toBe(1);
+    expect(fixture.componentInstance.quicklinks).toEqual([custom]); expect(config()).toBe(saved);
+    const openShortcut = spyOn(fixture.componentInstance, 'abrirAtalhoMobile').and.callFake((_, event) => event.preventDefault());
+    links().find(link => link.textContent?.includes('Minha assinatura'))!.click();
+    expect(openShortcut).toHaveBeenCalledWith(custom, jasmine.any(Event));
+    links().find(link => link.textContent?.includes('SmartCalc'))!.click(); await fixture.whenStable(); fixture.detectChanges();
+    expect(router.url).toBe('/smartcalc'); expect(fixture.componentInstance.mobileAppsOpen).toBeFalse();
+  });
+
+  for (const width of [360, 390, 430]) {
+    it(`distribui quatro destinos sem sobreposição em viewport Chromium de ${width}px`, () => {
+      const frame = document.createElement('iframe'); frame.style.cssText = `width:${width}px;height:800px;border:0`;
+      document.body.appendChild(frame);
+      try {
+        const doc = frame.contentDocument!;
+        document.querySelectorAll('style').forEach(style => doc.head.appendChild(style.cloneNode(true)));
+        doc.body.style.margin = '0'; doc.body.appendChild(fixture.nativeElement.cloneNode(true));
+        const nav = doc.querySelector<HTMLElement>('.mobile-bottom-nav')!;
+        const buttons = Array.from(nav.querySelectorAll('button'));
+        expect(buttons.map(button => button.textContent?.trim())).toEqual(['Pedidos', 'Atalhos', 'SmartCalc', 'Dashboard']);
+        expect(nav.style.gridTemplateColumns).toBe('repeat(4, minmax(0px, 1fr))');
+        const bounds = nav.getBoundingClientRect();
+        expect(bounds.left).toBe(0); expect(bounds.right).toBeLessThanOrEqual(width); expect(bounds.width).toBeGreaterThan(width - 20);
+        const rects = buttons.map(button => button.getBoundingClientRect());
+        rects.forEach((rect, index) => {
+          expect(rect.height).toBeGreaterThanOrEqual(44); expect(Math.abs(rect.width - rects[0].width)).toBeLessThan(1);
+          expect(rect.left).toBeGreaterThanOrEqual(bounds.left); expect(rect.right).toBeLessThanOrEqual(bounds.right);
+          if (index) expect(rect.left).toBeGreaterThanOrEqual(rects[index - 1].right);
+        });
+        const content = doc.querySelector<HTMLElement>('.pageContent--mobile')!;
+        expect(parseFloat(frame.contentWindow!.getComputedStyle(content).paddingBottom)).toBeGreaterThan(bounds.height);
+        expect(parseFloat(frame.contentWindow!.getComputedStyle(nav).paddingBottom)).toBeGreaterThanOrEqual(6);
+      } finally { frame.remove(); }
+    });
+  }
+
   it('preserva as ações de perfil e logout existentes', () => {
     click('Abrir perfil');
     const logout = query('.mobile-sheet--profile .mobile-action-link--danger')!;
@@ -336,9 +382,9 @@ describe('FullComponent — cabeçalho mobile global', () => {
     expect(drawer.inert).toBeTrue();
   });
 
-  it('contém Tab/Shift+Tab no menu e devolve foco ao acionador da barra inferior', async () => {
+  it('contém Tab/Shift+Tab no menu e devolve foco ao hambúrguer', async () => {
     usuario$.next(authorizedUser([], true)); fixture.detectChanges();
-    const trigger = Array.from(fixture.nativeElement.querySelectorAll('.mobile-bottom-nav button')).find((button: any) => button.textContent.includes('Mais')) as HTMLButtonElement;
+    const trigger = query('.mobile-topbar button[aria-label="Abrir menu"]') as HTMLButtonElement;
     trigger.focus(); trigger.click(); fixture.detectChanges();
     await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
     const anchors = Array.from(fixture.nativeElement.querySelectorAll('.cdk-focus-trap-anchor')) as HTMLElement[];
@@ -377,24 +423,24 @@ describe('FullComponent — cabeçalho mobile global', () => {
 
   it('atualiza a ordem mobile ao habilitar/desabilitar SmartCalc sem alterar a configuração desktop', () => {
     const desktop = fixture.componentInstance.navItemsFiltrados;
-    expect(bottomKeys()).toEqual(['pedidos', 'atalhos', 'smartcalc', 'dashboard', 'mais']);
+    expect(bottomKeys()).toEqual(['pedidos', 'atalhos', 'smartcalc', 'dashboard']);
     expect(bottomButton('smartcalc').classList.contains('mobile-bottom-nav__item--special')).toBeTrue();
     features.set({ GRAFICA: true, SMARTCALC: false }); fixture.detectChanges();
-    expect(bottomKeys()).toEqual(['catalogo', 'atalhos', 'pedidos', 'dashboard', 'mais']);
+    expect(bottomKeys()).toEqual(['catalogo', 'atalhos', 'pedidos', 'dashboard']);
     expect(bottomButton('pedidos').classList.contains('mobile-bottom-nav__item--special')).toBeTrue();
     expect(fixture.componentInstance.navItemsFiltrados).toBe(desktop);
     features.set({ GRAFICA: true, SMARTCALC: true }); fixture.detectChanges();
-    expect(bottomKeys()).toEqual(['pedidos', 'atalhos', 'smartcalc', 'dashboard', 'mais']);
+    expect(bottomKeys()).toEqual(['pedidos', 'atalhos', 'smartcalc', 'dashboard']);
   });
 
   it('reflete mudanças reais de usuário, sem permissões SmartCalc e depois sem Pedidos', () => {
     usuario$.next(authorizedUser(['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER'])); fixture.detectChanges();
-    expect(bottomKeys()).toEqual(['catalogo', 'atalhos', 'pedidos', 'dashboard', 'mais']);
+    expect(bottomKeys()).toEqual(['catalogo', 'atalhos', 'pedidos', 'dashboard']);
     usuario$.next(authorizedUser(['SMARTCALC_USAR'])); fixture.detectChanges();
-    expect(bottomKeys()).toEqual(['atalhos', 'smartcalc', 'mais']);
-    expect(count('.mobile-bottom-nav button')).toBe(3);
+    expect(bottomKeys()).toEqual(['atalhos', 'smartcalc']);
+    expect(count('.mobile-bottom-nav button')).toBe(2);
     usuario$.next(authorizedUser([])); fixture.detectChanges();
-    expect(bottomKeys()).toEqual(['atalhos', 'dashboard', 'mais']);
+    expect(bottomKeys()).toEqual(['atalhos', 'dashboard']);
     usuario$.next(null); fixture.detectChanges();
     expect(count('.mobile-bottom-nav')).toBe(0);
   });
@@ -408,7 +454,7 @@ describe('FullComponent — cabeçalho mobile global', () => {
     features.set({ GRAFICA: true, SMARTCALC: false }); fixture.detectChanges();
     expect(count('.mobile-bottom-nav')).toBe(0);
     pending.next(features()); pending.complete(); fixture.detectChanges();
-    expect(bottomKeys()).toEqual(['catalogo', 'atalhos', 'pedidos', 'dashboard', 'mais']);
+    expect(bottomKeys()).toEqual(['catalogo', 'atalhos', 'pedidos', 'dashboard']);
     expect(count('.mobile-bottom-nav')).toBe(1);
   });
 
@@ -420,16 +466,16 @@ describe('FullComponent — cabeçalho mobile global', () => {
     first.next({ GRAFICA: true, SMARTCALC: true }); fixture.detectChanges();
     expect(count('.mobile-bottom-nav')).toBe(0);
     features.set({ GRAFICA: true, SMARTCALC: false }); second.next(features()); fixture.detectChanges();
-    expect(bottomKeys()).toEqual(['catalogo', 'atalhos', 'pedidos', 'dashboard', 'mais']);
+    expect(bottomKeys()).toEqual(['catalogo', 'atalhos', 'pedidos', 'dashboard']);
   });
 
   it('preserva a organização existente do Depósito e restaura a da Gráfica ao trocar segmento', () => {
     permitted = true;
     usuario$.next({ ...authorizedUser([], true), empresa: { id: 2, tipoEmpresa: TipoEmpresa.DEPOSITO } as any }); fixture.detectChanges();
-    expect(bottomKeys()).toEqual(['dashboard', 'atalhos', 'catalogo', 'orcamentos', 'mais']);
+    expect(bottomKeys()).toEqual(['dashboard', 'atalhos', 'catalogo', 'orcamentos']);
     expect(fixture.componentInstance.mobileBottomNavItems[2].route).toBe('/page/catalogo/produtos');
     usuario$.next({ ...authorizedUser([], true), empresa: { id: 3, tipoEmpresa: TipoEmpresa.GRAFICA } as any }); fixture.detectChanges();
-    expect(bottomKeys()).toEqual(['pedidos', 'atalhos', 'smartcalc', 'dashboard', 'mais']);
+    expect(bottomKeys()).toEqual(['pedidos', 'atalhos', 'smartcalc', 'dashboard']);
   });
 
   it('distingue destaque central de seleção por rota, incluindo query e detalhe de pedido', async () => {
@@ -450,15 +496,17 @@ describe('FullComponent — cabeçalho mobile global', () => {
     expect(bottomButton('pedidos').hasAttribute('aria-current')).toBeFalse();
   });
 
-  it('mantém Atalhos e Mais e acessa Ajuda e Tutoriais somente pela área de apoio de Mais', async () => {
+  it('mantém Atalhos e acessa o menu completo e Ajuda pelo hambúrguer', async () => {
     expect(fixture.componentInstance.navItemsFiltrados.some(item => item.route === '/page/ajuda' && item.displayName === 'Central de ajuda')).toBeTrue();
     bottomButton('atalhos').click(); fixture.detectChanges();
     expect(fixture.componentInstance.mobileAppsOpen).toBeTrue();
     expect(bottomButton('atalhos').getAttribute('aria-pressed')).toBe('true');
     fixture.componentInstance.closeMobileOverlays(); fixture.detectChanges();
-    bottomButton('mais').focus(); bottomButton('mais').click(); fixture.detectChanges();
+    const hamburger = query('.mobile-topbar button[aria-label="Abrir menu"]')!;
+    hamburger.focus(); hamburger.click(); fixture.detectChanges();
     expect(fixture.componentInstance.mobileDrawerOpen).toBeTrue();
-    expect(bottomButton('mais').getAttribute('aria-pressed')).toBe('true');
+    expect(hamburger.getAttribute('aria-expanded')).toBe('true');
+    expect(bottomKeys()).not.toContain('mais');
     expect(query('nav[aria-label="Menu principal"]')?.textContent).not.toContain('Central de ajuda');
     const help = query('nav[aria-label="Ajuda"] button')!;
     expect(help.textContent).toContain('Ajuda e Tutoriais');
@@ -466,7 +514,7 @@ describe('FullComponent — cabeçalho mobile global', () => {
     help.click(); await fixture.whenStable(); fixture.detectChanges();
     expect(router.url).toBe('/page/ajuda');
     expect(fixture.componentInstance.mobileDrawerOpen).toBeFalse();
-    expect(document.activeElement).toBe(bottomButton('mais'));
+    expect(document.activeElement).toBe(hamburger);
     expect(query('.mobile-topbar__title')?.textContent?.trim()).toBe('Central de ajuda');
   });
 

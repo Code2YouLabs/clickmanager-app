@@ -167,7 +167,7 @@
   bottom: 0;
   z-index: 55;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 4px;
   padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
   border: 1px solid rgba(148, 163, 184, 0.16);
