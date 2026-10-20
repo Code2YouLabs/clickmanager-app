@@ -48,6 +48,7 @@ describe('Ações do pedido em painel lateral mobile', () => {
     service.buscarResumoFinanceiroPedido.and.returnValue(of({ subtotal: 50, total: 50, totalRecebido: 20, saldoAberto: 30 }));
     service.listarRecebimentosPedido.and.returnValue(of({ content: [{ id: 1, formaPagamento: 'PIX', valor: 20, status: 'CONFIRMADO' }] }));
     service.buscarFluxoPedidoComercial.and.returnValue(of(flow()));
+    service.alterarStatusPedidoComercial.and.callFake((id: number, status: string) => of(order(id, status)));
     TestBed.configureTestingModule({ imports: [ComercialEditorComponent, NoopAnimationsModule], providers: [
       provideRouter([]), provideHttpClient(), { provide: LOCALE_ID, useValue: 'pt-BR' },
       { provide: ActivatedRoute, useValue: { data: of({ tipo: 'pedidos' }), paramMap: params } },
@@ -68,7 +69,12 @@ describe('Ações do pedido em painel lateral mobile', () => {
   const open = () => { trigger().click(); tick(400); render(); };
   const close = () => q('[aria-label="Fechar ações do pedido"]').click();
   const confirm = () => {
-    const button = document.querySelector<HTMLButtonElement>('.confirmation-submit') || Array.from(document.querySelectorAll<HTMLButtonElement>('mat-dialog-actions button')).find(b => b.textContent?.includes('Confirmar status'))!;
+    tick(); render();
+    if (!document.querySelector('.confirmation-submit')) {
+      const next = Array.from(document.querySelectorAll<HTMLButtonElement>('mat-dialog-actions button')).find(b => b.textContent?.includes('Continuar'))!;
+      next.click(); tick(400); render();
+    }
+    const button = document.querySelector<HTMLButtonElement>('.confirmation-submit')!;
     button.click(); tick(400); render();
   };
 
@@ -161,6 +167,49 @@ describe('Ações do pedido em painel lateral mobile', () => {
     }));
   }
 
+
+  for (const mode of ['Voltar', 'X', 'Escape', 'backdrop']) {
+    it(`seleção e confirmação comum preservam o painel ao desistir por ${mode}`, fakeAsync(() => {
+      open(); q('.order-action-status').click(); tick(); render();
+      const selection = document.querySelector('app-pedido-trocar-status-dialog')!;
+      expect(selection.closest('.confirmation-responsive')).not.toBeNull();
+      expect(selection.querySelector('.confirmation-handle')).not.toBeNull();
+      expect(q('[aria-label="Fechar ações do pedido"]').disabled).toBeTrue();
+      Array.from(selection.querySelectorAll<HTMLButtonElement>('mat-dialog-actions button')).find(b => b.textContent?.includes('Continuar'))!.click(); tick(400); render();
+      const confirmation = document.querySelector('app-confirm-dialog')!;
+      expect(document.querySelector('app-pedido-trocar-status-dialog')).toBeNull();
+      expect(document.querySelectorAll('mat-dialog-actions').length).toBe(1);
+      expect(confirmation.textContent).toContain('Alterar status do pedido?');
+      expect(confirmation.textContent).toContain('Aguardando pagamento'); expect(confirmation.textContent).toContain('Pendente');
+      expect(confirmation.closest('.confirmation-responsive')).not.toBeNull();
+      expect(q('[aria-label="Fechar ações do pedido"]').disabled).toBeTrue();
+      expect(q('.order-action-status').disabled).toBeTrue();
+      if (mode === 'Voltar') confirmation.querySelector<HTMLButtonElement>('.confirmation-back')!.click();
+      else if (mode === 'X') confirmation.querySelector<HTMLButtonElement>('[aria-label="Fechar confirmação"]')!.click();
+      else if (mode === 'Escape') confirmation.closest('.cdk-overlay-pane')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
+      else Array.from(document.querySelectorAll<HTMLElement>('.cdk-overlay-backdrop')).at(-1)!.click();
+      tick(400); render();
+      expect(panel()).not.toBeNull(); expect(q('.order-action-status').disabled).toBeFalse();
+      expect(service.alterarStatusPedidoComercial).not.toHaveBeenCalled();
+      expect(flowComponent().statusAtual).toBe('AGUARDANDO_PAGAMENTO');
+      expect(document.activeElement).toBe(q('.order-action-status'));
+    }));
+  }
+
+  it('confirmação operacional desktop permanece centralizada com dimensões existentes', fakeAsync(() => {
+    viewport.next({ matches: false, breakpoints: {} }); render();
+    flowComponent().abrirMenuTrocarStatus(); tick(); render();
+    Array.from(document.querySelectorAll<HTMLButtonElement>('mat-dialog-actions button')).find(b => b.textContent?.includes('Continuar'))!.click(); tick(400); render();
+    const confirmation = document.querySelector('app-confirm-dialog')!;
+    expect(confirmation.textContent).toContain('Alterar status do pedido?');
+    expect(confirmation.querySelector('.confirmation-handle')).toBeNull();
+    expect((confirmation.closest('.cdk-overlay-pane') as HTMLElement).style.width).toBe('440px');
+    expect((confirmation.closest('.cdk-global-overlay-wrapper') as HTMLElement).style.alignItems).toBe('center');
+    expect(service.alterarStatusPedidoComercial).not.toHaveBeenCalled();
+    service.alterarStatusPedidoComercial.and.returnValue(of(order(32, 'PENDENTE')));
+    confirm(); expect(service.alterarStatusPedidoComercial).toHaveBeenCalledOnceWith(32, 'PENDENTE');
+  }));
+
   it('cancelar a confirmação não cancela pedido nem fecha o painel', fakeAsync(() => {
     open(); q('.order-action-cancel').click(); render(); (document.querySelector('mat-dialog-actions button') as HTMLButtonElement).click(); tick(400); render();
     expect(panel()).not.toBeNull(); expect(service.alterarStatusPedidoComercial).not.toHaveBeenCalled(); expect(q('.order-action-cancel').disabled).toBeFalse();
@@ -218,7 +267,9 @@ describe('Ações do pedido em painel lateral mobile', () => {
   it('respeita transição bloqueada e permissão revogada antes de confirmar', fakeAsync(() => {
     editor.fluxoPedido = { ...flow(), proximasTransicoes: [{ status: 'PENDENTE', label: 'Pendente', permitida: true }, { status: 'CANCELADO', label: 'Cancelado', permitida: false, motivo: 'Operação bloqueada.' }] } as any; render();
     open(); expect(q('.order-action-cancel').disabled).toBeTrue(); editor.gerenciarPedidoMobile(true); render(); expect(document.querySelector('mat-dialog-actions')).toBeNull();
-    q('.order-action-status').click(); render(); editor.fluxoPedido!.permissoes.alterarStatus = false; render(); confirm();
+    q('.order-action-status').click(); tick(); render(); editor.fluxoPedido!.permissoes.alterarStatus = false; render();
+    Array.from(document.querySelectorAll<HTMLButtonElement>('mat-dialog-actions button')).find(b => b.textContent?.includes('Continuar'))!.click(); tick(400); render();
+    expect(document.querySelector('app-confirm-dialog')).toBeNull();
     expect(service.alterarStatusPedidoComercial).not.toHaveBeenCalled(); expect(panel()!.querySelector('.order-action-status')).toBeNull();
   }));
 

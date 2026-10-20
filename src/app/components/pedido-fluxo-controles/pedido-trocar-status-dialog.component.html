@@ -1,7 +1,8 @@
+@if (data.selectionOnly && mobile) { <div class="confirmation-handle" aria-hidden="true"></div> }
 <h2 mat-dialog-title class="dialog-head">
   <div class="dialog-head__copy">
-    <strong>Confirmar troca de status</strong>
-    <span>Revise a alteração antes de atualizar o pedido.</span>
+    <strong>{{ data.selectionOnly ? 'Selecionar novo status' : 'Confirmar troca de status' }}</strong>
+    <span>{{ data.selectionOnly ? 'Escolha o destino para continuar.' : 'Revise a alteração antes de atualizar o pedido.' }}</span>
   </div>
   <button mat-icon-button type="button" aria-label="Fechar" (click)="cancelar()">
     <mat-icon>close</mat-icon>
@@ -10,8 +11,9 @@
 
 <mat-divider></mat-divider>
 
-<mat-dialog-content class="dialog-content">
-  <div class="status-summary" aria-label="Resumo da troca de status">
+<mat-dialog-content class="dialog-content" [id]="messageId">
+  <p *ngIf="data.selectionOnly && mobile">Status atual: <strong>{{ statusAtualLabel }}</strong></p>
+  <div class="status-summary" aria-label="Resumo da troca de status" *ngIf="!data.selectionOnly || !mobile">
     <div class="status-summary__item">
       <span>Status atual</span>
       <strong>{{ statusAtualLabel }}</strong>
@@ -35,9 +37,9 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end" class="dialog-actions">
-  <button mat-stroked-button type="button" (click)="cancelar()">Cancelar</button>
+  <button mat-stroked-button type="button" (click)="cancelar()">{{ data.selectionOnly ? 'Voltar' : 'Cancelar' }}</button>
   <button mat-flat-button color="primary" type="button" (click)="salvar()" [disabled]="!control.value">
     <mat-icon>check</mat-icon>
-    Confirmar status
+    {{ data.selectionOnly ? 'Continuar' : 'Confirmar status' }}
   </button>
 </mat-dialog-actions>

@@ -9,7 +9,7 @@ export interface ConfirmDialogData {
   confirmColor?: 'primary' | 'accent' | 'warn';
   type?: ConfirmationType;
   icon?: string;
-  details?: ReadonlyArray<{ label: string; value: string }>;
+  details?: ReadonlyArray<{ label: string; value: string; emphasis?: boolean }>;
   processing?: boolean;
   processingText?: string;
   disabled?: boolean;

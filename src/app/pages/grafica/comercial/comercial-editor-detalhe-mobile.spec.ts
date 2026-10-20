@@ -53,6 +53,7 @@ describe('Detalhes do Pedido mobile: organização e movimentação', () => {
     service.buscarResumoFinanceiroPedido.and.returnValue(of({ subtotal: 50, total: 50, totalRecebido: 20, saldoAberto: 30 }));
     service.listarRecebimentosPedido.and.returnValue(of({ content: [{ id: 1, formaPagamento: 'PIX', valor: 20, status: 'CONFIRMADO' }] }));
     service.buscarFluxoPedidoComercial.and.returnValue(of(flow()));
+    service.alterarStatusPedidoComercial.and.callFake((id: number, status: string) => of(order(id, status)));
     TestBed.configureTestingModule({ imports: [ComercialEditorComponent, NoopAnimationsModule], providers: [
       provideRouter([]), provideHttpClient(), { provide: LOCALE_ID, useValue: 'pt-BR' },
       { provide: ActivatedRoute, useValue: { data: of({ tipo: 'pedidos' }), paramMap: params } },
@@ -121,9 +122,9 @@ describe('Detalhes do Pedido mobile: organização e movimentação', () => {
   });
 
   function confirm() {
-    advance().click(); render();
+    advance().click(); tick(); render();
     const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('mat-dialog-actions button'));
-    buttons.find(button => button.textContent?.includes('Confirmar status'))!.click(); tick(400); render();
+    buttons.find(button => button.textContent?.includes('Confirmar alteração'))!.click(); tick(400); render();
   }
 
   it('aguarda sucesso real, recarrega transições e preserva escolhas e dados do pedido', fakeAsync(() => {
@@ -146,9 +147,12 @@ describe('Detalhes do Pedido mobile: organização e movimentação', () => {
     confirm(); expect(service.alterarStatusPedidoComercial).toHaveBeenCalledTimes(2);
   }));
 
-  it('cancelar confirmação não envia requisição', fakeAsync(() => {
-    advance().click(); render(); (document.querySelector('mat-dialog-actions button') as HTMLButtonElement).click(); tick(400);
+  it('cancelar confirmação não envia requisição e restaura foco na tela', fakeAsync(() => {
+    document.body.appendChild(fixture.nativeElement);
+    advance().focus(); advance().click(); tick(); render(); (document.querySelector('.confirmation-back') as HTMLButtonElement).click(); tick(400); render();
+    expect(document.activeElement).toBe(advance());
     expect(service.alterarStatusPedidoComercial).not.toHaveBeenCalled(); expect(editor.statusControl.value).toBe('AGUARDANDO_PAGAMENTO');
+    fixture.nativeElement.remove();
   }));
 
   it('respeita permissões recebidas e mantém o fluxo completo acessível', () => {

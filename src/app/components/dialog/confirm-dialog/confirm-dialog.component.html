@@ -10,7 +10,7 @@
   <p>{{ data.message }}</p>
   @if (data.details?.length) {
     <dl class="confirmation-details">
-      @for (detail of data.details; track $index) { <div><dt>{{ detail.label }}</dt><dd>{{ detail.value }}</dd></div> }
+      @for (detail of data.details; track $index) { <div><dt>{{ detail.label }}</dt><dd [class.confirmation-detail--emphasis]="detail.emphasis">{{ detail.value }}</dd></div> }
     </dl>
   }
   @if (data.error) { <p class="confirmation-error" role="alert">{{ data.error }}</p> }

@@ -36,6 +36,14 @@ describe('Confirmação compartilhada responsiva', () => {
     }));
   }
 
+  it('destaca somente o detalhe opt-in sem alterar detalhes existentes', fakeAsync(() => {
+    open({ details: [{ label: 'Atual', value: 'Aguardando' }, { label: 'Novo', value: 'Pendente', emphasis: true }] }); tick();
+    const values = overlay().querySelectorAll('dd');
+    expect(values[0].classList.contains('confirmation-detail--emphasis')).toBeFalse();
+    expect(values[1].classList.contains('confirmation-detail--emphasis')).toBeTrue();
+    expect(values[1].textContent).toBe('Pendente');
+  }));
+
   for (const mode of ['Voltar', 'X', 'Escape', 'backdrop']) {
     it(`${mode} significa desistência e restaura o foco`, fakeAsync(() => {
       const f = TestBed.createComponent(Host); f.detectChanges(); document.body.appendChild(f.nativeElement);

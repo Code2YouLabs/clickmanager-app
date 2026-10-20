@@ -1,7 +1,7 @@
 import { ClienteResponse } from 'src/app/models/cliente/cliente-response.model';
 import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild, TemplateRef, ViewContainerRef, Optional, effect, signal, untracked, afterRender, Injector } from '@angular/core';
+import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild, TemplateRef, ViewContainerRef, Optional, effect, signal, untracked, afterRender, afterNextRender, Injector } from '@angular/core';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { TutorialService } from 'src/app/shared/tutorial/tutorial.service';
@@ -286,6 +286,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   @ViewChild(PedidoFluxoControlesComponent) private fluxoControles?: PedidoFluxoControlesComponent;
   private acoesPedidoPanelRef?: MatDialogRef<unknown>;
   private acoesPedidoConfirmacaoRef?: MatDialogRef<unknown>;
+  private acoesPedidoOrigem?: HTMLButtonElement;
   acoesPedidoNavegando = false;
   get acoesPedidoOcupado(): boolean { return this.carregando || this.carregandoStatus || this.acoesPedidoNavegando || !!this.acoesPedidoConfirmacaoRef; }
   get podeTrocarStatusAcoesMobile(): boolean { return this.permissoesFluxo.alterarStatus && this.transicoesFluxo.some(opcao => classificarTransicaoPedido(opcao.status) !== 'cancelamento' && !opcao.bloqueado); }
@@ -303,13 +304,23 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   fecharAcoesPedidoMobile(): void { if (!this.acoesPedidoOcupado) this.acoesPedidoPanelRef?.close(); }
   gerenciarPedidoMobile(cancelar = false): void {
     if (!this.mobilePedidoDetalhe || !this.acoesPedidoPanelRef || this.acoesPedidoPanelRef.getState() !== MatDialogState.OPEN || this.acoesPedidoOcupado || !(cancelar ? this.podeCancelarPedidoAcoesMobile : this.podeTrocarStatusAcoesMobile)) return;
-    const ref = cancelar ? this.fluxoControles?.confirmarCancelamentoMobile() : this.fluxoControles?.abrirMenuTrocarStatus();
-    if (!ref) return;
+    this.acoesPedidoOrigem = this.elementRef?.nativeElement.ownerDocument.getElementById(this.acoesPedidoPanelRef.id)?.querySelector<HTMLButtonElement>(cancelar ? '.order-action-cancel' : '.order-action-status') || undefined;
+    if (cancelar) this.fluxoControles?.confirmarCancelamentoMobile();
+    else this.fluxoControles?.abrirMenuTrocarStatus();
+  }
+  acompanharConfirmacaoPedidoMobile(ref: MatDialogRef<unknown>): void {
+    if (!this.mobilePedidoDetalhe || !this.acoesPedidoPanelRef) return;
     this.acoesPedidoConfirmacaoRef = ref;
     this.acoesPedidoPanelRef.disableClose = true;
     ref.afterClosed().pipe(take(1), takeUntil(this.destroy$)).subscribe(() => {
+      if (this.acoesPedidoConfirmacaoRef !== ref) return;
       this.acoesPedidoConfirmacaoRef = undefined;
       if (this.acoesPedidoPanelRef) this.acoesPedidoPanelRef.disableClose = this.acoesPedidoOcupado;
+      const panel = this.acoesPedidoPanelRef;
+      if (this.viewContainerRef) afterNextRender(() => {
+        if (panel !== this.acoesPedidoPanelRef || this.acoesPedidoOcupado || !this.acoesPedidoOrigem?.isConnected || this.acoesPedidoOrigem.disabled) return;
+        this.acoesPedidoOrigem.focus({ preventScroll: true });
+      }, { injector: this.viewContainerRef.injector });
     });
   }
   executarDocumentoPedido(acao: 'completo' | 'duas-vias' | 'etiqueta' | 'whatsapp'): void {

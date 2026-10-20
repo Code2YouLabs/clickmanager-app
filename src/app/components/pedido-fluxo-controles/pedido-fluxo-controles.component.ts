@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, afterNextRender, Injector, inject } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -18,6 +18,7 @@ import { classificarTransicaoPedido } from './pedido-transicao-apresentacao';
 import { take } from 'rxjs';
 import { ConfirmDialogComponent } from '../dialog/confirm-dialog/confirm-dialog.component';
 import { confirmacaoCancelamentoPedido } from './pedido-cancelamento-confirmacao';
+import { confirmacaoAlteracaoStatusPedido } from './pedido-status-confirmacao';
 
 type ConfirmacaoPedidoRef = MatDialogRef<PedidoTrocarStatusDialogComponent> | MatDialogRef<ConfirmDialogComponent>;
 
@@ -65,12 +66,15 @@ const STATUS_UI: Record<string, { icon: string; tone: 'blue' | 'orange' | 'green
   host: { '[class.pedido-fluxo--mobile]': 'mobileCompact' }
 })
 export class PedidoFluxoControlesComponent implements OnChanges {
+  private readonly renderInjector = inject(Injector);
   private static nextId = 0;
+  readonly trackTransicao = (_: number, transicao: { status: string }): string => transicao.status;
   readonly flowId = `pedido-flow-${PedidoFluxoControlesComponent.nextId++}`;
   mobileFlowExpanded = false;
   @Input() mobileCompact = false;
   @Input() mobileActionsPanel = false;
   @Output() abrirAcoesMobile = new EventEmitter<void>();
+  @Output() confirmacaoAberta = new EventEmitter<ConfirmacaoPedidoRef>();
   @Input() statusAtualLabel: string | null = null;
   @Input() pedidoReferencia: string | null = null;
   STATUS_UI = STATUS_UI;
@@ -258,10 +262,14 @@ export class PedidoFluxoControlesComponent implements OnChanges {
 
   get mobileStatusBusy(): boolean { return this.inativo || this.trocandoStatus || this.carregandoStatus || !!this.confirmacaoStatusRef; }
 
-  avancarMobile(status: string): MatDialogRef<PedidoTrocarStatusDialogComponent> | undefined {
+  private transicaoPermitida(status: string): boolean {
+    return (this.mobileCompact ? this.transicoes : this.opcoesTrocaStatus).some(opcao => opcao.status === status && !opcao.bloqueado);
+  }
+
+  avancarMobile(status: string, origem?: EventTarget | null): MatDialogRef<ConfirmDialogComponent> | undefined {
     const transicao = this.transicoesOperacionaisMobile.find(opcao => opcao.status === status);
     if (!this.mobileCompact || this.mobileStatusBusy || this.isReadOnly || !transicao || transicao.bloqueado) return;
-    return this.abrirConfirmacaoTrocaStatus(status);
+    return this.abrirConfirmacaoTrocaStatus(status, origem instanceof HTMLElement ? origem : undefined);
   }
 
   confirmarCancelamentoMobile(): MatDialogRef<ConfirmDialogComponent> | undefined {
@@ -288,6 +296,7 @@ export class PedidoFluxoControlesComponent implements OnChanges {
         this.trocarStatusSelecionado.emit(transicao.status); this.salvarStatus.emit();
       } else this.cancelarPedido.emit();
     });
+    this.confirmacaoAberta.emit(ref);
     return ref;
   }
 
@@ -333,11 +342,37 @@ export class PedidoFluxoControlesComponent implements OnChanges {
     const opcoes = this.opcoesTrocaStatus;
     if (this.inativo || this.isReadOnly || !opcoes.length) return;
     if (opcoes.every(opcao => classificarTransicaoPedido(opcao.status) === 'cancelamento')) return this.confirmarCancelamento();
-    return this.abrirConfirmacaoTrocaStatus();
+    return this.abrirSelecaoTrocaStatus();
   }
 
-  private abrirConfirmacaoTrocaStatus(statusDestino?: string): MatDialogRef<PedidoTrocarStatusDialogComponent> | undefined {
-    if (this.mobileCompact && this.mobileStatusBusy) return;
+  private abrirConfirmacaoTrocaStatus(statusDestino?: string, origem?: HTMLElement): MatDialogRef<ConfirmDialogComponent> | undefined {
+    if (!statusDestino || this.mobileStatusBusy || this.isReadOnly) return;
+    if (classificarTransicaoPedido(statusDestino) === 'cancelamento') return this.confirmarCancelamento();
+    const transicao = this.opcoesTrocaStatus.find(opcao => opcao.status === statusDestino && !opcao.bloqueado);
+    if (!transicao || !this.transicaoPermitida(statusDestino)) return;
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      width: '440px', maxWidth: 'calc(100vw - 32px)',
+      data: confirmacaoAlteracaoStatusPedido(this.vm.statusLabel, transicao.label || this.statusLabel(transicao.status)),
+    });
+    this.confirmacaoStatusRef = ref;
+    ref.afterClosed().pipe(take(1)).subscribe(confirmado => {
+      if (this.confirmacaoStatusRef === ref) this.confirmacaoStatusRef = undefined;
+      if (origem) {
+        afterNextRender(() => {
+          if (!this.mobileStatusBusy && origem.isConnected && !origem.matches(':disabled')) origem.focus({ preventScroll: true });
+        }, { injector: this.renderInjector });
+      }
+      if (confirmado !== true || this.mobileStatusBusy || this.isReadOnly ||
+        !this.transicaoPermitida(statusDestino)) return;
+      this.statusControl?.setValue(statusDestino);
+      this.trocarStatusSelecionado.emit(statusDestino); this.salvarStatus.emit();
+    });
+    this.confirmacaoAberta.emit(ref);
+    return ref;
+  }
+
+  private abrirSelecaoTrocaStatus(): MatDialogRef<PedidoTrocarStatusDialogComponent> | undefined {
+    if (this.mobileStatusBusy) return;
     const opcoes = this.opcoesTrocaStatus;
     if (this.inativo || this.isReadOnly || !opcoes.length) return;
 
@@ -345,29 +380,29 @@ export class PedidoFluxoControlesComponent implements OnChanges {
       width: '440px',
       maxWidth: 'calc(100vw - 32px)',
       data: {
-        statusAtual: this.statusControl?.value || this.statusAtual,
-        statusDestino: statusDestino || null,
+        statusAtual: this.statusAtual,
+        statusAtualLabel: this.vm.statusLabel,
+        statusDestino: null,
         opcoes,
         cancelamentoSeparado: !this.mobileCompact,
+        selectionOnly: true,
       }
     });
 
-    if (this.mobileCompact) this.confirmacaoStatusRef = ref;
+    this.confirmacaoStatusRef = ref;
     ref.afterClosed().pipe(take(1)).subscribe((novo: { status: string } | null | undefined) => {
       if (this.confirmacaoStatusRef === ref) this.confirmacaoStatusRef = undefined;
       if (novo?.status) {
         if (!this.mobileCompact && classificarTransicaoPedido(novo.status) === 'cancelamento') {
           this.confirmarCancelamento(); return;
         }
-        if (this.mobileCompact && (this.mobileStatusBusy || this.isReadOnly ||
+        if (this.mobileStatusBusy || this.isReadOnly ||
           !opcoes.some(opcao => opcao.status === novo.status && !opcao.bloqueado) ||
-          !this.transicoes.some(opcao => opcao.status === novo.status && !opcao.bloqueado))) return;
-        const selected = novo.status;
-        this.statusControl?.setValue(selected);
-        this.trocarStatusSelecionado.emit(selected);
-        this.salvarStatus.emit();
+          !this.transicaoPermitida(novo.status)) return;
+        this.abrirConfirmacaoTrocaStatus(novo.status);
       }
     });
+    this.confirmacaoAberta.emit(ref);
     return ref;
   }
 }

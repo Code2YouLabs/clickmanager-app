@@ -44,11 +44,11 @@
         <p class="helper-text">{{ vm.helperText }}</p>
       </div>
       <div class="mobile-transitions" *ngIf="transicoesOperacionaisMobile.length; else semTransicoes">
-        <div class="mobile-transition" *ngFor="let transicao of transicoesOperacionaisMobile; let i = index">
+        <div class="mobile-transition" *ngFor="let transicao of transicoesOperacionaisMobile; trackBy: trackTransicao; let i = index">
           <button mat-flat-button color="primary" type="button"
             [disabled]="mobileStatusBusy || isReadOnly || transicao.bloqueado"
             [attr.aria-describedby]="transicao.motivo ? flowId + '-motivo-' + i : null"
-            (click)="avancarMobile(transicao.status)">
+            (click)="avancarMobile(transicao.status, $event.currentTarget)">
             <mat-icon>arrow_forward</mat-icon>Avançar para {{ transicao.label || statusLabel(transicao.status) }}
           </button>
           <p class="helper-text" *ngIf="transicao.motivo" [id]="flowId + '-motivo-' + i">{{ transicao.motivo }}</p>
