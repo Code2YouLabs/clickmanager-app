@@ -1,8 +1,28 @@
 @use "../../../shared/responsive/mobile-foundation" as mobile;
+.confirmation-heading { display: contents; }
+.confirmation-heading:has(> button) { display: flex; align-items: center; }
+.confirmation-heading h2 { flex: 1; }
+.confirmation-heading > button { flex-shrink: 0; margin-right: 8px; }
+.confirmation-icon { color: var(--mat-sys-primary); }
+:host(.confirmation--destructive) {
+  .confirmation-icon { color: var(--mat-sys-error); }
+  .confirmation-submit { --mdc-filled-button-container-color: var(--mat-sys-error); --mdc-filled-button-label-text-color: var(--mat-sys-on-error); }
+}
+:host(.confirmation--warning) .confirmation-icon { color: var(--mat-sys-tertiary); }
+.confirmation-details { margin: 12px 0 0; }
+.confirmation-details > div { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.confirmation-details dt { font-weight: 600; }
+.confirmation-details dd { margin: 0; overflow-wrap: anywhere; }
+.confirmation-error { color: var(--mat-sys-error); }
+.confirmation-submit mat-spinner { display: inline-flex; vertical-align: middle; margin-right: 8px; }
 @include mobile.mobile-foundation {
-  :host { display: flex; flex-direction: column; max-height: calc(100dvh - 48px); min-width: 0; }
-  [mat-dialog-title], mat-dialog-content { overflow-wrap: anywhere; }
-  mat-dialog-content { min-height: 0; overflow-y: auto; }
-  mat-dialog-actions { flex-shrink: 0; display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 24px; }
-  mat-dialog-actions button { flex: 1 1 100%; margin: 0; min-height: 44px; white-space: normal; }
+  :host { display: flex; flex-direction: column; max-height: inherit; min-width: 0; }
+  .confirmation-handle { flex: 0 0 4px; align-self: center; width: 32px; margin: 8px 0; border-radius: 4px; background: var(--mat-sys-outline-variant); }
+  .confirmation-heading { display: flex; align-items: center; flex-shrink: 0; padding-right: max(8px, env(safe-area-inset-right)); }
+  [mat-dialog-title] { margin: 0; padding: 8px max(16px, env(safe-area-inset-left)); font-size: 18px; line-height: 28px; font-weight: 600; overflow-wrap: anywhere; }
+  mat-dialog-content { flex: 1 1 auto; min-height: 0; max-height: none; padding: 8px max(16px, env(safe-area-inset-right)) 8px max(16px, env(safe-area-inset-left)) !important; margin: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; overflow-wrap: anywhere; font-size: 14px; line-height: 20px; }
+  mat-dialog-content p { margin: 0; }
+  .confirmation-icon { float: left; margin: 0 8px 8px 0; }
+  mat-dialog-actions { flex-shrink: 0; display: flex; flex-wrap: wrap; gap: 8px; padding: 12px max(16px, env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); }
+  mat-dialog-actions button { flex: 1 1 120px; margin: 0; min-height: 44px; height: auto; padding: 8px 12px; white-space: normal; overflow-wrap: anywhere; }
 }

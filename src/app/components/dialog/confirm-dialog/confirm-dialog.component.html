@@ -1,0 +1,24 @@
+@if (mobile) { <div class="confirmation-handle" aria-hidden="true"></div> }
+<div class="confirmation-heading">
+  <h2 mat-dialog-title>{{ data.title || 'Confirmação' }}</h2>
+  @if (data.showClose ?? mobile) {
+    <button mat-icon-button type="button" aria-label="Fechar confirmação" [disabled]="!canDismiss" (click)="dismiss()"><mat-icon>close</mat-icon></button>
+  }
+</div>
+<mat-dialog-content [class.m-b-16]="!mobile" [id]="messageId">
+  @if (icon) { <mat-icon class="confirmation-icon" aria-hidden="true">{{ icon }}</mat-icon> }
+  <p>{{ data.message }}</p>
+  @if (data.details?.length) {
+    <dl class="confirmation-details">
+      @for (detail of data.details; track $index) { <div><dt>{{ detail.label }}</dt><dd>{{ detail.value }}</dd></div> }
+    </dl>
+  }
+  @if (data.error) { <p class="confirmation-error" role="alert">{{ data.error }}</p> }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button class="confirmation-back" type="button" [disabled]="!canDismiss" (click)="dismiss()">{{ data.cancelText || 'Cancelar' }}</button>
+  <button mat-flat-button class="confirmation-submit" type="button" [color]="confirmColor" [disabled]="processing || data.disabled" (click)="confirm()">
+    @if (processing) { <mat-spinner diameter="18" aria-label="Processando"></mat-spinner> }
+    {{ processing ? (data.processingText || 'Processando...') : (data.confirmText || 'Confirmar') }}
+  </button>
+</mat-dialog-actions>
