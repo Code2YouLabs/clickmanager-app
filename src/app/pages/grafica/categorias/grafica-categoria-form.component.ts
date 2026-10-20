@@ -1,5 +1,9 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { Subject, takeUntil } from 'rxjs';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { finalize, forkJoin, of, switchMap } from 'rxjs';
@@ -27,6 +31,7 @@ import { catalogoErrorMessage, catalogoSlugify } from '../../catalogo/shared/uti
     RouterModule,
     MaterialModule,
     PageCardComponent,
+    MobileTotalBarComponent,
     SectionCardComponent,
     RichTextPreviewFieldComponent,
     InputTextoRestritoComponent,
@@ -34,16 +39,20 @@ import { catalogoErrorMessage, catalogoSlugify } from '../../catalogo/shared/uti
     InputOptionsComponent,
   ],
   template: `
-    <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [formState]="formState" [footerActions]="footerActions" [saving]="salvando" [actionsDisabled]="carregando">
+    <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [formState]="mobileCreate ? undefined : formState" [footerActions]="mobileCreate ? [] : footerActions" [saving]="salvando" [actionsDisabled]="carregando">
+      @if (mobileCreate) {
+        <button page-mobile-header-actions mat-button type="button" [disabled]="salvando" (click)="voltar()"><mat-icon>arrow_back</mat-icon>Voltar</button>
+      } @else {
       <div page-header-actions>
         <button mat-stroked-button type="button" (click)="voltar()">
           <mat-icon>arrow_back</mat-icon>
           Voltar
         </button>
       </div>
+      }
 
-      <form id="grafica-categoria-form" [formGroup]="form" class="categoria-form" (ngSubmit)="salvar()">
-        <app-section-card title="Dados da categoria">
+      <form id="grafica-categoria-form" [formGroup]="form" class="categoria-form" [class.categoria-form--mobile-create]="mobileCreate" (ngSubmit)="salvar()">
+        <app-section-card [title]="mobileCreate ? undefined : 'Dados da categoria'" [mobilePlain]="mobileCreate">
           <div class="form-grid">
             <app-input-texto-restrito
               [control]="nomeControl"
@@ -82,6 +91,16 @@ import { catalogoErrorMessage, catalogoSlugify } from '../../catalogo/shared/uti
           </div>
         </app-section-card>
       </form>
+      @if (mobileCreate) {
+        <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true"
+          actionType="submit" actionForm="grafica-categoria-form" bottomAnchorSelector=".mobile-bottom-nav"
+          bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+          secondaryActionText="Cancelar" secondaryActionAriaLabel="Limpar cadastro de categoria"
+          [secondaryActionDisabled]="salvando || carregando || !formState.canReset" (secondaryAction)="formState.reset()"
+          [actionText]="salvando ? 'Salvando...' : 'Salvar categoria'" actionIcon="save" actionAriaLabel="Salvar categoria"
+          [actionDisabled]="form.invalid || salvando || carregando" [loading]="salvando">
+        </app-mobile-total-bar>
+      }
 
     </app-page-card>
   `,
@@ -110,9 +129,18 @@ import { catalogoErrorMessage, catalogoSlugify } from '../../catalogo/shared/uti
         grid-template-columns: 1fr;
       }
     }
+    @media (max-width: 760px) {
+      .categoria-form--mobile-create { min-width: 0; }
+      .categoria-form--mobile-create .form-grid { gap: 12px; }
+      .categoria-form--mobile-create .form-grid > * { min-width: 0; }
+    }
   `],
 })
-export class GraficaCategoriaFormComponent implements OnInit {
+export class GraficaCategoriaFormComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  private readonly destroy$ = new Subject<void>();
+  get mobileCreate(): boolean { return this.isMobile && !this.categoriaId; }
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
   categoriaId?: number;
   cloneFromId?: number;
   categoriasPai: CatalogoCategoriaOption[] = [];
@@ -162,7 +190,10 @@ export class GraficaCategoriaFormComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly toastr: ToastrService,
-  ) {}
+    breakpoints?: BreakpointObserver,
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+  }
 
   ngOnInit(): void {
     this.carregando = true;
