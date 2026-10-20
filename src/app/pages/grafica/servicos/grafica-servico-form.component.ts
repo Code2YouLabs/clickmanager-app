@@ -1,5 +1,9 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { Subject, takeUntil } from 'rxjs';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { finalize, map, of, switchMap } from 'rxjs';
@@ -25,22 +29,27 @@ import { GraficaProdutoService } from '../shared/grafica.service';
     RouterModule,
     MaterialModule,
     PageCardComponent,
+    MobileTotalBarComponent,
     SectionCardComponent,
     InputTextoRestritoComponent,
     InputTextareaComponent,
     PrecoSelectorComponent,
   ],
   template: `
-    <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [formState]="formState" [footerActions]="footerActions" [saving]="salvando" [actionsDisabled]="carregando">
+    <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [formState]="isMobile ? undefined : formState" [footerActions]="isMobile ? [] : footerActions" [saving]="salvando" [actionsDisabled]="carregando">
+      @if (isMobile) {
+        <button page-mobile-header-actions mat-button type="button" [disabled]="salvando" (click)="voltar()"><mat-icon>arrow_back</mat-icon>Voltar</button>
+      } @else {
       <div page-header-actions>
         <button mat-stroked-button type="button" (click)="voltar()">
           <mat-icon>arrow_back</mat-icon>
           Voltar
         </button>
       </div>
+      }
 
-      <form id="grafica-servico-form" [formGroup]="form" class="servico-form" (ngSubmit)="salvar()">
-        <app-section-card title="Dados do serviço">
+      <form id="grafica-servico-form" [formGroup]="form" class="servico-form" [class.cadastro-form--mobile]="isMobile" (ngSubmit)="salvar()">
+        <app-section-card [title]="isMobile ? undefined : 'Dados do serviço'" [mobilePlain]="isMobile">
           <div class="form-grid">
             <app-input-texto-restrito
               [control]="nomeControl"
@@ -60,13 +69,23 @@ import { GraficaProdutoService } from '../shared/grafica.service';
           </div>
         </app-section-card>
 
-        <app-section-card title="Precificação">
+        <app-section-card title="Precificação" [mobilePlain]="isMobile">
           <app-preco-selector
             [formGroup]="precoForm"
             [tiposDisponiveis]="['FIXO', 'DEMANDA', 'QUANTIDADE', 'METRO']">
           </app-preco-selector>
         </app-section-card>
       </form>
+      @if (isMobile) {
+        <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true"
+          actionType="submit" actionForm="grafica-servico-form" bottomAnchorSelector=".mobile-bottom-nav"
+          bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+          secondaryActionText="Cancelar" secondaryActionAriaLabel="Restaurar formulário"
+          [secondaryActionDisabled]="salvando || carregando || !formState.canReset" (secondaryAction)="formState.reset()"
+          [actionText]="salvando ? 'Salvando...' : 'Salvar serviço'" actionIcon="save" actionAriaLabel="Salvar serviço"
+          [actionDisabled]="form.invalid || precoForm.invalid || salvando || carregando" [loading]="salvando">
+        </app-mobile-total-bar>
+      }
 
     </app-page-card>
   `,
@@ -113,9 +132,17 @@ import { GraficaProdutoService } from '../shared/grafica.service';
         grid-template-columns: 1fr;
       }
     }
+    @media (max-width: 760px) {
+      .cadastro-form--mobile { min-width: 0; }
+      .cadastro-form--mobile .form-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+      .cadastro-form--mobile .form-grid > * { min-width: 0; }
+    }
   `],
 })
-export class GraficaServicoFormComponent implements OnInit {
+export class GraficaServicoFormComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  private readonly destroy$ = new Subject<void>();
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
   servicoId?: number;
   cloneFromId?: number;
   salvando = false;
@@ -153,7 +180,10 @@ export class GraficaServicoFormComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly toastr: ToastrService,
-  ) {}
+    breakpoints?: BreakpointObserver,
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+  }
 
   ngOnInit(): void {
     this.carregando = true;
