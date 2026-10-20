@@ -1,0 +1,13 @@
+@use "../../../shared/responsive/mobile-foundation" as mobile;
+@use "../../../shared/responsive/mobile-list-item" as item;
+
+@include mobile.mobile-foundation {
+  .cliente-mobile-item {
+    @include item.surface;
+    header > strong { @include item.heading; }
+    dl { display: grid; gap: 8px; margin: 8px 0 0; }
+    dt { color: var(--mat-sys-on-surface-variant); font-size: 12px; line-height: 16px; }
+    dd { margin: 0; font-size: 14px; line-height: 20px; overflow-wrap: anywhere; }
+    &__actions { @include item.actions; }
+  }
+}

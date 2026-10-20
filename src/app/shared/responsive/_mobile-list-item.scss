@@ -1,0 +1,24 @@
+// Shared item skin originally adopted by the Comercial mobile lists.
+// Consumers supply only the fields and actions appropriate to their records.
+@mixin surface {
+  padding: 12px;
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 8px;
+  background: var(--mat-sys-surface);
+  min-width: 0;
+}
+
+@mixin heading {
+  min-width: 0;
+  font-size: 14px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+
+@mixin actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 8px;
+  button { min-height: 44px; flex: 1 1 auto; }
+}

@@ -1,3 +1,4 @@
+@use "../../../shared/responsive/mobile-list-item" as item;
 @use "../../../shared/responsive/mobile-foundation" as mobile;
 .view-mode-actions { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .kanban-expand-button { min-height: 38px; border-radius: 999px; white-space: nowrap; }
@@ -47,13 +48,9 @@
 
 @include mobile.mobile-foundation {
   .pedido-mobile-item {
-    padding: 12px;
-    border: 1px solid var(--mat-sys-outline-variant);
-    border-radius: 8px;
-    background: var(--mat-sys-surface);
-    min-width: 0;
+    @include item.surface;
     header { display: grid; grid-template-columns: minmax(0, 1fr) fit-content(48%); align-items: center; gap: 8px; }
-    header > strong { min-width: 0; font-size: 14px; line-height: 20px; overflow-wrap: anywhere; }
+    header > strong { @include item.heading; }
     .status-pill { display: block; box-sizing: border-box; min-width: 0; max-width: 100%; justify-self: end; line-height: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     &__cliente { margin: 6px 0; overflow-wrap: anywhere; font-size: 15px; line-height: 22px; }
     &__summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
@@ -62,8 +59,7 @@
     &__summary > strong.pedido-mobile-item__total { margin-left: auto; text-align: right; }
     &__value-label { display: block; color: var(--mat-sys-on-surface-variant); font-size: 12px; line-height: 16px; font-weight: 400; }
     &__validade { display: block; margin-top: 4px; }
-    &__actions { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 8px; }
-    &__actions button { min-height: 44px; flex: 1 1 auto; }
+    &__actions { @include item.actions; }
     .expanded-detail { grid-template-columns: 1fr; margin: 8px 0 0; padding: 0; gap: 0; border: 0; border-radius: 0; background: transparent; }
     .expanded-detail > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 8px 0; border-top: 1px solid var(--mat-sys-outline-variant); }
     .expanded-detail span { margin: 0; font-weight: 400; text-transform: none; }
