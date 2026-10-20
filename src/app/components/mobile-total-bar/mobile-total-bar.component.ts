@@ -13,7 +13,7 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
   styleUrls: ['./mobile-total-bar.component.scss'],
 })
 export class MobileTotalBarComponent implements OnChanges, AfterViewInit, OnDestroy {
-  @Input() appearance: 'default' | 'compact' = 'default';
+  @Input() appearance: 'default' | 'compact' | 'actions' = 'default';
   @Input() actionType: 'button' | 'submit' = 'button';
   @Input() actionForm: string | null = null;
   @Input() actionTutorialTarget = '';
@@ -173,6 +173,8 @@ export class MobileTotalBarComponent implements OnChanges, AfterViewInit, OnDest
   @Input() secondaryActionDisabled = false;
   @Input() secondaryActionAriaLabel = 'Executar ação secundária';
   @Input() actionText = '';
+  @Input() actionIcon = '';
+  @Input() secondaryActionIcon = '';
   @Input() actionDisabled = false;
   @Input() expandAriaLabel = 'Ver detalhes do cálculo';
   @Input() actionAriaLabel = 'Executar ação principal';

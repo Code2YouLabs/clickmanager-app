@@ -1,0 +1,101 @@
+
+    <app-page-card [class.whatsapp-page-card--mobile]="isMobile"
+      titulo="Compartilhar Pedido"
+      [subtitulo]="subtituloPagina"
+      [botaoTexto]="isMobile ? '' : 'Voltar'"
+      [botaoRota]="voltarLink"
+      [mostrarDivisor]="true">
+
+      <button *ngIf="isMobile" page-mobile-header-actions mat-button type="button" [routerLink]="voltarLink"><mat-icon>arrow_back</mat-icon>Voltar</button>
+      <div class="whatsapp-page" [class.whatsapp-page--mobile]="isMobile">
+        @if (isMobile) {
+          <form id="whatsapp-mobile-editor" class="whatsapp-mobile-editor" (submit)="$event.preventDefault()">
+            <div class="state-panel" role="status" *ngIf="carregando"><mat-spinner diameter="34"></mat-spinner><span>Carregando pedido...</span></div>
+            <div class="error-panel" role="alert" *ngIf="!carregando && erro">
+              <mat-icon>error_outline</mat-icon><div><strong>Não foi possível carregar a mensagem.</strong><span>{{ erro }}</span></div>
+              <div class="error-actions"><button mat-flat-button color="primary" type="button" (click)="carregarPedido()">Tentar novamente</button></div>
+            </div>
+            <ng-container *ngIf="!carregando && !erro && pedido as p">
+              <section class="whatsapp-mobile-recipient" aria-label="Destinatário">
+                <h3>Destinatário</h3>
+                <strong>{{ p.clienteNome || 'Cliente não informado' }}</strong>
+                <span>{{ (p.clienteTelefone | telefone) || 'Telefone não informado' }}</span>
+                <small>Pedido {{ p.numero || (p.id ? '#' + p.id : 'não informado') }}</small>
+              </section>
+              <section class="whatsapp-mobile-message" aria-label="Mensagem do pedido">
+                <app-input-textarea [control]="mensagemControl" label="Mensagem" placeholder="Mensagem do pedido" [rows]="12" [maxlength]="4000"></app-input-textarea>
+              </section>
+            </ng-container>
+          </form>
+          <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true"
+            actionType="button" actionForm="whatsapp-mobile-editor" bottomAnchorSelector=".mobile-bottom-nav"
+            bottomOffset="var(--mobile-bottom-nav-height, env(safe-area-inset-bottom, 0px))" [attachedToBottomNav]="true"
+            secondaryActionText="Copiar" secondaryActionIcon="content_copy" secondaryActionAriaLabel="Copiar mensagem completa"
+            [secondaryActionDisabled]="carregando || !!erro || !mensagemControl.value"
+            actionText="Abrir WhatsApp" actionIcon="chat" actionAriaLabel="Abrir pedido no WhatsApp"
+            [actionDisabled]="carregando || !!erro || !pedido" (secondaryAction)="copiar()" (action)="abrirWhatsApp()">
+          </app-mobile-total-bar>
+        } @else {
+        <app-section-card titulo="Mensagem para WhatsApp" subtitulo="Revise a mensagem antes de enviar." [divider]="true">
+          <div class="state-panel" *ngIf="carregando">
+            <mat-spinner diameter="34"></mat-spinner>
+            <span>Carregando pedido...</span>
+          </div>
+
+          <div class="error-panel" *ngIf="!carregando && erro">
+            <mat-icon>error_outline</mat-icon>
+            <div>
+              <strong>Não foi possível carregar a mensagem.</strong>
+              <span>{{ erro }}</span>
+            </div>
+            <div class="error-actions">
+              <button mat-stroked-button color="primary" type="button" [routerLink]="voltarLink">
+                Voltar
+              </button>
+              <button mat-flat-button color="primary" type="button" (click)="carregarPedido()">
+                Tentar novamente
+              </button>
+            </div>
+          </div>
+
+          <ng-container *ngIf="!carregando && !erro">
+            <div class="pedido-context" *ngIf="pedido as p">
+              <div>
+                <span>Número</span>
+                <strong>{{ p.numero || '—' }}</strong>
+              </div>
+              <div>
+                <span>Cliente</span>
+                <strong>{{ p.clienteNome || 'Cliente não informado' }}</strong>
+              </div>
+              <div>
+                <span>Telefone</span>
+                <strong>{{ p.clienteTelefone || '—' }}</strong>
+              </div>
+            </div>
+
+            <app-input-textarea
+              [control]="mensagemControl"
+              label="Mensagem"
+              placeholder="Mensagem do pedido"
+              [rows]="16"
+              [maxlength]="4000">
+            </app-input-textarea>
+
+            <div class="actions">
+              <button mat-stroked-button type="button" (click)="copiar()">
+                <mat-icon>content_copy</mat-icon>
+                Copiar
+              </button>
+              <button mat-flat-button color="primary" type="button" (click)="abrirWhatsApp()">
+                <mat-icon>chat</mat-icon>
+                Abrir no WhatsApp
+              </button>
+            </div>
+          </ng-container>
+        </app-section-card>
+        }
+
+      </div>
+    </app-page-card>
+

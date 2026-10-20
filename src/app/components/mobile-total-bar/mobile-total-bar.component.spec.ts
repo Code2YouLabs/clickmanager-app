@@ -12,7 +12,7 @@ import { By } from '@angular/platform-browser';
     <div class="form-scroll-port" [style.overflow-y]="scrollable ? 'auto' : null">
     <form id="test-form" (submit)="submits = submits + 1; $event.preventDefault()"><input class="form-field" value="Dados preservados"><button type="button" class="form-action">Adicionar produto</button></form>
     <app-mobile-total-bar [inlineDetails]="inlineDetails" [awaitingResult]="awaitingResult" [loading]="loading" [expanded]="expanded" detailsPanelId="test-details"
-      [appearance]="appearance" [actionType]="actionType" [actionForm]="actionForm" [actionTutorialTarget]="tutorialTarget" [reserveSpace]="reserveSpace" [avoidKeyboard]="avoidKeyboard"
+      [actionIcon]="actionIcon" [secondaryActionIcon]="secondaryActionIcon" [appearance]="appearance" [actionType]="actionType" [actionForm]="actionForm" [actionTutorialTarget]="tutorialTarget" [reserveSpace]="reserveSpace" [avoidKeyboard]="avoidKeyboard"
       [bottomAnchorSelector]="anchorSelector"
       [expandable]="expandable" valueText="R$ 123,45" actionText="Criar rascunho" [actionDisabled]="disabled"
       secondaryActionText="Revisar" [detailText]="expanded ? 'Ocultar detalhes' : 'Detalhes'"
@@ -23,7 +23,9 @@ import { By } from '@angular/platform-browser';
     </app-mobile-total-bar></div><nav class="test-bottom-anchor"></nav>`,
 })
 class HostComponent {
-  appearance: 'default' | 'compact' = 'default';
+  appearance: 'default' | 'compact' | 'actions' = 'default';
+  actionIcon = '';
+  secondaryActionIcon = '';
   scrollable = false;
   anchorSelector = '';
   actionType: 'button' | 'submit' = 'button';
@@ -50,6 +52,18 @@ describe('MobileTotalBarComponent — detalhes internos opcionais', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({ imports: [HostComponent, NoopAnimationsModule], providers: [provideRouter([])] });
     fixture = TestBed.createComponent(HostComponent); fixture.detectChanges();
+  });
+
+  it('oferece duas ações com ícones por opt-in, sem resumo ou detalhes, preservando eventos', () => {
+    const host = fixture.componentInstance; host.appearance = 'actions'; host.inlineDetails = false; host.expandable = false;
+    host.actionIcon = 'chat'; host.secondaryActionIcon = 'content_copy'; fixture.detectChanges();
+    expect(query('.mobile-total-bar--actions-only')).not.toBeNull(); expect(query('.mobile-total-bar__summary')).toBeNull();
+    expect(query('.mobile-total-bar__handle-toggle')).toBeNull(); expect(query('.mobile-total-bar__details')).toBeNull();
+    expect(query('.mobile-total-bar__cta mat-icon').textContent).toBe('chat'); expect(query('.mobile-total-bar__secondary mat-icon').textContent).toBe('content_copy');
+    query<HTMLButtonElement>('.mobile-total-bar__cta').click(); query<HTMLButtonElement>('.mobile-total-bar__secondary').click();
+    expect(host.actions).toBe(1); expect(host.secondaryActions).toBe(1); expect(host.expansions).toBe(0);
+    host.appearance = 'compact'; host.actionIcon = ''; host.secondaryActionIcon = ''; fixture.detectChanges();
+    expect(query('.mobile-total-bar__summary')).not.toBeNull(); expect(query('.mobile-total-bar__cta mat-icon')).toBeNull();
   });
 
   it('adota a aparência compacta compartilhada e preserva submit nativo e alvo do tutorial', () => {

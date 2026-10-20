@@ -1,7 +1,8 @@
 @if (reserveSpace) { <div #clearance class="mobile-total-bar__clearance" aria-hidden="true" [style.height.px]="reservedHeight()"></div> }
 <div #bar class="mobile-total-bar"
   [class.mobile-total-bar--managed]="reserveSpace"
-  [class.mobile-total-bar--compact]="appearance === 'compact'"
+  [class.mobile-total-bar--compact]="appearance === 'compact' || appearance === 'actions'"
+  [class.mobile-total-bar--actions-only]="appearance === 'actions'"
   [class.mobile-total-bar--expanded]="expanded && !awaitingResult"
   [class.mobile-total-bar--awaiting-result]="awaitingResult"
   [class.mobile-total-bar--inline-details]="inlineDetails"
@@ -58,6 +59,7 @@
         <div><strong>{{ loading ? 'Calculando...' : 'Aguardando cálculo' }}</strong></div>
       </div>
     } @else {
+  @if (appearance !== 'actions') {
   <div class="mobile-total-bar__summary" [class.mobile-total-bar__summary--compact]="!status && !detailText">
     <span class="label">{{ label }}</span>
     <span class="value" [class.value--loading]="loading">{{ valueText }}</span>
@@ -89,6 +91,7 @@
     }
   </div>
 
+  }
   <div class="mobile-total-bar__actions">
     @if (secondaryActionText) {
     <button mat-stroked-button
@@ -97,6 +100,7 @@
       [attr.aria-label]="secondaryActionAriaLabel"
       [disabled]="secondaryActionDisabled"
       (click)="onSecondaryActionClick($event)">
+      @if (secondaryActionIcon) { <mat-icon aria-hidden="true">{{ secondaryActionIcon }}</mat-icon> }
       {{ secondaryActionText }}
     </button>
     }
@@ -110,6 +114,7 @@
       [attr.aria-label]="actionAriaLabel"
       [disabled]="actionDisabled"
       (click)="onActionClick($event)">
+      @if (actionIcon) { <mat-icon aria-hidden="true">{{ actionIcon }}</mat-icon> }
       {{ actionText }}
     </button>
   </div>
