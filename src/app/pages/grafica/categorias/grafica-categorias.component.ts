@@ -1,5 +1,9 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { Subject, takeUntil } from 'rxjs';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { DataTableItemDirective } from 'src/app/components/data-table/data-table-item.directive';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { PageEvent } from '@angular/material/paginator';
 import { Sort } from '@angular/material/sort';
@@ -8,7 +12,7 @@ import { finalize } from 'rxjs/operators';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { DataTableCellDirective } from 'src/app/components/data-table/data-table-cell.directive';
 import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
-import { DataTableColumn, DataTablePagination } from 'src/app/components/data-table/data-table.models';
+import { DataTableAction, DataTableActionEvent, DataTableFilterSortChange, DataTableColumn, DataTablePagination } from 'src/app/components/data-table/data-table.models';
 import {
   HierarchyTreeAction,
   HierarchyTreeActionEvent,
@@ -34,24 +38,30 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
     PageCardComponent,
     DataTableComponent,
     DataTableCellDirective,
+    DataTableItemDirective,
     HierarchyTreeComponent,
     ViewModeToggleComponent,
   ],
   template: `
-    <app-page-card titulo="Categorias gráficas" subtitulo="Organização dos produtos gráficos no catálogo">
+    <app-page-card titulo="Categorias gráficas" subtitulo="Organização dos produtos gráficos no catálogo"
+      [primaryAction]="isMobile ? novaAcao : null" (primaryActionClick)="novoMobile()">
+      @if (!isMobile) {
       <div page-header-actions>
         <button mat-flat-button color="primary" type="button" (click)="novo()">
           <mat-icon>add</mat-icon>
           Nova categoria
         </button>
       </div>
+      }
 
       <app-data-table
         [columns]="columns"
-        [data]="categorias"
+        [data]="categorias" [actions]="isMobile ? mobileActions : []" (action)="onMobileAction($event)"
+        [mobileSortPlacement]="visualizacao === 'lista' ? 'filters' : 'list'" mobileSortLabel="Ordenar categorias por" (filterSortChange)="onFilterSortChange($event)"
+        [error]="isMobile ? erro : null" [forbidden]="isMobile && semPermissao" (retry)="carregar()"
         [search]="searchConfig"
         [pagination]="pagination"
-        [loading]="carregando"
+        [loading]="isMobile ? carregando && !categorias.length : carregando" [refreshing]="isMobile && carregando && !!categorias.length"
         [showTable]="visualizacao === 'lista'"
         [sort]="sort"
         [emptyState]="{
@@ -105,6 +115,28 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
             }
           </div>
         </ng-template>
+        <ng-template [appDataTableItem]="categorias" let-categoria let-itemActions="actions" let-emit="emitAction">
+          <article class="categoria-mobile-item" [attr.aria-label]="categoria.nome">
+            <header>
+              <strong>{{ categoria.nome }}</strong>
+              @if (itemActions.length) {
+                <button mat-icon-button type="button" class="categoria-mobile-item__menu" [matMenuTriggerFor]="categoriaMenu" [disabled]="carregando"
+                  [attr.aria-label]="'Ações da categoria ' + categoria.nome"><mat-icon>more_vert</mat-icon></button>
+                <mat-menu #categoriaMenu="matMenu" xPosition="before">
+                  <ng-template matMenuContent>
+                    @for (acao of itemActions; track acao.id) {
+                      <button mat-menu-item type="button" [disabled]="carregando" [class.categoria-mobile-menu__destructive]="acao.color === 'warn'" (click)="emit(categoria, acao.id)">
+                        <mat-icon [color]="acao.color || null">{{ acao.icon }}</mat-icon><span>{{ acao.label }}</span>
+                      </button>
+                    }
+                  </ng-template>
+                </mat-menu>
+              }
+            </header>
+            <p class="categoria-mobile-item__parent">Categoria pai: {{ categoria.categoriaPaiNome || 'Sem categoria pai' }}</p>
+            @if (descricaoLinha(categoria) !== '-') { <p class="categoria-mobile-item__description">{{ descricaoLinha(categoria) }}</p> }
+          </article>
+        </ng-template>
       </app-data-table>
 
       @if (visualizacao === 'arvore') {
@@ -120,44 +152,21 @@ import { catalogoErrorMessage } from '../../catalogo/shared/utils/catalogo-utils
       }
     </app-page-card>
   `,
-  styles: [`
-    .visualizacao-toggle {
-      display: inline-flex;
-    }
-
-    .categoria-nome {
-      display: block;
-      color: #111827;
-      line-height: 1.25;
-    }
-
-    .descricao-cell {
-      display: -webkit-box;
-      max-width: 420px;
-      overflow: hidden;
-      color: #374151;
-      line-height: 1.35;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
-    }
-
-    .acoes-cell {
-      display: inline-flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 4px;
-      min-width: 132px;
-      white-space: nowrap;
-    }
-
-    @media (max-width: 760px) {
-      .visualizacao-toggle {
-        width: 100%;
-      }
-    }
-  `],
+  styleUrl: './grafica-categorias.component.scss',
 })
-export class GraficaCategoriasComponent implements OnInit {
+export class GraficaCategoriasComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  erro: string | null = null;
+  semPermissao = false;
+  private readonly destroy$ = new Subject<void>();
+  readonly novaAcao = { label: 'Nova categoria', icon: 'add', permission: 'GRAFICA_PRODUTOS_EDITAR' };
+  readonly mobileActions: DataTableAction<CatalogoCategoria>[] = this.actionDefinitions().map(acao => ({ ...acao, visible: () => this.podeExecutar(acao.id) }));
+  novoMobile(): void { if (this.auth.temAlgumaPermissao(['GRAFICA_PRODUTOS_EDITAR'])) this.novo(); }
+  onMobileAction(event: DataTableActionEvent<CatalogoCategoria>): void {
+    if (!this.carregando && !this.semPermissao) this.executarAcaoCategoria(event.action, event.row);
+  }
+  onFilterSortChange(event: DataTableFilterSortChange): void { this.onSortChange(event.sort); }
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
   categorias: CatalogoCategoria[] = [];
   categoriasArvore: HierarchyTreeNode<CatalogoCategoria>[] = [];
   total = 0;
@@ -213,7 +222,10 @@ export class GraficaCategoriasComponent implements OnInit {
     private readonly toastr: ToastrService,
     private readonly dialog: MatDialog,
     private readonly auth: AuthService,
-  ) {}
+    breakpoints: BreakpointObserver,
+  ) {
+    breakpoints.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+  }
 
   ngOnInit(): void {
     this.carregar();
@@ -225,13 +237,13 @@ export class GraficaCategoriasComponent implements OnInit {
       return;
     }
 
-    this.carregando = true;
+    this.carregando = true; this.erro = null; this.semPermissao = false;
     this.service.listar(this.listParams()).pipe(finalize(() => this.carregando = false)).subscribe({
       next: (page) => {
         this.categorias = page.content || [];
         this.total = page.totalElements || 0;
       },
-      error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível carregar categorias.')),
+      error: (error) => { this.semPermissao = error?.status === 403; this.erro = catalogoErrorMessage(error, 'Não foi possível carregar categorias.'); this.toastr.error(this.erro); },
     });
   }
 
@@ -286,6 +298,7 @@ export class GraficaCategoriasComponent implements OnInit {
         title: 'Clonar categoria',
         message: `Deseja usar "${item.nome}" como base para criar uma nova categoria?`,
         confirmText: 'Clonar',
+        ...(this.isMobile ? { type: 'default', confirmColor: 'primary' } : {}),
       },
     });
 
@@ -305,6 +318,7 @@ export class GraficaCategoriasComponent implements OnInit {
         message: `Deseja excluir "${item.nome}"?`,
         confirmText: 'Excluir',
         confirmColor: 'warn',
+        ...(this.isMobile ? { type: 'destructive' } : {}),
       },
     });
 

@@ -5,7 +5,7 @@ import { MatDialog, MatDialogRef, MatDialogState } from '@angular/material/dialo
 import { Subject, takeUntil } from 'rxjs';
 import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { CommonModule } from '@angular/common';
-import { afterNextRender, Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild, TemplateRef, ViewContainerRef, ElementRef, inject } from '@angular/core';
+import { afterRender, signal, afterNextRender, Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild, TemplateRef, ViewContainerRef, ElementRef, inject } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { MaterialModule } from 'src/app/material.module';
 import { SectionCardComponent } from '../section-card/section-card.component';
@@ -47,6 +47,7 @@ export class ListFilterBarComponent implements OnChanges, OnDestroy {
   @ViewChild('mobileFilterAction', { static: true }) private mobileFilterAction!: TemplateRef<unknown>;
   readonly mobileHeaderHost = inject(MOBILE_HEADER_ACTIONS, { optional: true });
   private unregisterHeaderAction?: () => void;
+  readonly headerFilterVisible = signal(false);
   get hasFilterFields(): boolean { return !!(this.filters.length || this.hasCustomFilters || this.customFilterTemplate || this.mobileSort); }
   get filterTriggerInHeader(): boolean { return !!this.mobileHeaderHost?.enabled(); }
   private readonly viewContainerRef = inject(ViewContainerRef);
@@ -63,9 +64,12 @@ export class ListFilterBarComponent implements OnChanges, OnDestroy {
   get hasDraftFilters(): boolean { return Object.keys(this.withoutEmptyFilters(this.draftFilters)).length > 0; }
 
   constructor() {
+    // A projected header is checked before its filter bar. Publish visibility only
+    // after rendering, so changing filter/sort inputs cannot invalidate that check.
+    afterRender(() => this.headerFilterVisible.set(this.useMobilePanel && this.hasFilterFields));
     afterNextRender(() => {
       this.unregisterHeaderAction = this.mobileHeaderHost?.register({
-        template: this.mobileFilterAction, visible: () => this.useMobilePanel && this.hasFilterFields,
+        template: this.mobileFilterAction, visible: () => this.headerFilterVisible(),
       });
     });
     this.breakpoints.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => {
