@@ -1,11 +1,11 @@
-<div class="links-preview-dialog">
-  <div class="links-preview-dialog__bar">
+<div class="links-preview-dialog" [class.mobile-side-panel__layout]="mobilePanel">
+  <div class="links-preview-dialog__bar" [class.mobile-side-panel__header]="mobilePanel">
     <strong>Visualizar</strong>
     <button mat-icon-button type="button" (click)="fechar()" aria-label="Fechar visualização">
       <mat-icon>close</mat-icon>
     </button>
   </div>
-  <div class="links-preview-dialog__stage">
+  <div class="links-preview-dialog__stage" [class.mobile-side-panel__body]="mobilePanel">
     <div class="links-preview-dialog__phone" role="img" aria-label="Preview em formato de celular">
       <div class="links-preview-dialog__speaker" aria-hidden="true"></div>
       <div class="links-preview-dialog__screen">

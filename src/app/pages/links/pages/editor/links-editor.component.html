@@ -3,17 +3,18 @@
     class="links-editor-page"
     [titulo]="tituloPagina"
     [subtitulo]="subtituloPagina"
-    botaoTexto="Voltar"
+    [botaoTexto]="isMobile ? undefined : 'Voltar'"
     botaoIcone="arrow_back"
     botaoCor="primary"
     [botaoRota]="['/page/links/paginas']"
     [mostrarDivisor]="true"
-    [formState]="!carregando && !erro && !semPermissao ? formState : undefined"
-    [footerActions]="footerActions"
+    [formState]="!isMobile && !carregando && !erro && !semPermissao ? formState : undefined"
+    [footerActions]="isMobile ? [] : footerActions"
     [saving]="salvandoPagina"
     [savingText]="savingText"
     [actionsDisabled]="publicando || excluindo"
     [headerActionDisabled]="salvandoPagina || publicando || excluindo">
+    @if (isMobile) { <a page-mobile-header-actions mat-button [routerLink]="['/page/links/paginas']" [disabled]="salvandoPagina || publicando || excluindo"><mat-icon>arrow_back</mat-icon>Voltar</a> }
 
     @if (carregando) {
     <div class="links-state">
@@ -50,7 +51,7 @@
         <mat-tab-group mat-stretch-tabs="false" animationDuration="0ms" dynamicHeight [(selectedIndex)]="abaSelecionada">
           <mat-tab label="Geral">
             <div class="links-tab-body links-tab-body--geral">
-              <app-section-card titulo="Página" subtitulo="Título e descrição exibidos no ClickLink público.">
+              <app-section-card [mobilePlain]="isMobile" titulo="Página" subtitulo="Título e descrição exibidos no ClickLink público.">
                 <div class="links-section-body">
                   <app-input-texto-restrito
                     [control]="tituloControl"
@@ -69,7 +70,7 @@
                 </div>
               </app-section-card>
 
-              <app-section-card titulo="Identidade da empresa" subtitulo="Logo e endereço pertencem à identidade pública global da empresa.">
+              <app-section-card [mobilePlain]="isMobile" titulo="Identidade da empresa" subtitulo="Logo e endereço pertencem à identidade pública global da empresa.">
                 <div class="links-identity">
                   <div class="links-logo__frame links-logo__frame--compact" *ngIf="identidade?.logoUrl; else logoFallback">
                     <img [src]="identidade?.logoUrl" alt="Logo da empresa" />
@@ -91,7 +92,7 @@
                 </div>
               </app-section-card>
 
-              <app-section-card titulo="Endereço público" *ngIf="pagina">
+              <app-section-card [mobilePlain]="isMobile" titulo="Endereço público" *ngIf="pagina">
                 <div class="links-section__header">
                   <div>
                     <p *ngIf="urlPublica(); else semEndereco">{{ urlPublica() }}</p>
@@ -106,7 +107,7 @@
                 </div>
               </app-section-card>
 
-              <app-section-card titulo="Publicação" *ngIf="pagina">
+              <app-section-card [mobilePlain]="isMobile" titulo="Publicação" *ngIf="pagina">
                 <div class="links-section-body">
                   <p class="links-muted" *ngIf="pagina.publicada && urlPublica(); else publicacaoNaoDisponivel">
                     Esta página está disponível publicamente em {{ urlPublica() }}.
@@ -140,7 +141,7 @@
                 </div>
               </app-section-card>
 
-              <app-section-card class="links-section--danger" titulo="Ações avançadas" subtitulo="Remove definitivamente a página, seus links e seus dados de analytics." *ngIf="pagina">
+              <app-section-card [mobilePlain]="isMobile" class="links-section--danger" titulo="Ações avançadas" subtitulo="Remove definitivamente a página, seus links e seus dados de analytics." *ngIf="pagina">
                 <button mat-stroked-button color="warn" type="button" (click)="excluirPagina()" [disabled]="excluindo || !podeExcluir()" *temPermissao="permissoes.excluir">
                   <mat-icon>delete</mat-icon>
                   Excluir página
@@ -151,7 +152,7 @@
 
           <mat-tab label="Links">
             <div class="links-tab-body">
-              <app-section-card *ngIf="!pagina">
+              <app-section-card [mobilePlain]="isMobile" *ngIf="!pagina">
                 <div class="links-empty links-empty--compact">
                   <mat-icon>save</mat-icon>
                   <h2>Salve a página para adicionar links</h2>
@@ -159,7 +160,7 @@
                 </div>
               </app-section-card>
 
-              <app-section-card titulo="Links" subtitulo="Itens exibidos na sua página pública. Essas operações são salvas individualmente." *ngIf="pagina">
+              <app-section-card [mobilePlain]="isMobile" titulo="Links" subtitulo="Itens exibidos na sua página pública. Essas operações são salvas individualmente." *ngIf="pagina">
                 <button section-card-actions mat-flat-button color="primary" type="button" (click)="abrirItem()" [disabled]="salvandoItem || !podeEditarPagina()" *temPermissao="permissoes.editar">
                   <mat-icon>add</mat-icon>
                   Adicionar link
@@ -239,18 +240,9 @@
                         <strong>{{ item.titulo }}</strong>
                         <span>{{ tipoLabel(item.tipo) }} · {{ item.subtitulo || (item.ativo ? 'Ativo' : 'Inativo') }}</span>
                       </div>
-                      <div class="links-item__actions">
-                        <button
-                          mat-icon-button
-                          type="button"
-                          *ngFor="let action of actions"
-                          [disabled]="action.disabled?.(item)"
-                          [matTooltip]="action.label"
-                          [attr.aria-label]="action.label"
-                          (click)="emitAction(item, action.id)">
-                          <mat-icon [color]="action.color || null">{{ action.icon }}</mat-icon>
-                        </button>
-                      </div>
+                      @if (actions.length) {
+                        <button mat-icon-button type="button" class="links-item__menu" [matMenuTriggerFor]="linkMobileMenu" [matMenuTriggerData]="{ row: item, actions: actions, emitAction: emitAction }" aria-label="Abrir ações do link"><mat-icon>more_vert</mat-icon></button>
+                      }
                     </article>
                   </ng-template>
                 </app-data-table>
@@ -260,7 +252,7 @@
 
           <mat-tab label="Aparência">
             <div class="links-tab-body links-appearance-layout">
-              <app-section-card titulo="Aparência" subtitulo="Configuração visual básica da página pública.">
+              <app-section-card [mobilePlain]="isMobile" titulo="Aparência" subtitulo="Configuração visual básica da página pública.">
                 <div class="links-section-body">
                   <mat-button-toggle-group formControlName="tema" aria-label="Tema da página">
                     <mat-button-toggle *ngFor="let tema of temas" [value]="tema.value">{{ tema.label }}</mat-button-toggle>
@@ -291,7 +283,7 @@
                 </div>
               </app-section-card>
 
-              <app-section-card class="links-preview-section" titulo="Preview mobile" subtitulo="Prévia da página pública com as alterações em edição.">
+              <app-section-card [mobilePlain]="isMobile" class="links-preview-section" titulo="Preview mobile" subtitulo="Prévia da página pública com as alterações em edição.">
                 <button section-card-actions mat-flat-button color="primary" class="links-preview-section__open" type="button" (click)="visualizarMobile()" *ngIf="pagina">
                   <mat-icon>smartphone</mat-icon>
                   Abrir preview
@@ -305,7 +297,7 @@
 
           <mat-tab label="Compartilhar">
             <div class="links-tab-body">
-              <app-section-card class="links-share-section" *ngIf="!pagina">
+              <app-section-card [mobilePlain]="isMobile" class="links-share-section" *ngIf="!pagina">
                 <div class="links-empty links-empty--compact">
                   <mat-icon>save</mat-icon>
                   <h2>Salve a página para compartilhar</h2>
@@ -313,7 +305,7 @@
                 </div>
               </app-section-card>
 
-              <app-section-card class="links-share-section" titulo="Compartilhar" subtitulo="Copie a URL pública ou baixe o QR Code da página." *ngIf="pagina">
+              <app-section-card [mobilePlain]="isMobile" class="links-share-section" titulo="Compartilhar" subtitulo="Copie a URL pública ou baixe o QR Code da página." *ngIf="pagina">
                 <app-links-share-panel [url]="urlPublica()" [slug]="identidade?.slug || ''"></app-links-share-panel>
               </app-section-card>
             </div>
@@ -322,5 +314,21 @@
       </form>
     </div>
     }
+    @if (isMobile && !carregando && !erro && !semPermissao && podeEditarPagina()) {
+      <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true"
+        actionType="submit" [actionForm]="formId" bottomAnchorSelector=".mobile-bottom-nav"
+        bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+        secondaryActionText="Cancelar" secondaryActionAriaLabel="Restaurar formulário" [secondaryActionDisabled]="salvandoPagina || publicando || excluindo || !formState.canReset" (secondaryAction)="formState.reset()"
+        [actionText]="salvandoPagina ? savingText : 'Salvar página'" actionAriaLabel="Salvar página" actionIcon="save"
+        [actionDisabled]="form.invalid || salvandoPagina || publicando || excluindo || !podeEditarPagina()" [loading]="salvandoPagina" />
+    }
   </app-page-card>
 </div>
+
+<mat-menu #linkMobileMenu="matMenu" xPosition="before">
+  <ng-template matMenuContent let-row="row" let-actions="actions" let-emitAction="emitAction">
+    @for (action of actions; track action.id) {
+      <button mat-menu-item type="button" [class.mobile-item-destructive]="action.color === 'warn'" [disabled]="action.disabled?.(row)" (click)="emitAction(row, action.id)"><mat-icon>{{ action.icon }}</mat-icon><span>{{ action.label }}</span></button>
+    }
+  </ng-template>
+</mat-menu>

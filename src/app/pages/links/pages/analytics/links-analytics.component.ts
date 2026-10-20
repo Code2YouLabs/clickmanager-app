@@ -1,3 +1,4 @@
+import { DataTableItemDirective } from 'src/app/components/data-table/data-table-item.directive';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit } from '@angular/core';
@@ -25,7 +26,7 @@ import { LinksService } from '../../services/links.service';
 @Component({
   selector: 'app-links-analytics',
   standalone: true,
-  imports: [
+  imports: [DataTableItemDirective,
     CommonModule,
     ReactiveFormsModule,
     MaterialModule,

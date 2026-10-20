@@ -1,6 +1,11 @@
+import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
+import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
+import { Subject, takeUntil } from 'rxjs';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -59,6 +64,7 @@ interface LinkEmpresaSugestao extends PaginaLinksItemRequest {
     RouterModule,
     MaterialModule,
     PageCardComponent,
+    MobileTotalBarComponent,
     SectionCardComponent,
     DataTableComponent,
     DataTableCellDirective,
@@ -72,7 +78,10 @@ interface LinkEmpresaSugestao extends PaginaLinksItemRequest {
   templateUrl: './links-editor.component.html',
   styleUrls: ['../../links.scss', './links-editor.component.scss'],
 })
-export class LinksEditorComponent implements OnInit {
+export class LinksEditorComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  private readonly destroy$ = new Subject<void>();
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
   pagina: PaginaLinksDetalhe | null = null;
   identidade: LinksIdentidadePublica | null = null;
   presenca: PresencaPublicaResponse | null = null;
@@ -135,8 +144,11 @@ export class LinksEditorComponent implements OnInit {
     private readonly empresaService: EmpresaFormService,
     private readonly authService: AuthService,
     private readonly toastr: ToastrService,
-    private readonly dialog: MatDialog
-  ) {}
+    private readonly dialog: MatDialog,
+    breakpoints?: BreakpointObserver
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+  }
 
   ngOnInit(): void {
     if (!this.podeVer()) {
@@ -305,12 +317,15 @@ export class LinksEditorComponent implements OnInit {
 
   abrirItem(item?: PaginaLinksItem): void {
     if (!this.pagina || this.salvandoItem || !this.podeEditarPagina()) return;
-    const dialogRef = this.dialog.open(LinksItemDialogComponent, {
+    const config = {
       width: window.innerWidth <= 640 ? '100vw' : '620px',
       maxWidth: window.innerWidth <= 640 ? '100vw' : '90vw',
       panelClass: 'links-item-dialog-panel',
       data: { item: item || null, ordem: item ? item.ordem : this.pagina.itens.length },
-    });
+    };
+    const dialogRef = this.isMobile
+      ? openMobileSidePanel<LinksItemDialogComponent, import('../../components/item-dialog/links-item-dialog.component').LinksItemDialogData, PaginaLinksItemRequest>(this.dialog, LinksItemDialogComponent, { ...config, data: { ...config.data, mobilePanel: true } })
+      : this.dialog.open(LinksItemDialogComponent, config);
 
     dialogRef.afterClosed().subscribe((payload: PaginaLinksItemRequest | undefined) => {
       if (!payload) return;
@@ -503,14 +518,16 @@ export class LinksEditorComponent implements OnInit {
   }
 
   visualizarMobile(): void {
-    this.dialog.open(LinksPreviewDialogComponent, {
+    const config = {
       width: '100vw',
       height: '100dvh',
       maxWidth: '100vw',
       maxHeight: '100dvh',
       panelClass: 'links-preview-dialog-panel',
       data: this.previewModel(),
-    });
+    };
+    if (this.isMobile) openMobileSidePanel(this.dialog, LinksPreviewDialogComponent, { ...config, data: { ...config.data, mobilePanel: true } });
+    else this.dialog.open(LinksPreviewDialogComponent, config);
   }
 
   itensOrdenados(): PaginaLinksItem[] {

@@ -119,6 +119,9 @@
           <ng-template appDataTableCell="cliques" let-item>
             <strong>{{ numeroFormatado(item.cliques) }}</strong>
           </ng-template>
+          <ng-template [appDataTableItem]="ranking()" let-item>
+            <article class="links-ranking-item"><div><strong>{{ item.titulo }}</strong><span>{{ tipoLabel(item.tipo) }}</span></div><span>{{ numeroFormatado(item.cliques) }} cliques</span></article>
+          </ng-template>
         </app-data-table>
       </app-section-card>
       }

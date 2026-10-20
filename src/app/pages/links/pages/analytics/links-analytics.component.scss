@@ -1,3 +1,4 @@
+@use '../../../../shared/responsive/mobile-list-item' as mobile-item;
 .links-analytics-content {
   display: grid;
   gap: 16px;
@@ -38,4 +39,10 @@
   .links-analytics-period {
     min-width: 0;
   }
+}
+
+@media (max-width: 760px) {
+  .links-ranking-item { @include mobile-item.surface; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .links-ranking-item > div { min-width: 0; display: grid; gap: 4px; strong { @include mobile-item.heading; } span { color: var(--mat-sys-on-surface-variant); font-size: 12px; } }
+  .links-ranking-item > span { flex-shrink: 0; font-weight: 600; }
 }
