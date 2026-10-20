@@ -1,3 +1,5 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { AuthService } from 'src/app/services/auth.service';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -35,6 +37,8 @@ describe('GraficaProdutosComponent', () => {
     TestBed.configureTestingModule({
       imports: [GraficaProdutosComponent, NoopAnimationsModule],
       providers: [
+        { provide: BreakpointObserver, useValue: { observe: () => of({ matches: false, breakpoints: {} }) } },
+        { provide: AuthService, useValue: { temPermissao: () => true } },
         { provide: GraficaProdutoService, useValue: service },
         { provide: Router, useValue: router },
         { provide: ToastrService, useValue: jasmine.createSpyObj('ToastrService', ['success', 'error']) },

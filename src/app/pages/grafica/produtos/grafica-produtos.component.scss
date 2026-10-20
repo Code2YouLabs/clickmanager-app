@@ -1,3 +1,6 @@
+@use "../../../shared/responsive/mobile-foundation" as mobile;
+@use "../../../shared/responsive/mobile-list-item" as item;
+
 .produto-thumb {
       display: block;
       width: 40px;
@@ -112,3 +115,21 @@
       min-width: 132px;
       white-space: nowrap;
     }
+
+@include mobile.mobile-foundation {
+  .produto-list-toolbar { display: flex; align-items: center; gap: 8px; min-width: 0; width: 100%; }
+  .produto-list-toolbar > button:first-child { flex: 1; min-width: 0; white-space: normal; min-height: 44px; }
+  .produto-mobile-item {
+    @include item.surface;
+    display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: start; gap: 8px;
+    &__content { min-width: 0; }
+    strong { @include item.heading; display: block; }
+    small { margin-top: 4px; color: var(--mat-sys-on-surface-variant); font-size: 12px; line-height: 16px; overflow-wrap: anywhere; }
+    &__description { margin: 4px 0 0; color: var(--mat-sys-on-surface-variant); font-size: 14px; line-height: 20px; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+    &__menu { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
+  }
+  .produto-mobile-menu__destructive {
+    --mat-menu-item-label-text-color: var(--mat-sys-error);
+    --mat-menu-item-icon-color: var(--mat-sys-error);
+  }
+}

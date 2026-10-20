@@ -1,16 +1,22 @@
 import { BibliotecaDialogComponent } from '../biblioteca/biblioteca-dialog.component';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { AuthService } from 'src/app/services/auth.service';
+import { DataTableItemDirective } from 'src/app/components/data-table/data-table-item.directive';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { PageEvent } from '@angular/material/paginator';
 import { Sort } from '@angular/material/sort';
 import { Router, RouterModule } from '@angular/router';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin, of, Subject, takeUntil } from 'rxjs';
 import { catchError, finalize } from 'rxjs/operators';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { DataTableCellDirective } from 'src/app/components/data-table/data-table-cell.directive';
 import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
 import {
+  DataTableAction,
+  DataTableActionEvent,
   DataTableColumn,
   DataTableFilter,
   DataTableFilterState,
@@ -51,11 +57,29 @@ type CategoriaResumoLinha = {
     PageCardComponent,
     DataTableComponent,
     DataTableCellDirective,
+    DataTableItemDirective,
   ],
   templateUrl: './grafica-produtos.component.html',
   styleUrl: './grafica-produtos.component.scss',
 })
-export class GraficaProdutosComponent implements OnInit {
+export class GraficaProdutosComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  private readonly destroy$ = new Subject<void>();
+  readonly novaAcao = { label: 'Novo produto', icon: 'add', permission: 'GRAFICA_PRODUTOS_EDITAR' };
+  readonly mobileActions: DataTableAction<GraficaProduto>[] = [
+    { id: 'editar', label: 'Editar produto', icon: 'edit', visible: () => this.podeEditarMobile },
+    { id: 'clonar', label: 'Clonar produto', icon: 'content_copy', visible: () => this.podeEditarMobile },
+    { id: 'excluir', label: 'Excluir produto', icon: 'delete', color: 'warn', visible: () => this.podeEditarMobile },
+  ];
+  get podeEditarMobile(): boolean { return this.auth.temPermissao('GRAFICA_PRODUTOS_EDITAR'); }
+  novoMobile(): void { if (this.podeEditarMobile) this.novo(); }
+  onMobileAction(event: DataTableActionEvent<GraficaProduto>): void {
+    if (this.acessoNegado || this.carregando || !this.podeEditarMobile) return;
+    if (event.action === 'editar') this.configurar(event.row);
+    else if (event.action === 'clonar') this.clonar(event.row);
+    else if (event.action === 'excluir') this.excluir(event.row);
+  }
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
   produtos: GraficaProduto[] = [];
   total = 0;
   pagina = 0;
@@ -113,8 +137,12 @@ export class GraficaProdutosComponent implements OnInit {
     private readonly router: Router,
     private readonly graficaService: GraficaProdutoService,
     private readonly toastr: ToastrService,
-    private readonly dialog: MatDialog
-  ) {}
+    private readonly dialog: MatDialog,
+    private readonly auth: AuthService,
+    breakpoints: BreakpointObserver
+  ) {
+    breakpoints.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+  }
 
   ngOnInit(): void {
     this.carregarFiltros();
@@ -285,6 +313,7 @@ export class GraficaProdutosComponent implements OnInit {
         title: 'Clonar produto',
         message: `Deseja realmente usar "${item.catalogoProdutoNome || 'este produto'}" como base para criar um novo produto?`,
         confirmText: 'Clonar',
+        ...(this.isMobile ? { type: 'default', confirmColor: 'primary' } : {}),
       },
     });
 
@@ -304,6 +333,7 @@ export class GraficaProdutosComponent implements OnInit {
         message: `Deseja excluir "${item.catalogoProdutoNome || 'este produto'}"?`,
         confirmText: 'Excluir',
         confirmColor: 'warn',
+        ...(this.isMobile ? { type: 'destructive' } : {}),
       },
     });
 
