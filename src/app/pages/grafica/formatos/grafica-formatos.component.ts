@@ -1,5 +1,10 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { Subject, takeUntil } from 'rxjs';
+import { AuthService } from 'src/app/services/auth.service';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { DataTableItemDirective } from 'src/app/components/data-table/data-table-item.directive';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { PageEvent } from '@angular/material/paginator';
 import { Router, RouterModule } from '@angular/router';
@@ -7,7 +12,7 @@ import { finalize } from 'rxjs/operators';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { DataTableCellDirective } from 'src/app/components/data-table/data-table-cell.directive';
 import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
-import { DataTableColumn, DataTablePagination } from 'src/app/components/data-table/data-table.models';
+import { DataTableAction, DataTableActionEvent, DataTableColumn, DataTablePagination } from 'src/app/components/data-table/data-table.models';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { MaterialModule } from 'src/app/material.module';
 import { ToastrService } from 'ngx-toastr';
@@ -25,22 +30,26 @@ import { GraficaProdutoService } from '../shared/grafica.service';
     PageCardComponent,
     DataTableComponent,
     DataTableCellDirective,
+    DataTableItemDirective,
   ],
   template: `
-    <app-page-card titulo="Formatos gráficos" subtitulo="Formatos usados na configuração de produtos gráficos">
+    <app-page-card titulo="Formatos gráficos" subtitulo="Formatos usados na configuração de produtos gráficos" [primaryAction]="isMobile ? novaAcao : null" (primaryActionClick)="novoMobile()">
+      @if (!isMobile) {
       <div page-header-actions>
         <button mat-flat-button color="primary" type="button" (click)="novo()">
           <mat-icon>add</mat-icon>
           Novo formato
         </button>
       </div>
+      }
 
       <app-data-table
         [columns]="columns"
-        [data]="formatosPaginados"
+        [data]="formatosPaginados" [actions]="isMobile ? mobileActions : []" (action)="onMobileAction($event)"
+        [error]="isMobile ? erro : null" [forbidden]="isMobile && semPermissao" (retry)="carregar()"
         [search]="searchConfig"
         [pagination]="pagination"
-        [loading]="carregando"
+        [loading]="isMobile ? carregando && !formatosPaginados.length : carregando" [refreshing]="isMobile && carregando && !!formatosPaginados.length"
         [emptyState]="{
           title: 'Nenhum formato encontrado',
           description: 'Cadastre um formato para configurar produtos gráficos.',
@@ -80,37 +89,54 @@ import { GraficaProdutoService } from '../shared/grafica.service';
             </button>
           </div>
         </ng-template>
+        <ng-template [appDataTableItem]="formatosPaginados" let-item let-itemActions="actions" let-emit="emitAction">
+          <article class="cadastro-mobile-item" [attr.aria-label]="item.nome">
+            <header>
+              <strong>{{ item.nome }}</strong>
+              @if (itemActions.length) {
+                <button mat-icon-button type="button" class="cadastro-mobile-item__menu" [matMenuTriggerFor]="itemMenu" [disabled]="carregando"
+                  [attr.aria-label]="'Ações de ' + item.nome"><mat-icon>more_vert</mat-icon></button>
+                <mat-menu #itemMenu="matMenu" xPosition="before">
+                  <ng-template matMenuContent>
+                    @for (acao of itemActions; track acao.id) {
+                      <button mat-menu-item type="button" [disabled]="carregando" [class.cadastro-mobile-menu__destructive]="acao.color === 'warn'" (click)="emit(item, acao.id)">
+                        <mat-icon [color]="acao.color || null">{{ acao.icon }}</mat-icon><span>{{ acao.label }}</span>
+                      </button>
+                    }
+                  </ng-template>
+                </mat-menu>
+              }
+            </header>
+            @if (item.descricao) { <p class="cadastro-mobile-item__description">{{ item.descricao }}</p> }
+            <p>Dimensão: {{ dimensao(item) }}</p>
+            @if (dimensaoUtil(item) !== '-') { <p>Área útil: {{ dimensaoUtil(item) }}</p> }
+          </article>
+        </ng-template>
       </app-data-table>
     </app-page-card>
   `,
-  styles: [`
-    .formato-nome {
-      display: block;
-      color: #111827;
-      line-height: 1.25;
-    }
-
-    .descricao-cell {
-      display: -webkit-box;
-      max-width: 420px;
-      overflow: hidden;
-      color: #374151;
-      line-height: 1.35;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 2;
-    }
-
-    .acoes-cell {
-      display: inline-flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 4px;
-      min-width: 132px;
-      white-space: nowrap;
-    }
-  `],
+  styleUrl: './grafica-formatos.component.scss',
 })
-export class GraficaFormatosComponent implements OnInit {
+export class GraficaFormatosComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  erro: string | null = null;
+  semPermissao = false;
+  private readonly destroy$ = new Subject<void>();
+  readonly novaAcao = { label: 'Novo formato', icon: 'add', permission: 'GRAFICA_PRODUTOS_EDITAR' };
+  readonly mobileActions: DataTableAction<GraficaFormato>[] = [
+    { id: 'editar', label: 'Editar', icon: 'edit', visible: () => this.podeEditarMobile },
+    { id: 'clonar', label: 'Clonar', icon: 'content_copy', visible: () => this.podeEditarMobile },
+    { id: 'excluir', label: 'Excluir', icon: 'delete', color: 'warn', visible: () => this.podeEditarMobile },
+  ];
+  get podeEditarMobile(): boolean { return !!this.auth?.temPermissao('GRAFICA_PRODUTOS_EDITAR'); }
+  novoMobile(): void { if (this.podeEditarMobile) this.novo(); }
+  onMobileAction(event: DataTableActionEvent<GraficaFormato>): void {
+    if (!this.podeEditarMobile || this.carregando || this.semPermissao) return;
+    if (event.action === 'editar') this.editar(event.row);
+    else if (event.action === 'clonar') this.clonar(event.row);
+    else if (event.action === 'excluir') this.excluir(event.row);
+  }
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
   formatos: GraficaFormato[] = [];
   pagina = 0;
   tamanho = 10;
@@ -162,20 +188,24 @@ export class GraficaFormatosComponent implements OnInit {
     private readonly router: Router,
     private readonly toastr: ToastrService,
     private readonly dialog: MatDialog,
-  ) {}
+    private readonly auth?: AuthService,
+    breakpoints?: BreakpointObserver,
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+  }
 
   ngOnInit(): void {
     this.carregar();
   }
 
   carregar(): void {
-    this.carregando = true;
+    this.carregando = true; this.erro = null; this.semPermissao = false;
     this.service.listarFormatos().pipe(finalize(() => this.carregando = false)).subscribe({
       next: (items) => {
         this.formatos = items || [];
         this.pagina = 0;
       },
-      error: (error) => this.toastr.error(catalogoErrorMessage(error, 'Não foi possível carregar formatos.')),
+      error: (error) => { this.semPermissao = error?.status === 403; this.erro = catalogoErrorMessage(error, 'Não foi possível carregar formatos.'); this.toastr.error(this.erro); },
     });
   }
 
@@ -204,6 +234,7 @@ export class GraficaFormatosComponent implements OnInit {
         title: 'Clonar formato',
         message: `Deseja criar um formato a partir de "${item.nome}"?`,
         confirmText: 'Clonar',
+        ...(this.isMobile ? { type: 'default', confirmColor: 'primary' } : {}),
       },
     });
 
@@ -221,6 +252,7 @@ export class GraficaFormatosComponent implements OnInit {
         message: `Deseja excluir "${item.nome}"?`,
         confirmText: 'Excluir',
         confirmColor: 'warn',
+        ...(this.isMobile ? { type: 'destructive' } : {}),
       },
     });
 

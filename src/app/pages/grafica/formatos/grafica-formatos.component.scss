@@ -1,0 +1,28 @@
+@use "../cadastros/mobile-cadastro-list" as mobile;
+
+    .formato-nome {
+      display: block;
+      color: #111827;
+      line-height: 1.25;
+    }
+
+    .descricao-cell {
+      display: -webkit-box;
+      max-width: 420px;
+      overflow: hidden;
+      color: #374151;
+      line-height: 1.35;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .acoes-cell {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+      min-width: 132px;
+      white-space: nowrap;
+    }
+
+@include mobile.items;
