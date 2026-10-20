@@ -22,7 +22,7 @@
           <mat-icon>sync_alt</mat-icon>
           <span>Trocar status</span>
         </button>
-        <button mat-menu-item *ngIf="statusOptions?.includes('CANCELADO')" (click)="cancelarPedido.emit()" [disabled]="inativo || isReadOnly">
+        <button mat-menu-item *ngIf="statusOptions?.includes('CANCELADO')" (click)="confirmarCancelamento()" [disabled]="inativo || isReadOnly">
           <mat-icon class="warn">cancel</mat-icon>
           <span class="warn-text">Cancelar pedido</span>
         </button>

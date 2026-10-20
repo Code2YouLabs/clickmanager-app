@@ -16,6 +16,10 @@ import { PedidoTrocarStatusDialogComponent } from './pedido-trocar-status-dialog
 import { StatusBadgeComponent } from '../status-badge/status-badge.component';
 import { classificarTransicaoPedido } from './pedido-transicao-apresentacao';
 import { take } from 'rxjs';
+import { ConfirmDialogComponent } from '../dialog/confirm-dialog/confirm-dialog.component';
+import { confirmacaoCancelamentoPedido } from './pedido-cancelamento-confirmacao';
+
+type ConfirmacaoPedidoRef = MatDialogRef<PedidoTrocarStatusDialogComponent> | MatDialogRef<ConfirmDialogComponent>;
 
 const FLOW_STEPS = ['AGUARDANDO_PAGAMENTO', 'PENDENTE', 'EM_PRODUCAO', 'PRONTO', 'ENTREGUE'];
 
@@ -68,6 +72,7 @@ export class PedidoFluxoControlesComponent implements OnChanges {
   @Input() mobileActionsPanel = false;
   @Output() abrirAcoesMobile = new EventEmitter<void>();
   @Input() statusAtualLabel: string | null = null;
+  @Input() pedidoReferencia: string | null = null;
   STATUS_UI = STATUS_UI;
   @Input() titulo = 'Fluxo do pedido';
   @Input() renderCard = true;
@@ -118,7 +123,7 @@ export class PedidoFluxoControlesComponent implements OnChanges {
   };
 
   private dialog = inject(MatDialog);
-  private confirmacaoStatusRef?: MatDialogRef<PedidoTrocarStatusDialogComponent>;
+  private confirmacaoStatusRef?: ConfirmacaoPedidoRef;
 
   ngOnChanges(_changes: SimpleChanges): void {
     this.computeFlowUI();
@@ -259,10 +264,31 @@ export class PedidoFluxoControlesComponent implements OnChanges {
     return this.abrirConfirmacaoTrocaStatus(status);
   }
 
-  confirmarCancelamentoMobile(): MatDialogRef<PedidoTrocarStatusDialogComponent> | undefined {
-    const transicao = this.transicoes.find(opcao => classificarTransicaoPedido(opcao.status) === 'cancelamento');
-    if (!this.mobileCompact || this.mobileStatusBusy || this.isReadOnly || !transicao || transicao.bloqueado) return;
-    return this.abrirConfirmacaoTrocaStatus(transicao.status, true);
+  confirmarCancelamentoMobile(): MatDialogRef<ConfirmDialogComponent> | undefined {
+    if (!this.mobileCompact) return;
+    return this.confirmarCancelamento();
+  }
+
+  confirmarCancelamento(): MatDialogRef<ConfirmDialogComponent> | undefined {
+    const disponivel = () => (this.transicoes.length ? this.transicoes : this.statusOptions.map(status => ({ status, bloqueado: false })))
+      .some(opcao => classificarTransicaoPedido(opcao.status) === 'cancelamento' && !opcao.bloqueado);
+    if (this.mobileStatusBusy || this.isReadOnly || !disponivel()) return;
+    const ref = this.dialog.open(ConfirmDialogComponent, {
+      width: '440px', maxWidth: 'calc(100vw - 32px)',
+      data: confirmacaoCancelamentoPedido(this.pedidoReferencia, this.vm.statusLabel),
+    });
+    this.confirmacaoStatusRef = ref;
+    ref.afterClosed().pipe(take(1)).subscribe(confirmado => {
+      if (this.confirmacaoStatusRef === ref) this.confirmacaoStatusRef = undefined;
+      if (confirmado !== true || this.mobileStatusBusy || this.isReadOnly || !disponivel()) return;
+      if (this.mobileCompact) {
+        const transicao = this.transicoes.find(opcao => classificarTransicaoPedido(opcao.status) === 'cancelamento');
+        if (!transicao) return;
+        this.statusControl?.setValue(transicao.status);
+        this.trocarStatusSelecionado.emit(transicao.status); this.salvarStatus.emit();
+      } else this.cancelarPedido.emit();
+    });
+    return ref;
   }
 
   onNextAction(): void {
@@ -281,7 +307,8 @@ export class PedidoFluxoControlesComponent implements OnChanges {
       case 'mudarStatus': {
         const destino = (this.vm.nextAction as any)?.target;
         if (destino) {
-          this.abrirConfirmacaoTrocaStatus(destino);
+          if (classificarTransicaoPedido(destino) === 'cancelamento') this.confirmarCancelamento();
+          else this.abrirConfirmacaoTrocaStatus(destino);
         }
         break;
       }
@@ -302,17 +329,16 @@ export class PedidoFluxoControlesComponent implements OnChanges {
     }
   }
 
-  abrirMenuTrocarStatus(): MatDialogRef<PedidoTrocarStatusDialogComponent> | undefined {
+  abrirMenuTrocarStatus(): ConfirmacaoPedidoRef | undefined {
     const opcoes = this.opcoesTrocaStatus;
     if (this.inativo || this.isReadOnly || !opcoes.length) return;
+    if (opcoes.every(opcao => classificarTransicaoPedido(opcao.status) === 'cancelamento')) return this.confirmarCancelamento();
     return this.abrirConfirmacaoTrocaStatus();
   }
 
-  private abrirConfirmacaoTrocaStatus(statusDestino?: string, cancelamentoMobile = false): MatDialogRef<PedidoTrocarStatusDialogComponent> | undefined {
+  private abrirConfirmacaoTrocaStatus(statusDestino?: string): MatDialogRef<PedidoTrocarStatusDialogComponent> | undefined {
     if (this.mobileCompact && this.mobileStatusBusy) return;
-    const opcoes = cancelamentoMobile
-      ? this.transicoes.filter(opcao => classificarTransicaoPedido(opcao.status) === 'cancelamento')
-      : this.opcoesTrocaStatus;
+    const opcoes = this.opcoesTrocaStatus;
     if (this.inativo || this.isReadOnly || !opcoes.length) return;
 
     const ref = this.dialog.open(PedidoTrocarStatusDialogComponent, {
@@ -321,7 +347,8 @@ export class PedidoFluxoControlesComponent implements OnChanges {
       data: {
         statusAtual: this.statusControl?.value || this.statusAtual,
         statusDestino: statusDestino || null,
-        opcoes
+        opcoes,
+        cancelamentoSeparado: !this.mobileCompact,
       }
     });
 
@@ -329,6 +356,9 @@ export class PedidoFluxoControlesComponent implements OnChanges {
     ref.afterClosed().pipe(take(1)).subscribe((novo: { status: string } | null | undefined) => {
       if (this.confirmacaoStatusRef === ref) this.confirmacaoStatusRef = undefined;
       if (novo?.status) {
+        if (!this.mobileCompact && classificarTransicaoPedido(novo.status) === 'cancelamento') {
+          this.confirmarCancelamento(); return;
+        }
         if (this.mobileCompact && (this.mobileStatusBusy || this.isReadOnly ||
           !opcoes.some(opcao => opcao.status === novo.status && !opcao.bloqueado) ||
           !this.transicoes.some(opcao => opcao.status === novo.status && !opcao.bloqueado))) return;

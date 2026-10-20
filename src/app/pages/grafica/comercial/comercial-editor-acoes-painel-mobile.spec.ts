@@ -68,7 +68,7 @@ describe('Ações do pedido em painel lateral mobile', () => {
   const open = () => { trigger().click(); tick(400); render(); };
   const close = () => q('[aria-label="Fechar ações do pedido"]').click();
   const confirm = () => {
-    const button = Array.from(document.querySelectorAll<HTMLButtonElement>('mat-dialog-actions button')).find(b => b.textContent?.includes('Confirmar status'))!;
+    const button = document.querySelector<HTMLButtonElement>('.confirmation-submit') || Array.from(document.querySelectorAll<HTMLButtonElement>('mat-dialog-actions button')).find(b => b.textContent?.includes('Confirmar status'))!;
     button.click(); tick(400); render();
   };
 
@@ -173,10 +173,15 @@ describe('Ações do pedido em painel lateral mobile', () => {
     const ref = TestBed.inject(MatDialog).openDialogs.at(-1)!;
     expect(ref.componentInstance.data.opcoes.map((opcao: any) => opcao.status)).toEqual(['PENDENTE']);
     ref.close(); tick(400); render();
-    q('.order-action-cancel').click(); render();
+    q('.order-action-cancel').click(); tick(); render();
     const cancellation = TestBed.inject(MatDialog).openDialogs.at(-1)!;
-    expect(cancellation.componentInstance.data.statusDestino).toBe('CANCELADO');
-    expect(cancellation.componentInstance.data.opcoes.map((opcao: any) => opcao.status)).toEqual(['CANCELADO']);
+    expect(cancellation.componentInstance.data.title).toBe('Cancelar pedido?');
+    expect(cancellation.componentInstance.data.type).toBe('destructive');
+    expect(cancellation.componentInstance.data.message).toBe('Deseja realmente cancelar o Pedido #32?');
+    expect(cancellation.componentInstance.data.details).toContain(jasmine.objectContaining({ label: 'Status atual', value: 'Aguardando pagamento' }));
+    expect(document.querySelector('.confirmation-responsive')).not.toBeNull();
+    expect(document.querySelector('.confirmation-handle')).not.toBeNull();
+    expect(document.querySelector('.confirmation-submit')!.textContent).toContain('Cancelar pedido');
     expect(service.alterarStatusPedidoComercial).not.toHaveBeenCalled();
   }));
 
@@ -187,6 +192,27 @@ describe('Ações do pedido em painel lateral mobile', () => {
     editor.gerenciarPedidoMobile(); render(); expect(document.querySelector('mat-dialog-actions')).toBeNull();
     q('.order-action-cancel').click(); render(); expect(document.querySelector('mat-dialog-actions')).not.toBeNull();
     confirm(); expect(service.alterarStatusPedidoComercial).toHaveBeenCalledOnceWith(32, 'CANCELADO');
+  }));
+
+  it('usa o número comercial real e restaura a ação sem executar ao desistir pelo X', fakeAsync(() => {
+    editor.pedido = { ...order(), numero: 'PED-2026-000033' } as any; render(); open(); q('.order-action-cancel').click(); tick(); render();
+    expect(document.querySelector('app-confirm-dialog')!.textContent).toContain('Deseja realmente cancelar o Pedido PED-2026-000033?');
+    (document.querySelector('[aria-label="Fechar confirmação"]') as HTMLButtonElement).click(); tick(400); render();
+    expect(panel()).not.toBeNull(); expect(q('.order-action-cancel').disabled).toBeFalse();
+    expect(service.alterarStatusPedidoComercial).not.toHaveBeenCalled(); expect(flowComponent().statusAtual).toBe('AGUARDANDO_PAGAMENTO');
+  }));
+
+  it('desktop preserva modal centralizado com linguagem destrutiva e o handler original', fakeAsync(() => {
+    viewport.next({ matches: false, breakpoints: {} }); render();
+    root().querySelector<HTMLButtonElement>('[aria-label="Ações do fluxo"]')!.click(); render();
+    const row = Array.from(document.querySelectorAll<HTMLButtonElement>('.mat-mdc-menu-panel button')).find(button => button.textContent?.includes('Cancelar pedido'))!;
+    row.click(); tick(); render();
+    const confirmation = document.querySelector('app-confirm-dialog')!;
+    expect(confirmation.textContent).toContain('Cancelar pedido?'); expect(confirmation.textContent).toContain('Aguardando pagamento');
+    expect(document.querySelector('.confirmation-handle')).toBeNull();
+    expect((confirmation.closest('.cdk-overlay-pane') as HTMLElement).style.width).toBe('440px');
+    expect(service.alterarStatusPedidoComercial).not.toHaveBeenCalled(); confirm();
+    expect(service.alterarStatusPedidoComercial).toHaveBeenCalledOnceWith(32, 'CANCELADO');
   }));
 
   it('respeita transição bloqueada e permissão revogada antes de confirmar', fakeAsync(() => {

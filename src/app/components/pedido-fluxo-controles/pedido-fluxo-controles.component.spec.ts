@@ -6,6 +6,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { of, Subject } from 'rxjs';
 import { PedidoFluxoControlesComponent } from './pedido-fluxo-controles.component';
 import { PedidoTrocarStatusDialogComponent } from './pedido-trocar-status-dialog.component';
+import { ConfirmDialogComponent } from '../dialog/confirm-dialog/confirm-dialog.component';
 
 describe('PedidoFluxoControles mobile operacional', () => {
   let fixture: ComponentFixture<PedidoFluxoControlesComponent>;
@@ -32,7 +33,7 @@ describe('PedidoFluxoControles mobile operacional', () => {
     TestBed.configureTestingModule({ imports: [PedidoFluxoControlesComponent, NoopAnimationsModule], providers: [provideRouter([])] });
     fixture = TestBed.createComponent(PedidoFluxoControlesComponent); component = fixture.componentInstance;
     openDialog = spyOn(fixture.debugElement.injector.get(MatDialog), 'open').and.returnValue({ afterClosed: () => result } as any);
-    for (const [key, value] of Object.entries({ mobileCompact: true, statusAtual: 'AGUARDANDO_PAGAMENTO', statusAtualLabel: 'Aguardando pagamento', descricaoStatus: 'Aguardando pagamento do cliente.', statusControl: new FormControl('AGUARDANDO_PAGAMENTO'), transicoes: options, statusOptions: options.map(o => o.status), fluxoSteps: steps })) fixture.componentRef.setInput(key, value);
+    for (const [key, value] of Object.entries({ mobileCompact: true, pedidoReferencia: '#32', statusAtual: 'AGUARDANDO_PAGAMENTO', statusAtualLabel: 'Aguardando pagamento', descricaoStatus: 'Aguardando pagamento do cliente.', statusControl: new FormControl('AGUARDANDO_PAGAMENTO'), transicoes: options, statusOptions: options.map(o => o.status), fluxoSteps: steps })) fixture.componentRef.setInput(key, value);
     render();
   });
   afterEach(() => TestBed.resetTestingModule());
@@ -71,7 +72,7 @@ describe('PedidoFluxoControles mobile operacional', () => {
   it('mantém destino e opções na confirmação existente e só emite depois de confirmar', () => {
     const save = spyOn(component.salvarStatus, 'emit'); const change = spyOn(component.trocarStatusSelecionado, 'emit');
     actions()[0].click(); expect(save).not.toHaveBeenCalled();
-    expect(openDialog).toHaveBeenCalledWith(PedidoTrocarStatusDialogComponent, jasmine.objectContaining({ data: { statusAtual: 'AGUARDANDO_PAGAMENTO', statusDestino: 'PENDENTE', opcoes: options.slice(0, 2) } }));
+    expect(openDialog).toHaveBeenCalledWith(PedidoTrocarStatusDialogComponent, jasmine.objectContaining({ data: jasmine.objectContaining({ statusAtual: 'AGUARDANDO_PAGAMENTO', statusDestino: 'PENDENTE', opcoes: options.slice(0, 2) }) }));
     result.next({ status: 'PENDENTE' }); expect(change).toHaveBeenCalledOnceWith('PENDENTE'); expect(save).toHaveBeenCalledTimes(1);
     expect(component.statusControl.value).toBe('PENDENTE');
   });
@@ -87,10 +88,10 @@ describe('PedidoFluxoControles mobile operacional', () => {
     expect(component.podeTrocarStatus).toBeFalse();
     component.avancarMobile('CANCELADO'); component.abrirMenuTrocarStatus(); expect(openDialog).not.toHaveBeenCalled();
     const save = spyOn(component.salvarStatus, 'emit'); component.confirmarCancelamentoMobile();
-    expect(openDialog).toHaveBeenCalledWith(PedidoTrocarStatusDialogComponent, jasmine.objectContaining({ data: {
-      statusAtual: 'AGUARDANDO_PAGAMENTO', statusDestino: 'CANCELADO', opcoes: [options[2]],
-    } }));
-    expect(save).not.toHaveBeenCalled(); result.next({ status: 'CANCELADO' });
+    expect(openDialog).toHaveBeenCalledWith(ConfirmDialogComponent, jasmine.objectContaining({ data: jasmine.objectContaining({
+      title: 'Cancelar pedido?', type: 'destructive', message: 'Deseja realmente cancelar o Pedido #32?', confirmText: 'Cancelar pedido', cancelText: 'Voltar',
+    }) }));
+    expect(save).not.toHaveBeenCalled(); result.next(true);
     expect(save).toHaveBeenCalledTimes(1); expect(component.statusControl.value).toBe('CANCELADO');
   });
 
@@ -107,7 +108,7 @@ describe('PedidoFluxoControles mobile operacional', () => {
     const save = spyOn(component.salvarStatus, 'emit'); set('transicoes', [{ ...options[2], bloqueado: true }]);
     component.confirmarCancelamentoMobile(); expect(openDialog).not.toHaveBeenCalled();
     set('transicoes', [options[2]]); component.confirmarCancelamentoMobile();
-    set('transicoes', []); result.next({ status: 'CANCELADO' });
+    set('transicoes', []); result.next(true);
     expect(save).not.toHaveBeenCalled(); expect(component.statusControl.value).toBe('AGUARDANDO_PAGAMENTO');
   });
 
@@ -168,5 +169,25 @@ describe('PedidoFluxoControles mobile operacional', () => {
     expect(root().querySelector<HTMLElement>('.step-strip')!.hidden).toBeFalse();
     component.abrirMenuTrocarStatus();
     expect(openDialog).toHaveBeenCalledWith(PedidoTrocarStatusDialogComponent, jasmine.objectContaining({ data: jasmine.objectContaining({ opcoes: options }) }));
+  });
+
+  for (const value of [false, undefined, null, 1, 'sim', { status: 'CANCELADO' }]) {
+    it(`não interpreta ${JSON.stringify(value)} como confirmação de cancelamento`, () => {
+      const save = spyOn(component.salvarStatus, 'emit'); component.confirmarCancelamentoMobile(); result.next(value);
+      expect(save).not.toHaveBeenCalled(); expect(component.statusControl.value).toBe('AGUARDANDO_PAGAMENTO');
+    });
+  }
+
+  it('desktop cancela somente após confirmar na fundação compartilhada, sem executar diretamente pelo menu', () => {
+    set('mobileCompact', false); const cancel = spyOn(component.cancelarPedido, 'emit'); component.confirmarCancelamento();
+    expect(openDialog).toHaveBeenCalledWith(ConfirmDialogComponent, jasmine.objectContaining({ width: '440px', data: jasmine.objectContaining({ title: 'Cancelar pedido?', type: 'destructive' }) }));
+    expect(cancel).not.toHaveBeenCalled(); result.next(true); expect(cancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('desktop encaminha Cancelado da troca geral para a mesma confirmação destrutiva', () => {
+    set('mobileCompact', false); const save = spyOn(component.salvarStatus, 'emit'); const cancel = spyOn(component.cancelarPedido, 'emit');
+    component.abrirMenuTrocarStatus(); result.next({ status: 'CANCELADO' });
+    expect(openDialog.calls.mostRecent().args[0]).toBe(ConfirmDialogComponent); expect(save).not.toHaveBeenCalled(); expect(cancel).not.toHaveBeenCalled();
+    result.next(true); expect(cancel).toHaveBeenCalledTimes(1);
   });
 });

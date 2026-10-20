@@ -9,6 +9,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatIconModule } from '@angular/material/icon';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { StatusLabelPipe } from 'src/app/pipes/status-label.pipe';
+import { classificarTransicaoPedido } from './pedido-transicao-apresentacao';
 
 interface DialogOpcao {
   status: string;
@@ -40,9 +41,10 @@ export class PedidoTrocarStatusDialogComponent {
 
   constructor(
     private dialogRef: MatDialogRef<PedidoTrocarStatusDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { statusAtual: string; statusDestino?: string | null; opcoes: DialogOpcao[] }
+    @Inject(MAT_DIALOG_DATA) public data: { statusAtual: string; statusDestino?: string | null; opcoes: DialogOpcao[]; cancelamentoSeparado?: boolean }
   ) {
-    const statusInicial = data.statusDestino || (data.opcoes || []).find(o => !o.bloqueado)?.status || null;
+    const statusInicial = data.statusDestino || (data.opcoes || []).find(o => !o.bloqueado &&
+      (!data.cancelamentoSeparado || classificarTransicaoPedido(o.status) !== 'cancelamento'))?.status || null;
     this.control.setValue(statusInicial);
   }
 
@@ -59,7 +61,13 @@ export class PedidoTrocarStatusDialogComponent {
   }
 
   salvar(): void {
+    if (this.encaminharCancelamento()) return;
     this.dialogRef.close({ status: this.control.value });
+  }
+
+  encaminharCancelamento(): boolean {
+    if (!this.data.cancelamentoSeparado || !this.control.value || classificarTransicaoPedido(this.control.value) !== 'cancelamento') return false;
+    this.dialogRef.close({ status: this.control.value }); return true;
   }
 
   cancelar(): void {

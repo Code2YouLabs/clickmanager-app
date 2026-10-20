@@ -10,6 +10,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { combineLatest, finalize, Observable, Subject, Subscription, takeUntil } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
+import { confirmacaoCancelamentoPedido } from 'src/app/components/pedido-fluxo-controles/pedido-cancelamento-confirmacao';
 import { DataTableCellDirective } from 'src/app/components/data-table/data-table-cell.directive';
 import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
 import { DataTableAction, DataTableActionEvent, DataTableColumn, DataTablePagination, DataTableFilter, DataTableFilterState } from 'src/app/components/data-table/data-table.models';
@@ -433,7 +434,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
           }
           this.dialog.open(PedidoTrocarStatusDialogComponent, {
             width: '480px', maxWidth: 'calc(100vw - 24px)',
-            data: { statusAtual: pedido.status, opcoes },
+            data: { statusAtual: pedido.status, opcoes, cancelamentoSeparado: true },
           }).afterClosed().pipe(takeUntil(this.destroy$)).subscribe(resultado => {
             this.limparDragAtivo();
             if (!resultado?.status || this.isPedidoDragDisabled(pedido)) return;
@@ -534,8 +535,8 @@ export class ComercialListComponent implements OnInit, OnDestroy {
           }
 
           if (event.targetColumn.id === 'CANCELADO') {
-            this.confirmarCancelamento(event.item).subscribe((confirmado) => {
-              if (!confirmado) {
+            this.confirmarCancelamento(event.item, fluxo.label).subscribe((confirmado) => {
+              if (confirmado !== true) {
                 this.restaurarMovimentoPedido(event, source, sourceSnapshot, target, targetSnapshot, originalStatus);
                 return;
               }
@@ -735,16 +736,10 @@ export class ComercialListComponent implements OnInit, OnDestroy {
     column.page = snapshot.page;
   }
 
-  private confirmarCancelamento(pedido: PedidoComercialResumo): Observable<boolean> {
+  private confirmarCancelamento(pedido: PedidoComercialResumo, statusAtual?: string): Observable<boolean> {
     return this.dialog.open(ConfirmDialogComponent, {
       width: '480px',
-      data: {
-        title: 'Cancelar pedido?',
-        message: `O pedido ${this.referencia(pedido)} será cancelado. Essa etapa é final.`,
-        cancelText: 'Voltar',
-        confirmText: 'Cancelar pedido',
-        confirmColor: 'warn',
-      },
+      data: confirmacaoCancelamentoPedido(this.referencia(pedido), statusAtual),
     }).afterClosed();
   }
 

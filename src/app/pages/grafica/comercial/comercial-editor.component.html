@@ -32,6 +32,7 @@
               [mobileCompact]="mobilePedidoDetalhe"
               [mobileActionsPanel]="mobilePedidoDetalhe" (abrirAcoesMobile)="abrirAcoesPedidoMobile()"
               [statusAtualLabel]="fluxoPedido.label"
+              [pedidoReferencia]="pedido?.numero || (pedidoId ? '#' + pedidoId : null)"
               [statusAtual]="fluxoPedido.statusAtual"
               [statusControl]="statusControl"
               [statusOptions]="statusOptionsFluxo"
