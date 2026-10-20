@@ -26,7 +26,8 @@
         [forbidden]="acessoNegado"
         tableLabel="Produtos gráficos"
         (retry)="carregar()"
-        [sort]="sort"
+        [sort]="sort" mobileSortPlacement="filters" mobileSortLabel="Ordenar produtos por"
+        (filterSortChange)="onFilterSortChange($event)"
         filtersLabel="Filtros"
         clearFiltersLabel="Limpar filtros"
         [emptyState]="{
@@ -42,7 +43,11 @@
         (sortChange)="onSortChange($event)">
 
         <div data-table-toolbar-actions class="produto-list-toolbar">
-          <button mat-stroked-button color="primary" (click)="abrirBiblioteca()"><mat-icon>library_books</mat-icon>Biblioteca de produtos</button>
+          @if (isMobile) {
+            <button mat-button color="primary" type="button" (click)="abrirBiblioteca()"><mat-icon>library_books</mat-icon>Biblioteca de produtos</button>
+          } @else {
+            <button mat-stroked-button color="primary" (click)="abrirBiblioteca()"><mat-icon>library_books</mat-icon>Biblioteca de produtos</button>
+          }
           @if (isMobile) {
             <button mat-icon-button type="button" matTooltip="Ajuda" aria-label="Ajuda" (click)="abrirAjuda()"><mat-icon>help_outline</mat-icon></button>
           }

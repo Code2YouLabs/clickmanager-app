@@ -12,6 +12,8 @@ import { ListFilterBarComponent } from 'src/app/components/list-filter-bar/list-
 import { AuthService } from 'src/app/services/auth.service';
 import { STORAGE_IMAGE_PLACEHOLDER } from '../../storage/utils/storage-media-url.util';
 import { BibliotecaDialogComponent } from '../biblioteca/biblioteca-dialog.component';
+import { BibliotecaService, BibliotecaItem } from '../biblioteca/biblioteca.service';
+import { SetupProgress } from 'src/app/components/setup-progress/setup-progress.component';
 import { GraficaProduto } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
 import { GraficaProdutosComponent } from './grafica-produtos.component';
@@ -29,6 +31,7 @@ describe('Produtos gráficos — listagem mobile compartilhada', () => {
   let service: jasmine.SpyObj<GraficaProdutoService>;
   let router: jasmine.SpyObj<Router>;
   let auth: jasmine.SpyObj<AuthService>;
+  let library: jasmine.SpyObj<BibliotecaService>;
   let viewport: BehaviorSubject<any>;
   const page = (content: GraficaProduto[] = [product], totalElements = 31) => ({ content, totalElements, pageNumber: 0, pageSize: 10, totalPages: 4, last: false });
   const root = () => fixture.nativeElement as HTMLElement;
@@ -40,6 +43,8 @@ describe('Produtos gráficos — listagem mobile compartilhada', () => {
   const openMenu = async () => { root().querySelector<HTMLButtonElement>('.produto-mobile-item__menu')!.click(); await settle(); };
 
   beforeEach(() => {
+    library = jasmine.createSpyObj('BibliotecaService', ['ultima', 'listar', 'importar', 'acompanhar']);
+    library.ultima.and.returnValue(of(null)); library.listar.and.returnValue(of([]));
     viewport = new BehaviorSubject({ matches: true, breakpoints: {} });
     service = jasmine.createSpyObj('GraficaProdutoService', ['listar', 'listarMateriais', 'listarFormatos', 'listarCores', 'listarPrecos', 'excluir']);
     service.listar.and.returnValue(of(page())); service.listarPrecos.and.returnValue(of([])); service.excluir.and.returnValue(of(void 0));
@@ -48,6 +53,7 @@ describe('Produtos gráficos — listagem mobile compartilhada', () => {
     auth = jasmine.createSpyObj('AuthService', ['temPermissao']); auth.temPermissao.and.returnValue(true);
     TestBed.configureTestingModule({ imports: [GraficaProdutosComponent, NoopAnimationsModule], providers: [
       { provide: BreakpointObserver, useValue: { observe: () => viewport } }, { provide: GraficaProdutoService, useValue: service },
+      { provide: BibliotecaService, useValue: library },
       { provide: Router, useValue: router }, { provide: AuthService, useValue: auth },
       { provide: ToastrService, useValue: jasmine.createSpyObj('ToastrService', ['success', 'error']) },
     ] });
@@ -75,9 +81,9 @@ describe('Produtos gráficos — listagem mobile compartilhada', () => {
     render(); root().querySelector<HTMLButtonElement>('app-mobile-fab-action button')!.click();
     expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/produtos/novo']);
     root().querySelector<HTMLButtonElement>('[aria-label="Ajuda"]')!.click(); expect(router.navigate).toHaveBeenCalledWith(['/page/ajuda'], { fragment: 'produtos-graficos' });
-    const decision = new Subject<boolean>(); const open = spyOn(fixture.debugElement.injector.get(MatDialog), 'open').and.returnValue({ afterClosed: () => decision } as any);
+    const decision = new Subject<boolean>(); const open = spyOn(fixture.debugElement.injector.get(MatDialog), 'open').and.returnValue({ afterClosed: () => decision, beforeClosed: () => new Subject(), updateSize() { return this; }, updatePosition() { return this; } } as any);
     const loads = service.listar.calls.count(); root().querySelector<HTMLButtonElement>('.produto-list-toolbar button')!.click();
-    expect(open).toHaveBeenCalledWith(BibliotecaDialogComponent, { width: '1120px', maxWidth: '96vw', maxHeight: '94vh' });
+    expect(open).toHaveBeenCalledWith(BibliotecaDialogComponent, jasmine.objectContaining({ data: { mobilePanel: true }, panelClass: ['mobile-side-panel'], width: '100vw', height: '100dvh', restoreFocus: true }));
     expect(service.listar.calls.count()).toBe(loads); decision.next(true); expect(service.listar.calls.count()).toBe(loads + 1);
   });
 
@@ -150,6 +156,111 @@ describe('Produtos gráficos — listagem mobile compartilhada', () => {
     service.listar.and.returnValue(throwError(() => ({ status: 403 }))); component.carregar(); render();
     expect(root().textContent).toContain('Acesso restrito'); expect(root().querySelector('[role="listitem"]')).toBeNull();
   });
+
+  it('aplica ordenação e filtros atomicamente, preservando busca e resetando a página', async () => {
+    await settle(); component.pagina = 2; component.termo = 'panfleto';
+    expect(root().querySelector('.data-table-mobile-sort')).toBeNull();
+    expect(filter().activeFilterCount).toBe(0);
+    const loads = service.listar.calls.count();
+    root().querySelector<HTMLButtonElement>('.list-mobile-toolbar__filter-button')!.click(); await settle();
+    expect(filter().draftSort).toEqual({ active: 'nome', direction: 'asc' });
+    const controls = document.querySelectorAll<HTMLElement>('.list-filter-panel mat-select');
+    controls[controls.length - 1].click(); await settle();
+    const option = Array.from(document.querySelectorAll<HTMLElement>('mat-option')).find(o => o.textContent!.includes('decrescente'))!;
+    option.click(); await settle(); filter().onFieldChange('materialIds', [1]);
+    expect(service.listar.calls.count()).toBe(loads);
+    document.querySelector<HTMLButtonElement>('.list-filter-panel__footer button')!.click(); await settle();
+    expect(service.listar.calls.count()).toBe(loads + 1);
+    expect(service.listar.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({ sort: 'nome,desc', materialIds: [1], search: 'panfleto', page: 0 }));
+    expect(filter().activeFilterCount).toBe(1);
+    root().querySelector<HTMLButtonElement>('.list-mobile-toolbar__filter-button')!.click(); await settle();
+    expect(filter().draftSort).toEqual({ active: 'nome', direction: 'desc' });
+    filter().draftSort = { active: 'nome', direction: 'asc' }; filter().closeMobileFilters(); await settle();
+    expect(component.sort.direction).toBe('desc'); expect(service.listar.calls.count()).toBe(loads + 1);
+    root().querySelector<HTMLButtonElement>('.list-mobile-toolbar__filter-button')!.click(); await settle();
+    filter().clearMobileFilters(); filter().applyMobileFilters(); await settle();
+    expect(component.sort.direction).toBe('desc'); expect(filter().activeFilterCount).toBe(0);
+    expect(service.listar.calls.count()).toBe(loads + 2);
+    root().querySelector<HTMLButtonElement>('.list-mobile-toolbar__filter-button')!.click(); await settle();
+    filter().applyMobileFilters(); await settle(); expect(service.listar.calls.count()).toBe(loads + 2);
+  });
+
+  for (const closeViaBackdrop of [false, true]) {
+  it(`Biblioteca real mantém pesquisa, seleção, importação e foco ao fechar por ${closeViaBackdrop ? 'backdrop' : 'botão'}`, async () => {
+    const item: BibliotecaItem = { id: 1, tipo: 'PRODUTO', nome: 'Vinil', descricao: 'Impressão', categoria: 'Adesivos', tiposPreco: ['FIXO'], acabamentos: [], jaExiste: true };
+    library.listar.and.returnValue(of([item, { ...item, id: 2, nome: 'Panfleto' }]));
+    const job: SetupProgress = { id: 12, status: 'CONCLUIDO', fase: 'CONCLUIDO', total: 1, processados: 1, criados: 0, duplicados: 1, erros: 0, tempoEstimadoRestanteSegundos: null,
+      itens: [{ id: 1, tipo: 'PRODUTO', templateId: 1, status: 'DUPLICADO', nome: 'Vinil', mensagem: 'Já cadastrado', criadoId: null }] };
+    library.importar.and.returnValue(of(job)); library.acompanhar.and.returnValue(of(job));
+    await settle(); document.body.appendChild(root());
+    try {
+      const trigger = root().querySelector<HTMLButtonElement>('.produto-list-toolbar button')!;
+      expect(trigger.hasAttribute('mat-button')).toBeTrue(); trigger.focus(); trigger.click(); await settle();
+      const panel = document.querySelector<HTMLElement>('.mobile-side-panel')!;
+      expect(panel).not.toBeNull(); expect(document.querySelectorAll('[role="dialog"]').length).toBe(1);
+      expect(panel.querySelector('.mobile-side-panel__header')!.textContent).toContain('Biblioteca de produtos');
+      const selector = TestBed.inject(MatDialog).openDialogs[0].componentInstance as BibliotecaDialogComponent;
+      const input = panel.querySelector<HTMLInputElement>('.biblioteca-toolbar input')!;
+      input.value = 'vinil'; input.dispatchEvent(new Event('input')); await new Promise(resolve => setTimeout(resolve, 320)); await settle();
+      const tree = panel.querySelector('app-hierarchy-tree')!; expect(tree.textContent).toContain('Vinil'); expect(tree.textContent).not.toContain('Panfleto');
+      const add = panel.querySelector<HTMLButtonElement>('.mobile-side-panel__footer button')!; expect(add.disabled).toBeTrue();
+      tree.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click(); await settle(); expect(add.disabled).toBeFalse();
+      const loads = service.listar.calls.count(); add.click(); await settle();
+      expect(library.importar).toHaveBeenCalledOnceWith([item], false); expect(selector.alterado).toBeTrue();
+      expect(panel.textContent).toContain('Vinil'); expect(panel.textContent).toContain('1 já existiam');
+      expect(service.listar.calls.count()).toBe(loads);
+      if (closeViaBackdrop) document.querySelector<HTMLElement>('.cdk-overlay-backdrop')!.click();
+      else panel.querySelector<HTMLButtonElement>('[aria-label="Fechar biblioteca"]')!.click();
+      await settle();
+      expect(document.querySelector('.mobile-side-panel')).toBeNull(); expect(service.listar.calls.count()).toBe(loads + 1);
+      expect(document.activeElement).toBe(trigger);
+    } finally { root().remove(); }
+  });
+
+  }
+
+  it('fechar Biblioteca sem importar preserva a listagem e desktop continua usando o diálogo original', async () => {
+    await settle(); const loads = service.listar.calls.count(); component.abrirBiblioteca(); await settle();
+    document.querySelector<HTMLButtonElement>('[aria-label="Fechar biblioteca"]')!.click(); await settle();
+    expect(service.listar.calls.count()).toBe(loads);
+    viewport.next({ matches: false, breakpoints: {} }); await settle();
+    const open = spyOn(fixture.debugElement.injector.get(MatDialog), 'open').and.returnValue({ afterClosed: () => of(false) } as any);
+    component.abrirBiblioteca(); expect(open).toHaveBeenCalledWith(BibliotecaDialogComponent, { width: '1120px', maxWidth: '96vw', maxHeight: '94vh' });
+  });
+
+  for (const width of [360, 390, 430]) {
+    it(`Biblioteca mantém rolagem interna, rodapé acessível e ausência de overflow em ${width}px`, async () => {
+      library.listar.and.returnValue(of(Array.from({ length: 20 }, (_, id) => ({
+        id, tipo: 'PRODUTO' as const, nome: 'Produto com nome longo para conferir a área útil', descricao: 'Descrição',
+        categoria: 'Produtos > Adesivos', tiposPreco: [], acabamentos: [], jaExiste: false,
+      }))));
+      await settle(); component.abrirBiblioteca(); await settle();
+      const frame = document.createElement('iframe'); frame.style.cssText = `width:${width}px;height:800px;border:0`; document.body.appendChild(frame);
+      try {
+        const doc = frame.contentDocument!;
+        Array.from(document.styleSheets).forEach(sheet => {
+          const style = doc.createElement('style'); style.textContent = Array.from(sheet.cssRules).map(rule => rule.cssText).join('\n'); doc.head.appendChild(style);
+        });
+        // Measure the final layout; slide animation is exercised by the shared opener.
+        const finalFrame = doc.createElement('style'); finalFrame.textContent = '.mobile-side-panel .mat-mdc-dialog-inner-container { animation: none !important; transform: none !important; }'; doc.head.appendChild(finalFrame);
+        doc.body.style.margin = '0'; const pane = document.querySelector<HTMLElement>('.mobile-side-panel')!.cloneNode(true) as HTMLElement;
+        // The shared opener resizes these dimensions on visualViewport changes.
+        pane.style.cssText = 'position:fixed;top:0;right:0;width:100vw;max-width:100vw;height:100dvh;max-height:100dvh'; doc.body.appendChild(pane);
+        const body = pane.querySelector<HTMLElement>('.mobile-side-panel__body')!;
+        const footer = pane.querySelector<HTMLElement>('.mobile-side-panel__footer')!;
+        expect(doc.documentElement.scrollWidth).toBeLessThanOrEqual(width);
+        expect(body.scrollWidth).toBeLessThanOrEqual(body.clientWidth);
+        expect(body.scrollHeight).toBeGreaterThan(body.clientHeight);
+        expect(footer.getBoundingClientRect().bottom).toBeLessThanOrEqual(800);
+        expect(footer.getBoundingClientRect().top).toBeGreaterThan(0);
+        expect(footer.querySelector('button')!.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+        pane.querySelectorAll('mat-form-field, mat-button-toggle-group').forEach(control => {
+          expect(control.getBoundingClientRect().right).toBeLessThanOrEqual(width);
+          expect(control.getBoundingClientRect().left).toBeGreaterThanOrEqual(0);
+        });
+      } finally { frame.remove(); }
+    });
+  }
 
   for (const width of [360, 390, 430]) {
     it(`menu com alvos de toque permanece dentro do card de ${width}px e fecha ao tocar fora`, async () => {

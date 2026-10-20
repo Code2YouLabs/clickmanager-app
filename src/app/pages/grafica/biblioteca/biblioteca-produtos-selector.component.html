@@ -32,7 +32,7 @@
 @if (carregando) { <mat-progress-bar mode="indeterminate" aria-label="Carregando biblioteca"></mat-progress-bar> }
 <div class="biblioteca-resultados" role="region" aria-label="Produtos da biblioteca" [attr.tabindex]="onboarding ? 0 : null">
 @if (onboarding || modo === 'arvore') {
-  <app-hierarchy-tree [hidden]="modo !== 'arvore'" [nodes]="arvore" [selectable]="true" [compact]="true"
+  <app-hierarchy-tree [hidden]="modo !== 'arvore'" [nodes]="arvore" [trackByNode]="trackByLibraryNode" [selectable]="true" [compact]="true"
     [selectionStates]="estados" [selectionDisabled]="importando || carregando" [loading]="carregando"
     [expandAll]="!onboarding || !!termo || !!categoria" [expandRoots]="!onboarding" emptyDescription="Altere a pesquisa ou a categoria."
     (selectionChange)="marcarNo($event)"></app-hierarchy-tree>

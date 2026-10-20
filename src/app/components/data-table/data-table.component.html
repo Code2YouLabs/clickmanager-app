@@ -1,5 +1,6 @@
 <app-list-filter-bar presentation="section"
   [mobileCompact]="mobileCompact" [mobileFilterPresentation]="mobileFilterPresentation" [mobileShowTitle]="mobileShowToolbarTitle" [filters]="filters" [filterState]="filterState" [search]="search" [searchControl]="searchControl"
+  [mobileSort]="mobileFilterSort" (filterSortChange)="onFilterSortChange($event)"
   [filtersLabel]="filtersLabel" [clearFiltersLabel]="clearFiltersLabel" [hasCustomFilters]="hasCustomFilters"
   (searchChange)="onSearch($event)" (stateChange)="onFilterStateChange($event)" (clear)="clearFilters.emit()">
   <ng-content select="[data-table-toolbar-actions]" ngProjectAs="[list-filter-actions]"></ng-content>
@@ -26,7 +27,7 @@
   @if (isMobile && !data.length) {
     <ng-container [ngTemplateOutlet]="emptyNotice"></ng-container>
   } @else if (useMobileItems) {
-    @if (sortableColumns.length) {
+    @if (sortableColumns.length && mobileSortPlacement === 'list') {
       <div class="data-table-mobile-sort">
         <mat-form-field appearance="outline">
           <mat-label>Ordenar por</mat-label>

@@ -13,7 +13,7 @@ import { BibliotecaItem, BibliotecaResultado, BibliotecaService } from './biblio
   imports: [CommonModule, FormsModule, MaterialModule, HierarchyTreeComponent, SetupProgressComponent],
   templateUrl: './biblioteca-produtos-selector.component.html',
   styleUrls: ['./biblioteca-produtos-selector.component.scss'],
-  host: { '[class.biblioteca-selector--onboarding]': 'onboarding' },
+  host: { '[class.biblioteca-selector--onboarding]': 'onboarding', '[class.biblioteca-selector--mobile-panel]': 'mobilePanel' },
 })
 export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
   private dialogFiltros?: MatDialogRef<unknown>;
@@ -29,6 +29,10 @@ export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
     this.pesquisar('');
     this.categoria = '';
   }
+  // Nested Material nodes must be refreshed when a mobile search rebuilds the hierarchy.
+  // Other presentations retain the existing stable-id tracking.
+  readonly trackByLibraryNode = (_: number, node: HierarchyTreeNode<BibliotecaItem | null>) => this.mobilePanel ? node : node.id;
+  @Input() mobilePanel = false;
   @Input() onboarding = false;
   @Input() animarEtapas = false;
   @Output() etapasConcluidas = new EventEmitter<void>();

@@ -126,3 +126,13 @@ details { margin-top: 12px; summary { cursor: pointer; } }
     .biblioteca-mobile-controls, .biblioteca-mobile-bulk { margin-bottom: 4px; }
   }
 }
+
+// Only the product-list side panel opts in; desktop and onboarding stay unchanged.
+:host(.biblioteca-selector--mobile-panel) {
+  min-width: 0;
+  .biblioteca-toolbar { gap: 8px; }
+  .biblioteca-toolbar mat-form-field { min-width: 0; width: 100%; }
+  .biblioteca-acoes__bulk { min-width: 0; }
+  .biblioteca-acoes__bulk button { height: auto; min-height: 44px; white-space: normal; }
+  .biblioteca-lista article { min-width: 0; overflow-wrap: anywhere; }
+}

@@ -1,3 +1,4 @@
+import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
 import { BibliotecaDialogComponent } from '../biblioteca/biblioteca-dialog.component';
 import { CommonModule } from '@angular/common';
 import { BreakpointObserver } from '@angular/cdk/layout';
@@ -15,6 +16,7 @@ import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog
 import { DataTableCellDirective } from 'src/app/components/data-table/data-table-cell.directive';
 import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
 import {
+  DataTableFilterSortChange,
   DataTableAction,
   DataTableActionEvent,
   DataTableColumn,
@@ -178,6 +180,11 @@ export class GraficaProdutosComponent implements OnInit, OnDestroy {
     this.carregar();
   }
 
+  onFilterSortChange(event: DataTableFilterSortChange): void {
+    this.sort = event.sort;
+    this.onFilterChange(event.filters);
+  }
+
   onFilterChange(filters: DataTableFilterState): void {
     this.filterState = { ...filters };
     this.pagina = 0;
@@ -290,8 +297,12 @@ export class GraficaProdutosComponent implements OnInit, OnDestroy {
   }
 
   abrirBiblioteca(): void {
-    this.dialog.open(BibliotecaDialogComponent, { width: '1120px', maxWidth: '96vw', maxHeight: '94vh' })
-      .afterClosed().subscribe(alterado => { if (alterado) { this.carregarFiltros(); this.carregar(); } });
+    const ref = this.isMobile
+      ? openMobileSidePanel(this.dialog, BibliotecaDialogComponent, { data: { mobilePanel: true }, ariaLabel: 'Biblioteca de produtos' })
+      : this.dialog.open(BibliotecaDialogComponent, { width: '1120px', maxWidth: '96vw', maxHeight: '94vh' });
+    // Escape/backdrop also close the mobile panel; retain completed imports on those exits.
+    const mobileLibrary = this.isMobile ? ref.componentInstance : null;
+    ref.afterClosed().subscribe(alterado => { if (alterado || mobileLibrary?.alterado) { this.carregarFiltros(); this.carregar(); } });
   }
 
   novo(): void {
