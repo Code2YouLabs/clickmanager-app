@@ -17,22 +17,31 @@
     </ng-template>
     <ng-template [appDataTableItem]="clientes" let-cliente let-itemActions="actions" let-emit="emitAction">
       <article class="cliente-mobile-item" [attr.aria-label]="'Cliente ' + cliente.nome">
-        <header><strong>{{ cliente.nome }}</strong></header>
+        <header>
+          <strong>{{ cliente.nome }}</strong>
+          @if (itemActions.length) {
+            <button class="cliente-mobile-item__menu" mat-icon-button type="button" [matMenuTriggerFor]="clienteMenu"
+              [disabled]="carregando" [attr.aria-label]="'Ações do cliente ' + cliente.nome">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #clienteMenu="matMenu" xPosition="before">
+              <ng-template matMenuContent>
+                @for (itemAction of itemActions; track itemAction.id) {
+                  <button mat-menu-item type="button" [disabled]="carregando || itemAction.disabled?.(cliente)"
+                    [class.cliente-mobile-menu__destructive]="itemAction.color === 'warn'"
+                    (click)="emit(cliente, itemAction.id)">
+                    <mat-icon [color]="itemAction.color || null">{{ itemAction.icon }}</mat-icon>
+                    <span>{{ itemAction.label }}</span>
+                  </button>
+                }
+              </ng-template>
+            </mat-menu>
+          }
+        </header>
         <dl>
           <div><dt>Telefone</dt><dd>{{ (cliente.telefone | telefone) || 'Não informado' }}</dd></div>
           <div><dt>E-mail</dt><dd>{{ cliente.email || 'Não informado' }}</dd></div>
         </dl>
-        @if (itemActions.length) {
-          <div class="cliente-mobile-item__actions">
-            @for (itemAction of itemActions; track itemAction.id) {
-              <button mat-stroked-button type="button" [color]="itemAction.color || null"
-                [disabled]="carregando || itemAction.disabled?.(cliente)"
-                [attr.aria-label]="itemAction.label" (click)="emit(cliente, itemAction.id)">
-                <mat-icon>{{ itemAction.icon }}</mat-icon>{{ itemAction.label }}
-              </button>
-            }
-          </div>
-        }
       </article>
     </ng-template>
   </app-data-table>

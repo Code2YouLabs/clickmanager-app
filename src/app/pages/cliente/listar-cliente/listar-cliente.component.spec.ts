@@ -1,3 +1,4 @@
+import { OverlayContainer } from '@angular/cdk/overlay';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
@@ -44,14 +45,14 @@ describe('Clientes — listagem compartilhada', () => {
     TestBed.overrideComponent(ListarClienteComponent, { add: { providers: [{ provide: MatDialog, useValue: dialog }] } });
     fixture = TestBed.createComponent(ListarClienteComponent); component = fixture.componentInstance; fixture.detectChanges();
   });
-  afterEach(() => fixture?.destroy());
+  afterEach(() => { fixture?.destroy(); TestBed.inject(OverlayContainer).ngOnDestroy(); });
   const mobile = () => { viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges(); };
 
   it('mobile reutiliza cards, busca e paginação do DataTable e exibe nome e contatos', () => {
     mobile(); resolve(page([cliente], 40));
     expect(table().useMobileItems).toBeTrue(); expect(fixture.nativeElement.querySelector('table')).toBeNull();
     const item = fixture.nativeElement.querySelector('[role="listitem"]');
-    for (const value of ['Ana', '(11) 98765-4321', 'ana@example.com', 'Editar cliente', 'Excluir cliente']) expect(item.textContent).toContain(value);
+    for (const value of ['Ana', '(11) 98765-4321', 'ana@example.com']) expect(item.textContent).toContain(value);
     expect(fixture.nativeElement.querySelector('app-list-filter-bar app-input-pesquisa')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.data-table-mobile-pagination')).not.toBeNull();
     table().pageChange.emit({ pageIndex: 1, pageSize: 10, length: 40 });
@@ -77,13 +78,65 @@ describe('Clientes — listagem compartilhada', () => {
     expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).toBeNull();
   });
 
-  it('mobile mantém as ações existentes e não apresenta contatos vazios sem identificação', () => {
+  it('mobile mantém as ações existentes pelo menu e não apresenta contatos vazios sem identificação', async () => {
     mobile(); resolve(page([{ ...cliente, email: '', telefone: '' }]));
     expect(text()).toContain('Não informado');
     const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
-    fixture.nativeElement.querySelector('[aria-label="Editar cliente"]').click(); expect(navigate).toHaveBeenCalledWith(['/page/cliente/editar', 7]);
-    fixture.nativeElement.querySelector('[aria-label="Excluir cliente"]').click(); expect(service.excluir).toHaveBeenCalledOnceWith(7);
+    await openMenu(); menuAction('Editar cliente').click(); await settleMenu();
+    expect(navigate).toHaveBeenCalledWith(['/page/cliente/editar', 7]); expect(document.querySelector('.mat-mdc-menu-panel')).toBeNull();
+    await openMenu(); menuAction('Excluir cliente').click(); await settleMenu();
+    expect(service.excluir).toHaveBeenCalledOnceWith(7); expect(document.querySelector('.mat-mdc-menu-panel')).toBeNull();
   });
+
+  const settleMenu = async () => {
+    fixture.detectChanges(); await fixture.whenStable(); await fixture.whenRenderingDone(); fixture.detectChanges();
+  };
+  const openMenu = async () => {
+    fixture.nativeElement.querySelector('.cliente-mobile-item__menu').click(); await settleMenu();
+  };
+  const menuAction = (label: string) => Array.from(document.querySelectorAll<HTMLButtonElement>('.mat-mdc-menu-panel button')).find(button => button.querySelector('.mat-mdc-menu-item-text')?.textContent?.trim() === label)!;
+
+  it('mobile mantém ações no cabeçalho, sem botões grandes, e fecha o menu ao tocar fora', async () => {
+    mobile(); resolve();
+    const card = fixture.nativeElement.querySelector('.cliente-mobile-item');
+    expect(card.querySelectorAll('button').length).toBe(1); expect(card.querySelector('header button mat-icon').textContent).toBe('more_vert');
+    expect(card.textContent).not.toContain('Editar cliente'); expect(card.textContent).not.toContain('Excluir cliente');
+    await openMenu(); expect(menuAction('Editar cliente').querySelector('mat-icon')!.textContent).toBe('edit');
+    const remove = menuAction('Excluir cliente'); expect(remove.querySelector('mat-icon')!.textContent).toBe('delete');
+    expect(remove.classList.contains('cliente-mobile-menu__destructive')).toBeTrue();
+    (document.querySelector('.cdk-overlay-backdrop') as HTMLElement).click(); await settleMenu();
+    expect(document.querySelector('.mat-mdc-menu-panel')).toBeNull(); expect(service.excluir).not.toHaveBeenCalled();
+    component.carregarClientes(); fixture.detectChanges(); expect(card.querySelector('header button').disabled).toBeTrue();
+  });
+
+  for (const permittedAction of ['CLIENTE_EDITAR', 'CLIENTE_EXCLUIR', 'nenhuma']) {
+    it(`mobile renderiza somente a permissão ${permittedAction}`, async () => {
+      mobile(); auth.temPermissao.and.callFake(permission => permission === permittedAction); resolve();
+      if (permittedAction === 'nenhuma') {
+        expect(fixture.nativeElement.querySelector('.cliente-mobile-item__menu')).toBeNull();
+      } else {
+        await openMenu();
+        expect(document.querySelectorAll('.mat-mdc-menu-panel button').length).toBe(1);
+        expect(!!menuAction('Editar cliente')).toBe(permittedAction === 'CLIENTE_EDITAR');
+        expect(!!menuAction('Excluir cliente')).toBe(permittedAction === 'CLIENTE_EXCLUIR');
+      }
+    });
+  }
+
+  for (const decision of [true, false, undefined]) {
+    it(`mobile confirma exclusão nominal e preserva decisão ${decision}`, async () => {
+      const decision$ = new Subject<boolean | undefined>(); dialog.open.and.returnValue({ afterClosed: () => decision$ } as any);
+      mobile(); resolve(page([{ ...cliente, nome: 'Dolores Guedes' }])); await openMenu(); menuAction('Excluir cliente').click();
+      await settleMenu();
+      expect(dialog.open.calls.mostRecent().args[1]?.data).toEqual(jasmine.objectContaining({
+        title: 'Excluir cliente?', message: 'Tem certeza que deseja excluir o cliente "Dolores Guedes"?', type: 'destructive',
+        cancelText: 'Manter cliente', confirmText: 'Excluir cliente', confirmColor: 'warn'
+      }));
+      expect(service.excluir).not.toHaveBeenCalled(); decision$.next(decision); fixture.detectChanges();
+      expect(service.excluir.calls.count()).toBe(decision === true ? 1 : 0);
+      expect(service.listar.calls.count()).toBe(decision === true ? 2 : 1);
+    });
+  }
 
   it('mobile mantém loading, erro com retry, vazio e acesso restrito na fundação existente', () => {
     mobile(); expect(text()).toContain('Carregando registros');
@@ -101,6 +154,25 @@ describe('Clientes — listagem compartilhada', () => {
     const calls = service.listar.calls.count(); mobile(); viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
     expect(service.listar.calls.count()).toBe(calls); expect(component.pagina).toBe(2); expect(component.tamanhoPagina).toBe(20); expect(component.termoPesquisa).toBe('Ana');
   });
+
+  for (const width of [360, 390, 430]) {
+    it(`menu CDK não ultrapassa o card de ${width}px e mantém área de toque`, async () => {
+      mobile(); resolve();
+      fixture.nativeElement.style.cssText = `display:block;width:${width}px`;
+      document.body.appendChild(fixture.nativeElement);
+      try {
+        const trigger = fixture.nativeElement.querySelector('.cliente-mobile-item__menu') as HTMLButtonElement;
+        trigger.focus(); await openMenu();
+        const menu = document.querySelector<HTMLElement>('.mat-mdc-menu-panel')!;
+        const bounds = menu.getBoundingClientRect(); const card = fixture.nativeElement.getBoundingClientRect();
+        expect(bounds.left).toBeGreaterThanOrEqual(card.left); expect(bounds.right).toBeLessThanOrEqual(card.right);
+        menu.querySelectorAll('button').forEach(button => expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(44));
+        expect(fixture.nativeElement.scrollWidth).toBeLessThanOrEqual(width);
+        (document.querySelector('.cdk-overlay-backdrop') as HTMLElement).click(); await settleMenu();
+        expect(document.querySelector('.mat-mdc-menu-panel')).toBeNull(); expect(document.activeElement).toBe(trigger);
+      } finally { fixture.nativeElement.remove(); }
+    });
+  }
 
   for (const width of [360, 390, 430, 1024, 1440]) {
     it(`preserva a composição e área útil em viewport Chromium de ${width}px`, () => {
@@ -122,7 +194,10 @@ describe('Clientes — listagem compartilhada', () => {
           const clearance = doc.querySelector<HTMLElement>('.page-card__fab-clearance')!.getBoundingClientRect();
           expect(clearance.height).toBeGreaterThan(fab.height);
           const name = doc.querySelector<HTMLElement>('.cliente-mobile-item header strong')!;
-          expect(name.getBoundingClientRect().right).toBeLessThanOrEqual(width);
+          const nameRect = name.getBoundingClientRect();
+          const trigger = doc.querySelector<HTMLElement>('.cliente-mobile-item__menu')!.getBoundingClientRect();
+          expect(nameRect.right).toBeLessThanOrEqual(trigger.left); expect(trigger.width).toBeGreaterThanOrEqual(44); expect(trigger.height).toBeGreaterThanOrEqual(44);
+          expect(doc.querySelector('.cliente-mobile-item__actions')).toBeNull();
         } else {
           expect(doc.querySelector('.data-table-items')).toBeNull(); expect(doc.querySelector('app-mobile-fab-action')).toBeNull();
           expect(doc.querySelector('app-card-header')!.textContent).not.toContain('Voltar');
@@ -130,6 +205,9 @@ describe('Clientes — listagem compartilhada', () => {
           expect(action.textContent).toContain('Novo cliente'); expect(action.hasAttribute('mat-stroked-button')).toBeTrue();
           expect(Array.from(doc.querySelectorAll('thead th')).map(cell => cell.textContent?.trim())).toEqual(['Nome', 'E-mail', 'Telefone', 'Ações']);
           expect(doc.querySelector('mat-paginator')).not.toBeNull();
+          expect(doc.querySelector('.cliente-mobile-item__menu')).toBeNull();
+          expect(doc.querySelectorAll('tbody [aria-label="Editar cliente"]').length).toBe(1);
+          expect(doc.querySelectorAll('tbody [aria-label="Excluir cliente"]').length).toBe(1);
         }
       } finally { frame.remove(); }
     });
@@ -198,7 +276,7 @@ describe('Clientes — listagem compartilhada', () => {
   });
   it('excluir confirma o cliente e atualiza após sucesso', () => {
     resolve(); fixture.nativeElement.querySelector('[aria-label="Excluir cliente"]').click();
-    expect(dialog.open.calls.mostRecent().args[1]?.data).toEqual(jasmine.objectContaining({ message: 'Tem certeza que deseja excluir o cliente "Ana"?' }));
+    expect(dialog.open.calls.mostRecent().args[1]?.data).toEqual({ title: 'Excluir Cliente', message: 'Tem certeza que deseja excluir o cliente "Ana"?', confirmText: 'Excluir', confirmColor: 'warn' });
     expect(service.excluir).toHaveBeenCalledOnceWith(7); expect(service.listar.calls.count()).toBe(2);
   });
   it('cancelar confirmação não exclui', () => {

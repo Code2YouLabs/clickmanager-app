@@ -4,10 +4,15 @@
 @include mobile.mobile-foundation {
   .cliente-mobile-item {
     @include item.surface;
+    header { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+    &__menu { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
     header > strong { @include item.heading; }
     dl { display: grid; gap: 8px; margin: 8px 0 0; }
     dt { color: var(--mat-sys-on-surface-variant); font-size: 12px; line-height: 16px; }
     dd { margin: 0; font-size: 14px; line-height: 20px; overflow-wrap: anywhere; }
-    &__actions { @include item.actions; }
+  }
+  .cliente-mobile-menu__destructive {
+    --mat-menu-item-label-text-color: var(--mat-sys-error);
+    --mat-menu-item-icon-color: var(--mat-sys-error);
   }
 }
