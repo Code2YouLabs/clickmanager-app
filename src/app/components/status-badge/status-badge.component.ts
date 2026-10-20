@@ -15,6 +15,7 @@ type StatusConfig = { icon: string; label: string; className: string };
 export class StatusBadgeComponent {
   @Input() status: string | null | undefined;
   @Input() compact = false;
+  @Input() fullLabel: string | null = null;
 
   private readonly map: Record<string, StatusConfig> = {
     INATIVO: { icon: 'block', label: 'Inativo', className: 'chip-cancelado' },

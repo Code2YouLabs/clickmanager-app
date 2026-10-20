@@ -1,5 +1,11 @@
+import { openMobileSidePanel } from '../mobile-side-panel/mobile-side-panel';
+import { MOBILE_HEADER_ACTIONS } from '../page-card/mobile-header-actions';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MatDialog, MatDialogRef, MatDialogState } from '@angular/material/dialog';
+import { Subject, takeUntil } from 'rxjs';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { afterNextRender, Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild, TemplateRef, ViewContainerRef, ElementRef, inject } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { MaterialModule } from 'src/app/material.module';
 import { SectionCardComponent } from '../section-card/section-card.component';
@@ -10,6 +16,11 @@ import { DataTableFilter, DataTableFilterValue, DataTableFilterState, DataTableS
 export type ListFilterOption = { value: string; label: string };
 export type ListFilterDefinition = { key: string; label: string; value: string; options: ListFilterOption[] };
 export type ListFilterChange = { key: string; value: string };
+export interface ListFilterTemplateContext {
+  $implicit: DataTableFilterState;
+  change: (key: string, value: DataTableFilterValue) => void;
+}
+
 export interface ListFilterChip { filterKey: string; filterLabel: string; value: string | number | boolean; optionLabel: string; }
 
 @Component({
@@ -17,7 +28,91 @@ export interface ListFilterChip { filterKey: string; filterLabel: string; value:
   imports: [CommonModule, MaterialModule, SectionCardComponent, InputPesquisaComponent],
   templateUrl: './list-filter-bar.component.html', styleUrl: './list-filter-bar.component.scss',
 })
-export class ListFilterBarComponent implements OnChanges {
+export class ListFilterBarComponent implements OnChanges, OnDestroy {
+  @Input() mobileCompact = true;
+  // 'sheet' remains an API alias for consumers; the only overlay presentation is the full-screen panel.
+  @Input() mobileFilterPresentation: 'sheet' | 'inline' = 'sheet';
+  @Input() customFilterTemplate?: TemplateRef<ListFilterTemplateContext>;
+  readonly changeCustomFilter = (key: string, value: DataTableFilterValue): void => this.onFieldChange(key, value);
+  get customFilterContext(): ListFilterTemplateContext {
+    return { $implicit: this.mobileFiltersOpen ? this.draftFilters : this.internalFilters, change: this.changeCustomFilter };
+  }
+  @Input() mobileShowTitle = false;
+  @ViewChild('mobileFilterTrigger', { read: ElementRef }) private mobileFilterTrigger?: ElementRef<HTMLButtonElement>;
+  @ViewChild('mobileFilterPanel', { static: true }) private mobileFilterPanel!: TemplateRef<unknown>;
+  @ViewChild('mobileFilterAction', { static: true }) private mobileFilterAction!: TemplateRef<unknown>;
+  readonly mobileHeaderHost = inject(MOBILE_HEADER_ACTIONS, { optional: true });
+  private unregisterHeaderAction?: () => void;
+  get hasFilterFields(): boolean { return !!(this.filters.length || this.hasCustomFilters || this.customFilterTemplate); }
+  get filterTriggerInHeader(): boolean { return !!this.mobileHeaderHost?.enabled(); }
+  private readonly viewContainerRef = inject(ViewContainerRef);
+  private readonly dialog = inject(MatDialog);
+  private readonly breakpoints = inject(BreakpointObserver);
+  private readonly destroy$ = new Subject<void>();
+  private panelRef: MatDialogRef<unknown> | null = null;
+  private draftFilters: DataTableFilterState = {};
+  private draftCleared = false;
+  private readonly draftKeys = new Set<string>();
+  isMobile = false;
+  get useMobilePanel(): boolean { return this.isMobile && this.mobileFilterPresentation === 'sheet'; }
+  get mobileFiltersOpen(): boolean { return !!this.panelRef; }
+  get hasDraftFilters(): boolean { return Object.keys(this.withoutEmptyFilters(this.draftFilters)).length > 0; }
+
+  constructor() {
+    afterNextRender(() => {
+      this.unregisterHeaderAction = this.mobileHeaderHost?.register({
+        template: this.mobileFilterAction, visible: () => this.useMobilePanel && this.hasFilterFields,
+      });
+    });
+    this.breakpoints.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => {
+      this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches;
+      if (!this.isMobile) this.closeMobileFilters();
+    });
+  }
+  ngOnDestroy(): void {
+    this.unregisterHeaderAction?.();
+    this.closeMobileFilters(); this.destroy$.next(); this.destroy$.complete();
+  }
+  private copyState(state: DataTableFilterState): DataTableFilterState {
+    return Object.fromEntries(Object.entries(state).map(([key, value]) => [key, Array.isArray(value) ? [...value] : value]));
+  }
+  openMobileFilters(): void {
+    if (!this.useMobilePanel || this.panelRef) return;
+    this.draftFilters = this.copyState(this.internalFilters); this.draftKeys.clear(); this.draftCleared = false;
+    this.mobileFilterTrigger?.nativeElement.focus({ preventScroll: true });
+    const ref = openMobileSidePanel(this.dialog, this.mobileFilterPanel, {
+      viewContainerRef: this.viewContainerRef, panelClass: 'list-filter-mobile-panel', ariaLabel: this.filtersLabel,
+    });
+    this.panelRef = ref;
+    ref.afterClosed().pipe(takeUntil(this.destroy$)).subscribe(() => {
+      if (this.panelRef === ref) { this.panelRef = null; this.draftKeys.clear(); }
+    });
+  }
+  closeMobileFilters(): void {
+    this.panelRef?.close();
+  }
+  applyMobileFilters(): void {
+    if (!this.panelRef || this.panelRef.getState() !== MatDialogState.OPEN) return;
+    const changed = [...this.draftKeys];
+    const cleared = this.draftCleared;
+    const next = this.copyState(this.draftFilters);
+    this.closeMobileFilters(); this.internalFilters = next;
+    if (!changed.length && !cleared) return;
+    if (cleared) this.clear.emit();
+    if (this.presentation === 'flat') {
+      changed.forEach(key => { const value = next[key]; if (typeof value === 'string') this.filterChange.emit({ key, value }); });
+    }
+    this.emitState();
+  }
+  clearMobileFilters(): void {
+    if (!this.mobileFiltersOpen) return;
+    Object.keys(this.draftFilters).forEach(key => this.draftKeys.add(key));
+    this.draftFilters = {}; this.draftCleared = true;
+  }
+  onFieldChange(key: string, value: DataTableFilterValue): void {
+    if (this.presentation === 'flat') this.onFilterChange(key, value);
+    else this.onFilterValueChange(key, value);
+  }
   @Input() placeholder = 'Digite para pesquisar...';
   @Input() searchValue = '';
   @Input() showSearchLabel = false;
@@ -41,20 +136,29 @@ export class ListFilterBarComponent implements OnChanges {
     return this.filters.map(filter => ({ ...filter, type: 'type' in filter ? filter.type : 'select' }));
   }
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['filterState'] || changes['filters']) {
+    if (changes['mobileFilterPresentation'] && this.mobileFilterPresentation === 'inline') this.closeMobileFilters();
+    if (changes['filterState'] || changes['filters'] || changes['customFilterTemplate']) {
       this.internalFilters = this.presentation === 'flat'
-        ? Object.fromEntries(this.filters.map(filter => [filter.key, 'value' in filter ? filter.value : this.filterState[filter.key]]))
+        ? { ...(this.customFilterTemplate ? this.filterState : {}), ...Object.fromEntries(this.filters.map(filter => [filter.key, 'value' in filter ? filter.value : this.filterState[filter.key]])) }
         : { ...this.filterState };
+      if (this.mobileFiltersOpen) {
+        const pending = Object.fromEntries([...this.draftKeys].map(key => [key, this.draftFilters[key]]));
+        this.draftFilters = this.draftCleared ? { ...this.draftFilters } : { ...this.copyState(this.internalFilters), ...pending };
+      }
     }
   }
   onSearchChange(value: string): void { this.searchChange.emit(value || ''); }
   onFilterChange(key: string, value: DataTableFilterValue): void {
-    if (typeof value === 'string') this.filterChange.emit({ key, value });
+    if (!this.mobileFiltersOpen && typeof value === 'string') this.filterChange.emit({ key, value });
     this.onFilterValueChange(key, value);
   }
   private emitState(): void { this.stateChange.emit({ ...this.internalFilters }); }
   get toolbarTitle(): string { return this.search.enabled ? (this.search.label || 'Buscar') : this.filtersLabel; }
   onFilterValueChange(key: string, value: DataTableFilterValue): void {
+    if (this.mobileFiltersOpen) {
+      this.draftFilters = { ...this.draftFilters, [key]: this.normalizeFilterValue(value) };
+      this.draftKeys.add(key); return;
+    }
     this.internalFilters = {
       ...this.internalFilters,
       [key]: this.normalizeFilterValue(value),
@@ -63,7 +167,7 @@ export class ListFilterBarComponent implements OnChanges {
   }
 
   onClearFilters(): void {
-    this.internalFilters = {};
+    this.internalFilters = {}; this.draftFilters = {}; this.draftKeys.clear();
     this.clear.emit();
     this.stateChange.emit({});
   }
@@ -88,6 +192,10 @@ export class ListFilterBarComponent implements OnChanges {
   }
 
   toggleFilters(): void {
+    if (this.useMobilePanel) {
+      if (this.mobileFiltersOpen) this.closeMobileFilters(); else this.openMobileFilters();
+      return;
+    }
     this.filtersExpanded = !this.filtersExpanded;
   }
 
@@ -100,7 +208,7 @@ export class ListFilterBarComponent implements OnChanges {
   }
 
   selectedFilterValue(filter: DataTableFilter): DataTableFilterValue {
-    const value = this.internalFilters[filter.key];
+    const value = (this.mobileFiltersOpen ? this.draftFilters : this.internalFilters)[filter.key];
     if (this.isMultiSelectFilter(filter)) {
       if (Array.isArray(value)) {
         return value;

@@ -1,12 +1,31 @@
 <ng-container *ngIf="renderCard; else content">
-  <app-section-card [titulo]="titulo" [divider]="divider">
+  <app-section-card [titulo]="titulo" [divider]="divider" [mobilePlain]="mobileCompact" [mobileCollapsible]="mobileCompact"
+    [mobileExpanded]="mobileExpanded" [mobileSummary]="mobileCompact && cliente ? (mobileExpanded ? '' : resumoClienteMobile) : mobileSummary" (mobileExpandedChange)="mobileExpandedChange.emit($event)">
     <ng-container [ngTemplateOutlet]="content"></ng-container>
   </app-section-card>
 </ng-container>
 
 <ng-template #content>
-  <div class="cliente-block" [class.border]="!renderCard" [class.inativo]="inativo">
+  <div class="cliente-block" [class.cliente-block--mobile-compact]="mobileCompact" [class.border]="!renderCard" [class.inativo]="inativo">
     <div *ngIf="cliente; else semCliente" class="cliente-info">
+      <ng-container *ngIf="mobileCompact; else cadastroCompleto">
+        <div class="cliente-mobile-summary">
+          <strong class="cliente-mobile-name">{{ cliente?.nome || '-' }}</strong>
+          <span *ngIf="cliente?.telefone">{{ cliente.telefone | telefone }}</span>
+          <span *ngIf="cliente?.documento"><span class="cdk-visually-hidden">CPF/CNPJ: </span>{{ cliente.documento }}</span>
+          <span *ngIf="cidadeUfMobile">{{ cidadeUfMobile }}</span>
+        </div>
+        <ng-container *ngIf="dadosComplementaresMobile.length">
+          <button class="cliente-details-toggle" mat-button type="button" [attr.aria-expanded]="mobileDetailsExpanded"
+            [attr.aria-controls]="detailsId" (click)="mobileDetailsExpanded = !mobileDetailsExpanded">
+            {{ mobileDetailsExpanded ? 'Ocultar detalhes' : 'Ver mais dados' }}
+          </button>
+          <dl class="cliente-mobile-details" [id]="detailsId" [hidden]="!mobileDetailsExpanded" [attr.inert]="!mobileDetailsExpanded ? '' : null">
+            <div *ngFor="let dado of dadosComplementaresMobile"><dt>{{ dado.label }}</dt><dd>{{ dado.value }}</dd></div>
+          </dl>
+        </ng-container>
+      </ng-container>
+      <ng-template #cadastroCompleto>
       <div class="info-grid">
         <div class="info-column">
           <div class="info-row">
@@ -57,12 +76,16 @@
         </div>
       </div>
 
+      </ng-template>
       <div class="actions-row">
         <div class="actions">
-          <button mat-stroked-button color="primary" (click)="onCancelarEdicao()" *ngIf="editando" [disabled]="inativo">
+          <button [attr.type]="mobileCompact ? 'button' : null" mat-stroked-button color="primary" (click)="onCancelarEdicao()" *ngIf="editando" [disabled]="inativo">
             Cancelar
           </button>
-          <button mat-stroked-button color="primary" (click)="onEditarCliente()" *ngIf="!editando" [disabled]="inativo">
+          <button [attr.type]="mobileCompact ? 'button' : null" mat-stroked-button color="primary" (click)="onEditarCliente()" *ngIf="!editando && !mobileCompact" [disabled]="inativo">
+            Trocar cliente
+          </button>
+          <button class="cliente-mobile-change" type="button" mat-button color="primary" (click)="onEditarCliente()" *ngIf="!editando && mobileCompact" [disabled]="inativo">
             Trocar cliente
           </button>
         </div>
@@ -90,6 +113,7 @@
       <div class="editor-actions">
         <button
           mat-flat-button
+          [attr.type]="mobileCompact ? 'button' : null"
           color="primary"
           (click)="onSalvarCliente()"
           [disabled]="salvando || inativo">

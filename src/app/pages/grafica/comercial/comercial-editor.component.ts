@@ -1,7 +1,12 @@
+import { ClienteResponse } from 'src/app/models/cliente/cliente-response.model';
+import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, Inject, OnDestroy, OnInit, ViewChild, TemplateRef, ViewContainerRef, Optional, effect, signal, untracked, afterRender, afterNextRender, Injector } from '@angular/core';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { TutorialService } from 'src/app/shared/tutorial/tutorial.service';
 import { AbstractControl, FormBuilder, FormControl, FormsModule, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef, MatDialogState } from '@angular/material/dialog';
 import { MatStepper } from '@angular/material/stepper';
 import { ActivatedRoute, Router } from '@angular/router';
 import { debounceTime, distinctUntilChanged, finalize, forkJoin, map, Observable, Subject, Subscription, switchMap, take, takeUntil, tap } from 'rxjs';
@@ -14,7 +19,9 @@ import { InputMoedaComponent } from 'src/app/components/inputs/input-moeda/input
 import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
 import { ObservacoesCardComponent } from 'src/app/components/observacoes-card/observacoes-card.component';
 import { PageCardAction, PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
 import { PedidoFluxoControlesComponent } from 'src/app/components/pedido-fluxo-controles/pedido-fluxo-controles.component';
+import { classificarTransicaoPedido } from 'src/app/components/pedido-fluxo-controles/pedido-transicao-apresentacao';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { StatusBadgeComponent } from 'src/app/components/status-badge/status-badge.component';
 import { MaterialModule } from 'src/app/material.module';
@@ -32,6 +39,14 @@ import { PRIMEIRO_PEDIDO_TARGETS, PrimeiroPedidoTutorialService } from './primei
 
 import { ComercialTipo } from './comercial.models';
 type FunilColuna = 'produto' | 'material' | 'formato' | 'cor';
+interface FunilViewport {
+  width: number;
+  available: number;
+  gap: number;
+  minimum: number;
+  heights: Record<string, number>;
+}
+type EditorMobileSection = 'cliente' | 'itens' | 'observacoes' | 'financeiro' | 'revisao';
 
 interface FunilOpcao {
   key: string;
@@ -50,6 +65,7 @@ interface AcabamentoComercialCalculado {
 }
 
 interface GraficaServicoWizardData {
+  mobilePanel?: boolean;
   cliente: {
     clienteId?: number | null;
     clienteNome?: string | null;
@@ -159,6 +175,7 @@ export class GraficaServicoWizardDialogComponent {
     MaterialModule,
     ReactiveFormsModule,
     PageCardComponent,
+    MobileTotalBarComponent,
     SectionCardComponent,
     ClienteSelectorCardComponent,
     ItensPedidoSectionComponent,
@@ -175,6 +192,178 @@ export class GraficaServicoWizardDialogComponent {
   styleUrl: './comercial-editor.component.scss',
 })
 export class ComercialEditorComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  get mobileCriacao(): boolean { return this.isMobile && !this.pedidoId; }
+  get mobilePedidoNovo(): boolean { return this.isMobile && this.tipo === 'pedidos' && !this.pedidoId; }
+  get mobilePedidoDetalhe(): boolean { return this.isMobile && this.tipo === 'pedidos' && !!this.pedidoId; }
+  private mobileSecoesPedidoId: number | null = null;
+  readonly mobileSections = signal<Record<EditorMobileSection, boolean>>({ cliente: true, itens: true, observacoes: false, financeiro: false, revisao: false });
+  readonly mobileTotalExpanded = signal(false);
+  @ViewChild('pagamentosMobile') private pagamentosMobile?: TemplateRef<unknown>;
+  private pagamentosPanelRef?: MatDialogRef<unknown>;
+  abrirPagamentosMobile(): void {
+    if (!this.isMobile || this.acessoNegado || !this.mostrarPagamentos || !this.permissoesFluxo.pagamentos || this.carregando || this.pagamentosPanelRef || this.ajustesPanelRef || !this.pagamentosMobile) return;
+    this.mobileTotalExpanded.set(false);
+    this.elementRef?.nativeElement.querySelector<HTMLElement>('.mobile-payments-trigger')?.focus({ preventScroll: true });
+    this.pagamentosPanelRef = openMobileSidePanel(this.dialog, this.pagamentosMobile, { ariaLabel: 'Pagamentos', viewContainerRef: this.viewContainerRef });
+    this.pagamentosPanelRef.afterClosed().pipe(take(1), takeUntil(this.destroy$)).subscribe(() => this.pagamentosPanelRef = undefined);
+  }
+  fecharPagamentosMobile(): void { this.pagamentosPanelRef?.close(); }
+  @ViewChild('ajustesMobile') private ajustesMobile?: TemplateRef<unknown>;
+  private ajustesPanelRef?: MatDialogRef<unknown>;
+  readonly ajustesMobileForm = this.fb.group({ acrescimo: [0], frete: [0], desconto: [0] });
+  abrirAjustesMobile(): void {
+    if (!this.isMobile || this.acessoNegado || this.carregando || !this.podeEditarAjustesFinanceiros || this.ajustesPanelRef || this.pagamentosPanelRef || !this.ajustesMobile) return;
+    for (const key of ['acrescimo', 'frete', 'desconto'] as const) {
+      const original = this.ajustesFinanceirosForm.controls[key];
+      this.ajustesMobileForm.controls[key].setValidators(original.validator);
+      this.ajustesMobileForm.controls[key].setAsyncValidators(original.asyncValidator);
+      if (original.disabled) this.ajustesMobileForm.controls[key].disable({ emitEvent: false });
+      else this.ajustesMobileForm.controls[key].enable({ emitEvent: false });
+    }
+    this.ajustesMobileForm.reset(this.ajustesFinanceirosForm.getRawValue());
+    this.mobileTotalExpanded.set(false);
+    this.elementRef?.nativeElement.querySelector<HTMLElement>('.mobile-adjustments-trigger')?.focus({ preventScroll: true });
+    this.ajustesPanelRef = openMobileSidePanel(this.dialog, this.ajustesMobile, { ariaLabel: 'Ajustes financeiros', viewContainerRef: this.viewContainerRef });
+    this.ajustesPanelRef.afterClosed().pipe(take(1), takeUntil(this.destroy$)).subscribe(() => {
+      this.ajustesPanelRef = undefined;
+      this.ajustesMobileForm.reset(this.ajustesFinanceirosForm.getRawValue());
+    });
+  }
+  fecharAjustesMobile(): void { if (!this.salvandoAjustesFinanceiros) this.ajustesPanelRef?.close(); }
+  aplicarAjustesMobile(): void {
+    if (!this.isMobile || !this.ajustesPanelRef || !this.podeEditarAjustesFinanceiros || this.salvandoAjustesFinanceiros) return;
+    if (this.ajustesMobileForm.invalid || this.ajustesMobileForm.pending) { this.ajustesMobileForm.markAllAsTouched(); return; }
+    if (this.pedidoId && this.tipo !== 'rascunhos') {
+      this.ajustesPanelRef.disableClose = true;
+      this.salvarAjustesFinanceiros(this.ajustesMobileForm, () => this.ajustesPanelRef?.close());
+      return;
+    }
+    this.aplicarAjustesFinanceirosForm(this.ajustesMobileForm.getRawValue(), false);
+    this.ajustesFinanceirosForm.markAsDirty();
+    this.ajustesPanelRef.close();
+  }
+  @ViewChild('observacaoMobile') private observacaoMobile?: TemplateRef<unknown>;
+  private observacaoPanelRef?: MatDialogRef<unknown>;
+  observacaoTipoMobile: 'cliente' | 'interna' = 'cliente';
+  readonly observacaoMobileControl = new FormControl('', { nonNullable: true });
+  observacaoSalvandoMobile = false;
+  get observacaoMobileTitulo(): string { return this.observacaoTipoMobile === 'cliente' ? 'Observação para o cliente' : 'Observação interna'; }
+  get podeEditarObservacaoMobile(): boolean { return !this.somenteLeitura && this.permissoesFluxo.observacoes; }
+  abrirObservacaoMobile(tipo: 'cliente' | 'interna'): void {
+    if (!this.isMobile || this.acessoNegado || this.carregando || this.observacaoPanelRef || this.ajustesPanelRef || this.pagamentosPanelRef || !this.observacaoMobile) return;
+    const original = tipo === 'cliente' ? this.observacaoClienteControl : this.observacaoInternaControl;
+    if (!this.podeEditarObservacaoMobile && !original.value?.trim()) return;
+    this.observacaoTipoMobile = tipo;
+    this.observacaoMobileControl.setValidators(original.validator);
+    this.observacaoMobileControl.setAsyncValidators(original.asyncValidator);
+    this.observacaoMobileControl.reset(original.value || '');
+    this.mobileTotalExpanded.set(false);
+    this.elementRef?.nativeElement.querySelector<HTMLElement>(`.mobile-observation-${tipo}`)?.focus({ preventScroll: true });
+    this.observacaoPanelRef = openMobileSidePanel(this.dialog, this.observacaoMobile, { ariaLabel: this.observacaoMobileTitulo, viewContainerRef: this.viewContainerRef });
+    this.observacaoPanelRef.afterOpened().pipe(take(1), takeUntil(this.destroy$)).subscribe(() => {
+      if (this.podeEditarObservacaoMobile && this.observacaoPanelRef) this.elementRef?.nativeElement.ownerDocument.getElementById(this.observacaoPanelRef.id)?.querySelector<HTMLTextAreaElement>('textarea')?.focus({ preventScroll: true });
+    });
+    this.observacaoPanelRef.afterClosed().pipe(take(1), takeUntil(this.destroy$)).subscribe(() => {
+      this.observacaoPanelRef = undefined; this.observacaoMobileControl.reset('');
+    });
+  }
+  fecharObservacaoMobile(): void { if (!this.observacaoSalvandoMobile) this.observacaoPanelRef?.close(); }
+  aplicarObservacaoMobile(texto: string): void {
+    if (!this.isMobile || !this.observacaoPanelRef || this.observacaoPanelRef.getState() !== MatDialogState.OPEN || !this.podeEditarObservacaoMobile || this.observacaoSalvandoMobile) return;
+    if (this.observacaoMobileControl.invalid || this.observacaoMobileControl.pending) { this.observacaoMobileControl.markAsTouched(); return; }
+    this.observacaoSalvandoMobile = this.tipo === 'orcamentos' && !!this.pedidoId;
+    this.observacaoPanelRef.disableClose = this.observacaoSalvandoMobile;
+    const fechar = () => this.observacaoPanelRef?.close();
+    if (this.observacaoTipoMobile === 'cliente') this.confirmarObservacaoCliente(texto, fechar);
+    else this.confirmarObservacaoInterna(texto, fechar);
+  }
+  private finalizarObservacaoMobile(): void {
+    this.observacaoSalvandoMobile = false;
+    if (this.observacaoPanelRef) this.observacaoPanelRef.disableClose = false;
+  }
+  @ViewChild('acoesPedidoMobile') private acoesPedidoMobile?: TemplateRef<unknown>;
+  @ViewChild(PedidoFluxoControlesComponent) private fluxoControles?: PedidoFluxoControlesComponent;
+  private acoesPedidoPanelRef?: MatDialogRef<unknown>;
+  private acoesPedidoConfirmacaoRef?: MatDialogRef<unknown>;
+  private acoesPedidoOrigem?: HTMLButtonElement;
+  acoesPedidoNavegando = false;
+  get acoesPedidoOcupado(): boolean { return this.carregando || this.carregandoStatus || this.acoesPedidoNavegando || !!this.acoesPedidoConfirmacaoRef; }
+  get podeTrocarStatusAcoesMobile(): boolean { return this.permissoesFluxo.alterarStatus && this.transicoesFluxo.some(opcao => classificarTransicaoPedido(opcao.status) !== 'cancelamento' && !opcao.bloqueado); }
+  get exibeCancelarPedidoAcoesMobile(): boolean { return this.permissoesFluxo.alterarStatus && this.transicoesFluxo.some(opcao => classificarTransicaoPedido(opcao.status) === 'cancelamento'); }
+  get podeCancelarPedidoAcoesMobile(): boolean { return this.permissoesFluxo.alterarStatus && this.transicoesFluxo.some(opcao => classificarTransicaoPedido(opcao.status) === 'cancelamento' && !opcao.bloqueado); }
+  abrirAcoesPedidoMobile(): void {
+    if (!this.mobilePedidoDetalhe || !this.temRegistroCarregado || this.acessoNegado || this.acoesPedidoOcupado || this.acoesPedidoPanelRef || this.ajustesPanelRef || this.pagamentosPanelRef || this.observacaoPanelRef || !this.acoesPedidoMobile) return;
+    this.elementRef?.nativeElement.querySelector<HTMLElement>('.mobile-order-actions-trigger')?.focus({ preventScroll: true });
+    this.acoesPedidoPanelRef = openMobileSidePanel(this.dialog, this.acoesPedidoMobile, { ariaLabel: 'Ações do pedido', viewContainerRef: this.viewContainerRef });
+    this.acoesPedidoPanelRef.afterClosed().pipe(take(1), takeUntil(this.destroy$)).subscribe(() => {
+      this.acoesPedidoConfirmacaoRef?.close(); this.acoesPedidoConfirmacaoRef = undefined;
+      this.acoesPedidoPanelRef = undefined; this.acoesPedidoNavegando = false;
+    });
+  }
+  fecharAcoesPedidoMobile(): void { if (!this.acoesPedidoOcupado) this.acoesPedidoPanelRef?.close(); }
+  gerenciarPedidoMobile(cancelar = false): void {
+    if (!this.mobilePedidoDetalhe || !this.acoesPedidoPanelRef || this.acoesPedidoPanelRef.getState() !== MatDialogState.OPEN || this.acoesPedidoOcupado || !(cancelar ? this.podeCancelarPedidoAcoesMobile : this.podeTrocarStatusAcoesMobile)) return;
+    this.acoesPedidoOrigem = this.elementRef?.nativeElement.ownerDocument.getElementById(this.acoesPedidoPanelRef.id)?.querySelector<HTMLButtonElement>(cancelar ? '.order-action-cancel' : '.order-action-status') || undefined;
+    if (cancelar) this.fluxoControles?.confirmarCancelamentoMobile();
+    else this.fluxoControles?.abrirMenuTrocarStatus();
+  }
+  acompanharConfirmacaoPedidoMobile(ref: MatDialogRef<unknown>): void {
+    if (!this.mobilePedidoDetalhe || !this.acoesPedidoPanelRef) return;
+    this.acoesPedidoConfirmacaoRef = ref;
+    this.acoesPedidoPanelRef.disableClose = true;
+    ref.afterClosed().pipe(take(1), takeUntil(this.destroy$)).subscribe(() => {
+      if (this.acoesPedidoConfirmacaoRef !== ref) return;
+      this.acoesPedidoConfirmacaoRef = undefined;
+      if (this.acoesPedidoPanelRef) this.acoesPedidoPanelRef.disableClose = this.acoesPedidoOcupado;
+      const panel = this.acoesPedidoPanelRef;
+      if (this.viewContainerRef) afterNextRender(() => {
+        if (panel !== this.acoesPedidoPanelRef || this.acoesPedidoOcupado || !this.acoesPedidoOrigem?.isConnected || this.acoesPedidoOrigem.disabled) return;
+        this.acoesPedidoOrigem.focus({ preventScroll: true });
+      }, { injector: this.viewContainerRef.injector });
+    });
+  }
+  executarDocumentoPedido(acao: 'completo' | 'duas-vias' | 'etiqueta' | 'whatsapp'): void {
+    const mobile = this.mobilePedidoDetalhe;
+    if (mobile && (!this.acoesPedidoPanelRef || this.acoesPedidoPanelRef.getState() !== MatDialogState.OPEN || this.acoesPedidoOcupado || this.acessoNegado || !this.mostrarDocumentosPedido)) return;
+    if (mobile) { this.acoesPedidoNavegando = true; this.acoesPedidoPanelRef!.disableClose = true; }
+    // Invoke navigation during the user's click; WhatsApp keeps its existing review route.
+    const navegacao = acao === 'whatsapp' ? this.abrirWhatsAppPedido() : this.abrirImpressaoPedido(acao);
+    if (!mobile) return;
+    const panel = this.acoesPedidoPanelRef;
+    Promise.resolve(navegacao).then(ok => { if (ok) panel?.close(); }, () => {
+      this.toastr.error('Não foi possível abrir a ação do pedido.');
+    }).finally(() => {
+      this.acoesPedidoNavegando = false;
+      if (panel === this.acoesPedidoPanelRef && panel) panel.disableClose = this.acoesPedidoOcupado;
+    });
+  }
+  mobileValidationAttempted = false;
+  private tutorialRevealTimer?: ReturnType<typeof setTimeout>;
+  private focusTimer?: ReturnType<typeof setTimeout>;
+  setMobileSection(section: EditorMobileSection, expanded: boolean): void {
+    this.mobileSections.update(value => ({ ...value, [section]: expanded }));
+  }
+  get mobileObservacoesResumo(): string {
+    const count = [this.observacaoClienteControl.value, this.observacaoInternaControl.value].filter(value => value?.trim()).length;
+    return count ? `${count} ${count === 1 ? 'observação preenchida' : 'observações preenchidas'}` : 'Nenhuma observação';
+  }
+  revisarPendencias(): void {
+    if (!this.mobilePedidoNovo) return;
+    this.mobileValidationAttempted = true;
+    this.setMobileSection('revisao', true);
+    const section: EditorMobileSection = !this.clienteConfirmado?.id ? 'cliente' : !this.itens.length ? 'itens' : 'financeiro';
+    this.setMobileSection(section, true);
+    if (this.ajustesFinanceirosForm.invalid) this.ajustesFinanceirosForm.markAllAsTouched();
+    clearTimeout(this.focusTimer);
+    this.focusTimer = setTimeout(() => {
+      const root = this.elementRef?.nativeElement.querySelector<HTMLElement>(`[data-editor-section="${section}"]`);
+      const selector = section === 'cliente' ? '.editor input:not(:disabled)' : section === 'itens' ? '.add-item-button'
+        : `.financial-adjustments app-input-moeda:nth-child(${this.acrescimoControl.invalid ? 1 : this.freteControl.invalid ? 2 : 3}) input`;
+      const target = root?.querySelector<HTMLElement>(selector) || root?.querySelector<HTMLElement>('.section-card__toggle');
+      target?.focus({ preventScroll: true }); target?.scrollIntoView({ block: 'center', behavior: 'auto' });
+    });
+  }
   readonly primeiroPedidoTargets = PRIMEIRO_PEDIDO_TARGETS;
   private primeiroPedidoCriacaoRegistrada = false;
   tipo: ComercialTipo = 'rascunhos';
@@ -232,7 +421,32 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     private readonly toastr: ToastrService,
     private readonly authService: AuthService,
     private readonly primeiroPedidoTutorial: PrimeiroPedidoTutorialService,
-  ) {}
+    @Optional() private readonly breakpoints?: BreakpointObserver,
+    @Optional() private readonly tutorial?: TutorialService,
+    @Optional() private readonly elementRef?: ElementRef<HTMLElement>,
+    @Optional() private readonly viewContainerRef?: ViewContainerRef,
+  ) {
+    if (breakpoints) breakpoints.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => {
+      if (this.isMobile === state.matches) return;
+      this.isMobile = state.matches;
+      if (!this.isMobile) { this.fecharPagamentosMobile(); this.ajustesPanelRef?.close(); this.observacaoPanelRef?.close(); this.acoesPedidoConfirmacaoRef?.close(); this.acoesPedidoPanelRef?.close(); }
+      this.mobileSections.update(value => ({ ...value }));
+    });
+    if (tutorial) effect(() => {
+      const target = tutorial.currentStep()?.targetId;
+      const section: EditorMobileSection | undefined = target === PRIMEIRO_PEDIDO_TARGETS.cliente ? 'cliente'
+        : target === PRIMEIRO_PEDIDO_TARGETS.adicionarItem ? 'itens'
+        : target === PRIMEIRO_PEDIDO_TARGETS.revisao ? 'financeiro'
+        : target === PRIMEIRO_PEDIDO_TARGETS.salvar ? 'revisao' : undefined;
+      if (!section || !this.mobilePedidoNovo) return;
+      // An in-flight client checkpoint must not undo a successful confirmation's collapse.
+      const expanded = section === 'cliente' ? untracked(() => this.mobileSections().cliente) : this.mobileSections()[section];
+      if (expanded) return;
+      this.setMobileSection(section, true);
+      clearTimeout(this.tutorialRevealTimer);
+      this.tutorialRevealTimer = setTimeout(() => tutorial.refreshTarget(target!));
+    });
+  }
 
   get titulo(): string {
     if (this.pedidoId && this.tipo === 'pedidos') {
@@ -291,7 +505,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
       return this.orcamento?.atendenteNomeSnapshot || this.orcamento?.responsavelNome || this.usuarioLogado?.nome || this.usuarioLogado?.username || '-';
     }
     if (this.tipo === 'pedidos') {
-      return this.pedido?.responsavelNome || this.usuarioLogado?.nome || this.usuarioLogado?.username || '-';
+      return this.pedido?.responsavelNome || (this.mobilePedidoDetalhe ? 'Não informado' : this.usuarioLogado?.nome || this.usuarioLogado?.username || '-');
     }
     return this.usuarioLogado?.nome || this.usuarioLogado?.username || '-';
   }
@@ -342,7 +556,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
       { id: 'orcamentos', label: 'Criar orçamento', disabled: !this.podeConcluirRascunho },
       { id: 'pedidos', label: 'Criar pedido', primary: true, disabled: !this.podeConcluirRascunho },
     ];
-    return [cancelar, { id: 'salvar', label: this.acaoSalvar, pendingLabel: 'Salvando...', primary: true,
+    return [...(this.mobilePedidoNovo ? [] : [cancelar]), { id: 'salvar', label: this.acaoSalvar, pendingLabel: 'Salvando...', primary: true,
       type: 'submit', form: 'comercial-editor-form', disabled: !this.podeSalvar,
       tutorialTarget: this.tipo === 'pedidos' ? PRIMEIRO_PEDIDO_TARGETS.salvar : '' }];
   }
@@ -356,6 +570,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     if ((event.target as HTMLElement | null)?.tagName === 'INPUT') event.preventDefault();
   }
   salvarFormulario(): void {
+    if (this.mobilePedidoNovo && (!this.podeSalvar || this.ajustesFinanceirosForm.invalid)) this.revisarPendencias();
     if (this.tipo !== 'rascunhos' && this.mostrarAcoesCriacao && !this.salvando) this.salvar();
   }
   recarregar(): void {
@@ -656,6 +871,8 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.fecharPagamentosMobile(); this.ajustesPanelRef?.close(); this.observacaoPanelRef?.close(); this.acoesPedidoConfirmacaoRef?.close(); this.acoesPedidoPanelRef?.close();
+    clearTimeout(this.tutorialRevealTimer); clearTimeout(this.focusTimer);
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -761,6 +978,11 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
       this.aplicarClienteConfirmado({ ...this.clienteConfirmado, ...clienteCompleto });
     } else {
       this.carregarClienteConfirmado(pedido.clienteId);
+    }
+    const pedidoId = pedido.id ?? this.pedidoId;
+    if (pedidoId && this.mobileSecoesPedidoId !== pedidoId) {
+      this.mobileSecoesPedidoId = pedidoId;
+      this.mobileSections.set({ cliente: !this.clienteConfirmado, itens: true, observacoes: false, financeiro: false, revisao: false });
     }
     this.observacaoClienteControl.setValue(pedido.observacaoCliente || '', { emitEvent: false });
     this.observacaoInternaControl.setValue(pedido.observacaoInterna || '', { emitEvent: false });
@@ -886,11 +1108,11 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     }
   }
 
-  private ajustesFinanceirosPayload(): PedidoAjustesFinanceirosRequest {
+  private ajustesFinanceirosPayload(form = this.ajustesFinanceirosForm): PedidoAjustesFinanceirosRequest {
     return {
-      acrescimo: this.valorMoeda(this.ajustesFinanceirosForm.value.acrescimo),
-      frete: this.valorMoeda(this.ajustesFinanceirosForm.value.frete),
-      desconto: this.valorMoeda(this.ajustesFinanceirosForm.value.desconto),
+      acrescimo: this.valorMoeda(form.value.acrescimo),
+      frete: this.valorMoeda(form.value.frete),
+      desconto: this.valorMoeda(form.value.desconto),
     };
   }
 
@@ -936,14 +1158,16 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   }
 
   private abrirWizardProduto(produtoPreSelecionado?: GraficaProduto): void {
-    const dialogRef = this.dialog.open(GraficaProdutoWizardDialogComponent, {
-      width: 'min(1720px, calc(100vw - 104px))',
-      height: 'min(900px, calc(100dvh - 96px))',
-      maxWidth: '96vw',
-      maxHeight: '92vh',
-      panelClass: ['dialog-grande', 'grafica-produto-wizard-panel'],
-      data: { cliente: this.clientePayload(), produtoPreSelecionado },
-    });
+    const data = { cliente: this.clientePayload(), produtoPreSelecionado };
+    const dialogRef = this.isMobile
+      ? openMobileSidePanel<GraficaProdutoWizardDialogComponent, typeof data & { mobilePanel: boolean }, ComposicaoComercialResolvida>(
+          this.dialog, GraficaProdutoWizardDialogComponent, { data: { ...data, mobilePanel: true }, ariaLabel: 'Adicionar item' })
+      : this.dialog.open(GraficaProdutoWizardDialogComponent, {
+          width: 'min(1720px, calc(100vw - 104px))',
+          height: 'min(900px, calc(100dvh - 96px))',
+          maxWidth: '96vw', maxHeight: '92vh',
+          panelClass: ['dialog-grande', 'grafica-produto-wizard-panel'], data,
+        });
     if (this.tipo === 'pedidos' && !this.pedidoId) {
       this.primeiroPedidoTutorial.registrarConfiguradorAberto();
     }
@@ -958,14 +1182,14 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   }
 
   private abrirWizardServico(servico: GraficaServico): void {
-    const dialogRef = this.dialog.open(GraficaServicoWizardDialogComponent, {
-      width: '560px',
-      maxWidth: '96vw',
-      panelClass: ['grafica-servico-wizard-panel'],
-      autoFocus: true,
-      restoreFocus: false,
-      data: { cliente: this.clientePayload(), servico },
-    });
+    const data: GraficaServicoWizardData = { cliente: this.clientePayload(), servico };
+    const dialogRef = this.isMobile
+      ? openMobileSidePanel<GraficaServicoWizardDialogComponent, GraficaServicoWizardData, ComposicaoComercialResolvida>(
+          this.dialog, GraficaServicoWizardDialogComponent, { data: { ...data, mobilePanel: true }, ariaLabel: 'Adicionar item' })
+      : this.dialog.open(GraficaServicoWizardDialogComponent, {
+          width: '560px', maxWidth: '96vw', panelClass: ['grafica-servico-wizard-panel'],
+          autoFocus: true, restoreFocus: false, data,
+        });
     if (this.tipo === 'pedidos' && !this.pedidoId) {
       this.primeiroPedidoTutorial.registrarConfiguradorAberto();
     }
@@ -1099,32 +1323,37 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     this.router.navigate(['/page/grafica/comercial', destino]);
   }
 
-  salvarAjustesFinanceiros(): void {
+  salvarAjustesFinanceiros(form = this.ajustesFinanceirosForm, aoAplicar?: () => void): void {
+    const finalizar = () => {
+      this.salvandoAjustesFinanceiros = false;
+      if (this.ajustesPanelRef) this.ajustesPanelRef.disableClose = false;
+    };
     if (this.tipo === 'orcamentos') {
-      if (!this.pedidoId || !this.orcamentoEditavel || this.ajustesFinanceirosForm.invalid) {
-        this.ajustesFinanceirosForm.markAllAsTouched();
+      if (!this.pedidoId || !this.orcamentoEditavel || form.invalid) {
+        form.markAllAsTouched();
         return;
       }
       this.salvandoAjustesFinanceiros = true;
-      this.graficaService.alterarAjustesComerciaisOrcamento(this.pedidoId, this.ajustesFinanceirosPayload())
-        .pipe(finalize(() => this.salvandoAjustesFinanceiros = false))
+      this.graficaService.alterarAjustesComerciaisOrcamento(this.pedidoId, this.ajustesFinanceirosPayload(form))
+        .pipe(finalize(finalizar))
         .subscribe({
-          next: (orcamento) => this.aplicarOrcamento(orcamento),
+          next: (orcamento) => { this.aplicarOrcamento(orcamento); aoAplicar?.(); },
           error: (error) => this.toastr.error(this.errorMessage(error, 'Não foi possível salvar os ajustes do orçamento.')),
         });
       return;
     }
-    if (!this.pedidoId || !this.permissoesFluxo.pagamentos || this.ajustesFinanceirosForm.invalid) {
-      this.ajustesFinanceirosForm.markAllAsTouched();
+    if (!this.pedidoId || !this.permissoesFluxo.pagamentos || form.invalid) {
+      form.markAllAsTouched();
       return;
     }
     this.salvandoAjustesFinanceiros = true;
-    this.graficaService.alterarAjustesFinanceirosPedido(this.pedidoId, this.ajustesFinanceirosPayload())
-      .pipe(finalize(() => this.salvandoAjustesFinanceiros = false))
+    this.graficaService.alterarAjustesFinanceirosPedido(this.pedidoId, this.ajustesFinanceirosPayload(form))
+      .pipe(finalize(finalizar))
       .subscribe({
         next: (pedido) => {
           this.aplicarPedido(pedido);
           this.carregarFinanceiroPedido(this.pedidoId!);
+          aoAplicar?.();
         },
         error: (error) => this.toastr.error(this.errorMessage(error, 'Não foi possível salvar os ajustes financeiros.')),
       });
@@ -1258,6 +1487,15 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     this.clienteConfirmado = this.normalizarClienteCard(cliente);
     this.clienteControl.setValue(this.clienteConfirmado, { emitEvent: false });
     this.trocandoCliente = false;
+    if (this.isMobile && this.clienteConfirmado?.id) {
+      this.setMobileSection('cliente', false);
+      clearTimeout(this.focusTimer);
+      this.focusTimer = setTimeout(() => {
+        const target = this.tutorial?.currentStep()?.targetId;
+        if (target && target !== PRIMEIRO_PEDIDO_TARGETS.cliente) return;
+        this.elementRef?.nativeElement.querySelector<HTMLElement>('[data-editor-section="cliente"] .section-card__toggle')?.focus({ preventScroll: true });
+      });
+    }
     if (this.tipo === 'pedidos' && !this.pedidoId) {
       this.primeiroPedidoTutorial.registrarClienteSelecionado();
     }
@@ -1318,11 +1556,12 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
       }
     }
 
-    const dialogRef = this.dialog.open(ClienteCreateDialogComponent, {
-      width: '760px',
-      maxWidth: '96vw',
-      data,
-    });
+    const dialogRef = this.isMobile
+      ? openMobileSidePanel<ClienteCreateDialogComponent, ClienteCreateDialogData, ClienteResponse | null>(
+          this.dialog, ClienteCreateDialogComponent, { data: { ...data, mobileMode: 'quick' }, ariaLabel: 'Novo cliente' })
+      : this.dialog.open(ClienteCreateDialogComponent, {
+          width: '760px', maxWidth: '96vw', data,
+        });
 
     dialogRef.afterClosed().pipe(take(1)).subscribe((cliente) => {
       if (!cliente) {
@@ -1345,38 +1584,46 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     });
   }
 
-  confirmarObservacaoCliente(): void {
+  confirmarObservacaoCliente(texto = this.observacaoClienteControl.value, aoAplicar?: () => void): void {
     if (!this.permissoesFluxo.observacoes) return;
     if (this.tipo === 'orcamentos' && this.pedidoId) {
-      this.graficaService.alterarObservacaoOrcamento(this.pedidoId, this.observacaoClienteControl.value || null)
+      this.graficaService.alterarObservacaoOrcamento(this.pedidoId, texto || null)
+        .pipe(finalize(() => this.finalizarObservacaoMobile()))
         .subscribe({
           next: (orcamento) => {
             this.aplicarOrcamento(orcamento);
             this.observacaoClienteSalvaFlag = true;
+            aoAplicar?.();
           },
           error: (error) => this.toastr.error(this.errorMessage(error, 'Não foi possível salvar a observação.')),
         });
       return;
     }
-    this.observacaoClienteSalva = this.observacaoClienteControl.value || '';
+    if (this.observacaoClienteControl.value !== (texto || '')) this.observacaoClienteControl.setValue(texto || '', { emitEvent: false });
+    this.observacaoClienteSalva = texto || '';
     this.observacaoClienteSalvaFlag = true;
+    aoAplicar?.();
   }
 
-  confirmarObservacaoInterna(): void {
+  confirmarObservacaoInterna(texto = this.observacaoInternaControl.value, aoAplicar?: () => void): void {
     if (!this.permissoesFluxo.observacoes) return;
     if (this.tipo === 'orcamentos' && this.pedidoId) {
-      this.graficaService.alterarObservacaoInternaOrcamento(this.pedidoId, this.observacaoInternaControl.value || null)
+      this.graficaService.alterarObservacaoInternaOrcamento(this.pedidoId, texto || null)
+        .pipe(finalize(() => this.finalizarObservacaoMobile()))
         .subscribe({
           next: (orcamento) => {
             this.aplicarOrcamento(orcamento);
             this.observacaoInternaSalvaFlag = true;
+            aoAplicar?.();
           },
           error: (error) => this.toastr.error(this.errorMessage(error, 'Não foi possível salvar a observação interna.')),
         });
       return;
     }
-    this.observacaoInternaSalva = this.observacaoInternaControl.value || '';
+    if (this.observacaoInternaControl.value !== (texto || '')) this.observacaoInternaControl.setValue(texto || '', { emitEvent: false });
+    this.observacaoInternaSalva = texto || '';
     this.observacaoInternaSalvaFlag = true;
+    aoAplicar?.();
   }
 
   alterarStatusSelecionado(): void {
@@ -1389,8 +1636,12 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   alterarStatus(status: string): void {
     if (!this.pedidoId || !this.permissoesFluxo.alterarStatus) return;
     this.carregandoStatus = true;
+    if (this.acoesPedidoPanelRef) this.acoesPedidoPanelRef.disableClose = true;
     this.graficaService.alterarStatusPedidoComercial(this.pedidoId, status)
-      .pipe(finalize(() => this.carregandoStatus = false))
+      .pipe(finalize(() => {
+        this.carregandoStatus = false;
+        if (this.acoesPedidoPanelRef) this.acoesPedidoPanelRef.disableClose = this.acoesPedidoOcupado;
+      }))
       .subscribe({
         next: (pedido) => {
           this.aplicarPedido(pedido);
@@ -1443,17 +1694,17 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
       });
   }
 
-  abrirImpressaoPedido(formato: 'completo' | 'duas-vias' | 'etiqueta'): void {
+  abrirImpressaoPedido(formato: 'completo' | 'duas-vias' | 'etiqueta'): Promise<boolean> | undefined {
     if (!this.pedidoId) return;
     const comandos = formato === 'completo'
       ? ['/page/grafica/comercial/pedidos', this.pedidoId, 'impressao']
       : ['/page/grafica/comercial/pedidos', this.pedidoId, 'impressao', formato];
-    this.router.navigate(comandos);
+    return this.router.navigate(comandos);
   }
 
-  abrirWhatsAppPedido(): void {
+  abrirWhatsAppPedido(): Promise<boolean> | undefined {
     if (!this.pedidoId) return;
-    this.router.navigate(['/page/grafica/comercial/pedidos', this.pedidoId, 'whatsapp']);
+    return this.router.navigate(['/page/grafica/comercial/pedidos', this.pedidoId, 'whatsapp']);
   }
 
   abrirImpressaoOrcamento(): void {
@@ -1483,9 +1734,11 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
       valorContexto,
       subtotalResumo,
       quantidade: Number(item.quantidade || 1),
+      unidade: item.unidadeVenda,
       valor: Number(item.valorUnitario || 0),
       subTotal: Number(item.valorTotal || 0),
       sourceIndex: index,
+      viewKey: item,
     };
   }
 
@@ -1708,6 +1961,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
 })
 export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   readonly primeiroPedidoTargets = PRIMEIRO_PEDIDO_TARGETS;
+  readonly stepLabels = ['Produto/serviço', 'Preço', 'Adicionais', 'Revisão'] as const;
   @ViewChild('stepper') stepper?: MatStepper;
   @ViewChild('quantidadeWizardInputContainer') quantidadeWizardInputContainer?: ElementRef<HTMLElement>;
   produtos: GraficaProduto[] = [];
@@ -1726,7 +1980,90 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   corSelecionadaId: number | null = null;
   paginasFunil: Record<FunilColuna, number> = { produto: 0, material: 0, formato: 0, cor: 0 };
   filtrosFunil: Record<FunilColuna, string> = { produto: '', material: '', formato: '', cor: '' };
-  readonly itensPorPaginaFunil = 6;
+  mobileFunnelStage: FunilColuna = 'produto';
+  private readonly funnelViewports = signal<Partial<Record<FunilColuna, FunilViewport>>>({});
+  private focusedMobileFunnelStage: FunilColuna = 'produto';
+  private funnelResizeObserver?: ResizeObserver;
+  @ViewChild('funnelGrid', { read: ElementRef }) private funnelGrid?: ElementRef<HTMLElement>;
+  get itensPorPaginaFunil(): number { return this.opcoesPaginadas('produto').length; }
+  get mobileFunnelStages(): FunilColuna[] {
+    // Searching within a frame must not remove that frame from navigation.
+    const material = !!this.produtoNomeSelecionado && this.opcoesFunil('material', false).length > 0;
+    const materialReady = this.materialSelecionadoId !== null || !material;
+    const formato = !!this.produtoNomeSelecionado && materialReady && this.opcoesFunil('formato', false).length > 0;
+    const formatoReady = this.formatoSelecionadoId !== null || !formato;
+    const cor = !!this.produtoNomeSelecionado && materialReady && formatoReady && this.opcoesFunil('cor', false).length > 0;
+    return ['produto', ...(material ? ['material'] : []), ...(formato ? ['formato'] : []), ...(cor ? ['cor'] : [])] as FunilColuna[];
+  }
+  get mobileFunnelIndex(): number { return Math.max(0, this.mobileFunnelStages.indexOf(this.mobileFunnelStage)); }
+  get canGoBackMobileFunnel(): boolean { return !!this.data?.mobilePanel && this.isFirstStep && this.mobileFunnelIndex > 0; }
+
+  private fitFunnel(): void {
+    const grid = this.funnelGrid?.nativeElement;
+    if (!grid || !this.isFirstStep || this.wizardDestruido) return;
+    if (this.focusedMobileFunnelStage !== this.mobileFunnelStage) {
+      this.focusedMobileFunnelStage = this.mobileFunnelStage;
+      grid.querySelector<HTMLElement>('.funnel-column--current .rev-title')?.focus({ preventScroll: true });
+    }
+    if (!this.funnelResizeObserver && typeof ResizeObserver !== 'undefined') {
+      this.funnelResizeObserver = new ResizeObserver(() => this.fitFunnel());
+      this.funnelResizeObserver.observe(grid);
+    }
+    grid.querySelectorAll<HTMLElement>('[data-funnel-stage]').forEach(frame => {
+      if (this.data?.mobilePanel && !frame.classList.contains('funnel-column--current')) return;
+      const column = frame.dataset['funnelStage'] as FunilColuna;
+      const list = frame.querySelector<HTMLElement>('.funnel-list');
+      if (!list?.clientHeight || !list.clientWidth) return;
+      const old = this.funnelViewports()[column];
+      const visible = this.opcoesPaginadas(column);
+      const anchor = visible[0]?.key;
+      const style = getComputedStyle(list);
+      const heights = old?.width === list.clientWidth ? { ...old.heights } : {};
+      list.querySelectorAll<HTMLElement>('.funnel-option').forEach(row => {
+        const key = row.dataset['funnelOptionKey'];
+        if (key && row.offsetHeight) heights[key] = row.offsetHeight;
+      });
+      const viewport: FunilViewport = {
+        width: list.clientWidth,
+        available: list.clientHeight - (parseFloat(style.paddingTop) || 0) - (parseFloat(style.paddingBottom) || 0),
+        gap: parseFloat(style.rowGap) || 0,
+        minimum: this.data?.mobilePanel ? 44 : 38,
+        heights,
+      };
+      if (JSON.stringify(old) === JSON.stringify(viewport)) return;
+      this.funnelViewports.update(current => ({ ...current, [column]: viewport }));
+      // Keep the first visible choice accessible when resizing or learning row heights.
+      const page = anchor ? this.paginasDeOpcoesFunil(column).findIndex(options => options.some(option => option.key === anchor)) : 0;
+      this.paginasFunil[column] = Math.max(0, page);
+    });
+  }
+
+  private paginasDeOpcoesFunil(column: FunilColuna): FunilOpcao[][] {
+    const viewport = this.funnelViewports()[column];
+    const options = this.opcoesFunil(column);
+    const pages: FunilOpcao[][] = [];
+    let page: FunilOpcao[] = [];
+    let used = 0;
+    options.forEach(option => {
+      const height = viewport?.heights[option.key] ?? viewport?.minimum ?? 44;
+      const gap = page.length ? viewport?.gap ?? 0 : 0;
+      if (page.length && (viewport ? used + gap + height > viewport.available : page.length >= 6)) {
+        pages.push(page); page = []; used = 0;
+      }
+      used += (page.length ? viewport?.gap ?? 0 : 0) + height;
+      page.push(option);
+    });
+    if (page.length || !pages.length) pages.push(page);
+    return pages;
+  }
+
+  private advanceMobileFunnel(): void {
+    if (!this.data?.mobilePanel) return;
+    const selected = { produto: this.produtoNomeSelecionado, material: this.materialSelecionadoId,
+      formato: this.formatoSelecionadoId, cor: this.corSelecionadaId };
+    const pending = this.mobileFunnelStages.find(stage => stage !== 'produto' && selected[stage] === null);
+    this.mobileFunnelStage = pending ?? this.mobileFunnelStages[this.mobileFunnelStages.length - 1];
+  }
   readonly tecladoQuantidade = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'backspace'];
   produtoBusca = '';
   acabamentosSelecionados = new Set<number>();
@@ -1761,7 +2098,12 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
 	    private readonly dialogRef: MatDialogRef<GraficaProdutoWizardDialogComponent>,
 	    private readonly toastr: ToastrService,
 	    @Inject(MAT_DIALOG_DATA) readonly data: any,
-	  ) {}
+        @Optional() private readonly renderInjector?: Injector,
+	  ) {
+        if (this.renderInjector) {
+          afterRender(() => this.fitFunnel(), { injector: this.renderInjector });
+        }
+      }
 
   ngOnInit(): void {
     this.quantidadeForm.valueChanges.pipe(
@@ -1793,6 +2135,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.wizardDestruido = true;
+    this.funnelResizeObserver?.disconnect();
     this.destroyWizard$.next();
     this.destroyWizard$.complete();
     this.precificacaoRequest?.unsubscribe();
@@ -1811,8 +2154,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   }
 
   get currentStepLabel(): string {
-    const labels = ['Produto/Serviço e Variação', 'Configurar Preço', 'Acabamentos', 'Revisão'];
-    return labels[this.stepper?.selectedIndex || 0] || labels[0];
+    return this.stepLabels[this.stepper?.selectedIndex || 0] || this.stepLabels[0];
   }
 
   get itemSelecionadoNome(): string {
@@ -1883,6 +2225,66 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
     return this.tipoPrecoAtual === 'POR_METRO_QUADRADO'
       || this.tipoPrecoAtual === 'POR_METRO_LINEAR'
       || this.tipoPrecoAtual === 'METRO_LINEAR';
+  }
+
+  get mobileMetroQuadrado(): boolean {
+    return !!this.data?.mobilePanel && this.tipoPrecoAtual === 'POR_METRO_QUADRADO';
+  }
+
+  get mobilePrecoLote(): boolean {
+    return !!this.data?.mobilePanel && this.tipoPrecoAtual === 'POR_LOTE';
+  }
+
+  get mobilePrecoFaixa(): boolean {
+    return !!this.data?.mobilePanel && this.tipoPrecoAtual === 'POR_FAIXA_QUANTIDADE';
+  }
+
+  get faixaAplicadaMobile(): GraficaPrecoFaixa | null {
+    if (!this.mobilePrecoFaixa || !this.precoValido) return null;
+    // The API reports the selected interval; do not infer it from the current input.
+    const intervalos = (this.preco?.detalhes || [])
+      .map(detalhe => /^Faixa aplicada:\s*(\d+)–(\d+|∞)$/.exec(detalhe.trim()))
+      .filter((match): match is RegExpExecArray => match !== null);
+    if (intervalos.length !== 1) return null;
+    const [, inicio, fim] = intervalos[0];
+    const correspondentes = this.faixasPreco.filter(faixa => Number(faixa.inicio) === Number(inicio)
+      && (fim === '∞' ? faixa.fim == null : faixa.fim != null && Number(faixa.fim) === Number(fim)));
+    return correspondentes.length === 1 ? correspondentes[0] : null;
+  }
+
+  get notasFaixaMobile(): string[] {
+    return [...new Set([this.preco?.mensagem || '', ...(this.preco?.detalhes || [])].filter(Boolean))];
+  }
+
+  get mostrarResumoPreco(): boolean {
+    if (this.mobileMetroQuadrado) return this.precoValido;
+    if (this.mobilePrecoLote) return !!this.loteSelecionado && this.precoValido;
+    if (this.mobilePrecoFaixa) return this.precoValido;
+    return true;
+  }
+
+  get regrasMetroQuadradoMobile(): Array<{ label: string; value: string }> {
+    const politica = this.politicaPrecoAtual;
+    return [
+      { label: 'Unidade de entrada', value: this.unidadeDimensaoAtualSimbolo },
+      { label: 'Unidade de cobrança', value: 'm²' },
+      { label: 'Preço por m²', value: politica?.precoMetroQuadrado == null ? 'Não configurado' : this.formatarMoeda(politica.precoMetroQuadrado) },
+      { label: 'Preço mínimo', value: politica?.minimoMetroQuadrado == null ? 'Não configurado' : this.formatarMoeda(politica.minimoMetroQuadrado) },
+      ...this.regrasMedida.slice(3),
+    ];
+  }
+
+  simboloUnidadeResultado(unidade: string): string {
+    return ({ METRO: 'm', CENTIMETRO: 'cm', MILIMETRO: 'mm' } as Record<string, string>)[unidade] || unidade;
+  }
+
+  get notasMetroQuadrado(): string[] {
+    const notas = [...new Set([this.preco?.mensagem || '', ...(this.preco?.detalhes || [])].filter(Boolean))];
+    if (!this.mobileMetroQuadrado || !this.precoValido) return notas;
+    // Only known, complete metadata entries from the pricing response are redundant.
+    // Unknown or mixed messages stay visible so operational warnings are not discarded.
+    const metadado = /^(?:Modo:\s*QUADRADO|(?:Largura|Altura):\s*[\d.,]+\s*(?:METRO|CENTIMETRO|MILIMETRO)|Área:\s*[\d.,]+\s*m²|(?:Preço\/m²|Mínimo por item|Total):\s*R\$\s*[\d.,]+|Quantidade:\s*\d+)\.?$/i;
+    return notas.filter(nota => !/^Preço calculado\.?$/i.test(nota.trim()) && !metadado.test(nota.trim()));
   }
 
   get mostraLarguraPreco(): boolean {
@@ -2034,8 +2436,8 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
     this.buscaProdutos$.next((termo || '').trim());
   }
 
-  opcoesFunil(coluna: FunilColuna): FunilOpcao[] {
-    const filtrar = (opcoes: FunilOpcao[]) => this.filtrarOpcoesFunil(coluna, opcoes);
+  opcoesFunil(coluna: FunilColuna, applySearch = true): FunilOpcao[] {
+    const filtrar = (opcoes: FunilOpcao[]) => applySearch ? this.filtrarOpcoesFunil(coluna, opcoes) : opcoes;
     if (coluna === 'produto') {
       return filtrar([
         ...this.agruparOpcoes(this.produtosFunil, (produto) => this.produtoNome(produto)),
@@ -2059,8 +2461,8 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   }
 
   opcoesPaginadas(coluna: FunilColuna): FunilOpcao[] {
-    const inicio = this.paginasFunil[coluna] * this.itensPorPaginaFunil;
-    return this.opcoesFunil(coluna).slice(inicio, inicio + this.itensPorPaginaFunil);
+    const pages = this.paginasDeOpcoesFunil(coluna);
+    return pages[Math.min(this.paginasFunil[coluna], pages.length - 1)];
   }
 
   paginaAtualFunil(coluna: FunilColuna): number {
@@ -2068,7 +2470,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   }
 
   totalPaginasFunil(coluna: FunilColuna): number {
-    return Math.max(1, Math.ceil(this.opcoesFunil(coluna).length / this.itensPorPaginaFunil));
+    return this.paginasDeOpcoesFunil(coluna).length;
   }
 
   podePaginarAnterior(coluna: FunilColuna): boolean {
@@ -2105,8 +2507,10 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
     this.formatoSelecionadoId = null;
     this.corSelecionadaId = null;
     this.resetarPaginasFunil('material', 'formato', 'cor');
+    if (this.data?.mobilePanel) (['material', 'formato', 'cor'] as FunilColuna[]).forEach(column => this.filtrosFunil[column] = '');
     this.limparProdutoResolvido();
     this.avancarFunilAutomaticamente();
+    this.advanceMobileFunnel();
   }
 
   selecionarMaterialFunil(opcao: FunilOpcao): void {
@@ -2114,16 +2518,20 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
     this.formatoSelecionadoId = null;
     this.corSelecionadaId = null;
     this.resetarPaginasFunil('formato', 'cor');
+    if (this.data?.mobilePanel) (['formato', 'cor'] as FunilColuna[]).forEach(column => this.filtrosFunil[column] = '');
     this.limparProdutoResolvido();
     this.avancarFunilAutomaticamente();
+    this.advanceMobileFunnel();
   }
 
   selecionarFormatoFunil(opcao: FunilOpcao): void {
     this.formatoSelecionadoId = Number(opcao.key);
     this.corSelecionadaId = null;
     this.resetarPaginasFunil('cor');
+    if (this.data?.mobilePanel) (['cor'] as FunilColuna[]).forEach(column => this.filtrosFunil[column] = '');
     this.limparProdutoResolvido();
     this.avancarFunilAutomaticamente();
+    this.advanceMobileFunnel();
   }
 
   selecionarCorFunil(opcao: FunilOpcao): void {
@@ -2350,7 +2758,9 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
     if (this.stepper) {
       this.stepper.selectedIndex = 0;
       this.stepper.steps.forEach((step, index) => {
-        step.completed = index === 0 ? false : step.completed;
+        // Form-backed steps derive completion from validity and interaction.
+        // Only Adicionais has an explicit completion flag for the resolved composition.
+        if (index === 2) step.completed = false;
         step.interacted = false;
       });
     }
@@ -2379,6 +2789,10 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   }
 
   voltarStep(): void {
+    if (this.canGoBackMobileFunnel) {
+      this.mobileFunnelStage = this.mobileFunnelStages[this.mobileFunnelIndex - 1];
+      return;
+    }
     if ((this.stepper?.selectedIndex || 0) === 3 && !this.possuiAdicionaisDisponiveis) {
       if (this.stepper) {
         this.stepper.selectedIndex = 1;
@@ -2393,7 +2807,6 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
 	    const stepPreco = this.stepper.steps.get(1);
 	    const stepAdicionais = this.stepper.steps.get(2);
 	    if (stepPreco) {
-	      stepPreco.completed = true;
 	      stepPreco.interacted = true;
 	    }
 	    if (stepAdicionais) {
@@ -2412,7 +2825,6 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
 	    const stepPreco = this.stepper.steps.get(1);
 	    const stepAdicionais = this.stepper.steps.get(2);
 	    if (stepPreco) {
-	      stepPreco.completed = true;
 	      stepPreco.interacted = true;
 	    }
 	    if (stepAdicionais) {
@@ -2476,6 +2888,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   }
 
   faixaPrecoAplicada(faixa: GraficaPrecoFaixa): boolean {
+    if (this.mobilePrecoFaixa) return this.faixaAplicadaMobile === faixa;
     const quantidade = Number(this.preco?.quantidadeSolicitada || this.quantidadeForm.value.quantidade || 0);
     const inicio = Number(faixa.inicio || 0);
     const fim = faixa.fim === null || faixa.fim === undefined ? null : Number(faixa.fim);
@@ -2719,6 +3132,14 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
     const calculo = this.calcularAcabamentoComercial(item);
     if (!calculo.politica) return 'Sem valor configurado';
     return `${this.labelFormaAplicacao(item.formaAplicacao)} · ${this.moeda(calculo.valorUnitario)}`;
+  }
+
+  apresentacaoPrecoAdicional(item: GraficaProdutoAcabamento): { unidade: string; valor: string | null } {
+    const calculo = this.calcularAcabamentoComercial(item);
+    return {
+      unidade: this.labelFormaAplicacao(item.formaAplicacao),
+      valor: calculo.politica ? this.moeda(calculo.valorUnitario) : null,
+    };
   }
 
   private composicaoDaPrecificacao(): ComposicaoComercialResolvida | null {
@@ -2976,6 +3397,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   }
 
   limparProdutoSelecionado(): void {
+    this.mobileFunnelStage = 'produto';
     this.produtoSelecionado = null;
     this.servicoAtual = null;
     this.produtoForm.reset({ produtoGraficoId: null });
@@ -3189,6 +3611,7 @@ export class GraficaProdutoWizardDialogComponent implements OnInit, OnDestroy {
   }
 
   private resetarItemAtual(): void {
+    this.mobileFunnelStage = 'produto';
     this.produtoSelecionado = null;
     this.servicoAtual = null;
     this.produtoForm.reset({ produtoGraficoId: null });

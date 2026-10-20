@@ -26,6 +26,9 @@ export class InputNumericoComponent implements OnInit {
   @Input() label: string = 'Número';
   @Input() placeholder: string = '';
   @Input() valor = '';
+  @Input() decimal = false;
+  @Input() errorText = '';
+  @Input() subscriptSizing: 'fixed' | 'dynamic' = 'fixed';
 
   private onChange = (value: any) => {};
   private onTouched = () => {};

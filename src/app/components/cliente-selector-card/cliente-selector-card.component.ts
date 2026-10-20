@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
@@ -22,7 +22,35 @@ import { TelefonePipe } from 'src/app/pipe/telefone.pipe';
   templateUrl: './cliente-selector-card.component.html',
   styleUrls: ['./cliente-selector-card.component.scss']
 })
-export class ClienteSelectorCardComponent {
+export class ClienteSelectorCardComponent implements OnChanges {
+  private static nextId = 0;
+  private readonly telefonePipe = new TelefonePipe();
+  readonly detailsId = `cliente-details-${ClienteSelectorCardComponent.nextId++}`;
+  mobileDetailsExpanded = false;
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['cliente']?.previousValue?.id !== changes['cliente']?.currentValue?.id) this.mobileDetailsExpanded = false;
+  }
+
+  get resumoClienteMobile(): string {
+    return [this.cliente?.nome || '-', this.telefonePipe.transform(this.cliente?.telefone)].filter(Boolean).join(' · ');
+  }
+
+  get cidadeUfMobile(): string {
+    return [this.cliente?.endereco?.cidade, this.cliente?.endereco?.estado].filter(Boolean).join(' / ');
+  }
+
+  get dadosComplementaresMobile(): Array<{ label: string; value: string }> {
+    const e = this.cliente?.endereco;
+    return [['E-mail', this.cliente?.email], ['Logradouro', e?.logradouro], ['Número', e?.numero],
+      ['Bairro', e?.bairro], ['CEP', e?.cep], ['Complemento', e?.complemento]]
+      .filter(([, value]) => value != null && String(value).trim() !== '')
+      .map(([label, value]) => ({ label: String(label), value: String(value) }));
+  }
+  @Input() mobileCompact = false;
+  @Input() mobileExpanded = true;
+  @Input() mobileSummary = '';
+  @Output() mobileExpandedChange = new EventEmitter<boolean>();
 
   @Input({ required: true }) control!: FormControl;
   @Input({ required: true }) buscarFn!: (termo: string) => Observable<any[]>;

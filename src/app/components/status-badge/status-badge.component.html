@@ -1,4 +1,4 @@
-<span class="status-chip" [ngClass]="config.className" [class.status-chip--compact]="compact" [attr.title]="config.label">
+<span class="status-chip" [ngClass]="config.className" [class.status-chip--compact]="compact" [class.status-chip--full]="!!fullLabel" [attr.title]="fullLabel || config.label">
   <mat-icon>{{ config.icon }}</mat-icon>
-  <span class="text">{{ config.label }}</span>
+  <span class="text">{{ fullLabel || config.label }}</span>
 </span>

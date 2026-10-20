@@ -1,3 +1,4 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -33,7 +34,8 @@ describe('Clientes — listagem compartilhada', () => {
     dialog.open.and.returnValue({ afterClosed: () => of(true) } as any);
     TestBed.configureTestingModule({
       imports: [ListarClienteComponent, NoopAnimationsModule],
-      providers: [provideRouter([]), { provide: ClienteService, useValue: service }, { provide: AuthService, useValue: auth },
+      providers: [
+        { provide: BreakpointObserver, useValue: { observe: () => of({ matches: false, breakpoints: {} }), isMatched: () => false } },provideRouter([]), { provide: ClienteService, useValue: service }, { provide: AuthService, useValue: auth },
         { provide: MatDialog, useValue: dialog }, { provide: ToastrService, useValue: jasmine.createSpyObj('Toastr', ['success', 'error']) }]
     });
     TestBed.overrideComponent(ListarClienteComponent, { add: { providers: [{ provide: MatDialog, useValue: dialog }] } });

@@ -1,10 +1,10 @@
-<div class="wizard-shell" [appTutorialTarget]="primeiroPedidoTargets.configurador">
-      <div class="dialog-header">
+<div class="wizard-shell mobile-side-panel__layout" [appTutorialTarget]="primeiroPedidoTargets.configurador">
+      <div class="dialog-header mobile-side-panel__header">
         <div class="title-stack">
           <h2 mat-dialog-title class="m-b-0">
             <span class="title-main">Adicionar item</span>
-            <span class="title-divider">-</span>
-            <span class="title-step" aria-live="polite">{{ currentStepLabel }}</span>
+            <span *ngIf="!data?.mobilePanel" class="title-divider">-</span>
+            <span *ngIf="!data?.mobilePanel" class="title-step" aria-live="polite">{{ currentStepLabel }}</span>
           </h2>
         </div>
         <button mat-icon-button mat-dialog-close aria-label="Fechar">
@@ -14,14 +14,17 @@
       <app-tutorial-overlay [embeddedForTarget]="primeiroPedidoTargets.configurador" />
       <mat-divider></mat-divider>
 
-      <mat-dialog-content class="wizard-body">
-        <mat-horizontal-stepper [linear]="true" #stepper class="wizard-stepper" (selectionChange)="onStepSelectionChange($event)">
-          <mat-step [stepControl]="produtoForm" label="Produto/Serviço e Variação">
+      <mat-dialog-content class="wizard-body mobile-side-panel__body" [class.wizard-body--funnel]="data?.mobilePanel && isFirstStep">
+        <p *ngIf="data?.mobilePanel" class="wizard-mobile-step-title" [class.wizard-mobile-step-title--redundant]="stepper.selectedIndex > 0" aria-live="polite">{{ currentStepLabel }}</p>
+        <mat-horizontal-stepper labelPosition="bottom" [linear]="true" #stepper class="wizard-stepper" (selectionChange)="onStepSelectionChange($event)">
+          <mat-step [stepControl]="produtoForm" [label]="data?.mobilePanel ? 'Produto' : stepLabels[0]">
             <form [formGroup]="produtoForm" class="step-inner step-full produto-step">
-                    <div class="funnel-grid">
-                      <section class="funnel-column">
+                    <div class="funnel-grid" #funnelGrid>
+                      <div class="funnel-track" [style.transform]="data?.mobilePanel ? 'translateX(-' + (mobileFunnelIndex * 100) + '%)' : null">
+                      <section class="funnel-column" data-funnel-stage="produto" [class.funnel-column--current]="mobileFunnelStage === 'produto'"
+                        [attr.aria-hidden]="data?.mobilePanel && mobileFunnelStage !== 'produto' ? 'true' : null" [attr.inert]="data?.mobilePanel && mobileFunnelStage !== 'produto' ? '' : null">
                         <div class="funnel-header">
-                          <div class="rev-title">Produto ou serviço</div>
+                          <div class="rev-title" role="heading" aria-level="3" [attr.tabindex]="data?.mobilePanel ? -1 : null">Produto ou serviço</div>
                           <mat-form-field appearance="outline" class="funnel-search" subscriptSizing="dynamic">
                             <input
                               matInput
@@ -38,7 +41,7 @@
                           <button
                             mat-button
                             type="button"
-                            class="funnel-option"
+                            class="funnel-option" [attr.data-funnel-option-key]="opcao.key"
                             *ngFor="let opcao of opcoesPaginadas('produto')"
                             [class.active]="opcao.servico ? servicoAtual?.id === opcao.servico.id : produtoNomeSelecionado === opcao.label"
                             (click)="selecionarProdutoFunil(opcao)">
@@ -68,9 +71,10 @@
                         </div>
                       </section>
 
-                      <section class="funnel-column" *ngIf="exibeColunaMaterial">
+                      <section class="funnel-column" *ngIf="data?.mobilePanel ? mobileFunnelStages.includes('material') : exibeColunaMaterial" data-funnel-stage="material" [class.funnel-column--current]="mobileFunnelStage === 'material'"
+                        [attr.aria-hidden]="data?.mobilePanel && mobileFunnelStage !== 'material' ? 'true' : null" [attr.inert]="data?.mobilePanel && mobileFunnelStage !== 'material' ? '' : null">
                         <div class="funnel-header">
-                          <div class="rev-title">Material</div>
+                          <div class="rev-title" role="heading" aria-level="3" [attr.tabindex]="data?.mobilePanel ? -1 : null">Material</div>
                           <mat-form-field appearance="outline" class="funnel-search" subscriptSizing="dynamic">
                             <input
                               matInput
@@ -87,7 +91,7 @@
                           <button
                             mat-button
                             type="button"
-                            class="funnel-option"
+                            class="funnel-option" [attr.data-funnel-option-key]="opcao.key"
                             *ngFor="let opcao of opcoesPaginadas('material')"
                             [class.active]="materialSelecionadoId === +opcao.key"
                             (click)="selecionarMaterialFunil(opcao)">
@@ -110,9 +114,10 @@
                         </div>
                       </section>
 
-                      <section class="funnel-column" *ngIf="exibeColunaFormato">
+                      <section class="funnel-column" *ngIf="data?.mobilePanel ? mobileFunnelStages.includes('formato') : exibeColunaFormato" data-funnel-stage="formato" [class.funnel-column--current]="mobileFunnelStage === 'formato'"
+                        [attr.aria-hidden]="data?.mobilePanel && mobileFunnelStage !== 'formato' ? 'true' : null" [attr.inert]="data?.mobilePanel && mobileFunnelStage !== 'formato' ? '' : null">
                         <div class="funnel-header">
-                          <div class="rev-title">Formato</div>
+                          <div class="rev-title" role="heading" aria-level="3" [attr.tabindex]="data?.mobilePanel ? -1 : null">Formato</div>
                           <mat-form-field appearance="outline" class="funnel-search" subscriptSizing="dynamic">
                             <input
                               matInput
@@ -129,7 +134,7 @@
                           <button
                             mat-button
                             type="button"
-                            class="funnel-option"
+                            class="funnel-option" [attr.data-funnel-option-key]="opcao.key"
                             *ngFor="let opcao of opcoesPaginadas('formato')"
                             [class.active]="formatoSelecionadoId === +opcao.key"
                             (click)="selecionarFormatoFunil(opcao)">
@@ -152,9 +157,10 @@
                         </div>
                       </section>
 
-                      <section class="funnel-column" *ngIf="exibeColunaCor">
+                      <section class="funnel-column" *ngIf="data?.mobilePanel ? mobileFunnelStages.includes('cor') : exibeColunaCor" data-funnel-stage="cor" [class.funnel-column--current]="mobileFunnelStage === 'cor'"
+                        [attr.aria-hidden]="data?.mobilePanel && mobileFunnelStage !== 'cor' ? 'true' : null" [attr.inert]="data?.mobilePanel && mobileFunnelStage !== 'cor' ? '' : null">
                         <div class="funnel-header">
-                          <div class="rev-title">Cor</div>
+                          <div class="rev-title" role="heading" aria-level="3" [attr.tabindex]="data?.mobilePanel ? -1 : null">Cor</div>
                           <mat-form-field appearance="outline" class="funnel-search" subscriptSizing="dynamic">
                             <input
                               matInput
@@ -171,7 +177,7 @@
                           <button
                             mat-button
                             type="button"
-                            class="funnel-option"
+                            class="funnel-option" [attr.data-funnel-option-key]="opcao.key"
                             *ngFor="let opcao of opcoesPaginadas('cor')"
                             [class.active]="corSelecionadaId === +opcao.key"
                             (click)="selecionarCorFunil(opcao)">
@@ -194,10 +200,11 @@
                         </div>
                       </section>
                     </div>
+                    </div>
             </form>
           </mat-step>
 
-          <mat-step [stepControl]="quantidadeForm" label="Configurar Preço">
+          <mat-step [stepControl]="quantidadeForm" [label]="stepLabels[1]">
             <form [formGroup]="quantidadeForm" class="step-inner step-wide price-step">
               <div class="price-shell">
                 <section class="price-product-card">
@@ -210,21 +217,22 @@
                 </section>
 
                 <div class="price-config-grid">
-                  <section class="price-config-card">
+                  <section class="price-config-card" [class.price-config-card--fixed]="tipoPrecoAtual === 'FIXO'">
                     <ng-container *ngIf="tipoPrecoAtual === 'POR_LOTE'">
                       <h3>Escolha a quantidade</h3>
-                      <div class="lot-grid">
+                      <div class="lot-grid" [class.lot-grid--mobile]="mobilePrecoLote">
                         <button
                           type="button"
                           class="lot-card"
                           *ngFor="let lote of lotesPreco"
                           [class.active]="loteSelecionado?.quantidade === lote.quantidade"
+                          [attr.aria-pressed]="mobilePrecoLote ? loteSelecionado?.quantidade === lote.quantidade : null"
                           (click)="selecionarLotePreco(lote)">
-                          <strong>{{ lote.quantidade | number:'1.0-0':'pt-BR' }} un</strong>
+                          <strong><mat-icon class="lot-selection-icon" aria-hidden="true" *ngIf="mobilePrecoLote && loteSelecionado?.quantidade === lote.quantidade">check_circle</mat-icon>{{ lote.quantidade | number:'1.0-0':'pt-BR' }} un</strong>
                           <span>{{ lote.valorLote | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span>
                         </button>
                       </div>
-                      <div class="price-hint">
+                      <div class="price-hint" *ngIf="!mobilePrecoLote">
                         <mat-icon>info</mat-icon>
                         <span>Selecione um lote para continuar.</span>
                       </div>
@@ -232,12 +240,12 @@
 
                     <ng-container *ngIf="tipoPrecoAtual === 'FIXO'">
                       <h3>Confirme a quantidade</h3>
-                      <div class="price-fixed">
+                      <div class="price-fixed" *ngIf="!data?.mobilePanel || preco?.valorUnitario == null">
                         Valor definido: <strong>{{ politicaPrecoAtual?.valorFixo | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
                       </div>
-                      <mat-form-field appearance="outline" *ngIf="mostraQuantidadePreco">
+                      <mat-form-field appearance="outline" *ngIf="mostraQuantidadePreco" [subscriptSizing]="data?.mobilePanel ? 'dynamic' : 'fixed'">
                         <mat-label>Quantidade</mat-label>
-                        <input matInput type="number" min="1" formControlName="quantidade" />
+                        <input matInput type="number" min="1" [attr.inputmode]="data?.mobilePanel ? 'decimal' : null" formControlName="quantidade" />
                       </mat-form-field>
                       <button mat-flat-button color="primary" type="button" [disabled]="quantidadeForm.invalid || precificando" (click)="precificar()">
                         {{ precificando ? 'Calculando...' : 'Calcular' }}
@@ -245,13 +253,14 @@
                     </ng-container>
 
                     <ng-container *ngIf="tipoPrecoAtual === 'POR_FAIXA_QUANTIDADE'">
-                      <div class="quantity-range-layout">
+                      <div class="quantity-range-layout" [class.quantity-range-layout--mobile]="mobilePrecoFaixa">
                         <div class="quantity-entry-panel" #quantidadeWizardInputContainer>
                           <h3>Informe a quantidade</h3>
                           <div class="quantity-entry-row">
                             <app-input-numerico
                               class="quantity-input"
                               [control]="quantidadeForm.controls.quantidade"
+                              [subscriptSizing]="mobilePrecoFaixa ? 'dynamic' : 'fixed'"
                               label="Quantidade">
                             </app-input-numerico>
                             <button mat-flat-button color="primary" type="button" [disabled]="quantidadeForm.invalid || precificando" (click)="precificar()">
@@ -267,7 +276,22 @@
                           </div>
                         </div>
 
-                        <div class="quantity-ranges-panel">
+                        <section class="quantity-ranges-panel" *ngIf="mobilePrecoFaixa">
+                          <div class="quantity-applied-range" *ngIf="faixaAplicadaMobile as aplicada">
+                            <span>Faixa aplicada</span><strong>{{ faixaPrecoLabel(aplicada) }}</strong>
+                          </div>
+                          <details class="quantity-range-details">
+                            <summary><span class="ranges-open-label">Ver todas as faixas</span><span class="ranges-close-label">Ocultar faixas</span></summary>
+                            <ul class="quantity-range-list" *ngIf="faixasPreco.length; else semFaixasMobile">
+                              <li class="price-range-row" *ngFor="let faixa of faixasPreco" [class.active]="faixaPrecoAplicada(faixa)">
+                                <span>{{ faixaPrecoLabel(faixa) }} <small *ngIf="faixaPrecoAplicada(faixa)">Faixa atual</small></span>
+                                <strong>{{ faixa.valorUnitario | currency:'BRL':'symbol':'1.2-20':'pt-BR' }}</strong>
+                              </li>
+                            </ul>
+                            <ng-template #semFaixasMobile><p class="quantity-range-empty">Nenhuma faixa cadastrada.</p></ng-template>
+                          </details>
+                        </section>
+                        <div class="quantity-ranges-panel" *ngIf="!mobilePrecoFaixa">
                           <div class="quantity-ranges-title">
                             <div>
                               <strong>Faixas de preço</strong>
@@ -303,19 +327,34 @@
                     </ng-container>
 
 		                    <ng-container *ngIf="tipoPrecoAtual === 'POR_METRO_QUADRADO'">
-		                      <div class="measure-layout">
+		                      <div class="measure-layout" [class.measure-layout--area-mobile]="mobileMetroQuadrado">
 		                        <div class="measure-entry-panel">
 		                          <h3>Informe as medidas</h3>
 		                          <div class="form-grid price-inputs">
-		                            <app-input-numerico [control]="quantidadeForm.controls.largura" [label]="'Largura (' + unidadeDimensaoAtualSimbolo + ')'"></app-input-numerico>
-		                            <app-input-numerico [control]="quantidadeForm.controls.altura" [label]="'Altura (' + unidadeDimensaoAtualSimbolo + ')'"></app-input-numerico>
-		                            <app-input-numerico [control]="quantidadeForm.controls.quantidade" label="Quantidade"></app-input-numerico>
+		                            <app-input-numerico [control]="quantidadeForm.controls.largura" [label]="'Largura (' + unidadeDimensaoAtualSimbolo + ')'" [decimal]="mobileMetroQuadrado" [errorText]="mobileMetroQuadrado ? erroMedida('largura') : ''"></app-input-numerico>
+		                            <app-input-numerico [control]="quantidadeForm.controls.altura" [label]="'Altura (' + unidadeDimensaoAtualSimbolo + ')'" [decimal]="mobileMetroQuadrado" [errorText]="mobileMetroQuadrado ? erroMedida('altura') : ''"></app-input-numerico>
+		                            <app-input-numerico [control]="quantidadeForm.controls.quantidade" label="Quantidade" [subscriptSizing]="mobileMetroQuadrado ? 'dynamic' : 'fixed'"></app-input-numerico>
 		                          </div>
 		                          <button mat-flat-button color="primary" type="button" [disabled]="quantidadeForm.invalid || precificando" (click)="precificar()">
 		                            {{ precificando ? 'Calculando...' : 'Calcular' }}
 		                          </button>
 		                        </div>
-		                        <div class="measure-rules-panel">
+		                        <section class="measure-rules-panel measure-area-rules" *ngIf="mobileMetroQuadrado">
+                              <div class="measure-area-rate">
+                                <span>Preço por m²</span>
+                                <strong *ngIf="politicaPrecoAtual?.precoMetroQuadrado != null; else semPrecoArea">{{ politicaPrecoAtual?.precoMetroQuadrado | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
+                                <ng-template #semPrecoArea><span>Não configurado</span></ng-template>
+                              </div>
+                              <details class="measure-area-details">
+                                <summary><span class="rules-open-label">Ver regras</span><span class="rules-close-label">Ocultar regras</span></summary>
+                                <dl>
+                                  <div *ngFor="let regra of regrasMetroQuadradoMobile">
+                                    <dt>{{ regra.label }}</dt><dd>{{ regra.value }}</dd>
+                                  </div>
+                                </dl>
+                              </details>
+                            </section>
+		                        <div class="measure-rules-panel" *ngIf="!mobileMetroQuadrado">
 		                          <div class="measure-rules-title">
 		                            <div>
 		                              <strong>Regras da medida</strong>
@@ -396,21 +435,39 @@
                     </ng-container>
                   </section>
 
-                  <aside class="price-summary-card">
-                    <h3>Resumo da precificação</h3>
-                    <div class="summary-price-row">
+                  <ng-container *ngIf="mobileMetroQuadrado && preco && !precoValido">
+                    <p class="measure-area-feedback" role="status" *ngFor="let nota of notasMetroQuadrado">{{ nota }}</p>
+                  </ng-container>
+                  <ng-container *ngIf="mobilePrecoFaixa && preco && !precoValido">
+                    <p class="quantity-range-feedback" role="status" *ngFor="let nota of notasFaixaMobile">{{ nota }}</p>
+                  </ng-container>
+                  <aside class="price-summary-card" *ngIf="mostrarResumoPreco">
+                    <h3>{{ data?.mobilePanel ? 'Resumo do preço' : 'Resumo da precificação' }}</h3>
+                    <div class="summary-price-row summary-price-kind">
                       <span>Tipo</span>
                       <strong>{{ tipoPrecoLabel }}</strong>
                     </div>
+                    <ng-container *ngIf="mobileMetroQuadrado">
+                      <div class="summary-price-row" *ngIf="preco?.largura != null && preco?.altura != null && preco?.unidadeDimensao">
+                        <span>Medidas informadas</span>
+                        <strong>{{ formatarMedida(preco!.largura) }} × {{ formatarMedida(preco!.altura) }} {{ simboloUnidadeResultado(preco!.unidadeDimensao!) }}</strong>
+                      </div>
+                      <div class="summary-price-row" *ngIf="preco?.areaFaturada != null">
+                        <span>Área faturada</span><strong>{{ preco!.areaFaturada | number:'1.2-2':'pt-BR' }} m²</strong>
+                      </div>
+                      <div class="summary-price-row" *ngIf="preco?.areaReal != null && preco?.areaReal !== preco?.areaFaturada">
+                        <span>Área geométrica</span><strong>{{ preco!.areaReal | number:'1.2-3':'pt-BR' }} m²</strong>
+                      </div>
+                    </ng-container>
                     <div class="summary-price-row" *ngIf="preco?.quantidadeSolicitada">
-                      <span>Quantidade</span>
-                      <strong>{{ preco?.quantidadeSolicitada | number:'1.0-3':'pt-BR' }}</strong>
+                      <span>{{ data?.mobilePanel && tipoPrecoAtual === 'POR_LOTE' ? 'Quantidade do lote' : 'Quantidade' }}</span>
+                      <strong>{{ preco?.quantidadeSolicitada | number:'1.0-3':'pt-BR' }}<span *ngIf="mobilePrecoLote"> unidades</span></strong>
                     </div>
                     <div class="summary-price-row" *ngIf="preco?.valorUnitario !== null && preco?.valorUnitario !== undefined">
-                      <span>Valor unitário</span>
-                      <strong>{{ preco?.valorUnitario | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
+                      <span>{{ data?.mobilePanel ? 'Preço unitário' : 'Valor unitário' }}</span>
+                      <strong>{{ preco?.valorUnitario | currency:'BRL':'symbol':(mobilePrecoFaixa ? '1.2-20' : '1.2-2'):'pt-BR' }}</strong>
                     </div>
-                    <div class="summary-price-row" *ngIf="preco?.areaFaturada">
+                    <div class="summary-price-row" *ngIf="!mobileMetroQuadrado && preco?.areaFaturada">
                       <span>{{ medidaFaturadaLabel }}</span>
                       <strong>{{ preco?.areaFaturada | number:'1.2-2':'pt-BR' }} {{ medidaFaturadaUnidade }}</strong>
                     </div>
@@ -422,13 +479,16 @@
                       <mat-icon>verified_user</mat-icon>
                       <span>Regra aplicada: {{ preco?.regraAplicadaNome }}</span>
                     </div>
+                    <div class="measure-area-notes" *ngIf="mobileMetroQuadrado && notasMetroQuadrado.length">
+                      <p *ngFor="let nota of notasMetroQuadrado">{{ nota }}</p>
+                    </div>
                   </aside>
                 </div>
               </div>
             </form>
           </mat-step>
 
-          <mat-step label="Acabamentos" [optional]="!possuiAdicionaisDisponiveis" [completed]="!possuiAdicionaisDisponiveis">
+          <mat-step [label]="stepLabels[2]" [optional]="!possuiAdicionaisDisponiveis">
             <div class="step-inner step-wide services-step">
               <div class="services-shell">
                 <section class="price-product-card">
@@ -443,11 +503,25 @@
                 <div class="services-grid">
                   <section class="services-card">
                     <div class="services-card-head">
-                      <h3>Acabamentos disponíveis</h3>
+                      <h3>{{ data?.mobilePanel ? 'Acabamentos' : 'Acabamentos disponíveis' }}</h3>
                       <span>{{ produtoSelecionado?.acabamentos?.length || 0 }}</span>
                     </div>
                     <div class="services-list" *ngIf="produtoSelecionado?.acabamentos?.length; else semAcabamentosServicos">
-                      <label class="opt-card service-option" *ngFor="let acabamento of produtoSelecionado?.acabamentos">
+                      <ng-container *ngFor="let acabamento of produtoSelecionado?.acabamentos">
+                      <mat-checkbox
+                        *ngIf="data?.mobilePanel"
+                        class="service-mobile-option"
+                        [checked]="acabamentoSelecionado(acabamento.id)"
+                        (change)="alternarAcabamento(acabamento.id, $event.checked)">
+                        <span class="opt-name">{{ acabamento.nome }}</span>
+                        <span class="opt-desc" *ngIf="acabamento.descricao">{{ acabamento.descricao }}</span>
+                        <span class="service-mobile-price" *ngIf="apresentacaoPrecoAdicional(acabamento) as precoAdicional">
+                          <span>{{ precoAdicional.unidade }}</span>
+                          <strong *ngIf="precoAdicional.valor; else adicionalSemValor">{{ precoAdicional.valor }}</strong>
+                          <ng-template #adicionalSemValor><span>Sem valor configurado</span></ng-template>
+                        </span>
+                      </mat-checkbox>
+                      <label *ngIf="!data?.mobilePanel" class="opt-card service-option">
                         <mat-checkbox
                           class="opt-check"
                           [checked]="acabamentoSelecionado(acabamento.id)"
@@ -459,6 +533,7 @@
                         </span>
                         <span class="opt-price">{{ precoResumoAdicional(acabamento) }}</span>
                       </label>
+                      </ng-container>
                     </div>
                     <ng-template #semAcabamentosServicos>
                       <div class="empty-state compact">
@@ -472,14 +547,14 @@
             </div>
           </mat-step>
 
-          <mat-step label="Revisão">
+          <mat-step [label]="stepLabels[3]">
             <div class="step-inner step-wide review-step">
               <div class="review-shell" *ngIf="composicao; else semComposicao">
                 <section class="price-product-card">
                   <div>
                     <div class="rev-title">Item selecionado</div>
                     <h3>{{ itemSelecionadoNome }}</h3>
-                    <div class="price-variation">{{ itemSelecionadoResumo }}</div>
+                    <div class="price-variation">{{ data?.mobilePanel && produtoSelecionado ? resumoProdutoResolvido : itemSelecionadoResumo }}</div>
                   </div>
                   <span class="price-type">{{ tipoPrecoLabel }}</span>
                 </section>
@@ -487,7 +562,20 @@
                 <div class="review-grid">
                   <section class="review-card review-items-card">
                     <h3>Itens da composição</h3>
-                    <div class="rev-table">
+                    <ul class="review-mobile-list" *ngIf="data?.mobilePanel">
+                      <li *ngFor="let item of itensRevisao">
+                        <strong class="review-mobile-name">{{ item.nomeProduto }}</strong>
+                        <p class="review-mobile-description" *ngIf="item.caracteristicasResumo">{{ item.caracteristicasResumo }}</p>
+                        <div class="review-mobile-values">
+                          <span>{{ item.quantidade | number:'1.0-3':'pt-BR' }} {{ item.unidadeVenda || 'un' }}</span>
+                          <strong>{{ item.valorTotal | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
+                        </div>
+                        <small class="review-mobile-unit" *ngIf="item.valorUnitario !== null && item.valorUnitario !== undefined">
+                          Unitário: {{ item.valorUnitario | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
+                        </small>
+                      </li>
+                    </ul>
+                    <div class="rev-table" *ngIf="!data?.mobilePanel">
                       <div class="rev-row rev-head">
                         <span>Item</span>
                         <span class="text-center">Qtd</span>
@@ -513,11 +601,11 @@
 
                   <aside class="price-summary-card">
                     <h3>Resumo</h3>
-                    <div class="summary-price-row">
+                    <div class="summary-price-row" *ngIf="!data?.mobilePanel">
                       <span>Quantidade</span>
                       <strong>{{ preco?.quantidadeSolicitada || quantidadeForm.value.quantidade || 1 }}</strong>
                     </div>
-                    <div class="summary-price-row" *ngIf="preco?.valorUnitario !== null && preco?.valorUnitario !== undefined">
+                    <div class="summary-price-row" *ngIf="!data?.mobilePanel && preco?.valorUnitario !== null && preco?.valorUnitario !== undefined">
                       <span>Valor unitário</span>
                       <strong>{{ preco?.valorUnitario | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</strong>
                     </div>
@@ -539,14 +627,14 @@
         </mat-horizontal-stepper>
       </mat-dialog-content>
 
-      <div class="wizard-footer">
-        <button mat-flat-button color="accent" type="button" [disabled]="isFirstStep" (click)="voltarStep()">
+      <div class="wizard-footer mobile-side-panel__footer" [class.wizard-footer--review]="data?.mobilePanel && isLastStep">
+        <button mat-flat-button color="accent" type="button" [disabled]="isFirstStep && !canGoBackMobileFunnel" (click)="voltarStep()">
           Voltar
         </button>
         <div class="right">
           <button mat-stroked-button color="primary" type="button" mat-dialog-close>Cancelar</button>
           <button mat-flat-button color="primary" class="primary-action" type="button" [disabled]="nextDisabled" (click)="avancarStep()">
-            <span>{{ nextLabel }}</span>
+            <span>{{ data?.mobilePanel && isLastStep ? 'Adicionar item' : nextLabel }}</span>
           </button>
         </div>
       </div>

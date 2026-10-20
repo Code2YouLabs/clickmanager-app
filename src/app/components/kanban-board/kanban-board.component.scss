@@ -1,3 +1,4 @@
+@use "../../shared/responsive/mobile-foundation" as mobile;
 :host {
   display: block;
   min-width: 0;
@@ -258,5 +259,20 @@
 @media (max-width: 760px) {
   .kanban-board__scroll {
     grid-auto-columns: minmax(270px, 84vw);
+  }
+}
+
+.kanban-item { display: contents; }
+.kanban-mobile-nav { display: flex; align-items: center; gap: 4px; }
+.kanban-mobile-nav mat-form-field { flex: 1; min-width: 0; }
+@include mobile.mobile-foundation {
+  .kanban-board--mobile-navigation {
+    .kanban-board__scroll { grid-auto-columns: minmax(270px, 100%); gap: 12px; }
+    .kanban-column { min-height: 0; }
+    .kanban-column__body { padding: 12px; }
+    .kanban-item { display: grid; gap: 4px; }
+    .kanban-card-action, .kanban-column__load-more { min-height: 44px; }
+    .kanban-card:hover { transform: none; }
+    .kanban-mobile-nav button { min-width: 44px; min-height: 44px; }
   }
 }

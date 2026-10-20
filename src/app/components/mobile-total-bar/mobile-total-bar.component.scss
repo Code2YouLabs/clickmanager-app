@@ -3,6 +3,19 @@
 }
 
 @media (max-width: 900px) {
+  .mobile-total-bar--managed {
+    max-height: max(0px, calc(var(--mobile-total-visible-height, 100dvh) - var(--mobile-total-bottom-offset, 0px) + var(--mobile-total-keyboard-inset, 0px) - 8px));
+    overflow: hidden;
+    .mobile-total-bar__handle-toggle, .mobile-total-bar__controls { flex-shrink: 0; }
+    .mobile-total-bar__details { flex: 0 1 auto; min-height: 0; overflow: hidden; }
+    .mobile-total-bar__details-clip { display: flex; flex-direction: column; min-height: 0; }
+    .mobile-total-bar__details-content { flex: 1 1 auto; min-height: 0; max-height: none; }
+    .mobile-total-bar__details-header { flex: 0 0 auto; }
+    .mobile-total-bar__details-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  }
+}
+
+@media (max-width: 900px) {
   :host {
     display: block;
   }
@@ -259,6 +272,7 @@
 
 // Opt-in composition: projected details and persistent controls share one fixed surface.
 .mobile-total-bar__controls { display: contents; }
+.mobile-total-bar__details-header { flex: 0 0 auto; }
 
 @media (max-width: 900px) {
   .mobile-total-bar--inline-details {
@@ -359,4 +373,73 @@
   .mobile-total-bar__waiting strong { font-size: 0.875rem; font-weight: 600; line-height: 1.4; }
   .mobile-total-bar__waiting mat-icon { width: 20px; height: 20px; font-size: 20px; flex-shrink: 0; }
   .mobile-total-bar__waiting mat-progress-spinner { flex-shrink: 0; }
+}
+
+// Compact shared presentation used by SmartCalc and form completion bars.
+@media (max-width: 900px) {
+  .mobile-total-bar--compact {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    --mobile-total-panel-bottom-padding: 8px;
+    --mobile-total-details-max-height: max(0px, calc(var(--mobile-total-visible-height, 100dvh) - var(--mobile-bottom-nav-height, 60px) - var(--mobile-total-summary-height, 56px) - var(--mobile-total-handle-height, 44px) - 72px - var(--mobile-total-panel-bottom-padding)));
+    padding: 0 max(12px, env(safe-area-inset-right)) var(--mobile-total-panel-bottom-padding) max(12px, env(safe-area-inset-left));
+    border-radius: 12px 12px 0 0;
+    background: var(--mat-sys-surface, #fff);
+    box-shadow: 0 -4px 12px rgba(15, 23, 42, 0.06);
+  }
+  .mobile-total-bar--compact:not(.mobile-total-bar--awaiting-result) { --mobile-total-panel-bottom-padding: 16px; }
+  .mobile-total-bar--compact::before,
+  .mobile-total-bar--compact .mobile-total-bar__handle { display: none; }
+  .mobile-total-bar--compact .mobile-total-bar__summary {
+    padding: 0;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: 'meta meta' 'label value';
+    align-items: center;
+    gap: 0 8px;
+  }
+  .mobile-total-bar--compact.mobile-total-bar--inline-details .mobile-total-bar__controls {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+  .mobile-total-bar--compact .mobile-total-bar__meta { grid-area: meta; }
+  .mobile-total-bar--compact .mobile-total-bar__waiting { padding: 4px 0 8px; gap: 8px; }
+  .mobile-total-bar--compact.mobile-total-bar--inline-details .mobile-total-bar__expand.mobile-total-bar__expand--button {
+    min-height: 32px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .mobile-total-bar--compact.mobile-total-bar--inline-details .mobile-total-bar__summary .label { grid-area: label; font-size: 0.75rem; line-height: 1; text-transform: uppercase; letter-spacing: normal; }
+  .mobile-total-bar--compact.mobile-total-bar--inline-details .mobile-total-bar__summary .value { grid-area: value; font-size: 1.125rem; line-height: 1.25; overflow-wrap: anywhere; }
+  .mobile-total-bar--compact .mobile-total-bar__expand { min-height: 24px; font-size: 0.75rem; }
+  .mobile-total-bar--compact .mobile-total-bar__actions { min-width: 0; width: auto; justify-self: end; }
+  .mobile-total-bar--compact.mobile-total-bar--inline-details .mobile-total-bar__cta {
+    width: auto;
+    flex: 0 0 auto;
+  }
+  .mobile-total-bar--compact.mobile-total-bar--inline-details .mobile-total-bar__cta,
+  .mobile-total-bar--actions-only .mobile-total-bar__secondary,
+  .mobile-total-bar--actions-only .mobile-total-bar__cta {
+    min-height: 44px;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.2;
+    box-shadow: none;
+  }
+
+}
+
+// Opt-in command bar: reuses the same fixed surface, viewport and clearance management.
+@media (max-width: 900px) {
+  .mobile-total-bar--actions-only {
+    padding-top: 12px;
+    .mobile-total-bar__controls { display: block; }
+    .mobile-total-bar__actions { display: flex; width: 100%; gap: 12px; }
+    .mobile-total-bar__secondary, .mobile-total-bar__cta { flex: 1 1 0; min-width: 0; width: auto; }
+    .mobile-total-bar__actions mat-icon { width: 18px; height: 18px; font-size: 18px; margin-right: 4px; }
+  }
 }

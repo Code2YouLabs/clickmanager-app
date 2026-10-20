@@ -1,3 +1,4 @@
+@use "../../shared/responsive/mobile-foundation" as mobile;
 .page-card {
   display: block;
 
@@ -74,3 +75,30 @@
 
 :host { display: block; min-width: 0; }
 .page-card__saving { display: block; padding: 8px 16px; color: var(--mat-sys-on-surface-variant); }
+
+@include mobile.mobile-foundation {
+  .page-card--mobile-compact {
+    margin-bottom: 0;
+    mat-card-content { padding: 12px; }
+    mat-card-content.no-padding { padding: 0; }
+    .page-card__footer { gap: 8px; padding: 12px; }
+  }
+}
+
+@include mobile.mobile-foundation {
+  :host(.page-card-host--mobile-fab) {
+    --mobile-page-fab-size: 56px;
+    --mobile-page-fab-gap: 16px;
+  }
+  // Reserve scroll space after the card without extending its surface below the content.
+  // Do not subtract ancestor padding: it may not belong to the same scroll surface.
+  .page-card__fab-clearance { height: calc(var(--mobile-page-fab-size) + 2 * var(--mobile-page-fab-gap)); flex-shrink: 0; }
+
+}
+
+@include mobile.mobile-foundation {
+  .page-card__contextual-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+  .page-card__contextual-actions:empty { display: none; }
+  .page-card__contextual-actions ::ng-deep button,
+  .page-card__contextual-actions ::ng-deep a { min-height: 44px; }
+}

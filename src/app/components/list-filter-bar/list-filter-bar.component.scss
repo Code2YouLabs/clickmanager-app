@@ -1,3 +1,4 @@
+@use "../../shared/responsive/mobile-foundation" as mobile;
 .list-filter-bar {
   display: grid;
   grid-template-columns: minmax(260px, 1fr) repeat(3, minmax(150px, 190px)) auto;
@@ -201,4 +202,72 @@
   .data-table-toolbar__filter {
     width: 100%;
   }
+}
+
+@include mobile.mobile-foundation {
+  .data-table-toolbar-card--mobile-compact {
+    margin: 0 0 12px;
+    &.data-table-toolbar-card--compact ::ng-deep .section-card { padding: 0; }
+    .data-table-toolbar__filter-toggle,
+    .data-table-toolbar__clear { min-height: 44px; }
+    .data-table-toolbar__filters-header { flex-direction: row; flex-wrap: wrap; align-items: center; }
+    .data-table-toolbar__actions { display: block; min-width: 0; }
+    .data-table-toolbar__section--search { gap: 8px; }
+  }
+}
+
+@include mobile.mobile-foundation {
+  .list-mobile-toolbar { display: grid; gap: 8px; margin-bottom: 12px; min-width: 0; }
+  .list-mobile-toolbar__title { font-size: 14px; line-height: 20px; font-weight: 600; }
+  .list-mobile-toolbar__controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .list-mobile-toolbar__filter-button {
+    min-height: 44px; flex: 0 0 auto; padding: 0 14px;
+    --mdc-outlined-button-container-shape: 12px;
+    --mdc-outlined-button-outline-color: transparent;
+    --mdc-outlined-button-label-text-color: var(--mat-sys-on-primary-container);
+    --mat-outlined-button-state-layer-color: var(--mat-sys-on-primary-container);
+    border-radius: 12px; border-color: transparent;
+    background: var(--mat-sys-primary-container); color: var(--mat-sys-on-primary-container);
+    font-size: 14px; font-weight: 600; letter-spacing: 0;
+    mat-icon { width: 20px; height: 20px; font-size: 20px; margin-right: 6px; }
+    &--active {
+      --mdc-outlined-button-label-text-color: var(--mat-sys-on-primary);
+      --mat-outlined-button-state-layer-color: var(--mat-sys-on-primary);
+      background: var(--mat-sys-primary); color: var(--mat-sys-on-primary);
+    }
+  }
+  .list-mobile-toolbar__actions { flex: 1 1 156px; min-width: 0; }
+  .list-mobile-toolbar__actions:empty { display: none; }
+  .list-mobile-toolbar__actions ::ng-deep [list-filter-actions],
+  .list-mobile-toolbar__actions ::ng-deep [data-table-toolbar-actions] { width: 100%; }
+  ::ng-deep .list-filter-mobile-panel {
+    .list-filter-panel { display: flex; flex-direction: column; height: 100%; min-width: 0; overflow: hidden; }
+    .list-filter-panel__header {
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+      padding: calc(8px + env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-right, 0px)) 8px max(8px, env(safe-area-inset-left, 0px));
+      border-bottom: 1px solid var(--mat-sys-outline-variant);
+    }
+    .list-filter-panel__header h2 { flex: 1; min-width: 0; margin: 0; font-size: 18px; line-height: 24px; font-weight: 600; overflow-wrap: anywhere; }
+    .list-filter-panel__header button { min-height: 44px; flex-shrink: 0; }
+    .list-filter-panel__body {
+      flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
+      padding: 16px max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px));
+    }
+    .data-table-toolbar__filters { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; }
+    .data-table-toolbar__filters > * { min-width: 0; max-width: 100%; }
+    .data-table-toolbar__filter { width: 100%; min-width: 0; }
+    .list-filter-panel__footer {
+      flex-shrink: 0; border-top: 1px solid var(--mat-sys-outline-variant);
+      padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+    }
+    .list-filter-panel__footer button { width: 100%; min-height: 44px; }
+  }
+}
+
+@include mobile.mobile-foundation {
+  .list-mobile-toolbar__controls:has(> .list-mobile-toolbar__actions:empty):not(:has(> .list-mobile-toolbar__filter-button)) { display: none; }
+}
+
+@include mobile.mobile-foundation {
+  .list-mobile-toolbar__hint { font-size: 12px; line-height: 18px; color: var(--mat-sys-on-surface-variant); }
 }

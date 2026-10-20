@@ -1,0 +1,127 @@
+@use "../../../shared/responsive/mobile-foundation" as mobile;
+
+    .whatsapp-page {
+      max-width: 920px;
+      margin: 0 auto;
+    }
+
+    .pedido-context {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      background: #f8fafc;
+    }
+
+    .pedido-context span,
+    .pedido-context strong {
+      display: block;
+    }
+
+    .pedido-context span {
+      color: #64748b;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .pedido-context strong {
+      margin-top: 2px;
+      color: #0f172a;
+      font-size: 14px;
+      line-height: 1.3;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .actions button {
+      border-radius: 999px;
+    }
+
+    .state-panel,
+    .error-panel {
+      min-height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 12px;
+      color: #64748b;
+      background: #f8fafc;
+    }
+
+    .error-panel {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      justify-content: flex-start;
+      align-items: start;
+      max-width: 680px;
+      min-height: auto;
+      margin: 24px auto;
+      padding: 18px;
+      border-color: #fecaca;
+      color: #991b1b;
+      background: #fff7f7;
+    }
+
+    .error-panel strong,
+    .error-panel span {
+      display: block;
+    }
+
+    .error-panel span {
+      margin-top: 3px;
+      color: #7f1d1d;
+    }
+
+    .error-actions {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .pedido-context {
+        grid-template-columns: 1fr;
+      }
+
+      .actions,
+      .error-actions {
+        flex-direction: column;
+      }
+
+      .actions button,
+      .error-actions button {
+        width: 100%;
+      }
+    }
+
+@include mobile.mobile-foundation {
+  :host ::ng-deep .whatsapp-page-card--mobile app-card-header > mat-divider { margin-bottom: 0 !important; }
+  .whatsapp-page--mobile { max-width: none; width: 100%; min-width: 0; }
+  .whatsapp-mobile-editor { min-width: 0; }
+  .whatsapp-mobile-recipient { display: flex; flex-direction: column; gap: 4px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--mat-sys-outline-variant); overflow-wrap: anywhere; }
+  .whatsapp-mobile-recipient h3 { margin: 0 0 4px; font-size: 14px; line-height: 20px; font-weight: 600; }
+  .whatsapp-mobile-recipient strong { font-size: 16px; line-height: 24px; font-weight: 600; }
+  .whatsapp-mobile-recipient span { font-size: 14px; line-height: 20px; }
+  .whatsapp-mobile-recipient small { font-size: 12px; line-height: 16px; color: var(--mat-sys-on-surface-variant); }
+  .whatsapp-mobile-message { min-width: 0; }
+  .whatsapp-mobile-message app-input-textarea { display: block; width: 100%; min-width: 0; }
+  .whatsapp-mobile-message ::ng-deep textarea { height: 55dvh; min-height: 12rem; max-height: 36rem; box-sizing: border-box; resize: vertical; overflow-y: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 16px; line-height: 24px; }
+  .whatsapp-mobile-message ::ng-deep .mat-mdc-form-field-subscript-wrapper { min-height: 0; }
+  .state-panel, .error-panel { min-height: 0; border: 0; border-radius: 0; margin: 0; padding: 16px 0; background: transparent; }
+  .error-actions { flex-direction: row; margin-top: 8px; }
+  .error-actions button { width: auto; min-height: 44px; }
+}

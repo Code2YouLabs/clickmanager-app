@@ -243,10 +243,6 @@
     </a>
     }
 
-    <a [routerLink]="['/billing/minha-assinatura']" class="mobile-action-link" (click)="closeMobileOverlays()">
-      <span>Minha assinatura</span>
-      <i-tabler name="chevron-right" class="icon-18 d-flex"></i-tabler>
-    </a>
     @for(quicklink of quicklinks; track quicklink.id || quicklink.url) {
     <a [href]="quicklink.url" class="mobile-action-link" (click)="abrirAtalhoMobile(quicklink, $event)">
       <span>{{ quicklink.nome }}</span>

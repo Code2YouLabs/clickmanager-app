@@ -1,11 +1,16 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { PedidoTrocarStatusDialogComponent } from 'src/app/components/pedido-fluxo-controles/pedido-trocar-status-dialog.component';
+import { DataTableItemDirective } from 'src/app/components/data-table/data-table-item.directive';
 import { CommonModule, DOCUMENT } from '@angular/common';
-import { Component, Inject, OnDestroy, OnInit } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { PageEvent } from '@angular/material/paginator';
 import { MatDialog } from '@angular/material/dialog';
 import { combineLatest, finalize, Observable, Subject, Subscription, takeUntil } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
+import { confirmacaoCancelamentoPedido } from 'src/app/components/pedido-fluxo-controles/pedido-cancelamento-confirmacao';
 import { DataTableCellDirective } from 'src/app/components/data-table/data-table-cell.directive';
 import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
 import { DataTableAction, DataTableActionEvent, DataTableColumn, DataTablePagination, DataTableFilter, DataTableFilterState } from 'src/app/components/data-table/data-table.models';
@@ -51,6 +56,7 @@ type PedidoKanbanSnapshot = Pick<PedidoKanbanColumn, 'items' | 'count' | 'total'
     PageCardComponent,
     DataTableComponent,
     DataTableCellDirective,
+    DataTableItemDirective,
     ViewModeToggleComponent,
     KanbanBoardComponent,
     KanbanCardDirective,
@@ -62,18 +68,28 @@ type PedidoKanbanSnapshot = Pick<PedidoKanbanColumn, 'items' | 'count' | 'total'
 export class ComercialListComponent implements OnInit, OnDestroy {
   readonly primeiroPedidoTargets = PRIMEIRO_PEDIDO_TARGETS;
   itens: any[] = [];
+  isMobile = false;
+  private readonly breakpoints = inject(BreakpointObserver);
   busca = '';
   pagina = 0;
   tamanho = 10;
   totalItens = 0;
   carregando = false;
   erro: string | null = null;
+  carregandoMais = false;
+  erroMais: string | null = null;
+  reiniciarLista = false;
+  private listRequestVersion = 0;
+  private listInitialized = false;
+  get progressiveList(): boolean { return this.isMobile && this.viewMode === 'lista'; }
   acessoNegado = false;
   private request?: Subscription;
   private readonly destroy$ = new Subject<void>();
   tipo: ComercialTipo = 'rascunhos';
   statusFiltro: string | null = null;
   viewMode: ComercialViewMode = 'lista';
+  private desktopViewMode: ComercialViewMode = 'lista';
+  private desktopKanbanExpanded = false;
   kanbanExpanded = false;
   kanbanColumns: PedidoKanbanColumn[] = [];
   pedidosMovendo = new Set<number>();
@@ -104,6 +120,19 @@ export class ComercialListComponent implements OnInit, OnDestroy {
     filteredTitle: 'Nenhum resultado encontrado',
     filteredDescription: 'Altere a busca para localizar outros registros.',
   };
+  get mobileEmptyState() {
+    const { singular, plural, emptyIcon } = this.configuracao;
+    return {
+      ...this.emptyState,
+      title: `Nenhum ${singular} encontrado`,
+      description: `Quando houver ${plural}, eles aparecerão aqui.`,
+      filteredTitle: this.busca.trim() ? 'Nenhum resultado encontrado' : `Nenhum ${singular} encontrado`,
+      filteredDescription: this.busca.trim()
+        ? `Nenhum resultado nos ${plural} carregados. Altere a busca para tentar novamente.`
+        : `Não há ${plural} com o status selecionado.`,
+      icon: emptyIcon,
+    };
+  }
   rowKey = (item: any) => item.id || item.pedidoId || item.orcamentoId || item.protocolo || item.numero;
   kanbanTrackBy = (pedido: PedidoComercialResumo) => pedido.id || pedido.pedidoId || pedido.numero;
   pedidoCardAriaLabel = (pedido: PedidoComercialResumo): string =>
@@ -170,7 +199,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   get kanbanExpandedActive(): boolean {
-    return this.kanbanExpanded && this.podeAlternarKanban && this.viewMode === 'kanban';
+    return !this.isMobile && this.kanbanExpanded && this.podeAlternarKanban && this.viewMode === 'kanban';
   }
 
   get kanbanDragEnabled(): boolean {
@@ -185,9 +214,30 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.breakpoints.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => {
+      const wasMobile = this.isMobile;
+      this.isMobile = state.matches;
+      if (this.listInitialized && wasMobile !== this.isMobile) {
+        const previousMode = this.viewMode;
+        this.itens = []; this.totalItens = 0; this.pagina = 0;
+        if (this.tipo !== 'pedidos') {
+          this.carregar();
+        } else if (this.isMobile) {
+          this.desktopViewMode = this.viewMode;
+          this.desktopKanbanExpanded = this.kanbanExpanded;
+          this.alterarVisualizacao('lista', false);
+        } else {
+          this.alterarVisualizacao(this.desktopViewMode, false);
+          if (this.desktopViewMode === 'kanban') this.setKanbanExpanded(this.desktopKanbanExpanded);
+        }
+        if (this.tipo === 'pedidos' && this.viewMode === previousMode && this.viewMode === 'lista') this.carregar();
+      }
+      this.syncKanbanFocusClass();
+    });
     combineLatest([this.route.data, this.route.queryParamMap]).pipe(takeUntil(this.destroy$)).subscribe(([data, params]) => {
       const tipo = data['tipo'] || 'rascunhos';
-      if (tipo !== this.tipo) { this.itens = []; this.totalItens = 0; this.busca = ''; }
+      if (tipo !== this.tipo) this.busca = '';
+      if (tipo !== this.tipo || (this.progressiveList && params.get('status') !== this.statusFiltro)) { this.itens = []; this.totalItens = 0; }
       this.tipo = tipo;
       this.statusFiltro = params.get('status');
       this.pagina = 0;
@@ -197,6 +247,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
       }
       this.syncKanbanFocusClass();
       this.resetKanbanSeContextoMudou();
+      this.listInitialized = true;
       this.carregar();
       if (this.tipo === 'pedidos') {
         const primeiroPedidoId = Number(params.get('primeiroPedidoId') || 0);
@@ -217,28 +268,27 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   carregar(): void {
+    const version = ++this.listRequestVersion;
     this.request?.unsubscribe();
+    this.carregandoMais = false; this.erroMais = null; this.reiniciarLista = false;
     if (this.podeAlternarKanban && this.viewMode === 'kanban') {
       this.carregarKanbanInicial();
       return;
     }
 
+    if (this.progressiveList) this.pagina = 0;
     this.carregando = true;
     this.erro = null;
     this.acessoNegado = false;
-    const source: Observable<GraficaPagina<any>> = this.tipo === 'pedidos'
-      ? this.graficaService.listarPedidosComerciais(this.pagina, this.tamanho, this.statusFiltroPedido())
-      : this.tipo === 'orcamentos'
-        ? this.graficaService.listarOrcamentosComerciais(this.pagina, this.tamanho, this.statusFiltroOrcamento())
-        : this.graficaService.listarRascunhosComerciais(this.pagina, this.tamanho, this.statusFiltro);
-
-    this.request = source.subscribe({
+    this.request = this.listarPagina(this.pagina).subscribe({
       next: (page: any) => {
+        if (version !== this.listRequestVersion) return;
         this.carregando = false;
-        this.itens = page?.content || [];
+        this.itens = this.progressiveList ? this.validateFirstBatch(page?.content || []) : page?.content || [];
         this.totalItens = page?.totalElements ?? this.itens.length;
       },
       error: (error) => {
+        if (version !== this.listRequestVersion) return;
         this.carregando = false;
         this.acessoNegado = error?.status === 403;
         this.erro = this.acessoNegado ? null : 'Não foi possível carregar os registros. Tente novamente.';
@@ -261,9 +311,74 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   paginar(event: PageEvent): void {
+    if (this.progressiveList) {
+      if (event.pageIndex === this.pagina + 1 && event.pageSize === this.tamanho) this.carregarMaisRegistros();
+      return;
+    }
     this.pagina = event.pageIndex;
     this.tamanho = event.pageSize;
     this.carregar();
+  }
+
+  private listarPagina(page: number): Observable<GraficaPagina<any>> {
+    return this.tipo === 'pedidos'
+      ? this.graficaService.listarPedidosComerciais(page, this.tamanho, this.statusFiltroPedido())
+      : this.tipo === 'orcamentos'
+        ? this.graficaService.listarOrcamentosComerciais(page, this.tamanho, this.statusFiltroOrcamento())
+        : this.graficaService.listarRascunhosComerciais(page, this.tamanho, this.statusFiltro);
+  }
+
+  private validateFirstBatch(items: any[]): any[] {
+    const unique = new Map<unknown, any>();
+    for (const item of items) {
+      const key = this.rowKey(item);
+      if (key == null || unique.has(key)) {
+        this.reiniciarLista = true;
+        this.erroMais = 'A lista recebida contém registros sem identidade ou repetidos. Atualize para continuar.';
+      }
+      if (key != null && !unique.has(key)) unique.set(key, item);
+    }
+    if (items.length && !unique.size) this.erro = `Não foi possível apresentar os ${this.configuracao.plural} recebidos. Tente novamente.`;
+    return [...unique.values()];
+  }
+
+  private carregarMaisRegistros(): void {
+    if (!this.progressiveList || this.carregando || this.carregandoMais || this.acessoNegado || this.erro || this.reiniciarLista ||
+      (this.pagina + 1) * this.tamanho >= this.totalItens) return;
+    const nextPage = this.pagina + 1;
+    const version = this.listRequestVersion;
+    this.carregandoMais = true; this.erroMais = null;
+    this.request = this.listarPagina(nextPage).subscribe({
+      next: page => {
+        if (version !== this.listRequestVersion) return;
+        this.carregandoMais = false;
+        const batch = page.content || [];
+        const keys = new Set(this.itens.map(item => this.rowKey(item)));
+        let inconsistent = this.itens.length !== nextPage * this.tamanho || page.totalElements !== this.totalItens || (page.number != null && page.number !== nextPage) ||
+          batch.length !== Math.min(this.tamanho, this.totalItens - nextPage * this.tamanho);
+        for (const item of batch) {
+          const key = this.rowKey(item);
+          if (key == null || keys.has(key)) inconsistent = true;
+          keys.add(key);
+        }
+        if (inconsistent) {
+          this.reiniciarLista = true;
+          this.erroMais = `A lista mudou durante o carregamento. Atualize para continuar com os ${this.configuracao.plural} atuais.`;
+          return;
+        }
+        this.itens = [...this.itens, ...batch];
+        this.pagina = nextPage;
+      },
+      error: error => {
+        if (version !== this.listRequestVersion) return;
+        this.carregandoMais = false;
+        if (error?.status === 403) {
+          this.acessoNegado = true; this.itens = []; this.totalItens = 0;
+          return;
+        }
+        this.erroMais = `Não foi possível carregar mais ${this.configuracao.plural}. Tente novamente.`;
+      },
+    });
   }
 
   onAction(event: DataTableActionEvent<any>): void {
@@ -272,18 +387,19 @@ export class ComercialListComponent implements OnInit, OnDestroy {
     }
   }
 
-  alterarVisualizacao(value: ComercialViewMode): void {
+  alterarVisualizacao(value: ComercialViewMode, registerTutorial = true): void {
     if (!this.podeAlternarKanban || !value || value === this.viewMode) {
       return;
     }
 
     this.viewMode = value;
+    if (!this.isMobile) this.desktopViewMode = value;
     this.pagina = 0;
     if (this.viewMode !== 'kanban') {
       this.setKanbanExpanded(false);
     } else {
       this.syncKanbanFocusClass();
-      this.primeiroPedidoTutorial.registrarKanbanSelecionado();
+      if (registerTutorial) this.primeiroPedidoTutorial.registrarKanbanSelecionado();
     }
     this.carregar();
   }
@@ -294,6 +410,47 @@ export class ComercialListComponent implements OnInit, OnDestroy {
     }
 
     this.setKanbanExpanded(!this.kanbanExpanded);
+  }
+
+  moverPedidoMobile(pedido: PedidoComercialResumo): void {
+    if (!this.isMobile || this.isPedidoDragDisabled(pedido)) return;
+    const source = this.kanbanColumns.find(column => column.id === pedido.status);
+    if (!source || source.forbidden) return;
+    this.activeDragPedidoId = this.pedidoId(pedido);
+    this.activeDragSourceStatus = source.id;
+    this.activeDragLoading = true;
+    this.graficaService.buscarFluxoPedidoComercial(this.pedidoId(pedido))
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: fluxo => {
+          const opcoes = (fluxo.proximasTransicoes || [])
+            .filter(transicao => transicao.status !== source.id && this.kanbanColumns.some(column => column.id === transicao.status))
+            .map(transicao => ({ status: transicao.status, label: transicao.label,
+              bloqueado: !transicao.permitida, motivo: transicao.motivo || undefined }));
+          if (!fluxo.permissoes.alterarStatus || !opcoes.some(opcao => !opcao.bloqueado)) {
+            this.limparDragAtivo();
+            this.toastr.info('Não há etapas disponíveis para movimentar este pedido.');
+            return;
+          }
+          this.dialog.open(PedidoTrocarStatusDialogComponent, {
+            width: '480px', maxWidth: 'calc(100vw - 24px)',
+            data: { statusAtual: pedido.status, opcoes, cancelamentoSeparado: true },
+          }).afterClosed().pipe(takeUntil(this.destroy$)).subscribe(resultado => {
+            this.limparDragAtivo();
+            if (!resultado?.status || this.isPedidoDragDisabled(pedido)) return;
+            const target = this.kanbanColumns.find(column => column.id === resultado.status);
+            if (!target || target.forbidden || target.id === source.id) return;
+            // Re-enter the existing drag path: revalidate, confirm cancellation, persist and roll back.
+            this.onPedidoDragStarted({ item: pedido, column: source, index: source.items.indexOf(pedido) });
+            this.onPedidoDropped({ item: pedido, sourceColumn: source, targetColumn: target,
+              previousIndex: source.items.indexOf(pedido), currentIndex: 0 });
+          });
+        },
+        error: error => {
+          this.limparDragAtivo();
+          this.toastr.error(this.errorMessage(error, 'Não foi possível validar as etapas do pedido.'));
+        },
+      });
   }
 
   onPedidoDragStarted(event: KanbanDragEvent<PedidoComercialResumo>): void {
@@ -378,8 +535,8 @@ export class ComercialListComponent implements OnInit, OnDestroy {
           }
 
           if (event.targetColumn.id === 'CANCELADO') {
-            this.confirmarCancelamento(event.item).subscribe((confirmado) => {
-              if (!confirmado) {
+            this.confirmarCancelamento(event.item, fluxo.label).subscribe((confirmado) => {
+              if (confirmado !== true) {
                 this.restaurarMovimentoPedido(event, source, sourceSnapshot, target, targetSnapshot, originalStatus);
                 return;
               }
@@ -465,7 +622,8 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   pedidoMovendo(pedido: PedidoComercialResumo): boolean {
-    return this.pedidosMovendo.has(this.pedidoId(pedido));
+    return this.pedidosMovendo.has(this.pedidoId(pedido))
+      || (this.activeDragLoading && this.activeDragPedidoId === this.pedidoId(pedido));
   }
 
   tutorialTargetPedidoKanban(pedido: PedidoComercialResumo): string {
@@ -492,8 +650,17 @@ export class ComercialListComponent implements OnInit, OnDestroy {
     return Number(item.total ?? item.totalEstimado ?? 0);
   }
 
+  mobileValueLabel(item: any): string | null {
+    if (item.total == null && item.totalEstimado != null) return 'Estimado';
+    return this.tipo === 'rascunhos' ? 'Em composição' : null;
+  }
+
   statusLabel(status: string | null | undefined): string {
     return pedidoStatusLabel(status);
+  }
+
+  statusMobileLabel(status: string | null | undefined): string {
+    return status === 'AGUARDANDO_PAGAMENTO' ? 'Ag. pagto.' : this.statusLabel(status);
   }
 
   totalPago(item: any): number {
@@ -569,16 +736,10 @@ export class ComercialListComponent implements OnInit, OnDestroy {
     column.page = snapshot.page;
   }
 
-  private confirmarCancelamento(pedido: PedidoComercialResumo): Observable<boolean> {
+  private confirmarCancelamento(pedido: PedidoComercialResumo, statusAtual?: string): Observable<boolean> {
     return this.dialog.open(ConfirmDialogComponent, {
       width: '480px',
-      data: {
-        title: 'Cancelar pedido?',
-        message: `O pedido ${this.referencia(pedido)} será cancelado. Essa etapa é final.`,
-        cancelText: 'Voltar',
-        confirmText: 'Cancelar pedido',
-        confirmColor: 'warn',
-      },
+      data: confirmacaoCancelamentoPedido(this.referencia(pedido), statusAtual),
     }).afterClosed();
   }
 
@@ -658,6 +819,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
     column.loading = reset;
     column.loadingMore = !reset;
     column.error = null;
+    column.forbidden = false;
 
     this.graficaService.listarPedidosComerciais(page, column.pageSize, status)
       .pipe(finalize(() => {
@@ -674,7 +836,8 @@ export class ComercialListComponent implements OnInit, OnDestroy {
           column.hasMore = column.items.length < column.total;
           this.garantirPedidoTutorialNoKanban();
         },
-        error: () => {
+        error: (error) => {
+          column.forbidden = error?.status === 403;
           column.error = 'Tente novamente para atualizar esta etapa.';
           if (reset) {
             column.items = [];

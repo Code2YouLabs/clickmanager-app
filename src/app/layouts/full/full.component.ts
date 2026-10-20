@@ -796,12 +796,6 @@ export class FullComponent implements OnInit, OnDestroy {
             icon: 'file-text',
             route: '/page/orcamentos',
             startsWith: ['/page/orcamentos'],
-          },
-          {
-            key: 'mais',
-            label: 'Mais',
-            icon: 'menu-2',
-            action: 'drawer',
           }
         ];
 

@@ -1,4 +1,5 @@
 @use "../variables" as *;
+@use "../../../app/shared/responsive/mobile-foundation" as mobile;
 
 html {
   .toast-success {
@@ -20,5 +21,42 @@ html {
   .toast-container .ngx-toastr {
     box-shadow: var(--mat-sys-level2);
     border-radius: $border-radius;
+  }
+}
+
+@include mobile.mobile-foundation {
+  html .toast-container.toast-mobile {
+    // Same stacking level as CDK panes; the notification host follows the active pane.
+    z-index: 1000;
+    top: max(var(--mobile-toast-top, 0px), calc(env(safe-area-inset-top, 0px) + 8px));
+    left: max(12px, env(safe-area-inset-left, 0px));
+    right: max(12px, env(safe-area-inset-right, 0px));
+    width: auto;
+    bottom: auto;
+    transform: none;
+  }
+  html .toast-container .ngx-toastr.mobile-toast {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+    margin: 0;
+    padding: 8px 8px 8px 12px;
+    border: 1px solid var(--mobile-toast-accent);
+    border-radius: 12px;
+    background: var(--mat-sys-surface-container-low, var(--mat-sys-surface));
+    background-image: none;
+    color: var(--mat-sys-on-surface);
+    font-family: $font-family;
+    font-size: 14px;
+    line-height: 20px;
+    box-shadow: var(--mat-sys-level1);
+    cursor: default;
+    --mobile-toast-accent: #{$primary};
+    &.toast-success { --mobile-toast-accent: color-mix(in srgb, #{$success} 60%, var(--mat-sys-on-surface)); }
+    &.toast-error { --mobile-toast-accent: color-mix(in srgb, #{$error} 60%, var(--mat-sys-on-surface)); }
+    &.toast-warning { --mobile-toast-accent: color-mix(in srgb, #{$warning} 60%, var(--mat-sys-on-surface)); }
+    &.toast-info { --mobile-toast-accent: #{$primary}; }
+    a { color: var(--mat-sys-primary); text-decoration: underline; }
   }
 }

@@ -1,11 +1,28 @@
-<section class="primeiro-pedido-welcome" role="document">
-  <div class="primeiro-pedido-welcome__icon" aria-hidden="true">
-    <mat-icon>celebration</mat-icon>
-  </div>
+@if (data.mobilePanel) {
+  <section class="mobile-side-panel__layout primeiro-pedido-welcome-panel" role="document">
+    <header class="mobile-side-panel__header">
+      <h2 mat-dialog-title>Bem-vindo ao ClickManager</h2>
+    </header>
+    <mat-dialog-content class="mobile-side-panel__body">
+      <div class="primeiro-pedido-welcome__icon" aria-hidden="true"><mat-icon>celebration</mat-icon></div>
+      <ng-container [ngTemplateOutlet]="mensagem"></ng-container>
+    </mat-dialog-content>
+    <mat-dialog-actions class="mobile-side-panel__footer">
+      <ng-container [ngTemplateOutlet]="acoes"></ng-container>
+    </mat-dialog-actions>
+  </section>
+} @else {
+  <section class="primeiro-pedido-welcome" role="document">
+    <div class="primeiro-pedido-welcome__icon" aria-hidden="true"><mat-icon>celebration</mat-icon></div>
+    <div class="primeiro-pedido-welcome__content">
+      <h2 mat-dialog-title>Bem-vindo ao ClickManager</h2>
+      <mat-dialog-content><ng-container [ngTemplateOutlet]="mensagem"></ng-container></mat-dialog-content>
+      <mat-dialog-actions><ng-container [ngTemplateOutlet]="acoes"></ng-container></mat-dialog-actions>
+    </div>
+  </section>
+}
 
-  <div class="primeiro-pedido-welcome__content">
-    <h2 mat-dialog-title>Bem-vindo ao ClickManager</h2>
-    <mat-dialog-content>
+<ng-template #mensagem>
       <div class="primeiro-pedido-welcome__message">
         <p>Sua gráfica está pronta para começar.</p>
         <p>Vamos criar seu primeiro pedido e conhecer o fluxo na prática?</p>
@@ -22,9 +39,8 @@
           {{ erroAcao }}
         </div>
       }
-    </mat-dialog-content>
-
-    <mat-dialog-actions>
+</ng-template>
+<ng-template #acoes>
       <button class="primeiro-pedido-welcome__primary" mat-flat-button color="primary" type="button" [disabled]="iniciando || ignorando" (click)="criarPrimeiroPedido()">
         @if (iniciando) {
           Preparando...
@@ -39,6 +55,4 @@
           Explorar sozinho
         }
       </button>
-    </mat-dialog-actions>
-  </div>
-</section>
+</ng-template>

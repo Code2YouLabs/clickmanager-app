@@ -1,3 +1,5 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { BehaviorSubject } from 'rxjs';
 import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
@@ -17,12 +19,14 @@ interface TaskFixture {
   imports: [KanbanBoardComponent, KanbanCardDirective],
   template: `
     <app-kanban-board
+      [mobileNavigation]="mobileNavigation"
       [columns]="columns"
       [trackBy]="trackBy"
       [cardAriaLabel]="cardAriaLabel"
       [dragEnabled]="dragEnabled"
       [isDragDisabled]="isDragDisabled"
       (cardClick)="clicked = $event"
+      (mobileCardAction)="moved = $event"
       (cardDropped)="dropped = $event"
       (retryColumn)="retried = $event"
       (loadMore)="loadedMore = $event">
@@ -41,6 +45,8 @@ class HostComponent {
   dropped: KanbanDropEvent<TaskFixture> | null = null;
   retried: string | null = null;
   loadedMore: string | null = null;
+  mobileNavigation = false;
+  moved: TaskFixture | null = null;
   dragEnabled = false;
   disabledIds = new Set<number>();
   trackBy = (task: TaskFixture) => task.id;
@@ -51,10 +57,13 @@ class HostComponent {
 describe('KanbanBoardComponent', () => {
   let fixture: ComponentFixture<HostComponent>;
   let host: HostComponent;
+  let viewport: BehaviorSubject<any>;
 
   beforeEach(() => {
+    viewport = new BehaviorSubject({ matches: false, breakpoints: {} });
     TestBed.configureTestingModule({
       imports: [HostComponent, NoopAnimationsModule],
+      providers: [{ provide: BreakpointObserver, useValue: { observe: () => viewport } }],
     });
 
     fixture = TestBed.createComponent(HostComponent);
@@ -156,4 +165,41 @@ describe('KanbanBoardComponent', () => {
 
     expect(host.retried).toBe('blocked');
   });
+  it('oferece navegação e ação mobile opt-in sem remover colunas ou drag', () => {
+    host.mobileNavigation = true; host.dragEnabled = true;
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    const board = fixture.debugElement.query(By.directive(KanbanBoardComponent)).componentInstance as KanbanBoardComponent<TaskFixture>;
+    expect(fixture.nativeElement.querySelectorAll('.kanban-column').length).toBe(2);
+    expect(fixture.nativeElement.querySelector('.kanban-mobile-nav')).toBeTruthy();
+    board.navigateColumn(1); fixture.detectChanges(); expect(board.activeColumnId).toBe('done');
+    board.navigateColumn(1); expect(board.activeColumnId).toBe('done');
+    board.selectColumn('todo'); fixture.detectChanges();
+    fixture.nativeElement.querySelector('.kanban-card-action').click();
+    expect(host.moved?.id).toBe(1); expect(host.clicked).toBeNull();
+    host.moved = null; host.disabledIds.add(1); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.kanban-card-action').disabled).toBeTrue();
+    board.onMobileCardAction(host.columns[0].items[0], host.columns[0]); expect(host.moved).toBeNull();
+    viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.kanban-mobile-nav')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.kanban-card-action')).toBeNull();
+  });
+
+  it('403 mobile tem precedência sobre dados e erro e não oferece movimentação', () => {
+    host.mobileNavigation = true; host.dragEnabled = true;
+    viewport.next({ matches: true, breakpoints: {} });
+    host.columns[0].forbidden = true; host.columns[0].error = 'Erro'; fixture.detectChanges();
+    const column = fixture.nativeElement.querySelector('.kanban-column');
+    expect(column.textContent).toContain('Acesso restrito');
+    expect(column.querySelector('.kanban-card')).toBeNull();
+    expect(column.querySelector('.kanban-state--error')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.kanban-board__empty')).toBeNull();
+  });
+
+  it('mantém estados e bloqueia carregar mais durante a requisição', () => {
+    host.columns[0].loadingMore = true; fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.kanban-column__load-more').disabled).toBeTrue();
+    host.columns[0] = { ...host.columns[0], items: [], loading: true }; fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.kanban-skeleton')).toBeTruthy();
+  });
+
 });

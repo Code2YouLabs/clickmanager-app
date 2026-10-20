@@ -1,3 +1,6 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
+import { MOBILE_FOUNDATION_QUERY } from '../responsive/mobile-foundation';
 import { Injectable } from '@angular/core';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { Observable, forkJoin, of } from 'rxjs';
@@ -33,6 +36,7 @@ export class PrimeiroPedidoBoasVindasService {
     private readonly featureFlagService: FeatureFlagService,
     private readonly dialog: MatDialog,
     private readonly flow: PrimeiroPedidoBoasVindasFlowService,
+    private readonly breakpoints: BreakpointObserver,
   ) {
     this.authService.usuario$.subscribe((usuario) => {
       if (!usuario) {
@@ -102,7 +106,8 @@ export class PrimeiroPedidoBoasVindasService {
   }
 
   private abrirDialog(usuario: Usuario): void {
-    this.dialogRef = this.dialog.open(PrimeiroPedidoBoasVindasComponent, {
+    const mobilePanel = this.breakpoints.isMatched(MOBILE_FOUNDATION_QUERY);
+    const config = {
       width: '660px',
       maxWidth: 'calc(100vw - 32px)',
       disableClose: true,
@@ -111,8 +116,12 @@ export class PrimeiroPedidoBoasVindasService {
       panelClass: 'primeiro-pedido-welcome-dialog',
       data: {
         empresaNome: usuario.empresa?.nome ?? null,
+        mobilePanel,
       },
-    });
+    };
+    this.dialogRef = mobilePanel
+      ? openMobileSidePanel(this.dialog, PrimeiroPedidoBoasVindasComponent, { ...config, panelClass: [] })
+      : this.dialog.open(PrimeiroPedidoBoasVindasComponent, config);
 
     this.dialogRef.afterClosed().pipe(take(1)).subscribe(() => {
       this.dialogRef = undefined;

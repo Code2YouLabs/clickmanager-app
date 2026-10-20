@@ -219,3 +219,15 @@
     font-size: 24px;
   }
 }
+
+// Geometry, safe areas and slide lifecycle belong to the shared side panel.
+:host-context(.mobile-side-panel) { display: block; height: 100%; }
+.primeiro-pedido-welcome-panel {
+  .mobile-side-panel__header { border-bottom: 1px solid var(--mat-sys-outline-variant); }
+  h2 { margin: 0; padding: 0; font-size: 20px; line-height: 28px; font-weight: 600; }
+  .mobile-side-panel__body { text-align: center; }
+  .primeiro-pedido-welcome__icon { margin: 16px auto 24px; }
+  .primeiro-pedido-welcome__message p { font-size: 16px; line-height: 24px; }
+  .mobile-side-panel__footer { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--mat-sys-outline-variant); }
+  .mobile-side-panel__footer button { width: 100%; min-height: 44px; }
+}

@@ -1,0 +1,4 @@
+Extrato do runner, sem progresso repetido. Exit: 0
+> clickmanager-app@4.0.0 test
+> ng test --watch=false --browsers=ChromeHeadless --include=src/app/pages/grafica/comercial/**/*.spec.ts
+TOTAL: 124 SUCCESS

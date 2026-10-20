@@ -1,3 +1,4 @@
+@use "../../shared/responsive/mobile-foundation" as mobile;
 :host {
   display: inline-flex;
   min-width: 0;
@@ -51,5 +52,12 @@
   .view-mode-toggle mat-button-toggle {
     flex: 1 1 0;
     min-width: 0;
+  }
+}
+
+@include mobile.mobile-foundation {
+  :host(.view-mode-toggle--mobile-compact) {
+    .view-mode-toggle, mat-button-toggle { height: 44px; }
+    ::ng-deep .mat-button-toggle-label-content { padding: 0 8px; gap: 4px; font-size: 14px; }
   }
 }

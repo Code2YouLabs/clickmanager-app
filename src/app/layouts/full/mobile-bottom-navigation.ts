@@ -34,14 +34,13 @@ export function buildGraficaMobileBottomNav(menu: NavItem[], isFeatureEnabled: (
     ? { key: 'catalogo', label: 'Catálogo', icon: 'package', route: catalogoRoute,
         startsWith: catalogoRoutes } : undefined;
   const apps: MobileBottomNavItem = { key: 'atalhos', label: 'Atalhos', icon: 'grid-dots', action: 'apps' };
-  const more: MobileBottomNavItem = { key: 'mais', label: 'Mais', icon: 'menu-2', action: 'drawer' };
   const primary = smartcalc || pedidos || catalogo || dashboard || clientes;
-  if (!primary) return [apps, more];
+  if (!primary) return [apps];
   const first = (smartcalc ? [pedidos, catalogo, clientes] : [catalogo, clientes])
     .find(item => item && item.key !== primary.key && item.key !== dashboard?.key);
   if (first && dashboard && dashboard.key !== primary.key) {
-    return [first, apps, { ...primary, special: true }, dashboard, more];
+    return [first, apps, { ...primary, special: true }, dashboard];
   }
-  // Restricted profiles keep a real central destination; the complete menu remains in Mais.
-  return [apps, { ...primary, special: true }, more];
+  // Restricted profiles keep a real central destination; the complete menu remains in the header drawer.
+  return [apps, { ...primary, special: true }];
 }

@@ -1,3 +1,4 @@
+@use '../../../shared/responsive/mobile-foundation' as mobile;
 @use '../../../components/dialog/dialog-form-shell';
 
 .cliente-dialog-shell {
@@ -126,5 +127,40 @@
     width: 100% !important;
     min-width: 0;
     margin-bottom: 0;
+  }
+}
+
+// Only the full-screen presentation opts into the shared panel layout.
+:host-context(.mobile-side-panel) {
+  display: block;
+  height: 100%;
+  min-height: 0;
+
+  .dialog-head::before { display: none; }
+  .dialog-head { align-items: center; }
+  .dialog-head__copy strong { color: var(--mat-sys-on-surface); }
+}
+
+@include mobile.mobile-foundation {
+  .cliente-dialog-shell--quick {
+    .dialog-head__copy strong { font-size: 18px; line-height: 24px; font-weight: 600; }
+    .cliente-dialog-section { padding: 0; border: 0; border-radius: 0; background: transparent; gap: 0; }
+    .cliente-dialog-grid { gap: 8px; }
+    .cliente-dialog-section + .cliente-dialog-section { border-top: 1px solid var(--mat-sys-outline-variant); }
+    .cliente-additional-toggle {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      width: 100%; min-height: 44px; padding: 12px 0; border: 0; background: transparent;
+      text-align: left; color: var(--mat-sys-on-surface); font: inherit; cursor: pointer;
+      strong { display: block; font-size: 14px; line-height: 20px; font-weight: 600; }
+      small { display: block; font-size: 12px; line-height: 16px; color: var(--mat-sys-on-surface-variant); }
+      mat-icon { flex-shrink: 0; }
+      &:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: 2px; }
+    }
+    .cliente-field-error { margin: 0; color: var(--mat-sys-error); font-size: 12px; line-height: 16px; }
+    #novo-cliente-adicionais { display: grid; gap: 8px; padding-top: 8px; }
+    #novo-cliente-adicionais[hidden] { display: none; }
+    .cliente-dialog-cep ::ng-deep button { min-height: 44px; }
+    .dialog-actions { display: grid; grid-template-columns: minmax(88px, 0.7fr) minmax(0, 1.3fr); gap: 8px; }
+    .dialog-actions button { width: 100%; min-width: 0; min-height: 44px; padding-inline: 12px; white-space: nowrap; }
   }
 }

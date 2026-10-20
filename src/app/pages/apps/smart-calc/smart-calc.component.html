@@ -1,4 +1,5 @@
 <app-page-card
+  mobileHeaderMode="legacy"
   class="smartcalc-page"
   [class.smartcalc-page--has-mobile-panel]="mobileViewport()"
   [titulo]="mobileViewport() ? 'SmartCalc' : 'SmartCalc – Calculadora Inteligente'"
@@ -168,6 +169,7 @@
 
   @if (mobileViewport()) {
     <app-mobile-total-bar
+      appearance="compact"
       label="Total"
       [valueText]="(total() | currency:'BRL':'symbol-narrow':'1.2-2') ?? ''"
       [detailText]="resultadoMobileAberto() ? 'Ocultar detalhes' : 'Detalhes'"

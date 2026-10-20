@@ -86,3 +86,6 @@
   background: #e5e7eb;
   color: #374151;
 }
+
+.status-chip--full { max-width: 100%; white-space: normal; font-size: 14px; line-height: 20px; font-weight: 600; }
+.status-chip--full .text { white-space: normal; overflow-wrap: anywhere; text-overflow: clip; }

@@ -1,5 +1,9 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { CommonModule } from '@angular/common';
-import { Component, Inject } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, Inject, inject, AfterViewInit, ViewChildren, QueryList, DestroyRef } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
@@ -21,6 +25,7 @@ export type ClienteCreateDialogData = {
   telefone?: string | null;
   email?: string | null;
   tutorialTarget?: string | null;
+  mobileMode?: 'quick' | 'full';
 };
 
 @Component({
@@ -40,7 +45,15 @@ export type ClienteCreateDialogData = {
   templateUrl: './cliente-create-dialog.component.html',
   styleUrl: './cliente-create-dialog.component.scss',
 })
-export class ClienteCreateDialogComponent {
+export class ClienteCreateDialogComponent implements AfterViewInit {
+  private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly mobile = toSignal(inject(BreakpointObserver).observe(MOBILE_FOUNDATION_QUERY)
+    .pipe(map(state => state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches)), { initialValue: false });
+  @ViewChildren('clientField', { read: ChangeDetectorRef }) private fieldViews!: QueryList<ChangeDetectorRef>;
+  private readonly destroyRef = inject(DestroyRef);
+  additionalExpanded = false;
+  get quickMobile(): boolean { return this.data?.mobileMode === 'quick' && this.mobile(); }
   salvando = false;
   readonly form: FormGroup;
 
@@ -65,6 +78,23 @@ export class ClienteCreateDialogComponent {
         cidade: [''],
         estado: [''],
       }),
+    });
+  }
+
+  ngAfterViewInit(): void {
+    this.linkInputLabels();
+    this.fieldViews.changes.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.linkInputLabels());
+  }
+
+  private linkInputLabels(): void {
+    if (!this.quickMobile) return;
+    // Existing inputs render their labels outside mat-form-field. Link them locally.
+    this.element.nativeElement.querySelectorAll<HTMLElement>('[data-client-field]').forEach(field => {
+      const input = field.querySelector<HTMLInputElement>('input');
+      const label = field.querySelector<HTMLElement>('mat-label');
+      if (!input || !label) return;
+      label.id = `${input.id}-label`;
+      input.setAttribute('aria-labelledby', label.id);
     });
   }
 
@@ -133,9 +163,33 @@ export class ClienteCreateDialogComponent {
     this.dialogRef.close(null);
   }
 
+  toggleAdditional(): void {
+    if (this.additionalExpanded && (this.documentoControl.invalid && this.documentoControl.touched
+      || this.enderecoGroup.invalid && this.enderecoGroup.touched)) {
+      this.focusFirstInvalid();
+      return;
+    }
+    this.additionalExpanded = !this.additionalExpanded;
+  }
+
+  private focusFirstInvalid(): void {
+    if (!this.quickMobile) return;
+    if (this.documentoControl.invalid || this.enderecoGroup.invalid) this.additionalExpanded = true;
+    // Touching controls alone does not refresh the existing OnPush input components.
+    this.fieldViews.forEach(view => view.markForCheck());
+    this.cdr.detectChanges();
+    const fields = ['nome', 'telefone', 'email', 'documento', ...['cep', 'logradouro', 'numero', 'bairro', 'cidade', 'estado', 'complemento'].map(key => `endereco.${key}`)];
+    const first = fields.find(path => this.form.get(path)?.invalid);
+    const input = this.element.nativeElement.querySelector<HTMLInputElement>(`[data-client-field="${first}"] input`);
+    input?.focus({ preventScroll: true });
+    input?.scrollIntoView({ block: 'nearest' });
+  }
+
   salvar(): void {
+    if (this.salvando) return;
     this.form.markAllAsTouched();
-    if (this.form.invalid || this.salvando) {
+    if (this.form.invalid) {
+      this.focusFirstInvalid();
       return;
     }
 
