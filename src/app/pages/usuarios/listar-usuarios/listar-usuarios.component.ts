@@ -1,3 +1,7 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { DataTableItemDirective } from 'src/app/components/data-table/data-table-item.directive';
+import { MaterialModule } from 'src/app/material.module';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { PageEvent } from '@angular/material/paginator';
 import { Router } from '@angular/router';
@@ -18,10 +22,13 @@ import { UsuarioService } from '../services/usuario.service';
 @Component({
   selector: 'app-listar-usuarios',
   standalone: true,
-  imports: [PageCardComponent, DataTableComponent, DataTableCellDirective, StatusBadgeComponent],
-  templateUrl: './listar-usuarios.component.html'
+  imports: [PageCardComponent, DataTableComponent, DataTableCellDirective, DataTableItemDirective, StatusBadgeComponent, MaterialModule],
+  templateUrl: './listar-usuarios.component.html', styleUrl: './listar-usuarios.component.scss'
 })
 export class ListarUsuariosComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  readonly novaAcao = { label: 'Novo usuário', icon: 'add', permission: 'USUARIO_CADASTRAR' };
+  novoMobile(): void { if (this.auth.temPermissao('USUARIO_CADASTRAR')) this.router.navigate(['/page/usuarios/novo']); }
   usuarios: Usuario[] = [];
   totalUsuarios = 0;
   carregando = false;
@@ -51,8 +58,9 @@ export class ListarUsuariosComponent implements OnInit, OnDestroy {
     private router: Router,
     private dialog: MatDialog,
     private toastr: ToastrService,
-    private auth: AuthService
-  ) {}
+    private auth: AuthService,
+    breakpoints?: BreakpointObserver,
+  ) { breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches); }
 
   ngOnInit(): void { this.carregarUsuarios(); }
 
@@ -117,7 +125,7 @@ export class ListarUsuariosComponent implements OnInit, OnDestroy {
       data: {
         title: 'Excluir usuário',
         message: `Tem certeza que deseja excluir o usuário "${usuario.nome}"?`,
-        confirmText: 'Excluir', confirmColor: 'warn'
+        confirmText: 'Excluir', confirmColor: 'warn', ...(this.isMobile ? { type: 'destructive' } : {})
       }
     }).afterClosed().pipe(takeUntil(this.destroy$)).subscribe(result => {
       if (!result) return;

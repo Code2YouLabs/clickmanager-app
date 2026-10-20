@@ -1,3 +1,7 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
+import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -20,11 +24,13 @@ import { PerfilService } from '../services/perfil.service';
 
 @Component({
   selector: 'app-form-usuario', standalone: true,
-  templateUrl: './form-usuario.component.html',
+  templateUrl: './form-usuario.component.html', styleUrl: './form-usuario.component.scss',
   imports: [CommonModule, ReactiveFormsModule, MatSlideToggleModule, MatProgressSpinnerModule, MatButtonModule,
-    PageCardComponent, SectionCardComponent, InputTextoRestritoComponent, InputEmailComponent, InputOptionsComponent, InputPasswordComponent],
+    MobileTotalBarComponent, MatIconModule, PageCardComponent, SectionCardComponent, InputTextoRestritoComponent, InputEmailComponent, InputOptionsComponent, InputPasswordComponent],
 })
 export class FormUsuarioComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  voltarMobile(): void { if (!this.saving) this.router.navigate(['/page/usuarios/listar']); }
   form!: FormGroup;
   readonly formState = new PageFormState(() => this.form);
   perfis: Perfil[] = [];
@@ -38,7 +44,9 @@ export class FormUsuarioComponent implements OnInit, OnDestroy {
   private readonly destroy$ = new Subject<void>();
 
   constructor(private fb: FormBuilder, private usuarioService: UsuarioService, private perfilService: PerfilService,
-    private toastrService: ToastrService, private router: Router, private route: ActivatedRoute) {}
+    private toastrService: ToastrService, private router: Router, private route: ActivatedRoute, breakpoints?: BreakpointObserver) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+  }
 
   get pronto(): boolean { return !this.carregando && !this.erro && !this.semPermissao; }
   get footerActions(): PageCardAction[] {
