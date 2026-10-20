@@ -1,3 +1,8 @@
+import { ComponentType } from '@angular/cdk/portal';
+import { MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
+import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit } from '@angular/core';
@@ -49,6 +54,7 @@ import { ClickTvTelaDialogComponent } from '../dialogs/clicktv-dialogs.component
   styleUrls: ['../../clicktv.scss'],
 })
 export class ClickTvTelasComponent implements OnInit, OnDestroy {
+  isMobile = false;
   telas: ClickTvTela[] = [];
   playlists: ClickTvPlaylistResumo[] = [];
   total = 0;
@@ -115,8 +121,17 @@ export class ClickTvTelasComponent implements OnInit, OnDestroy {
     private readonly service: ClickTvService,
     private readonly dialog: MatDialog,
     private readonly toastr: ToastrService,
-    private readonly auth: AuthService
-  ) {}
+    private readonly auth: AuthService,
+    breakpoints?: BreakpointObserver
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+  }
+
+  private abrirDialog<T, D = unknown>(component: ComponentType<T>, config: MatDialogConfig<D>): MatDialogRef<T> {
+    return this.isMobile
+      ? openMobileSidePanel(this.dialog, component, { ...config, data: { ...config.data, mobilePanel: true } })
+      : this.dialog.open(component, config);
+  }
 
   ngOnInit(): void {
     this.carregar$.pipe(
@@ -245,7 +260,7 @@ export class ClickTvTelasComponent implements OnInit, OnDestroy {
       this.toastr.warning('Uma tela desativada não pode ser vinculada novamente.');
       return;
     }
-    this.dialog.open(ClickTvTelaDialogComponent, {
+    this.abrirDialog(ClickTvTelaDialogComponent, {
       width: '560px',
       data: { vincular: true, tela },
     }).afterClosed().subscribe((payload) => {
@@ -258,7 +273,7 @@ export class ClickTvTelasComponent implements OnInit, OnDestroy {
   }
 
   editar(tela: ClickTvTela): void {
-    this.dialog.open(ClickTvTelaDialogComponent, {
+    this.abrirDialog(ClickTvTelaDialogComponent, {
       width: '560px',
       data: { vincular: false, tela },
     }).afterClosed().subscribe((payload: ClickTvTelaPayload | undefined) => {

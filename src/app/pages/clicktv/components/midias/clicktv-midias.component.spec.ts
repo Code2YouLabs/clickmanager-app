@@ -1,3 +1,4 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { HttpErrorResponse, HttpEventType } from '@angular/common/http';
 import { OverlayContainer } from '@angular/cdk/overlay';
 import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
@@ -89,6 +90,7 @@ describe('ClickTvMidiasComponent', () => {
     TestBed.configureTestingModule({
       imports: [ClickTvMidiasComponent],
       providers: [
+        { provide: BreakpointObserver, useValue: { observe: () => of({ matches: false, breakpoints: {} }), isMatched: () => false } },
         provideNoopAnimations(),
         { provide: ClickTvService, useValue: service },
         { provide: MatDialog, useValue: dialog },

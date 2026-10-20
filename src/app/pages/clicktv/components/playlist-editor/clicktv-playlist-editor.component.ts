@@ -1,6 +1,9 @@
+import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, TemplateRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, RouterModule } from '@angular/router';
@@ -32,6 +35,7 @@ import { ClickTvService } from '../../services/clicktv.service';
   styleUrls: ['../../clicktv.scss', './clicktv-playlist-editor.component.scss'],
 })
 export class ClickTvPlaylistEditorComponent implements OnInit, OnDestroy {
+  isMobile = false;
   playlist?: ClickTvPlaylistDetalhe;
   biblioteca: ClickTvMidia[] = [];
   busca = '';
@@ -54,8 +58,16 @@ export class ClickTvPlaylistEditorComponent implements OnInit, OnDestroy {
     private readonly route: ActivatedRoute,
     private readonly service: ClickTvService,
     private readonly toastr: ToastrService,
-    private readonly dialog: MatDialog
-  ) {}
+    private readonly dialog: MatDialog,
+    breakpoints?: BreakpointObserver
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+  }
+
+  abrirBiblioteca(template: TemplateRef<unknown>): void {
+    if (!this.podeExibirEditor || this.salvando) return;
+    openMobileSidePanel(this.dialog, template, { ariaLabel: 'Biblioteca de mídias' });
+  }
 
   ngOnInit(): void {
     this.carregarPlaylist$.pipe(

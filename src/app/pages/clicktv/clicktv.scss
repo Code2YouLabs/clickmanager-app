@@ -1,3 +1,4 @@
+@use '../../shared/responsive/mobile-list-item' as mobile-item;
 .clicktv-page {
   display: grid;
   gap: 20px;
@@ -203,4 +204,18 @@
     align-items: flex-start;
     flex-direction: column;
   }
+}
+
+@media (max-width: 760px) {
+  .clicktv-list-item { @include mobile-item.surface; gap: 8px; }
+  .clicktv-list-item__head { display: flex; align-items: flex-start; gap: 8px; }
+  .clicktv-list-item__main { flex: 1; min-width: 0; strong { @include mobile-item.heading; } }
+  .clicktv-list-item__head button, .clicktv-card__head button { flex: 0 0 44px; height: 44px; width: 44px; }
+  .clicktv-list-item__footer:empty { display: none; }
+  .clicktv-grid { grid-template-columns: minmax(0, 1fr); }
+  .clicktv-card { border-radius: 8px; background: var(--mat-sys-surface); border-color: var(--mat-sys-outline-variant); }
+  .clicktv-card__body { padding: 12px; }
+  .clicktv-card__title { @include mobile-item.heading; }
+  .clicktv-inline-select { width: 100%; }
+  .mobile-item-destructive { --mat-menu-item-label-text-color: var(--mat-sys-error); --mat-menu-item-icon-color: var(--mat-sys-error); }
 }

@@ -2,7 +2,10 @@
   <app-page-card
     titulo="Mídias do ClickTV"
     subtitulo="Envie e organize imagens e vídeos usados nas playlists."
+    [primaryAction]="isMobile ? { label: 'Enviar mídia', icon: 'cloud_upload', permission: 'CLICKTV_MIDIAS_GERENCIAR', disabled: uploadEmAndamento } : null"
+    (primaryActionClick)="enviar()"
     [mostrarDivisor]="true">
+    @if (!isMobile) {
     <button
       page-header-actions
       mat-flat-button
@@ -14,6 +17,7 @@
       <mat-icon>cloud_upload</mat-icon>
       Enviar mídia
     </button>
+    }
 
     <div class="clicktv-content">
       <app-list-filter-bar
@@ -81,8 +85,34 @@
             <span>{{ mensagemVazio.subtitulo }}</span>
           </div>
         } @else {
+          @if (isMobile) {
+            <app-data-table [columns]="[{ key: 'nome', label: 'Mídia' }]" [data]="midias" tableLabel="Mídias do ClickTV"
+              [search]="{ enabled: false }" [pagination]="{ pageIndex: page, pageSize: size, totalItems: total, pageSizeOptions: [12, 24, 48] }"
+              (pageChange)="pagina($event)">
+              <ng-template [appDataTableItem]="midias" let-midia><ng-container *ngTemplateOutlet="midiaCard; context: { $implicit: midia }"></ng-container></ng-template>
+            </app-data-table>
+          } @else {
           <div class="clicktv-grid" [attr.aria-busy]="refreshing">
             @for (midia of midias; track midia.id) {
+              <ng-container *ngTemplateOutlet="midiaCard; context: { $implicit: midia }"></ng-container>
+            }
+          </div>
+          <mat-paginator
+            [length]="total"
+            [pageIndex]="page"
+            [pageSize]="size"
+            [pageSizeOptions]="[12, 24, 48]"
+            (page)="pagina($event)"
+            showFirstLastButtons>
+          </mat-paginator>
+          }
+        }
+      }
+    </div>
+  </app-page-card>
+</section>
+
+<ng-template #midiaCard let-midia>
               <article class="clicktv-card">
                 <button class="clicktv-card__preview" type="button" (click)="visualizar(midia)" [attr.aria-label]="'Visualizar ' + midia.nome">
                   @if (midia.visualizacao?.url) {
@@ -118,18 +148,4 @@
                   <span class="clicktv-badge clicktv-badge--{{ statusClass(midia.status) }}">{{ midia.status }}</span>
                 </div>
               </article>
-            }
-          </div>
-          <mat-paginator
-            [length]="total"
-            [pageIndex]="page"
-            [pageSize]="size"
-            [pageSizeOptions]="[12, 24, 48]"
-            (page)="pagina($event)"
-            showFirstLastButtons>
-          </mat-paginator>
-        }
-      }
-    </div>
-  </app-page-card>
-</section>
+</ng-template>
