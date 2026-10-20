@@ -1,5 +1,5 @@
-<app-page-card titulo="Perfis e Permissões" subtitulo="Defina os acessos e veja quem utiliza cada perfil">
-  @if (podeCadastrar) {
+<app-page-card titulo="Perfis e Permissões" subtitulo="Defina os acessos e veja quem utiliza cada perfil" [primaryAction]="isMobile && podeVer ? novaAcao : null" (primaryActionClick)="openDialogPerfil('Add')">
+  @if (podeCadastrar && !isMobile) {
     <button page-header-actions mat-flat-button color="primary" type="button" (click)="openDialogPerfil('Add')">
       <mat-icon>add</mat-icon> Novo perfil
     </button>
@@ -12,7 +12,7 @@
     </div>
   } @else {
     <div class="perfil-layout">
-      <app-section-card title="Perfis" subtitle="Selecione um perfil para ver os usuários vinculados">
+      <app-section-card [mobilePlain]="isMobile" title="Perfis" subtitle="Selecione um perfil para ver os usuários vinculados">
         @if (carregandoPerfis) {
           <div class="section-state" role="status" aria-live="polite">
             <mat-spinner diameter="32"></mat-spinner><span>Carregando perfis...</span>
@@ -28,6 +28,24 @@
             <span>Crie um perfil para organizar as permissões dos usuários.</span>
           </div>
         } @else {
+          @if (isMobile) {
+            <app-data-table [columns]="colunasPerfis" [data]="perfis" [search]="{ enabled: false }" [pagination]="null" tableLabel="Perfis disponíveis">
+              <ng-template [appDataTableItem]="perfis" let-perfil>
+                <article class="perfil-mobile-item" [attr.aria-label]="perfil.nome" [class.perfil-mobile-item--selected]="perfilSelecionado?.id === perfil.id">
+                  <button class="perfil-mobile-item__select" type="button" [attr.aria-pressed]="perfilSelecionado?.id === perfil.id" (click)="selecionarPerfil(perfil)">
+                    <strong>{{ perfil.nome }}</strong><span>{{ perfil.descricao || 'Sem descrição' }}</span>
+                  </button>
+                  @if (podeEditar || podeExcluir) {
+                    <button mat-icon-button type="button" [matMenuTriggerFor]="perfilMenu" [attr.aria-label]="'Ações do perfil ' + perfil.nome"><mat-icon>more_vert</mat-icon></button>
+                    <mat-menu #perfilMenu="matMenu" xPosition="before">
+                      @if (podeEditar) { <button mat-menu-item type="button" (click)="editar(perfil)"><mat-icon>edit</mat-icon>Editar perfil</button> }
+                      @if (podeExcluir) { <button mat-menu-item type="button" class="perfil-mobile-menu__destructive" (click)="excluir(perfil.id)"><mat-icon>delete</mat-icon>Excluir perfil</button> }
+                    </mat-menu>
+                  }
+                </article>
+              </ng-template>
+            </app-data-table>
+          } @else {
           <mat-nav-list class="perfil-list" aria-label="Perfis disponíveis">
             @for (perfil of perfis; track perfil.id) {
               <mat-list-item class="perfil-list__item"
@@ -50,10 +68,11 @@
               </mat-list-item>
             }
           </mat-nav-list>
+          }
         }
       </app-section-card>
 
-      <app-section-card
+      <app-section-card [mobilePlain]="isMobile"
         [title]="perfilSelecionado ? 'Usuários de ' + perfilSelecionado.nome : 'Usuários do perfil'"
         subtitle="Consulte os usuários vinculados e altere seu perfil quando necessário">
         @if (!perfilSelecionado) {
@@ -77,6 +96,17 @@
             </ng-template>
             <ng-template appDataTableCell="perfil">
               <span class="perfil-badge">{{ perfilSelecionado.nome }}</span>
+            </ng-template>
+            <ng-template [appDataTableItem]="usuarios" let-usuario let-itemActions="actions" let-emit="emitAction">
+              <article class="perfil-usuario-mobile">
+                <div class="usuario-identidade"><img [src]="imagemUtil.montarUrlImagemPerfil(usuario.fotoPerfil)" (error)="usarImagemPadrao($event)" class="usuario-avatar" width="40" height="40" alt="" /><div><strong>{{ usuario.nome }}</strong><span>{{ usuario.email }}</span><span>{{ perfilSelecionado.nome }}</span></div></div>
+                @if (itemActions.length) {
+                  <button mat-icon-button type="button" [matMenuTriggerFor]="vinculoMenu" [disabled]="carregandoUsuarios" [attr.aria-label]="'Ações do usuário ' + usuario.nome"><mat-icon>more_vert</mat-icon></button>
+                  <mat-menu #vinculoMenu="matMenu" xPosition="before">
+                    @for (acao of itemActions; track acao.id) { <button mat-menu-item type="button" (click)="emit(usuario, acao.id)"><mat-icon>{{ acao.icon }}</mat-icon>{{ acao.label }}</button> }
+                  </mat-menu>
+                }
+              </article>
             </ng-template>
           </app-data-table>
         }

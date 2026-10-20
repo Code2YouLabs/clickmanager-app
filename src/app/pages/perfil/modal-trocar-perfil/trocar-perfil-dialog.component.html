@@ -1,3 +1,6 @@
+@if (mobilePanel) {
+  <header class="mobile-side-panel__header access-panel__header"><h2>Alterar perfil</h2><button mat-icon-button type="button" aria-label="Fechar" (click)="cancelar()"><mat-icon>close</mat-icon></button></header>
+} @else {
 <div mat-dialog-title class="dialog-head">
   <div class="dialog-head__copy">
     <strong>Alterar perfil</strong>
@@ -8,7 +11,9 @@
   </button>
 </div>
 
-<mat-dialog-content class="dialog-content">
+}
+
+<mat-dialog-content [class.mobile-side-panel__body]="mobilePanel" class="dialog-content">
   <form [formGroup]="form">
     <app-input-options [control]="perfilControl" label="Novo perfil" placeholder="Selecione o perfil"
       [options]="perfis" labelKey="nome" valueKey="id" [showNull]="true" nullLabel="Selecione o perfil">
@@ -16,7 +21,7 @@
   </form>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end" class="dialog-actions">
+<mat-dialog-actions align="end" class="dialog-actions" [class.mobile-side-panel__footer]="mobilePanel">
   <button mat-stroked-button type="button" (click)="cancelar()">Cancelar</button>
   <button mat-flat-button color="primary" type="button" (click)="salvar()">Salvar</button>
 </mat-dialog-actions>
