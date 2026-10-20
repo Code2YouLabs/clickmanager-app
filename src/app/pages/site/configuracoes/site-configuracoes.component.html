@@ -2,8 +2,8 @@
   class="site-config-page"
   titulo="Configurações do site"
   subtitulo="Defina como o site público da empresa será publicado e atendido."
-  [formState]="pageFormState"
-  [footerActions]="footerActions"
+  [formState]="isMobile ? undefined : pageFormState"
+  [footerActions]="isMobile ? [] : footerActions"
   [saving]="salvando"
   savingText="Salvando..."
   [actionsDisabled]="carregando || !!erro || semPermissao"
@@ -35,7 +35,7 @@
     </div>
     }
 
-    <app-section-card titulo="Site público" subtitulo="Controle o endereço e a publicação do site para clientes.">
+    <app-section-card [mobilePlain]="isMobile" titulo="Site público" subtitulo="Controle o endereço e a publicação do site para clientes.">
       <div class="site-publication">
         <div class="site-publication__content">
           <span class="site-publication__status" [class.site-publication__status--inactive]="siteInativo">
@@ -58,7 +58,7 @@
       </div>
     </app-section-card>
 
-    <app-section-card titulo="Recursos" subtitulo="Defina quais canais e solicitações aparecem no site público.">
+    <app-section-card [mobilePlain]="isMobile" titulo="Recursos" subtitulo="Defina quais canais e solicitações aparecem no site público.">
       <div class="site-config-resources">
         <div class="site-config-setting-row">
           <div>
@@ -127,7 +127,7 @@
       </div>
     </app-section-card>
 
-    <app-section-card titulo="Outras configurações" subtitulo="Acesse ajustes complementares do site público.">
+    <app-section-card [mobilePlain]="isMobile" titulo="Outras configurações" subtitulo="Acesse ajustes complementares do site público.">
       <div class="site-config-links">
         <a class="site-config-link-row" routerLink="/page/config/presenca-publica">
           <mat-icon>language</mat-icon>
@@ -153,5 +153,15 @@
       </div>
     </app-section-card>
   </form>
+  }
+
+  @if (isMobile && (!!pageFormState)) {
+    <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true"
+      actionType="submit" actionForm="site-config-form" bottomAnchorSelector=".mobile-bottom-nav"
+      bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+      secondaryActionText="Cancelar" secondaryActionAriaLabel="Restaurar formulário"
+      [secondaryActionDisabled]="salvando || !formState.canReset" (secondaryAction)="formState.reset()"
+      [actionText]="salvando ? 'Salvando...' : ('Salvar configurações')" actionIcon="save" actionAriaLabel="Salvar formulário"
+      [actionDisabled]="!podeSalvar || form.invalid" [loading]="salvando" />
   }
 </app-page-card>

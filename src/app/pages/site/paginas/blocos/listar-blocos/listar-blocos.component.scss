@@ -1,3 +1,4 @@
+@use '../../../../../shared/responsive/mobile-list-item' as mobile-item;
 :host ::ng-deep app-list-filter-bar .list-filter-bar {
   margin-bottom: 12px;
 }
@@ -53,4 +54,11 @@
     width: 100%;
     justify-content: center;
   }
+}
+
+@media (max-width: 760px) {
+  .bloco-mobile-card { @include mobile-item.surface; gap: 8px; }
+  .bloco-mobile-card__head > :first-child { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+  .bloco-mobile-card__head button { flex: 0 0 44px; width: 44px; height: 44px; }
+  .site-mobile-destructive { --mat-menu-item-label-text-color: var(--mat-sys-error); --mat-menu-item-icon-color: var(--mat-sys-error); }
 }

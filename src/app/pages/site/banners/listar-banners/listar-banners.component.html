@@ -106,86 +106,44 @@
   </mat-card-content>
 </mat-card>
 } @else {
-<section class="cadastro-mobile">
-  <div class="cadastro-mobile__sticky">
-    <div class="cadastro-mobile__search">
-      <mat-icon>search</mat-icon>
-      <input type="search" placeholder="Buscar banner..." (input)="onPesquisar($any($event.target).value)" />
-    </div>
-  </div>
-
-  <div class="cadastro-mobile__list">
-    @if (carregando) {
-    <div class="cadastro-mobile__state">
-      <mat-spinner diameter="28"></mat-spinner>
-      <span>Carregando banners...</span>
-    </div>
-    } @else if (!banners.length) {
-    <div class="cadastro-mobile__state cadastro-mobile__state--empty">
-      <strong>Nenhum banner encontrado</strong>
-      <span>Crie o primeiro banner para a página inicial do site.</span>
-    </div>
-    } @else {
-      @for (banner of banners; track banner.id) {
-      <article class="cadastro-mobile-card" matRipple (click)="editar(banner)">
-        <div class="cadastro-mobile-card__image">
+<app-page-card titulo="Banners do site" subtitulo="Gerencie as imagens e chamadas principais da página inicial."
+  [primaryAction]="{ label: 'Novo banner', icon: 'add', permission: 'SITE_BANNERS_CADASTRAR' }"
+  (primaryActionClick)="navegarCriacao()">
+  <app-data-table [columns]="colunasMobile" [data]="banners" [actions]="acoesMobile" actionsMode="menu"
+    tableLabel="Banners do site" [search]="searchConfig" [filtered]="!!termoPesquisa.trim()" [pagination]="pagination"
+    [loading]="carregando && !banners.length" [refreshing]="carregando && !!banners.length" [error]="erro" [forbidden]="semPermissao"
+    [emptyState]="{ title: 'Nenhum banner cadastrado', description: 'Crie o primeiro banner para a página inicial do site.', filteredTitle: 'Nenhum banner encontrado', filteredDescription: 'Altere a busca para localizar outros banners.' }"
+    (searchChange)="onPesquisar($event)" (pageChange)="onPaginaAlterada($event)" (retry)="carregarBanners()" (action)="onAcao($event)">
+    <ng-template [appDataTableItem]="banners" let-banner let-actions="actions" let-emitAction="emitAction">
+      <article class="banner-mobile-item">
+        <div class="banner-mobile-item__image">
           @if (bannerImagemUrl(banner)) {
-          <img [src]="bannerImagemUrl(banner)" [alt]="banner.altText || banner.titulo || 'Banner do site'" loading="lazy" decoding="async" />
-          } @else {
-          <mat-icon>image</mat-icon>
+            <img [src]="bannerImagemUrl(banner)" [alt]="banner.altText || banner.titulo || 'Banner do site'" loading="lazy" decoding="async" />
+          } @else { <mat-icon>image</mat-icon> }
+        </div>
+        <div class="banner-mobile-item__head">
+          <div class="banner-mobile-item__identity"><strong>{{ banner.titulo || 'Sem título' }}</strong><span>{{ vigenciaLabel(banner) }}</span></div>
+          @if (actions.length) {
+            <button mat-icon-button type="button" [matMenuTriggerFor]="bannerMobileMenu"
+              [matMenuTriggerData]="{ banner: banner, actions: actions, emitAction: emitAction }" aria-label="Abrir ações do banner"><mat-icon>more_vert</mat-icon></button>
           }
         </div>
-
-        <div class="cadastro-mobile-card__head">
-          <div class="cadastro-mobile-card__identity">
-            <strong>{{ banner.titulo || 'Sem título' }}</strong>
-            <span>{{ vigenciaLabel(banner) }}</span>
-          </div>
-
-          <button
-            mat-icon-button
-            type="button"
-            class="cadastro-mobile-card__menu"
-            [matMenuTriggerFor]="bannerMenu"
-            (click)="selecionarBannerMenu(banner, $event)"
-            aria-label="Abrir ações do banner">
-            <mat-icon>more_vert</mat-icon>
-          </button>
-        </div>
-
-        <div class="cadastro-mobile-card__footer">
+        <div class="banner-mobile-item__footer">
           <span class="status-pill status-pill--secondary">Ordem {{ banner.ordem || '-' }}</span>
-          <span class="status-pill" [class.status-pill--inactive]="!banner.ativo">
-            {{ statusLabel(banner.ativo) }}
-          </span>
+          <span class="status-pill" [class.status-pill--inactive]="!banner.ativo">{{ statusLabel(banner.ativo) }}</span>
         </div>
       </article>
-      }
+    </ng-template>
+  </app-data-table>
+</app-page-card>
+<mat-menu #bannerMobileMenu="matMenu" xPosition="before">
+  <ng-template matMenuContent let-banner="banner" let-actions="actions" let-emitAction="emitAction">
+    @for (action of actions; track action.id) {
+      <button mat-menu-item type="button" [class.site-mobile-destructive]="action.id === 'excluir'"
+        [disabled]="action.disabled?.(banner)" (click)="emitAction(banner, action.id)">
+        <mat-icon>{{ action.icon }}</mat-icon><span>{{ action.label }}</span>
+      </button>
     }
-  </div>
-
-  <app-mobile-fab-action
-    *temPermissao="'SITE_BANNERS_CADASTRAR'"
-    label="Novo banner"
-    icon="add"
-    [compact]="mobileFabCompact"
-    ariaLabel="Criar novo banner"
-    (action)="navegarCriacao()">
-  </app-mobile-fab-action>
-</section>
-
-<mat-menu #bannerMenu="matMenu">
-  <button mat-menu-item type="button" (click)="editar(bannerSelecionadoMenu!)" [disabled]="!bannerSelecionadoMenu" *temPermissao="'SITE_BANNERS_EDITAR'">
-    <mat-icon>edit</mat-icon>
-    <span>Editar</span>
-  </button>
-  <button mat-menu-item type="button" (click)="alterarStatus(bannerSelecionadoMenu!)" [disabled]="!bannerSelecionadoMenu" *temPermissao="'SITE_BANNERS_EDITAR'">
-    <mat-icon>{{ bannerSelecionadoMenu?.ativo ? 'toggle_off' : 'toggle_on' }}</mat-icon>
-    <span>{{ bannerSelecionadoMenu?.ativo ? 'Desativar' : 'Ativar' }}</span>
-  </button>
-  <button mat-menu-item type="button" (click)="excluir(bannerSelecionadoMenu!)" [disabled]="!bannerSelecionadoMenu" *temPermissao="'SITE_BANNERS_EXCLUIR'">
-    <mat-icon>delete</mat-icon>
-    <span>Excluir</span>
-  </button>
+  </ng-template>
 </mat-menu>
 }

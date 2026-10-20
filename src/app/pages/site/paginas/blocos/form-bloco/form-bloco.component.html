@@ -1,6 +1,10 @@
-<h2 mat-dialog-title>{{ tituloDialog }}</h2>
+@if (mobilePanel) {
+  <header class="mobile-side-panel__header"><h2>{{ tituloDialog }}</h2>
+    <button mat-icon-button type="button" aria-label="Fechar editor de bloco" (click)="cancelar()"><mat-icon>close</mat-icon></button>
+  </header>
+} @else { <h2 mat-dialog-title>{{ tituloDialog }}</h2> }
 
-<mat-dialog-content class="form-bloco-dialog">
+<mat-dialog-content class="form-bloco-dialog" [class.mobile-side-panel__body]="mobilePanel">
   @if (avisoJsonInvalido) {
   <div class="form-bloco-alert">
     O conteúdo salvo deste bloco está inválido. Os campos foram abertos em branco para evitar quebra da tela.
@@ -165,7 +169,7 @@
   </form>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end">
+<mat-dialog-actions align="end" [class.mobile-side-panel__footer]="mobilePanel">
   <button mat-stroked-button type="button" (click)="cancelar()">Cancelar</button>
   <button mat-flat-button color="primary" type="button" (click)="salvar()" [disabled]="salvando">
     {{ salvando ? 'Salvando...' : 'Salvar' }}

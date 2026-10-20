@@ -1,3 +1,4 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -45,6 +46,7 @@ describe('SiteConfiguracoesComponent', () => {
     TestBed.configureTestingModule({
       imports: [SiteConfiguracoesComponent, NoopAnimationsModule, RouterTestingModule.withRoutes([])],
       providers: [
+        { provide: BreakpointObserver, useValue: { observe: () => of({ matches: false, breakpoints: {} }) } },
         { provide: SiteConfigService, useValue: service },
         { provide: AuthService, useValue: auth },
         { provide: ToastrService, useValue: toastr },

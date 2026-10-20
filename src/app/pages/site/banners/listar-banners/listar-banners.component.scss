@@ -1,3 +1,4 @@
+@use '../../../../shared/responsive/mobile-list-item' as mobile-item;
 .mat-mdc-table .mat-mdc-row .mat-mdc-cell {
   white-space: normal;
 }
@@ -82,135 +83,16 @@
   font-size: 1rem;
 }
 
-@media (max-width: 768px) {
-  .cadastro-mobile {
-    position: relative;
-    display: grid;
-    gap: 18px;
-    padding: 4px 0 96px;
+@media (max-width: 760px) {
+  .banner-mobile-item { @include mobile-item.surface; display: grid; gap: 8px; }
+  .banner-mobile-item__head { display: flex; align-items: flex-start; gap: 8px; }
+  .banner-mobile-item__head button { flex: 0 0 44px; width: 44px; height: 44px; }
+  .banner-mobile-item__identity { min-width: 0; flex: 1; display: grid; gap: 4px;
+    strong { @include mobile-item.heading; }
+    span { font-size: 12px; color: var(--mat-sys-on-surface-variant); overflow-wrap: anywhere; }
   }
-
-  .cadastro-mobile__sticky {
-    position: sticky;
-    top: 52px;
-    z-index: 4;
-    display: grid;
-    gap: 10px;
-    padding: 4px 0 6px;
-    background: linear-gradient(180deg, #f8fbff 0%, rgba(248, 251, 255, 0.96) 78%, rgba(248, 251, 255, 0));
-    backdrop-filter: blur(12px);
-  }
-
-  .cadastro-mobile__search {
-    min-height: 52px;
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    gap: 10px;
-    padding: 0 16px;
-    border-radius: 18px;
-    border: 1px solid rgba(203, 213, 225, 0.8);
-    background: rgba(255, 255, 255, 0.98);
-    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
-  }
-
-  .cadastro-mobile__search mat-icon {
-    color: #64748b;
-  }
-
-  .cadastro-mobile__search input {
-    width: 100%;
-    border: 0;
-    outline: 0;
-    background: transparent;
-    color: #0f172a;
-    font-size: 0.96rem;
-  }
-
-  .cadastro-mobile__list {
-    display: grid;
-    gap: 18px;
-  }
-
-  .cadastro-mobile__state {
-    display: grid;
-    justify-items: center;
-    gap: 10px;
-    padding: 28px 16px;
-    color: #64748b;
-    text-align: center;
-  }
-
-  .cadastro-mobile__state--empty {
-    padding: 36px 16px;
-    border-radius: 24px;
-    border: 1px dashed rgba(191, 219, 254, 0.9);
-    background: rgba(255, 255, 255, 0.76);
-  }
-
-  .cadastro-mobile__state strong {
-    color: #0f172a;
-    font-size: 1rem;
-  }
-
-  .cadastro-mobile-card {
-    display: grid;
-    gap: 14px;
-    padding: 16px;
-    border-radius: 24px;
-    border: 1px solid rgba(226, 232, 240, 0.92);
-    background: rgba(255, 255, 255, 0.98);
-    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
-    cursor: pointer;
-  }
-
-  .cadastro-mobile-card__image {
-    min-height: 132px;
-    overflow: hidden;
-    display: grid;
-    place-items: center;
-    border-radius: 18px;
-    border: 1px solid rgba(226, 232, 240, 0.9);
-    background: rgba(248, 250, 252, 0.92);
-    color: #94a3b8;
-  }
-
-  .cadastro-mobile-card__image img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    min-height: 132px;
-    object-fit: cover;
-  }
-
-  .cadastro-mobile-card__head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-  }
-
-  .cadastro-mobile-card__identity {
-    min-width: 0;
-    display: grid;
-    gap: 4px;
-  }
-
-  .cadastro-mobile-card__identity strong {
-    color: #0f172a;
-    font-size: 1rem;
-    line-height: 1.25;
-  }
-
-  .cadastro-mobile-card__identity span {
-    color: #64748b;
-    font-size: 0.84rem;
-  }
-
-  .cadastro-mobile-card__footer {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
+  .banner-mobile-item__image { aspect-ratio: 16 / 6; border-radius: 6px; overflow: hidden; display: grid; place-items: center; background: var(--mat-sys-surface-container); }
+  .banner-mobile-item__image img { width: 100%; height: 100%; object-fit: cover; }
+  .banner-mobile-item__footer { display: flex; gap: 8px; flex-wrap: wrap; }
+  .site-mobile-destructive { --mat-menu-item-label-text-color: var(--mat-sys-error); --mat-menu-item-icon-color: var(--mat-sys-error); }
 }

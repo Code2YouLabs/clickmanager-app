@@ -1,7 +1,9 @@
 <app-page-card
   titulo="Páginas do site"
   subtitulo="Gerencie as páginas, o menu e os resumos exibidos na Home."
-  botaoTexto="Nova página"
+  [botaoTexto]="isMobile ? undefined : 'Nova página'"
+  [primaryAction]="isMobile ? { label: 'Nova página', icon: 'add', permission: 'SITE_PAGINAS_CADASTRAR' } : null"
+  (primaryActionClick)="novaPagina()"
   botaoIcone="add"
   [botaoRota]="['/page/site/paginas/nova']"
   permissao="SITE_PAGINAS_CADASTRAR">
@@ -106,10 +108,10 @@
   </app-data-table>
 </app-page-card>
 
-<mat-menu #paginaMobileMenu="matMenu">
+<mat-menu #paginaMobileMenu="matMenu" xPosition="before">
   <ng-template matMenuContent let-pagina="pagina" let-actions="actions" let-emitAction="emitAction">
     @for (action of actions; track action.id) {
-      <button mat-menu-item type="button" [disabled]="action.disabled?.(pagina)" (click)="emitAction(pagina, action.id)">
+      <button mat-menu-item type="button" [class.site-mobile-destructive]="action.id === 'excluir'" [disabled]="action.disabled?.(pagina)" (click)="emitAction(pagina, action.id)">
         @if (action.icon) {
           <mat-icon [color]="action.color || null">{{ action.icon }}</mat-icon>
         }
