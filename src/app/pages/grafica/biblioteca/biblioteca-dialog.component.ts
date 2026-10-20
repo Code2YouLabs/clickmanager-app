@@ -30,7 +30,7 @@ import { BibliotecaProdutosSelectorComponent } from './biblioteca-produtos-selec
     <mat-dialog-actions align="end" class="dialog-actions" [class.mobile-side-panel__footer]="mobilePanel">
       <button mat-flat-button color="primary" type="button"
         [disabled]="ocupado || seletor.reconectando || !!seletor.erro || seletor.carregando || seletor.importando || !seletor.selecionados.size"
-        (click)="seletor.adicionar()">{{ seletor.importando ? 'Adicionando...' : 'Adicionar à empresa' }}</button>
+        (click)="seletor.adicionar()">{{ mobilePanel ? seletor.textoImportacaoMobile : seletor.importando ? 'Adicionando...' : 'Adicionar à empresa' }}</button>
     </mat-dialog-actions>`,
   styleUrls: ['../../../components/dialog/dialog-form-shell.scss'],
   styles: [`

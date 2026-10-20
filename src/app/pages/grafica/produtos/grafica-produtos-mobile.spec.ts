@@ -202,7 +202,7 @@ describe('Produtos gráficos — listagem mobile compartilhada', () => {
       const selector = TestBed.inject(MatDialog).openDialogs[0].componentInstance as BibliotecaDialogComponent;
       const input = panel.querySelector<HTMLInputElement>('.biblioteca-toolbar input')!;
       input.value = 'vinil'; input.dispatchEvent(new Event('input')); await new Promise(resolve => setTimeout(resolve, 320)); await settle();
-      const tree = panel.querySelector('app-hierarchy-tree')!; expect(tree.textContent).toContain('Vinil'); expect(tree.textContent).not.toContain('Panfleto');
+      const tree = panel.querySelector('.biblioteca-mobile-list')!; expect(tree.textContent).toContain('Vinil'); expect(tree.textContent).not.toContain('Panfleto');
       const add = panel.querySelector<HTMLButtonElement>('.mobile-side-panel__footer button')!; expect(add.disabled).toBeTrue();
       tree.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click(); await settle(); expect(add.disabled).toBeFalse();
       const loads = service.listar.calls.count(); add.click(); await settle();
@@ -251,6 +251,13 @@ describe('Produtos gráficos — listagem mobile compartilhada', () => {
         expect(doc.documentElement.scrollWidth).toBeLessThanOrEqual(width);
         expect(body.scrollWidth).toBeLessThanOrEqual(body.clientWidth);
         expect(body.scrollHeight).toBeGreaterThan(body.clientHeight);
+        expect(pane.querySelector('app-hierarchy-tree')).toBeNull(); expect(pane.querySelector('mat-button-toggle-group')).toBeNull();
+        expect(pane.querySelector('.mobile-side-panel__header')!.getBoundingClientRect().height).toBeLessThanOrEqual(80);
+        const rows = pane.querySelectorAll<HTMLElement>('.biblioteca-mobile-item'); expect(rows.length).toBe(20);
+        expect(rows[0].getBoundingClientRect().height).toBeLessThanOrEqual(100);
+        expect(rows[0].querySelector('mat-checkbox')!.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+        body.scrollTop = body.scrollHeight;
+        expect(rows[rows.length - 1].getBoundingClientRect().bottom).toBeLessThanOrEqual(body.getBoundingClientRect().bottom);
         expect(footer.getBoundingClientRect().bottom).toBeLessThanOrEqual(800);
         expect(footer.getBoundingClientRect().top).toBeGreaterThan(0);
         expect(footer.querySelector('button')!.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);

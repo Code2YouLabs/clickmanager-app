@@ -52,7 +52,7 @@ export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
   private descendentes = new Map<string | number, BibliotecaItem[]>();
   private lista: BibliotecaItem[] = [];
   get itens() { return this.lista; }
-  set itens(valor: BibliotecaItem[]) { this.lista = valor; this.atualizarVisualizacao(); }
+  set itens(valor: BibliotecaItem[]) { this.lista = valor; this.atualizarCategoriasMobile(); this.atualizarVisualizacao(); }
   filtrados: BibliotecaItem[] = [];
   selecionados = new Set<string>();
   private categoriaAtual = '';
@@ -84,10 +84,25 @@ export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
   pesquisar(valor: string) { this.pesquisa.next(valor); }
   chave(item: BibliotecaItem) { return `${item.tipo}:${item.id}`; }
   get categorias() { return [...new Set(this.itens.map(i => i.categoria))].sort((a,b) => a.localeCompare(b, 'pt-BR')); }
+  categoriasMobile: string[] = [];
+  private atualizarCategoriasMobile(): void {
+    if (!this.mobilePanel) return;
+    this.categoriasMobile = [...new Set(this.categorias.flatMap(c => {
+      const partes = c.split(' > ');
+      return partes.map((_, index) => partes.slice(0, index + 1).join(' > '));
+    }))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }
+  get textoImportacaoMobile(): string {
+    if (this.importando) return 'Adicionando...';
+    const total = this.selecionados.size;
+    return total ? `Adicionar ${total} ${total === 1 ? 'produto' : 'produtos'}` : 'Adicionar à empresa';
+  }
   private atualizarVisualizacao() {
-    this.filtrados = this.itens.filter(i => (!this.categoria || i.categoria === this.categoria) &&
+    this.filtrados = this.itens.filter(i => (!this.categoria || i.categoria === this.categoria || (this.mobilePanel && i.categoria.startsWith(this.categoria + ' > '))) &&
       this.normalizar([i.nome,i.descricao,i.material,i.formato,i.cor,i.categoria].join(' ')).includes(this.termo));
     this.arvore = []; this.estados = new Map(); this.ancestrais.clear(); this.descendentes.clear();
+    // The flat mobile list uses the same selection Set without building unused tree nodes.
+    if (this.mobilePanel) return;
     const categorias = new Map<string, HierarchyTreeNode<BibliotecaItem | null>>();
     for (const item of this.filtrados) {
       const caminho = item.categoria.split(' > ');
