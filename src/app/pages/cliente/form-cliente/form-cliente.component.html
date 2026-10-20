@@ -1,3 +1,22 @@
+@if (useSharedMobileCreate) {
+  <app-page-card titulo="Novo cliente" [headerActionDisabled]="saving">
+    <button page-mobile-header-actions mat-button type="button" [disabled]="saving" (click)="cancelarCadastroMobile()">
+      <mat-icon>arrow_back</mat-icon>Voltar
+    </button>
+    <app-cliente-create-form #clientCreate mobileMode="quick" formId="novo-cliente-page-form" [initialValue]="mobileInitialValue"
+      (valueChange)="form.patchValue($event, { emitEvent: false })"
+      (savingChange)="saving = $event" (created)="concluirCadastroMobile()" (cancelled)="cancelarCadastroMobile()">
+    </app-cliente-create-form>
+    <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true"
+      actionType="submit" actionForm="novo-cliente-page-form" bottomAnchorSelector=".mobile-bottom-nav"
+      bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+      secondaryActionText="Cancelar" secondaryActionAriaLabel="Cancelar cadastro de cliente"
+      [secondaryActionDisabled]="saving" (secondaryAction)="clientCreate.cancelar()"
+      [actionText]="saving ? 'Salvando...' : 'Salvar cliente'" actionIcon="save" actionAriaLabel="Salvar cliente"
+      [actionDisabled]="saving" [loading]="saving">
+    </app-mobile-total-bar>
+  </app-page-card>
+} @else {
 @if (!isMobileView || !pronto) {
 <app-page-card [titulo]="isEditMode ? 'Editar Cliente' : 'Novo Cliente'" botaoTexto="Voltar"
     botaoIcone="arrow_back" [botaoRota]="['/page/cliente']" [headerActionDisabled]="saving"
@@ -192,4 +211,6 @@
         (action)="salvarMobile()">
     </app-mobile-total-bar>
 </form>
+}
+
 }

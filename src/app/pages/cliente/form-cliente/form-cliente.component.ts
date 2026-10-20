@@ -1,4 +1,7 @@
-import { AfterViewInit, Component, ElementRef, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { ClienteCreateFormComponent, ClienteCreateInitialValue } from '../cliente-create-form/cliente-create-form.component';
+import { AfterViewInit, Optional, Component, ElementRef, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
@@ -40,7 +43,8 @@ import { MobileTotalBarComponent } from "../../../components/mobile-total-bar/mo
     InputDocumentoComponent,
     InputCepComponent,
     MatIconModule,
-    MobileTotalBarComponent
+    MobileTotalBarComponent,
+    ClienteCreateFormComponent
 ],
   templateUrl: './form-cliente.component.html',
   styleUrls: ['./form-cliente.component.scss']
@@ -52,6 +56,9 @@ export class FormClienteComponent implements OnInit, AfterViewInit, OnDestroy {
   clienteId?: number;
   retorno: string | null = null;
   isMobileView = false;
+  private foundationMobile = false;
+  mobileInitialValue: ClienteCreateInitialValue | null = null;
+  get useSharedMobileCreate(): boolean { return this.foundationMobile && !this.isEditMode; }
   mobileStep = 0;
   carregando = false;
   erro: string | null = null;
@@ -84,8 +91,18 @@ export class FormClienteComponent implements OnInit, AfterViewInit, OnDestroy {
     private toastr: ToastrService,
     private router: Router,
     private route: ActivatedRoute,
-    private host: ElementRef<HTMLElement>
-  ) { }
+    private host: ElementRef<HTMLElement>,
+    @Optional() breakpoints?: BreakpointObserver
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => {
+      const mobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches;
+      if (mobile && !this.foundationMobile) this.mobileInitialValue = this.form?.getRawValue() ?? null;
+      this.foundationMobile = mobile;
+    });
+  }
+
+  cancelarCadastroMobile(): void { if (!this.saving) this.router.navigate(['/page/cliente']); }
+  concluirCadastroMobile(): void { this.router.navigate(['/page/cliente']); }
 
   ngOnInit(): void {
     this.atualizarViewport();
@@ -143,6 +160,7 @@ export class FormClienteComponent implements OnInit, AfterViewInit, OnDestroy {
       this.carregando = false;
       this.form.reset({ nome: '', email: '', telefone: '', documento: '',
         endereco: { cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '' } });
+      this.mobileInitialValue = this.form.getRawValue();
       this.formState.begin(this.isEditMode ? 'edit' : 'create');
       if (this.isEditMode) this.carregarCliente();
     });
@@ -285,7 +303,7 @@ export class FormClienteComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private focusCampoAtualMobile(): void {
-    if (!this.isMobileView || !this.pronto || this.saving) return;
+    if (this.useSharedMobileCreate || !this.isMobileView || !this.pronto || this.saving) return;
 
     clearTimeout(this.focusTimer);
     this.focusTimer = setTimeout(() => {

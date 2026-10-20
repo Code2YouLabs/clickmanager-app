@@ -5,88 +5,12 @@
   display: block;
 }
 
-.cliente-dialog-form {
-  box-sizing: border-box;
-  display: grid;
-  gap: 16px;
-  width: 100%;
-  min-width: 0;
-}
-
 .dialog-content {
   box-sizing: border-box;
   width: min(760px, calc(100vw - 48px));
   max-height: min(68vh, 620px);
   overflow-x: hidden;
   padding: 18px 24px 20px !important;
-}
-
-.cliente-dialog-section {
-  display: grid;
-  gap: 14px;
-  min-width: 0;
-  padding: 14px;
-  border: 1px solid rgba(14, 23, 38, 0.10);
-  border-radius: 8px;
-  background: #fff;
-}
-
-.cliente-dialog-section__header {
-  display: grid;
-  gap: 2px;
-}
-
-.cliente-dialog-section__header strong {
-  color: #0f172a;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.cliente-dialog-section__header span {
-  color: #64748b;
-  font-size: 12px;
-  line-height: 1.35;
-}
-
-.cliente-dialog-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  min-width: 0;
-}
-
-.cliente-dialog-grid--address {
-  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1fr);
-}
-
-.cliente-dialog-grid__wide {
-  grid-column: 1 / -1;
-}
-
-.cliente-dialog-cep {
-  grid-column: 1 / -1;
-}
-
-.cliente-dialog-cep ::ng-deep > .w-100 {
-  display: grid;
-  grid-template-columns: minmax(0, 220px) auto;
-  column-gap: 12px;
-  align-items: end;
-}
-
-.cliente-dialog-cep ::ng-deep mat-label {
-  grid-column: 1 / -1;
-}
-
-.cliente-dialog-cep ::ng-deep button {
-  width: auto !important;
-  min-width: 174px;
-  height: 40px;
-  margin-bottom: 1.34375em;
-}
-
-.cliente-dialog-form ::ng-deep .mat-mdc-form-field {
-  width: 100%;
 }
 
 .dialog-actions button {
@@ -100,36 +24,8 @@
 }
 
 @media (max-width: 767px) {
-  .dialog-content {
-    width: calc(100vw - 32px);
-    max-height: min(70vh, 620px);
-    padding: 16px !important;
-  }
-
-  .cliente-dialog-grid,
-  .cliente-dialog-grid--address {
-    grid-template-columns: 1fr;
-  }
-
-  .cliente-dialog-grid__wide {
-    grid-column: auto;
-  }
-
-  .cliente-dialog-cep {
-    grid-column: auto;
-  }
-
-  .cliente-dialog-cep ::ng-deep > .w-100 {
-    grid-template-columns: 1fr;
-  }
-
-  .cliente-dialog-cep ::ng-deep button {
-    width: 100% !important;
-    min-width: 0;
-    margin-bottom: 0;
-  }
+  .dialog-content { width: calc(100vw - 32px); max-height: min(70vh, 620px); padding: 16px !important; }
 }
-
 // Only the full-screen presentation opts into the shared panel layout.
 :host-context(.mobile-side-panel) {
   display: block;
@@ -144,22 +40,6 @@
 @include mobile.mobile-foundation {
   .cliente-dialog-shell--quick {
     .dialog-head__copy strong { font-size: 18px; line-height: 24px; font-weight: 600; }
-    .cliente-dialog-section { padding: 0; border: 0; border-radius: 0; background: transparent; gap: 0; }
-    .cliente-dialog-grid { gap: 8px; }
-    .cliente-dialog-section + .cliente-dialog-section { border-top: 1px solid var(--mat-sys-outline-variant); }
-    .cliente-additional-toggle {
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
-      width: 100%; min-height: 44px; padding: 12px 0; border: 0; background: transparent;
-      text-align: left; color: var(--mat-sys-on-surface); font: inherit; cursor: pointer;
-      strong { display: block; font-size: 14px; line-height: 20px; font-weight: 600; }
-      small { display: block; font-size: 12px; line-height: 16px; color: var(--mat-sys-on-surface-variant); }
-      mat-icon { flex-shrink: 0; }
-      &:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: 2px; }
-    }
-    .cliente-field-error { margin: 0; color: var(--mat-sys-error); font-size: 12px; line-height: 16px; }
-    #novo-cliente-adicionais { display: grid; gap: 8px; padding-top: 8px; }
-    #novo-cliente-adicionais[hidden] { display: none; }
-    .cliente-dialog-cep ::ng-deep button { min-height: 44px; }
     .dialog-actions { display: grid; grid-template-columns: minmax(88px, 0.7fr) minmax(0, 1.3fr); gap: 8px; }
     .dialog-actions button { width: 100%; min-width: 0; min-height: 44px; padding-inline: 12px; white-space: nowrap; }
   }
