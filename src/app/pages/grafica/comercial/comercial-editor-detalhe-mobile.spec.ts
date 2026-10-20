@@ -124,7 +124,7 @@ describe('Detalhes do Pedido mobile: organização e movimentação', () => {
   function confirm() {
     advance().click(); tick(); render();
     const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('mat-dialog-actions button'));
-    buttons.find(button => button.textContent?.includes('Confirmar alteração'))!.click(); tick(400); render();
+    buttons.find(button => button.textContent?.includes('Confirmar'))!.click(); tick(400); render();
   }
 
   it('aguarda sucesso real, recarrega transições e preserva escolhas e dados do pedido', fakeAsync(() => {

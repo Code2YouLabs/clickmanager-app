@@ -9,7 +9,7 @@ Branch inicial: `feature/mobile-comercial-adicionar-item-painel`; HEAD inicial: 
 ## Implementação
 
 - Avançar abre diretamente `ConfirmDialogComponent`. Trocar status preserva o seletor existente, em modo de seleção, e abre a mesma confirmação global após escolher o destino. A seleção não altera o pedido.
-- Título: **Alterar status do pedido?**; mensagem: **Confirme a alteração antes de continuar.**; ações: **Voltar** e **Confirmar alteração**, com variante comum e cor primária.
+- Título: **Alterar status do pedido?**; mensagem: **Confirme a alteração antes de continuar.**; ações: **Voltar** e **Confirmar**, com variante comum e cor primária.
 - Os detalhes mostram os rótulos reais de **Status atual** e **Novo status**. A extensão opcional e genérica `details[].emphasis` destaca o destino sem afetar consumidores existentes.
 - O seletor opt-in reutiliza o serviço e os estilos responsivos existentes, inclusive animação, handle, limite de altura e safe-area. Seu modo legado, utilizado pelo Kanban, permanece intacto.
 - Apenas o resultado booleano `true` da confirmação autoriza o handler existente. Permissões e transições são revalidadas ao fechar. A referência ativa evita aberturas simultâneas; o loading existente impede requisições repetidas.

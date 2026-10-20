@@ -73,7 +73,7 @@ describe('PedidoFluxoControles mobile operacional', () => {
     const save = spyOn(component.salvarStatus, 'emit'); const change = spyOn(component.trocarStatusSelecionado, 'emit');
     actions()[0].click(); expect(save).not.toHaveBeenCalled();
     expect(openDialog).toHaveBeenCalledWith(ConfirmDialogComponent, jasmine.objectContaining({ data: jasmine.objectContaining({
-      type: 'default', title: 'Alterar status do pedido?', confirmText: 'Confirmar alteração', confirmColor: 'primary',
+      type: 'default', title: 'Alterar status do pedido?', confirmText: 'Confirmar', confirmColor: 'primary',
       details: [{ label: 'Status atual', value: 'Aguardando pagamento' }, { label: 'Novo status', value: 'Pendente', emphasis: true }],
     }) }));
     result.next(true); expect(change).toHaveBeenCalledOnceWith('PENDENTE'); expect(save).toHaveBeenCalledTimes(1);
