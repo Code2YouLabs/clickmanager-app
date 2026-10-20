@@ -14,6 +14,8 @@ import { SectionCardComponent } from '../section-card/section-card.component';
 import { ManualLinkComponent } from '../manual-link/manual-link.component';
 import { PedidoTrocarStatusDialogComponent } from './pedido-trocar-status-dialog.component';
 import { StatusBadgeComponent } from '../status-badge/status-badge.component';
+import { classificarTransicaoPedido } from './pedido-transicao-apresentacao';
+import { take } from 'rxjs';
 
 const FLOW_STEPS = ['AGUARDANDO_PAGAMENTO', 'PENDENTE', 'EM_PRODUCAO', 'PRONTO', 'ENTREGUE'];
 
@@ -116,6 +118,7 @@ export class PedidoFluxoControlesComponent implements OnChanges {
   };
 
   private dialog = inject(MatDialog);
+  private confirmacaoStatusRef?: MatDialogRef<PedidoTrocarStatusDialogComponent>;
 
   ngOnChanges(_changes: SimpleChanges): void {
     this.computeFlowUI();
@@ -234,18 +237,32 @@ export class PedidoFluxoControlesComponent implements OnChanges {
   }
 
   get podeTrocarStatus(): boolean {
-    const lista = this.transicoes?.length
-      ? this.transicoes
-      : (this.statusOptions || []).map(s => ({ status: s, bloqueado: false }));
-    return lista.some(l => !l.bloqueado);
+    return this.opcoesTrocaStatus.some(l => !l.bloqueado);
   }
 
-  get mobileStatusBusy(): boolean { return this.inativo || this.trocandoStatus || this.carregandoStatus; }
+  get transicoesOperacionaisMobile() {
+    return this.transicoes.filter(opcao => classificarTransicaoPedido(opcao.status) === 'operacional');
+  }
+
+  private get opcoesTrocaStatus() {
+    const lista = this.transicoes?.length
+      ? this.transicoes
+      : (this.statusOptions || []).map(s => ({ status: s, label: this.statusLabel(s), bloqueado: false }));
+    return this.mobileCompact ? lista.filter(opcao => classificarTransicaoPedido(opcao.status) !== 'cancelamento') : lista;
+  }
+
+  get mobileStatusBusy(): boolean { return this.inativo || this.trocandoStatus || this.carregandoStatus || !!this.confirmacaoStatusRef; }
 
   avancarMobile(status: string): MatDialogRef<PedidoTrocarStatusDialogComponent> | undefined {
-    const transicao = this.transicoes.find(opcao => opcao.status === status);
+    const transicao = this.transicoesOperacionaisMobile.find(opcao => opcao.status === status);
     if (!this.mobileCompact || this.mobileStatusBusy || this.isReadOnly || !transicao || transicao.bloqueado) return;
     return this.abrirConfirmacaoTrocaStatus(status);
+  }
+
+  confirmarCancelamentoMobile(): MatDialogRef<PedidoTrocarStatusDialogComponent> | undefined {
+    const transicao = this.transicoes.find(opcao => classificarTransicaoPedido(opcao.status) === 'cancelamento');
+    if (!this.mobileCompact || this.mobileStatusBusy || this.isReadOnly || !transicao || transicao.bloqueado) return;
+    return this.abrirConfirmacaoTrocaStatus(transicao.status, true);
   }
 
   onNextAction(): void {
@@ -286,14 +303,16 @@ export class PedidoFluxoControlesComponent implements OnChanges {
   }
 
   abrirMenuTrocarStatus(): MatDialogRef<PedidoTrocarStatusDialogComponent> | undefined {
-    const opcoes = (this.transicoes?.length ? this.transicoes : (this.statusOptions || []).map(s => ({ status: s, label: this.statusLabel(s), bloqueado: false })));
+    const opcoes = this.opcoesTrocaStatus;
     if (this.inativo || this.isReadOnly || !opcoes.length) return;
     return this.abrirConfirmacaoTrocaStatus();
   }
 
-  private abrirConfirmacaoTrocaStatus(statusDestino?: string): MatDialogRef<PedidoTrocarStatusDialogComponent> | undefined {
+  private abrirConfirmacaoTrocaStatus(statusDestino?: string, cancelamentoMobile = false): MatDialogRef<PedidoTrocarStatusDialogComponent> | undefined {
     if (this.mobileCompact && this.mobileStatusBusy) return;
-    const opcoes = (this.transicoes?.length ? this.transicoes : (this.statusOptions || []).map(s => ({ status: s, label: this.statusLabel(s), bloqueado: false })));
+    const opcoes = cancelamentoMobile
+      ? this.transicoes.filter(opcao => classificarTransicaoPedido(opcao.status) === 'cancelamento')
+      : this.opcoesTrocaStatus;
     if (this.inativo || this.isReadOnly || !opcoes.length) return;
 
     const ref = this.dialog.open(PedidoTrocarStatusDialogComponent, {
@@ -306,9 +325,12 @@ export class PedidoFluxoControlesComponent implements OnChanges {
       }
     });
 
-    ref.afterClosed().subscribe((novo: { status: string } | null | undefined) => {
+    if (this.mobileCompact) this.confirmacaoStatusRef = ref;
+    ref.afterClosed().pipe(take(1)).subscribe((novo: { status: string } | null | undefined) => {
+      if (this.confirmacaoStatusRef === ref) this.confirmacaoStatusRef = undefined;
       if (novo?.status) {
         if (this.mobileCompact && (this.mobileStatusBusy || this.isReadOnly ||
+          !opcoes.some(opcao => opcao.status === novo.status && !opcao.bloqueado) ||
           !this.transicoes.some(opcao => opcao.status === novo.status && !opcao.bloqueado))) return;
         const selected = novo.status;
         this.statusControl?.setValue(selected);

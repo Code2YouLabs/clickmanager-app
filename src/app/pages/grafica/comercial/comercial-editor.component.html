@@ -385,7 +385,7 @@
         <h3>Documentos e compartilhamento</h3>
         <ng-container [ngTemplateOutlet]="documentosPedidoConteudo" [ngTemplateOutletContext]="{ actionList: true }"></ng-container>
       </section>
-      <section class="order-action-group" aria-label="Cancelamento" *ngIf="permissoesFluxo.alterarStatus && statusOptionsFluxo.includes('CANCELADO')">
+      <section class="order-action-group" aria-label="Cancelamento" *ngIf="exibeCancelarPedidoAcoesMobile">
         <button class="order-action-row order-action-cancel" mat-button type="button" [disabled]="acoesPedidoOcupado || !podeCancelarPedidoAcoesMobile" (click)="gerenciarPedidoMobile(true)">
           <span class="action-content"><mat-icon class="action-leading-icon" aria-hidden="true">cancel</mat-icon><span><strong>Cancelar pedido</strong></span><mat-icon class="action-indicator" aria-hidden="true">chevron_right</mat-icon></span>
         </button>

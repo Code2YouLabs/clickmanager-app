@@ -166,6 +166,29 @@ describe('Ações do pedido em painel lateral mobile', () => {
     expect(panel()).not.toBeNull(); expect(service.alterarStatusPedidoComercial).not.toHaveBeenCalled(); expect(q('.order-action-cancel').disabled).toBeFalse();
   }));
 
+  it('remove Cancelado da troca geral e dos avanços, mantendo a confirmação exclusiva de cancelamento', fakeAsync(() => {
+    expect(section('fluxo').textContent).toContain('Avançar para Pendente');
+    expect(section('fluxo').textContent).not.toContain('Avançar para Cancelado');
+    open(); q('.order-action-status').click(); render();
+    const ref = TestBed.inject(MatDialog).openDialogs.at(-1)!;
+    expect(ref.componentInstance.data.opcoes.map((opcao: any) => opcao.status)).toEqual(['PENDENTE']);
+    ref.close(); tick(400); render();
+    q('.order-action-cancel').click(); render();
+    const cancellation = TestBed.inject(MatDialog).openDialogs.at(-1)!;
+    expect(cancellation.componentInstance.data.statusDestino).toBe('CANCELADO');
+    expect(cancellation.componentInstance.data.opcoes.map((opcao: any) => opcao.status)).toEqual(['CANCELADO']);
+    expect(service.alterarStatusPedidoComercial).not.toHaveBeenCalled();
+  }));
+
+  it('mantém Cancelar pedido utilizável quando não há outra transição autorizada', fakeAsync(() => {
+    editor.fluxoPedido = { ...flow(), proximasTransicoes: [{ status: 'CANCELADO', label: 'Cancelado', permitida: true }] } as any; render();
+    expect(section('fluxo').querySelector('.mobile-transition')).toBeNull();
+    open(); expect(q('.order-action-status').disabled).toBeTrue(); expect(q('.order-action-cancel').disabled).toBeFalse();
+    editor.gerenciarPedidoMobile(); render(); expect(document.querySelector('mat-dialog-actions')).toBeNull();
+    q('.order-action-cancel').click(); render(); expect(document.querySelector('mat-dialog-actions')).not.toBeNull();
+    confirm(); expect(service.alterarStatusPedidoComercial).toHaveBeenCalledOnceWith(32, 'CANCELADO');
+  }));
+
   it('respeita transição bloqueada e permissão revogada antes de confirmar', fakeAsync(() => {
     editor.fluxoPedido = { ...flow(), proximasTransicoes: [{ status: 'PENDENTE', label: 'Pendente', permitida: true }, { status: 'CANCELADO', label: 'Cancelado', permitida: false, motivo: 'Operação bloqueada.' }] } as any; render();
     open(); expect(q('.order-action-cancel').disabled).toBeTrue(); editor.gerenciarPedidoMobile(true); render(); expect(document.querySelector('mat-dialog-actions')).toBeNull();

@@ -21,6 +21,7 @@ import { ObservacoesCardComponent } from 'src/app/components/observacoes-card/ob
 import { PageCardAction, PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
 import { PedidoFluxoControlesComponent } from 'src/app/components/pedido-fluxo-controles/pedido-fluxo-controles.component';
+import { classificarTransicaoPedido } from 'src/app/components/pedido-fluxo-controles/pedido-transicao-apresentacao';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { StatusBadgeComponent } from 'src/app/components/status-badge/status-badge.component';
 import { MaterialModule } from 'src/app/material.module';
@@ -287,8 +288,9 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   private acoesPedidoConfirmacaoRef?: MatDialogRef<unknown>;
   acoesPedidoNavegando = false;
   get acoesPedidoOcupado(): boolean { return this.carregando || this.carregandoStatus || this.acoesPedidoNavegando || !!this.acoesPedidoConfirmacaoRef; }
-  get podeTrocarStatusAcoesMobile(): boolean { return this.permissoesFluxo.alterarStatus && this.transicoesFluxo.some(opcao => !opcao.bloqueado); }
-  get podeCancelarPedidoAcoesMobile(): boolean { return this.permissoesFluxo.alterarStatus && this.transicoesFluxo.some(opcao => opcao.status === 'CANCELADO' && !opcao.bloqueado); }
+  get podeTrocarStatusAcoesMobile(): boolean { return this.permissoesFluxo.alterarStatus && this.transicoesFluxo.some(opcao => classificarTransicaoPedido(opcao.status) !== 'cancelamento' && !opcao.bloqueado); }
+  get exibeCancelarPedidoAcoesMobile(): boolean { return this.permissoesFluxo.alterarStatus && this.transicoesFluxo.some(opcao => classificarTransicaoPedido(opcao.status) === 'cancelamento'); }
+  get podeCancelarPedidoAcoesMobile(): boolean { return this.permissoesFluxo.alterarStatus && this.transicoesFluxo.some(opcao => classificarTransicaoPedido(opcao.status) === 'cancelamento' && !opcao.bloqueado); }
   abrirAcoesPedidoMobile(): void {
     if (!this.mobilePedidoDetalhe || !this.temRegistroCarregado || this.acessoNegado || this.acoesPedidoOcupado || this.acoesPedidoPanelRef || this.ajustesPanelRef || this.pagamentosPanelRef || this.observacaoPanelRef || !this.acoesPedidoMobile) return;
     this.elementRef?.nativeElement.querySelector<HTMLElement>('.mobile-order-actions-trigger')?.focus({ preventScroll: true });
@@ -300,8 +302,8 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   }
   fecharAcoesPedidoMobile(): void { if (!this.acoesPedidoOcupado) this.acoesPedidoPanelRef?.close(); }
   gerenciarPedidoMobile(cancelar = false): void {
-    if (!this.mobilePedidoDetalhe || !this.acoesPedidoPanelRef || this.acoesPedidoPanelRef.getState() !== MatDialogState.OPEN || this.acoesPedidoOcupado || !this.podeTrocarStatusAcoesMobile || (cancelar && !this.podeCancelarPedidoAcoesMobile)) return;
-    const ref = cancelar ? this.fluxoControles?.avancarMobile('CANCELADO') : this.fluxoControles?.abrirMenuTrocarStatus();
+    if (!this.mobilePedidoDetalhe || !this.acoesPedidoPanelRef || this.acoesPedidoPanelRef.getState() !== MatDialogState.OPEN || this.acoesPedidoOcupado || !(cancelar ? this.podeCancelarPedidoAcoesMobile : this.podeTrocarStatusAcoesMobile)) return;
+    const ref = cancelar ? this.fluxoControles?.confirmarCancelamentoMobile() : this.fluxoControles?.abrirMenuTrocarStatus();
     if (!ref) return;
     this.acoesPedidoConfirmacaoRef = ref;
     this.acoesPedidoPanelRef.disableClose = true;

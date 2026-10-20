@@ -37,12 +37,14 @@ describe('PedidoFluxoControles mobile operacional', () => {
   });
   afterEach(() => TestBed.resetTestingModule());
 
-  it('exibe status completo na skin existente, descrição e todas as transições recebidas', () => {
+  it('exibe status completo, descrição e todas as transições operacionais, sem avanço para cancelar', () => {
     expect(root().querySelector('.mobile-current-status .status-chip')!.textContent).toContain('Aguardando pagamento');
     expect(root().querySelector('.mobile-current-status .chip-aguardando')).not.toBeNull();
     expect(root().querySelector('.mobile-current-status .helper-text')!.textContent).toBe('Aguardando pagamento do cliente.');
-    expect(actions().map(b => b.textContent!.trim())).toEqual(options.map(o => 'arrow_forwardAvançar para ' + o.label));
-    expect(actions().map(b => b.disabled)).toEqual([false, true, false]);
+    expect(actions().map(b => b.textContent!.trim())).toEqual(options.slice(0, 2).map(o => 'arrow_forwardAvançar para ' + o.label));
+    expect(actions().map(b => b.disabled)).toEqual([false, true]);
+    expect(root().textContent).not.toContain('Avançar para Cancelado');
+    expect(component.transicoes).toEqual(options);
     expect(root().querySelector('#' + actions()[1].getAttribute('aria-describedby'))!.textContent).toBe('Pagamento necessário.');
   });
 
@@ -68,16 +70,61 @@ describe('PedidoFluxoControles mobile operacional', () => {
 
   it('mantém destino e opções na confirmação existente e só emite depois de confirmar', () => {
     const save = spyOn(component.salvarStatus, 'emit'); const change = spyOn(component.trocarStatusSelecionado, 'emit');
-    actions()[2].click(); expect(save).not.toHaveBeenCalled();
-    expect(openDialog).toHaveBeenCalledWith(PedidoTrocarStatusDialogComponent, jasmine.objectContaining({ data: { statusAtual: 'AGUARDANDO_PAGAMENTO', statusDestino: 'CANCELADO', opcoes: options } }));
-    result.next({ status: 'CANCELADO' }); expect(change).toHaveBeenCalledOnceWith('CANCELADO'); expect(save).toHaveBeenCalledTimes(1);
-    expect(component.statusControl.value).toBe('CANCELADO');
+    actions()[0].click(); expect(save).not.toHaveBeenCalled();
+    expect(openDialog).toHaveBeenCalledWith(PedidoTrocarStatusDialogComponent, jasmine.objectContaining({ data: { statusAtual: 'AGUARDANDO_PAGAMENTO', statusDestino: 'PENDENTE', opcoes: options.slice(0, 2) } }));
+    result.next({ status: 'PENDENTE' }); expect(change).toHaveBeenCalledOnceWith('PENDENTE'); expect(save).toHaveBeenCalledTimes(1);
+    expect(component.statusControl.value).toBe('PENDENTE');
   });
 
   it('cancelar confirmação não altera controle nem emite operação', () => {
     const save = spyOn(component.salvarStatus, 'emit'); actions()[0].click(); result.next(null);
     expect(save).not.toHaveBeenCalled(); expect(component.statusControl.value).toBe('AGUARDANDO_PAGAMENTO');
   });
+
+  it('não transforma uma opção exclusiva de cancelamento em avanço ou troca geral', () => {
+    set('transicoes', [options[2]]); set('statusOptions', ['CANCELADO']);
+    expect(actions().length).toBe(0); expect(root().querySelector('.mobile-no-transitions')).not.toBeNull();
+    expect(component.podeTrocarStatus).toBeFalse();
+    component.avancarMobile('CANCELADO'); component.abrirMenuTrocarStatus(); expect(openDialog).not.toHaveBeenCalled();
+    const save = spyOn(component.salvarStatus, 'emit'); component.confirmarCancelamentoMobile();
+    expect(openDialog).toHaveBeenCalledWith(PedidoTrocarStatusDialogComponent, jasmine.objectContaining({ data: {
+      statusAtual: 'AGUARDANDO_PAGAMENTO', statusDestino: 'CANCELADO', opcoes: [options[2]],
+    } }));
+    expect(save).not.toHaveBeenCalled(); result.next({ status: 'CANCELADO' });
+    expect(save).toHaveBeenCalledTimes(1); expect(component.statusControl.value).toBe('CANCELADO');
+  });
+
+  it('impede cancelamento pela troca geral e confirmação duplicada', () => {
+    const save = spyOn(component.salvarStatus, 'emit'); component.abrirMenuTrocarStatus();
+    component.avancarMobile('PENDENTE'); component.confirmarCancelamentoMobile();
+    expect(openDialog).toHaveBeenCalledTimes(1);
+    result.next({ status: 'CANCELADO' }); expect(save).not.toHaveBeenCalled();
+    expect(component.statusControl.value).toBe('AGUARDANDO_PAGAMENTO');
+    result.next({ status: 'PENDENTE' }); expect(save).not.toHaveBeenCalled();
+  });
+
+  it('revalida cancelamento bloqueado ou revogado sem executar outra operação', () => {
+    const save = spyOn(component.salvarStatus, 'emit'); set('transicoes', [{ ...options[2], bloqueado: true }]);
+    component.confirmarCancelamentoMobile(); expect(openDialog).not.toHaveBeenCalled();
+    set('transicoes', [options[2]]); component.confirmarCancelamentoMobile();
+    set('transicoes', []); result.next({ status: 'CANCELADO' });
+    expect(save).not.toHaveBeenCalled(); expect(component.statusControl.value).toBe('AGUARDANDO_PAGAMENTO');
+  });
+
+  it('preserva múltiplas opções operacionais permitidas e a ordem recebida', () => {
+    set('transicoes', [{ ...options[1], bloqueado: false }, options[2], options[0]]);
+    expect(actions().map(button => button.textContent)).toEqual([
+      jasmine.stringContaining('Avançar para Em produção'), jasmine.stringContaining('Avançar para Pendente'),
+    ]);
+    expect(actions().every(button => !button.disabled)).toBeTrue();
+  });
+
+  for (const status of ['AGUARDANDO_PAGAMENTO', 'PENDENTE', 'EM_PRODUCAO', 'PRONTO', 'ENTREGUE', 'CANCELADO']) {
+    it(`não inventa avanço para ${status} sem transição operacional recebida`, () => {
+      set('statusAtual', status); set('transicoes', status === 'ENTREGUE' || status === 'CANCELADO' ? [] : [options[2]]);
+      expect(actions().length).toBe(0); expect(root().querySelector('.mobile-flow-toggle')).not.toBeNull();
+    });
+  }
 
   for (const state of ['inativo', 'isReadOnly', 'trocandoStatus', 'carregandoStatus']) {
     it(`respeita ${state} sem acionar transição`, () => {
@@ -96,7 +143,7 @@ describe('PedidoFluxoControles mobile operacional', () => {
   it('preserva menu de ações e ajuda como acessos secundários', () => {
     expect(root().querySelector('app-manual-link')).not.toBeNull();
     expect(root().querySelector('[aria-label="Ações do fluxo"]')).not.toBeNull();
-    component.abrirMenuTrocarStatus(); expect(openDialog).toHaveBeenCalledWith(PedidoTrocarStatusDialogComponent, jasmine.objectContaining({ data: jasmine.objectContaining({ opcoes: options, statusDestino: null }) }));
+    component.abrirMenuTrocarStatus(); expect(openDialog).toHaveBeenCalledWith(PedidoTrocarStatusDialogComponent, jasmine.objectContaining({ data: jasmine.objectContaining({ opcoes: options.slice(0, 2), statusDestino: null }) }));
   });
 
   it('oferece painel por opt-in sem bloquear documentos pela permissão de status', () => {
@@ -119,5 +166,7 @@ describe('PedidoFluxoControles mobile operacional', () => {
     expect(root().querySelector('.primary-action')).not.toBeNull();
     expect(root().querySelector('.status-chip')!.textContent).toContain('Aguard. pagto');
     expect(root().querySelector<HTMLElement>('.step-strip')!.hidden).toBeFalse();
+    component.abrirMenuTrocarStatus();
+    expect(openDialog).toHaveBeenCalledWith(PedidoTrocarStatusDialogComponent, jasmine.objectContaining({ data: jasmine.objectContaining({ opcoes: options }) }));
   });
 });
