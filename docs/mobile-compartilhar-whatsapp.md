@@ -32,7 +32,8 @@
 - Nenhuma string gerada é cortada para caber: o limite nativo de edição anterior
   não trunca o valor carregado. Alternar mobile/desktop conserva o controle/texto.
 - MobileTotalBar recebe `appearance=actions` opt-in: sem resumo de total, dois botões
-  em colunas 1:2, ícones opcionais e área de toque de 48px. As variantes default/compact
+  com largura igual, ícones opcionais e altura mínima de 44px compartilhada com a
+  apresentação compacta (ver consolidação abaixo). As variantes default/compact
   continuam idênticas. Não há comportamento de WhatsApp dentro do componente global.
 - A página configura expandable=false, actionType=button, reserveSpace=true,
   avoidKeyboard=true e bottomAnchorSelector=.mobile-bottom-nav. O form identificado
@@ -89,5 +90,33 @@
 npm test -- --configuration=application-theme --watch=false --browsers=ChromeHeadless --include='src/app/pages/grafica/comercial/pedido-comercial-whatsapp*.spec.ts' --include='src/app/components/mobile-total-bar/*.spec.ts'
 npm test -- --configuration=application-theme --watch=false --browsers=ChromeHeadless --include='src/app/pages/grafica/comercial/pedido-comercial-whatsapp*.spec.ts' --include='src/app/components/mobile-total-bar/*.spec.ts' --include='src/app/pages/grafica/comercial/comercial-editor-mobile.spec.ts' --include='src/app/pages/calculadora-materiais/calculadora-materiais.component.spec.ts' --include='src/app/components/pdf-document-page/*.spec.ts' --include='src/app/pages/grafica/comercial/pedido-comercial-impressao-page.component.spec.ts' --include='src/app/components/page-card/*.spec.ts' --include='src/app/components/card-header/*.spec.ts' --include='src/app/layouts/full/full.component.spec.ts'
 npm test -- --configuration=application-theme --watch=false --browsers=ChromeHeadless --include='src/app/pages/apps/smart-calc/smart-calc-mobile.component.spec.ts'
+npm run build:prod
+```
+
+## Consolidação do rodapé compartilhado — 19/10/2026
+
+- A investigação confirmou que WhatsApp já usava `MobileTotalBarComponent`, também
+  usado em `smart-calc.component.html` e `comercial-editor.component.html`. Não havia
+  uma segunda implementação de posicionamento fixo na página.
+- A diferença vinha das medidas próprias de `appearance="actions"`. Os botões agora
+  compartilham a mesma regra de altura mínima (44px), padding (8px 12px), raio (8px),
+  tipografia e ausência de sombra do botão compacto do SmartCalc/Editor. Os valores
+  desses consumidores foram preservados; somente a variante de ações muda.
+- As duas ações usam flex com larguras iguais, `min-width: 0` e intervalo de 12px.
+  Textos podem quebrar em telas estreitas, sem exigir rolagem horizontal.
+- A superfície compacta existente conserva padding lateral com safe-area, reserva
+  medida, acompanhamento do teclado e âncora `.mobile-bottom-nav`. O fallback de
+  `bottomOffset` do WhatsApp passa a ser o mesmo do Editor (60px + safe-area); o shell
+  continua prevalecendo pela variável CSS e pela medição da navegação real.
+- Não foi necessário ampliar o contrato TypeScript nem criar componentes. Handlers,
+  mensagem, validações, feedback e ramo desktop não foram alterados.
+- Testes da página reforçam instância/reserva únicas, integração com o shell e
+  ausência de duplicação ao alternar entre mobile e desktop.
+- Validação desta consolidação: **116 testes aprovados** (WhatsApp, barra global,
+  Editor Comercial, SmartCalc e shell); build de produção aprovado, com 38 avisos.
+  `git diff --check` aprovado. Sem testes visuais ou screenshots.
+
+```sh
+npm test -- --configuration=application-theme --watch=false --browsers=ChromeHeadless --include='src/app/pages/grafica/comercial/pedido-comercial-whatsapp*.spec.ts' --include='src/app/components/mobile-total-bar/*.spec.ts' --include='src/app/pages/grafica/comercial/comercial-editor-mobile.spec.ts' --include='src/app/pages/apps/smart-calc/smart-calc-mobile.component.spec.ts' --include='src/app/layouts/full/full.component.spec.ts'
 npm run build:prod
 ```

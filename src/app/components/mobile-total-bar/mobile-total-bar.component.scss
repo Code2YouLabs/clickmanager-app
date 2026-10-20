@@ -416,9 +416,13 @@
   .mobile-total-bar--compact .mobile-total-bar__expand { min-height: 24px; font-size: 0.75rem; }
   .mobile-total-bar--compact .mobile-total-bar__actions { min-width: 0; width: auto; justify-self: end; }
   .mobile-total-bar--compact.mobile-total-bar--inline-details .mobile-total-bar__cta {
-    min-height: 44px;
     width: auto;
     flex: 0 0 auto;
+  }
+  .mobile-total-bar--compact.mobile-total-bar--inline-details .mobile-total-bar__cta,
+  .mobile-total-bar--actions-only .mobile-total-bar__secondary,
+  .mobile-total-bar--actions-only .mobile-total-bar__cta {
+    min-height: 44px;
     border-radius: 8px;
     padding: 8px 12px;
     font-size: 0.875rem;
@@ -434,8 +438,8 @@
   .mobile-total-bar--actions-only {
     padding-top: 12px;
     .mobile-total-bar__controls { display: block; }
-    .mobile-total-bar__actions { display: grid; width: 100%; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 8px; }
-    .mobile-total-bar__secondary, .mobile-total-bar__cta { width: 100%; min-width: 0; min-height: 48px; padding: 8px; border-radius: 8px; font-size: 14px; line-height: 20px; font-weight: 600; white-space: nowrap; box-shadow: none; }
+    .mobile-total-bar__actions { display: flex; width: 100%; gap: 12px; }
+    .mobile-total-bar__secondary, .mobile-total-bar__cta { flex: 1 1 0; min-width: 0; width: auto; }
     .mobile-total-bar__actions mat-icon { width: 18px; height: 18px; font-size: 18px; margin-right: 4px; }
   }
 }

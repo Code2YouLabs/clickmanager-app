@@ -29,7 +29,7 @@
           </form>
           <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true"
             actionType="button" actionForm="whatsapp-mobile-editor" bottomAnchorSelector=".mobile-bottom-nav"
-            bottomOffset="var(--mobile-bottom-nav-height, env(safe-area-inset-bottom, 0px))" [attachedToBottomNav]="true"
+            bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
             secondaryActionText="Copiar" secondaryActionIcon="content_copy" secondaryActionAriaLabel="Copiar mensagem completa"
             [secondaryActionDisabled]="carregando || !!erro || !mensagemControl.value"
             actionText="Abrir WhatsApp" actionIcon="chat" actionAriaLabel="Abrir pedido no WhatsApp"

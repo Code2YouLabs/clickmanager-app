@@ -54,6 +54,11 @@ describe('Compartilhar Pedido mobile', () => {
   it('reutiliza a barra gerenciada com duas ações, reserva e proteção de teclado sem total fictício', () => {
     ready(); expect(bar().appearance).toBe('actions'); expect(bar().expandable).toBeFalse();
     expect(bar().reserveSpace).toBeTrue(); expect(bar().avoidKeyboard).toBeTrue(); expect(bar().bottomAnchorSelector).toBe('.mobile-bottom-nav');
+    expect(bar().attachedToBottomNav).toBeTrue();
+    expect(bar().bottomOffset).toBe('var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))');
+    expect(root().querySelectorAll('app-mobile-total-bar').length).toBe(1);
+    expect(root().querySelectorAll('.mobile-total-bar__clearance').length).toBe(1);
+    expect(root().querySelector('.mobile-total-bar--compact')).not.toBeNull();
     expect(bar().actionForm).toBe('whatsapp-mobile-editor'); expect(root().querySelector('.mobile-total-bar__summary')).toBeNull();
     expect(root().querySelectorAll('.mobile-total-bar__actions button').length).toBe(2); expect(copy().getAttribute('type')).toBe('button'); expect(share().getAttribute('type')).toBe('button');
     expect(copy().textContent).toContain('Copiar'); expect(share().textContent).toContain('Abrir WhatsApp');
@@ -103,6 +108,8 @@ describe('Compartilhar Pedido mobile', () => {
     expect(text.length).toBeGreaterThan(4000); expect(field().value).toBe(text);
     viewport.next({ matches: false, breakpoints: {} }); render(); expect(field().value).toBe(text);
     viewport.next({ matches: true, breakpoints: {} }); render(); expect(field().value).toBe(text);
+    expect(root().querySelectorAll('app-mobile-total-bar').length).toBe(1);
+    expect(root().querySelectorAll('.mobile-total-bar__actions button').length).toBe(2);
     expect(page.pedido!.clienteTelefone).toBe('31987531233');
   });
 
