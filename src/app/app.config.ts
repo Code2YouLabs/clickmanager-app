@@ -19,7 +19,8 @@ import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
 import { TranslateHttpLoader } from '@ngx-translate/http-loader';
 
 import { ToastrModule } from 'ngx-toastr';
-import { provideToastr } from 'ngx-toastr';
+import { provideToastr, ToastrService } from 'ngx-toastr';
+import { ResponsiveToastrService } from './shared/notifications/responsive-toastr.service';
 
 // icons
 import { TablerIconsModule } from 'angular-tabler-icons';
@@ -124,5 +125,6 @@ export const appConfig: ApplicationConfig = {
         },
       })
     ),
+    { provide: ToastrService, useClass: ResponsiveToastrService },
   ],
 };

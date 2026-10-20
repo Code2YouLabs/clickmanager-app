@@ -1,0 +1,7 @@
+.mobile-toast__icon { width: 24px; height: 24px; flex-shrink: 0; margin-top: 8px; color: var(--mobile-toast-accent); }
+.mobile-toast__content { flex: 1; min-width: 0; padding: 8px 0; white-space: pre-wrap; overflow-wrap: anywhere; max-height: var(--mobile-toast-max-height, 35dvh); overflow-y: auto; overscroll-behavior: contain; }
+.mobile-toast__content strong { display: block; font-weight: 600; }
+.mobile-toast__close { display: grid; place-items: center; flex: 0 0 44px; width: 44px; height: 44px; padding: 12px; border: 0; border-radius: 8px; color: inherit; background: transparent; cursor: pointer; }
+.mobile-toast__close svg { width: 20px; height: 20px; }
+.mobile-toast__close:hover { background: var(--mat-sys-surface-container-high); }
+.mobile-toast__close:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: -2px; }
