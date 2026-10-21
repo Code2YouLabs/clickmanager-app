@@ -6,3 +6,17 @@
     height: auto !important;
   }
 }
+
+@media (max-width: 760px) {
+  :host { display: block; min-width: 0; }
+  .mobile-profile__form { display: grid; gap: 12px; margin-top: 12px; min-width: 0; }
+  .mobile-profile__form[hidden] { display: none; }
+  .mobile-profile .row { margin-inline: 0; }
+  .mobile-profile .row > div { width: 100%; padding-inline: 0; min-width: 0; }
+  .mobile-profile img { max-width: 100%; }
+  .mobile-profile button { min-height: 44px; }
+  .mobile-profile .text-center button { margin: 4px; }
+  .mobile-profile .m-t-24 { margin-top: 12px !important; }
+  .mobile-profile ::ng-deep .mat-button-toggle-label-content { font-size: 12px !important; padding-inline: 4px !important; }
+  .mobile-profile app-notificacoes { display: block; margin-top: 12px; min-width: 0; }
+}

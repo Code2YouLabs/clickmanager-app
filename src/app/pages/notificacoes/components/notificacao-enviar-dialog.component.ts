@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
 import { Usuario } from 'src/app/models/usuario/usuario.model';
 import { MaterialModule } from 'src/app/material.module';
@@ -17,12 +17,14 @@ type DestinoSelecionavel = Extract<NotificacaoTipoDestino, 'EMPRESA_INTEIRA' | '
 
 @Component({
   selector: 'app-notificacao-enviar-dialog',
+  host: { '[class.mobile-side-panel__layout]': 'mobilePanel' },
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MaterialModule],
   templateUrl: './notificacao-enviar-dialog.component.html',
   styleUrl: './notificacao-enviar-dialog.component.scss'
 })
 export class NotificacaoEnviarDialogComponent implements OnInit {
+  readonly mobilePanel = !!inject<{ mobilePanel?: boolean }>(MAT_DIALOG_DATA, { optional: true })?.mobilePanel;
   salvando = false;
   carregandoUsuarios = false;
   usuarios: Usuario[] = [];

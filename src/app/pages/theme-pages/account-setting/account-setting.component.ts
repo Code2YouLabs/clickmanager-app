@@ -1,3 +1,9 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
+import { ViewModeToggleComponent } from 'src/app/components/view-mode-toggle/view-mode-toggle.component';
+import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -24,6 +30,7 @@ import { AppNotificacoesComponent } from '../../notificacoes/notificacoes.compon
   selector: 'app-account-setting',
   standalone: true,
   imports: [
+    PageCardComponent, SectionCardComponent, ViewModeToggleComponent, MobileTotalBarComponent,
     CommonModule,
     MatCardModule,
     MatIconModule,
@@ -43,6 +50,33 @@ import { AppNotificacoesComponent } from '../../notificacoes/notificacoes.compon
 })
 export class AppAccountSettingComponent implements OnInit, OnDestroy {
   
+  isMobile = false;
+  salvando = false;
+  mobileSection: 'dados' | 'endereco' | 'foto' | 'senha' | null = 'dados';
+  readonly mobileTabs = [
+    { value: 'conta', label: 'Conta' },
+    { value: 'preferencias', label: 'Preferências' },
+    { value: 'notificacoes', label: 'Notificações' }
+  ];
+  private readonly responsiveSub = new Subscription();
+  get mobileTab(): string { return this.mobileTabs[this.selectedTabIndex]?.value || 'conta'; }
+  selecionarAbaMobile(value: string): void {
+    const index = this.mobileTabs.findIndex(tab => tab.value === value);
+    if (index >= 0) this.selectedTabIndex = index;
+  }
+  expandirSecao(section: 'dados' | 'endereco' | 'foto' | 'senha', expanded: boolean): void {
+    this.mobileSection = expanded ? section : this.mobileSection === section ? null : this.mobileSection;
+  }
+  salvarMobile(): void {
+    if (this.salvando) return;
+    if (this.form.invalid) {
+      if (this.form.get('nome')?.invalid || this.form.get('telefone')?.invalid) this.mobileSection = 'dados';
+      else if (this.form.get('enderecoRequest')?.invalid) this.mobileSection = 'endereco';
+      else this.mobileSection = 'senha';
+    } else if (this.form.get('novaSenha')?.value !== this.form.get('confirmarNovaSenha')?.value) this.mobileSection = 'senha';
+    this.salvar();
+  }
+
   readonly IMAGEM_PADRAO = 'assets/images/profile/user-1.jpg';
   form!: FormGroup;
   imagemPreview: string | null = null;
@@ -63,7 +97,11 @@ export class AppAccountSettingComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private authService: AuthService,
-  ) {}
+    breakpoints?: BreakpointObserver
+  ) {
+    if (breakpoints) this.responsiveSub.add(breakpoints.observe(MOBILE_FOUNDATION_QUERY)
+      .subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches));
+  }
 
   ngOnInit(): void {
     this.form = this.criarFormulario();
@@ -97,6 +135,7 @@ export class AppAccountSettingComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.responsiveSub.unsubscribe();
     this.usuarioSub?.unsubscribe();
     this.queryParamsSub?.unsubscribe();
   }
@@ -166,8 +205,10 @@ export class AppAccountSettingComponent implements OnInit, OnDestroy {
 
     const formData = this.montarFormData();
 
+    this.salvando = true;
     this.accountService.atualizarDadosUsuario(userId, formData).subscribe({
       next: () => {
+        this.salvando = false;
         this.authService.carregarUsuarioCompleto();
         this.toastr.success('Perfil atualizado com sucesso!');
         this.form.patchValue({
@@ -176,7 +217,7 @@ export class AppAccountSettingComponent implements OnInit, OnDestroy {
           confirmarNovaSenha: ''
         });
       },
-      error: () => this.toastr.error('Erro ao salvar dados.')
+      error: () => { this.salvando = false; this.toastr.error('Erro ao salvar dados.'); }
     });
   }
 
