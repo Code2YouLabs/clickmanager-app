@@ -1,3 +1,4 @@
+import { LinksShareDialogComponent } from '../../components/share-dialog/links-share-dialog.component';
 import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
 import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
 import { Subject, takeUntil } from 'rxjs';
@@ -51,6 +52,8 @@ import { LinksService } from '../../services/links.service';
 import { buildMailtoUrl, buildTelefoneUrl, buildWhatsappUrl, normalizarTelefoneParaUrl } from '../../utils/links-item-url.util';
 import { buildClickLinkPublicUrl } from '../../utils/links-url.util';
 
+type MobileLinkSection = 'geral' | 'links' | 'aparencia';
+
 interface LinkEmpresaSugestao extends PaginaLinksItemRequest {
   origem: string;
 }
@@ -80,6 +83,25 @@ interface LinkEmpresaSugestao extends PaginaLinksItemRequest {
 })
 export class LinksEditorComponent implements OnInit, OnDestroy {
   isMobile = false;
+  mobileSection: MobileLinkSection | null = 'geral';
+
+  setMobileSection(section: MobileLinkSection, expanded: boolean): void {
+    this.mobileSection = expanded ? section : null;
+  }
+
+  get geralInvalida(): boolean { return this.tituloControl.invalid || this.descricaoControl.invalid; }
+
+  get aparenciaInvalida(): boolean {
+    return ['tema', 'corPrincipal', 'corFundo', 'formatoBotao'].some(name => this.form.get(name)?.invalid);
+  }
+
+  compartilharMobile(): void {
+    if (!this.pagina || !this.urlPublica()) return;
+    openMobileSidePanel(this.dialog, LinksShareDialogComponent, {
+      data: { titulo: this.pagina.titulo, url: this.urlPublica(), slug: this.identidade?.slug || '', mobilePanel: true },
+    });
+  }
+
   private readonly destroy$ = new Subject<void>();
   ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
   pagina: PaginaLinksDetalhe | null = null;
@@ -148,6 +170,8 @@ export class LinksEditorComponent implements OnInit, OnDestroy {
     breakpoints?: BreakpointObserver
   ) {
     breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+    const state = this.router.getCurrentNavigation?.()?.extras.state;
+    if (!this.isNova && state?.['clickLinkMobileSection'] === 'links') this.mobileSection = 'links';
   }
 
   ngOnInit(): void {
@@ -233,16 +257,19 @@ export class LinksEditorComponent implements OnInit, OnDestroy {
     ];
   }
 
-  salvarOuCriar(): void {
+  salvarOuCriar(continuarEmLinks = false): void {
     if (this.salvandoPagina || this.semPermissao || this.erro || !this.podeEditarPagina()) {
       return;
     }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.toastr.warning('Informe um título válido para a página.');
+      if (this.isMobile) this.mobileSection = this.tituloControl.invalid || this.descricaoControl.invalid ? 'geral' : 'aparencia';
+      this.toastr.warning(this.isMobile && !this.tituloControl.invalid
+        ? (this.descricaoControl.invalid ? 'Revise a descrição da página.' : 'Revise as configurações de aparência.')
+        : 'Informe um título válido para a página.');
       return;
     }
-    this.isNova ? this.criarPagina() : this.salvarPagina();
+    this.isNova ? this.criarPagina(continuarEmLinks) : this.salvarPagina();
   }
 
   salvarPagina(): void {
@@ -258,14 +285,18 @@ export class LinksEditorComponent implements OnInit, OnDestroy {
     });
   }
 
-  criarPagina(): void {
+  criarPagina(continuarEmLinks = false): void {
     if (this.salvandoPagina) return;
     this.salvandoPagina = true;
     this.linksService.criarPagina(this.payloadPagina()).subscribe({
       next: (pagina) => {
         this.salvandoPagina = false;
         this.toastr.success('Página criada.');
-        this.router.navigate(['/page/links', pagina.id]);
+        if (this.isMobile && continuarEmLinks) {
+          this.router.navigate(['/page/links', pagina.id], { state: { clickLinkMobileSection: 'links' } });
+        } else {
+          this.router.navigate(['/page/links', pagina.id]);
+        }
       },
       error: (error) => this.tratarErro(error, 'Não foi possível criar a página.'),
     });

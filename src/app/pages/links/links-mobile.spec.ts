@@ -6,7 +6,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { TablerIconsModule } from 'angular-tabler-icons';
 import * as TablerIcons from 'angular-tabler-icons/icons';
-import { BehaviorSubject, of, Subject } from 'rxjs';
+import { BehaviorSubject, of, Subject, throwError } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { AuthService } from 'src/app/services/auth.service';
 import { PresencaPublicaService } from '../config/presenca-publica/presenca-publica.service';
@@ -62,6 +62,46 @@ describe('ClickLink — fundação mobile', () => {
     await create(LinksEditorComponent); fixture.componentInstance.tituloControl.setValue('Prévia atual'); fixture.componentInstance.visualizarMobile(); await settle(); expect(document.querySelector('.mobile-side-panel')).not.toBeNull(); expect(dialog().openDialogs[0].componentInstance.data.titulo).toBe('Prévia atual'); document.querySelector<HTMLButtonElement>('.links-preview-dialog__bar button')!.click(); await settle(); expect(api.editarPagina).not.toHaveBeenCalled();
   });
 
+
+  for (const nova of [false, true]) it(`inicia ${nova ? 'criação' : 'edição'} em Geral e navega sem perder controles nem salvar`, async () => {
+    snapshot.routeConfig.path = nova ? 'nova' : ':id'; await create(LinksEditorComponent); const c = fixture.componentInstance as LinksEditorComponent;
+    const sections = root().querySelectorAll('[data-mobile-section]'); expect(sections.length).toBe(3); expect(root().querySelector('mat-tab-group')).toBeNull(); expect(c.mobileSection).toBe('geral');
+    const field = root().querySelector<HTMLInputElement>('[data-mobile-section="geral"] app-input-texto-restrito input')!; const control = c.tituloControl;
+    field.value = 'Título em edição'; field.dispatchEvent(new Event('input')); fixture.detectChanges();
+    root().querySelector<HTMLButtonElement>('[data-mobile-section="aparencia"] .section-card__toggle')!.click(); await settle(); expect(c.mobileSection).toBe('aparencia'); expect(root().querySelector<HTMLElement>('[data-mobile-section="geral"] .section-card__body')!.hidden).toBeTrue();
+    const picker = root().querySelector<HTMLInputElement>('[aria-label="Selecionar cor de destaque"]')!; picker.value = '#123abc'; picker.dispatchEvent(new Event('input')); await settle(); expect(c.corPrincipalControl.value).toBe('#123ABC');
+    root().querySelector<HTMLButtonElement>('[data-mobile-section="geral"] .section-card__toggle')!.click(); await settle(); expect(c.tituloControl).toBe(control); expect(root().querySelector('[data-mobile-section="geral"] app-input-texto-restrito input')).toBe(field); expect(field.value).toBe('Título em edição'); expect(c.corPrincipalControl.value).toBe('#123ABC');
+    root().querySelector<HTMLButtonElement>('[data-mobile-section="geral"] .section-card__toggle')!.click(); await settle(); expect(c.mobileSection).toBeNull(); expect(root().querySelectorAll('.section-card__body[hidden]').length).toBe(3); expect(api.criarPagina).not.toHaveBeenCalled(); expect(api.editarPagina).not.toHaveBeenCalled();
+  });
+  it('mantém identidade global, logo compacto e destino Gerenciar dados da empresa', async () => {
+    await create(LinksEditorComponent); expect(root().querySelector('.links-identity__main strong')!.textContent).toBe(identidade.nome); expect(root().querySelector<HTMLAnchorElement>('.links-identity a')!.getAttribute('href')).toBe('/page/empresa');
+    expect(root().querySelectorAll('.links-identity').length).toBe(1); expect(root().querySelectorAll('app-mobile-total-bar').length).toBe(1); expect(root().querySelectorAll('app-section-card').length).toBe(3);
+  });
+  it('Links oferece primeiro salvamento com validação e encaminha à edição com a seção indicada', async () => {
+    snapshot.routeConfig.path = 'nova'; const response = new Subject<any>(); api.criarPagina.and.returnValue(response); await create(LinksEditorComponent); const c = fixture.componentInstance as LinksEditorComponent;
+    root().querySelector<HTMLButtonElement>('[data-mobile-section="links"] .section-card__toggle')!.click(); await settle(); expect(root().textContent).toContain('Primeiro, salve sua página');
+    c.tituloControl.setValue(''); fixture.detectChanges(); root().querySelector<HTMLButtonElement>('.links-mobile-save-first button')!.click(); await settle(); expect(api.criarPagina).not.toHaveBeenCalled(); expect(c.mobileSection).toBe('geral'); expect(c.tituloControl.touched).toBeTrue(); expect(root().querySelector('[data-mobile-section="geral"] mat-error')!.textContent).toContain('Campo obrigatório');
+    c.form.patchValue({ titulo: 'Nova página', tema: 'ESCURO', corPrincipal: '#123ABC', corFundo: '#000000', formatoBotao: 'SUAVE' }); c.setMobileSection('links', true); await settle(); root().querySelector<HTMLButtonElement>('.links-mobile-save-first button')!.click(); fixture.detectChanges(); c.salvarOuCriar(true); expect(api.criarPagina).toHaveBeenCalledTimes(1); expect(root().querySelector<HTMLButtonElement>('.links-mobile-save-first button')!.disabled).toBeTrue();
+    expect(api.criarPagina).toHaveBeenCalledWith(jasmine.objectContaining({ titulo: 'Nova página', tema: 'ESCURO', corPrincipal: '#123ABC', corFundo: '#000000', formatoBotao: 'SUAVE' })); response.next(pagina); response.complete(); await settle(); expect(navigate).toHaveBeenCalledWith(['/page/links', 7], { state: { clickLinkMobileSection: 'links' } }); expect(api.alterarPublicacao).not.toHaveBeenCalled();
+  });
+  it('falha no primeiro salvamento mantém valores e permite tentar novamente sem herdar continuidade no Salvar comum', async () => {
+    snapshot.routeConfig.path = 'nova'; api.criarPagina.and.returnValue(throwError(() => ({ status: 500 }))); await create(LinksEditorComponent); const c = fixture.componentInstance as LinksEditorComponent; c.form.patchValue({ titulo: 'Minha página', descricao: 'Conteúdo preservado', corFundo: '#AABBCC' }); c.setMobileSection('links', true); await settle(); root().querySelector<HTMLButtonElement>('.links-mobile-save-first button')!.click(); await settle(); expect(c.salvandoPagina).toBeFalse(); expect(c.descricaoControl.value).toBe('Conteúdo preservado'); expect(c.corFundoControl.value).toBe('#AABBCC'); expect(c.mobileSection).toBe('links'); expect(navigate).not.toHaveBeenCalled();
+    api.criarPagina.and.returnValue(of(pagina)); c.salvarOuCriar(); await settle(); expect(navigate).toHaveBeenCalledWith(['/page/links', 7]); expect(api.criarPagina).toHaveBeenCalledTimes(2);
+  });
+  it('aparência continua acessível com Geral inválida e identifica a seção de cada erro', async () => {
+    await create(LinksEditorComponent); const c = fixture.componentInstance as LinksEditorComponent; c.tituloControl.setValue(''); c.setMobileSection('aparencia', true); await settle(); expect(c.mobileSection).toBe('aparencia'); expect(root().querySelector('[data-mobile-section="geral"] .section-card__toggle')!.textContent).toContain('Revise');
+    c.tituloControl.setValue('Título válido'); c.corPrincipalControl.setValue('inválida'); c.corPrincipalControl.markAsTouched(); c.setMobileSection('geral', true); await settle(); expect(root().querySelector('[data-mobile-section="aparencia"] .section-card__toggle')!.textContent).toContain('Revise'); c.salvarOuCriar(); await settle(); expect(c.mobileSection).toBe('aparencia'); expect(root().querySelector('[data-mobile-section="aparencia"] mat-error')!.textContent).toContain('#RRGGBB'); expect(api.editarPagina).not.toHaveBeenCalled();
+  });
+  it('prévia da nova página mantém formulário ainda não salvo e usa o renderer/painel existentes', async () => {
+    snapshot.routeConfig.path = 'nova'; await create(LinksEditorComponent); const c = fixture.componentInstance as LinksEditorComponent; c.form.patchValue({ titulo: 'Rascunho', descricao: 'Sem salvar', tema: 'ESCURO', corPrincipal: '#123ABC', corFundo: '#000000', formatoBotao: 'QUADRADO' }); c.setMobileSection('aparencia', true); await settle(); expect(root().querySelector('app-links-public-preview')).toBeNull(); root().querySelector<HTMLButtonElement>('.links-mobile-preview')!.click(); await settle(); expect(document.querySelector('.mobile-side-panel__header')!.textContent).toContain('Prévia da página'); expect(document.querySelectorAll('.mobile-side-panel app-links-public-preview').length).toBe(1); expect(dialog().openDialogs[0].componentInstance.data).toEqual(jasmine.objectContaining({ titulo: 'Rascunho', descricao: 'Sem salvar', tema: 'ESCURO', corPrincipal: '#123ABC', corFundo: '#000000', formatoBotao: 'QUADRADO' }));
+    document.querySelector<HTMLButtonElement>('.links-preview-dialog__bar button')!.click(); await settle(); expect(c.tituloControl.value).toBe('Rascunho'); expect(c.mobileSection).toBe('aparencia'); expect(api.criarPagina).not.toHaveBeenCalled(); expect(api.editarPagina).not.toHaveBeenCalled();
+  });
+  it('Links existente mantém o DataTable e abre edição pelo menu, sem salvar o formulário ao expandir', async () => {
+    await create(LinksEditorComponent); root().querySelector<HTMLButtonElement>('[data-mobile-section="links"] .section-card__toggle')!.click(); await settle(); expect(root().querySelector('.links-mobile-save-first')).toBeNull(); expect(root().querySelector('.links-mobile-add')).not.toBeNull(); root().querySelector<HTMLButtonElement>('.links-item__menu')!.click(); await settle(); action('Editar').click(); await settle(); expect(dialog().openDialogs[0].componentInstance.data.item.id).toBe(3); expect(api.editarPagina).not.toHaveBeenCalled();
+  });
+  it('compartilhamento permanece em Geral pelo painel reutilizável sem publicar a página', async () => {
+    await create(LinksEditorComponent); root().querySelector<HTMLButtonElement>('.links-mobile-share')!.click(); await settle(); expect(document.querySelector('.mobile-side-panel app-links-share-panel')).not.toBeNull(); expect(dialog().openDialogs[0].componentInstance.data.url).toBe(fixture.componentInstance.urlPublica()); expect(api.editarPagina).not.toHaveBeenCalled(); expect(api.alterarPublicacao).not.toHaveBeenCalled();
+  });
   for (const width of [360, 390, 430]) for (const kind of ['item', 'compartilhar', 'preview']) it(`painel ${kind} não transborda em ${width}px`, async () => {
     if (kind === 'compartilhar') { await create(LinksListaComponent); fixture.componentInstance.compartilhar(pagina); }
     else { await create(LinksEditorComponent); if (kind === 'item') fixture.componentInstance.abrirItem(item); else fixture.componentInstance.visualizarMobile(); }
@@ -77,9 +117,17 @@ describe('ClickLink — fundação mobile', () => {
         if (component === LinksEditorComponent) expect(doc.querySelector('.mobile-total-bar')!.getBoundingClientRect().bottom).toBeLessThanOrEqual(820); if (component === LinksAnalyticsComponent) expect(doc.querySelector('.links-ranking-item')).not.toBeNull();
       } else { expect(doc.querySelector('app-mobile-fab-action')).toBeNull(); expect(doc.querySelector('app-mobile-total-bar')).toBeNull(); if (component === LinksEditorComponent) expect(doc.querySelector('.page-card__footer')).not.toBeNull(); else expect(doc.querySelector('table')).not.toBeNull(); }
     } finally { frame.remove(); }
-    if (component === LinksEditorComponent && width <= 760) for (const tab of [1, 2, 3]) {
-      fixture.componentInstance.abaSelecionada = tab; await settle(); const tabFrame = frameCopy(root(), width);
-      try { expect(tabFrame.contentDocument!.documentElement.scrollWidth).toBeLessThanOrEqual(width); } finally { tabFrame.remove(); }
+    if (component === LinksEditorComponent && width <= 760) for (const section of ['geral', 'links', 'aparencia']) {
+      fixture.componentInstance.setMobileSection(section, true); await settle(); const tabFrame = frameCopy(root(), width);
+      try { const doc = tabFrame.contentDocument!; expect(doc.documentElement.scrollWidth).toBeLessThanOrEqual(width);
+        expect(doc.querySelector('mat-tab-group')).toBeNull(); expect(doc.querySelectorAll('.section-card__toggle[aria-expanded="true"]').length).toBe(1);
+        if (section === 'aparencia') {
+          for (const inputId of ['clicklink-primary-input', 'clicklink-background-input']) {
+            const field = doc.getElementById(inputId)!; const label = doc.querySelector(`label[for="${inputId}"]`)!; expect(label.getBoundingClientRect().bottom).toBeLessThanOrEqual(field.getBoundingClientRect().top);
+          }
+          expect(doc.querySelector<HTMLInputElement>('[type="color"]')!.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+        }
+      } finally { tabFrame.remove(); }
     }
   });
 });

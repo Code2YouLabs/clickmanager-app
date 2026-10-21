@@ -1,6 +1,6 @@
 <div class="links-preview-dialog" [class.mobile-side-panel__layout]="mobilePanel">
   <div class="links-preview-dialog__bar" [class.mobile-side-panel__header]="mobilePanel">
-    <strong>Visualizar</strong>
+    <strong>{{ mobilePanel ? 'Prévia da página' : 'Visualizar' }}</strong>
     <button mat-icon-button type="button" (click)="fechar()" aria-label="Fechar visualização">
       <mat-icon>close</mat-icon>
     </button>
