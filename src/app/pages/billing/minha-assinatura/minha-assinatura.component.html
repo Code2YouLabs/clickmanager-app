@@ -1,7 +1,7 @@
 <app-page-card
   titulo="Minha assinatura"
   subtitulo="Consulte seu plano, cobrança e histórico de pagamentos."
-  [botaoTexto]="pageHeaderActionLabel"
+  [botaoTexto]="isMobile ? undefined : pageHeaderActionLabel"
   botaoIcone="swap_horiz"
   [botaoRota]="['/billing/pagamento']">
 
@@ -54,7 +54,7 @@
           }
         </div>
 
-        <app-section-card titulo="Informações da assinatura">
+        <app-section-card [mobilePlain]="isMobile" titulo="Informações da assinatura">
           <div class="assinatura-status-strip" *ngIf="resumo">
             <span class="assinatura-status-chip" [ngClass]="classeStatus">{{ statusAssinatura }}</span>
             <div class="status-texts">
@@ -98,7 +98,7 @@
         </app-section-card>
       </section>
 
-      <app-section-card titulo="Recursos do plano">
+      <app-section-card [mobilePlain]="isMobile" titulo="Recursos do plano">
         @if (beneficios.length || limites.length) {
           <div class="feature-list">
             <div class="feature-item" *ngFor="let b of beneficios">
@@ -118,7 +118,7 @@
         }
       </app-section-card>
 
-      <app-section-card titulo="Histórico de pagamentos" subtitulo="Use esta tabela apenas para consulta das cobranças já geradas.">
+      <app-section-card [mobilePlain]="isMobile" titulo="Histórico de pagamentos" subtitulo="Use esta tabela apenas para consulta das cobranças já geradas.">
         <app-data-table
           tableLabel="Histórico de pagamentos"
           [columns]="pagamentoColumns"
@@ -196,5 +196,10 @@
         </app-data-table>
       </app-section-card>
     </div>
+  }
+  @if (isMobile && pageHeaderActionLabel && !loading && !error && !acessoNegado) {
+    <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" bottomAnchorSelector=".mobile-bottom-nav"
+      bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+      [actionText]="pageHeaderActionLabel || ''" actionIcon="swap_horiz" [actionAriaLabel]="pageHeaderActionLabel || ''" (action)="irParaPlanos()" />
   }
 </app-page-card>

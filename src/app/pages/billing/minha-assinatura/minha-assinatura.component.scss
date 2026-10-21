@@ -1,3 +1,4 @@
+@use '../../../shared/responsive/mobile-list-item' as mobile-item;
 .assinatura-page {
   display: flex;
   flex-direction: column;
@@ -319,4 +320,13 @@
   .assinatura-metrics {
     grid-template-columns: 1fr;
   }
+}
+
+@media (max-width: 760px) {
+  .assinatura-payment-item { @include mobile-item.surface; box-shadow: none; gap: 8px;
+    &.assinatura-payment-item--pending { border-color: #f3c785; background: #fffaf0; }
+  }
+  .assinatura-payment-item button { min-height: 44px; }
+  .assinatura-meta .meta-row { min-width: 0; }
+  .assinatura-meta dd { overflow-wrap: anywhere; }
 }
