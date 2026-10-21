@@ -1,3 +1,8 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { ListFilterBarComponent } from 'src/app/components/list-filter-bar/list-filter-bar.component';
+import { DataTableFilterState } from 'src/app/components/data-table/data-table.models';
+import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -37,6 +42,7 @@ const trimRequired: ValidatorFn = (control: AbstractControl): ValidationErrors |
   selector: 'app-suporte',
   standalone: true,
   imports: [
+    ListFilterBarComponent,
     CommonModule,
     RouterModule,
     ReactiveFormsModule,
@@ -53,6 +59,19 @@ const trimRequired: ValidatorFn = (control: AbstractControl): ValidationErrors |
 })
 export class SuporteComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
+  isMobile = false;
+  mobileLista = true;
+  private primeiraRota = true;
+
+  get filtrosMobile() {
+    return [{ key: 'status', label: 'Status', value: this.statusControl.value === 'TODOS' ? '' : this.statusControl.value, options: this.statusOptions.filter(option => option.value !== 'TODOS') }];
+  }
+
+  aplicarFiltrosMobile(state: DataTableFilterState): void {
+    const status = this.statusOptions.find(option => option.value === state['status'])?.value ?? 'TODOS';
+    this.statusControl.setValue(status);
+  }
+
   private readonly tamanhoPagina = 50;
   private detalheRequestSeq = 0;
   private routeChamadoId: number | null = null;
@@ -95,8 +114,12 @@ export class SuporteComponent implements OnInit {
     private readonly toastr: ToastrService,
     private readonly router: Router,
     private readonly route: ActivatedRoute,
-    private readonly fb: FormBuilder
-  ) {}
+    private readonly fb: FormBuilder,
+    breakpoints?: BreakpointObserver
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+  }
 
   ngOnInit(): void {
     this.statusControl.valueChanges
@@ -113,6 +136,7 @@ export class SuporteComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe((id) => {
+        if (this.primeiraRota) { this.mobileLista = !id; this.primeiraRota = false; }
         this.routeChamadoId = id;
         if (!this.listaInicialCarregada && !this.carregandoLista) {
           this.carregarListaInicial(id);
@@ -123,14 +147,14 @@ export class SuporteComponent implements OnInit {
   }
 
   abrirNovoChamado(): void {
-    const dialogRef = this.dialog.open(ChamadoSuporteDialogComponent, {
-      width: '720px',
-      maxWidth: '95vw',
-      disableClose: true
-    });
+    const config = { width: '720px', maxWidth: '95vw', disableClose: true, data: { mobilePanel: this.isMobile } };
+    const dialogRef = this.isMobile
+      ? openMobileSidePanel<ChamadoSuporteDialogComponent, { mobilePanel: boolean }, ChamadoSuporteDetalhe>(this.dialog, ChamadoSuporteDialogComponent, config)
+      : this.dialog.open<ChamadoSuporteDialogComponent, { mobilePanel: boolean }, ChamadoSuporteDetalhe>(ChamadoSuporteDialogComponent, config);
 
     dialogRef.afterClosed().subscribe((chamado?: ChamadoSuporteDetalhe | null) => {
       if (!chamado?.id) return;
+      this.mobileLista = false;
       this.chamadoSelecionado = chamado;
       this.atualizarItemNaLista(chamado);
       this.router.navigate(['/page/suporte', chamado.id], { replaceUrl: true });
@@ -143,7 +167,9 @@ export class SuporteComponent implements OnInit {
   }
 
   selecionarChamado(item: ChamadoSuporteListaItem): void {
-    if (!item?.id || item.id === this.routeChamadoId) return;
+    if (!item?.id) return;
+    this.mobileLista = false;
+    if (item.id === this.routeChamadoId) return;
     this.router.navigate(['/page/suporte', item.id], { replaceUrl: true });
   }
 

@@ -1,7 +1,9 @@
+import { OverlayContainer } from '@angular/cdk/overlay';
+import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
-import { MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
 import { of, Subject, throwError } from 'rxjs';
 import { ChamadoSuporteDialogComponent } from './chamado-suporte-dialog.component';
@@ -15,7 +17,7 @@ describe('ChamadoSuporteDialogComponent', () => {
   let dialogRef: jasmine.SpyObj<MatDialogRef<ChamadoSuporteDialogComponent>>;
   let toastr: jasmine.SpyObj<ToastrService>;
 
-  function setup(): void {
+  function setup(mobilePanel = false): void {
     service = jasmine.createSpyObj<SuporteService>('SuporteService', ['criar$']);
     dialogRef = jasmine.createSpyObj<MatDialogRef<ChamadoSuporteDialogComponent>>('MatDialogRef', ['close']);
     toastr = jasmine.createSpyObj<ToastrService>('ToastrService', ['success', 'error']);
@@ -24,6 +26,7 @@ describe('ChamadoSuporteDialogComponent', () => {
     TestBed.configureTestingModule({
       imports: [ChamadoSuporteDialogComponent, NoopAnimationsModule],
       providers: [
+        { provide: MAT_DIALOG_DATA, useValue: { mobilePanel } },
         { provide: SuporteService, useValue: service },
         { provide: MatDialogRef, useValue: dialogRef },
         { provide: ToastrService, useValue: toastr },
@@ -34,6 +37,42 @@ describe('ChamadoSuporteDialogComponent', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
   }
+
+
+  it('mobile reutiliza shell lateral, mantém submit e protege cancelar/fechar durante envio', () => {
+    setup(true);
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.classList.contains('mobile-side-panel__layout')).toBeTrue();
+    expect(root.querySelector('.mobile-side-panel__header h2')?.textContent).toBe('Novo chamado');
+    expect(root.querySelector('.mobile-side-panel__body form')?.id).toBe('novo-chamado-form');
+    expect(root.querySelector('.mobile-side-panel__footer [type="submit"]')?.getAttribute('form')).toBe('novo-chamado-form');
+    component.salvando = true; fixture.detectChanges();
+    expect(root.querySelector<HTMLButtonElement>('[aria-label="Fechar novo chamado"]')!.disabled).toBeTrue();
+    component.cancelar(); expect(dialogRef.close).not.toHaveBeenCalled();
+    component.salvando = false; fixture.detectChanges(); root.querySelector<HTMLButtonElement>('[aria-label="Fechar novo chamado"]')!.click();
+    expect(dialogRef.close).toHaveBeenCalledWith(null);
+  });
+
+
+  for (const width of [360, 390, 430]) it(`painel compartilhado mantém formulário e ações acessíveis em ${width}px`, async () => {
+    setup(true);
+    const ref = openMobileSidePanel(TestBed.inject(MatDialog), ChamadoSuporteDialogComponent, { data: { mobilePanel: true }, disableClose: true });
+    fixture.detectChanges(); await fixture.whenStable();
+    const pane = document.querySelector<HTMLElement>('.mobile-side-panel')!.cloneNode(true) as HTMLElement;
+    pane.style.cssText = 'position:fixed;top:0;right:0;width:100vw;height:100dvh;max-width:100vw;max-height:100dvh';
+    const frame = document.createElement('iframe'); frame.style.cssText = `width:${width}px;height:900px;border:0`; document.body.appendChild(frame);
+    try {
+      const doc = frame.contentDocument!; const style = doc.createElement('style');
+      style.textContent = Array.from(document.styleSheets).map(sheet => Array.from(sheet.cssRules).map(rule => rule.cssText).join('\n')).join('\n') + '\nbody { margin:0; } .mobile-side-panel .mat-mdc-dialog-inner-container { animation:none!important;transform:none!important; }';
+      doc.head.appendChild(style); doc.body.appendChild(pane);
+      const body = doc.querySelector<HTMLElement>('.mobile-side-panel__body')!;
+      expect(doc.documentElement.scrollWidth).toBeLessThanOrEqual(width);
+      expect(body.scrollWidth).toBeLessThanOrEqual(body.clientWidth);
+      expect(frame.contentWindow!.getComputedStyle(body).overflowY).toBe('auto');
+      expect(doc.querySelector('.mobile-side-panel__footer')!.getBoundingClientRect().bottom).toBeLessThanOrEqual(900);
+      expect(doc.querySelector('[aria-label="Fechar novo chamado"]')!.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+    } finally { frame.remove(); ref.close(); await fixture.whenStable(); TestBed.inject(OverlayContainer).ngOnDestroy(); }
+  });
 
   afterEach(() => {
     fixture?.destroy();

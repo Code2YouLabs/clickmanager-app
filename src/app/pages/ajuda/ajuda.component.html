@@ -3,14 +3,16 @@
   subtitulo="Encontre respostas e guias para usar o ClickManager."
   [mostrarDivisor]="true"
   [contentPadding]="false">
+  @if (!isMobile) {
   <div page-header-actions>
     <button mat-flat-button color="primary" type="button" [routerLink]="suporteRoute">
       <mat-icon>support_agent</mat-icon>
       Falar com o suporte
     </button>
   </div>
+  }
 
-  <div class="ajuda-content">
+  <div class="ajuda-content" id="central-ajuda-content">
     <section class="ajuda-toolbar" aria-label="Busca e atalhos da Central de Ajuda">
       <app-input-pesquisa
         class="ajuda-search"
@@ -34,7 +36,7 @@
       }
     </section>
 
-    <app-section-card title="Guias" subtitle="Abra um tópico para ver passos e orientações.">
+    <app-section-card [mobilePlain]="true" title="Guias" subtitle="Abra um tópico para ver passos e orientações.">
       @if (filteredSecoes.length) {
         <mat-accordion multi class="ajuda-accordion">
           @for (secao of filteredSecoes; track trackBySecao($index, secao)) {
@@ -134,4 +136,10 @@
       }
     </app-section-card>
   </div>
+  @if (isMobile) {
+    <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true"
+      actionForm="central-ajuda-content" bottomAnchorSelector=".mobile-bottom-nav"
+      bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+      actionText="Falar com o suporte" actionIcon="support_agent" actionAriaLabel="Falar com o suporte" (action)="abrirSuporte()" />
+  }
 </app-page-card>

@@ -1,3 +1,4 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -26,6 +27,7 @@ describe('AjudaComponent', () => {
   let usuario$: BehaviorSubject<any>;
 
   function setup(options: {
+    mobile?: boolean;
     tipoEmpresa?: TipoEmpresa;
     features?: Record<string, boolean>;
     fragment?: string | null;
@@ -60,6 +62,7 @@ describe('AjudaComponent', () => {
     TestBed.configureTestingModule({
       imports: [AjudaComponent, NoopAnimationsModule],
       providers: [
+        { provide: BreakpointObserver, useValue: { observe: () => of({ matches: !!options.mobile, breakpoints: {} }), isMatched: () => !!options.mobile } },
         { provide: AuthService, useValue: authService },
         { provide: FeatureFlagService, useValue: featureFlagService },
         { provide: JornadaService, useValue: jornadaService },
@@ -80,6 +83,37 @@ describe('AjudaComponent', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
   }
+
+
+  it('mobile reutiliza rodapé global para suporte e preserva pesquisa e navegação dos tópicos', () => {
+    setup({ mobile: true });
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('[page-header-actions]')).toBeNull();
+    expect(root.querySelectorAll('app-mobile-total-bar').length).toBe(1);
+    root.querySelector<HTMLButtonElement>('.mobile-total-bar__cta')!.click();
+    expect(router.navigate).toHaveBeenCalledWith(['/page/suporte']);
+    component.onPesquisar('zzzzzz'); fixture.detectChanges(); expect(root.querySelector('.empty-state')).not.toBeNull();
+    component.limparBusca(); fixture.detectChanges(); expect(root.querySelector('.ajuda-accordion')).not.toBeNull();
+  });
+
+  for (const width of [360, 390, 430, 1024, 1440]) it(`preserva conteúdo e ações em ${width}px sem overflow mobile`, async () => {
+    setup({ mobile: width <= 760 }); await fixture.whenStable(); fixture.detectChanges();
+    const frame = document.createElement('iframe'); frame.style.cssText = `width:${width}px;height:900px;border:0`; document.body.appendChild(frame);
+    try {
+      const doc = frame.contentDocument!; const style = doc.createElement('style');
+      style.textContent = Array.from(document.styleSheets).map(sheet => { try { return Array.from(sheet.cssRules).map(rule => rule.cssText).join('\n'); } catch { return ''; } }).join('\n') + '\nbody { margin:0; --mobile-bottom-nav-height:80px; }';
+      doc.head.appendChild(style); doc.body.appendChild(fixture.nativeElement.cloneNode(true));
+      if (width <= 760) {
+        expect(doc.documentElement.scrollWidth).toBeLessThanOrEqual(width);
+        expect(doc.querySelector('.mobile-total-bar')!.getBoundingClientRect().bottom).toBeLessThanOrEqual(820);
+        for (const button of Array.from(doc.querySelectorAll('.quick-topics button'))) expect(button.getBoundingClientRect().height).toBeGreaterThanOrEqual(44);
+        component.expandedId = component.visibleSecoes[0].id; fixture.detectChanges(); await fixture.whenStable();
+        doc.body.replaceChildren(fixture.nativeElement.cloneNode(true)); expect(doc.documentElement.scrollWidth).toBeLessThanOrEqual(width);
+      } else {
+        expect(doc.querySelector('app-mobile-total-bar')).toBeNull(); expect(doc.querySelector('[page-header-actions]')).not.toBeNull();
+      }
+    } finally { frame.remove(); }
+  });
 
   afterEach(() => {
     fixture?.destroy();

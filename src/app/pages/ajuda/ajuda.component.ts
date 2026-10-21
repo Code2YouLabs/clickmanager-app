@@ -1,3 +1,6 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
 import { CommonModule } from '@angular/common';
 import { AfterViewInit, Component, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -30,6 +33,7 @@ type AjudaQuickTopic = {
   selector: 'app-ajuda',
   standalone: true,
   imports: [
+    MobileTotalBarComponent,
     CommonModule,
     ReactiveFormsModule,
     RouterLink,
@@ -44,6 +48,7 @@ type AjudaQuickTopic = {
   styleUrls: ['./ajuda.component.scss'],
 })
 export class AjudaComponent implements OnInit, AfterViewInit, OnDestroy {
+  isMobile = false;
   readonly pesquisaControl = new FormControl('', { nonNullable: true });
   readonly suporteRoute = ['/page/suporte'];
 
@@ -68,8 +73,16 @@ export class AjudaComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly featureFlagService: FeatureFlagService,
     private readonly jornadaService: JornadaService,
     private readonly dialog: MatDialog,
-    private readonly toastr: ToastrService
-  ) {}
+    private readonly toastr: ToastrService,
+    breakpoints?: BreakpointObserver
+  ) {
+    if (breakpoints) this.subscriptions.add(breakpoints.observe(MOBILE_FOUNDATION_QUERY)
+      .subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches));
+  }
+
+  abrirSuporte(): void {
+    this.router.navigate(this.suporteRoute);
+  }
 
   ngOnInit(): void {
     this.tipoEmpresa = this.authService.getTipoEmpresa();
