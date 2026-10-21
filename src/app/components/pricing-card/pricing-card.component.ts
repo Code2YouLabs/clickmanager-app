@@ -7,12 +7,14 @@ import { PlanoPublico } from 'src/app/types/plano-publico.type';
 
 @Component({
   selector: 'app-pricing-card',
+  host: { '[class.pricing-card--mobile-compact]': 'mobileCompact' },
   standalone: true,
   imports: [CommonModule, MatCardModule, MatButtonModule, TablerIconsModule, CurrencyPipe, NgIf, NgFor],
   templateUrl: './pricing-card.component.html',
   styleUrls: ['./pricing-card.component.scss']
 })
 export class PricingCardComponent {
+  @Input() mobileCompact = false;
   @Input() plano!: PlanoPublico;
   @Input() popular: boolean = false;
   @Input() imgSrc?: string;
