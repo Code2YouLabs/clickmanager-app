@@ -25,6 +25,8 @@ export function buildGraficaMobileBottomNav(menu: NavItem[], isFeatureEnabled: (
   const dashboard = shortcut('dashboard', '/dashboards/dashboard1', 'Dashboard', 'layout-dashboard');
   const pedidos = shortcut('pedidos', '/page/grafica/comercial/pedidos', 'Pedidos', 'file-text', 'GRAFICA');
   const smartcalc = shortcut('smartcalc', '/smartcalc', 'SmartCalc', 'calculator', 'SMARTCALC');
+  const suporte = shortcut('suporte', '/page/suporte', 'Suporte', 'lifebuoy');
+  const withSupport = (items: MobileBottomNavItem[]): MobileBottomNavItem[] => suporte ? [...items, suporte] : items;
   const clientes = shortcut('clientes', '/page/cliente', 'Clientes', 'users');
   const catalogoNode = menu.find(item => !item.disabled && item.route === '/page/grafica/produtos' && item.children?.length);
   const catalogoRoutes = (catalogoNode?.children || [])
@@ -35,12 +37,12 @@ export function buildGraficaMobileBottomNav(menu: NavItem[], isFeatureEnabled: (
         startsWith: catalogoRoutes } : undefined;
   const apps: MobileBottomNavItem = { key: 'atalhos', label: 'Atalhos', icon: 'grid-dots', action: 'apps' };
   const primary = smartcalc || pedidos || catalogo || dashboard || clientes;
-  if (!primary) return [apps];
+  if (!primary) return withSupport([apps]);
   const first = (smartcalc ? [pedidos, catalogo, clientes] : [catalogo, clientes])
     .find(item => item && item.key !== primary.key && item.key !== dashboard?.key);
   if (first && dashboard && dashboard.key !== primary.key) {
-    return [first, apps, { ...primary, special: true }, dashboard];
+    return withSupport([first, apps, { ...primary, special: true }, dashboard]);
   }
   // Restricted profiles keep a real central destination; the complete menu remains in the header drawer.
-  return [apps, { ...primary, special: true }];
+  return withSupport([apps, { ...primary, special: true }]);
 }
