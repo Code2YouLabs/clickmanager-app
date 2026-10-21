@@ -248,3 +248,9 @@
     width: 100%;
   }
 }
+
+@media (max-width: 760px) {
+  .presenca-hero__main { padding: 12px; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+  .presenca-actions button { min-height: 44px; }
+  .presenca-url { overflow-wrap: anywhere; }
+}

@@ -1,5 +1,8 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { Subject, takeUntil } from 'rxjs';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
@@ -22,7 +25,10 @@ import {
   styleUrls: ['./calculadora-materiais.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CalculadoraMateriaisComponent implements OnInit {
+export class CalculadoraMateriaisComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  private readonly destroy$ = new Subject<void>();
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
   readonly buscaControl = this.fb.control('');
   readonly carregando = signal(false);
   readonly buscando = signal(false);
@@ -36,8 +42,10 @@ export class CalculadoraMateriaisComponent implements OnInit {
     private readonly fb: FormBuilder,
     private readonly service: CalculadoraMaterialService,
     private readonly router: Router,
-    private readonly toastr: ToastrService
-  ) {}
+    private readonly toastr: ToastrService,
+    breakpoints?: BreakpointObserver
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);}
 
   ngOnInit(): void {
     this.carregarHabilitados();

@@ -10,6 +10,7 @@ import { PresencaPublicaResponse, PresencaPublicaSlugDisponivelResponse } from '
 import { PresencaPublicaService } from '../presenca-publica.service';
 
 export interface AlterarEnderecoPublicoDialogData {
+  mobilePanel?: boolean;
   presenca: PresencaPublicaResponse;
   dominioPublico: string;
   urlAtual: string;
@@ -18,6 +19,7 @@ export interface AlterarEnderecoPublicoDialogData {
 type AlterarEnderecoPublicoEtapa = 'pesquisa' | 'confirmacao';
 
 @Component({
+  host: { '[class.mobile-side-panel__layout]': 'mobilePanel' },
   selector: 'app-alterar-endereco-publico-dialog',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, MaterialModule],
@@ -28,6 +30,7 @@ type AlterarEnderecoPublicoEtapa = 'pesquisa' | 'confirmacao';
   ],
 })
 export class AlterarEnderecoPublicoDialogComponent {
+  get mobilePanel(): boolean { return !!this.data.mobilePanel; }
   etapa: AlterarEnderecoPublicoEtapa = 'pesquisa';
   consultando = false;
   confirmando = false;

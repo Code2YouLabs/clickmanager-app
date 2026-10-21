@@ -104,3 +104,12 @@
     gap: 8px;
   }
 }
+
+@media (max-width: 760px) {
+  .quicklink-row, .app-row { min-width: 0; }
+  .quicklink-row { padding: 12px; border: 1px solid var(--mat-sys-outline-variant); border-radius: 8px; grid-template-columns: minmax(0, 1fr) 44px; }
+  .quicklink-row mat-form-field { grid-column: 1 / -1; min-width: 0; }
+  .quicklink-row__toggle { min-height: 44px; }
+  .quicklink-row > button { width: 44px; height: 44px; }
+  .app-row__content { min-width: 0; overflow-wrap: anywhere; }
+}

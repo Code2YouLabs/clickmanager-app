@@ -1,5 +1,9 @@
+import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { Subject, takeUntil } from 'rxjs';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import { TablerIconsModule } from 'angular-tabler-icons';
@@ -41,11 +45,14 @@ type AplicativoFormGroup = FormGroup<AplicativoForm>;
 @Component({
   selector: 'app-aplicativos-atalhos',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MaterialModule, TablerIconsModule, PageCardComponent, SectionCardComponent],
+  imports: [MobileTotalBarComponent,CommonModule, ReactiveFormsModule, MaterialModule, TablerIconsModule, PageCardComponent, SectionCardComponent],
   templateUrl: './aplicativos-atalhos.component.html',
   styleUrls: ['./aplicativos-atalhos.component.scss'],
 })
-export class AplicativosAtalhosComponent implements OnInit {
+export class AplicativosAtalhosComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  private readonly destroy$ = new Subject<void>();
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
   readonly formId = 'aplicativos-atalhos-form';
   readonly tipoEmpresa: TipoEmpresa;
   readonly aplicativosCatalogo: AplicativoCatalogo[];
@@ -65,7 +72,9 @@ export class AplicativosAtalhosComponent implements OnInit {
     private readonly authService: AuthService,
     private readonly configuracaoService: ConfiguracaoAplicativosService,
     private readonly toastr: ToastrService,
+    breakpoints?: BreakpointObserver
   ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
     this.tipoEmpresa = this.authService.getTipoEmpresa();
     this.aplicativosCatalogo = aplicativosDisponiveisParaSegmento(this.tipoEmpresa);
     this.form = this.fb.group({

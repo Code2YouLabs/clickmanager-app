@@ -1,3 +1,4 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
@@ -66,6 +67,7 @@ describe('PresencaPublicaComponent', () => {
     TestBed.configureTestingModule({
       imports: [PresencaPublicaComponent, NoopAnimationsModule],
       providers: [
+        { provide: BreakpointObserver, useValue: { observe: () => of({ matches: false, breakpoints: {} }) } },
         provideRouter([]),
         { provide: PresencaPublicaService, useValue: service },
         { provide: SiteConfigService, useValue: siteConfigService },
@@ -241,6 +243,7 @@ describe('PresencaPublicaComponent', () => {
     TestBed.configureTestingModule({
       imports: [PresencaPublicaComponent, NoopAnimationsModule],
       providers: [
+        { provide: BreakpointObserver, useValue: { observe: () => of({ matches: false, breakpoints: {} }) } },
         provideRouter([]),
         { provide: PresencaPublicaService, useValue: service },
         { provide: SiteConfigService, useValue: siteConfigService },

@@ -1,3 +1,8 @@
+import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
+import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { Subject, takeUntil } from 'rxjs';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -19,7 +24,7 @@ import { AuthService } from 'src/app/services/auth.service';
 @Component({
   selector: 'app-email-servidor',
   standalone: true,
-  imports: [
+  imports: [MobileTotalBarComponent,
     CommonModule,
     ReactiveFormsModule,
     MaterialModule,
@@ -34,6 +39,8 @@ import { AuthService } from 'src/app/services/auth.service';
   styleUrls: ['./email-servidor.component.scss'],
 })
 export class EmailServidorComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  private readonly destroy$ = new Subject<void>();
   readonly formId = 'email-servidor-form';
   readonly mensagemPadraoTeste = 'E-mail de teste do servidor de e-mail do ClickManager. Se você recebeu esta mensagem, sua configuração está funcionando.';
 
@@ -52,8 +59,10 @@ export class EmailServidorComponent implements OnInit, OnDestroy {
     private readonly emailService: EmailServidorService,
     private readonly toastr: ToastrService,
     private readonly dialog: MatDialog,
-    private readonly authService: AuthService
-  ) {}
+    private readonly authService: AuthService,
+    breakpoints?: BreakpointObserver
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);}
 
   ngOnInit(): void {
     this.form = this.fb.group({
@@ -75,6 +84,7 @@ export class EmailServidorComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.usuarioSub?.unsubscribe();
+    this.destroy$.next(); this.destroy$.complete();
   }
 
   get podeSalvar(): boolean {
@@ -127,13 +137,16 @@ export class EmailServidorComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const dialogRef = this.dialog.open(EmailServidorTesteDialogComponent, {
+    const config = {
       width: '600px',
       data: {
         emailDestino: this.emailUsuario,
         mensagemPadrao: this.mensagemPadraoTeste,
       },
-    });
+    };
+    const dialogRef = this.isMobile
+      ? openMobileSidePanel<EmailServidorTesteDialogComponent, import('./email-servidor-teste-dialog.component').EmailTesteDialogData, { emailDestino: string; mensagem: string }>(this.dialog, EmailServidorTesteDialogComponent, { ...config, data: { ...config.data, mobilePanel: true } })
+      : this.dialog.open(EmailServidorTesteDialogComponent, config);
 
     dialogRef.afterClosed().subscribe((result: { emailDestino: string; mensagem: string } | undefined) => {
       if (!result) return;
