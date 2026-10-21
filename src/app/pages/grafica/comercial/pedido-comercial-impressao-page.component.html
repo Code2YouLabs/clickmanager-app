@@ -1,0 +1,7 @@
+<app-pdf-document-page #documentPage [title]="tituloPagina" [subtitle]="subtituloPagina" [backLink]="voltarLink"
+  [loading]="carregando" [error]="erro" [pdfAvailable]="!!pdfPreviewUrl" [saveAvailable]="!!pdfBlob" [printAvailable]="!!pdfPreviewUrl"
+  [viewerLabel]="'PDF: ' + tituloFormato" (save)="salvarPdf()" (print)="imprimir()" (retry)="carregarDados()">
+  <iframe *ngIf="!carregando && !erro && pdfPreviewUrl && (!documentPage.isMobile || documentPage.inlinePdfSupported)" #pdfFrame class="pdf-frame" [src]="pdfPreviewUrl"
+    [title]="documentPage.isMobile ? 'PDF: ' + tituloFormato : 'Preview do PDF do pedido'" [attr.scrolling]="documentPage.isMobile ? null : 'no'">
+  </iframe>
+</app-pdf-document-page>

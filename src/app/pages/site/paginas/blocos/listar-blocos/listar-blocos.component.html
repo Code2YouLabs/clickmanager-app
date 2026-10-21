@@ -1,4 +1,4 @@
-<app-section-card
+<app-section-card [mobilePlain]="isMobile"
   *temPermissao="'SITE_PAGINA_BLOCOS_VER'"
   titulo="Conteúdo da página"
   subtitulo="Gerencie os blocos exibidos nesta página personalizada.">
@@ -63,10 +63,10 @@
   </app-data-table>
 </app-section-card>
 
-<mat-menu #blocoMobileMenu="matMenu">
+<mat-menu #blocoMobileMenu="matMenu" xPosition="before">
   <ng-template matMenuContent let-bloco="bloco" let-actions="actions" let-emitAction="emitAction">
     @for (action of actions; track action.id) {
-      <button mat-menu-item type="button" [disabled]="action.disabled?.(bloco)" (click)="emitAction(bloco, action.id)">
+      <button mat-menu-item type="button" [class.site-mobile-destructive]="action.id === 'excluir'" [disabled]="action.disabled?.(bloco)" (click)="emitAction(bloco, action.id)">
         @if (action.icon) {
           <mat-icon [color]="action.color || null">{{ action.icon }}</mat-icon>
         }

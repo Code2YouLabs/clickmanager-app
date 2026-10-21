@@ -1,6 +1,10 @@
+import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
+import { Subject, takeUntil } from 'rxjs';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { Router, RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
@@ -36,7 +40,10 @@ import { buildClickLinkPublicUrl } from '../../utils/links-url.util';
   templateUrl: './links-lista.component.html',
   styleUrls: ['../../links.scss', './links-lista.component.scss'],
 })
-export class LinksListaComponent implements OnInit {
+export class LinksListaComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  private readonly destroy$ = new Subject<void>();
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
   paginas: PaginaLinksResumo[] = [];
   identidade: LinksIdentidadePublica | null = null;
   presenca: PresencaPublicaResponse | null = null;
@@ -67,8 +74,11 @@ export class LinksListaComponent implements OnInit {
     private readonly authService: AuthService,
     private readonly toastr: ToastrService,
     private readonly dialog: MatDialog,
-    private readonly router: Router
-  ) {}
+    private readonly router: Router,
+    breakpoints?: BreakpointObserver
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+  }
 
   ngOnInit(): void {
     if (!this.podeVer) {
@@ -233,7 +243,7 @@ export class LinksListaComponent implements OnInit {
       this.toastr.info('Configure os dados da empresa antes de compartilhar.');
       return;
     }
-    this.dialog.open(LinksShareDialogComponent, {
+    const config = {
       width: window.innerWidth <= 640 ? '100vw' : '520px',
       maxWidth: window.innerWidth <= 640 ? '100vw' : '90vw',
       data: {
@@ -241,7 +251,9 @@ export class LinksListaComponent implements OnInit {
         url,
         slug: this.identidade?.slug || '',
       },
-    });
+    };
+    if (this.isMobile) openMobileSidePanel(this.dialog, LinksShareDialogComponent, { ...config, data: { ...config.data, mobilePanel: true } });
+    else this.dialog.open(LinksShareDialogComponent, config);
   }
 
   excluir(pagina: PaginaLinksResumo | null): void {

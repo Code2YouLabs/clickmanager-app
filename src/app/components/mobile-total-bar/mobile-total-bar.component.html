@@ -1,19 +1,65 @@
-<div class="mobile-total-bar"
-  [class.mobile-total-bar--expanded]="expanded"
+@if (reserveSpace) { <div #clearance class="mobile-total-bar__clearance" aria-hidden="true" [style.height.px]="reservedHeight()"></div> }
+<div #bar class="mobile-total-bar"
+  [class.mobile-total-bar--managed]="reserveSpace"
+  [class.mobile-total-bar--compact]="appearance === 'compact' || appearance === 'actions'"
+  [class.mobile-total-bar--actions-only]="appearance === 'actions'"
+  [class.mobile-total-bar--expanded]="expanded && !awaitingResult"
+  [class.mobile-total-bar--awaiting-result]="awaitingResult"
+  [class.mobile-total-bar--inline-details]="inlineDetails"
   [class.mobile-total-bar--attached]="attachedToBottomNav"
   [class.mobile-total-bar--static]="!expandable"
-  [style.bottom]="bottomOffset"
-  [attr.role]="expandable ? 'button' : null"
-  [attr.tabindex]="expandable ? 0 : null"
-  [attr.aria-label]="expandable ? expandAriaLabel : null"
+  [style.bottom]="resolvedBottomOffset"
+  [style.--mobile-total-visible-height]="visibleHeight()"
+  [style.--mobile-total-bottom-offset]="resolvedBottomOffset"
+  [style.--mobile-total-keyboard-inset]="keyboardInset() + 'px'"
+  [attr.role]="expandable && !inlineDetails ? 'button' : null"
+  [attr.tabindex]="expandable && !inlineDetails ? 0 : null"
+  [attr.aria-label]="expandable && !inlineDetails ? expandAriaLabel : null"
   (click)="onRootClick()"
   (keydown)="onRootKeydown($event)"
   (touchstart)="onTouchStart($event)"
   (touchend)="onTouchEnd($event)">
-  @if (expandable) {
+  @if (expandable && !inlineDetails) {
   <div class="mobile-total-bar__handle"></div>
   }
 
+  @if (inlineDetails && (expandable || awaitingResult)) {
+    <button #handle type="button" class="mobile-total-bar__handle-toggle" [disabled]="awaitingResult || !expandable"
+      [attr.aria-label]="awaitingResult ? 'Aguardando cálculo' : expandAriaLabel" [attr.aria-expanded]="expanded && !awaitingResult" [attr.aria-controls]="detailsPanelId"
+      (click)="onHandleClick($event)"
+      (pointerdown)="onHandlePointerDown($event)" (pointermove)="onHandlePointerMove($event)"
+      (pointerup)="onHandlePointerUp($event)" (pointercancel)="onHandlePointerCancel($event)"
+      (lostpointercapture)="onHandlePointerCancel($event)">
+      <span aria-hidden="true"></span>
+    </button>
+  }
+
+  @if (inlineDetails && !awaitingResult) {
+    <div #details class="mobile-total-bar__details" [class.mobile-total-bar__details--expanded]="expanded"
+      [id]="detailsPanelId" [attr.aria-hidden]="!expanded" [attr.inert]="expanded ? null : ''">
+      <div class="mobile-total-bar__details-clip">
+        <div class="mobile-total-bar__details-content">
+          <div class="mobile-total-bar__details-header"><ng-content select="[total-bar-details-header]"></ng-content></div>
+          <div class="mobile-total-bar__details-body">
+            <ng-content select="[total-bar-details]"></ng-content>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <div #controls class="mobile-total-bar__controls">
+    @if (awaitingResult) {
+      <div class="mobile-total-bar__waiting" role="status" [attr.aria-busy]="loading">
+        @if (loading) {
+          <mat-progress-spinner diameter="18" mode="indeterminate" aria-label="Calculando"></mat-progress-spinner>
+        } @else {
+          <mat-icon aria-hidden="true">calculate</mat-icon>
+        }
+        <div><strong>{{ loading ? 'Calculando...' : 'Aguardando cálculo' }}</strong></div>
+      </div>
+    } @else {
+  @if (appearance !== 'actions') {
   <div class="mobile-total-bar__summary" [class.mobile-total-bar__summary--compact]="!status && !detailText">
     <span class="label">{{ label }}</span>
     <span class="value" [class.value--loading]="loading">{{ valueText }}</span>
@@ -25,6 +71,14 @@
       </div>
       }
       @if (detailText) {
+      @if (inlineDetails) {
+        <button type="button" class="mobile-total-bar__expand mobile-total-bar__expand--button"
+          [disabled]="!expandable" [attr.aria-expanded]="expanded" [attr.aria-controls]="detailsPanelId"
+          [attr.aria-label]="expandAriaLabel" (click)="onExpandClick($event)">
+          <span>{{ detailText }}</span>
+          <mat-icon>{{ expanded ? 'expand_more' : 'expand_less' }}</mat-icon>
+        </button>
+      } @else {
       <span class="mobile-total-bar__expand" [class.mobile-total-bar__expand--static]="!expandable">
         <span>{{ detailText }}</span>
         @if (expandable) {
@@ -32,10 +86,12 @@
         }
       </span>
       }
+      }
     </div>
     }
   </div>
 
+  }
   <div class="mobile-total-bar__actions">
     @if (secondaryActionText) {
     <button mat-stroked-button
@@ -44,18 +100,24 @@
       [attr.aria-label]="secondaryActionAriaLabel"
       [disabled]="secondaryActionDisabled"
       (click)="onSecondaryActionClick($event)">
+      @if (secondaryActionIcon) { <mat-icon aria-hidden="true">{{ secondaryActionIcon }}</mat-icon> }
       {{ secondaryActionText }}
     </button>
     }
 
     <button mat-flat-button
       color="primary"
-      type="button"
+      [type]="actionType"
+      [attr.form]="actionForm"
+      [appTutorialTarget]="actionTutorialTarget"
       class="mobile-total-bar__cta"
       [attr.aria-label]="actionAriaLabel"
       [disabled]="actionDisabled"
       (click)="onActionClick($event)">
+      @if (actionIcon) { <mat-icon aria-hidden="true">{{ actionIcon }}</mat-icon> }
       {{ actionText }}
     </button>
+  </div>
+    }
   </div>
 </div>

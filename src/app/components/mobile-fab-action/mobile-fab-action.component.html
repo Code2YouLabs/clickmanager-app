@@ -2,6 +2,9 @@
   mat-flat-button
   type="button"
   class="mobile-fab-action"
+  [class.mobile-fab-action--page]="placement === 'page'"
+  [disabled]="disabled"
+  [appTutorialTarget]="tutorialTarget"
   [class.mobile-fab-action--compact]="compact"
   [attr.aria-label]="ariaLabel || label"
   (click)="emitAction()">

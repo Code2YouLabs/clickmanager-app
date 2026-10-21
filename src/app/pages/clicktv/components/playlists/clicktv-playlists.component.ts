@@ -1,3 +1,8 @@
+import { ComponentType } from '@angular/cdk/portal';
+import { MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
+import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnDestroy, OnInit } from '@angular/core';
@@ -43,6 +48,7 @@ import { ClickTvNameDialogComponent, ClickTvPlaylistDialogComponent } from '../d
   styleUrls: ['../../clicktv.scss'],
 })
 export class ClickTvPlaylistsComponent implements OnInit, OnDestroy {
+  isMobile = false;
   playlists: ClickTvPlaylistResumo[] = [];
   total = 0;
   page = 0;
@@ -103,8 +109,17 @@ export class ClickTvPlaylistsComponent implements OnInit, OnDestroy {
     private readonly dialog: MatDialog,
     private readonly toastr: ToastrService,
     private readonly router: Router,
-    private readonly auth: AuthService
-  ) {}
+    private readonly auth: AuthService,
+    breakpoints?: BreakpointObserver
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+  }
+
+  private abrirDialog<T, D = unknown>(component: ComponentType<T>, config: MatDialogConfig<D>): MatDialogRef<T> {
+    return this.isMobile
+      ? openMobileSidePanel(this.dialog, component, { ...config, data: { ...config.data, mobilePanel: true } })
+      : this.dialog.open(component, config);
+  }
 
   ngOnInit(): void {
     this.carregar$.pipe(
@@ -213,7 +228,7 @@ export class ClickTvPlaylistsComponent implements OnInit, OnDestroy {
   }
 
   criar(): void {
-    this.dialog.open(ClickTvPlaylistDialogComponent, { width: '560px', data: null }).afterClosed()
+    this.abrirDialog(ClickTvPlaylistDialogComponent, { width: '560px', data: null }).afterClosed()
       .subscribe((payload: ClickTvPlaylistPayload | undefined) => {
         if (!payload) return;
         this.service.criarPlaylist(payload).subscribe({
@@ -227,7 +242,7 @@ export class ClickTvPlaylistsComponent implements OnInit, OnDestroy {
   }
 
   editar(playlist: ClickTvPlaylistResumo): void {
-    this.dialog.open(ClickTvPlaylistDialogComponent, { width: '560px', data: playlist }).afterClosed()
+    this.abrirDialog(ClickTvPlaylistDialogComponent, { width: '560px', data: playlist }).afterClosed()
       .subscribe((payload: ClickTvPlaylistPayload | undefined) => {
         if (!payload) return;
         this.service.editarPlaylist(playlist.id, payload).subscribe({
@@ -242,7 +257,7 @@ export class ClickTvPlaylistsComponent implements OnInit, OnDestroy {
   }
 
   duplicar(playlist: ClickTvPlaylistResumo): void {
-    this.dialog.open(ClickTvNameDialogComponent, {
+    this.abrirDialog(ClickTvNameDialogComponent, {
       width: '500px',
       data: { titulo: 'Duplicar playlist', nome: `${playlist.nome} (cópia)` },
     }).afterClosed().subscribe((nome) => {

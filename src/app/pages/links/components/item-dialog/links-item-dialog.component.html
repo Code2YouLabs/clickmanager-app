@@ -1,5 +1,5 @@
-<div class="links-item-dialog">
-  <div class="links-item-dialog__header">
+<div class="links-item-dialog" [class.mobile-side-panel__layout]="mobilePanel">
+  <div class="links-item-dialog__header" [class.mobile-side-panel__header]="mobilePanel">
     <div>
       <h2>{{ data.item ? 'Editar link' : 'Adicionar link' }}</h2>
       <p>Escolha o tipo e informe o destino final.</p>
@@ -9,7 +9,7 @@
     </button>
   </div>
 
-  <form [formGroup]="form" (ngSubmit)="salvar()" class="links-item-dialog__form">
+  <form id="clicklink-item-form" [class.mobile-side-panel__body]="mobilePanel" [formGroup]="form" (ngSubmit)="salvar()" class="links-item-dialog__form">
     <mat-form-field appearance="outline">
       <mat-label>Tipo</mat-label>
       <mat-select formControlName="tipo">
@@ -81,9 +81,18 @@
       <mat-hint align="end">{{ subtituloControl.value?.length || 0 }}/180</mat-hint>
     </mat-form-field>
 
+    @if (!mobilePanel) {
     <div class="links-item-dialog__actions">
       <button mat-stroked-button type="button" (click)="fechar()">Cancelar</button>
       <button mat-flat-button color="primary" type="submit">Salvar link</button>
     </div>
+    }
   </form>
+
+  @if (mobilePanel) {
+    <footer class="mobile-side-panel__footer links-item-dialog__mobile-actions">
+      <button mat-stroked-button type="button" (click)="fechar()">Cancelar</button>
+      <button mat-flat-button color="primary" type="submit" form="clicklink-item-form">Salvar link</button>
+    </footer>
+  }
 </div>

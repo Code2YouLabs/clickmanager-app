@@ -1,8 +1,8 @@
-<div class="service-wizard" [appTutorialTarget]="primeiroPedidoTargets.configurador">
-      <div class="service-wizard__header">
+<div class="service-wizard mobile-side-panel__layout" [appTutorialTarget]="primeiroPedidoTargets.configurador">
+      <div class="service-wizard__header mobile-side-panel__header">
         <div>
-          <span class="service-wizard__eyebrow">Serviço</span>
-          <h2 mat-dialog-title>{{ data.servico.nome }}</h2>
+          <span *ngIf="!data.mobilePanel" class="service-wizard__eyebrow">Serviço</span>
+          <h2 mat-dialog-title>{{ data.mobilePanel ? 'Adicionar item' : data.servico.nome }}</h2>
         </div>
         <button mat-icon-button type="button" mat-dialog-close aria-label="Fechar">
           <mat-icon>close</mat-icon>
@@ -11,7 +11,8 @@
       <app-tutorial-overlay [embeddedForTarget]="primeiroPedidoTargets.configurador" />
       <mat-divider></mat-divider>
 
-      <mat-dialog-content class="service-wizard__content">
+      <mat-dialog-content class="service-wizard__content mobile-side-panel__body">
+        <strong *ngIf="data.mobilePanel">{{ data.servico.nome }}</strong>
         <p class="service-wizard__description" *ngIf="data.servico.descricao">{{ data.servico.descricao }}</p>
 
         <div class="state-row state-row--error" *ngIf="!politica">
@@ -59,7 +60,7 @@
         </div>
       </mat-dialog-content>
 
-      <mat-dialog-actions align="end" class="service-wizard__actions">
+      <mat-dialog-actions align="end" class="service-wizard__actions mobile-side-panel__footer">
         <button mat-stroked-button type="button" mat-dialog-close>Cancelar</button>
         <button mat-stroked-button type="button" [disabled]="!politica || form.invalid || precificando" (click)="calcular()">
           Calcular

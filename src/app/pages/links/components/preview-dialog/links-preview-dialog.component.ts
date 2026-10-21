@@ -7,14 +7,16 @@ import { LinksPublicPreviewComponent } from '../public-preview/links-public-prev
 
 @Component({
   selector: 'app-links-preview-dialog',
+  host: { '[class.mobile-side-panel__layout]': 'mobilePanel' },
   standalone: true,
   imports: [CommonModule, MaterialModule, LinksPublicPreviewComponent],
   templateUrl: './links-preview-dialog.component.html',
   styleUrls: ['./links-preview-dialog.component.scss'],
 })
 export class LinksPreviewDialogComponent {
+  get mobilePanel(): boolean { return !!this.data.mobilePanel; }
   constructor(
-    @Inject(MAT_DIALOG_DATA) public readonly data: LinksPreviewModel,
+    @Inject(MAT_DIALOG_DATA) public readonly data: LinksPreviewModel & { mobilePanel?: boolean },
     private readonly dialogRef: MatDialogRef<LinksPreviewDialogComponent>
   ) {}
 

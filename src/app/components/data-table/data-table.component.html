@@ -1,5 +1,6 @@
 <app-list-filter-bar presentation="section"
-  [filters]="filters" [filterState]="filterState" [search]="search" [searchControl]="searchControl"
+  [mobileCompact]="mobileCompact" [mobileFilterPresentation]="mobileFilterPresentation" [mobileShowTitle]="mobileShowToolbarTitle" [filters]="filters" [filterState]="filterState" [search]="search" [searchControl]="searchControl"
+  [mobileSort]="mobileFilterSort" (filterSortChange)="onFilterSortChange($event)"
   [filtersLabel]="filtersLabel" [clearFiltersLabel]="clearFiltersLabel" [hasCustomFilters]="hasCustomFilters"
   (searchChange)="onSearch($event)" (stateChange)="onFilterStateChange($event)" (clear)="clearFilters.emit()">
   <ng-content select="[data-table-toolbar-actions]" ngProjectAs="[list-filter-actions]"></ng-content>
@@ -7,7 +8,7 @@
 </app-list-filter-bar>
 
 @if (showTable) {
-<div [@.disabled]="reducedMotion" class="data-table-container" [attr.aria-busy]="!forbidden && busy">
+<div [@.disabled]="reducedMotion" class="data-table-container" [class.data-table-container--mobile-compact]="mobileCompact" [class.data-table-container--initial-loading]="initialLoading" [attr.aria-busy]="!forbidden && busy">
   @if (forbidden) {
     <div class="data-table-state" role="status"><strong>Acesso restrito</strong><p>{{ forbiddenMessage }}</p></div>
   } @else if (initialLoading) {
@@ -23,7 +24,24 @@
   }
 
   @if (canShowContent) {
-  @if (useMobileItems) {
+  @if (isMobile && !data.length) {
+    <ng-container [ngTemplateOutlet]="emptyNotice"></ng-container>
+  } @else if (useMobileItems) {
+    @if (sortableColumns.length && mobileSortPlacement === 'list') {
+      <div class="data-table-mobile-sort">
+        <mat-form-field appearance="outline">
+          <mat-label>Ordenar por</mat-label>
+          <mat-select [value]="sort.active" [disabled]="busy" (selectionChange)="onMobileSort($event.value)">
+            @for (column of sortableColumns; track column.key) {
+              <mat-option [value]="column.sortKey || column.key">{{ column.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <button mat-icon-button type="button" [disabled]="busy || !sort.active"
+          [attr.aria-label]="sort.direction === 'asc' ? 'Ordenar decrescente' : 'Ordenar crescente'"
+          (click)="toggleMobileSortDirection()"><mat-icon>{{ sort.direction === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon></button>
+      </div>
+    }
     <div class="data-table-items" role="list" [attr.aria-label]="tableLabel">
       @for (row of data; track trackByRow($index, row)) {
         <div role="listitem">
@@ -170,6 +188,44 @@
 
   }
   @if (pagination) {
+    @if (useProgressiveLoading) {
+      @if (progressiveLoadedCount > 0) {
+        <div class="data-table-progressive" [attr.aria-busy]="loadingNextBatch">
+          <span class="data-table-progressive__summary" aria-live="polite">Carregados {{ progressiveLoadedCount }} de {{ pagination.totalItems }} {{ itemsLabel }}</span>
+          @if (progressiveState?.error) {
+            <div class="data-table-progressive__error" role="alert">
+              <p>{{ progressiveState?.error }}</p>
+              <button mat-stroked-button type="button" [disabled]="busy || !!error || loadingNextBatch" (click)="retryNextBatch()">{{ progressiveState?.restartRequired ? 'Atualizar lista' : 'Tentar novamente' }}</button>
+            </div>
+          } @else if (canNextPage || loadingNextBatch) {
+            <button mat-stroked-button type="button" class="data-table-progressive__more"
+              [disabled]="busy || !!error || loadingNextBatch" (click)="loadNextBatch()">
+              @if (loadingNextBatch) { <mat-spinner diameter="18" aria-hidden="true"></mat-spinner> }
+              {{ loadingNextBatch ? 'Carregando mais...' : loadMoreLabel }}
+            </button>
+          }
+        </div>
+      }
+    } @else if (isMobile && mobilePagination === 'compact') {
+      <nav class="data-table-mobile-pagination" aria-label="Paginação dos resultados">
+        <div class="data-table-mobile-pagination__summary" aria-live="polite">
+          <strong class="data-table-page">Página {{ pagination.pageIndex + 1 }} de {{ pageCount }}</strong>
+          <span>{{ pageRangeStart }}–{{ pageRangeEnd }} de {{ pagination.totalItems }} registros</span>
+        </div>
+        <div class="data-table-mobile-pagination__controls">
+          <button mat-icon-button type="button" aria-label="Página anterior" [disabled]="busy || !canPreviousPage" (click)="onMobilePage(-1)"><mat-icon>chevron_left</mat-icon></button>
+          <button mat-icon-button type="button" aria-label="Próxima página" [disabled]="busy || !canNextPage" (click)="onMobilePage(1)"><mat-icon>chevron_right</mat-icon></button>
+          @if (mobilePageSizes.length > 1) {
+            <button mat-icon-button type="button" [attr.aria-label]="'Itens por página: ' + pagination.pageSize" [disabled]="busy" [matMenuTriggerFor]="pageSizeMenu"><mat-icon>more_vert</mat-icon></button>
+            <mat-menu #pageSizeMenu="matMenu">
+              @for (size of mobilePageSizes; track size) {
+                <button mat-menu-item type="button" [disabled]="size === pagination.pageSize" (click)="onMobilePageSize(size)">{{ size }} por página</button>
+              }
+            </mat-menu>
+          }
+        </div>
+      </nav>
+    } @else {
     <mat-paginator
       [length]="pagination.totalItems"
       [pageIndex]="pagination.pageIndex"
@@ -180,6 +236,8 @@
       showFirstLastButtons
       (page)="onPageChange($event)">
     </mat-paginator>
+    }
+
   }
   }
 </div>
@@ -194,8 +252,12 @@
 </ng-template>
 <ng-template #emptyNotice>
   <div class="data-table-empty" role="status">
+    @if (isMobile && emptyState.icon) {
+      <mat-icon class="data-table-empty__icon" aria-hidden="true">{{ isFilteredEmpty ? 'search_off' : emptyState.icon }}</mat-icon>
+    }
     <strong>{{ isFilteredEmpty ? (emptyState.filteredTitle || emptyState.title || 'Nenhum resultado encontrado') : (emptyState.title || 'Nenhum registro encontrado') }}</strong>
     <span>{{ isFilteredEmpty ? (emptyState.filteredDescription || emptyState.description || 'Altere a busca ou os filtros.') : (emptyState.description || 'Os registros aparecerão aqui quando forem adicionados.') }}</span>
+    <div class="data-table-empty__actions"><ng-content select="[data-table-empty-actions]"></ng-content></div>
   </div>
 </ng-template>
 

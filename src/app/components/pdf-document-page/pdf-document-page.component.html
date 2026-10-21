@@ -1,0 +1,34 @@
+<app-page-card [class.pdf-document-page--mobile]="isMobile" [titulo]="title" [subtitulo]="subtitle"
+  [botaoTexto]="isMobile ? '' : 'Voltar'" [botaoRota]="backLink" [mostrarDivisor]="true" [contentPadding]="false">
+  <button *ngIf="isMobile" page-mobile-header-actions mat-button type="button" [routerLink]="backLink"><mat-icon>arrow_back</mat-icon>Voltar</button>
+  <div *ngIf="!isMobile" page-header-actions class="document-actions"><ng-container [ngTemplateOutlet]="actions"></ng-container></div>
+  <div *ngIf="isMobile" class="document-actions document-actions--mobile"><ng-container [ngTemplateOutlet]="actions"></ng-container></div>
+  <p class="pdf-viewer-help" *ngIf="isMobile && pdfAvailable && !loading && !error">Se o PDF não aparecer, use Salvar PDF.</p>
+  <div #viewer class="print-page" [class.print-page--state]="loading || !!error || !pdfAvailable || (isMobile && !inlinePdfSupported)" [attr.aria-busy]="loading">
+    <div class="state-panel" role="status" *ngIf="loading">
+      <mat-spinner diameter="34"></mat-spinner><span>Gerando documento...</span>
+    </div>
+    <div class="error-panel" role="alert" *ngIf="!loading && error">
+      <mat-icon>error_outline</mat-icon>
+      <div><strong>Não foi possível gerar o documento.</strong><span>{{ error }}</span></div>
+      <div class="error-actions">
+        <button *ngIf="!isMobile" mat-stroked-button color="primary" type="button" [routerLink]="backLink">Voltar</button>
+        <button *ngIf="retryAvailable" mat-flat-button color="primary" type="button" (click)="retry.emit()">Tentar novamente</button>
+      </div>
+    </div>
+    <div class="state-panel pdf-unavailable" role="status" *ngIf="!loading && !error && !pdfAvailable">
+      <span>Documento indisponível.</span>
+      <button *ngIf="retryAvailable" mat-stroked-button type="button" (click)="retry.emit()">Tentar novamente</button>
+    </div>
+    <div class="state-panel pdf-unavailable" role="status" *ngIf="!loading && !error && pdfAvailable && isMobile && !inlinePdfSupported">
+      <span>Seu navegador não oferece visualização de PDF nesta página. Use Salvar PDF para abrir o documento no seu dispositivo.</span>
+    </div>
+    <div *ngIf="!loading && !error && pdfAvailable && (!isMobile || inlinePdfSupported)" class="pdf-frame" role="region" [attr.aria-label]="viewerLabel">
+      <ng-content></ng-content>
+    </div>
+  </div>
+</app-page-card>
+<ng-template #actions>
+  <button mat-stroked-button color="primary" type="button" [disabled]="!saveAvailable || loading" (click)="save.emit()"><mat-icon>download</mat-icon>Salvar PDF</button>
+  <button mat-flat-button color="primary" type="button" [disabled]="!printAvailable || loading || (isMobile && !inlinePdfSupported)" (click)="print.emit()"><mat-icon>print</mat-icon>Imprimir</button>
+</ng-template>

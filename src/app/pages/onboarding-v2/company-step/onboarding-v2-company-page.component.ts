@@ -1,9 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
-import { finalize } from 'rxjs/operators';
+import { finalize, map } from 'rxjs/operators';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { InputEmailComponent } from 'src/app/components/inputs/input-email/input-custom.component';
 import { InputTelefoneComponent } from 'src/app/components/inputs/input-telefone/input-telefone.component';
 import { InputTextoRestritoComponent } from 'src/app/components/inputs/input-texto/input-texto-restrito.component';
@@ -43,6 +45,13 @@ export class OnboardingV2CompanyPageComponent implements OnInit {
     responsavelNome: ['', [Validators.required, Validators.minLength(2)]],
     responsavelTelefone: [''],
   });
+
+  // Presentation only; matches the existing shared mobile CSS ranges.
+  protected readonly mobile = toSignal(
+    inject(BreakpointObserver).observe('(max-width: 768px), (max-width: 960px) and (max-height: 560px)')
+      .pipe(map(state => state.matches)),
+    { initialValue: false }
+  );
 
   carregando = true;
 

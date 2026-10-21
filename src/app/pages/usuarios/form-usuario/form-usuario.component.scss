@@ -1,0 +1,4 @@
+@media (max-width: 760px) {
+  :host { display: block; min-width: 0; }
+  .row > * { min-width: 0; }
+}

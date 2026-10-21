@@ -1,9 +1,9 @@
-<div class="blank-layout-container justify-content-center onboarding-page-layout">
+<div class="blank-layout-container justify-content-center onboarding-page-layout onboarding-mobile-layout">
   <div class="auth-wrapper onboarding-page-wrapper">
     <div class="position-relative w-100">
       <div class="w-100 position-relative rounded bg-white auth-card onboarding-page-card">
         <div class="auth-body onboarding-page">
-          <app-onboarding-shell [semanticSteps]="true" [showExit]="false"
+          <app-onboarding-shell mobileLayout="flow" [semanticSteps]="true" [showExit]="false"
             tituloFluxo=""
             tituloEtapa=""
             subtituloEtapa=""
@@ -21,9 +21,12 @@
           >
             <ng-container *ngIf="!carregando; else loadingTemplate">
               <section class="onboarding-page__section onboarding-page__section--empresa">
-                <div class="onboarding-page__intro"><h1>Sua empresa</h1><p>Vamos começar com algumas informações básicas.</p></div>
-                <app-section-card
-                  titulo="Empresa"
+                <div class="onboarding-page__intro">
+                  <h1 class="onboarding-step-title">{{ mobile() ? 'Dados de Cadastro' : 'Sua empresa' }}</h1>
+                  @if (!mobile()) { <p>Vamos começar com algumas informações básicas.</p> }
+                </div>
+                <app-section-card class="onboarding-v2-company__business"
+                  [titulo]="mobile() ? '' : 'Empresa'"
                   subtitulo=""
                   [divider]="true"
                 >
@@ -41,7 +44,7 @@
                       <div class="col-md-6">
                         <app-input-telefone
                           [control]="telefoneControl"
-                          label="Telefone"
+                          [label]="mobile() ? 'Telefone da empresa' : 'Telefone'"
                           placeholder="(00) 00000-0000"
                         ></app-input-telefone>
                       </div>
@@ -49,7 +52,7 @@
                       <div class="col-md-6">
                         <app-input-email
                           [control]="emailControl"
-                          label="E-mail"
+                          [label]="mobile() ? 'E-mail da empresa' : 'E-mail'"
                           placeholder="contato@suaempresa.com"
                         ></app-input-email>
                       </div>
@@ -57,8 +60,8 @@
                   </form>
                 </app-section-card>
 
-                <app-section-card
-                  titulo="Responsável"
+                <app-section-card class="onboarding-v2-company__contact"
+                  [titulo]="mobile() ? 'Responsável da empresa' : 'Responsável'"
                   subtitulo=""
                   [divider]="true"
                 >

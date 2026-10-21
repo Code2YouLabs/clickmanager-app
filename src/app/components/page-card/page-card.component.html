@@ -1,7 +1,12 @@
-<mat-card class="cardWithShadow page-card" [attr.aria-busy]="saving">
+<mat-card class="cardWithShadow page-card" [class.page-card--mobile-compact]="compactMobileHeader" [attr.aria-busy]="saving">
   <app-card-header
     [titulo]="titulo"
-    [actionDisabled]="headerActionDisabled"
+    [mobileContextualActionsEnabled]="enabled()"
+    [titleOnly]="titleOnlyMobileHeader && isMobile()"
+    [mobileCompact]="compactMobileHeader"
+    [primaryAction]="showMobilePrimaryAction ? null : primaryAction"
+    (primaryActionClick)="onPrimaryAction()"
+    [actionDisabled]="headerActionDisabled || (!!primaryAction && (saving || actionsDisabled))"
     [subtitulo]="subtitulo"
     [botaoTexto]="botaoTexto"
     [botaoIcone]="botaoIcone"
@@ -14,6 +19,14 @@
     [helpExterno]="helpExterno"
     [permissao]="permissao"
     [mostrarDivisor]="showHeaderDivider">
+    <div card-header-contextual-actions class="page-card__contextual-actions">
+      <ng-content select="[page-mobile-header-actions]"></ng-content>
+      @if (enabled()) {
+        @for (action of contextualActions(); track action) {
+          @if (action.visible()) { <ng-container [ngTemplateOutlet]="action.template"></ng-container> }
+        }
+      }
+    </div>
     <ng-content select="[page-header-actions]"></ng-content>
   </app-card-header>
 
@@ -48,3 +61,27 @@
     </mat-card-actions>
   </ng-container>
 </mat-card>
+
+@if (showMobilePrimaryAction && floatingPrimaryAction; as action) {
+  @if (action.permission) {
+    <div *temPermissao="action.permission" class="page-card__fab-clearance" aria-hidden="true"></div>
+  } @else {
+    <div class="page-card__fab-clearance" aria-hidden="true"></div>
+  }
+  @if (action.permission) {
+    <ng-container *temPermissao="action.permission"><ng-container [ngTemplateOutlet]="primaryFab"></ng-container></ng-container>
+  } @else {
+    <ng-container [ngTemplateOutlet]="primaryFab"></ng-container>
+  }
+}
+<ng-template #primaryFab>
+  <app-mobile-fab-action
+    placement="page"
+    [compact]="true"
+    [label]="floatingPrimaryAction!.label"
+    [icon]="floatingPrimaryAction!.icon || 'add'"
+    [disabled]="mobilePrimaryActionDisabled"
+    [tutorialTarget]="floatingPrimaryAction!.tutorialTarget || ''"
+    (action)="onMobilePrimaryAction()">
+  </app-mobile-fab-action>
+</ng-template>

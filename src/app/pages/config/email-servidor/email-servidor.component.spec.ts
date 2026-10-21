@@ -1,3 +1,4 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -59,6 +60,7 @@ describe('EmailServidorComponent', () => {
     TestBed.configureTestingModule({
       imports: [EmailServidorComponent, NoopAnimationsModule],
       providers: [
+        { provide: BreakpointObserver, useValue: { observe: () => of({ matches: false, breakpoints: {} }) } },
         provideRouter([]),
         { provide: EmailServidorService, useValue: emailService },
         { provide: ToastrService, useValue: toastr },

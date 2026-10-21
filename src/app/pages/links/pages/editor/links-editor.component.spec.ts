@@ -1,3 +1,4 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
@@ -44,6 +45,7 @@ describe('LinksEditorComponent', () => {
     TestBed.configureTestingModule({
       imports: [LinksEditorComponent, NoopAnimationsModule, RouterTestingModule.withRoutes([])],
       providers: [
+        { provide: BreakpointObserver, useValue: { observe: () => of({ matches: false, breakpoints: {} }), isMatched: () => false } },
         { provide: ActivatedRoute, useValue: { snapshot: { routeConfig: { path }, paramMap: { get: () => '7' } } } },
         {
           provide: LinksService,

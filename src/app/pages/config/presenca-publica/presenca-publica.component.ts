@@ -1,5 +1,9 @@
+import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { Subject, takeUntil } from 'rxjs';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
@@ -25,7 +29,10 @@ import { PresencaPublicaService } from './presenca-publica.service';
   templateUrl: './presenca-publica.component.html',
   styleUrl: './presenca-publica.component.scss',
 })
-export class PresencaPublicaComponent implements OnInit {
+export class PresencaPublicaComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  private readonly destroy$ = new Subject<void>();
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
   presenca: PresencaPublicaResponse | null = null;
   carregando = true;
   erro: string | null = null;
@@ -38,8 +45,10 @@ export class PresencaPublicaComponent implements OnInit {
     private readonly service: PresencaPublicaService,
     private readonly siteConfigService: SiteConfigService,
     private readonly dialog: MatDialog,
-    private readonly toastr: ToastrService
-  ) {}
+    private readonly toastr: ToastrService,
+    breakpoints?: BreakpointObserver
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);}
 
   ngOnInit(): void {
     this.carregar();
@@ -128,12 +137,15 @@ export class PresencaPublicaComponent implements OnInit {
       urlAtual: this.urlClickManagerAtual,
     };
 
-    const ref = this.dialog.open(AlterarEnderecoPublicoDialogComponent, {
+    const config = {
       width: '620px',
       maxWidth: 'calc(100vw - 32px)',
       data,
       autoFocus: false,
-    });
+    };
+    const ref = this.isMobile
+      ? openMobileSidePanel<AlterarEnderecoPublicoDialogComponent, import('./components/alterar-endereco-publico-dialog.component').AlterarEnderecoPublicoDialogData, PresencaPublicaResponse>(this.dialog, AlterarEnderecoPublicoDialogComponent, { ...config, data: { ...config.data, mobilePanel: true } })
+      : this.dialog.open(AlterarEnderecoPublicoDialogComponent, config);
 
     ref.afterClosed().subscribe((presenca: PresencaPublicaResponse | undefined) => {
       if (!presenca) {

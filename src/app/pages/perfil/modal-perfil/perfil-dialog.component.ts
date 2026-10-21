@@ -30,6 +30,7 @@ interface ModuloPermissaoView {
 @Component({
   selector: 'app-perfil-dialog',
   standalone: true,
+  host: { '[class.mobile-side-panel__layout]': 'mobilePanel' },
   templateUrl: './perfil-dialog.component.html',
   styleUrls: ['./perfil-dialog.component.scss'],
   imports: [
@@ -46,6 +47,7 @@ interface ModuloPermissaoView {
       ]
 })
 export class PerfilDialogComponent implements OnInit {
+  get mobilePanel(): boolean { return !!this.data?.mobilePanel; }
     form!: FormGroup;
     modulos: ModuloPermissaoView[] = [];
     modulosFiltrados: ModuloPermissaoView[] = [];

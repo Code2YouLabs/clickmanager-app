@@ -1,0 +1,4 @@
+Extrato do runner, sem progresso repetido. Exit: 0
+> clickmanager-app@4.0.0 test
+> ng test --watch=false --browsers=ChromeHeadless --include=src/app/components/page-card/**/*.spec.ts --include=src/app/components/card-header/**/*.spec.ts --include=src/app/components/section-card/**/*.spec.ts
+TOTAL: 24 SUCCESS

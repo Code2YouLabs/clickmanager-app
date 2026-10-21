@@ -1,3 +1,4 @@
+@use '../../../../shared/responsive/mobile-list-item' as mobile-item;
 .links-table a,
 .links-mobile-card span {
   overflow-wrap: anywhere;
@@ -69,4 +70,12 @@
 .links-mobile-card__actions button {
   flex: 1 1 120px;
   min-height: 42px;
+}
+
+@media (max-width: 760px) {
+  .links-mobile-card { @include mobile-item.surface; gap: 8px; }
+  .links-mobile-card__head > div { flex: 1; }
+  .links-mobile-card__head strong { @include mobile-item.heading; }
+  .links-mobile-card__head button { flex: 0 0 44px; width: 44px; height: 44px; }
+  .mobile-item-destructive { --mat-menu-item-label-text-color: var(--mat-sys-error); --mat-menu-item-icon-color: var(--mat-sys-error); }
 }

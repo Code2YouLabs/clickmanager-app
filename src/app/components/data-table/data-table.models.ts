@@ -29,6 +29,7 @@ export interface DataTableFilter {
 }
 
 export interface DataTableSearchConfig {
+  mobileHint?: string;
   enabled: boolean;
   label?: string;
   placeholder?: string;
@@ -60,6 +61,8 @@ export interface DataTableActionEvent<T> {
 export type DataTableActionsMode = 'menu' | 'buttons';
 
 export interface DataTableEmptyState {
+  /** Decorative icon in the mobile presentation only. */
+  icon?: string;
   title?: string;
   description?: string;
   filteredTitle?: string;
@@ -69,3 +72,24 @@ export interface DataTableEmptyState {
 export type DataTableFilterValue = string | number | boolean | Array<string | number | boolean> | null;
 export type DataTableFilterState = Record<string, DataTableFilterValue>;
 export type DataTableSort = Sort;
+
+/** The consumer owns the accumulated collection and commits pagination only after success. */
+export interface DataTableProgressiveState {
+  /** Optional source identity; changing it releases any pending request for the previous collection. */
+  contextKey?: string;
+  loadedCount: number;
+  loading?: boolean;
+  error?: string | null;
+  restartRequired?: boolean;
+}
+
+/** Atomic mobile filter/sort application; sorting is not counted as an active filter. */
+export interface DataTableFilterSortChange {
+  filters: DataTableFilterState;
+  sort: DataTableSort;
+}
+export interface DataTableMobileSort {
+  label: string;
+  value: DataTableSort;
+  options: { label: string; value: DataTableSort }[];
+}

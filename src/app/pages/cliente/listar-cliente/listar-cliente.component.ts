@@ -1,4 +1,10 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { DataTableItemDirective } from 'src/app/components/data-table/data-table-item.directive';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
+import { Component, OnDestroy, OnInit, Optional } from '@angular/core';
 import { PageEvent } from '@angular/material/paginator';
 import { Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
@@ -17,10 +23,13 @@ import { ClienteService } from '../cliente.service';
 @Component({
   selector: 'app-listar-clientes',
   standalone: true,
-  imports: [PageCardComponent, DataTableComponent, DataTableCellDirective, TelefonePipe],
-  templateUrl: './listar-cliente.component.html'
+  imports: [PageCardComponent, DataTableComponent, DataTableCellDirective, DataTableItemDirective, TelefonePipe, MatButtonModule, MatIconModule, MatMenuModule],
+  templateUrl: './listar-cliente.component.html',
+  styleUrls: ['./listar-cliente.component.scss']
 })
 export class ListarClienteComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  readonly novaAcao = { label: 'Novo cliente', icon: 'add', permission: 'CLIENTE_CADASTRAR' };
   clientes: ClienteListagem[] = [];
   totalClientes = 0;
   carregando = false;
@@ -46,8 +55,17 @@ export class ListarClienteComponent implements OnInit, OnDestroy {
     private router: Router,
     private dialog: MatDialog,
     private toastr: ToastrService,
-    private auth: AuthService
-  ) {}
+    private auth: AuthService,
+    @Optional() breakpoints?: BreakpointObserver
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.matches);
+  }
+
+  novoCliente(): void {
+    if (this.auth.temPermissao('CLIENTE_CADASTRAR')) this.router.navigate(['/page/cliente/criar']);
+  }
+
+  voltar(): void { this.router.navigate([this.auth.getDefaultRouteForUsuario()]); }
 
   ngOnInit(): void { this.carregarClientes(); }
 
@@ -104,7 +122,8 @@ export class ListarClienteComponent implements OnInit, OnDestroy {
       data: {
         title: 'Excluir Cliente',
         message: `Tem certeza que deseja excluir o cliente "${cliente.nome}"?`,
-        confirmText: 'Excluir', confirmColor: 'warn'
+        confirmText: 'Excluir', confirmColor: 'warn',
+        ...(this.isMobile ? { type: 'destructive', title: 'Excluir cliente?', cancelText: 'Manter cliente', confirmText: 'Excluir cliente' } : {})
       }
     }).afterClosed().pipe(takeUntil(this.destroy$)).subscribe(result => {
       if (!result) return;

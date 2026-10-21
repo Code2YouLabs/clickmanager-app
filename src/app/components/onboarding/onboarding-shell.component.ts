@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, TemplateRef } from '@angular/core';
 import { MaterialModule } from 'src/app/material.module';
 
 @Component({
@@ -8,8 +8,11 @@ import { MaterialModule } from 'src/app/material.module';
   imports: [CommonModule, MaterialModule],
   templateUrl: './onboarding-shell.component.html',
   styleUrls: ['./onboarding-shell.component.scss'],
+  host: { '[class.onboarding-shell-host--mobile]': '!!mobileLayout' },
 })
 export class OnboardingShellComponent {
+  @Input() mobileLayout: 'flow' | 'catalog' | null = null;
+  @Input() mobileActions: TemplateRef<unknown> | null = null;
   @Input() tituloFluxo = 'Configuração inicial';
   @Input() tituloEtapa = '';
   @Input() subtituloEtapa = '';
@@ -26,6 +29,7 @@ export class OnboardingShellComponent {
   @Input() showFooter = true;
   @Input() showBack = true;
   @Input() showSkip = false;
+  @Input() mobileSkipLabel = '';
   @Input() showPrimary = true;
   @Input() primaryLabel = 'Próximo';
   @Input() primaryDisabled = false;

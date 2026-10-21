@@ -1,3 +1,5 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { DashboardMobileStickyDirective } from './dashboard-mobile-sticky.directive';
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
@@ -48,6 +50,7 @@ interface DashboardRefreshState {
   standalone: true,
   imports: [
     CommonModule,
+    DashboardMobileStickyDirective,
     MatButtonModule,
     MatIconModule,
     PageCardComponent,
@@ -61,6 +64,7 @@ interface DashboardRefreshState {
   styleUrls: ['./dashboard1.component.scss'],
 })
 export class AppDashboard1Component implements OnInit, OnDestroy {
+  isMobile = false;
   loading = true;
   refreshingSummary = false;
   erro: string | null = null;
@@ -106,10 +110,12 @@ export class AppDashboard1Component implements OnInit, OnDestroy {
     private dashboardService: DashboardService,
     private router: Router,
     private authService: AuthService,
-    private featureFlagService: FeatureFlagService
+    private featureFlagService: FeatureFlagService,
+    private breakpointObserver: BreakpointObserver,
   ) {}
 
   ngOnInit(): void {
+    this.subscriptions.add(this.breakpointObserver.observe('(max-width: 1023px)').subscribe(state => this.isMobile = state.matches));
     this.atualizarAcessos();
     this.subscriptions.add(
       this.featureFlagService.carregar().subscribe(() => this.atualizarAcessos())
@@ -128,6 +134,10 @@ export class AppDashboard1Component implements OnInit, OnDestroy {
 
   navegar(route: string): void {
     this.router.navigate([route]);
+  }
+
+  get visibleQuickActions(): DashboardQuickAction[] {
+    return this.isMobile ? this.quickActions.filter(action => action.route !== '/page/grafica/comercial/pedidos/novo') : this.quickActions;
   }
 
   get podeCriarPedido(): boolean {

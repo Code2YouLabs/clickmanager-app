@@ -1,0 +1,1964 @@
+[
+  {
+    "bulk": {
+      "bottom": 199,
+      "height": 44,
+      "left": 24,
+      "right": 336,
+      "top": 155,
+      "width": 312,
+      "x": 24,
+      "y": 155
+    },
+    "filter": {
+      "bottom": 146,
+      "height": 44,
+      "left": 24,
+      "right": 110.2109375,
+      "top": 102,
+      "width": 86.2109375,
+      "x": 24,
+      "y": 102
+    },
+    "footer": {
+      "bottom": 776,
+      "height": 53,
+      "left": 24,
+      "right": 336,
+      "top": 723,
+      "width": 312,
+      "x": 24,
+      "y": 723
+    },
+    "header": {
+      "bottom": 53,
+      "height": 29,
+      "left": 24,
+      "right": 336,
+      "top": 24,
+      "width": 312,
+      "x": 24,
+      "y": 24
+    },
+    "height": 800,
+    "list": {
+      "bottom": 711,
+      "height": 504,
+      "left": 24,
+      "right": 336,
+      "top": 207,
+      "width": 312,
+      "x": 24,
+      "y": 207
+    },
+    "listScrollHeight": 44736,
+    "mode": "detalhada",
+    "overflow": 0,
+    "pageHeight": 800,
+    "primary": {
+      "bottom": 776,
+      "height": 44,
+      "left": 96,
+      "right": 336,
+      "top": 732,
+      "width": 240,
+      "x": 96,
+      "y": 732
+    },
+    "primaryLabel": {
+      "bottom": 764,
+      "height": 20,
+      "left": 138.65625,
+      "right": 293.34375,
+      "top": 744,
+      "width": 154.6875,
+      "x": 138.65625,
+      "y": 744
+    },
+    "skip": "Pular",
+    "title": {
+      "bottom": 93,
+      "height": 28,
+      "left": 24,
+      "right": 336,
+      "top": 65,
+      "width": 312,
+      "x": 24,
+      "y": 65
+    },
+    "titleText": {
+      "bottom": 90,
+      "height": 22.5,
+      "left": 24,
+      "right": 284.78125,
+      "top": 67.5,
+      "width": 260.78125,
+      "x": 24,
+      "y": 67.5
+    },
+    "toggle": {
+      "bottom": 147,
+      "height": 46,
+      "left": 187.3671875,
+      "right": 336,
+      "top": 101,
+      "width": 148.6328125,
+      "x": 187.3671875,
+      "y": 101
+    },
+    "width": 360
+  },
+  {
+    "bulk": {
+      "bottom": 199,
+      "height": 44,
+      "left": 24,
+      "right": 366,
+      "top": 155,
+      "width": 342,
+      "x": 24,
+      "y": 155
+    },
+    "filter": {
+      "bottom": 146,
+      "height": 44,
+      "left": 24,
+      "right": 110.2109375,
+      "top": 102,
+      "width": 86.2109375,
+      "x": 24,
+      "y": 102
+    },
+    "footer": {
+      "bottom": 820,
+      "height": 53,
+      "left": 24,
+      "right": 366,
+      "top": 767,
+      "width": 342,
+      "x": 24,
+      "y": 767
+    },
+    "header": {
+      "bottom": 53,
+      "height": 29,
+      "left": 24,
+      "right": 366,
+      "top": 24,
+      "width": 342,
+      "x": 24,
+      "y": 24
+    },
+    "height": 844,
+    "list": {
+      "bottom": 755,
+      "height": 548,
+      "left": 24,
+      "right": 366,
+      "top": 207,
+      "width": 342,
+      "x": 24,
+      "y": 207
+    },
+    "listScrollHeight": 44496,
+    "mode": "detalhada",
+    "overflow": 0,
+    "pageHeight": 844,
+    "primary": {
+      "bottom": 820,
+      "height": 44,
+      "left": 96,
+      "right": 366,
+      "top": 776,
+      "width": 270,
+      "x": 96,
+      "y": 776
+    },
+    "primaryLabel": {
+      "bottom": 808,
+      "height": 20,
+      "left": 153.65625,
+      "right": 308.34375,
+      "top": 788,
+      "width": 154.6875,
+      "x": 153.65625,
+      "y": 788
+    },
+    "skip": "Pular",
+    "title": {
+      "bottom": 93,
+      "height": 28,
+      "left": 24,
+      "right": 366,
+      "top": 65,
+      "width": 342,
+      "x": 24,
+      "y": 65
+    },
+    "titleText": {
+      "bottom": 90,
+      "height": 22.5,
+      "left": 24,
+      "right": 284.78125,
+      "top": 67.5,
+      "width": 260.78125,
+      "x": 24,
+      "y": 67.5
+    },
+    "toggle": {
+      "bottom": 147,
+      "height": 46,
+      "left": 217.3671875,
+      "right": 366,
+      "top": 101,
+      "width": 148.6328125,
+      "x": 217.3671875,
+      "y": 101
+    },
+    "width": 390
+  },
+  {
+    "bulk": {
+      "bottom": 199,
+      "height": 44,
+      "left": 24,
+      "right": 406,
+      "top": 155,
+      "width": 382,
+      "x": 24,
+      "y": 155
+    },
+    "filter": {
+      "bottom": 146,
+      "height": 44,
+      "left": 24,
+      "right": 110.2109375,
+      "top": 102,
+      "width": 86.2109375,
+      "x": 24,
+      "y": 102
+    },
+    "footer": {
+      "bottom": 908,
+      "height": 53,
+      "left": 24,
+      "right": 406,
+      "top": 855,
+      "width": 382,
+      "x": 24,
+      "y": 855
+    },
+    "header": {
+      "bottom": 53,
+      "height": 29,
+      "left": 24,
+      "right": 406,
+      "top": 24,
+      "width": 382,
+      "x": 24,
+      "y": 24
+    },
+    "height": 932,
+    "list": {
+      "bottom": 843,
+      "height": 636,
+      "left": 24,
+      "right": 406,
+      "top": 207,
+      "width": 382,
+      "x": 24,
+      "y": 207
+    },
+    "listScrollHeight": 44496,
+    "mode": "detalhada",
+    "overflow": 0,
+    "pageHeight": 932,
+    "primary": {
+      "bottom": 908,
+      "height": 44,
+      "left": 96,
+      "right": 406,
+      "top": 864,
+      "width": 310,
+      "x": 96,
+      "y": 864
+    },
+    "primaryLabel": {
+      "bottom": 896,
+      "height": 20,
+      "left": 173.65625,
+      "right": 328.34375,
+      "top": 876,
+      "width": 154.6875,
+      "x": 173.65625,
+      "y": 876
+    },
+    "skip": "Pular",
+    "title": {
+      "bottom": 93,
+      "height": 28,
+      "left": 24,
+      "right": 406,
+      "top": 65,
+      "width": 382,
+      "x": 24,
+      "y": 65
+    },
+    "titleText": {
+      "bottom": 90,
+      "height": 22.5,
+      "left": 24,
+      "right": 284.78125,
+      "top": 67.5,
+      "width": 260.78125,
+      "x": 24,
+      "y": 67.5
+    },
+    "toggle": {
+      "bottom": 147,
+      "height": 46,
+      "left": 257.3671875,
+      "right": 406,
+      "top": 101,
+      "width": 148.6328125,
+      "x": 257.3671875,
+      "y": 101
+    },
+    "width": 430
+  },
+  {
+    "bulk": {
+      "bottom": 171,
+      "height": 44,
+      "left": 24,
+      "right": 776,
+      "top": 127,
+      "width": 752,
+      "x": 24,
+      "y": 127
+    },
+    "filter": {
+      "bottom": 122,
+      "height": 44,
+      "left": 24,
+      "right": 110.2109375,
+      "top": 78,
+      "width": 86.2109375,
+      "x": 24,
+      "y": 78
+    },
+    "footer": {
+      "bottom": 348,
+      "height": 49,
+      "left": 24,
+      "right": 776,
+      "top": 299,
+      "width": 752,
+      "x": 24,
+      "y": 299
+    },
+    "header": {
+      "bottom": 37,
+      "height": 25,
+      "left": 24,
+      "right": 776,
+      "top": 12,
+      "width": 752,
+      "x": 24,
+      "y": 12
+    },
+    "height": 360,
+    "list": {
+      "bottom": 291,
+      "height": 116,
+      "left": 24,
+      "right": 776,
+      "top": 175,
+      "width": 752,
+      "x": 24,
+      "y": 175
+    },
+    "listScrollHeight": 40176,
+    "mode": "detalhada",
+    "overflow": 0,
+    "pageHeight": 360,
+    "primary": {
+      "bottom": 348,
+      "height": 44,
+      "left": 96,
+      "right": 776,
+      "top": 304,
+      "width": 680,
+      "x": 96,
+      "y": 304
+    },
+    "primaryLabel": {
+      "bottom": 336,
+      "height": 20,
+      "left": 358.65625,
+      "right": 513.34375,
+      "top": 316,
+      "width": 154.6875,
+      "x": 358.65625,
+      "y": 316
+    },
+    "skip": "Pular",
+    "title": {
+      "bottom": 73,
+      "height": 28,
+      "left": 24,
+      "right": 776,
+      "top": 45,
+      "width": 752,
+      "x": 24,
+      "y": 45
+    },
+    "titleText": {
+      "bottom": 70,
+      "height": 22.5,
+      "left": 24,
+      "right": 284.78125,
+      "top": 47.5,
+      "width": 260.78125,
+      "x": 24,
+      "y": 47.5
+    },
+    "toggle": {
+      "bottom": 123,
+      "height": 46,
+      "left": 627.3671875,
+      "right": 776,
+      "top": 77,
+      "width": 148.6328125,
+      "x": 627.3671875,
+      "y": 77
+    },
+    "width": 800
+  },
+  {
+    "bulk": {
+      "bottom": 199,
+      "height": 44,
+      "left": 24,
+      "right": 744,
+      "top": 155,
+      "width": 720,
+      "x": 24,
+      "y": 155
+    },
+    "filter": {
+      "bottom": 146,
+      "height": 44,
+      "left": 24,
+      "right": 110.2109375,
+      "top": 102,
+      "width": 86.2109375,
+      "x": 24,
+      "y": 102
+    },
+    "footer": {
+      "bottom": 1000,
+      "height": 53,
+      "left": 24,
+      "right": 744,
+      "top": 947,
+      "width": 720,
+      "x": 24,
+      "y": 947
+    },
+    "header": {
+      "bottom": 53,
+      "height": 29,
+      "left": 24,
+      "right": 744,
+      "top": 24,
+      "width": 720,
+      "x": 24,
+      "y": 24
+    },
+    "height": 1024,
+    "list": {
+      "bottom": 935,
+      "height": 728,
+      "left": 24,
+      "right": 744,
+      "top": 207,
+      "width": 720,
+      "x": 24,
+      "y": 207
+    },
+    "listScrollHeight": 40176,
+    "mode": "detalhada",
+    "overflow": 0,
+    "pageHeight": 1024,
+    "primary": {
+      "bottom": 1000,
+      "height": 44,
+      "left": 96,
+      "right": 744,
+      "top": 956,
+      "width": 648,
+      "x": 96,
+      "y": 956
+    },
+    "primaryLabel": {
+      "bottom": 988,
+      "height": 20,
+      "left": 342.65625,
+      "right": 497.34375,
+      "top": 968,
+      "width": 154.6875,
+      "x": 342.65625,
+      "y": 968
+    },
+    "skip": "Pular",
+    "title": {
+      "bottom": 93,
+      "height": 28,
+      "left": 24,
+      "right": 744,
+      "top": 65,
+      "width": 720,
+      "x": 24,
+      "y": 65
+    },
+    "titleText": {
+      "bottom": 90,
+      "height": 22.5,
+      "left": 24,
+      "right": 284.78125,
+      "top": 67.5,
+      "width": 260.78125,
+      "x": 24,
+      "y": 67.5
+    },
+    "toggle": {
+      "bottom": 147,
+      "height": 46,
+      "left": 595.3671875,
+      "right": 744,
+      "top": 101,
+      "width": 148.6328125,
+      "x": 595.3671875,
+      "y": 101
+    },
+    "width": 768
+  },
+  {
+    "bulk": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "filter": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "footer": {
+      "bottom": 740,
+      "height": 65,
+      "left": 147,
+      "right": 1219,
+      "top": 675,
+      "width": 1072,
+      "x": 147,
+      "y": 675
+    },
+    "header": {
+      "bottom": 127.34375,
+      "height": 99.34375,
+      "left": 147,
+      "right": 1219,
+      "top": 28,
+      "width": 1072,
+      "x": 147,
+      "y": 28
+    },
+    "height": 768,
+    "list": {
+      "bottom": 663,
+      "height": 316.15625,
+      "left": 147,
+      "right": 1219,
+      "top": 346.84375,
+      "width": 1072,
+      "x": 147,
+      "y": 346.84375
+    },
+    "listScrollHeight": 14832,
+    "mode": "detalhada",
+    "overflow": 0,
+    "pageHeight": 768,
+    "primary": {
+      "bottom": 740,
+      "height": 44,
+      "left": 1016.3125,
+      "right": 1219,
+      "top": 696,
+      "width": 202.6875,
+      "x": 1016.3125,
+      "y": 696
+    },
+    "primaryLabel": {
+      "bottom": 728.671875,
+      "height": 21.34375,
+      "left": 1040.3125,
+      "right": 1195,
+      "top": 707.328125,
+      "width": 154.6875,
+      "x": 1040.3125,
+      "y": 707.328125
+    },
+    "skip": "Pular por enquanto",
+    "title": {
+      "bottom": 176.84375,
+      "height": 37.5,
+      "left": 147,
+      "right": 1219,
+      "top": 139.34375,
+      "width": 1072,
+      "x": 147,
+      "y": 139.34375
+    },
+    "titleText": {
+      "bottom": 176.84375,
+      "height": 37.5,
+      "left": 147,
+      "right": 581.6328125,
+      "top": 139.34375,
+      "width": 434.6328125,
+      "x": 147,
+      "y": 139.34375
+    },
+    "toggle": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "width": 1366
+  },
+  {
+    "bulk": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "filter": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "footer": {
+      "bottom": 872,
+      "height": 65,
+      "left": 147,
+      "right": 1219,
+      "top": 807,
+      "width": 1072,
+      "x": 147,
+      "y": 807
+    },
+    "header": {
+      "bottom": 127.34375,
+      "height": 99.34375,
+      "left": 147,
+      "right": 1219,
+      "top": 28,
+      "width": 1072,
+      "x": 147,
+      "y": 28
+    },
+    "height": 900,
+    "list": {
+      "bottom": 795,
+      "height": 448.15625,
+      "left": 147,
+      "right": 1219,
+      "top": 346.84375,
+      "width": 1072,
+      "x": 147,
+      "y": 346.84375
+    },
+    "listScrollHeight": 14832,
+    "mode": "detalhada",
+    "overflow": 0,
+    "pageHeight": 900,
+    "primary": {
+      "bottom": 872,
+      "height": 44,
+      "left": 1016.3125,
+      "right": 1219,
+      "top": 828,
+      "width": 202.6875,
+      "x": 1016.3125,
+      "y": 828
+    },
+    "primaryLabel": {
+      "bottom": 860.671875,
+      "height": 21.34375,
+      "left": 1040.3125,
+      "right": 1195,
+      "top": 839.328125,
+      "width": 154.6875,
+      "x": 1040.3125,
+      "y": 839.328125
+    },
+    "skip": "Pular por enquanto",
+    "title": {
+      "bottom": 176.84375,
+      "height": 37.5,
+      "left": 147,
+      "right": 1219,
+      "top": 139.34375,
+      "width": 1072,
+      "x": 147,
+      "y": 139.34375
+    },
+    "titleText": {
+      "bottom": 176.84375,
+      "height": 37.5,
+      "left": 147,
+      "right": 581.6328125,
+      "top": 139.34375,
+      "width": 434.6328125,
+      "x": 147,
+      "y": 139.34375
+    },
+    "toggle": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "width": 1366
+  },
+  {
+    "bulk": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "filter": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "footer": {
+      "bottom": 772,
+      "height": 65,
+      "left": 184,
+      "right": 1256,
+      "top": 707,
+      "width": 1072,
+      "x": 184,
+      "y": 707
+    },
+    "header": {
+      "bottom": 127.34375,
+      "height": 99.34375,
+      "left": 184,
+      "right": 1256,
+      "top": 28,
+      "width": 1072,
+      "x": 184,
+      "y": 28
+    },
+    "height": 800,
+    "list": {
+      "bottom": 695,
+      "height": 348.15625,
+      "left": 184,
+      "right": 1256,
+      "top": 346.84375,
+      "width": 1072,
+      "x": 184,
+      "y": 346.84375
+    },
+    "listScrollHeight": 14832,
+    "mode": "detalhada",
+    "overflow": 0,
+    "pageHeight": 800,
+    "primary": {
+      "bottom": 772,
+      "height": 44,
+      "left": 1053.3125,
+      "right": 1256,
+      "top": 728,
+      "width": 202.6875,
+      "x": 1053.3125,
+      "y": 728
+    },
+    "primaryLabel": {
+      "bottom": 760.671875,
+      "height": 21.34375,
+      "left": 1077.3125,
+      "right": 1232,
+      "top": 739.328125,
+      "width": 154.6875,
+      "x": 1077.3125,
+      "y": 739.328125
+    },
+    "skip": "Pular por enquanto",
+    "title": {
+      "bottom": 176.84375,
+      "height": 37.5,
+      "left": 184,
+      "right": 1256,
+      "top": 139.34375,
+      "width": 1072,
+      "x": 184,
+      "y": 139.34375
+    },
+    "titleText": {
+      "bottom": 176.84375,
+      "height": 37.5,
+      "left": 184,
+      "right": 618.6328125,
+      "top": 139.34375,
+      "width": 434.6328125,
+      "x": 184,
+      "y": 139.34375
+    },
+    "toggle": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "width": 1440
+  },
+  {
+    "bulk": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "filter": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "footer": {
+      "bottom": 872,
+      "height": 65,
+      "left": 184,
+      "right": 1256,
+      "top": 807,
+      "width": 1072,
+      "x": 184,
+      "y": 807
+    },
+    "header": {
+      "bottom": 127.34375,
+      "height": 99.34375,
+      "left": 184,
+      "right": 1256,
+      "top": 28,
+      "width": 1072,
+      "x": 184,
+      "y": 28
+    },
+    "height": 900,
+    "list": {
+      "bottom": 795,
+      "height": 448.15625,
+      "left": 184,
+      "right": 1256,
+      "top": 346.84375,
+      "width": 1072,
+      "x": 184,
+      "y": 346.84375
+    },
+    "listScrollHeight": 14832,
+    "mode": "detalhada",
+    "overflow": 0,
+    "pageHeight": 900,
+    "primary": {
+      "bottom": 872,
+      "height": 44,
+      "left": 1053.3125,
+      "right": 1256,
+      "top": 828,
+      "width": 202.6875,
+      "x": 1053.3125,
+      "y": 828
+    },
+    "primaryLabel": {
+      "bottom": 860.671875,
+      "height": 21.34375,
+      "left": 1077.3125,
+      "right": 1232,
+      "top": 839.328125,
+      "width": 154.6875,
+      "x": 1077.3125,
+      "y": 839.328125
+    },
+    "skip": "Pular por enquanto",
+    "title": {
+      "bottom": 176.84375,
+      "height": 37.5,
+      "left": 184,
+      "right": 1256,
+      "top": 139.34375,
+      "width": 1072,
+      "x": 184,
+      "y": 139.34375
+    },
+    "titleText": {
+      "bottom": 176.84375,
+      "height": 37.5,
+      "left": 184,
+      "right": 618.6328125,
+      "top": 139.34375,
+      "width": 434.6328125,
+      "x": 184,
+      "y": 139.34375
+    },
+    "toggle": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "width": 1440
+  },
+  {
+    "bulk": {
+      "bottom": 199,
+      "height": 44,
+      "left": 24,
+      "right": 336,
+      "top": 155,
+      "width": 312,
+      "x": 24,
+      "y": 155
+    },
+    "filter": {
+      "bottom": 146,
+      "height": 44,
+      "left": 24,
+      "right": 110.2109375,
+      "top": 102,
+      "width": 86.2109375,
+      "x": 24,
+      "y": 102
+    },
+    "footer": {
+      "bottom": 776,
+      "height": 53,
+      "left": 24,
+      "right": 336,
+      "top": 723,
+      "width": 312,
+      "x": 24,
+      "y": 723
+    },
+    "header": {
+      "bottom": 53,
+      "height": 29,
+      "left": 24,
+      "right": 336,
+      "top": 24,
+      "width": 312,
+      "x": 24,
+      "y": 24
+    },
+    "height": 800,
+    "list": {
+      "bottom": 711,
+      "height": 504,
+      "left": 24,
+      "right": 336,
+      "top": 207,
+      "width": 312,
+      "x": 24,
+      "y": 207
+    },
+    "listScrollHeight": 3344,
+    "mode": "arvore",
+    "overflow": 0,
+    "pageHeight": 800,
+    "primary": {
+      "bottom": 776,
+      "height": 44,
+      "left": 96,
+      "right": 336,
+      "top": 732,
+      "width": 240,
+      "x": 96,
+      "y": 732
+    },
+    "primaryLabel": {
+      "bottom": 764,
+      "height": 20,
+      "left": 138.65625,
+      "right": 293.34375,
+      "top": 744,
+      "width": 154.6875,
+      "x": 138.65625,
+      "y": 744
+    },
+    "skip": "Pular",
+    "title": {
+      "bottom": 93,
+      "height": 28,
+      "left": 24,
+      "right": 336,
+      "top": 65,
+      "width": 312,
+      "x": 24,
+      "y": 65
+    },
+    "titleText": {
+      "bottom": 90,
+      "height": 22.5,
+      "left": 24,
+      "right": 284.78125,
+      "top": 67.5,
+      "width": 260.78125,
+      "x": 24,
+      "y": 67.5
+    },
+    "toggle": {
+      "bottom": 147,
+      "height": 46,
+      "left": 187.3671875,
+      "right": 336,
+      "top": 101,
+      "width": 148.6328125,
+      "x": 187.3671875,
+      "y": 101
+    },
+    "width": 360
+  },
+  {
+    "bulk": {
+      "bottom": 199,
+      "height": 44,
+      "left": 24,
+      "right": 366,
+      "top": 155,
+      "width": 342,
+      "x": 24,
+      "y": 155
+    },
+    "filter": {
+      "bottom": 146,
+      "height": 44,
+      "left": 24,
+      "right": 110.2109375,
+      "top": 102,
+      "width": 86.2109375,
+      "x": 24,
+      "y": 102
+    },
+    "footer": {
+      "bottom": 820,
+      "height": 53,
+      "left": 24,
+      "right": 366,
+      "top": 767,
+      "width": 342,
+      "x": 24,
+      "y": 767
+    },
+    "header": {
+      "bottom": 53,
+      "height": 29,
+      "left": 24,
+      "right": 366,
+      "top": 24,
+      "width": 342,
+      "x": 24,
+      "y": 24
+    },
+    "height": 844,
+    "list": {
+      "bottom": 755,
+      "height": 548,
+      "left": 24,
+      "right": 366,
+      "top": 207,
+      "width": 342,
+      "x": 24,
+      "y": 207
+    },
+    "listScrollHeight": 3326,
+    "mode": "arvore",
+    "overflow": 0,
+    "pageHeight": 844,
+    "primary": {
+      "bottom": 820,
+      "height": 44,
+      "left": 96,
+      "right": 366,
+      "top": 776,
+      "width": 270,
+      "x": 96,
+      "y": 776
+    },
+    "primaryLabel": {
+      "bottom": 808,
+      "height": 20,
+      "left": 153.65625,
+      "right": 308.34375,
+      "top": 788,
+      "width": 154.6875,
+      "x": 153.65625,
+      "y": 788
+    },
+    "skip": "Pular",
+    "title": {
+      "bottom": 93,
+      "height": 28,
+      "left": 24,
+      "right": 366,
+      "top": 65,
+      "width": 342,
+      "x": 24,
+      "y": 65
+    },
+    "titleText": {
+      "bottom": 90,
+      "height": 22.5,
+      "left": 24,
+      "right": 284.78125,
+      "top": 67.5,
+      "width": 260.78125,
+      "x": 24,
+      "y": 67.5
+    },
+    "toggle": {
+      "bottom": 147,
+      "height": 46,
+      "left": 217.3671875,
+      "right": 366,
+      "top": 101,
+      "width": 148.6328125,
+      "x": 217.3671875,
+      "y": 101
+    },
+    "width": 390
+  },
+  {
+    "bulk": {
+      "bottom": 199,
+      "height": 44,
+      "left": 24,
+      "right": 406,
+      "top": 155,
+      "width": 382,
+      "x": 24,
+      "y": 155
+    },
+    "filter": {
+      "bottom": 146,
+      "height": 44,
+      "left": 24,
+      "right": 110.2109375,
+      "top": 102,
+      "width": 86.2109375,
+      "x": 24,
+      "y": 102
+    },
+    "footer": {
+      "bottom": 908,
+      "height": 53,
+      "left": 24,
+      "right": 406,
+      "top": 855,
+      "width": 382,
+      "x": 24,
+      "y": 855
+    },
+    "header": {
+      "bottom": 53,
+      "height": 29,
+      "left": 24,
+      "right": 406,
+      "top": 24,
+      "width": 382,
+      "x": 24,
+      "y": 24
+    },
+    "height": 932,
+    "list": {
+      "bottom": 843,
+      "height": 636,
+      "left": 24,
+      "right": 406,
+      "top": 207,
+      "width": 382,
+      "x": 24,
+      "y": 207
+    },
+    "listScrollHeight": 3326,
+    "mode": "arvore",
+    "overflow": 0,
+    "pageHeight": 932,
+    "primary": {
+      "bottom": 908,
+      "height": 44,
+      "left": 96,
+      "right": 406,
+      "top": 864,
+      "width": 310,
+      "x": 96,
+      "y": 864
+    },
+    "primaryLabel": {
+      "bottom": 896,
+      "height": 20,
+      "left": 173.65625,
+      "right": 328.34375,
+      "top": 876,
+      "width": 154.6875,
+      "x": 173.65625,
+      "y": 876
+    },
+    "skip": "Pular",
+    "title": {
+      "bottom": 93,
+      "height": 28,
+      "left": 24,
+      "right": 406,
+      "top": 65,
+      "width": 382,
+      "x": 24,
+      "y": 65
+    },
+    "titleText": {
+      "bottom": 90,
+      "height": 22.5,
+      "left": 24,
+      "right": 284.78125,
+      "top": 67.5,
+      "width": 260.78125,
+      "x": 24,
+      "y": 67.5
+    },
+    "toggle": {
+      "bottom": 147,
+      "height": 46,
+      "left": 257.3671875,
+      "right": 406,
+      "top": 101,
+      "width": 148.6328125,
+      "x": 257.3671875,
+      "y": 101
+    },
+    "width": 430
+  },
+  {
+    "bulk": {
+      "bottom": 171,
+      "height": 44,
+      "left": 24,
+      "right": 776,
+      "top": 127,
+      "width": 752,
+      "x": 24,
+      "y": 127
+    },
+    "filter": {
+      "bottom": 122,
+      "height": 44,
+      "left": 24,
+      "right": 110.2109375,
+      "top": 78,
+      "width": 86.2109375,
+      "x": 24,
+      "y": 78
+    },
+    "footer": {
+      "bottom": 348,
+      "height": 49,
+      "left": 24,
+      "right": 776,
+      "top": 299,
+      "width": 752,
+      "x": 24,
+      "y": 299
+    },
+    "header": {
+      "bottom": 37,
+      "height": 25,
+      "left": 24,
+      "right": 776,
+      "top": 12,
+      "width": 752,
+      "x": 24,
+      "y": 12
+    },
+    "height": 360,
+    "list": {
+      "bottom": 291,
+      "height": 116,
+      "left": 24,
+      "right": 776,
+      "top": 175,
+      "width": 752,
+      "x": 24,
+      "y": 175
+    },
+    "listScrollHeight": 3350,
+    "mode": "arvore",
+    "overflow": 0,
+    "pageHeight": 360,
+    "primary": {
+      "bottom": 348,
+      "height": 44,
+      "left": 96,
+      "right": 776,
+      "top": 304,
+      "width": 680,
+      "x": 96,
+      "y": 304
+    },
+    "primaryLabel": {
+      "bottom": 336,
+      "height": 20,
+      "left": 358.65625,
+      "right": 513.34375,
+      "top": 316,
+      "width": 154.6875,
+      "x": 358.65625,
+      "y": 316
+    },
+    "skip": "Pular",
+    "title": {
+      "bottom": 73,
+      "height": 28,
+      "left": 24,
+      "right": 776,
+      "top": 45,
+      "width": 752,
+      "x": 24,
+      "y": 45
+    },
+    "titleText": {
+      "bottom": 70,
+      "height": 22.5,
+      "left": 24,
+      "right": 284.78125,
+      "top": 47.5,
+      "width": 260.78125,
+      "x": 24,
+      "y": 47.5
+    },
+    "toggle": {
+      "bottom": 123,
+      "height": 46,
+      "left": 627.3671875,
+      "right": 776,
+      "top": 77,
+      "width": 148.6328125,
+      "x": 627.3671875,
+      "y": 77
+    },
+    "width": 800
+  },
+  {
+    "bulk": {
+      "bottom": 199,
+      "height": 44,
+      "left": 24,
+      "right": 744,
+      "top": 155,
+      "width": 720,
+      "x": 24,
+      "y": 155
+    },
+    "filter": {
+      "bottom": 146,
+      "height": 44,
+      "left": 24,
+      "right": 110.2109375,
+      "top": 102,
+      "width": 86.2109375,
+      "x": 24,
+      "y": 102
+    },
+    "footer": {
+      "bottom": 1000,
+      "height": 53,
+      "left": 24,
+      "right": 744,
+      "top": 947,
+      "width": 720,
+      "x": 24,
+      "y": 947
+    },
+    "header": {
+      "bottom": 53,
+      "height": 29,
+      "left": 24,
+      "right": 744,
+      "top": 24,
+      "width": 720,
+      "x": 24,
+      "y": 24
+    },
+    "height": 1024,
+    "list": {
+      "bottom": 935,
+      "height": 728,
+      "left": 24,
+      "right": 744,
+      "top": 207,
+      "width": 720,
+      "x": 24,
+      "y": 207
+    },
+    "listScrollHeight": 3326,
+    "mode": "arvore",
+    "overflow": 0,
+    "pageHeight": 1024,
+    "primary": {
+      "bottom": 1000,
+      "height": 44,
+      "left": 96,
+      "right": 744,
+      "top": 956,
+      "width": 648,
+      "x": 96,
+      "y": 956
+    },
+    "primaryLabel": {
+      "bottom": 988,
+      "height": 20,
+      "left": 342.65625,
+      "right": 497.34375,
+      "top": 968,
+      "width": 154.6875,
+      "x": 342.65625,
+      "y": 968
+    },
+    "skip": "Pular",
+    "title": {
+      "bottom": 93,
+      "height": 28,
+      "left": 24,
+      "right": 744,
+      "top": 65,
+      "width": 720,
+      "x": 24,
+      "y": 65
+    },
+    "titleText": {
+      "bottom": 90,
+      "height": 22.5,
+      "left": 24,
+      "right": 284.78125,
+      "top": 67.5,
+      "width": 260.78125,
+      "x": 24,
+      "y": 67.5
+    },
+    "toggle": {
+      "bottom": 147,
+      "height": 46,
+      "left": 595.3671875,
+      "right": 744,
+      "top": 101,
+      "width": 148.6328125,
+      "x": 595.3671875,
+      "y": 101
+    },
+    "width": 768
+  },
+  {
+    "bulk": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "filter": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "footer": {
+      "bottom": 740,
+      "height": 65,
+      "left": 147,
+      "right": 1219,
+      "top": 675,
+      "width": 1072,
+      "x": 147,
+      "y": 675
+    },
+    "header": {
+      "bottom": 127.34375,
+      "height": 99.34375,
+      "left": 147,
+      "right": 1219,
+      "top": 28,
+      "width": 1072,
+      "x": 147,
+      "y": 28
+    },
+    "height": 768,
+    "list": {
+      "bottom": 663,
+      "height": 316.15625,
+      "left": 147,
+      "right": 1219,
+      "top": 346.84375,
+      "width": 1072,
+      "x": 147,
+      "y": 346.84375
+    },
+    "listScrollHeight": 3350,
+    "mode": "arvore",
+    "overflow": 0,
+    "pageHeight": 768,
+    "primary": {
+      "bottom": 740,
+      "height": 44,
+      "left": 1016.3125,
+      "right": 1219,
+      "top": 696,
+      "width": 202.6875,
+      "x": 1016.3125,
+      "y": 696
+    },
+    "primaryLabel": {
+      "bottom": 728.671875,
+      "height": 21.34375,
+      "left": 1040.3125,
+      "right": 1195,
+      "top": 707.328125,
+      "width": 154.6875,
+      "x": 1040.3125,
+      "y": 707.328125
+    },
+    "skip": "Pular por enquanto",
+    "title": {
+      "bottom": 176.84375,
+      "height": 37.5,
+      "left": 147,
+      "right": 1219,
+      "top": 139.34375,
+      "width": 1072,
+      "x": 147,
+      "y": 139.34375
+    },
+    "titleText": {
+      "bottom": 176.84375,
+      "height": 37.5,
+      "left": 147,
+      "right": 581.6328125,
+      "top": 139.34375,
+      "width": 434.6328125,
+      "x": 147,
+      "y": 139.34375
+    },
+    "toggle": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "width": 1366
+  },
+  {
+    "bulk": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "filter": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "footer": {
+      "bottom": 872,
+      "height": 65,
+      "left": 147,
+      "right": 1219,
+      "top": 807,
+      "width": 1072,
+      "x": 147,
+      "y": 807
+    },
+    "header": {
+      "bottom": 127.34375,
+      "height": 99.34375,
+      "left": 147,
+      "right": 1219,
+      "top": 28,
+      "width": 1072,
+      "x": 147,
+      "y": 28
+    },
+    "height": 900,
+    "list": {
+      "bottom": 795,
+      "height": 448.15625,
+      "left": 147,
+      "right": 1219,
+      "top": 346.84375,
+      "width": 1072,
+      "x": 147,
+      "y": 346.84375
+    },
+    "listScrollHeight": 3350,
+    "mode": "arvore",
+    "overflow": 0,
+    "pageHeight": 900,
+    "primary": {
+      "bottom": 872,
+      "height": 44,
+      "left": 1016.3125,
+      "right": 1219,
+      "top": 828,
+      "width": 202.6875,
+      "x": 1016.3125,
+      "y": 828
+    },
+    "primaryLabel": {
+      "bottom": 860.671875,
+      "height": 21.34375,
+      "left": 1040.3125,
+      "right": 1195,
+      "top": 839.328125,
+      "width": 154.6875,
+      "x": 1040.3125,
+      "y": 839.328125
+    },
+    "skip": "Pular por enquanto",
+    "title": {
+      "bottom": 176.84375,
+      "height": 37.5,
+      "left": 147,
+      "right": 1219,
+      "top": 139.34375,
+      "width": 1072,
+      "x": 147,
+      "y": 139.34375
+    },
+    "titleText": {
+      "bottom": 176.84375,
+      "height": 37.5,
+      "left": 147,
+      "right": 581.6328125,
+      "top": 139.34375,
+      "width": 434.6328125,
+      "x": 147,
+      "y": 139.34375
+    },
+    "toggle": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "width": 1366
+  },
+  {
+    "bulk": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "filter": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "footer": {
+      "bottom": 772,
+      "height": 65,
+      "left": 184,
+      "right": 1256,
+      "top": 707,
+      "width": 1072,
+      "x": 184,
+      "y": 707
+    },
+    "header": {
+      "bottom": 127.34375,
+      "height": 99.34375,
+      "left": 184,
+      "right": 1256,
+      "top": 28,
+      "width": 1072,
+      "x": 184,
+      "y": 28
+    },
+    "height": 800,
+    "list": {
+      "bottom": 695,
+      "height": 348.15625,
+      "left": 184,
+      "right": 1256,
+      "top": 346.84375,
+      "width": 1072,
+      "x": 184,
+      "y": 346.84375
+    },
+    "listScrollHeight": 3350,
+    "mode": "arvore",
+    "overflow": 0,
+    "pageHeight": 800,
+    "primary": {
+      "bottom": 772,
+      "height": 44,
+      "left": 1053.3125,
+      "right": 1256,
+      "top": 728,
+      "width": 202.6875,
+      "x": 1053.3125,
+      "y": 728
+    },
+    "primaryLabel": {
+      "bottom": 760.671875,
+      "height": 21.34375,
+      "left": 1077.3125,
+      "right": 1232,
+      "top": 739.328125,
+      "width": 154.6875,
+      "x": 1077.3125,
+      "y": 739.328125
+    },
+    "skip": "Pular por enquanto",
+    "title": {
+      "bottom": 176.84375,
+      "height": 37.5,
+      "left": 184,
+      "right": 1256,
+      "top": 139.34375,
+      "width": 1072,
+      "x": 184,
+      "y": 139.34375
+    },
+    "titleText": {
+      "bottom": 176.84375,
+      "height": 37.5,
+      "left": 184,
+      "right": 618.6328125,
+      "top": 139.34375,
+      "width": 434.6328125,
+      "x": 184,
+      "y": 139.34375
+    },
+    "toggle": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "width": 1440
+  },
+  {
+    "bulk": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "filter": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "footer": {
+      "bottom": 872,
+      "height": 65,
+      "left": 184,
+      "right": 1256,
+      "top": 807,
+      "width": 1072,
+      "x": 184,
+      "y": 807
+    },
+    "header": {
+      "bottom": 127.34375,
+      "height": 99.34375,
+      "left": 184,
+      "right": 1256,
+      "top": 28,
+      "width": 1072,
+      "x": 184,
+      "y": 28
+    },
+    "height": 900,
+    "list": {
+      "bottom": 795,
+      "height": 448.15625,
+      "left": 184,
+      "right": 1256,
+      "top": 346.84375,
+      "width": 1072,
+      "x": 184,
+      "y": 346.84375
+    },
+    "listScrollHeight": 3350,
+    "mode": "arvore",
+    "overflow": 0,
+    "pageHeight": 900,
+    "primary": {
+      "bottom": 872,
+      "height": 44,
+      "left": 1053.3125,
+      "right": 1256,
+      "top": 828,
+      "width": 202.6875,
+      "x": 1053.3125,
+      "y": 828
+    },
+    "primaryLabel": {
+      "bottom": 860.671875,
+      "height": 21.34375,
+      "left": 1077.3125,
+      "right": 1232,
+      "top": 839.328125,
+      "width": 154.6875,
+      "x": 1077.3125,
+      "y": 839.328125
+    },
+    "skip": "Pular por enquanto",
+    "title": {
+      "bottom": 176.84375,
+      "height": 37.5,
+      "left": 184,
+      "right": 1256,
+      "top": 139.34375,
+      "width": 1072,
+      "x": 184,
+      "y": 139.34375
+    },
+    "titleText": {
+      "bottom": 176.84375,
+      "height": 37.5,
+      "left": 184,
+      "right": 618.6328125,
+      "top": 139.34375,
+      "width": 434.6328125,
+      "x": 184,
+      "y": 139.34375
+    },
+    "toggle": {
+      "bottom": 0,
+      "height": 0,
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "width": 0,
+      "x": 0,
+      "y": 0
+    },
+    "width": 1440
+  }
+]

@@ -1,1 +1,5 @@
 @use '../../../components/dialog/dialog-form-shell';
+
+:host(.mobile-side-panel__layout) { height: 100%; min-width: 0; }
+.access-panel__header { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--mat-sys-outline-variant); }
+.access-panel__header h2 { margin: 0; min-width: 0; font-size: 16px; line-height: 24px; font-weight: 600; }

@@ -1,12 +1,27 @@
+@if (panelEditor) {
+  <section class="mobile-side-panel__layout observacoes-panel">
+    <header class="mobile-side-panel__header observacoes-panel__header">
+      <h2 mat-dialog-title>{{ titulo }}</h2>
+      <button mat-icon-button type="button" [attr.aria-label]="'Fechar ' + titulo" [disabled]="salvando" (click)="fecharEditor.emit()"><mat-icon>close</mat-icon></button>
+    </header>
+    <mat-dialog-content class="mobile-side-panel__body" [attr.aria-busy]="salvando">
+      <app-input-textarea [control]="control" [label]="label" [rows]="10" [placeholder]="placeholder" [readonly]="inativo || salvando"></app-input-textarea>
+    </mat-dialog-content>
+    <mat-dialog-actions class="mobile-side-panel__footer">
+      <button mat-stroked-button type="button" [disabled]="salvando" (click)="fecharEditor.emit()">{{ inativo ? 'Fechar' : 'Cancelar' }}</button>
+      <button class="apply-observation" *ngIf="!inativo" mat-flat-button color="primary" type="button" [disabled]="salvando || control.invalid || control.pending" (click)="aplicarEdicao()">{{ salvando ? 'Aplicando...' : 'Aplicar observação' }}</button>
+    </mat-dialog-actions>
+  </section>
+} @else {
 <ng-container *ngIf="renderCard; else content">
-  <app-section-card [titulo]="titulo" [divider]="divider">
+  <app-section-card [titulo]="titulo" [divider]="divider" [mobilePlain]="mobileCompact">
     <ng-container [ngTemplateOutlet]="content"></ng-container>
   </app-section-card>
 </ng-container>
 
 <ng-template #content>
   <div class="obs-block" [class.border]="!renderCard" [class.inativo]="inativo">
-    <div class="empty-alert" *ngIf="!textoSalvo && !editando">
+    <div class="empty-alert" *ngIf="!textoSalvo && !editando && !mobileCompact">
       <mat-icon>info</mat-icon>
       <span>{{ emptyMessage }}</span>
     </div>
@@ -48,3 +63,5 @@
     </ng-template>
   </div>
 </ng-template>
+
+}

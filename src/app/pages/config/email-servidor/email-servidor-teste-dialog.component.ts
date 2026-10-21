@@ -1,3 +1,4 @@
+import { MatIconModule } from '@angular/material/icon';
 import { Component, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -7,16 +8,18 @@ import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea
 import { MatButtonModule } from '@angular/material/button';
 
 export interface EmailTesteDialogData {
+  mobilePanel?: boolean;
   emailDestino: string;
   mensagemPadrao: string;
 }
 
 @Component({
+  host: { '[class.mobile-side-panel__layout]': 'mobilePanel' },
   selector: 'app-email-servidor-teste-dialog',
   standalone: true,
   templateUrl: './email-servidor-teste-dialog.component.html',
   styleUrls: ['./email-servidor-teste-dialog.component.scss'],
-  imports: [
+  imports: [MatIconModule,
     CommonModule,
     ReactiveFormsModule,
     MatDialogModule,
@@ -26,6 +29,7 @@ export interface EmailTesteDialogData {
   ]
 })
 export class EmailServidorTesteDialogComponent {
+  get mobilePanel(): boolean { return !!this.data.mobilePanel; }
   form: FormGroup;
 
   constructor(

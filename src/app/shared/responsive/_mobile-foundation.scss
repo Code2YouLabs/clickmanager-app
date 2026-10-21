@@ -1,0 +1,8 @@
+// Existing list/item breakpoint. TS counterpart: MOBILE_FOUNDATION_QUERY.
+$mobile-foundation-max: 760px;
+
+@mixin mobile-foundation {
+  @media (max-width: $mobile-foundation-max) {
+    @content;
+  }
+}

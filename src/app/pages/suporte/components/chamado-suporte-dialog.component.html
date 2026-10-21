@@ -1,11 +1,18 @@
+@if (mobilePanel) {
+  <header class="mobile-side-panel__header">
+    <h2>Novo chamado</h2>
+    <button mat-icon-button type="button" aria-label="Fechar novo chamado" (click)="cancelar()" [disabled]="salvando"><mat-icon>close</mat-icon></button>
+  </header>
+} @else {
 <h2 mat-dialog-title class="dialog-head">
   <span class="dialog-head__copy">
     <strong>Novo chamado</strong>
     <span>Envie sua dúvida ou problema para o suporte do sistema.</span>
   </span>
 </h2>
+}
 
-<mat-dialog-content class="dialog-content">
+<mat-dialog-content class="dialog-content" [class.mobile-side-panel__body]="mobilePanel">
   <form id="novo-chamado-form" [formGroup]="form" class="dialog-form" (ngSubmit)="salvar()">
     <app-input-texto-restrito
       label="Assunto"
@@ -45,7 +52,7 @@
   </form>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end" class="dialog-actions">
+<mat-dialog-actions align="end" class="dialog-actions" [class.mobile-side-panel__footer]="mobilePanel">
   <button mat-stroked-button color="primary" type="button" (click)="cancelar()" [disabled]="salvando">
     Cancelar
   </button>

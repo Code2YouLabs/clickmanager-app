@@ -112,3 +112,15 @@
         flex-direction: column;
       }
     }
+
+  :host-context(.mobile-side-panel) {
+    display: block; height: 100%; min-height: 0; min-width: 0;
+    .service-wizard { width: 100%; max-height: none; }
+    .service-wizard__header { align-items: center; flex-shrink: 0; }
+    .service-wizard__header h2 { margin: 0; font-size: 18px; line-height: 24px; }
+    .service-wizard__header h2::before { display: none; }
+    .service-wizard__grid { grid-template-columns: minmax(0, 1fr); }
+    .service-wizard__content > strong { overflow-wrap: anywhere; }
+    .service-wizard__actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .service-wizard__actions button { min-width: 0; min-height: 44px; margin: 0; padding-inline: 8px; white-space: nowrap; }
+  }

@@ -26,7 +26,7 @@ describe('AppDashboard1Component', () => {
     features.carregar.and.returnValue(of({ SMARTCALC: smartCalcEnabled }));
     features.isEnabled.and.callFake((feature: string) => feature === 'SMARTCALC' ? smartCalcEnabled : false);
 
-    const component = new AppDashboard1Component(service, router, auth, features);
+    const component = new AppDashboard1Component(service, router, auth, features, { observe: () => of({ matches: false }) } as any);
     return { component, service, router };
   }
 

@@ -1,0 +1,14 @@
+@use "../../../shared/responsive/mobile-list-item" as item;
+@media (max-width: 760px) {
+  .usuario-mobile-item {
+    @include item.surface;
+    display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 8px; align-items: start;
+    img { border-radius: 50%; object-fit: cover; }
+    &__content { min-width: 0; }
+    strong { @include item.heading; display: block; }
+    span { display: block; margin-top: 4px; font-size: 12px; line-height: 16px; overflow-wrap: anywhere; color: var(--mat-sys-on-surface-variant); }
+    app-status-badge { display: block; margin-top: 4px; }
+    &__menu { min-width: 44px; width: 44px; height: 44px; }
+  }
+  .usuario-mobile-menu__destructive { --mat-menu-item-label-text-color: var(--mat-sys-error); --mat-menu-item-icon-color: var(--mat-sys-error); }
+}

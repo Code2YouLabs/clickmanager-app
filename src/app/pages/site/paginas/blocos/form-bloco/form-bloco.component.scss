@@ -73,3 +73,15 @@
     display: grid;
   }
 }
+
+@media (max-width: 760px) {
+  :host.mobile-side-panel__layout .form-bloco-dialog {
+    width: 100%; max-width: none; max-height: none; min-width: 0;
+  }
+  .form-bloco-grid > *, .faq-editor > * { min-width: 0; }
+  .faq-editor__header { flex-wrap: wrap; }
+  .mobile-side-panel__header { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    h2 { min-width: 0; margin: 0; font-size: 18px; line-height: 24px; overflow-wrap: anywhere; }
+    button { flex-shrink: 0; }
+  }
+}

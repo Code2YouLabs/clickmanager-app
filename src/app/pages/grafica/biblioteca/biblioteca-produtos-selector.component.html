@@ -1,50 +1,67 @@
 @if (erro) { <div role="alert" class="biblioteca-erro">{{ erro }} <button mat-button (click)="reconectar()" [disabled]="reconectando">Reconectar</button></div> }
 @if (reconectando) { <mat-progress-bar mode="indeterminate" aria-label="Consultando preparação" /> }
-@if (job) { <app-setup-progress [job]="job" [onboarding]="onboarding" [animarEtapas]="animarEtapas" (etapasConcluidas)="etapasConcluidas.emit()" /> }
+@if (job) { <app-setup-progress [job]="job" [compact]="mobilePanel" [onboarding]="onboarding" [animarEtapas]="animarEtapas" (etapasConcluidas)="etapasConcluidas.emit()" /> }
 @if (!importando && !reconectando && (!onboarding || !job)) {
 @if (mostrarIntroducao) { <p>Escolha produtos e serviços prontos para sua empresa. Depois de adicionar, você pode editar os cadastros e preços livremente.</p> }
-<div class="biblioteca-toolbar">
-  <mat-form-field appearance="outline">
-    <mat-label>Pesquisar na biblioteca</mat-label>
-    <input matInput [(ngModel)]="busca" (ngModelChange)="pesquisar($event)" [disabled]="importando" placeholder="Nome, material, formato ou cor">
-    <mat-icon matSuffix>search</mat-icon>
-  </mat-form-field>
-  <mat-form-field appearance="outline">
-    <mat-label>Categoria</mat-label>
-    <mat-select [(ngModel)]="categoria" [disabled]="importando">
-      <mat-option value="">Todas as categorias</mat-option>
-      @for (c of categorias; track c) { <mat-option [value]="c">{{ c }}</mat-option> }
-    </mat-select>
-  </mat-form-field>
-  <mat-button-toggle-group [(ngModel)]="modo" aria-label="Visualização da biblioteca">
-    <mat-button-toggle value="arvore">Árvore</mat-button-toggle>
-    <mat-button-toggle value="detalhada">Detalhada</mat-button-toggle>
-  </mat-button-toggle-group>
+<div class="biblioteca-toolbar" [class.biblioteca-desktop-controls]="onboarding">
+  <ng-container *ngTemplateOutlet="camposFiltros" />
+  @if (!mobilePanel) { <ng-container *ngTemplateOutlet="visualizacao" /> }
 </div>
-<div class="biblioteca-acoes" *ngIf="!carregando || filtrados.length">
+@if (mobilePanel) {
+  <div class="biblioteca-mobile-selection" aria-live="polite">
+    <span>{{ contadorSelecionados }} · {{ selecionados.size }} no total</span>
+    <button mat-button type="button" color="primary" [disabled]="carregando || importando || !filtrados.length"
+      [attr.aria-pressed]="algunsSelecionados ? 'mixed' : todosSelecionados"
+      (click)="selecionarTodos(!todosSelecionados)">{{ todosSelecionados ? 'Desmarcar resultados' : 'Selecionar resultados' }}</button>
+  </div>
+} @else {
+<div class="biblioteca-acoes" [class.biblioteca-desktop-controls]="onboarding" *ngIf="!carregando || filtrados.length">
   <div class="biblioteca-acoes__bulk">
-    <button
-      mat-stroked-button
-      color="primary"
-      type="button"
-      [disabled]="carregando || importando || !filtrados.length"
-      (click)="selecionarTodos(!todosSelecionados)"
-      [attr.aria-pressed]="todosSelecionados"
-    >
-      <mat-icon>{{ todosSelecionados ? 'remove_done' : 'select_all' }}</mat-icon>
-      <span>{{ textoAcaoSelecao }}</span>
-    </button>
-    <span class="biblioteca-acoes__contador" aria-live="polite">{{ contadorSelecionados }}</span>
+    <ng-container *ngTemplateOutlet="selecaoCompleta" />
+    @if (!onboarding) { <span class="biblioteca-acoes__contador" aria-live="polite">{{ contadorSelecionados }}</span> }
+    @if (onboarding) {
+      <span class="cdk-visually-hidden" role="status">{{ todosSelecionados ? 'Todos os resultados selecionados.' : algunsSelecionados ? 'Seleção parcial dos resultados.' : 'Nenhum resultado selecionado.' }}</span>
+    }
   </div>
   @if (mostrarAcaoAdicionar) { <button mat-flat-button color="primary" [disabled]="carregando || importando || !selecionados.size" (click)="adicionar()">{{ importando ? 'Adicionando...' : 'Adicionar à empresa' }}</button> }
 </div>
+}
+@if (onboarding) {
+  <div class="biblioteca-mobile-controls">
+    <button class="onboarding-catalogo__filters" mat-stroked-button type="button"
+      [disabled]="carregando || importando || !!erro" [class.onboarding-catalogo__filters--active]="!!filtrosAtivos"
+      [attr.aria-label]="filtrosAtivos ? 'Filtros: ' + filtrosAtivos + ' ativos' : 'Filtros'" (click)="abrirFiltros()">
+      <mat-icon>filter_list</mat-icon>Filtros
+      @if (filtrosAtivos) { <span class="biblioteca-filter-count" aria-hidden="true">{{ filtrosAtivos }}</span> }
+    </button>
+    <ng-container *ngTemplateOutlet="visualizacao; context: { compact: true }" />
+  </div>
+  <ng-container *ngTemplateOutlet="selecaoCompleta; context: { mobile: true }" />
+}
 @if (carregando) { <mat-progress-bar mode="indeterminate" aria-label="Carregando biblioteca"></mat-progress-bar> }
-@if (modo === 'arvore') {
-  <app-hierarchy-tree [nodes]="arvore" [selectable]="true" [compact]="true"
+<div class="biblioteca-resultados" role="region" aria-label="Produtos da biblioteca" [attr.tabindex]="onboarding ? 0 : null">
+@if (mobilePanel) {
+  <mat-list class="biblioteca-mobile-list" role="list" aria-label="Produtos disponíveis">
+    @for (item of filtrados; track chave(item)) {
+      <div class="biblioteca-mobile-item" role="listitem">
+        <mat-checkbox #selecao [checked]="selecionados.has(chave(item))" [disabled]="importando || carregando"
+          (change)="marcar(item, $event.checked)" [aria-label]="'Selecionar ' + item.nome + ' ' + configuracao(item)" />
+        <label [for]="selecao.inputId" class="biblioteca-mobile-item__content">
+          <strong [title]="item.nome">{{ item.nome }}</strong>
+          @if (configuracao(item) || item.descricao) { <span class="biblioteca-mobile-item__description" [title]="configuracao(item) || item.descricao">{{ configuracao(item) || item.descricao }}</span> }
+          @if (item.jaExiste) { <small>Já cadastrado na empresa</small> }
+        </label>
+      </div>
+    } @empty { @if (!carregando && !erro) { <p>Nenhum item encontrado. Altere a pesquisa ou a categoria.</p> } }
+  </mat-list>
+} @else {
+@if (onboarding || modo === 'arvore') {
+  <app-hierarchy-tree [hidden]="modo !== 'arvore'" [nodes]="arvore" [trackByNode]="trackByLibraryNode" [selectable]="true" [compact]="true"
     [selectionStates]="estados" [selectionDisabled]="importando || carregando" [loading]="carregando"
     [expandAll]="!onboarding || !!termo || !!categoria" [expandRoots]="!onboarding" emptyDescription="Altere a pesquisa ou a categoria."
     (selectionChange)="marcarNo($event)"></app-hierarchy-tree>
-} @else {
+}
+@if (modo === 'detalhada') {
 <div class="biblioteca-lista" [attr.aria-busy]="carregando || importando">
   @for (item of filtrados; track chave(item)) {
     <article>
@@ -64,5 +81,51 @@
 </div>
 
 }
+}
+</div>
 
 }
+
+<ng-template #selecaoCompleta let-mobile="mobile">
+  <button mat-stroked-button color="primary" type="button" [class.biblioteca-mobile-bulk]="mobile"
+    [disabled]="carregando || importando || !filtrados.length"
+    [attr.aria-pressed]="mobile && algunsSelecionados ? 'mixed' : todosSelecionados"
+    (click)="selecionarTodos(!todosSelecionados)">
+    <mat-icon>{{ todosSelecionados ? 'remove_done' : 'select_all' }}</mat-icon>
+    <span>{{ mobile ? 'Selecionar todos' : textoAcaoSelecao }}</span>
+  </button>
+</ng-template>
+
+<ng-template #visualizacao let-compact="compact">
+  <mat-button-toggle-group [(ngModel)]="modo" [hideSingleSelectionIndicator]="!!compact" aria-label="Visualização da biblioteca">
+    <mat-button-toggle value="arvore">Árvore</mat-button-toggle>
+    <mat-button-toggle value="detalhada">Detalhada</mat-button-toggle>
+  </mat-button-toggle-group>
+</ng-template>
+
+<ng-template #camposFiltros>
+  <mat-form-field appearance="outline">
+    <mat-label>Pesquisar na biblioteca</mat-label>
+    <input matInput [(ngModel)]="busca" (ngModelChange)="pesquisar($event)" [disabled]="importando" placeholder="Nome, material, formato ou cor">
+    <mat-icon matSuffix>search</mat-icon>
+  </mat-form-field>
+  <mat-form-field appearance="outline">
+    <mat-label>Categoria</mat-label>
+    <mat-select [(ngModel)]="categoria" [disabled]="importando">
+      @if (onboarding || mobilePanel) { <mat-select-trigger>{{ categoria || 'Todas' }}</mat-select-trigger> }
+      <mat-option value="">Todas as categorias</mat-option>
+      @for (c of (mobilePanel ? categoriasMobile : categorias); track c) { <mat-option [value]="c">{{ c }}</mat-option> }
+    </mat-select>
+  </mat-form-field>
+</ng-template>
+
+<ng-template #modalFiltros>
+  <h2 mat-dialog-title>Filtros do catálogo</h2>
+  <mat-dialog-content class="biblioteca-filtros-dialog">
+    <ng-container *ngTemplateOutlet="camposFiltros" />
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button type="button" (click)="limparFiltros()" [disabled]="!busca && !categoria">Limpar filtros</button>
+    <button mat-flat-button color="primary" type="button" mat-dialog-close>Concluir</button>
+  </mat-dialog-actions>
+</ng-template>

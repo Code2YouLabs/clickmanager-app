@@ -18,24 +18,21 @@
       </div>
     </div>
 
+    @if (compactMobile) {
+    <details class="dashboard-chart-card__periods">
+      <summary>
+        <span class="dashboard-chart-card__periods-title">Período e comparação</span>
+        <span class="dashboard-chart-card__periods-selection">{{ mesLabel(mesA) }} / {{ mesLabel(mesB) }} · {{ ano }} · {{ modo === 'receita' ? 'Valor' : 'Qtd' }}</span>
+      </summary>
+      <div class="dashboard-chart-card__filters">
+        <ng-container *ngTemplateOutlet="periodFilters"></ng-container>
+      </div>
+    </details>
+    } @else {
     <div class="dashboard-chart-card__filters">
-      <button type="button" class="dashboard-chart-filter" [matMenuTriggerFor]="mesAMenu">
-        {{ mesLabel(mesA) }}
-      </button>
-      <button type="button" class="dashboard-chart-filter" [matMenuTriggerFor]="mesBMenu">
-        {{ mesLabel(mesB) }}
-      </button>
-      <button type="button" class="dashboard-chart-filter" [matMenuTriggerFor]="anoMenu">
-        {{ ano }}
-      </button>
-      @for(item of modos; track item.value) {
-      <button type="button" class="dashboard-chart-filter"
-        [class.dashboard-chart-filter--active]="modo === item.value"
-        (click)="alterarModo(item.value)">
-        {{ item.label }}
-      </button>
-      }
+      <ng-container *ngTemplateOutlet="periodFilters"></ng-container>
     </div>
+    }
 
     <div class="dashboard-chart-card__desktop-summary">
       <div class="dashboard-chart-card__desktop-metric">
@@ -118,6 +115,25 @@
     </div>
   </div>
 </div>
+
+<ng-template #periodFilters>
+      <button type="button" class="dashboard-chart-filter" [matMenuTriggerFor]="mesAMenu">
+        {{ mesLabel(mesA) }}
+      </button>
+      <button type="button" class="dashboard-chart-filter" [matMenuTriggerFor]="mesBMenu">
+        {{ mesLabel(mesB) }}
+      </button>
+      <button type="button" class="dashboard-chart-filter" [matMenuTriggerFor]="anoMenu">
+        {{ ano }}
+      </button>
+      @for(item of modos; track item.value) {
+      <button type="button" class="dashboard-chart-filter"
+        [class.dashboard-chart-filter--active]="modo === item.value"
+        (click)="alterarModo(item.value)">
+        {{ item.label }}
+      </button>
+      }
+</ng-template>
 
 <mat-menu #mesAMenu="matMenu">
   @for(month of meses; track month.value) {

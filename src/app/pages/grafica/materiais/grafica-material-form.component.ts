@@ -1,5 +1,9 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { Subject, takeUntil } from 'rxjs';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { finalize, map, of, switchMap } from 'rxjs';
@@ -24,21 +28,26 @@ import { GraficaProdutoService } from '../shared/grafica.service';
     RouterModule,
     MaterialModule,
     PageCardComponent,
+    MobileTotalBarComponent,
     SectionCardComponent,
     InputTextoRestritoComponent,
     InputTextareaComponent,
   ],
   template: `
-    <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [formState]="formState" [footerActions]="footerActions" [saving]="salvando" [actionsDisabled]="carregando">
+    <app-page-card [titulo]="titulo" [subtitulo]="subtitulo" [formState]="isMobile ? undefined : formState" [footerActions]="isMobile ? [] : footerActions" [saving]="salvando" [actionsDisabled]="carregando">
+      @if (isMobile) {
+        <button page-mobile-header-actions mat-button type="button" [disabled]="salvando" (click)="voltar()"><mat-icon>arrow_back</mat-icon>Voltar</button>
+      } @else {
       <div page-header-actions>
         <button mat-stroked-button type="button" (click)="voltar()">
           <mat-icon>arrow_back</mat-icon>
           Voltar
         </button>
       </div>
+      }
 
-      <form id="grafica-material-form" [formGroup]="form" class="material-form" (ngSubmit)="salvar()">
-        <app-section-card title="Dados do material">
+      <form id="grafica-material-form" [formGroup]="form" class="material-form" [class.cadastro-form--mobile]="isMobile" (ngSubmit)="salvar()">
+        <app-section-card [title]="isMobile ? undefined : 'Dados do material'" [mobilePlain]="isMobile">
           <div class="form-grid">
             <app-input-texto-restrito
               [control]="nomeControl"
@@ -58,6 +67,16 @@ import { GraficaProdutoService } from '../shared/grafica.service';
           </div>
         </app-section-card>
       </form>
+      @if (isMobile) {
+        <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true"
+          actionType="submit" actionForm="grafica-material-form" bottomAnchorSelector=".mobile-bottom-nav"
+          bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+          secondaryActionText="Cancelar" secondaryActionAriaLabel="Restaurar formulário"
+          [secondaryActionDisabled]="salvando || carregando || !formState.canReset" (secondaryAction)="formState.reset()"
+          [actionText]="salvando ? 'Salvando...' : 'Salvar material'" actionIcon="save" actionAriaLabel="Salvar material"
+          [actionDisabled]="form.invalid || salvando || carregando" [loading]="salvando">
+        </app-mobile-total-bar>
+      }
 
     </app-page-card>
   `,
@@ -86,9 +105,17 @@ import { GraficaProdutoService } from '../shared/grafica.service';
         grid-template-columns: 1fr;
       }
     }
+    @media (max-width: 760px) {
+      .cadastro-form--mobile { min-width: 0; }
+      .cadastro-form--mobile .form-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+      .cadastro-form--mobile .form-grid > * { min-width: 0; }
+    }
   `],
 })
-export class GraficaMaterialFormComponent implements OnInit {
+export class GraficaMaterialFormComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  private readonly destroy$ = new Subject<void>();
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
   materialId?: number;
   cloneFromId?: number;
   salvando = false;
@@ -125,7 +152,10 @@ export class GraficaMaterialFormComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly toastr: ToastrService,
-  ) {}
+    breakpoints?: BreakpointObserver,
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+  }
 
   ngOnInit(): void {
     this.carregando = true;

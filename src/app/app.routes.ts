@@ -137,25 +137,25 @@ export const routes: Routes = [
         path: 'billing/blocked',
         component: BillingBlockedComponent,
         canActivate: [AuthGuard],
-        data: { perfil: 'GESTOR', ...SHARED_ROUTE_DATA },
+        data: { mobileTitle: 'Assinatura', perfil: 'GESTOR', ...SHARED_ROUTE_DATA },
       },
       {
         path: 'billing/pagamento',
         component: BillingPagamentoComponent,
         canActivate: [AuthGuard],
-        data: { perfil: 'GESTOR', ...SHARED_ROUTE_DATA },
+        data: { mobileTitle: 'Assinatura', perfil: 'GESTOR', ...SHARED_ROUTE_DATA },
       },
       {
         path: 'billing/return',
         component: BillingReturnComponent,
         canActivate: [AuthGuard],
-        data: { perfil: 'GESTOR', ...SHARED_ROUTE_DATA },
+        data: { mobileTitle: 'Assinatura', perfil: 'GESTOR', ...SHARED_ROUTE_DATA },
       },
       {
         path: 'billing/confirmacao',
         component: BillingConfirmationComponent,
         canActivate: [AuthGuard],
-        data: { perfil: 'GESTOR', ...SHARED_ROUTE_DATA },
+        data: { mobileTitle: 'Assinatura', perfil: 'GESTOR', ...SHARED_ROUTE_DATA },
       },
       {
         path: 'billing/minha-assinatura',
@@ -164,7 +164,7 @@ export const routes: Routes = [
             (m) => m.MinhaAssinaturaComponent
           ),
         canActivate: [AuthGuard],
-        data: { perfil: 'GESTOR', ...SHARED_ROUTE_DATA },
+        data: { mobileTitle: 'Assinatura', perfil: 'GESTOR', ...SHARED_ROUTE_DATA },
       },
     ],
   },

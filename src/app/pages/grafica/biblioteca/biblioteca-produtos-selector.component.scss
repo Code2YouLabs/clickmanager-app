@@ -1,10 +1,12 @@
+@use "../../../shared/responsive/mobile-list-item" as item;
 :host { display: block; }
+.biblioteca-resultados > [hidden] { display: none; }
 p { color: var(--mat-sys-on-surface-variant, #526075); }
 .biblioteca-toolbar { display: flex; gap: 16px; flex-wrap: wrap; mat-form-field { flex: 1 1 260px; } }
 .biblioteca-acoes { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 12px 0 20px; }
 .biblioteca-acoes__bulk { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: min(100%, 360px); }
-.biblioteca-acoes__bulk button { min-height: 40px; border-radius: 999px; }
-.biblioteca-acoes__bulk mat-icon { width: 18px; height: 18px; font-size: 18px; margin-right: 6px; }
+.biblioteca-acoes__bulk button, .biblioteca-mobile-bulk { min-height: 40px; border-radius: 999px; }
+.biblioteca-acoes__bulk mat-icon, .biblioteca-mobile-bulk mat-icon { width: 18px; height: 18px; font-size: 18px; margin-right: 6px; }
 .biblioteca-acoes__contador { color: var(--mat-sys-on-surface-variant, #526075); font-size: .88rem; font-weight: 700; }
 .biblioteca-acoes > button { margin-left: auto; }
 .biblioteca-lista { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; }
@@ -33,4 +35,119 @@ details { margin-top: 12px; summary { cursor: pointer; } }
   .biblioteca-acoes__contador {
     padding-left: 2px;
   }
+}
+
+// The bounded layout is opt-in to onboarding; the regular library keeps its layout.
+:host(.biblioteca-selector--onboarding) {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+
+  .biblioteca-toolbar { flex: 0 0 auto; gap: 8px; }
+  .biblioteca-toolbar mat-form-field { min-width: 0; }
+  .biblioteca-acoes { flex: 0 0 auto; margin: 8px 0; gap: 8px; }
+  .biblioteca-acoes__bulk { width: 100%; min-width: 0; gap: 4px 12px; }
+  .biblioteca-acoes__bulk button { min-height: 44px; max-width: 100%; height: auto; white-space: normal; }
+  .biblioteca-acoes__bulk small { width: 100%; color: var(--mat-sys-on-surface-variant); font-size: 12px; line-height: 16px; }
+  .biblioteca-resultados { flex: 1 1 0; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; padding: 4px; }
+  .biblioteca-resultados:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: -2px; }
+  .biblioteca-lista { gap: 8px; }
+  article { min-width: 0; padding: 8px 12px; }
+  .biblioteca-item-corpo { padding-left: 40px; overflow-wrap: anywhere; font-size: 14px; line-height: 20px; }
+  .biblioteca-item-corpo p { margin: 4px 0; }
+  details { margin-top: 8px; }
+
+  ::ng-deep {
+    .biblioteca-toolbar .mat-mdc-form-field-subscript-wrapper { display: none; }
+    .biblioteca-toolbar input { font-size: 16px; }
+    .biblioteca-lista mat-checkbox,
+    .biblioteca-lista .mdc-form-field { width: 100%; min-width: 0; }
+    .biblioteca-lista .mdc-label { flex: 1; min-width: 0; padding: 8px 0; overflow-wrap: anywhere; }
+    .hierarchy-tree-shell--compact .hierarchy-tree__row { min-height: 44px; }
+  }
+
+  @media (max-width: 768px) {
+    .biblioteca-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+    .biblioteca-toolbar mat-form-field:first-child { grid-column: 1 / -1; }
+    .biblioteca-toolbar mat-button-toggle-group { max-width: 100%; }
+    .biblioteca-acoes__bulk button { width: 100%; }
+    .biblioteca-lista { grid-template-columns: minmax(0, 1fr); }
+    .biblioteca-item-corpo { padding-left: 12px; }
+    ::ng-deep .biblioteca-toolbar .mat-button-toggle-label-content { padding: 0 12px; line-height: 44px; }
+  }
+}
+
+.biblioteca-mobile-controls, .biblioteca-mobile-bulk { display: none; }
+.biblioteca-filtros-dialog { display: grid; gap: 8px; }
+.biblioteca-filtros-dialog > mat-form-field:first-child { margin-top: 12px; }
+.biblioteca-filtros-dialog mat-form-field { width: 100%; min-width: 0; }
+.biblioteca-filtros-dialog input { font-size: 16px; }
+:host(.biblioteca-selector--onboarding) ::ng-deep .hierarchy-tree__row--parent .hierarchy-tree__meta { display: none; }
+
+@media (max-width: 768px), (max-width: 960px) and (max-height: 560px) {
+  :host(.biblioteca-selector--onboarding) {
+    .biblioteca-desktop-controls { display: none; }
+    .biblioteca-mobile-controls { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; margin-bottom: 8px; }
+    .onboarding-catalogo__filters { flex: 0 0 auto; min-height: 44px; padding: 0 12px; }
+    .onboarding-catalogo__filters,
+    .biblioteca-mobile-controls mat-button-toggle-group {
+      height: 44px; box-sizing: border-box;
+      border-radius: var(--mat-standard-button-toggle-shape, var(--mat-sys-corner-medium));
+    }
+    .biblioteca-mobile-controls mat-button-toggle-group { border-color: var(--mdc-outlined-button-outline-color, var(--mat-sys-outline)); }
+    .onboarding-catalogo__filters--active { background: var(--mat-sys-primary-container); }
+    .onboarding-catalogo__filters--active:not(:disabled) { color: var(--mat-sys-on-primary-container); }
+    .biblioteca-filter-count { margin-left: 4px; font-weight: 700; }
+    .biblioteca-mobile-controls mat-button-toggle-group { flex: 0 0 auto; }
+    .biblioteca-mobile-bulk { display: inline-flex; flex: 0 0 auto; width: 100%; min-height: 44px; margin-bottom: 8px; background: var(--mat-sys-surface); }
+    .biblioteca-lista { grid-template-columns: minmax(0, 1fr); }
+    .biblioteca-item-corpo { padding-left: 12px; }
+    ::ng-deep {
+      // Two border pixels are included in the existing 44px control row.
+      .biblioteca-mobile-controls .mat-button-toggle-label-content { padding: 0 8px; font-size: 14px; line-height: calc(44px - 2px); }
+      .biblioteca-mobile-controls .mat-button-toggle-checked { background: var(--mat-sys-primary-container); color: var(--mat-sys-on-primary-container); }
+      .hierarchy-tree-shell--compact {
+        // Keep the 44px row; use its height for both independent touch targets.
+        .hierarchy-tree__row--selectable { grid-template-columns: 44px 44px minmax(0, 1fr); gap: 0; padding: 0; }
+        .hierarchy-tree__toggle { width: 44px; height: 44px; padding: 0; display: grid; place-items: center; }
+        .hierarchy-tree__toggle[aria-expanded='true'] { color: var(--mat-sys-primary); }
+        .hierarchy-tree__row--selectable > mat-checkbox { justify-self: center; }
+        .hierarchy-tree__row--selectable .mat-mdc-checkbox-touch-target { width: 44px; height: 44px; }
+        .hierarchy-tree__title { align-items: center; }
+        .hierarchy-tree__row--parent:has(input:checked) .hierarchy-tree__label,
+        .hierarchy-tree__row--parent:has(input:indeterminate) .hierarchy-tree__label { color: var(--mat-sys-primary); }
+      }
+    }
+  }
+}
+
+@media (max-width: 960px) and (max-height: 560px) {
+  :host(.biblioteca-selector--onboarding) {
+    .biblioteca-mobile-controls, .biblioteca-mobile-bulk { margin-bottom: 4px; }
+  }
+}
+
+// Only the product-list side panel opts in; desktop and onboarding stay unchanged.
+:host(.biblioteca-selector--mobile-panel) {
+  min-width: 0;
+  .biblioteca-toolbar { gap: 8px; }
+  .biblioteca-toolbar mat-form-field { min-width: 0; width: 100%; }
+  .biblioteca-acoes__bulk { min-width: 0; }
+  .biblioteca-acoes__bulk button { height: auto; min-height: 44px; white-space: normal; }
+  .biblioteca-lista article { min-width: 0; overflow-wrap: anywhere; }
+}
+
+:host(.biblioteca-selector--mobile-panel) {
+  .biblioteca-toolbar { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .biblioteca-mobile-selection { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0 8px; font-size: 12px; line-height: 16px; color: var(--mat-sys-on-surface-variant); }
+  .biblioteca-mobile-selection button { min-height: 44px; }
+  .biblioteca-mobile-list { padding: 0; }
+  .biblioteca-mobile-item { display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: start; gap: 4px; padding: 8px 0; border-bottom: 1px solid var(--mat-sys-outline-variant); }
+  .biblioteca-mobile-item mat-checkbox { min-width: 44px; min-height: 44px; }
+  .biblioteca-mobile-item__content { min-width: 0; cursor: pointer; padding: 4px 0; }
+  .biblioteca-mobile-item strong { @include item.heading; font-weight: 600; }
+  .biblioteca-mobile-item strong, .biblioteca-mobile-item__description { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
+  .biblioteca-mobile-item__description { margin-top: 2px; font-size: 12px; line-height: 16px; color: var(--mat-sys-on-surface-variant); }
+  .biblioteca-mobile-item small { display: block; font-size: 12px; line-height: 16px; color: var(--mat-sys-on-surface-variant); }
 }

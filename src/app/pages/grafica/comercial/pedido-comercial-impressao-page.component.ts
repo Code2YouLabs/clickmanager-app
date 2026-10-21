@@ -1,13 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { ActivatedRoute, RouterModule } from '@angular/router';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { ActivatedRoute } from '@angular/router';
 import { finalize } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
-import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { PdfDocumentPageComponent } from 'src/app/components/pdf-document-page/pdf-document-page.component';
 import { GraficaProdutoService } from '../shared/grafica.service';
 import { PedidoComercialDetalhe } from '../shared/grafica.models';
 
@@ -18,160 +15,10 @@ type FormatoPedidoComercial = 'completo' | 'duas-vias' | 'etiqueta';
   standalone: true,
   imports: [
     CommonModule,
-    RouterModule,
-    MatButtonModule,
-    MatIconModule,
-    MatProgressSpinnerModule,
-    PageCardComponent,
+    PdfDocumentPageComponent,
   ],
-  template: `
-    <app-page-card
-      [titulo]="tituloPagina"
-      [subtitulo]="subtituloPagina"
-      [botaoTexto]="'Voltar'"
-      [botaoRota]="voltarLink"
-      [mostrarDivisor]="true"
-      [contentPadding]="false">
-      <div page-header-actions class="document-actions">
-        <button mat-stroked-button color="primary" type="button" [disabled]="!pdfBlob || carregando" (click)="salvarPdf()">
-          <mat-icon>download</mat-icon>
-          Salvar PDF
-        </button>
-        <button mat-flat-button color="primary" type="button" [disabled]="!pdfPreviewUrl || carregando" (click)="imprimir()">
-          <mat-icon>print</mat-icon>
-          Imprimir
-        </button>
-      </div>
-
-      <div class="print-page">
-        <div class="state-panel" *ngIf="carregando">
-          <mat-spinner diameter="34"></mat-spinner>
-          <span>Gerando documento...</span>
-        </div>
-
-        <div class="error-panel" *ngIf="!carregando && erro">
-          <mat-icon>error_outline</mat-icon>
-          <div>
-            <strong>Não foi possível gerar o documento.</strong>
-            <span>{{ erro }}</span>
-          </div>
-          <div class="error-actions">
-            <button mat-stroked-button color="primary" type="button" [routerLink]="voltarLink">
-              Voltar
-            </button>
-            <button mat-flat-button color="primary" type="button" (click)="carregarDados()">
-              Tentar novamente
-            </button>
-          </div>
-        </div>
-
-        <iframe
-          *ngIf="!carregando && !erro && pdfPreviewUrl"
-          #pdfFrame
-          class="pdf-frame"
-          [src]="pdfPreviewUrl"
-          title="Preview do PDF do pedido"
-          scrolling="no">
-        </iframe>
-      </div>
-    </app-page-card>
-  `,
-  styles: [`
-    .print-page {
-      height: calc(100vh - 210px);
-      min-height: 720px;
-      padding: 0;
-      overflow: hidden;
-      background: #f8fafc;
-    }
-
-    .document-actions {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .document-actions button {
-      border-radius: 999px;
-    }
-
-    .pdf-frame {
-      display: block;
-      width: 100%;
-      height: 100%;
-      border: 0;
-      background: #fff;
-    }
-
-    .state-panel,
-    .error-panel {
-      height: 100%;
-      min-height: 420px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      color: #64748b;
-      background: #f8fafc;
-    }
-
-    .error-panel {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
-      justify-content: flex-start;
-      align-items: start;
-      max-width: 680px;
-      min-height: auto;
-      margin: 24px auto;
-      padding: 18px;
-      border-color: #fecaca;
-      color: #991b1b;
-      background: #fff7f7;
-    }
-
-    .error-panel mat-icon {
-      margin-top: 1px;
-    }
-
-    .error-panel strong,
-    .error-panel span {
-      display: block;
-    }
-
-    .error-panel span {
-      margin-top: 3px;
-      color: #7f1d1d;
-    }
-
-    .error-actions {
-      grid-column: 1 / -1;
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      margin-top: 12px;
-    }
-
-    @media (max-width: 768px) {
-      .document-actions {
-        width: 100%;
-      }
-
-      .document-actions button,
-      .error-actions button {
-        width: 100%;
-      }
-
-      .print-page {
-        height: calc(100vh - 250px);
-        min-height: 560px;
-      }
-
-      .error-actions {
-        flex-direction: column;
-      }
-    }
-  `],
+  templateUrl: './pedido-comercial-impressao-page.component.html',
+  styleUrl: './pedido-comercial-impressao-page.component.scss',
 })
 export class PedidoComercialImpressaoPageComponent implements OnInit, OnDestroy {
   @ViewChild('pdfFrame') pdfFrame?: ElementRef<HTMLIFrameElement>;
@@ -271,7 +118,7 @@ export class PedidoComercialImpressaoPageComponent implements OnInit, OnDestroy 
       .pipe(finalize(() => this.carregando = false))
       .subscribe({
         next: response => {
-          if (!response.body) {
+          if (!response.body || response.body.size === 0) {
             this.erro = 'Não foi possível gerar o PDF.';
             this.toastr.error(this.erro);
             return;

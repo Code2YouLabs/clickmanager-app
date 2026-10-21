@@ -105,3 +105,17 @@
     flex-wrap: wrap;
   }
 }
+
+@media (max-width: 760px) {
+  .editor-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .sequence-item { display: grid; grid-template-columns: 28px 24px minmax(0, 1fr) 44px; gap: 8px; padding: 12px 0; }
+  .sequence-info { min-width: 0; }
+  .sequence-menu { grid-column: 4; grid-row: 1; width: 44px; height: 44px; }
+  .duration { grid-column: 2 / 4; width: 100%; min-width: 0; }
+  .sequence-item mat-slide-toggle { grid-column: 2 / -1; min-height: 44px; }
+  .library-list { max-height: none; overflow: visible; }
+  .library-item { min-height: 44px; min-width: 0; grid-template-columns: 24px minmax(0, 1fr) 24px; }
+  .library-panel__header { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    h2 { margin: 0; font-size: 18px; line-height: 24px; } button { flex-shrink: 0; }
+  }
+}

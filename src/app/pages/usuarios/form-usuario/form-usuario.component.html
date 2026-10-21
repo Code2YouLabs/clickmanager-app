@@ -1,7 +1,8 @@
-<app-page-card [titulo]="isEditMode ? 'Editar Usuário' : 'Novo Usuário'" botaoTexto="Voltar"
+<app-page-card [titulo]="isEditMode ? 'Editar Usuário' : 'Novo Usuário'" [botaoTexto]="isMobile ? undefined : 'Voltar'"
   botaoIcone="arrow_back" [botaoRota]="['/page/usuarios/listar']" [headerActionDisabled]="saving"
-  [formState]="pronto ? formState : undefined" [footerActions]="footerActions"
+  [formState]="pronto && !isMobile ? formState : undefined" [footerActions]="isMobile ? [] : footerActions"
   [saving]="saving" savingText="Salvando usuário..." [actionsDisabled]="!pronto">
+  @if (isMobile) { <button page-mobile-header-actions mat-button type="button" [disabled]="saving" (click)="voltarMobile()"><mat-icon>arrow_back</mat-icon>Voltar</button> }
   @if (carregando) {
     <div class="d-flex align-items-center justify-content-center gap-16 p-24" role="status" aria-busy="true">
       <mat-spinner diameter="36"></mat-spinner><span>Carregando usuário e perfis...</span>
@@ -14,7 +15,7 @@
     </div>
   } @else {
     <form id="usuario-form" [formGroup]="form" (ngSubmit)="onSubmit()">
-      <app-section-card title="Dados do usuário">
+      <app-section-card [title]="isMobile ? undefined : 'Dados do usuário'" [mobilePlain]="isMobile">
         <div class="row g-3">
           <div class="col-12"><app-input-texto-restrito [control]="nomeControl" label="Nome" [maxlength]="100"></app-input-texto-restrito></div>
           <div class="col-md-6"><app-input-email [control]="emailControl" label="E-mail" [maxlength]="50"></app-input-email></div>
@@ -30,5 +31,12 @@
         </div>
       </app-section-card>
     </form>
+  }
+  @if (isMobile && pronto) {
+    <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true"
+      actionType="submit" actionForm="usuario-form" bottomAnchorSelector=".mobile-bottom-nav"
+      bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+      secondaryActionText="Cancelar" secondaryActionAriaLabel="Restaurar formulário" [secondaryActionDisabled]="saving || !formState.canReset" (secondaryAction)="formState.reset()"
+      [actionText]="saving ? 'Salvando...' : 'Salvar usuário'" actionIcon="save" actionAriaLabel="Salvar usuário" [actionDisabled]="form.invalid || saving" [loading]="saving" />
   }
 </app-page-card>

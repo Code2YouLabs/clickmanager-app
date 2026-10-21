@@ -1,12 +1,16 @@
 <app-page-card
+      [class.editor-page--mobile-progressive]="mobilePedidoNovo"
+      [class.editor-page--mobile-detail]="mobilePedidoDetalhe"
       [titulo]="titulo"
       [subtitulo]="subtitulo"
-      botaoTexto="Voltar"
+      [botaoTexto]="mobilePedidoNovo || mobilePedidoDetalhe ? '' : 'Voltar'"
       botaoIcone="arrow_back"
       botaoCor="primary"
       [botaoRota]="['/page/grafica/comercial', tipo]"
-      [mostrarDivisor]="true" [saving]="salvando" [footerActions]="footerActions"
+      [mostrarDivisor]="true" [saving]="salvando" [footerActions]="mobilePedidoNovo ? [] : footerActions"
       (footerAction)="onFooterAction($event)">
+
+      <button *ngIf="mobilePedidoNovo || mobilePedidoDetalhe" page-mobile-header-actions mat-button type="button" (click)="voltar()"><mat-icon>arrow_back</mat-icon>Voltar</button>
 
       <div class="editor-state" role="status" *ngIf="acessoNegado">Você não possui permissão para visualizar este registro.</div>
       <div class="editor-state" role="status" *ngIf="carregando && !acessoNegado">
@@ -18,12 +22,18 @@
         <button mat-stroked-button type="button" [disabled]="carregando" (click)="recarregar()">Tentar novamente</button>
       </div>
       <form id="comercial-editor-form" [formGroup]="form" (ngSubmit)="salvarFormulario()"
-        *ngIf="!acessoNegado && (!pedidoId || temRegistroCarregado)" [attr.aria-busy]="carregando">
+        *ngIf="!acessoNegado && (!pedidoId || temRegistroCarregado)" [attr.aria-busy]="carregando" [class.editor--mobile-progressive]="mobilePedidoNovo" [class.editor--mobile-detail]="mobilePedidoDetalhe">
         <div class="pedido-layout">
           <div class="main-column">
             <app-pedido-fluxo-controles
               *ngIf="mostrarFluxoPedido && fluxoPedido"
               [titulo]="'Fluxo do pedido'"
+              data-editor-section="fluxo"
+              [mobileCompact]="mobilePedidoDetalhe"
+              [mobileActionsPanel]="mobilePedidoDetalhe" (abrirAcoesMobile)="abrirAcoesPedidoMobile()"
+              (confirmacaoAberta)="acompanharConfirmacaoPedidoMobile($event)"
+              [statusAtualLabel]="fluxoPedido.label"
+              [pedidoReferencia]="pedido?.numero || (pedidoId ? '#' + pedidoId : null)"
               [statusAtual]="fluxoPedido.statusAtual"
               [statusControl]="statusControl"
               [statusOptions]="statusOptionsFluxo"
@@ -32,7 +42,7 @@
               [descricaoStatus]="fluxoPedido.descricao"
               [hints]="hintsFluxo"
               [isReadOnly]="!permissoesFluxo.alterarStatus"
-              [inativo]="carregandoStatus"
+              [inativo]="carregandoStatus || (mobilePedidoDetalhe && carregando)"
               [restaPagar]="resumoFinanceiroView.saldoAberto"
               [totalPago]="resumoFinanceiroView.totalRecebido"
               [temPagamentos]="pagamentosView.length > 0"
@@ -74,6 +84,11 @@
             </app-section-card>
 
             <app-cliente-selector-card
+              [titulo]="isMobile ? 'Cliente' : 'Dados do cliente'"
+              data-editor-section="cliente"
+              [mobileCompact]="isMobile" [mobileExpanded]="mobileSections().cliente"
+              [mobileSummary]="clienteConfirmado?.nome || 'Selecione ou cadastre um cliente'"
+              (mobileExpandedChange)="setMobileSection('cliente', $event)"
               [appTutorialTarget]="tipo === 'pedidos' && !pedidoId ? primeiroPedidoTargets.cliente : ''"
               [cliente]="clienteConfirmado"
               [editando]="trocandoCliente || !clienteConfirmado"
@@ -81,7 +96,7 @@
               [salvarAoSelecionar]="true"
               [inativo]="somenteLeitura || !permissoesFluxo.editarCliente"
               [permitirCriarCliente]="podeCriarCliente"
-              [showEmptyAlert]="true"
+              [showEmptyAlert]="!mobilePedidoNovo"
               [control]="clienteControl"
               [displayWith]="mostrarCliente"
               [buscarFn]="buscarClientes"
@@ -94,6 +109,10 @@
             </app-cliente-selector-card>
 
             <app-itens-pedido-section
+              data-editor-section="itens"
+              [mobileCompact]="mobilePedidoNovo || mobilePedidoDetalhe" [mobileExpanded]="mobileSections().itens"
+              [mobileSummary]="itens.length + (itens.length === 1 ? ' item adicionado' : ' itens adicionados')"
+              (mobileExpandedChange)="setMobileSection('itens', $event)"
               [titulo]="itensTitulo"
               [itemContextoLabel]="itemContextoLabel"
               [itens]="itensView"
@@ -110,7 +129,28 @@
               (removerItem)="remover($event)">
             </app-itens-pedido-section>
 
+            @if (isMobile) {
+              <app-section-card titulo="Observações" data-editor-section="observacoes" [mobilePlain]="true" [mobileCollapsible]="true"
+                [mobileExpanded]="mobileSections().observacoes" [mobileSummary]="mobileObservacoesResumo" (mobileExpandedChange)="setMobileSection('observacoes', $event)">
+                <p class="mobile-observations-empty" *ngIf="!(observacaoClienteControl.value || '').trim() && !(observacaoInternaControl.value || '').trim()">Nenhuma observação informada.</p>
+                <div class="mobile-observation-summary" *ngIf="(observacaoClienteControl.value || '').trim()">
+                  <h3>Para o cliente</h3><p>{{ observacaoClienteControl.value }}</p>
+                </div>
+                <div class="mobile-observation-summary" *ngIf="(observacaoInternaControl.value || '').trim()">
+                  <h3>Observação interna</h3><p>{{ observacaoInternaControl.value }}</p>
+                </div>
+                <div class="mobile-observation-actions">
+                  <button class="mobile-observation-cliente" mat-stroked-button type="button" aria-label="Ver ou editar observação para o cliente" [disabled]="carregando || (!podeEditarObservacaoMobile && !(observacaoClienteControl.value || '').trim())" (click)="abrirObservacaoMobile('cliente')">Cliente</button>
+                  <button class="mobile-observation-interna" mat-stroked-button type="button" aria-label="Ver ou editar observação interna" [disabled]="carregando || (!podeEditarObservacaoMobile && !(observacaoInternaControl.value || '').trim())" (click)="abrirObservacaoMobile('interna')">Interna</button>
+                </div>
+                <p class="mobile-observations-hint" *ngIf="(observacaoClienteControl.value || '').trim() || (observacaoInternaControl.value || '').trim()">Toque em Cliente ou Interna para ver o texto completo.</p>
+              </app-section-card>
+            } @else {
+              <ng-container [ngTemplateOutlet]="observacoesConteudo"></ng-container>
+            }
+            <ng-template #observacoesConteudo>
             <app-observacoes-card
+              [mobileCompact]="mobilePedidoNovo"
               class="observacoes-compact"
               titulo="Observação para o cliente"
               [control]="observacaoClienteControl"
@@ -123,6 +163,7 @@
             </app-observacoes-card>
 
             <app-observacoes-card
+              [mobileCompact]="mobilePedidoNovo"
               class="observacoes-compact"
               titulo="Observação interna"
               [control]="observacaoInternaControl"
@@ -133,24 +174,30 @@
               placeholder="Anotação visível somente dentro do ClickManager..."
               (salvar)="confirmarObservacaoInterna()">
             </app-observacoes-card>
+            </ng-template>
           </div>
 
           <div class="summary-column">
             <div class="summary-sticky">
               <app-section-card
-                [titulo]="resumoTitulo"
+                [titulo]="isMobile && tipo === 'pedidos' ? 'Financeiro e pagamentos' : resumoTitulo"
+                data-editor-section="financeiro"
+                [mobilePlain]="isMobile" [mobileCollapsible]="isMobile"
+                [mobileExpanded]="mobileSections().financeiro"
+                [mobileSummary]="isMobile && tipo === 'pedidos' ? 'Pago ' + (resumoFinanceiroView.totalRecebido | currency:'BRL':'symbol':'1.2-2') + ' · Saldo ' + (resumoFinanceiroView.saldoAberto | currency:'BRL':'symbol':'1.2-2') : isMobile ? 'Total ' + (resumoFinanceiroView.total | currency:'BRL':'symbol':'1.2-2') : ''"
+                (mobileExpandedChange)="setMobileSection('financeiro', $event)"
                 [divider]="true"
-                class="summary-card"
+                class="summary-card" [class.summary-card--mobile]="isMobile"
                 [appTutorialTarget]="tipo === 'pedidos' && !pedidoId && itens.length ? primeiroPedidoTargets.revisao : ''"
               >
-                <div class="summary-row">
+                <div class="summary-row subtotal">
                   <span>Subtotal</span>
                   <strong class="value align-right">{{ resumoFinanceiroView.subtotal | currency:'BRL':'symbol':'1.2-2' }}</strong>
                 </div>
-                <div class="financial-adjustments" (keydown.enter)="evitarSubmitDaSecao($event)" [formGroup]="ajustesFinanceirosForm" *ngIf="podeEditarAjustesFinanceiros; else ajustesFinanceirosLeitura">
-                  <app-input-moeda [control]="acrescimoControl" label="Acréscimos"></app-input-moeda>
-                  <app-input-moeda [control]="freteControl" label="Frete"></app-input-moeda>
-                  <app-input-moeda [control]="descontoControl" label="Descontos"></app-input-moeda>
+                <div class="financial-adjustments" (keydown.enter)="evitarSubmitDaSecao($event)" [formGroup]="ajustesFinanceirosForm" *ngIf="!isMobile && podeEditarAjustesFinanceiros; else ajustesFinanceirosLeitura">
+                  <app-input-moeda [showControlErrors]="isMobile" [inputMode]="isMobile ? 'decimal' : null" [control]="acrescimoControl" label="Acréscimos"></app-input-moeda>
+                  <app-input-moeda [showControlErrors]="isMobile" [inputMode]="isMobile ? 'decimal' : null" [control]="freteControl" label="Frete"></app-input-moeda>
+                  <app-input-moeda [showControlErrors]="isMobile" [inputMode]="isMobile ? 'decimal' : null" [control]="descontoControl" label="Descontos"></app-input-moeda>
                   <button
                     *ngIf="pedidoId"
                     mat-stroked-button
@@ -189,28 +236,29 @@
                   <span>Saldo</span>
                   <strong class="value highlight">{{ resumoFinanceiroView.saldoAberto | currency:'BRL':'symbol':'1.2-2' }}</strong>
                 </div>
-                <mat-progress-bar *ngIf="tipo === 'pedidos'" mode="determinate" [value]="percentualPagoView"></mat-progress-bar>
-                <div class="percentual" *ngIf="tipo === 'pedidos'">{{ percentualPagoView | number:'1.0-2' }}% pago</div>
+                <mat-progress-bar *ngIf="tipo === 'pedidos' && !mobilePedidoNovo" mode="determinate" [value]="percentualPagoView"></mat-progress-bar>
+                <div class="percentual" *ngIf="tipo === 'pedidos' && !mobilePedidoNovo">{{ percentualPagoView | number:'1.0-2' }}% pago</div>
+                <mat-divider *ngIf="isMobile" class="mobile-financial-divider"></mat-divider>
+                <div class="mobile-financial-actions" *ngIf="isMobile">
+                  <button class="mobile-adjustments-trigger" mat-stroked-button color="primary" type="button" *ngIf="podeEditarAjustesFinanceiros"
+                    [disabled]="carregando || salvandoAjustesFinanceiros || salvandoPagamento" (click)="abrirAjustesMobile()">Ajustes</button>
+                  <button class="mobile-payments-trigger" mat-stroked-button color="primary" type="button"
+                    *ngIf="mostrarPagamentos && permissoesFluxo.pagamentos" [disabled]="salvandoPagamento || carregando || salvandoAjustesFinanceiros"
+                    (click)="abrirPagamentosMobile()">Pagamentos</button>
+                </div>
               </app-section-card>
 
-              <app-section-card titulo="Responsável" [divider]="true" class="responsavel-card">
+              <app-section-card *ngIf="!mobilePedidoNovo" titulo="Responsável" [divider]="true" [mobilePlain]="mobilePedidoDetalhe" data-editor-section="responsavel" class="responsavel-card">
                 <div class="responsavel-content">
-                  <mat-icon>person</mat-icon>
+                  <mat-icon *ngIf="!mobilePedidoDetalhe">person</mat-icon>
                   <div>
-                    <span>Atendente</span>
+                    <span *ngIf="!mobilePedidoDetalhe">Atendente</span>
                     <strong>{{ responsavelNome }}</strong>
                   </div>
                 </div>
               </app-section-card>
 
-              <app-pedido-documentos-acoes
-                *ngIf="mostrarDocumentosPedido"
-                contexto="pedido"
-                (pedidoCompleto)="abrirImpressaoPedido('completo')"
-                (duasVias)="abrirImpressaoPedido('duas-vias')"
-                (etiqueta)="abrirImpressaoPedido('etiqueta')"
-                (whatsapp)="abrirWhatsAppPedido()">
-              </app-pedido-documentos-acoes>
+              <ng-container *ngIf="mostrarDocumentosPedido && !mobilePedidoDetalhe" [ngTemplateOutlet]="documentosPedidoConteudo" [ngTemplateOutletContext]="{ actionList: false }"></ng-container>
 
               <app-pedido-documentos-acoes
                 *ngIf="mostrarDocumentosOrcamento"
@@ -219,50 +267,45 @@
                 (whatsapp)="abrirWhatsAppOrcamento()">
               </app-pedido-documentos-acoes>
 
-              <app-section-card *ngIf="mostrarPagamentos" titulo="Pagamentos" [divider]="true" class="payments-card">
+              <ng-container *ngIf="!isMobile" [ngTemplateOutlet]="pagamentosConteudo"></ng-container>
+              <ng-template #pagamentosConteudo>
+              <app-section-card *ngIf="mostrarPagamentos" [titulo]="isMobile ? '' : 'Pagamentos'" [divider]="!isMobile" [mobilePlain]="isMobile" class="payments-card" [class.payments-card--mobile]="isMobile">
+                <ng-container *ngIf="isMobile" [ngTemplateOutlet]="pagamentoResumo"></ng-container>
+                <p class="payment-draft-note" *ngIf="isMobile && !pedidoId">Os pagamentos informados serão incluídos ao salvar o pedido.</p>
                 <div class="payment-entry">
-                  <div class="payment-form" (keydown.enter)="evitarSubmitDaSecao($event)" [formGroup]="pagamentoForm">
+                  <div class="payment-form" [attr.aria-busy]="isMobile ? salvandoPagamento : null" (keydown.enter)="evitarSubmitDaSecao($event)" [formGroup]="pagamentoForm">
                     <app-input-options
                       [control]="pagamentoFormaControl"
-                      label="Forma"
+                      [label]="isMobile ? 'Forma de pagamento' : 'Forma'"
                       placeholder="Selecione"
                       [options]="formasPagamento"
                       [showNull]="true"
                       nullLabel="Selecione">
                     </app-input-options>
-                    <app-input-moeda [control]="pagamentoValorControl" label="Valor"></app-input-moeda>
-                    <button mat-flat-button color="primary" type="button" [disabled]="pagamentoForm.invalid || pagamentoExcedeSaldo || salvandoPagamento || !permissoesFluxo.pagamentos" (click)="adicionarPagamento()">
-                      <mat-icon>add</mat-icon>
-                      Adicionar pagamento
-                    </button>
+                    <app-input-moeda [showControlErrors]="isMobile" [inputMode]="isMobile ? 'decimal' : null" [control]="pagamentoValorControl" label="Valor"></app-input-moeda>
+                    <ng-container *ngIf="!isMobile" [ngTemplateOutlet]="pagamentoAdicionar"></ng-container>
                   </div>
 
-                  <div class="payment-error" *ngIf="pagamentoExcedeSaldo">
+                  <div class="payment-error" role="alert" *ngIf="pagamentoExcedeSaldo">
                     Valor não pode exceder o saldo em aberto.
                   </div>
                 </div>
 
                 <div class="payment-history">
-                  <div class="payment-context">
-                    <div>
-                      <span>Pago</span>
-                      <strong class="success">{{ resumoFinanceiroView.totalRecebido | currency:'BRL':'symbol':'1.2-2' }}</strong>
-                    </div>
-                    <div>
-                      <span>Saldo</span>
-                      <strong class="highlight">{{ resumoFinanceiroView.saldoAberto | currency:'BRL':'symbol':'1.2-2' }}</strong>
-                    </div>
-                  </div>
+                  <ng-container *ngIf="!isMobile" [ngTemplateOutlet]="pagamentoResumo"></ng-container>
+                  <h3 class="mobile-payment-title" *ngIf="isMobile">Pagamentos informados</h3>
 
                   <div class="payment-list" *ngIf="pagamentosView.length; else semPagamentos">
                     <div class="payment-item" *ngFor="let pagamento of pagamentosView; let i = index" [class.cancelado]="pagamento.status === 'CANCELADO'">
                       <div class="payment-main">
                         <strong>{{ formaPagamentoLabel(pagamento.formaPagamento) }}</strong>
+                        <span class="payment-date" *ngIf="isMobile && pagamento.dataRecebimento">{{ pagamento.dataRecebimento | date:'dd/MM/yyyy' }}</span>
                         <app-status-badge class="payment-status" [status]="pagamento.status"></app-status-badge>
                       </div>
                       <div class="payment-value">{{ pagamento.valor | currency:'BRL':'symbol':'1.2-2' }}</div>
                       <button class="payment-cancel" mat-icon-button color="warn" type="button" matTooltip="Cancelar pagamento"
                         *ngIf="pagamento.status !== 'CANCELADO' && permissoesFluxo.pagamentos"
+                        [disabled]="isMobile && salvandoPagamento"
                         aria-label="Cancelar pagamento"
                         (click)="cancelarPagamento(pagamento, i)">
                         <mat-icon>block</mat-icon>
@@ -274,8 +317,21 @@
                   </ng-template>
                 </div>
               </app-section-card>
+              </ng-template>
 
-              <app-section-card class="submit-card" *ngIf="mostrarAcoesCriacao">
+              <app-section-card class="submit-card" *ngIf="mostrarAcoesCriacao" data-editor-section="revisao"
+                [titulo]="mobileCriacao ? 'Revisão e conclusão' : ''" [mobilePlain]="mobileCriacao" [mobileCollapsible]="mobileCriacao"
+                [mobileExpanded]="mobileSections().revisao" [mobileSummary]="mobileCriacao ? (pendenciasSalvar.length ? 'Há informações pendentes' : 'Pronto para salvar') : ''"
+                (mobileExpandedChange)="setMobileSection('revisao', $event)">
+                @if (mobilePedidoNovo) {
+                  <p class="mobile-responsavel">Atendente: <strong>{{ responsavelNome }}</strong></p>
+                  <p class="mobile-validation" role="status" tabindex="-1" *ngIf="mobileValidationAttempted && pendenciasSalvar.length">{{ pendenciasSalvar.join(' ') }}</p>
+                  <div class="mobile-review-actions">
+                    <button mat-stroked-button type="button" *ngIf="pendenciasSalvar.length || ajustesFinanceirosForm.invalid" (click)="revisarPendencias()">Revisar pendências</button>
+                    <button mat-button type="button" [disabled]="salvando" (click)="onFooterAction('cancelar')">Cancelar</button>
+                  </div>
+                }
+                <ng-container *ngIf="!mobilePedidoNovo">
                 <div class="actions-final">
                   <div class="required-alert" *ngIf="pendenciasSalvar.length; else prontoSalvar">
                     <mat-icon>error_outline</mat-icon>
@@ -303,9 +359,128 @@
 
 
                 </div>
+                </ng-container>
               </app-section-card>
             </div>
           </div>
         </div>
+<ng-template #documentosPedidoConteudo let-actionList="actionList">
+  <app-pedido-documentos-acoes contexto="pedido" [actionList]="actionList" [disabled]="actionList && acoesPedidoOcupado"
+    (pedidoCompleto)="executarDocumentoPedido('completo')" (duasVias)="executarDocumentoPedido('duas-vias')"
+    (etiqueta)="executarDocumentoPedido('etiqueta')" (whatsapp)="executarDocumentoPedido('whatsapp')">
+  </app-pedido-documentos-acoes>
+</ng-template>
+<ng-template #acoesPedidoMobile>
+  <section class="mobile-side-panel__layout order-actions-panel">
+    <header class="mobile-side-panel__header order-actions-panel__header">
+      <div><h2 mat-dialog-title>Ações do pedido</h2><p>Pedido #{{ pedidoId }}</p></div>
+      <button mat-icon-button type="button" aria-label="Fechar ações do pedido" [disabled]="acoesPedidoOcupado" (click)="fecharAcoesPedidoMobile()"><mat-icon>close</mat-icon></button>
+    </header>
+    <mat-dialog-content class="mobile-side-panel__body" [attr.aria-busy]="acoesPedidoOcupado">
+      <section class="order-action-group" aria-label="Gerenciamento" *ngIf="permissoesFluxo.alterarStatus">
+        <h3>Gerenciamento</h3>
+        <button class="order-action-row order-action-status" mat-button type="button" [disabled]="acoesPedidoOcupado || !podeTrocarStatusAcoesMobile" (click)="gerenciarPedidoMobile()">
+          <span class="action-content"><mat-icon class="action-leading-icon" aria-hidden="true">sync_alt</mat-icon><span><strong>Trocar status</strong><small>Alterar o andamento do pedido</small></span><mat-icon class="action-indicator" aria-hidden="true">chevron_right</mat-icon></span>
+        </button>
+      </section>
+      <section class="order-action-group" aria-label="Documentos e compartilhamento" *ngIf="mostrarDocumentosPedido">
+        <h3>Documentos e compartilhamento</h3>
+        <ng-container [ngTemplateOutlet]="documentosPedidoConteudo" [ngTemplateOutletContext]="{ actionList: true }"></ng-container>
+      </section>
+      <section class="order-action-group" aria-label="Cancelamento" *ngIf="exibeCancelarPedidoAcoesMobile">
+        <button class="order-action-row order-action-cancel" mat-button type="button" [disabled]="acoesPedidoOcupado || !podeCancelarPedidoAcoesMobile" (click)="gerenciarPedidoMobile(true)">
+          <span class="action-content"><mat-icon class="action-leading-icon" aria-hidden="true">cancel</mat-icon><span><strong>Cancelar pedido</strong></span><mat-icon class="action-indicator" aria-hidden="true">chevron_right</mat-icon></span>
+        </button>
+      </section>
+      <p class="order-actions-feedback" role="status" *ngIf="carregandoStatus">Atualizando pedido...</p>
+      <p class="order-actions-feedback" role="status" *ngIf="acoesPedidoNavegando">Abrindo...</p>
+    </mat-dialog-content>
+  </section>
+</ng-template>
+<ng-template #observacaoMobile>
+  <app-observacoes-card [panelEditor]="true" [titulo]="observacaoMobileTitulo"
+    [label]="observacaoTipoMobile === 'cliente' ? 'Texto para o cliente' : 'Texto interno'"
+    [control]="observacaoMobileControl" [salvando]="observacaoSalvandoMobile" [inativo]="!podeEditarObservacaoMobile"
+    [placeholder]="observacaoTipoMobile === 'cliente' ? 'Texto que pode aparecer no PDF e no WhatsApp...' : 'Anotação visível somente dentro do ClickManager...'"
+    (aplicarTexto)="aplicarObservacaoMobile($event)" (fecharEditor)="fecharObservacaoMobile()">
+  </app-observacoes-card>
+</ng-template>
+<ng-template #ajustesMobile>
+  <section class="mobile-side-panel__layout adjustments-panel">
+    <header class="mobile-side-panel__header payments-panel__header">
+      <h2 mat-dialog-title>Ajustes financeiros</h2>
+      <button mat-icon-button type="button" aria-label="Fechar ajustes" [disabled]="salvandoAjustesFinanceiros" (click)="fecharAjustesMobile()"><mat-icon>close</mat-icon></button>
+    </header>
+    <mat-dialog-content class="mobile-side-panel__body">
+      <div class="adjustments-panel__fields" [formGroup]="ajustesMobileForm" [attr.aria-busy]="salvandoAjustesFinanceiros" [attr.inert]="salvandoAjustesFinanceiros ? '' : null" (keydown.enter)="evitarSubmitDaSecao($event)">
+        <app-input-moeda [control]="ajustesMobileForm.controls.acrescimo" label="Acréscimos" inputMode="decimal" [showControlErrors]="true"></app-input-moeda>
+        <app-input-moeda [control]="ajustesMobileForm.controls.frete" label="Frete" inputMode="decimal" [showControlErrors]="true"></app-input-moeda>
+        <app-input-moeda [control]="ajustesMobileForm.controls.desconto" label="Descontos" inputMode="decimal" [showControlErrors]="true"></app-input-moeda>
+      </div>
+    </mat-dialog-content>
+    <mat-dialog-actions class="mobile-side-panel__footer">
+      <button mat-stroked-button type="button" [disabled]="salvandoAjustesFinanceiros" (click)="fecharAjustesMobile()">Cancelar</button>
+      <button class="apply-adjustments" mat-flat-button color="primary" type="button" [disabled]="ajustesMobileForm.invalid || ajustesMobileForm.pending || salvandoAjustesFinanceiros || !podeEditarAjustesFinanceiros" (click)="aplicarAjustesMobile()">{{ salvandoAjustesFinanceiros ? 'Aplicando...' : 'Aplicar ajustes' }}</button>
+    </mat-dialog-actions>
+  </section>
+</ng-template>
+<ng-template #pagamentosMobile>
+  <section class="mobile-side-panel__layout payments-panel">
+    <header class="mobile-side-panel__header payments-panel__header">
+      <h2 mat-dialog-title>Pagamentos</h2>
+      <button mat-icon-button type="button" aria-label="Fechar pagamentos" (click)="fecharPagamentosMobile()"><mat-icon>close</mat-icon></button>
+    </header>
+    <mat-dialog-content class="mobile-side-panel__body">
+      <ng-container [ngTemplateOutlet]="pagamentosConteudo"></ng-container>
+    </mat-dialog-content>
+    <mat-dialog-actions class="mobile-side-panel__footer">
+      <ng-container [ngTemplateOutlet]="pagamentoAdicionar"></ng-container>
+    </mat-dialog-actions>
+  </section>
+</ng-template>
+
       </form>
     </app-page-card>
+
+    <app-mobile-total-bar *ngIf="mobilePedidoNovo && !acessoNegado && !carregando"
+      appearance="compact" label="Total" [valueText]="(resumoFinanceiroView.total | currency:'BRL':'symbol-narrow':'1.2-2') || ''"
+      [inlineDetails]="true" [expanded]="mobileTotalExpanded()" [detailText]="mobileTotalExpanded() ? 'Ocultar detalhes' : 'Detalhes'"
+      detailsPanelId="pedido-mobile-total-details" [expandAriaLabel]="mobileTotalExpanded() ? 'Ocultar detalhes do pedido' : 'Ver detalhes do pedido'"
+      [actionText]="salvando ? 'Salvando...' : 'Salvar'" actionAriaLabel="Salvar pedido" [actionDisabled]="!podeSalvar || salvando"
+      actionType="submit" actionForm="comercial-editor-form" [actionTutorialTarget]="primeiroPedidoTargets.salvar"
+      bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+      [reserveSpace]="true" [avoidKeyboard]="true"
+      bottomAnchorSelector=".mobile-bottom-nav"
+      (expand)="mobileTotalExpanded.set(!mobileTotalExpanded())" (collapse)="mobileTotalExpanded.set(false)"
+      (keydown.escape)="mobileTotalExpanded.set(false); $event.stopPropagation()">
+      <h2 total-bar-details-header class="mobile-order-details-title">Detalhes do pedido</h2>
+      <div total-bar-details class="mobile-order-details">
+        <div><span>Cliente</span><strong>{{ clienteConfirmado?.nome || 'Não informado' }}</strong></div>
+        <div><span>Itens</span><strong>{{ itens.length }}</strong></div>
+        <div><span>Subtotal</span><strong>{{ resumoFinanceiroView.subtotal | currency:'BRL':'symbol':'1.2-2' }}</strong></div>
+        <div><span>Acréscimos</span><strong>{{ resumoFinanceiroView.acrescimo | currency:'BRL':'symbol':'1.2-2' }}</strong></div>
+        <div><span>Frete</span><strong>{{ resumoFinanceiroView.frete | currency:'BRL':'symbol':'1.2-2' }}</strong></div>
+        <div><span>Descontos</span><strong>{{ resumoFinanceiroView.desconto | currency:'BRL':'symbol':'1.2-2' }}</strong></div>
+        <div><span>Pago</span><strong>{{ resumoFinanceiroView.totalRecebido | currency:'BRL':'symbol':'1.2-2' }}</strong></div>
+        <div><span>Saldo</span><strong>{{ resumoFinanceiroView.saldoAberto | currency:'BRL':'symbol':'1.2-2' }}</strong></div>
+      </div>
+    </app-mobile-total-bar>
+
+<ng-template #pagamentoResumo>
+                  <div class="payment-context">
+                    <div>
+                      <span>Pago</span>
+                      <strong class="success">{{ resumoFinanceiroView.totalRecebido | currency:'BRL':'symbol':'1.2-2' }}</strong>
+                    </div>
+                    <div>
+                      <span>Saldo</span>
+                      <strong class="highlight">{{ resumoFinanceiroView.saldoAberto | currency:'BRL':'symbol':'1.2-2' }}</strong>
+                    </div>
+                  </div>
+</ng-template>
+<ng-template #pagamentoAdicionar>
+                    <button class="payment-add-button" mat-flat-button color="primary" type="button" [disabled]="pagamentoForm.invalid || pagamentoExcedeSaldo || salvandoPagamento || !permissoesFluxo.pagamentos" (click)="adicionarPagamento()">
+                      <mat-icon>add</mat-icon>
+                      {{ isMobile && salvandoPagamento ? 'Adicionando pagamento...' : 'Adicionar pagamento' }}
+                    </button>
+</ng-template>

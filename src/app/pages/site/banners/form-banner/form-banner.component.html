@@ -2,16 +2,19 @@
   class="site-banner-form-page"
   [titulo]="tituloPagina"
   subtitulo="Configure imagem, texto e chamada do banner exibido no site público."
-  botaoTexto="Voltar"
+  [botaoTexto]="isMobile ? undefined : 'Voltar'"
   botaoIcone="arrow_back"
   botaoCor="primary"
   [botaoRota]="['/page/site/banners']"
   [mostrarDivisor]="true"
-  [formState]="formState"
-  [footerActions]="footerActions"
+  [formState]="isMobile ? undefined : formState"
+  [footerActions]="isMobile ? [] : footerActions"
   [saving]="salvando"
   [savingText]="isEditMode ? 'Atualizando...' : 'Salvando...'"
   [actionsDisabled]="carregando">
+  @if (isMobile) {
+    <a page-mobile-header-actions mat-button [routerLink]="['/page/site/banners']" [disabled]="salvando"><mat-icon>arrow_back</mat-icon>Voltar</a>
+  }
 
   @if (carregando) {
   <div class="site-banner-form-state">
@@ -22,7 +25,7 @@
   <form id="site-banner-form" [formGroup]="form" (ngSubmit)="onSubmit()">
     <div class="site-banner-form-layout">
       <div class="site-banner-form-layout__main">
-        <app-section-card titulo="Imagem" subtitulo="Selecione a imagem principal do banner.">
+        <app-section-card [mobilePlain]="isMobile" titulo="Imagem" subtitulo="Selecione a imagem principal do banner.">
           <app-site-banner-image-upload
             [imagemAtual]="imagemAtualUrl"
             [altText]="altTextControl.value || tituloControl.value || 'Banner do site'"
@@ -32,7 +35,7 @@
           </app-site-banner-image-upload>
         </app-section-card>
 
-        <app-section-card titulo="Conteúdo" subtitulo="Defina textos, botão e acessibilidade.">
+        <app-section-card [mobilePlain]="isMobile" titulo="Conteúdo" subtitulo="Defina textos, botão e acessibilidade.">
           <div class="cadastro-form-grid">
             <app-input-texto-restrito
               [control]="tituloControl"
@@ -75,7 +78,7 @@
           </div>
         </app-section-card>
 
-        <app-section-card titulo="Aparência" subtitulo="Ajuste contraste, alinhamento e camada visual do texto.">
+        <app-section-card [mobilePlain]="isMobile" titulo="Aparência" subtitulo="Ajuste contraste, alinhamento e camada visual do texto.">
           <div class="cadastro-form-grid">
             <div class="cadastro-form-grid cadastro-form-grid--double">
               <div class="cadastro-form-field">
@@ -124,7 +127,7 @@
           </div>
         </app-section-card>
 
-        <app-section-card titulo="Publicação" subtitulo="Controle status, ordem e período de exibição.">
+        <app-section-card [mobilePlain]="isMobile" titulo="Publicação" subtitulo="Controle status, ordem e período de exibição.">
           <div class="cadastro-form-grid">
             <div class="cadastro-form-grid cadastro-form-grid--triple">
               <div class="w-100">
@@ -169,7 +172,7 @@
       </div>
 
       <div class="site-banner-form-layout__preview">
-        <app-section-card titulo="Visualização" subtitulo="Prévia aproximada da chamada na página inicial.">
+        <app-section-card [mobilePlain]="isMobile" titulo="Visualização" subtitulo="Prévia aproximada da chamada na página inicial.">
           <app-banner-preview
             [imagemUrl]="previewImagem"
             [titulo]="tituloControl.value"
@@ -187,5 +190,15 @@
     </div>
 
   </form>
+  }
+
+  @if (isMobile && (!carregando)) {
+    <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true"
+      actionType="submit" actionForm="site-banner-form" bottomAnchorSelector=".mobile-bottom-nav"
+      bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+      secondaryActionText="Cancelar" secondaryActionAriaLabel="Restaurar formulário"
+      [secondaryActionDisabled]="salvando || !formState.canReset" (secondaryAction)="formState.reset()"
+      [actionText]="salvando ? 'Salvando...' : (textoAcaoPrincipal)" actionIcon="save" actionAriaLabel="Salvar formulário"
+      [actionDisabled]="!podeSalvar" [loading]="salvando" />
   }
 </app-page-card>

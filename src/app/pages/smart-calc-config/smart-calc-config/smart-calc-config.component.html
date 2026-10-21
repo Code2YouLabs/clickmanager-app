@@ -2,26 +2,29 @@
   [titulo]="tituloPagina"
   subtitulo="Ative o SmartCalc e escolha as bases de produção."
   [mostrarDivisor]="true"
-  [formState]="formState" [footerActions]="footerActions" [saving]="salvando()" [actionsDisabled]="carregando() || erroCarregamento"
+  [formState]="isMobile ? undefined : formState" [footerActions]="isMobile ? [] : footerActions" [saving]="salvando()" [actionsDisabled]="carregando() || erroCarregamento"
   [helpRota]="['/page/ajuda']"
   helpFragment="smartcalc"
   helpTexto="Manual do SmartCalc"
   helpIcone="help_outline">
+  @if (isMobile) { <button page-mobile-header-actions mat-button type="button" (click)="voltar()"><mat-icon>arrow_back</mat-icon>Voltar</button> }
+  @if (!isMobile) {
   <div page-header-actions>
     <button mat-stroked-button type="button" (click)="voltar()">
       <mat-icon>arrow_back</mat-icon> Voltar
     </button>
   </div>
+  }
 
   <form id="smartcalc-config-form" [formGroup]="form" class="smartcalc-config__form" (ngSubmit)="onSubmit()">
-    <app-section-card titulo="Ativação" subtitulo="Defina se o SmartCalc fica disponível para esta empresa.">
+    <app-section-card [mobilePlain]="isMobile" titulo="Ativação" subtitulo="Defina se o SmartCalc fica disponível para esta empresa.">
       <div class="smartcalc-config__toggle">
         <mat-slide-toggle formControlName="ativo">SmartCalc ativo</mat-slide-toggle>
         <small>Quando desativado, o cálculo não aparece nos fluxos de orçamento e pedido.</small>
       </div>
     </app-section-card>
 
-    <app-section-card titulo="Bases de produção"
+    <app-section-card [mobilePlain]="isMobile" titulo="Bases de produção"
       subtitulo="Escolha os produtos que servirão de área para distribuir e calcular as peças.">
       @if (carregando()) {
         <mat-progress-spinner mode="indeterminate" diameter="28"></mat-progress-spinner>
@@ -50,4 +53,10 @@
     </app-section-card>
   </form>
 
+  @if (isMobile && !carregando() && !erroCarregamento) {
+    <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true" actionType="submit" actionForm="smartcalc-config-form" bottomAnchorSelector=".mobile-bottom-nav"
+      bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+      secondaryActionText="Cancelar" secondaryActionAriaLabel="Restaurar configuração" [secondaryActionDisabled]="salvando() || !formState.canReset" (secondaryAction)="formState.reset()"
+      [actionText]="salvando() ? 'Salvando...' : 'Salvar configuração'" actionIcon="save" actionAriaLabel="Salvar configuração" [actionDisabled]="salvarDesabilitado" [loading]="salvando()" />
+  }
 </app-page-card>

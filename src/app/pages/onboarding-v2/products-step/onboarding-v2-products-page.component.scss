@@ -1,1 +1,41 @@
 @use '../onboarding-v2-page';
+
+// The bounded selection layout does not affect preparation or the other steps.
+.onboarding-catalogo--selecao {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+
+  .onboarding-page-wrapper { height: 100%; min-height: 0; margin: 0 auto; }
+  .onboarding-page-card { height: 100%; min-height: 0; min-width: 0; overflow: hidden; }
+  .onboarding-page { height: 100%; min-height: 0; padding: 16px 24px; box-sizing: border-box; }
+  .onboarding-page__intro h1 { margin-bottom: 8px; }
+  .onboarding-page__intro p { margin-bottom: 4px; font-size: 14px; line-height: 20px; }
+
+  :host ::ng-deep & {
+    app-onboarding-shell { display: block; height: 100%; min-height: 0; }
+    .onboarding-shell { height: 100%; min-height: 0; gap: 12px; }
+    // Original semantic header from 2b96957: keep its spacing, logo and proportions.
+    .onboarding-shell.onboarding-shell--semantic .onboarding-shell__header { flex: 0 0 auto; padding: 16px 0 24px; gap: 24px; }
+    .onboarding-shell__content { flex: 1 1 0; min-height: 0; gap: 12px; }
+    app-biblioteca-produtos-selector { flex: 1 1 0; min-height: 0; }
+    .onboarding-shell__footer { position: static; flex: 0 0 auto; padding: 12px 0 0; }
+    .onboarding-shell__footer-left:empty { display: none; }
+    .onboarding-shell__footer-right { flex: 1; justify-content: flex-end; }
+    .onboarding-shell__footer button { min-height: 44px; }
+    // Preserve the original desktop header height without presenting removed copy.
+    .onboarding-shell__steps > small { visibility: hidden; }
+  }
+}
+
+// Catalog-specific content stays unchanged; the shared shell owns header/scroll/footer.
+@media (max-width: 768px), (max-width: 960px) and (max-height: 560px) {
+  .onboarding-catalogo--selecao {
+    .onboarding-page__intro { margin: 0; }
+    .onboarding-page__intro > p { display: none; }
+    .onboarding-catalogo__heading h1 { margin: 0; font-size: 18px; line-height: 28px; white-space: nowrap; }
+  }
+  :host ::ng-deep .onboarding-catalogo--selecao app-biblioteca-produtos-selector { display: flex; flex: 1 1 0; min-height: 0; }
+}

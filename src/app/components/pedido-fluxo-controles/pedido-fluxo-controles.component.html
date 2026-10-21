@@ -1,5 +1,5 @@
 <ng-container *ngIf="renderCard; else content">
-  <app-section-card [titulo]="titulo" [divider]="divider">
+  <app-section-card [titulo]="titulo" [divider]="divider" [mobilePlain]="mobileCompact">
     <div actions class="header-actions">
       <app-manual-link
         routerLink="/page/ajuda"
@@ -9,15 +9,20 @@
         [onlyIcon]="true">
       </app-manual-link>
 
-      <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Ações do fluxo" [disabled]="inativo || isReadOnly || !podeTrocarStatus">
+      @if (mobileCompact && mobileActionsPanel) {
+        <button class="mobile-order-actions-trigger" mat-icon-button type="button" aria-label="Ações do pedido" aria-haspopup="dialog"
+          [disabled]="mobileStatusBusy" (click)="abrirAcoesMobile.emit()"><mat-icon>more_vert</mat-icon></button>
+      } @else {
+      <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Ações do fluxo" [disabled]="inativo || isReadOnly || !podeTrocarStatus || (mobileCompact && mobileStatusBusy)">
         <mat-icon>more_vert</mat-icon>
       </button>
+      }
       <mat-menu #menu="matMenu">
         <button mat-menu-item (click)="abrirMenuTrocarStatus()" [disabled]="inativo || isReadOnly || isOrcamento">
           <mat-icon>sync_alt</mat-icon>
           <span>Trocar status</span>
         </button>
-        <button mat-menu-item *ngIf="statusOptions?.includes('CANCELADO')" (click)="cancelarPedido.emit()" [disabled]="inativo || isReadOnly">
+        <button mat-menu-item *ngIf="statusOptions?.includes('CANCELADO')" (click)="confirmarCancelamento()" [disabled]="inativo || isReadOnly">
           <mat-icon class="warn">cancel</mat-icon>
           <span class="warn-text">Cancelar pedido</span>
         </button>
@@ -32,7 +37,29 @@
 </ng-container>
 
 <ng-template #content>
-  <div class="fluxo" [class.inativo]="inativo">
+  <div class="fluxo" [class.inativo]="inativo" [class.fluxo--mobile]="mobileCompact" [attr.aria-busy]="mobileCompact ? mobileStatusBusy : null">
+    @if (mobileCompact) {
+      <div class="mobile-current-status">
+        <app-status-badge [status]="statusAtual" [fullLabel]="vm.statusLabel"></app-status-badge>
+        <p class="helper-text">{{ vm.helperText }}</p>
+      </div>
+      <div class="mobile-transitions" *ngIf="transicoesOperacionaisMobile.length; else semTransicoes">
+        <div class="mobile-transition" *ngFor="let transicao of transicoesOperacionaisMobile; trackBy: trackTransicao; let i = index">
+          <button mat-flat-button color="primary" type="button"
+            [disabled]="mobileStatusBusy || isReadOnly || transicao.bloqueado"
+            [attr.aria-describedby]="transicao.motivo ? flowId + '-motivo-' + i : null"
+            (click)="avancarMobile(transicao.status, $event.currentTarget)">
+            <mat-icon>arrow_forward</mat-icon>Avançar para {{ transicao.label || statusLabel(transicao.status) }}
+          </button>
+          <p class="helper-text" *ngIf="transicao.motivo" [id]="flowId + '-motivo-' + i">{{ transicao.motivo }}</p>
+        </div>
+      </div>
+      <ng-template #semTransicoes><p class="mobile-no-transitions">Nenhum avanço operacional disponível.</p></ng-template>
+      <button class="mobile-flow-toggle" mat-button type="button" [attr.aria-expanded]="mobileFlowExpanded" [attr.aria-controls]="flowId" (click)="mobileFlowExpanded = !mobileFlowExpanded">
+        {{ mobileFlowExpanded ? 'Ocultar fluxo completo' : 'Ver fluxo completo' }}
+        <mat-icon iconPositionEnd>{{ mobileFlowExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+      </button>
+    } @else {
     <div class="flow-body">
       <div class="status-top">
         <app-status-badge [status]="statusAtual"></app-status-badge>
@@ -54,11 +81,12 @@
       </div>
     </div>
 
-    <div class="step-strip textual">
+    }
+    <div class="step-strip textual" [id]="flowId" [hidden]="mobileCompact && !mobileFlowExpanded" [attr.inert]="mobileCompact && !mobileFlowExpanded ? '' : null">
       <span class="flow-label">Fluxo dos pedidos</span>
       <div class="flow-line">
         <span class="flow-step" *ngFor="let s of vm.steps; let last = last">
-          <span [class.active]="s.active" [class.done]="s.done">{{ s.label }}</span>
+          <span [class.active]="s.active" [class.done]="s.done" [attr.aria-current]="mobileCompact && s.active ? 'step' : null">{{ s.label }}</span>
           <span class="arrow" *ngIf="!last">→</span>
         </span>
       </div>

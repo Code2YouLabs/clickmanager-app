@@ -1,3 +1,6 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { Subject, takeUntil } from 'rxjs';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { CommonModule } from '@angular/common';
 import {
   AfterContentInit,
@@ -6,6 +9,12 @@ import {
   EventEmitter,
   Input,
   Output,
+  OnDestroy,
+  inject,
+  ViewChild,
+  ViewChildren,
+  ElementRef,
+  QueryList,
 } from '@angular/core';
 import { CdkDragDrop, CdkDragEnd, CdkDragStart, DragDropModule } from '@angular/cdk/drag-drop';
 import { MaterialModule } from 'src/app/material.module';
@@ -19,7 +28,59 @@ import { KanbanColumnState, KanbanDragEvent, KanbanDropEvent, KanbanDropState } 
   templateUrl: './kanban-board.component.html',
   styleUrl: './kanban-board.component.scss',
 })
-export class KanbanBoardComponent<T = unknown> implements AfterContentInit {
+export class KanbanBoardComponent<T = unknown> implements AfterContentInit, OnDestroy {
+  @Input() mobileNavigation = false;
+  @Input() mobileCardActionLabel = 'Mover';
+  @Input() forbiddenMessage = 'Você não possui permissão para visualizar este conteúdo.';
+  @Output() mobileCardAction = new EventEmitter<T>();
+  isMobile = false;
+  @ViewChild('boardScroll') private boardScroll?: ElementRef<HTMLElement>;
+  @ViewChildren('kanbanColumn') private columnElements?: QueryList<ElementRef<HTMLElement>>;
+  private reducedMotion = false;
+  private selectedColumnId: string | null = null;
+  private readonly destroy$ = new Subject<void>();
+  private readonly breakpoints = inject(BreakpointObserver);
+
+  constructor() {
+    this.breakpoints.observe([MOBILE_FOUNDATION_QUERY, '(prefers-reduced-motion: reduce)']).pipe(takeUntil(this.destroy$)).subscribe(state => {
+      this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches;
+      this.reducedMotion = state.breakpoints['(prefers-reduced-motion: reduce)'] ?? false;
+    });
+  }
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
+  get activeColumnIndex(): number { return Math.max(0, this.columns.findIndex(column => column.id === this.selectedColumnId)); }
+  get activeColumnId(): string | undefined { return this.columns[this.activeColumnIndex]?.id; }
+  selectColumn(id: string): void {
+    const index = this.columns.findIndex(column => column.id === id);
+    if (index < 0) return;
+    this.selectedColumnId = id;
+    const elements = this.columnElements?.toArray() || [];
+    const target = elements[index]?.nativeElement;
+    const first = elements[0]?.nativeElement;
+    if (target && first && this.mobileNavigation && this.isMobile) {
+      this.boardScroll?.nativeElement.scrollTo({ left: target.offsetLeft - first.offsetLeft, behavior: this.reducedMotion ? 'auto' : 'smooth' });
+    }
+  }
+  navigateColumn(offset: number): void {
+    const column = this.columns[this.activeColumnIndex + offset];
+    if (column) this.selectColumn(column.id);
+  }
+  onBoardScroll(): void {
+    if (!this.mobileNavigation || !this.isMobile || !this.boardScroll) return;
+    const elements = this.columnElements?.toArray() || [];
+    const first = elements[0]?.nativeElement;
+    if (!first) return;
+    const left = this.boardScroll.nativeElement.scrollLeft;
+    let nearest = 0;
+    elements.forEach((element, index) => {
+      if (Math.abs(element.nativeElement.offsetLeft - first.offsetLeft - left)
+        < Math.abs(elements[nearest].nativeElement.offsetLeft - first.offsetLeft - left)) nearest = index;
+    });
+    this.selectedColumnId = this.columns[nearest]?.id || null;
+  }
+  onMobileCardAction(item: T, column: KanbanColumnState<T>): void {
+    if (this.mobileNavigation && this.isMobile && !column.forbidden && !this.cardDisabled(item, column)) this.mobileCardAction.emit(item);
+  }
   @Input() columns: KanbanColumnState<T>[] = [];
   @Input() boardLabel = 'Quadro Kanban';
   @Input() emptyTitle = 'Nenhum registro encontrado';
@@ -51,7 +112,7 @@ export class KanbanBoardComponent<T = unknown> implements AfterContentInit {
 
   get allEmpty(): boolean {
     return !!this.columns.length
-      && this.columns.every((column) => !column.loading && !column.error && !column.items.length);
+      && this.columns.every((column) => !column.forbidden && !column.loading && !column.error && !column.items.length);
   }
 
   itemTrackBy = (_index: number, item: T): unknown => this.trackBy(item);

@@ -60,3 +60,10 @@
     width: 100%;
   }
 }
+
+@media (max-width: 760px) {
+  :host.mobile-side-panel__layout .links-item-dialog { width: 100%; }
+  .mobile-side-panel__header p { display: none; }
+  .mobile-side-panel__header h2 { font-size: 18px; line-height: 24px; }
+  .links-item-dialog__mobile-actions { display: flex; justify-content: flex-end; gap: 8px; }
+}

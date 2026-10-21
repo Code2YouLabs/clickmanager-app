@@ -3,7 +3,10 @@
     {{ label }} <span *ngIf="isRequired" style="color: #ff110094">*</span>
   </mat-label>
 
-  <mat-form-field appearance="outline" class="w-100">
+  <mat-form-field appearance="outline" class="w-100" [subscriptSizing]="decimal ? 'dynamic' : subscriptSizing">
+    @if (decimal) {
+    <input matInput type="number" inputmode="decimal" step="any" [formControl]="control" />
+    } @else {
     <input
       matInput
       type="text"
@@ -13,9 +16,10 @@
       [value]="valor"
       (input)="atualizarValor($event)"
       (keydown)="permitirApenasNumeros($event)" />
+    }
 
       @if (control.invalid && control.touched) {
-        <mat-error>{{ errorMessage() }}</mat-error>
+        <mat-error>{{ errorText || errorMessage() }}</mat-error>
         }
   </mat-form-field>
 </div>

@@ -1,3 +1,6 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
@@ -16,7 +19,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { SitePaginaBlocoResponse, SitePaginaBlocoTipo } from 'src/app/pages/site/models/site-pagina-bloco.models';
 import { SitePaginaBlocoService } from 'src/app/pages/site/services/site-pagina-bloco.service';
 import { BlocoPreviewComponent } from '../bloco-preview/bloco-preview.component';
-import { FormBlocoComponent } from '../form-bloco/form-bloco.component';
+import { FormBlocoComponent, FormBlocoDialogData } from '../form-bloco/form-bloco.component';
 
 @Component({
   selector: 'app-listar-blocos',
@@ -36,6 +39,7 @@ import { FormBlocoComponent } from '../form-bloco/form-bloco.component';
   styleUrl: './listar-blocos.component.scss',
 })
 export class ListarBlocosComponent implements OnChanges, OnDestroy {
+  isMobile = false;
   @Input() paginaId!: number;
 
   blocos: SitePaginaBlocoResponse[] = [];
@@ -82,8 +86,11 @@ export class ListarBlocosComponent implements OnChanges, OnDestroy {
     private readonly blocoService: SitePaginaBlocoService,
     private readonly dialog: MatDialog,
     private readonly toastr: ToastrService,
-    private readonly authService: AuthService
-  ) {}
+    private readonly authService: AuthService,
+    breakpoints?: BreakpointObserver
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['paginaId'] && this.paginaId && this.podeVerBlocos) {
@@ -256,7 +263,7 @@ export class ListarBlocosComponent implements OnChanges, OnDestroy {
   }
 
   private abrirDialog(bloco?: SitePaginaBlocoResponse): void {
-    const dialogRef = this.dialog.open(FormBlocoComponent, {
+    const config = {
       width: '820px',
       maxWidth: '96vw',
       data: {
@@ -264,7 +271,10 @@ export class ListarBlocosComponent implements OnChanges, OnDestroy {
         bloco: bloco || null,
         proximaOrdem: this.proximaOrdem,
       },
-    });
+    };
+    const dialogRef = this.isMobile
+      ? openMobileSidePanel<FormBlocoComponent, FormBlocoDialogData, { salvou: boolean; acao: string }>(this.dialog, FormBlocoComponent, { ...config, data: { ...config.data, mobilePanel: true } })
+      : this.dialog.open(FormBlocoComponent, config);
 
     dialogRef.afterClosed().pipe(takeUntil(this.destroy$)).subscribe((resultado) => {
       if (resultado?.salvou) {

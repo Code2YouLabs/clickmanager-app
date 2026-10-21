@@ -242,3 +242,16 @@
     width: 100%;
   }
 }
+
+@media (max-width: 760px) {
+  .ajuda-content { min-width: 0; gap: 16px; padding: 12px; }
+  .ajuda-toolbar { min-width: 0; gap: 12px; }
+  .quick-topics { flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; overflow: visible; }
+  .quick-topics button { min-height: 44px; max-width: 100%; height: auto; white-space: normal; }
+  .ajuda-panel .mat-expansion-panel-header { height: auto; min-height: 64px; padding: 12px 16px; }
+  .ajuda-panel .mat-expansion-panel-header-title { margin-right: 8px; overflow-wrap: anywhere; }
+  .secao-icon { flex-shrink: 0; }
+  .conteudo, .tutorial-card { min-width: 0; overflow-wrap: anywhere; }
+  .tutorial-card { padding: 12px; gap: 12px; }
+  .tutorial-card__actions button, .empty-state__actions button { min-height: 44px; }
+}

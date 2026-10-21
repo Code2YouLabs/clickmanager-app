@@ -1,0 +1,48 @@
+@use "../../../shared/responsive/mobile-list-item" as item;
+
+    .visualizacao-toggle {
+      display: inline-flex;
+    }
+
+    .categoria-nome {
+      display: block;
+      color: #111827;
+      line-height: 1.25;
+    }
+
+    .descricao-cell {
+      display: -webkit-box;
+      max-width: 420px;
+      overflow: hidden;
+      color: #374151;
+      line-height: 1.35;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .acoes-cell {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+      min-width: 132px;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 760px) {
+      .visualizacao-toggle {
+        width: 100%;
+      }
+    }
+
+@media (max-width: 760px) {
+  .categoria-mobile-item {
+    @include item.surface;
+    header { display: flex; align-items: start; justify-content: space-between; gap: 8px; }
+    strong { @include item.heading; flex: 1; }
+    &__menu { width: 44px; height: 44px; min-width: 44px; flex-shrink: 0; }
+    p { margin: 4px 0 0; overflow-wrap: anywhere; color: var(--mat-sys-on-surface-variant); font-size: 12px; line-height: 16px; }
+    &__description { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+  }
+  .categoria-mobile-menu__destructive { --mat-menu-item-label-text-color: var(--mat-sys-error); --mat-menu-item-icon-color: var(--mat-sys-error); }
+}

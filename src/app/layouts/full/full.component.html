@@ -56,75 +56,14 @@
       }
 
       @if(isMobileLayout) {
-      <header
-        class="mobile-topbar"
-        [class.mobile-topbar--minimal]="useMinimalMobileHeader"
-        [class.mobile-topbar--title-only]="useTitleOnlyMobileHeader">
-        @if(useTitleOnlyMobileHeader) {
-        <span class="mobile-topbar__spacer" aria-hidden="true"></span>
-
-        <div class="mobile-topbar__center mobile-topbar__center--minimal">
-          <span class="mobile-topbar__title">{{ currentPageTitle }}</span>
-        </div>
-
-        <div class="mobile-topbar__actions">
-          <button mat-icon-button type="button" class="mobile-topbar__icon-btn mobile-topbar__notification-btn"
-            (click)="toggleMobileNotificationsSheet()" aria-label="Abrir notificações"
-            [class.mobile-topbar__notification-btn--critical]="possuiNotificacaoCriticaNaoLida()">
-            <i-tabler name="message-2" class="icon-20 d-flex"></i-tabler>
-            @if(notificacoesNaoLidas > 0) {
-            <span class="mobile-topbar__notification-badge">{{ notificacoesNaoLidas }}</span>
-            }
-          </button>
-          <button mat-icon-button type="button" class="mobile-topbar__avatar-btn" (click)="toggleMobileProfileSheet()"
-            aria-label="Abrir perfil">
-            @if(usuarioLogado?.fotoPerfil) {
-            <img [src]="ImagemUtil.montarUrlImagemPerfil(usuarioLogado?.fotoPerfil)" alt="Perfil" class="mobile-topbar__avatar-image" />
-            } @else {
-            <i-tabler name="user-circle" class="icon-22 d-flex"></i-tabler>
-            }
-          </button>
-        </div>
-        } @else if(useMinimalMobileHeader) {
-        <button mat-icon-button type="button" class="mobile-topbar__icon-btn" (click)="navigateMobileBack()"
-          aria-label="Voltar">
-          <i-tabler name="arrow-left" class="icon-20 d-flex"></i-tabler>
-        </button>
-
-        <div class="mobile-topbar__center mobile-topbar__center--minimal">
-          <span class="mobile-topbar__title">{{ currentPageTitle }}</span>
-        </div>
-
-        <div class="mobile-topbar__actions">
-          <button mat-icon-button type="button" class="mobile-topbar__icon-btn mobile-topbar__notification-btn"
-            (click)="toggleMobileNotificationsSheet()" aria-label="Abrir notificações"
-            [class.mobile-topbar__notification-btn--critical]="possuiNotificacaoCriticaNaoLida()">
-            <i-tabler name="message-2" class="icon-20 d-flex"></i-tabler>
-            @if(notificacoesNaoLidas > 0) {
-            <span class="mobile-topbar__notification-badge">{{ notificacoesNaoLidas }}</span>
-            }
-          </button>
-          <button mat-icon-button type="button" class="mobile-topbar__avatar-btn" (click)="toggleMobileProfileSheet()"
-            aria-label="Abrir perfil">
-            @if(usuarioLogado?.fotoPerfil) {
-            <img [src]="ImagemUtil.montarUrlImagemPerfil(usuarioLogado?.fotoPerfil)" alt="Perfil" class="mobile-topbar__avatar-image" />
-            } @else {
-            <i-tabler name="user-circle" class="icon-22 d-flex"></i-tabler>
-            }
-          </button>
-        </div>
-        } @else {
-        <button mat-icon-button type="button" class="mobile-topbar__icon-btn" (click)="toggleMobileDrawer()"
-          aria-label="Abrir menu">
+      <header class="mobile-topbar">
+        <button mat-icon-button type="button" class="mobile-topbar__icon-btn" (click)="toggleMobileDrawer()" #mobileMenuTrigger
+          aria-label="Abrir menu" aria-controls="mobile-navigation" [attr.aria-expanded]="mobileDrawerOpen">
           <i-tabler name="menu-2" class="icon-22 d-flex"></i-tabler>
         </button>
 
         <div class="mobile-topbar__center">
-          @if(currentPageTitle !== 'ClickManager') {
-          <span class="mobile-topbar__title">{{ currentPageTitle }}</span>
-          } @else {
-          <img src="./assets/images/logos/logoClickManager.png" alt="ClickManager" class="mobile-topbar__logo" />
-          }
+          <span class="mobile-topbar__title" [title]="currentPageTitle">{{ currentPageTitle }}</span>
         </div>
 
         <div class="mobile-topbar__actions">
@@ -149,7 +88,6 @@
             }
           </button>
         </div>
-        }
       </header>
       }
 
@@ -199,65 +137,85 @@
 <div class="mobile-shell-backdrop" [class.mobile-shell-backdrop--visible]="hasMobileOverlayOpen" (click)="closeMobileOverlays()"></div>
 
 <section
+  id="mobile-navigation"
   class="mobile-sheet mobile-sheet--more"
   [class.mobile-sheet--open]="mobileDrawerOpen"
-  aria-label="Mais opções">
-  <div
-    class="mobile-sheet__top mobile-sheet__top--sheet"
-    role="button"
-    tabindex="0"
-    aria-label="Fechar mais opções"
-    (click)="closeMobileOverlays()"
-    (keydown.enter)="closeMobileOverlays()"
-    (keydown.space)="closeMobileOverlays(); $event.preventDefault()"
-    (touchstart)="onMoreSheetTouchStart($event)"
-    (touchend)="onMoreSheetTouchEnd($event)">
-    <app-mobile-sheet-header title="Mais opções"></app-mobile-sheet-header>
+  [inert]="!mobileDrawerOpen" [attr.aria-hidden]="!mobileDrawerOpen"
+  [cdkTrapFocus]="mobileDrawerOpen"
+  role="dialog" [attr.aria-modal]="mobileDrawerOpen ? true : null" aria-label="Menu"
+  (keydown.escape)="closeMobileOverlays(); $event.preventDefault(); $event.stopPropagation()">
+  <div class="mobile-sheet__top mobile-sheet__top--sheet"
+    (touchstart)="onMoreSheetTouchStart($event)" (touchend)="onMoreSheetTouchEnd($event)">
+    <app-mobile-sheet-header title="Menu"></app-mobile-sheet-header>
+    <button #mobileMenuClose type="button" class="mobile-menu-close" (click)="closeMobileOverlays()" aria-label="Fechar menu">
+      <i-tabler name="x" class="icon-20 d-flex"></i-tabler>
+    </button>
   </div>
 
   <div class="mobile-sheet__content mobile-sheet__content--more">
+  <nav aria-label="Menu principal">
     @for(group of mobileNavGroups; track trackByGroupTitle($index, group)) {
-    <section class="mobile-nav-group">
-      <h3 class="mobile-nav-group__title">{{ group.title }}</h3>
-      <div class="mobile-nav-group__items">
-        @for(item of group.items; track trackByNavItem($index, item)) {
-        <button type="button" class="mobile-nav-item" [class.mobile-nav-item--active]="isMobileItemActive(item)"
-          [class.mobile-nav-item--expanded]="isMobileItemExpanded(item)" (click)="onMobileNavItemClick(item)">
-          <span class="mobile-nav-item__main">
-            <i-tabler [name]="item.iconName || 'point'" class="icon-20 d-flex mobile-nav-item__icon"></i-tabler>
-            <span class="mobile-nav-item__label">{{ item.displayName }}</span>
-          </span>
-          @if(item.children?.length) {
-          <i-tabler [name]="isMobileItemExpanded(item) ? 'chevron-up' : 'chevron-down'" class="icon-18 d-flex"></i-tabler>
-          }
+    <section class="mobile-nav-group" [class.mobile-nav-group--active]="isMobileGroupActive(group)">
+      @if(group.title) {
+      <h3 class="mobile-nav-group__title">
+        <button type="button" class="mobile-nav-group__toggle" (click)="toggleMobileGroup(group)"
+          [attr.aria-expanded]="isMobileGroupExpanded(group)" [attr.aria-controls]="group.id">
+          <span>{{ group.title }}</span>
+          <i-tabler [name]="isMobileGroupExpanded(group) ? 'chevron-up' : 'chevron-down'" class="icon-18 d-flex"></i-tabler>
         </button>
-
-        @if(item.children?.length && isMobileItemExpanded(item)) {
-        <div class="mobile-nav-children">
-          @for(child of item.children; track trackByNavItem($index, child)) {
-          <button type="button" class="mobile-nav-child"
-            [class.mobile-nav-child--active]="isMobileItemActive(child)" (click)="onMobileChildItemClick(child)">
-            <span>{{ child.displayName }}</span>
-            <i-tabler name="chevron-right" class="icon-16 d-flex"></i-tabler>
-          </button>
-          }
-        </div>
-        }
-        }
+      </h3>
+      }
+      <div class="mobile-nav-group__items" [id]="group.id" [hidden]="!isMobileGroupExpanded(group)">
+        <ng-container *ngTemplateOutlet="mobileMenuItems; context: { $implicit: group.items, parentId: group.id, depth: 0 }"></ng-container>
       </div>
     </section>
     }
-
-    <div class="mobile-sheet__section">
-      <button type="button" class="mobile-action-link mobile-action-link--danger" (click)="logout(); closeMobileOverlays()">
-        <span>Sair</span>
-        <i-tabler name="logout-2" class="icon-18 d-flex"></i-tabler>
-      </button>
-    </div>
+  </nav>
+  @if(mobileHelpItem) {
+  <nav class="mobile-sheet__section" aria-label="Ajuda">
+    <button type="button" class="mobile-nav-item" [class.mobile-nav-item--active]="isMobileItemActive(mobileHelpItem)"
+      [attr.aria-current]="isMobileItemActive(mobileHelpItem) ? 'page' : null" (click)="onMobileNavItemClick(mobileHelpItem)">
+      <span class="mobile-nav-item__main">
+        <i-tabler [name]="mobileHelpItem.iconName || 'help'" class="icon-20 d-flex mobile-nav-item__icon"></i-tabler>
+        <span class="mobile-nav-item__label">Ajuda e Tutoriais</span>
+      </span>
+    </button>
+  </nav>
+  }
   </div>
 </section>
 
-<section class="mobile-sheet mobile-sheet--apps" [class.mobile-sheet--open]="mobileAppsOpen" aria-label="Atalhos">
+<ng-template #mobileMenuItems let-items let-parentId="parentId" let-depth="depth">
+  @for(item of items; track trackByNavItem($index, item)) {
+  <div class="mobile-nav-node">
+    <button type="button" [class]="depth === 0 ? 'mobile-nav-item' : 'mobile-nav-child'"
+      [class.mobile-nav-item--active]="isMobileItemActive(item)"
+      [class.mobile-nav-child--active]="depth > 0 && isMobileItemActive(item)"
+      [class.mobile-nav-item--expanded]="isMobileItemExpanded(item)"
+      [disabled]="item.disabled"
+      [id]="mobileNavItemId(item, parentId)"
+      [attr.aria-current]="!item.children?.length && isMobileItemActive(item) ? 'page' : null"
+      [attr.aria-expanded]="item.children?.length ? isMobileItemExpanded(item) : null"
+      [attr.aria-controls]="item.children?.length ? mobileNavItemId(item, parentId) + '-children' : null"
+      (click)="onMobileNavItemClick(item)">
+      <span class="mobile-nav-item__main">
+        <i-tabler [name]="item.iconName || 'point'" class="icon-20 d-flex mobile-nav-item__icon"></i-tabler>
+        <span class="mobile-nav-item__label">{{ item.displayName | translate }}</span>
+      </span>
+      @if(item.children?.length) {
+      <i-tabler [name]="isMobileItemExpanded(item) ? 'chevron-up' : 'chevron-down'" class="icon-18 d-flex"></i-tabler>
+      }
+    </button>
+    @if(item.children?.length) {
+    <div class="mobile-nav-children" [id]="mobileNavItemId(item, parentId) + '-children'" [hidden]="!isMobileItemExpanded(item)">
+      <ng-container *ngTemplateOutlet="mobileMenuItems; context: { $implicit: item.children, parentId: mobileNavItemId(item, parentId), depth: depth + 1 }"></ng-container>
+    </div>
+    }
+  </div>
+  }
+</ng-template>
+
+<section class="mobile-sheet mobile-sheet--apps" [class.mobile-sheet--open]="mobileAppsOpen" [inert]="!mobileAppsOpen" [attr.aria-hidden]="!mobileAppsOpen" aria-label="Atalhos">
   <div class="mobile-sheet__top"
     role="button"
     tabindex="0"
@@ -285,10 +243,6 @@
     </a>
     }
 
-    <a [routerLink]="['/billing/minha-assinatura']" class="mobile-action-link" (click)="closeMobileOverlays()">
-      <span>Minha assinatura</span>
-      <i-tabler name="chevron-right" class="icon-18 d-flex"></i-tabler>
-    </a>
     @for(quicklink of quicklinks; track quicklink.id || quicklink.url) {
     <a [href]="quicklink.url" class="mobile-action-link" (click)="abrirAtalhoMobile(quicklink, $event)">
       <span>{{ quicklink.nome }}</span>
@@ -298,7 +252,7 @@
   </div>
 </section>
 
-<section class="mobile-sheet mobile-sheet--notifications" [class.mobile-sheet--open]="mobileNotificationsOpen" aria-label="Notificações">
+<section class="mobile-sheet mobile-sheet--notifications" [class.mobile-sheet--open]="mobileNotificationsOpen" [inert]="!mobileNotificationsOpen" [attr.aria-hidden]="!mobileNotificationsOpen" aria-label="Notificações">
   <div class="mobile-sheet__top"
     role="button"
     tabindex="0"
@@ -396,7 +350,7 @@
   </div>
 </section>
 
-<section class="mobile-sheet mobile-sheet--profile" [class.mobile-sheet--open]="mobileProfileOpen" aria-label="Perfil do usuário">
+<section class="mobile-sheet mobile-sheet--profile" [class.mobile-sheet--open]="mobileProfileOpen" [inert]="!mobileProfileOpen" [attr.aria-hidden]="!mobileProfileOpen" aria-label="Perfil do usuário">
   <div class="mobile-sheet__top"
     role="button"
     tabindex="0"
@@ -437,14 +391,17 @@
   </div>
 </section>
 
-@if(!hideMobileBottomNav) {
-<nav class="mobile-bottom-nav" aria-label="Navegação principal">
+@if(!hideMobileBottomNav && mobileBottomNavItems.length) {
+<nav class="mobile-bottom-nav" aria-label="Navegação principal"
+  [style.grid-template-columns]="'repeat(' + mobileBottomNavItems.length + ', minmax(0, 1fr))'">
   @for(item of mobileBottomNavItems; track item.key) {
   <button
     type="button"
     class="mobile-bottom-nav__item"
     [class.mobile-bottom-nav__item--active]="isMobileBottomNavActive(item)"
     [class.mobile-bottom-nav__item--special]="item.special"
+    [attr.aria-current]="item.route && isMobileBottomNavActive(item) ? 'page' : null"
+    [attr.aria-pressed]="item.action ? isMobileBottomNavActive(item) : null"
     (click)="onMobileBottomNavClick(item)">
     <span class="mobile-bottom-nav__icon-wrap">
       <i-tabler [name]="item.icon" class="icon-20 d-flex"></i-tabler>

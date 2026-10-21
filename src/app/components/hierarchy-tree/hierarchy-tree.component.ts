@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { NestedTreeControl } from '@angular/cdk/tree';
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, TrackByFunction } from '@angular/core';
 import { ThemePalette } from '@angular/material/core';
 import { MatTreeNestedDataSource } from '@angular/material/tree';
 import { MaterialModule } from 'src/app/material.module';
@@ -86,7 +86,7 @@ export class HierarchyTreeComponent<T = unknown> implements OnChanges {
 
   hasChild = (_: number, node: HierarchyTreeNode<T>): boolean => this.hasChildren(node);
 
-  trackByNode = (_: number, node: HierarchyTreeNode<T>): string | number => node.id;
+  @Input() trackByNode: TrackByFunction<HierarchyTreeNode<T>> = (_: number, node: HierarchyTreeNode<T>) => node.id;
 
   visibleActions(node: HierarchyTreeNode<T>): HierarchyTreeAction<T>[] {
     return this.actions.filter((action) => action.visible ? action.visible(node) : true);

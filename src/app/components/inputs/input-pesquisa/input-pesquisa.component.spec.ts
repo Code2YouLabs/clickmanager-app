@@ -1,11 +1,15 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { BehaviorSubject } from 'rxjs';
 import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { InputPesquisaComponent } from './input-pesquisa.component';
 
 describe('InputPesquisaComponent', () => {
+  let viewport: BehaviorSubject<any>;
   let fixture: ComponentFixture<InputPesquisaComponent>;
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [InputPesquisaComponent, NoopAnimationsModule] });
+    viewport = new BehaviorSubject({ matches: false, breakpoints: {} });
+    TestBed.configureTestingModule({ imports: [InputPesquisaComponent, NoopAnimationsModule], providers: [{ provide: BreakpointObserver, useValue: { observe: () => viewport } }] });
     fixture = TestBed.createComponent(InputPesquisaComponent);
     fixture.detectChanges();
   });
@@ -35,4 +39,19 @@ describe('InputPesquisaComponent', () => {
     fixture.destroy(); tick(500);
     expect(emit).not.toHaveBeenCalled();
   }));
+  it('foca o input na primeira interação mobile sem alterar valor ou debounce', fakeAsync(() => {
+    viewport.next({ matches: true, breakpoints: {} }); fixture.componentRef.setInput('compact', true); fixture.detectChanges();
+    document.body.appendChild(fixture.nativeElement);
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('input');
+    const emit = spyOn(fixture.componentInstance.valorAlterado, 'emit');
+    fixture.nativeElement.querySelector('mat-icon').dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch' }));
+    expect(document.activeElement).toBe(input);
+    expect(input.getAttribute('inputmode')).toBe('text');
+    expect(input.getAttribute('enterkeyhint')).toBe('search');
+    expect(input.getAttribute('autocomplete')).toBe('off');
+    tick(500); expect(emit).not.toHaveBeenCalled();
+    viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
+    expect(input.getAttribute('autocomplete')).toBeNull(); fixture.nativeElement.remove();
+  }));
+
 });

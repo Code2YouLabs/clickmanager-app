@@ -17,6 +17,7 @@ export const ThemePagesRoutes: Routes = [
         data: {
           ...SHARED_ROUTE_DATA,
           title: 'Account Setting',
+          mobileTitle: 'Meu perfil',
           urls: [
             { title: 'Dashboard', url: '/dashboards/dashboard1' },
             { title: 'Account Setting' },

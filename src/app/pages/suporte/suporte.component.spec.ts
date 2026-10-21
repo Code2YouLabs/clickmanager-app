@@ -1,3 +1,4 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
@@ -35,6 +36,7 @@ describe('SuporteComponent', () => {
   });
 
   function setup(options: {
+    mobile?: boolean;
     initialId?: number | null;
     listar?: Observable<ChamadoSuportePaginadoResponse>;
     buscar?: (id: number) => Observable<ChamadoSuporteDetalhe>;
@@ -43,7 +45,8 @@ describe('SuporteComponent', () => {
     toastr = jasmine.createSpyObj<ToastrService>('ToastrService', ['success', 'warning', 'error']);
     router = jasmine.createSpyObj<Router>('Router', ['navigate']);
     dialogOpenSpy = spyOn(MatDialog.prototype, 'open').and.returnValue({
-      afterClosed: () => of(null),
+      afterClosed: () => of(null), beforeClosed: () => of(),
+      updateSize() { return this; }, updatePosition() { return this; }, addPanelClass() { return this; },
     } as any);
     paramMap$ = new BehaviorSubject(convertToParamMap(options.initialId ? { id: String(options.initialId) } : {}));
 
@@ -58,6 +61,7 @@ describe('SuporteComponent', () => {
     TestBed.configureTestingModule({
       imports: [SuporteComponent, NoopAnimationsModule],
       providers: [
+        { provide: BreakpointObserver, useValue: { observe: () => of({ matches: !!options.mobile, breakpoints: {} }), isMatched: () => !!options.mobile } },
         { provide: SuporteService, useValue: service },
         { provide: ToastrService, useValue: toastr },
         { provide: Router, useValue: router },
@@ -69,6 +73,59 @@ describe('SuporteComponent', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
   }
+
+
+  it('mobile inicia na lista, seleciona inclusive o chamado ativo e volta sem perder busca ou status', () => {
+    setup({ mobile: true, buscar: () => of({ ...chamadoDetalhe(6), ...item6, mensagens: [] }) });
+    expect(component.mobileLista).toBeTrue();
+    expect(fixture.nativeElement.querySelector('app-list-filter-bar')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.support-detail')).toBeNull();
+    paramMap$.next(convertToParamMap({ id: '6' }));
+    component.aplicarFiltroBusca('Pedido'); component.aplicarFiltrosMobile({ status: 'RESPONDIDO' });
+    router.navigate.calls.reset(); component.selecionarChamado(item6); fixture.detectChanges();
+    expect(component.mobileLista).toBeFalse();
+    expect(router.navigate).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('.support-detail')).not.toBeNull();
+    fixture.nativeElement.querySelector('[aria-label="Voltar à lista de chamados"]').click(); fixture.detectChanges();
+    expect(component.buscaControl.value).toBe('Pedido'); expect(component.statusControl.value).toBe('RESPONDIDO');
+    expect(component.chamadosFiltrados.map(item => item.id)).toEqual([6]);
+    component.aplicarFiltrosMobile({}); expect(component.statusControl.value).toBe('TODOS');
+  });
+
+  it('mobile abre novo chamado no painel compartilhado e preserva fechamento protegido', () => {
+    setup({ mobile: true }); component.abrirNovoChamado();
+    const config = dialogOpenSpy.calls.mostRecent().args[1];
+    expect(config.panelClass).toContain('mobile-side-panel'); expect(config.width).toBe('100vw');
+    expect(config.disableClose).toBeTrue(); expect(config.data.mobilePanel).toBeTrue();
+  });
+
+  it('deep link mobile mostra histórico, mantém mensagens internas ocultas e bloqueia resposta em chamado fechado', () => {
+    setup({ mobile: true, initialId: 6, buscar: () => of({ ...chamadoDetalhe(6, [mensagem(1, 'CLIENTE', 'Pública', false), mensagem(2, 'SUPORTE', 'Interna', true)]), status: 'FECHADO' }) });
+    expect(component.mobileLista).toBeFalse(); expect(fixture.nativeElement.textContent).toContain('Pública');
+    expect(fixture.nativeElement.textContent).not.toContain('Interna'); expect(fixture.nativeElement.querySelector('.reply-box')).toBeNull();
+    component.responderChamado(); expect(service.responder$).not.toHaveBeenCalled();
+  });
+
+  for (const width of [360, 390, 430, 1024, 1440]) it(`preserva conteúdo e ações em ${width}px sem overflow mobile`, async () => {
+    setup({ mobile: width <= 760 }); await fixture.whenStable(); fixture.detectChanges();
+    const frame = document.createElement('iframe'); frame.style.cssText = `width:${width}px;height:900px;border:0`; document.body.appendChild(frame);
+    try {
+      const doc = frame.contentDocument!; const style = doc.createElement('style');
+      style.textContent = Array.from(document.styleSheets).map(sheet => { try { return Array.from(sheet.cssRules).map(rule => rule.cssText).join('\n'); } catch { return ''; } }).join('\n') + '\nbody { margin:0; --mobile-bottom-nav-height:80px; }';
+      doc.head.appendChild(style); doc.body.appendChild(fixture.nativeElement.cloneNode(true));
+      if (width <= 760) {
+        expect(doc.documentElement.scrollWidth).toBeLessThanOrEqual(width);
+        expect(doc.querySelectorAll('.page-card__fab-clearance').length).toBe(1);
+        expect(doc.querySelector('.support-detail')).toBeNull();
+        component.selecionarChamado(item6); fixture.detectChanges();
+        doc.body.replaceChildren(fixture.nativeElement.cloneNode(true));
+        expect(doc.documentElement.scrollWidth).toBeLessThanOrEqual(width);
+      } else {
+        expect(doc.querySelector('.support-sidebar')).not.toBeNull(); expect(doc.querySelector('.support-detail')).not.toBeNull();
+        expect(doc.querySelector('[page-header-actions]')).not.toBeNull(); expect(doc.querySelector('.page-card__fab-clearance')).toBeNull();
+      }
+    } finally { frame.remove(); }
+  });
 
   afterEach(() => {
     fixture?.destroy();

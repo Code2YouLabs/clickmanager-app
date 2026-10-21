@@ -1,5 +1,9 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
+import { Subject, takeUntil } from 'rxjs';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { finalize } from 'rxjs';
@@ -25,6 +29,7 @@ import { SiteBannerService } from '../../services/site-banner.service';
     ReactiveFormsModule,
     MaterialModule,
     PageCardComponent,
+    MobileTotalBarComponent,
     SectionCardComponent,
     InputTextoRestritoComponent,
     InputTextareaComponent,
@@ -34,7 +39,10 @@ import { SiteBannerService } from '../../services/site-banner.service';
   templateUrl: './form-banner.component.html',
   styleUrl: './form-banner.component.scss',
 })
-export class FormBannerComponent implements OnInit {
+export class FormBannerComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  private readonly destroy$ = new Subject<void>();
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
   readonly posicoesTexto: Array<{ value: SiteBannerPosicaoTexto; label: string }> = [
     { value: 'ESQUERDA', label: 'Esquerda' },
     { value: 'CENTRO', label: 'Centro' },
@@ -64,8 +72,11 @@ export class FormBannerComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly siteBannerService: SiteBannerService,
-    private readonly toastr: ToastrService
-  ) {}
+    private readonly toastr: ToastrService,
+    breakpoints?: BreakpointObserver
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+  }
 
   ngOnInit(): void {
     this.form = this.fb.group({

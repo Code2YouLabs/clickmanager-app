@@ -72,3 +72,37 @@
   font-size: 14px;
   line-height: 1.4;
 }
+
+@media (max-width: 760px) {
+  :host { display: block; min-width: 0; }
+  .billing-mobile__content, .billing-mobile__plans { display: grid; gap: 12px; min-width: 0; }
+  .billing-mobile__intro h2 { margin: 0 0 8px; font-size: 18px; line-height: 24px; }
+  .billing-mobile__intro p, .billing-mobile__notice { margin: 0 0 8px; color: var(--mat-sys-on-surface-variant); font-size: 14px; line-height: 20px; overflow-wrap: anywhere; }
+  .billing-mobile__state { display: grid; justify-items: center; gap: 12px; padding: 16px 0; text-align: center; }
+  .billing-mobile__state p { margin: 0; }
+  .billing-mobile__state button { min-height: 44px; }
+  .billing-mobile .selected-plan-summary { margin-top: 0 !important; padding: 12px; border-radius: 8px; }
+  .billing-mobile .selected-plan-summary__title { font-size: 16px; gap: 4px 12px; }
+  .billing-mobile .selected-plan-summary__badge { max-width: 100%; overflow-wrap: anywhere; }
+  .billing-mobile__plans app-section-card + app-section-card { border-top: 1px solid var(--mat-sys-outline-variant); padding-top: 8px; }
+}
+
+@media (max-width: 760px) {
+  .billing-mobile__plans app-section-card.billing-mobile__plan--featured {
+    display: block;
+    padding: 10px;
+    border: 1px solid color-mix(in srgb, var(--mat-sys-primary) 25%, var(--mat-sys-outline-variant));
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--mat-sys-primary) 5%, var(--mat-sys-surface));
+  }
+  .billing-mobile__plan-badge {
+    display: inline-flex;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--mat-sys-primary) 10%, var(--mat-sys-surface));
+    color: var(--mat-sys-primary);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+  }
+}

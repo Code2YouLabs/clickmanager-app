@@ -7,6 +7,11 @@
     <input
       matInput
       type="text"
+      [attr.aria-label]="label"
+      [required]="showControlErrors && isRequired"
+      [errorStateMatcher]="showControlErrors ? controlErrorMatcher : defaultErrorMatcher"
+      (blur)="onBlur()"
+      [attr.inputmode]="inputMode"
       #inputRef
       [value]="valorFormatado"
       [disabled]="control.disabled"

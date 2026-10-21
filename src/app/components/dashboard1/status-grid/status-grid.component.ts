@@ -24,6 +24,7 @@ interface StatusGridItem {
 })
 export class AppStatusGridComponent implements OnInit, OnChanges, OnDestroy {
   @Input() refreshToken = 0;
+  @Input() compactMobile = false;
   @Output() refreshState = new EventEmitter<{ id: 'status'; refreshing: boolean }>();
   pedidoStats: StatusGridItem[] = [];
   orcamentoStats: StatusGridItem[] = [];

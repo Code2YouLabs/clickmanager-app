@@ -1,0 +1,31 @@
+@if (actionList) {
+  <div class="document-action-list">
+    @for (action of actions; track action.id) {
+      <button class="document-action-row" mat-button type="button" [attr.data-document-action]="action.id" [disabled]="disabled" (click)="executarDocumento(action.id)">
+        <span class="action-content">
+          @if (action.id === 'whatsapp') {
+            <mat-icon class="action-leading-icon whatsapp-icon" svgIcon="comercial:whatsapp" aria-hidden="true"></mat-icon>
+          } @else {
+            <mat-icon class="action-leading-icon" aria-hidden="true">{{ action.icon }}</mat-icon>
+          }
+          <span class="action-label">{{ action.id === 'completo' && contexto === 'orcamento' ? 'Orçamento PDF' : action.label }}</span>
+          <mat-icon class="action-indicator" aria-hidden="true">chevron_right</mat-icon>
+        </span>
+      </button>
+    }
+  </div>
+} @else {
+  <app-section-card titulo="Documentos e compartilhamento" [divider]="true" class="documents-card">
+    <div class="document-actions">
+      @for (action of actions; track action.id) {
+        @if (action.flat) {
+          <button mat-flat-button [color]="action.color" [class.btn-whatsapp]="action.id === 'whatsapp'" type="button" (click)="executarDocumento(action.id)">
+            <mat-icon>{{ action.icon }}</mat-icon>{{ action.id === 'completo' && contexto === 'orcamento' ? 'Orçamento PDF' : action.label }}
+          </button>
+        } @else {
+          <button mat-stroked-button [color]="action.color" type="button" (click)="executarDocumento(action.id)"><mat-icon>{{ action.icon }}</mat-icon>{{ action.label }}</button>
+        }
+      }
+    </div>
+  </app-section-card>
+}

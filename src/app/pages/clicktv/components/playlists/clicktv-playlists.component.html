@@ -2,7 +2,10 @@
   <app-page-card
     titulo="Playlists do ClickTV"
     subtitulo="Monte sequências de imagens e vídeos para suas telas."
+    [primaryAction]="isMobile ? { label: 'Nova playlist', icon: 'add', permission: 'CLICKTV_PLAYLISTS_GERENCIAR', disabled: false } : null"
+    (primaryActionClick)="criar()"
     [mostrarDivisor]="true">
+    @if (!isMobile) {
     <button
       page-header-actions
       mat-flat-button
@@ -13,6 +16,7 @@
       <mat-icon>add</mat-icon>
       Nova playlist
     </button>
+    }
 
     <app-data-table
       tableLabel="Playlists do ClickTV"
@@ -59,9 +63,14 @@
 
       <ng-template [appDataTableItem]="playlists" let-playlist let-actions="actions" let-emitAction="emitAction">
         <article class="clicktv-list-item">
+          <div class="clicktv-list-item__head">
           <div class="clicktv-list-item__main">
             <strong>{{ playlist.nome }}</strong>
             <span>{{ playlist.descricao || 'Sem descrição' }}</span>
+          </div>
+            @if (actions.length) {
+              <button mat-icon-button type="button" [matMenuTriggerFor]="itemMobileMenu" [matMenuTriggerData]="{ row: playlist, actions: actions, emitAction: emitAction }" aria-label="Abrir ações da playlist"><mat-icon>more_vert</mat-icon></button>
+            }
           </div>
           <div class="clicktv-list-item__meta">
             <span>{{ playlist.orientacao }}</span>
@@ -72,22 +81,18 @@
             <span class="clicktv-badge clicktv-badge--{{ playlist.ativa ? 'success' : 'neutral' }}">
               {{ playlist.ativa ? 'ATIVA' : 'INATIVA' }}
             </span>
-            <div class="clicktv-actions">
-              @for (action of actions; track action.id) {
-                <button
-                  mat-icon-button
-                  type="button"
-                  [disabled]="action.disabled?.(playlist)"
-                  [matTooltip]="action.label"
-                  [attr.aria-label]="action.label"
-                  (click)="emitAction(playlist, action.id)">
-                  <mat-icon [color]="action.color || null">{{ action.icon }}</mat-icon>
-                </button>
-              }
-            </div>
+
           </div>
         </article>
       </ng-template>
     </app-data-table>
   </app-page-card>
 </section>
+
+<mat-menu #itemMobileMenu="matMenu" xPosition="before">
+  <ng-template matMenuContent let-row="row" let-actions="actions" let-emitAction="emitAction">
+    @for (action of actions; track action.id) {
+      <button mat-menu-item type="button" [class.mobile-item-destructive]="action.color === 'warn'" [disabled]="action.disabled?.(row)" (click)="emitAction(row, action.id)"><mat-icon>{{ action.icon }}</mat-icon><span>{{ action.label }}</span></button>
+    }
+  </ng-template>
+</mat-menu>

@@ -1,3 +1,4 @@
+@use "../../shared/responsive/mobile-foundation" as mobile;
 :host {
   display: block;
   height: 100%;
@@ -224,5 +225,29 @@
   .status-secondary {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+@include mobile.mobile-foundation {
+  :host(.pedido-fluxo--mobile) ::ng-deep .section-card--mobile-plain {
+    .section-card__header { flex-direction: row; align-items: center; justify-content: space-between; }
+    .section-card__actions { width: auto; }
+  }
+  .fluxo--mobile {
+    min-height: 0; height: auto; gap: 12px;
+    &.inativo { pointer-events: auto; }
+    .mobile-current-status app-status-badge { min-width: 0; max-width: 100%; }
+    .mobile-current-status { display: grid; justify-items: start; gap: 8px; min-width: 0; }
+    .helper-text, .mobile-no-transitions { margin: 0; font-size: 14px; line-height: 20px; color: var(--mat-sys-on-surface-variant); overflow-wrap: anywhere; }
+    .mobile-transitions { display: grid; gap: 12px; min-width: 0; }
+    .mobile-transition { display: grid; gap: 4px; min-width: 0; }
+    .mobile-transition button { width: 100%; min-width: 0; min-height: 44px; height: auto; padding: 8px 12px; white-space: normal; overflow-wrap: anywhere; font-size: 14px; line-height: 20px; }
+    .mobile-flow-toggle { align-self: flex-start; max-width: 100%; min-height: 44px; white-space: normal; }
+    .step-strip { margin: 0; }
+    .step-strip[hidden] { display: none; }
+    .flow-line { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .flow-step { display: block; max-width: 100%; overflow-wrap: anywhere; }
+    .flow-step span { font-size: 14px; line-height: 20px; }
+    .flow-step .arrow { display: none; }
   }
 }

@@ -1,6 +1,7 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { BehaviorSubject } from 'rxjs';
 import { DataTableItemDirective } from './data-table-item.directive';
+import { By } from '@angular/platform-browser';
 import { Component } from '@angular/core';
 import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -8,7 +9,7 @@ import { PageEvent } from '@angular/material/paginator';
 import { Sort } from '@angular/material/sort';
 import { DataTableCellDirective } from './data-table-cell.directive';
 import { DataTableComponent } from './data-table.component';
-import { DataTableActionEvent, DataTableFilterState } from './data-table.models';
+import { DataTableActionEvent, DataTableFilterState, DataTableProgressiveState } from './data-table.models';
 
 interface TestRow extends Record<string, unknown> {
   id: number;
@@ -21,12 +22,14 @@ interface TestRow extends Record<string, unknown> {
   imports: [DataTableComponent, DataTableCellDirective, DataTableItemDirective],
   template: `
     <app-data-table
+      [mobileCompact]="compact"
       [columns]="columns"
       [data]="data"
       [filters]="filters"
       [filterState]="filterState"
       [search]="search"
       [pagination]="pagination"
+      [mobileLoadMode]="loadMode" [progressiveState]="progressive" loadMoreLabel="Carregar mais produtos" itemsLabel="produtos"
       [loading]="loading" [refreshing]="refreshing" [error]="error" [forbidden]="forbidden"
       [expandable]="expandable" (retry)="retries = retries + 1"
       [actions]="actions"
@@ -44,6 +47,7 @@ interface TestRow extends Record<string, unknown> {
         <span class="custom-name">Produto: {{ row.name }}</span>
       </ng-template>
       <button data-table-toolbar-actions>Importar</button>
+      <button data-table-empty-actions (click)="emptyClicks = emptyClicks + 1">Cadastrar</button>
       <ng-template appDataTableCell="__expandedDetail" let-row><span class="details">Detalhe {{ row.name }}</span></ng-template>
       @if (mobile) {
         <ng-template [appDataTableItem]="data" let-row let-actions="actions" let-emit="emitAction" let-toggle="toggle" let-expanded="expanded">
@@ -83,11 +87,15 @@ class HostComponent {
   filterState: DataTableFilterState = {};
   search = { enabled: true, label: 'Buscar produtos', placeholder: 'Buscar por nome', debounceMs: 300 };
   pagination = { pageIndex: 0, pageSize: 10, totalItems: 1, pageSizeOptions: [10, 20] };
+  loadMode: 'paged' | 'progressive' = 'paged';
+  progressive: DataTableProgressiveState | null = null;
   loading = false;
   refreshing = false;
   error: string | null = null;
   forbidden = false;
   expandable = false;
+  emptyClicks = 0;
+  compact = false;
   mobile = false;
   retries = 0;
   sort: Sort = { active: '', direction: '' };
@@ -121,7 +129,7 @@ describe('DataTableComponent', () => {
     viewport = new BehaviorSubject<{ matches: boolean; breakpoints: Record<string, boolean> }>({ matches: false, breakpoints: {} });
     TestBed.configureTestingModule({
       imports: [HostComponent, NoopAnimationsModule],
-      providers: [{ provide: BreakpointObserver, useValue: { observe: () => viewport } }],
+      providers: [{ provide: BreakpointObserver, useValue: { observe: () => viewport, isMatched: () => false } }],
     });
 
     fixture = TestBed.createComponent(HostComponent);
@@ -131,6 +139,81 @@ describe('DataTableComponent', () => {
   });
 
   afterEach(() => TestBed.resetTestingModule());
+
+  it('progressivo usa PageEvent, bloqueia cliques simultâneos e mantém os nós existentes ao acrescentar', () => {
+    host.mobile = true; host.loadMode = 'progressive';
+    host.pagination = { pageIndex: 0, pageSize: 1, totalItems: 3, pageSizeOptions: [1] };
+    host.progressive = { loadedCount: 1 };
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    const firstNode = fixture.nativeElement.querySelector('[role=listitem]');
+    const emit = spyOn(table.pageChange, 'emit');
+    const more = fixture.nativeElement.querySelector('.data-table-progressive__more');
+    expect(more.textContent).toContain('Carregar mais produtos');
+    expect(fixture.nativeElement.querySelector('.data-table-mobile-pagination')).toBeNull();
+    more.click(); more.click();
+    expect(emit).toHaveBeenCalledOnceWith({ pageIndex: 1, previousPageIndex: 0, pageSize: 1, length: 3 });
+    host.progressive = { loadedCount: 1, loading: true }; fixture.detectChanges();
+    expect(more.disabled).toBeTrue(); expect(more.textContent).toContain('Carregando mais');
+    host.data = [...host.data, { id: 2, name: 'Cartão', status: 'Ativo' }];
+    host.pagination = { ...host.pagination, pageIndex: 1 }; host.progressive = { loadedCount: 2 }; fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role=listitem]')).toBe(firstNode);
+    expect(fixture.nativeElement.querySelectorAll('[role=listitem]').length).toBe(2);
+    expect(fixture.nativeElement.textContent).toContain('Carregados 2 de 3 produtos');
+    table.loadNextBatch(); expect(emit).toHaveBeenCalledTimes(2);
+  });
+
+  it('progressivo diferencia fim, vazio, pesquisa local e desktop sem aderir outros consumidores', () => {
+    host.loadMode = 'progressive'; host.progressive = { loadedCount: 1 };
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.data-table-progressive')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.data-table-progressive__more')).toBeNull();
+    host.data = []; host.progressive = { loadedCount: 0 }; host.pagination.totalItems = 0; fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.data-table-empty')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.data-table-progressive')).toBeNull();
+    expect(fixture.nativeElement.querySelector('mat-paginator')).toBeNull();
+    host.progressive = { loadedCount: 10 }; host.pagination = { pageIndex: 0, pageSize: 10, totalItems: 20, pageSizeOptions: [10] };
+    const emit = spyOn(table.pageChange, 'emit'); table.onSearch('ausente'); fixture.detectChanges();
+    expect(emit).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.textContent).toContain('Carregados 10 de 20 produtos');
+    expect(fixture.nativeElement.querySelector('.data-table-progressive__more')).toBeTruthy();
+    viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.data-table-progressive')).toBeNull();
+    expect(fixture.nativeElement.querySelector('mat-paginator')).toBeTruthy();
+  });
+
+  it('progressivo permite retry do mesmo lote e atualização explícita, sem substituir os dados', () => {
+    host.loadMode = 'progressive'; host.progressive = { loadedCount: 1 };
+    host.pagination = { pageIndex: 0, pageSize: 1, totalItems: 3, pageSizeOptions: [1] };
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    const emit = spyOn(table.pageChange, 'emit'); table.loadNextBatch();
+    host.progressive = { loadedCount: 1, error: 'Falha de rede' }; fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.custom-name')).toBeTruthy();
+    fixture.nativeElement.querySelector('.data-table-progressive__error button').click();
+    expect(emit).toHaveBeenCalledTimes(2);
+    expect(emit.calls.mostRecent().args[0]?.pageIndex).toBe(1);
+    host.progressive = { loadedCount: 1, error: 'A lista mudou', restartRequired: true }; fixture.detectChanges();
+    const reset = fixture.nativeElement.querySelector('.data-table-progressive__error button');
+    expect(reset.textContent).toContain('Atualizar lista'); reset.click();
+    expect(host.retries).toBe(1); expect(emit).toHaveBeenCalledTimes(2);
+    host.filterState = { materialId: 10 }; host.progressive = { loadedCount: 0 }; host.data = []; fixture.detectChanges();
+    host.progressive = { loadedCount: 1 }; host.data = [{ id: 3, name: 'Novo filtro', status: 'Ativo' }]; fixture.detectChanges();
+    table.loadNextBatch(); expect(emit).toHaveBeenCalledTimes(3);
+  });
+
+  it('troca a fonte progressiva sem manter a requisição pendente anterior com os mesmos filtros e contagens', () => {
+    host.loadMode = 'progressive'; host.expandable = true; host.progressive = { contextKey: 'source-a', loadedCount: 1 };
+    host.pagination = { pageIndex: 0, pageSize: 1, totalItems: 3, pageSizeOptions: [1] };
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    table.toggleRow(host.data[0]); expect(table.expandedRow).toBe(host.data[0]);
+    const emit = spyOn(table.pageChange, 'emit'); table.loadNextBatch(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.data-table-progressive__more').disabled).toBeTrue();
+    host.progressive = { contextKey: 'source-b', loadedCount: 1 };
+    host.data = [{ id: 7, name: 'Outra fonte', status: 'Ativo' }]; fixture.detectChanges();
+    expect(table.expandedRow).toBeNull();
+    expect(fixture.nativeElement.querySelector('.data-table-progressive__more').disabled).toBeFalse();
+    table.loadNextBatch(); expect(emit).toHaveBeenCalledTimes(2);
+    expect(emit.calls.mostRecent().args[0]?.pageIndex).toBe(1);
+  });
 
   it('renderiza colunas, dados e template customizado', () => {
     expect(fixture.nativeElement.textContent).toContain('Nome');
@@ -281,13 +364,13 @@ describe('DataTableComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Importar');
     table.emitAction({ ...host.data[0], status: 'Inativo' }, host.actions[1]); expect(host.lastAction).toBeNull();
   });
-  it('usa item mobile opcional com mesmos dados, acoes, expansao e paginator', () => {
+  it('usa item mobile opcional com mesmos dados, acoes, expansao e paginação', () => {
     host.mobile = true; host.expandable = true; fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('table')).toBeTruthy();
     viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('table')).toBeNull();
     expect(fixture.nativeElement.querySelector('.mobile-name').textContent).toBe('Panfleto');
-    expect(fixture.nativeElement.querySelector('mat-paginator')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.data-table-mobile-pagination')).toBeTruthy();
     fixture.nativeElement.querySelector('.mobile-action').click(); expect(host.lastAction?.action).toBe('edit');
     fixture.nativeElement.querySelector('.mobile-expand').click(); fixture.detectChanges();
     expect(table.isExpanded(host.data[0])).toBeTrue();
@@ -297,5 +380,82 @@ describe('DataTableComponent', () => {
     viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('table')).toBeTruthy();
   });
+
+  it('pagina no mobile por controles compartilhados e conserva o MatPaginator desktop', () => {
+    host.mobile = true;
+    host.pagination = { pageIndex: 1, pageSize: 10, totalItems: 42, pageSizeOptions: [10, 20] };
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.data-table-page').textContent).toContain('Página 2 de 5');
+    expect(fixture.nativeElement.textContent).toContain('11–20 de 42 registros');
+    expect(fixture.nativeElement.querySelector('mat-paginator')).toBeNull();
+    fixture.nativeElement.querySelector('[aria-label="Próxima página"]').click();
+    expect(host.lastPage).toEqual({ pageIndex: 2, pageSize: 10, length: 42, previousPageIndex: 1 });
+    table.onMobilePageSize(20);
+    expect(host.lastPage).toEqual({ pageIndex: 0, pageSize: 20, length: 42, previousPageIndex: 1 });
+    host.refreshing = true; fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[aria-label="Próxima página"]').disabled).toBeTrue();
+    const before = host.lastPage; table.onMobilePage(1); expect(host.lastPage).toBe(before);
+    host.refreshing = false;
+    viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.data-table-mobile-pagination')).toBeNull();
+    expect(fixture.nativeElement.querySelector('table')).toBeTruthy();
+    const paginator = fixture.debugElement.query(By.css('mat-paginator')).componentInstance;
+    expect(paginator.showFirstLastButtons).toBeTrue(); expect(paginator.pageSizeOptions).toEqual([10, 20]);
+  });
+
+  it('mostra vazio e paginação sem dados sem apresentar cabeçalho de tabela no mobile', () => {
+    host.data = []; host.pagination = { pageIndex: 0, pageSize: 10, totalItems: 0, pageSizeOptions: [10, 20] };
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('table')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Nenhum cadastro');
+    expect(fixture.nativeElement.textContent).toContain('Cadastre um item.');
+    fixture.nativeElement.querySelector('[data-table-empty-actions]').click(); expect(host.emptyClicks).toBe(1);
+    expect(fixture.nativeElement.textContent).toContain('Página 1 de 1');
+    expect(fixture.nativeElement.textContent).toContain('0–0 de 0 registros');
+    expect(fixture.nativeElement.querySelector('[aria-label="Página anterior"]').disabled).toBeTrue();
+    expect(fixture.nativeElement.querySelector('[aria-label="Próxima página"]').disabled).toBeTrue();
+    table.onMobilePage(1); expect(host.lastPage).toBeNull();
+  });
+
+  it('preserva âncora do primeiro item ao mudar tamanho de página e rejeita tamanhos inválidos', () => {
+    host.pagination = { pageIndex: 3, pageSize: 10, totalItems: 92, pageSizeOptions: [10, 20] }; fixture.detectChanges();
+    table.onMobilePageSize(20);
+    expect(host.lastPage).toEqual({ pageIndex: 1, pageSize: 20, length: 92, previousPageIndex: 3 });
+    const before = host.lastPage; table.onMobilePageSize(0); expect(host.lastPage).toBe(before);
+    table.onMobilePageSize(99); expect(host.lastPage).toBe(before);
+  });
+
+  it('oferece a ordenação das mesmas colunas no item mobile sem ordenar outra fonte', () => {
+    host.mobile = true; viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.data-table-mobile-sort')).toBeTruthy();
+    table.onMobileSort('name');
+    expect(host.lastSort).toEqual({ active: 'name', direction: 'asc' });
+    host.sort = { active: 'name', direction: 'asc' }; fixture.detectChanges();
+    fixture.nativeElement.querySelector('.data-table-mobile-sort button').click();
+    expect(host.lastSort).toEqual({ active: 'name', direction: 'desc' });
+    expect(host.data[0].name).toBe('Panfleto');
+  });
+
+  it('encaminha opt-in à barra de pesquisa e seção sem mudar filtros tipados', () => {
+    host.compact = true; fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.section-card--mobile-plain')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.input-pesquisa--mobile-compact')).toBeTruthy();
+    table.onFilterStateChange({ status: false, zero: 0, none: null });
+    expect(host.lastFilters).toEqual({ status: false, zero: 0 });
+    table.onClearFilters();
+    expect(host.lastFilters).toEqual({});
+  });
+
+  it('integra aplicar filtros do painel com o mesmo adaptador tipado do DataTable', fakeAsync(() => {
+    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.list-mobile-toolbar__title')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Importar');
+    table.filterBar!.openMobileFilters(); tick(); fixture.detectChanges();
+    table.filterBar!.onFieldChange('materialId', 10);
+    expect(host.lastFilters).toBeNull();
+    table.filterBar!.applyMobileFilters(); tick(500); fixture.detectChanges();
+    expect(host.lastFilters).toEqual({ materialId: 10 });
+    expect(table.filterBar!.mobileFiltersOpen).toBeFalse();
+  }));
 
 });

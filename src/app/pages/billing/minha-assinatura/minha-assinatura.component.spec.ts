@@ -1,3 +1,4 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { registerLocaleData } from '@angular/common';
 import localePt from '@angular/common/locales/pt';
@@ -71,6 +72,7 @@ describe('MinhaAssinaturaComponent', () => {
     TestBed.configureTestingModule({
       imports: [MinhaAssinaturaComponent, NoopAnimationsModule, TablerIconsModule.pick(TablerIcons)],
       providers: [
+        { provide: BreakpointObserver, useValue: { observe: () => of({ matches: false, breakpoints: {} }) } },
         provideRouter([]),
         { provide: AuthService, useValue: { usuario$: usuario$.asObservable() } },
         { provide: BillingService, useValue: billingService },

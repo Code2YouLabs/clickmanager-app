@@ -2,17 +2,20 @@
   class="site-pagina-form-page"
   [titulo]="tituloPagina"
   subtitulo="Configure conteúdo, exibição no menu, resumo da Home e SEO da página."
-  botaoTexto="Voltar"
+  [botaoTexto]="isMobile ? undefined : 'Voltar'"
   botaoIcone="arrow_back"
   botaoCor="primary"
   [botaoRota]="['/page/site/paginas']"
   [mostrarDivisor]="true"
-  [formState]="formState"
-  [footerActions]="footerActions"
+  [formState]="isMobile ? undefined : formState"
+  [footerActions]="isMobile ? [] : footerActions"
   [saving]="salvando"
   [savingText]="savingText"
   [actionsDisabled]="carregando || !!erro || semPermissao"
   [headerActionDisabled]="salvando">
+  @if (isMobile) {
+    <a page-mobile-header-actions mat-button [routerLink]="['/page/site/paginas']" [disabled]="salvando"><mat-icon>arrow_back</mat-icon>Voltar</a>
+  }
 
   @if (carregando) {
   <div class="site-pagina-form-state">
@@ -35,7 +38,7 @@
   } @else {
   <form [id]="formId" [formGroup]="form" (ngSubmit)="onSubmit()">
     <div class="site-pagina-form-layout">
-      <app-section-card titulo="Dados da página" subtitulo="Defina identificação, rota e status principal.">
+      <app-section-card [mobilePlain]="isMobile" titulo="Dados da página" subtitulo="Defina identificação, rota e status principal.">
         <div class="cadastro-form-grid">
           @if (isEditMode) {
           <div class="pagina-meta">
@@ -74,7 +77,7 @@
         </div>
       </app-section-card>
 
-      <app-section-card titulo="Exibição" subtitulo="Controle presença e ordem no menu e na Home.">
+      <app-section-card [mobilePlain]="isMobile" titulo="Exibição" subtitulo="Controle presença e ordem no menu e na Home.">
         <div class="cadastro-form-grid">
           <div class="cadastro-form-toggle-grid">
             <div class="cadastro-form-toggle">
@@ -110,7 +113,7 @@
         </div>
       </app-section-card>
 
-      <app-section-card
+      <app-section-card [mobilePlain]="isMobile"
         titulo="Resumo da Home"
         subtitulo="Configure o bloco exibido na página inicial."
         [class.home-section-disabled]="!exibirNaHomeControl.value"
@@ -159,7 +162,7 @@
         </div>
       </app-section-card>
 
-      <app-section-card titulo="SEO" subtitulo="Defina título e descrição para buscadores.">
+      <app-section-card [mobilePlain]="isMobile" titulo="SEO" subtitulo="Defina título e descrição para buscadores.">
         <div class="cadastro-form-grid">
           <app-input-texto-restrito
             [control]="seoTituloControl"
@@ -185,5 +188,15 @@
     </div>
 
   </form>
+  }
+
+  @if (isMobile && (!carregando && !erro && !semPermissao)) {
+    <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true"
+      actionType="submit" actionForm="site-pagina-form" bottomAnchorSelector=".mobile-bottom-nav"
+      bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+      secondaryActionText="Cancelar" secondaryActionAriaLabel="Restaurar formulário"
+      [secondaryActionDisabled]="salvando || !formState.canReset" (secondaryAction)="formState.reset()"
+      [actionText]="salvando ? 'Salvando...' : (isEditMode ? 'Atualizar página' : 'Salvar página')" actionIcon="save" actionAriaLabel="Salvar formulário"
+      [actionDisabled]="salvando || form.invalid" [loading]="salvando" />
   }
 </app-page-card>

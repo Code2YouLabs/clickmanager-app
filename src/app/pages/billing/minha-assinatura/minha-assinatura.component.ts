@@ -1,5 +1,9 @@
+import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { Subject, takeUntil } from 'rxjs';
 import { CommonModule, DatePipe, CurrencyPipe } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -32,7 +36,7 @@ interface Pagamento {
 @Component({
   selector: 'app-minha-assinatura',
   standalone: true,
-  imports: [
+  imports: [MobileTotalBarComponent,
     CommonModule,
     MatIconModule,
     MatButtonModule,
@@ -49,7 +53,10 @@ interface Pagamento {
   templateUrl: './minha-assinatura.component.html',
   styleUrls: ['./minha-assinatura.component.scss']
 })
-export class MinhaAssinaturaComponent implements OnInit {
+export class MinhaAssinaturaComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  private readonly destroy$ = new Subject<void>();
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
   loading = true;
   error: string | null = null;
   resumo: any = null;
@@ -80,8 +87,10 @@ export class MinhaAssinaturaComponent implements OnInit {
     private billingState: BillingStateService,
     private authService: AuthService,
     private toastr: ToastrService,
-    private router: Router
-  ) {}
+    private router: Router,
+    breakpoints?: BreakpointObserver
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);}
 
   ngOnInit(): void {
     this.authService.usuario$.pipe(

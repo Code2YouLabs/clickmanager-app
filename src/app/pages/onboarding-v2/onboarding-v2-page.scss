@@ -1,3 +1,5 @@
+@use './onboarding-mobile';
+
 .onboarding-page-layout {
   padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
   background:

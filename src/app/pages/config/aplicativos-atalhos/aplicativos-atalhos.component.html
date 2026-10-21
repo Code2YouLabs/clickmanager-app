@@ -1,8 +1,8 @@
 <app-page-card
   titulo="Aplicativos e atalhos"
   subtitulo="Configure os links de trabalho exibidos como atalhos."
-  [formState]="pageFormState"
-  [footerActions]="footerActions"
+  [formState]="isMobile ? undefined : pageFormState"
+  [footerActions]="isMobile ? [] : footerActions"
   [saving]="salvando"
   savingText="Salvando..."
   [actionsDisabled]="carregando || !!erro || semPermissao"
@@ -40,7 +40,7 @@
         </div>
       }
 
-      <app-section-card titulo="Atalhos" subtitulo="Links externos usados pela operação.">
+      <app-section-card [mobilePlain]="isMobile" titulo="Atalhos" subtitulo="Links externos usados pela operação.">
         <button actions mat-stroked-button color="primary" type="button" [disabled]="!podeEditar || salvando" (click)="adicionarAtalho()">
           <mat-icon>add</mat-icon>
           Adicionar
@@ -75,7 +75,7 @@
                 Nova aba
               </mat-slide-toggle>
 
-              <button mat-icon-button color="warn" type="button" matTooltip="Remover atalho" [disabled]="!podeEditar || salvando" (click)="removerAtalho(i)">
+              <button mat-icon-button color="warn" type="button" matTooltip="Remover atalho" aria-label="Remover atalho" [disabled]="!podeEditar || salvando" (click)="removerAtalho(i)">
                 <mat-icon>delete</mat-icon>
               </button>
             </div>
@@ -87,7 +87,7 @@
         </div>
       </app-section-card>
 
-      <app-section-card titulo="Aplicativos" subtitulo="Escolha quais aplicativos disponíveis para este segmento aparecem no menu superior.">
+      <app-section-card [mobilePlain]="isMobile" titulo="Aplicativos" subtitulo="Escolha quais aplicativos disponíveis para este segmento aparecem no menu superior.">
         <div formArrayName="aplicativos" class="apps-list">
           @for (appControl of aplicativos.controls; track appControl.controls.aplicativo.value; let i = $index) {
             <div class="app-row" [formGroupName]="i">
@@ -106,5 +106,13 @@
         </div>
       </app-section-card>
     </form>
+  }
+
+  @if (isMobile && (!!pageFormState)) {
+    <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true"
+      actionType="submit" [actionForm]="formId" bottomAnchorSelector=".mobile-bottom-nav"
+      bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+      secondaryActionText="Cancelar" secondaryActionAriaLabel="Restaurar formulário" [secondaryActionDisabled]="salvando || !formState.canReset" (secondaryAction)="formState.reset()"
+      [actionText]="salvando ? 'Salvando...' : 'Salvar configurações'" actionIcon="save" actionAriaLabel="Salvar configurações" [actionDisabled]="!podeSalvar" [loading]="salvando" />
   }
 </app-page-card>

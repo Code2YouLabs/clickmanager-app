@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, Optional } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { InputNumericoComponent } from 'src/app/components/inputs/input-numerico/input-numerico.component';
@@ -18,10 +18,14 @@ import {
 } from '../../models/clicktv.models';
 
 @Component({
+  host: { '[class.mobile-side-panel__layout]': 'mobilePanel' },
   selector: 'app-clicktv-midia-preview-dialog',
   standalone: true,
   imports: [CommonModule, MatDialogModule, MaterialModule],
   template: `
+    @if (mobilePanel) {
+      <header class="mobile-side-panel__header"><h2>{{ data.midia.nome }}</h2><button mat-icon-button mat-dialog-close aria-label="Fechar"><mat-icon>close</mat-icon></button></header>
+    } @else {
     <div mat-dialog-title class="dialog-head">
       <div class="dialog-head__copy">
         <strong>{{ data.midia.nome }}</strong>
@@ -29,7 +33,8 @@ import {
       </div>
       <button mat-icon-button mat-dialog-close aria-label="Fechar"><mat-icon>close</mat-icon></button>
     </div>
-    <mat-dialog-content class="dialog-content preview-dialog">
+    }
+    <mat-dialog-content [class.mobile-side-panel__body]="mobilePanel" class="dialog-content preview-dialog">
       @if (data.midia.visualizacao?.url) {
         @if (data.midia.tipo === 'VIDEO') {
           <video controls autoplay [src]="data.midia.visualizacao?.url"></video>
@@ -49,9 +54,9 @@ import {
         <p class="usage"><strong>{{ uso.nome }}</strong> · {{ uso.quantidadeItens }} item(ns)</p>
       }
     </mat-dialog-content>
-    <mat-dialog-actions align="end" class="dialog-actions"><button mat-button mat-dialog-close>Fechar</button></mat-dialog-actions>
+    <mat-dialog-actions [class.mobile-side-panel__footer]="mobilePanel" align="end" class="dialog-actions"><button mat-button mat-dialog-close>Fechar</button></mat-dialog-actions>
   `,
-  styleUrls: ['../../../../components/dialog/dialog-form-shell.scss'],
+  styleUrls: ['../../../../components/dialog/dialog-form-shell.scss', './clicktv-dialogs-mobile.scss'],
   styles: [`
     .preview-dialog { min-width:min(720px,80vw); }
     img, video { display:block; width:100%; max-height:55vh; object-fit:contain; background:#080b12; border-radius:12px; }
@@ -60,17 +65,23 @@ import {
   `],
 })
 export class ClickTvMidiaPreviewDialogComponent {
+  get mobilePanel(): boolean { return !!this.data?.mobilePanel; }
   constructor(@Inject(MAT_DIALOG_DATA) readonly data: {
+    mobilePanel?: boolean;
     midia: ClickTvMidia;
     utilizacoes: ClickTvMidiaUtilizacao[];
   }) {}
 }
 
 @Component({
+  host: { '[class.mobile-side-panel__layout]': 'mobilePanel' },
   selector: 'app-clicktv-upload-dialog',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MaterialModule, InputNumericoComponent, InputTextoRestritoComponent],
   template: `
+    @if (mobilePanel) {
+      <header class="mobile-side-panel__header"><h2>Enviar mídia</h2><button mat-icon-button mat-dialog-close aria-label="Fechar"><mat-icon>close</mat-icon></button></header>
+    } @else {
     <div mat-dialog-title class="dialog-head">
       <div class="dialog-head__copy">
         <strong>Enviar mídia</strong>
@@ -78,7 +89,8 @@ export class ClickTvMidiaPreviewDialogComponent {
       </div>
       <button mat-icon-button mat-dialog-close aria-label="Fechar"><mat-icon>close</mat-icon></button>
     </div>
-    <mat-dialog-content class="dialog-content">
+    }
+    <mat-dialog-content [class.mobile-side-panel__body]="mobilePanel" class="dialog-content">
       <p class="text-muted">JPG, JPEG, PNG, WebP ou MP4. Os limites são validados pelo servidor.</p>
       <input #fileInput hidden type="file" accept=".jpg,.jpeg,.png,.webp,.mp4,image/jpeg,image/png,image/webp,video/mp4"
         (change)="selecionar($event)" />
@@ -91,21 +103,23 @@ export class ClickTvMidiaPreviewDialogComponent {
         }
       </form>
     </mat-dialog-content>
-    <mat-dialog-actions align="end" class="dialog-actions">
+    <mat-dialog-actions [class.mobile-side-panel__footer]="mobilePanel" align="end" class="dialog-actions">
       <button mat-button mat-dialog-close>Cancelar</button>
       <button mat-flat-button color="primary" [disabled]="!arquivo || form.invalid" (click)="confirmar()">Enviar</button>
     </mat-dialog-actions>
   `,
-  styleUrls: ['../../../../components/dialog/dialog-form-shell.scss'],
+  styleUrls: ['../../../../components/dialog/dialog-form-shell.scss', './clicktv-dialogs-mobile.scss'],
   styles: [`.dialog-form { display: grid; gap: 12px; margin-top: 20px; min-width: min(460px, 75vw); }`],
 })
 export class ClickTvUploadDialogComponent {
+  get mobilePanel(): boolean { return !!this.data?.mobilePanel; }
   arquivo: File | null = null;
   readonly form = this.fb.group({ nome: [''], duracaoImagem: [10, [Validators.min(1)]] });
 
   constructor(
     private readonly fb: FormBuilder,
-    private readonly dialogRef: MatDialogRef<ClickTvUploadDialogComponent>
+    private readonly dialogRef: MatDialogRef<ClickTvUploadDialogComponent>,
+    @Optional() @Inject(MAT_DIALOG_DATA) readonly data?: { mobilePanel?: boolean }
   ) {}
 
   get nomeControl() {
@@ -134,10 +148,14 @@ export class ClickTvUploadDialogComponent {
 }
 
 @Component({
+  host: { '[class.mobile-side-panel__layout]': 'mobilePanel' },
   selector: 'app-clicktv-name-dialog',
   standalone: true,
   imports: [ReactiveFormsModule, MatDialogModule, MaterialModule, InputTextoRestritoComponent],
   template: `
+    @if (mobilePanel) {
+      <header class="mobile-side-panel__header"><h2>{{ data.titulo }}</h2><button mat-icon-button mat-dialog-close aria-label="Fechar"><mat-icon>close</mat-icon></button></header>
+    } @else {
     <div mat-dialog-title class="dialog-head">
       <div class="dialog-head__copy">
         <strong>{{ data.titulo }}</strong>
@@ -145,25 +163,27 @@ export class ClickTvUploadDialogComponent {
       </div>
       <button mat-icon-button mat-dialog-close aria-label="Fechar"><mat-icon>close</mat-icon></button>
     </div>
-    <mat-dialog-content class="dialog-content">
+    }
+    <mat-dialog-content [class.mobile-side-panel__body]="mobilePanel" class="dialog-content">
       <form [formGroup]="form" class="dialog-form">
         <app-input-texto-restrito [control]="nomeControl" label="Nome" [maxlength]="160"></app-input-texto-restrito>
       </form>
     </mat-dialog-content>
-    <mat-dialog-actions align="end" class="dialog-actions">
+    <mat-dialog-actions [class.mobile-side-panel__footer]="mobilePanel" align="end" class="dialog-actions">
       <button mat-button mat-dialog-close>Cancelar</button>
       <button mat-flat-button color="primary" [disabled]="form.invalid" (click)="confirmar()">Salvar</button>
     </mat-dialog-actions>
   `,
-  styleUrls: ['../../../../components/dialog/dialog-form-shell.scss'],
+  styleUrls: ['../../../../components/dialog/dialog-form-shell.scss', './clicktv-dialogs-mobile.scss'],
   styles: [`.dialog-form { min-width: min(420px, 75vw); padding-top: 8px; } mat-form-field { width: 100%; }`],
 })
 export class ClickTvNameDialogComponent {
+  get mobilePanel(): boolean { return !!this.data?.mobilePanel; }
   readonly form = this.fb.group({ nome: [this.data.nome || '', [Validators.required, Validators.maxLength(160)]] });
   constructor(
     private readonly fb: FormBuilder,
     private readonly dialogRef: MatDialogRef<ClickTvNameDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) readonly data: { titulo: string; nome?: string }
+    @Inject(MAT_DIALOG_DATA) readonly data: { titulo: string; nome?: string; mobilePanel?: boolean }
   ) {}
   get nomeControl() {
     return this.form.controls.nome;
@@ -174,6 +194,7 @@ export class ClickTvNameDialogComponent {
 }
 
 @Component({
+  host: { '[class.mobile-side-panel__layout]': 'mobilePanel' },
   selector: 'app-clicktv-playlist-dialog',
   standalone: true,
   imports: [
@@ -186,14 +207,18 @@ export class ClickTvNameDialogComponent {
     InputOptionsComponent,
   ],
   template: `
+    @if (mobilePanel) {
+      <header class="mobile-side-panel__header"><h2>{{ data?.id ? 'Editar playlist' : 'Nova playlist' }}</h2><button mat-icon-button mat-dialog-close aria-label="Fechar"><mat-icon>close</mat-icon></button></header>
+    } @else {
     <div mat-dialog-title class="dialog-head">
       <div class="dialog-head__copy">
-        <strong>{{ data ? 'Editar playlist' : 'Nova playlist' }}</strong>
+        <strong>{{ data?.id ? 'Editar playlist' : 'Nova playlist' }}</strong>
         <span>Defina os dados básicos da sequência exibida nas telas.</span>
       </div>
       <button mat-icon-button mat-dialog-close aria-label="Fechar"><mat-icon>close</mat-icon></button>
     </div>
-    <mat-dialog-content class="dialog-content">
+    }
+    <mat-dialog-content [class.mobile-side-panel__body]="mobilePanel" class="dialog-content">
       <form [formGroup]="form" class="dialog-form">
         <app-input-texto-restrito [control]="nomeControl" label="Nome" [maxlength]="160"></app-input-texto-restrito>
         <app-input-textarea [control]="descricaoControl" label="Descrição" [maxlength]="1000" [rows]="4"></app-input-textarea>
@@ -201,14 +226,15 @@ export class ClickTvNameDialogComponent {
         <mat-slide-toggle formControlName="ativa">Playlist ativa</mat-slide-toggle>
       </form>
     </mat-dialog-content>
-    <mat-dialog-actions align="end" class="dialog-actions"><button mat-button mat-dialog-close>Cancelar</button>
+    <mat-dialog-actions [class.mobile-side-panel__footer]="mobilePanel" align="end" class="dialog-actions"><button mat-button mat-dialog-close>Cancelar</button>
       <button mat-flat-button color="primary" [disabled]="form.invalid" (click)="confirmar()">Salvar</button>
     </mat-dialog-actions>
   `,
-  styleUrls: ['../../../../components/dialog/dialog-form-shell.scss'],
+  styleUrls: ['../../../../components/dialog/dialog-form-shell.scss', './clicktv-dialogs-mobile.scss'],
   styles: [`.dialog-form { display:grid; gap: 12px; min-width:min(480px,75vw); padding-top:8px; }`],
 })
 export class ClickTvPlaylistDialogComponent {
+  get mobilePanel(): boolean { return !!this.data?.mobilePanel; }
   readonly orientacoes = CLICKTV_ORIENTACOES;
   readonly form = this.fb.group({
     nome: [this.data?.nome || '', [Validators.required, Validators.maxLength(160)]],
@@ -219,7 +245,7 @@ export class ClickTvPlaylistDialogComponent {
   constructor(
     private readonly fb: FormBuilder,
     private readonly dialogRef: MatDialogRef<ClickTvPlaylistDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) readonly data: ClickTvPlaylistResumo | null
+    @Inject(MAT_DIALOG_DATA) readonly data: (Partial<ClickTvPlaylistResumo> & { mobilePanel?: boolean }) | null
   ) {}
   get nomeControl() {
     return this.form.controls.nome;
@@ -236,15 +262,20 @@ export class ClickTvPlaylistDialogComponent {
 }
 
 export interface ClickTvTelaDialogData {
+  mobilePanel?: boolean;
   tela?: ClickTvTela;
   vincular?: boolean;
 }
 
 @Component({
+  host: { '[class.mobile-side-panel__layout]': 'mobilePanel' },
   selector: 'app-clicktv-tela-dialog',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MaterialModule, InputTextoRestritoComponent, InputOptionsComponent],
   template: `
+    @if (mobilePanel) {
+      <header class="mobile-side-panel__header"><h2>{{ data.vincular ? (data.tela ? 'Vincular novamente' : 'Vincular nova tela') : 'Editar tela' }}</h2><button mat-icon-button mat-dialog-close aria-label="Fechar"><mat-icon>close</mat-icon></button></header>
+    } @else {
     <div mat-dialog-title class="dialog-head">
       <div class="dialog-head__copy">
         <strong>{{ data.vincular ? (data.tela ? 'Vincular novamente' : 'Vincular nova tela') : 'Editar tela' }}</strong>
@@ -252,7 +283,8 @@ export interface ClickTvTelaDialogData {
       </div>
       <button mat-icon-button mat-dialog-close aria-label="Fechar"><mat-icon>close</mat-icon></button>
     </div>
-    <mat-dialog-content class="dialog-content">
+    }
+    <mat-dialog-content [class.mobile-side-panel__body]="mobilePanel" class="dialog-content">
       <form [formGroup]="form" class="dialog-form">
         @if (data.vincular) {
           <mat-form-field appearance="outline"><mat-label>Código de ativação</mat-label>
@@ -266,14 +298,15 @@ export interface ClickTvTelaDialogData {
         <app-input-options [control]="orientacaoControl" label="Orientação" [options]="orientacoes" [showNull]="false"></app-input-options>
       </form>
     </mat-dialog-content>
-    <mat-dialog-actions align="end" class="dialog-actions"><button mat-button mat-dialog-close>Cancelar</button>
+    <mat-dialog-actions [class.mobile-side-panel__footer]="mobilePanel" align="end" class="dialog-actions"><button mat-button mat-dialog-close>Cancelar</button>
       <button mat-flat-button color="primary" [disabled]="form.invalid" (click)="confirmar()">{{ data.vincular ? 'Vincular' : 'Salvar' }}</button>
     </mat-dialog-actions>
   `,
-  styleUrls: ['../../../../components/dialog/dialog-form-shell.scss'],
+  styleUrls: ['../../../../components/dialog/dialog-form-shell.scss', './clicktv-dialogs-mobile.scss'],
   styles: [`.dialog-form { display:grid; gap:12px; min-width:min(480px,75vw); padding-top:8px; }`],
 })
 export class ClickTvTelaDialogComponent {
+  get mobilePanel(): boolean { return !!this.data?.mobilePanel; }
   readonly orientacoes = CLICKTV_ORIENTACOES;
   readonly form = this.fb.group({
     codigo: ['', this.data.vincular ? [Validators.required, Validators.pattern(/^\d{6}$/)] : []],

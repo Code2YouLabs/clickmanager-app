@@ -1,3 +1,4 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -56,6 +57,7 @@ describe('AplicativosAtalhosComponent', () => {
     TestBed.configureTestingModule({
       imports: [AplicativosAtalhosComponent, NoopAnimationsModule, TablerIconsModule.pick(TablerIcons)],
       providers: [
+        { provide: BreakpointObserver, useValue: { observe: () => of({ matches: false, breakpoints: {} }) } },
         provideRouter([]),
         { provide: AuthService, useValue: authService },
         { provide: ConfiguracaoAplicativosService, useValue: configuracaoService },

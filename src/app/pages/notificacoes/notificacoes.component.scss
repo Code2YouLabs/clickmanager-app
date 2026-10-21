@@ -444,3 +444,23 @@
     }
   }
 }
+
+.mobile-notifications { display: grid; gap: 12px; min-width: 0; }
+.mobile-notifications__toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mobile-notifications__list { display: grid; gap: 8px; min-width: 0; }
+.mobile-notifications__item { width: 100%; min-width: 0; min-height: 44px; text-align: left; }
+.mobile-notifications__item-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.mobile-notifications__item-head strong { min-width: 0; overflow-wrap: anywhere; }
+.mobile-notifications__item:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: 2px; }
+.mobile-notification-detail {
+  .mobile-side-panel__header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  h2 { margin: 0; font-size: 18px; line-height: 24px; }
+  .mobile-side-panel__header button { flex-shrink: 0; }
+  mat-card-content { padding: 0; }
+  .notify-detail { padding: 12px; min-width: 0; }
+  .detail-top { flex-wrap: wrap; }
+  .detail-top h3 { font-size: 18px !important; overflow-wrap: anywhere; }
+  .detail-resumo, .detail-conteudo, .detail-meta { overflow-wrap: anywhere; }
+  .detail-conteudo { min-height: 0; padding: 12px; }
+  .empty-state { display: grid; gap: 12px; }
+}

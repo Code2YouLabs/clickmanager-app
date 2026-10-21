@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output, TemplateRef, ViewChild, Optional } from '@angular/core';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, finalize, takeUntil, Subscription, timeout } from 'rxjs';
 import { SetupProgress, SetupProgressComponent, preparacaoAtiva } from 'src/app/components/setup-progress/setup-progress.component';
@@ -12,8 +13,26 @@ import { BibliotecaItem, BibliotecaResultado, BibliotecaService } from './biblio
   imports: [CommonModule, FormsModule, MaterialModule, HierarchyTreeComponent, SetupProgressComponent],
   templateUrl: './biblioteca-produtos-selector.component.html',
   styleUrls: ['./biblioteca-produtos-selector.component.scss'],
+  host: { '[class.biblioteca-selector--onboarding]': 'onboarding', '[class.biblioteca-selector--mobile-panel]': 'mobilePanel' },
 })
 export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
+  private dialogFiltros?: MatDialogRef<unknown>;
+  @ViewChild('modalFiltros') modalFiltros?: TemplateRef<unknown>;
+  get filtrosAtivos(): number { return Number(!!this.busca.trim()) + Number(!!this.categoria); }
+  abrirFiltros(): void {
+    if (!this.onboarding || !this.modalFiltros || !this.dialog || this.dialogFiltros) return;
+    this.dialogFiltros = this.dialog.open(this.modalFiltros, { width: '480px', maxWidth: 'calc(100vw - 32px)', maxHeight: '90dvh' });
+    this.dialogFiltros.afterClosed().subscribe(() => this.dialogFiltros = undefined);
+  }
+  limparFiltros(): void {
+    this.busca = '';
+    this.pesquisar('');
+    this.categoria = '';
+  }
+  // Nested Material nodes must be refreshed when a mobile search rebuilds the hierarchy.
+  // Other presentations retain the existing stable-id tracking.
+  readonly trackByLibraryNode = (_: number, node: HierarchyTreeNode<BibliotecaItem | null>) => this.mobilePanel ? node : node.id;
+  @Input() mobilePanel = false;
   @Input() onboarding = false;
   @Input() animarEtapas = false;
   @Output() etapasConcluidas = new EventEmitter<void>();
@@ -33,7 +52,7 @@ export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
   private descendentes = new Map<string | number, BibliotecaItem[]>();
   private lista: BibliotecaItem[] = [];
   get itens() { return this.lista; }
-  set itens(valor: BibliotecaItem[]) { this.lista = valor; this.atualizarVisualizacao(); }
+  set itens(valor: BibliotecaItem[]) { this.lista = valor; this.atualizarCategoriasMobile(); this.atualizarVisualizacao(); }
   filtrados: BibliotecaItem[] = [];
   selecionados = new Set<string>();
   private categoriaAtual = '';
@@ -49,12 +68,12 @@ export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
   resultado: BibliotecaResultado | null = null;
   private readonly pesquisa = new Subject<string>();
   private readonly destruir = new Subject<void>();
-  constructor(private readonly service: BibliotecaService) {}
+  constructor(private readonly service: BibliotecaService, @Optional() private readonly dialog: MatDialog | null = null) {}
   ngOnInit() {
     this.pesquisa.pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destruir)).subscribe(v => this.termo = this.normalizar(v));
     this.reconectar();
   }
-  ngOnDestroy() { this.acompanhamento?.unsubscribe(); this.destruir.next(); this.destruir.complete(); }
+  ngOnDestroy() { this.dialogFiltros?.close(); this.acompanhamento?.unsubscribe(); this.destruir.next(); this.destruir.complete(); }
   carregar() {
     this.carregando = true; this.erro = '';
     this.service.listar().pipe(takeUntil(this.destruir), finalize(() => this.carregando = false)).subscribe({
@@ -65,10 +84,25 @@ export class BibliotecaProdutosSelectorComponent implements OnInit, OnDestroy {
   pesquisar(valor: string) { this.pesquisa.next(valor); }
   chave(item: BibliotecaItem) { return `${item.tipo}:${item.id}`; }
   get categorias() { return [...new Set(this.itens.map(i => i.categoria))].sort((a,b) => a.localeCompare(b, 'pt-BR')); }
+  categoriasMobile: string[] = [];
+  private atualizarCategoriasMobile(): void {
+    if (!this.mobilePanel) return;
+    this.categoriasMobile = [...new Set(this.categorias.flatMap(c => {
+      const partes = c.split(' > ');
+      return partes.map((_, index) => partes.slice(0, index + 1).join(' > '));
+    }))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }
+  get textoImportacaoMobile(): string {
+    if (this.importando) return 'Adicionando...';
+    const total = this.selecionados.size;
+    return total ? `Adicionar ${total} ${total === 1 ? 'produto' : 'produtos'}` : 'Adicionar à empresa';
+  }
   private atualizarVisualizacao() {
-    this.filtrados = this.itens.filter(i => (!this.categoria || i.categoria === this.categoria) &&
+    this.filtrados = this.itens.filter(i => (!this.categoria || i.categoria === this.categoria || (this.mobilePanel && i.categoria.startsWith(this.categoria + ' > '))) &&
       this.normalizar([i.nome,i.descricao,i.material,i.formato,i.cor,i.categoria].join(' ')).includes(this.termo));
     this.arvore = []; this.estados = new Map(); this.ancestrais.clear(); this.descendentes.clear();
+    // The flat mobile list uses the same selection Set without building unused tree nodes.
+    if (this.mobilePanel) return;
     const categorias = new Map<string, HierarchyTreeNode<BibliotecaItem | null>>();
     for (const item of this.filtrados) {
       const caminho = item.categoria.split(' > ');

@@ -4,7 +4,7 @@
     </mat-label>
 
     <mat-form-field appearance="outline" class="w-100">
-        <textarea matInput [formControl]="control" [rows]="rows" [placeholder]="placeholder" [attr.maxlength]="maxlength">
+        <textarea matInput [attr.aria-label]="label || placeholder" [readonly]="readonly" [formControl]="control" [rows]="rows" [placeholder]="placeholder" [attr.maxlength]="maxlength">
       </textarea>
 
         <mat-error *ngIf="control.invalid && control.touched">

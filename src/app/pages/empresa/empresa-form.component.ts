@@ -1,4 +1,8 @@
-import { Component, OnInit, ViewChild, ElementRef, Input, Output, EventEmitter } from '@angular/core';
+import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { Subject, takeUntil } from 'rxjs';
+import { Component, OnDestroy, OnInit, ViewChild, ElementRef, Input, Output, EventEmitter } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { MatInputModule } from '@angular/material/input';
@@ -58,7 +62,7 @@ type IdentidadeSnapshot = {
   standalone: true,
   templateUrl: './empresa-form.component.html',
   styleUrls: ['./empresa-form.component.scss'],
-  imports: [
+  imports: [MobileTotalBarComponent,
     CommonModule,
     ReactiveFormsModule,
     MatInputModule,
@@ -83,7 +87,24 @@ type IdentidadeSnapshot = {
   ],
   providers: [provideNgxMask()]
 })
-export class EmpresaFormComponent implements OnInit {
+export class EmpresaFormComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  mobileSection: number | null = 0;
+  setMobileSection(index: number, expanded: boolean): void {
+    this.mobileSection = expanded ? index : null;
+    if (expanded) this.abaSelecionada = index;
+  }
+  salvarMobile(): void {
+    if (this.savingAtual || this.actionsDisabledAtual) return;
+    if (this.abaSelecionada === 1) this.salvarIdentidadePublica();
+    else if (this.abaSelecionada === 2) this.salvarRedes();
+    else this.salvarEmpresa();
+  }
+  get mobileFormId(): string { return this.abaSelecionada === 1 ? 'empresa-identidade-form' : this.abaSelecionada === 2 ? 'empresa-redes-form' : 'empresa-dados-form'; }
+  get mobileSaveLabel(): string { return this.abaSelecionada === 1 ? 'Salvar identidade' : this.abaSelecionada === 2 ? 'Salvar redes' : 'Salvar empresa'; }
+
+  private readonly destroy$ = new Subject<void>();
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
 
   @Input() modoOnboarding = false;
   @Input() esconderAcoesOnboarding = false;
@@ -145,7 +166,9 @@ export class EmpresaFormComponent implements OnInit {
     private cepUtilService: CepUtilService,
     private empresaService: EmpresaFormService,
     private identidadeService: EmpresaIdentidadePublicaService,
-    private authService: AuthService) { }
+    private authService: AuthService,
+    breakpoints?: BreakpointObserver) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches); }
 
   ngOnInit(): void {
     this.form = this.criarFormulario();
