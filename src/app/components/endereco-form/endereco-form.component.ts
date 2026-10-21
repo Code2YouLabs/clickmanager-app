@@ -19,6 +19,7 @@ import { EnderecoViaCep } from 'src/app/models/endereco/endereco.viacep.model';
   ]
 })
 export class EnderecoFormComponent implements OnInit {
+    @Input() mobilePlain = false;
     @Input() enderecoFormGroup?: FormGroup;
     @Output() formReady = new EventEmitter<FormGroup>();
     enderecoForm!: FormGroup;

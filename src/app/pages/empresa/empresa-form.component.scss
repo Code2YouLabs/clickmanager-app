@@ -241,3 +241,12 @@
     width: 100%;
   }
 }
+
+@media (max-width: 760px) {
+  .empresa-mobile-sections { display: grid; gap: 8px; min-width: 0; }
+  .empresa-mobile-sections > app-section-card + app-section-card { padding-top: 8px; border-top: 1px solid var(--mat-sys-outline-variant); }
+  .empresa-mobile-sections .empresa-tab-panel { min-width: 0; padding: 0; }
+  .empresa-mobile-sections .empresa-media-box, .empresa-mobile-sections .empresa-readonly-box { padding: 12px; min-width: 0; overflow-wrap: anywhere; }
+  .empresa-mobile-sections .empresa-media-actions { flex-wrap: wrap; }
+  .empresa-mobile-sections .empresa-media-actions button { min-height: 44px; }
+}

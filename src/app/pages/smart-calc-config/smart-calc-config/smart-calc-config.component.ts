@@ -1,3 +1,6 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
 import { Component, OnInit, DestroyRef, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
@@ -25,7 +28,7 @@ import { ProductIdentityComponent } from 'src/app/components/product-identity/pr
 @Component({
     selector: 'app-calculadora-config',
     standalone: true,
-    imports: [
+    imports: [MobileTotalBarComponent,
       CommonModule,
       ReactiveFormsModule,
       MatSlideToggleModule,
@@ -70,6 +73,10 @@ export class CalculadoraConfigComponent implements OnInit {
         return [{ id: 'salvar', type: 'submit', form: 'smartcalc-config-form', disabled: this.salvarDesabilitado }];
     }
 
+    isMobile = false;
+    constructor() {
+      inject(BreakpointObserver).observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(state => this.isMobile = state.matches);
+    }
     ngOnInit(): void {
         this.formState.begin('edit');
         this.isEditMode = this.route.snapshot.routeConfig?.path?.includes('editar') ?? false;

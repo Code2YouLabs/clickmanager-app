@@ -1,5 +1,9 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
+import { Subject, takeUntil } from 'rxjs';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
@@ -26,6 +30,7 @@ import { getUrlPublicaPrincipal } from '../utils/site-public-url.util';
     RouterModule,
     MaterialModule,
     PageCardComponent,
+    MobileTotalBarComponent,
     SectionCardComponent,
     InputOptionsComponent,
     InputTelefoneComponent,
@@ -35,7 +40,10 @@ import { getUrlPublicaPrincipal } from '../utils/site-public-url.util';
   templateUrl: './site-configuracoes.component.html',
   styleUrl: './site-configuracoes.component.scss',
 })
-export class SiteConfiguracoesComponent implements OnInit {
+export class SiteConfiguracoesComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  private readonly destroy$ = new Subject<void>();
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
   readonly formId = 'site-config-form';
   readonly exibicoesWhatsapp: Array<{ value: SiteWhatsappExibicao; label: string }> = [
     { value: 'ICONE', label: 'Somente ícone' },
@@ -54,8 +62,11 @@ export class SiteConfiguracoesComponent implements OnInit {
     private readonly fb: FormBuilder,
     private readonly siteConfigService: SiteConfigService,
     private readonly authService: AuthService,
-    private readonly toastr: ToastrService
-  ) {}
+    private readonly toastr: ToastrService,
+    breakpoints?: BreakpointObserver
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+  }
 
   ngOnInit(): void {
     this.form = this.fb.group({

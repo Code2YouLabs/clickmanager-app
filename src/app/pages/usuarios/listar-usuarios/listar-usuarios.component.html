@@ -1,4 +1,4 @@
-<app-page-card titulo="Usuários" botaoTexto="Novo Usuário" botaoIcone="add"
+<app-page-card titulo="Usuários" [botaoTexto]="isMobile ? undefined : 'Novo Usuário'" [primaryAction]="isMobile ? novaAcao : null" (primaryActionClick)="novoMobile()" botaoIcone="add"
   [botaoRota]="['/page/usuarios/novo']" permissao="USUARIO_CADASTRAR">
   <app-data-table [columns]="colunas" [data]="usuarios" [actions]="acoes" actionsMode="buttons" tableLabel="Usuários"
     [filters]="filtros" [filterState]="{ ativo: filtroStatus }" [filtered]="filtroStatus !== null"
@@ -14,6 +14,23 @@
     </ng-template>
     <ng-template appDataTableCell="status" let-usuario>
       <app-status-badge [status]="usuario.ativo ? 'ATIVO' : 'INATIVO'"></app-status-badge>
+    </ng-template>
+    <ng-template [appDataTableItem]="usuarios" let-usuario let-itemActions="actions" let-emit="emitAction">
+      <article class="usuario-mobile-item" [attr.aria-label]="usuario.nome">
+        <img [src]="imagemUtil.montarUrlImagemPerfil(usuario.fotoPerfil)" (error)="usarImagemPadrao($event)" [alt]="'Foto de ' + usuario.nome" width="40" height="40" />
+        <div class="usuario-mobile-item__content">
+          <strong>{{ usuario.nome }}</strong><span>{{ usuario.username }}</span><span>Perfil: {{ usuario.perfil?.nome || '-' }}</span>
+          <app-status-badge [status]="usuario.ativo ? 'ATIVO' : 'INATIVO'" />
+        </div>
+        @if (itemActions.length) {
+          <button class="usuario-mobile-item__menu" mat-icon-button type="button" [matMenuTriggerFor]="usuarioMenu" [disabled]="carregando" [attr.aria-label]="'Ações do usuário ' + usuario.nome"><mat-icon>more_vert</mat-icon></button>
+          <mat-menu #usuarioMenu="matMenu" xPosition="before"><ng-template matMenuContent>
+            @for (acao of itemActions; track acao.id) {
+              <button mat-menu-item type="button" [disabled]="carregando" [class.usuario-mobile-menu__destructive]="acao.color === 'warn'" (click)="emit(usuario, acao.id)"><mat-icon [color]="acao.color || null">{{ acao.icon }}</mat-icon><span>{{ acao.label }}</span></button>
+            }
+          </ng-template></mat-menu>
+        }
+      </article>
     </ng-template>
   </app-data-table>
 </app-page-card>

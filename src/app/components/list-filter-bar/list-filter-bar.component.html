@@ -146,7 +146,17 @@
         <button mat-button type="button" aria-label="Limpar filtros" (click)="clearMobileFilters()">Limpar</button>
       }
     </header>
-    <div class="list-filter-panel__body"><ng-container [ngTemplateOutlet]="filterFields"></ng-container></div>
+    <div class="list-filter-panel__body">
+      <ng-container [ngTemplateOutlet]="filterFields"></ng-container>
+      @if (mobileSort) {
+        <mat-form-field appearance="outline" class="data-table-toolbar__filter">
+          <mat-label>{{ mobileSort.label }}</mat-label>
+          <mat-select [value]="draftSort" [compareWith]="compareSort" (selectionChange)="draftSort = $event.value">
+            @for (option of mobileSort.options; track $index) { <mat-option [value]="option.value">{{ option.label }}</mat-option> }
+          </mat-select>
+        </mat-form-field>
+      }
+    </div>
     <footer class="list-filter-panel__footer">
       <button mat-flat-button type="button" color="primary" (click)="applyMobileFilters()">Aplicar filtros</button>
     </footer>
@@ -162,7 +172,7 @@
 </ng-template>
 
 <ng-template #mobileFilterAction>
-      @if (useMobilePanel && hasFilterFields) {
+      @if (filterTriggerInHeader ? headerFilterVisible() : useMobilePanel && hasFilterFields) {
         <button #mobileFilterTrigger mat-stroked-button type="button" class="list-mobile-toolbar__filter-button" [class.list-mobile-toolbar__filter-button--active]="hasActiveFilters"
           aria-haspopup="dialog" [attr.aria-expanded]="mobileFiltersOpen" (click)="openMobileFilters()">
           <mat-icon>tune</mat-icon>{{ filtersLabel }}{{ activeFilterCount ? ' (' + activeFilterCount + ')' : '' }}

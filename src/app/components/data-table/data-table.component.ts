@@ -25,6 +25,8 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { DataTableItemDirective } from './data-table-item.directive';
 import { DataTableCellDirective } from './data-table-cell.directive';
 import {
+  DataTableFilterSortChange,
+  DataTableMobileSort,
   DataTableAction,
   DataTableActionEvent,
   DataTableActionsMode,
@@ -57,6 +59,22 @@ export class DataTableComponent<T = unknown>
   implements AfterContentInit, OnChanges, OnDestroy {
 
   @Input() mobileCompact = true;
+  /** Opt-in: commit filters and sorting through filterSortChange in one request. */
+  @Input() mobileSortPlacement: 'list' | 'filters' = 'list';
+  @Input() mobileSortLabel = 'Ordenar por';
+  @Output() filterSortChange = new EventEmitter<DataTableFilterSortChange>();
+  get mobileFilterSort(): DataTableMobileSort | null {
+    if (!this.isMobile || this.mobileSortPlacement !== 'filters' || !this.sortableColumns.length) return null;
+    return { label: this.mobileSortLabel, value: this.sort, options: this.sortableColumns.flatMap(column =>
+      (['asc', 'desc'] as const).map(direction => ({
+        label: `${column.label} (${direction === 'asc' ? 'crescente' : 'decrescente'})`,
+        value: { active: column.sortKey || column.key, direction },
+      }))) };
+  }
+  onFilterSortChange(value: DataTableFilterSortChange): void {
+    this.currentFilters = { ...value.filters };
+    this.filterSortChange.emit(value);
+  }
   @Input() mobileFilterPresentation: 'sheet' | 'inline' = 'sheet';
   @Input() mobileShowToolbarTitle = false;
   @Input() mobilePagination: 'compact' | 'material' = 'compact';

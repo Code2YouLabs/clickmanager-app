@@ -1,7 +1,8 @@
-<h2 mat-dialog-title>Compartilhar {{ data.titulo }}</h2>
-<mat-dialog-content>
+@if (mobilePanel) { <header class="mobile-side-panel__header"><h2>Compartilhar {{ data.titulo }}</h2><button mat-icon-button type="button" (click)="fechar()" aria-label="Fechar"><mat-icon>close</mat-icon></button></header> }
+@else { <h2 mat-dialog-title>Compartilhar {{ data.titulo }}</h2> }
+<mat-dialog-content [class.mobile-side-panel__body]="mobilePanel">
   <app-links-share-panel [url]="data.url" [slug]="data.slug"></app-links-share-panel>
 </mat-dialog-content>
-<mat-dialog-actions align="end">
+<mat-dialog-actions [class.mobile-side-panel__footer]="mobilePanel" align="end">
   <button mat-stroked-button type="button" (click)="fechar()">Fechar</button>
 </mat-dialog-actions>

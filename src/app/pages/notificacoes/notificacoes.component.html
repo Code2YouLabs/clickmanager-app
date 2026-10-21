@@ -1,3 +1,4 @@
+<ng-template #desktopNotificacoes>
 <mat-card class="mat-card-top cardWithShadow overflow-hidden notificacoes-app" [class.embedded]="embedded">
   <mat-sidenav-container
     [ngClass]="{
@@ -110,6 +111,13 @@
     </mat-toolbar>
 
     <div class="position-relative detail-panel">
+      <ng-container [ngTemplateOutlet]="detalheContent"></ng-container>
+    </div>
+  </mat-sidenav-container>
+</mat-card>
+
+</ng-template>
+<ng-template #detalheContent>
       <mat-card-content>
         @if(carregandoDetalhe) {
         <div class="empty-state">Carregando detalhe...</div>
@@ -134,7 +142,7 @@
               {{ item.conteudo || 'Sem conteúdo detalhado.' }}
             </div>
 
-            <div class="detail-actions" *ngIf="item.link">
+            <div class="detail-actions" *ngIf="item.link && !mobileLayout">
               <button mat-flat-button color="primary" (click)="abrirLink(item.link)">
                 Abrir link relacionado
               </button>
@@ -145,6 +153,52 @@
           }
         }
       </mat-card-content>
+</ng-template>
+
+@if (mobileLayout) {
+  <section class="mobile-notifications" aria-label="Notificações">
+    <div class="mobile-notifications__toolbar">
+      <span class="counter">{{ naoLidas }} não lida(s)</span>
+      <button mat-icon-button type="button" [matMenuTriggerFor]="notificacoesMenu" aria-label="Ações das notificações"><mat-icon>more_vert</mat-icon></button>
+      <mat-menu #notificacoesMenu="matMenu" xPosition="before">
+        @if (podeEnviarNotificacao) { <button mat-menu-item type="button" (click)="abrirDialogEnvio()"><mat-icon>send</mat-icon>Enviar notificação</button> }
+        <button mat-menu-item type="button" (click)="marcarTodasComoLidas()" [disabled]="!naoLidas || processandoLeitura"><mat-icon>done_all</mat-icon>Marcar todas como lidas</button>
+        <button mat-menu-item type="button" [routerLink]="['/page/ajuda']" fragment="notificacoes"><mat-icon>help_outline</mat-icon>Manual de notificações</button>
+      </mat-menu>
     </div>
-  </mat-sidenav-container>
-</mat-card>
+    <app-list-filter-bar placeholder="Buscar notificações" [searchValue]="busca" [searchControl]="buscaControl" (searchChange)="aplicarFiltroTexto($event)"
+      presentation="section" [filters]="filtrosMobile" [filterState]="{ naoLidas: somenteNaoLidas ? true : null }" (stateChange)="aplicarFiltroMobile($event)" />
+    @if (carregandoLista) { <div class="empty-state" role="status">Carregando...</div> }
+    @else if (notificacoesFiltradas().length) {
+      <div class="mobile-notifications__list">
+        @for (n of notificacoesFiltradas(); track n.id) {
+          <button type="button" class="notify-item mobile-notifications__item" [ngClass]="statusNivelClass(n.nivel)" [class.unread]="!n.lida" (click)="abrirNotificacaoMobile(n)">
+            <span class="mobile-notifications__item-head"><strong>{{ n.titulo }}</strong>@if (!n.lida) { <span class="notify-badge">Nova</span> }</span>
+            <span class="notify-resumo">{{ n.resumo || n.conteudo || 'Sem resumo' }}</span>
+            <span class="notify-time">{{ dataRelativa(n.criadaEm) }}</span>
+          </button>
+        }
+      </div>
+    } @else { <div class="empty-state">Nenhuma notificação encontrada.</div> }
+  </section>
+} @else { <ng-container [ngTemplateOutlet]="desktopNotificacoes"></ng-container> }
+
+<ng-template #notificacaoMobilePanel>
+  <div class="mobile-side-panel__layout mobile-notification-detail">
+    <header class="mobile-side-panel__header">
+      <h2>Notificação</h2>
+      <button mat-icon-button type="button" aria-label="Fechar notificação" (click)="fecharDetalheMobile()"><mat-icon>close</mat-icon></button>
+    </header>
+    <div class="mobile-side-panel__body">
+      @if (mobileDetalheErro) {
+        <div class="empty-state" role="alert">{{ mobileDetalheErro }}<button mat-stroked-button type="button" (click)="tentarDetalheMobile()">Tentar novamente</button></div>
+      } @else { <ng-container [ngTemplateOutlet]="detalheContent"></ng-container> }
+    </div>
+    <footer class="mobile-side-panel__footer">
+      <button mat-stroked-button type="button" (click)="fecharDetalheMobile()">Voltar</button>
+      @if (!carregandoDetalhe && !mobileDetalheErro && selecionada()?.link) {
+        <button mat-flat-button color="primary" type="button" (click)="abrirLink(selecionada()?.link)">Abrir link relacionado</button>
+      }
+    </footer>
+  </div>
+</ng-template>

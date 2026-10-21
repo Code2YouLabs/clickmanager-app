@@ -81,6 +81,8 @@ describe('FullComponent — cabeçalho mobile global', () => {
             { path: 'grafica/comercial/pedidos', component: PageStub, data: { title: 'Pedidos' } },
             { path: 'grafica/comercial/pedidos/:id', component: PageStub, data: { title: 'Pedido' } },
             { path: 'grafica/produtos', component: PageStub, data: { title: 'Produtos' } },
+            { path: 'suporte', component: PageStub, data: { title: 'Suporte' } },
+            { path: 'suporte/:id', component: PageStub, data: { title: 'Suporte' } },
             { path: 'ajuda', component: PageStub, data: { title: 'Central de ajuda' } },
             { path: 'grafica/categorias', component: PageStub, data: { title: 'Categorias' } },
             { path: 'cliente', children: [
@@ -207,7 +209,7 @@ describe('FullComponent — cabeçalho mobile global', () => {
   });
 
   for (const width of [360, 390, 430]) {
-    it(`distribui quatro destinos sem sobreposição em viewport Chromium de ${width}px`, () => {
+    it(`distribui cinco destinos sem sobreposição em viewport Chromium de ${width}px`, () => {
       const frame = document.createElement('iframe'); frame.style.cssText = `width:${width}px;height:800px;border:0`;
       document.body.appendChild(frame);
       try {
@@ -216,8 +218,8 @@ describe('FullComponent — cabeçalho mobile global', () => {
         doc.body.style.margin = '0'; doc.body.appendChild(fixture.nativeElement.cloneNode(true));
         const nav = doc.querySelector<HTMLElement>('.mobile-bottom-nav')!;
         const buttons = Array.from(nav.querySelectorAll('button'));
-        expect(buttons.map(button => button.textContent?.trim())).toEqual(['Pedidos', 'Atalhos', 'SmartCalc', 'Dashboard']);
-        expect(nav.style.gridTemplateColumns).toBe('repeat(4, minmax(0px, 1fr))');
+        expect(buttons.map(button => button.textContent?.trim())).toEqual(['Pedidos', 'Atalhos', 'SmartCalc', 'Dashboard', 'Suporte']);
+        expect(nav.style.gridTemplateColumns).toBe('repeat(5, minmax(0px, 1fr))');
         const bounds = nav.getBoundingClientRect();
         expect(bounds.left).toBe(0); expect(bounds.right).toBeLessThanOrEqual(width); expect(bounds.width).toBeGreaterThan(width - 20);
         const rects = buttons.map(button => button.getBoundingClientRect());
@@ -421,26 +423,37 @@ describe('FullComponent — cabeçalho mobile global', () => {
     return fixture.nativeElement.querySelectorAll('.mobile-bottom-nav button')[index];
   };
 
+  it('Suporte abre a rota existente e permanece ativo no detalhe de um chamado', async () => {
+    bottomButton('suporte').click(); await fixture.whenStable(); fixture.detectChanges();
+    expect(router.url).toBe('/page/suporte');
+    expect(bottomButton('suporte').getAttribute('aria-current')).toBe('page');
+    expect(bottomButton('smartcalc').hasAttribute('aria-current')).toBeFalse();
+    await navigate('/page/suporte/7');
+    expect(bottomButton('suporte').getAttribute('aria-current')).toBe('page');
+    await navigate('/page/ajuda');
+    expect(bottomButton('suporte').hasAttribute('aria-current')).toBeFalse();
+  });
+
   it('atualiza a ordem mobile ao habilitar/desabilitar SmartCalc sem alterar a configuração desktop', () => {
     const desktop = fixture.componentInstance.navItemsFiltrados;
-    expect(bottomKeys()).toEqual(['pedidos', 'atalhos', 'smartcalc', 'dashboard']);
+    expect(bottomKeys()).toEqual(['pedidos', 'atalhos', 'smartcalc', 'dashboard', 'suporte']);
     expect(bottomButton('smartcalc').classList.contains('mobile-bottom-nav__item--special')).toBeTrue();
     features.set({ GRAFICA: true, SMARTCALC: false }); fixture.detectChanges();
-    expect(bottomKeys()).toEqual(['catalogo', 'atalhos', 'pedidos', 'dashboard']);
+    expect(bottomKeys()).toEqual(['catalogo', 'atalhos', 'pedidos', 'dashboard', 'suporte']);
     expect(bottomButton('pedidos').classList.contains('mobile-bottom-nav__item--special')).toBeTrue();
     expect(fixture.componentInstance.navItemsFiltrados).toBe(desktop);
     features.set({ GRAFICA: true, SMARTCALC: true }); fixture.detectChanges();
-    expect(bottomKeys()).toEqual(['pedidos', 'atalhos', 'smartcalc', 'dashboard']);
+    expect(bottomKeys()).toEqual(['pedidos', 'atalhos', 'smartcalc', 'dashboard', 'suporte']);
   });
 
   it('reflete mudanças reais de usuário, sem permissões SmartCalc e depois sem Pedidos', () => {
     usuario$.next(authorizedUser(['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER'])); fixture.detectChanges();
-    expect(bottomKeys()).toEqual(['catalogo', 'atalhos', 'pedidos', 'dashboard']);
+    expect(bottomKeys()).toEqual(['catalogo', 'atalhos', 'pedidos', 'dashboard', 'suporte']);
     usuario$.next(authorizedUser(['SMARTCALC_USAR'])); fixture.detectChanges();
-    expect(bottomKeys()).toEqual(['atalhos', 'smartcalc']);
-    expect(count('.mobile-bottom-nav button')).toBe(2);
+    expect(bottomKeys()).toEqual(['atalhos', 'smartcalc', 'suporte']);
+    expect(count('.mobile-bottom-nav button')).toBe(3);
     usuario$.next(authorizedUser([])); fixture.detectChanges();
-    expect(bottomKeys()).toEqual(['atalhos', 'dashboard']);
+    expect(bottomKeys()).toEqual(['atalhos', 'dashboard', 'suporte']);
     usuario$.next(null); fixture.detectChanges();
     expect(count('.mobile-bottom-nav')).toBe(0);
   });
@@ -454,7 +467,7 @@ describe('FullComponent — cabeçalho mobile global', () => {
     features.set({ GRAFICA: true, SMARTCALC: false }); fixture.detectChanges();
     expect(count('.mobile-bottom-nav')).toBe(0);
     pending.next(features()); pending.complete(); fixture.detectChanges();
-    expect(bottomKeys()).toEqual(['catalogo', 'atalhos', 'pedidos', 'dashboard']);
+    expect(bottomKeys()).toEqual(['catalogo', 'atalhos', 'pedidos', 'dashboard', 'suporte']);
     expect(count('.mobile-bottom-nav')).toBe(1);
   });
 
@@ -466,7 +479,7 @@ describe('FullComponent — cabeçalho mobile global', () => {
     first.next({ GRAFICA: true, SMARTCALC: true }); fixture.detectChanges();
     expect(count('.mobile-bottom-nav')).toBe(0);
     features.set({ GRAFICA: true, SMARTCALC: false }); second.next(features()); fixture.detectChanges();
-    expect(bottomKeys()).toEqual(['catalogo', 'atalhos', 'pedidos', 'dashboard']);
+    expect(bottomKeys()).toEqual(['catalogo', 'atalhos', 'pedidos', 'dashboard', 'suporte']);
   });
 
   it('preserva a organização existente do Depósito e restaura a da Gráfica ao trocar segmento', () => {
@@ -475,7 +488,7 @@ describe('FullComponent — cabeçalho mobile global', () => {
     expect(bottomKeys()).toEqual(['dashboard', 'atalhos', 'catalogo', 'orcamentos']);
     expect(fixture.componentInstance.mobileBottomNavItems[2].route).toBe('/page/catalogo/produtos');
     usuario$.next({ ...authorizedUser([], true), empresa: { id: 3, tipoEmpresa: TipoEmpresa.GRAFICA } as any }); fixture.detectChanges();
-    expect(bottomKeys()).toEqual(['pedidos', 'atalhos', 'smartcalc', 'dashboard']);
+    expect(bottomKeys()).toEqual(['pedidos', 'atalhos', 'smartcalc', 'dashboard', 'suporte']);
   });
 
   it('distingue destaque central de seleção por rota, incluindo query e detalhe de pedido', async () => {

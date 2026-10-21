@@ -1,5 +1,11 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
+import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
+import { Subject, takeUntil, finalize } from 'rxjs';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -20,11 +26,22 @@ import { CheckoutResponse } from 'src/app/models/billing-access.model';
 @Component({
   selector: 'app-billing-pagamento',
   standalone: true,
-  imports: [CommonModule, MatButtonModule, MatProgressSpinnerModule, MatIconModule, MatCardModule, CardHeaderComponent, TablerIconsModule, PricingCardComponent],
+  imports: [PageCardComponent, SectionCardComponent, MobileTotalBarComponent, CommonModule, MatButtonModule, MatProgressSpinnerModule, MatIconModule, MatCardModule, CardHeaderComponent, TablerIconsModule, PricingCardComponent],
   templateUrl: './billing-pagamento.component.html',
   styleUrls: ['./billing-pagamento.component.scss']
 })
-export class BillingPagamentoComponent implements OnInit {
+export class BillingPagamentoComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  mobilePlanoAberto: number | null = null;
+  carregandoPlanos = false;
+  erroPlanos: string | null = null;
+  private readonly destroy$ = new Subject<void>();
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
+  expandirPlano(id: number, expanded: boolean): void { this.mobilePlanoAberto = expanded ? id : null; }
+  tentarNovamente(): void { this.billing ? this.verificarPlanos() : this.carregarStatus(); }
+  get podePagarMobile(): boolean { return this.podePagar && this.isProprietario && !this.loading && !this.carregandoPlanos && !this.erroPlanos; }
+  pagarMobile(): void { if (this.podePagarMobile) this.irParaPagamento(); }
+
   billing: BillingAccessResponse | null = null;
   loading = false;
   ownerDenied = false;
@@ -40,11 +57,15 @@ export class BillingPagamentoComponent implements OnInit {
     private toastr: ToastrService,
     private router: Router,
     private route: ActivatedRoute,
-    private authService: AuthService
-  ) {}
+    private authService: AuthService,
+    breakpoints?: BreakpointObserver
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$))
+      .subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+  }
 
   ngOnInit(): void {
-    this.authService.usuario$.subscribe(u => this.usuario = u);
+    this.authService.usuario$.pipe(takeUntil(this.destroy$)).subscribe(u => this.usuario = u);
     this.returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
     this.planoIdParam = this.parsePlanoId(this.route.snapshot.queryParamMap.get('planoId'));
     this.billing = this.billingState.snapshot;
@@ -58,6 +79,8 @@ export class BillingPagamentoComponent implements OnInit {
   }
 
   private carregarStatus(): void {
+    this.carregandoPlanos = true;
+    this.erroPlanos = null;
     this.billingService.obterStatus().subscribe({
       next: (resp) => {
         this.billingState.setFromResponse(resp);
@@ -67,16 +90,21 @@ export class BillingPagamentoComponent implements OnInit {
       error: () => {
         // se 402, o interceptor já redireciona. Aqui evitamos travar o botão.
         this.billing = this.billingState.snapshot;
+        this.carregandoPlanos = false;
         if (!this.billing) {
-          this.toastr.error('Não foi possível carregar o status de assinatura.');
+          this.erroPlanos = 'Não foi possível carregar o status de assinatura.';
+          this.toastr.error(this.erroPlanos);
         }
       }
     });
   }
 
   private verificarPlanos(): void {
+    this.carregandoPlanos = true;
+    this.erroPlanos = null;
     this.billingService.listarPlanosInternos().subscribe({
       next: (planos) => {
+        this.carregandoPlanos = false;
         this.planos = [...(planos || [])].sort((a, b) => (a.ordem_exibicao || a.ordemExibicao || 0) - (b.ordem_exibicao || b.ordemExibicao || 0));
         const planoPreferido =
           this.findPlanoById(this.planoIdParam) ||
@@ -91,7 +119,9 @@ export class BillingPagamentoComponent implements OnInit {
         }
       },
       error: () => {
-        this.toastr.error('Não foi possível carregar os planos disponíveis.');
+        this.carregandoPlanos = false;
+        this.erroPlanos = 'Não foi possível carregar os planos disponíveis.';
+        this.toastr.error(this.erroPlanos);
       }
     });
   }
@@ -221,7 +251,7 @@ export class BillingPagamentoComponent implements OnInit {
     }
 
     this.loading = true;
-    this.billingService.checkoutAssinatura(this.planoSelecionado.id).subscribe({
+    this.billingService.checkoutAssinatura(this.planoSelecionado.id).pipe(finalize(() => this.loading = false)).subscribe({
       next: (resp: CheckoutResponse) => {
         const outcome = `${resp?.outcome || ''}`.toUpperCase()
           || (resp?.requiresPayment ? 'PAYMENT_REQUIRED' : '')
@@ -274,7 +304,7 @@ export class BillingPagamentoComponent implements OnInit {
     if (this.returnUrl) {
       this.router.navigateByUrl(this.returnUrl);
     } else {
-      this.router.navigate(['/billing/blocked']);
+      this.router.navigate([this.isMobile ? '/billing/minha-assinatura' : '/billing/blocked']);
     }
   }
 

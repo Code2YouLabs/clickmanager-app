@@ -1,3 +1,4 @@
+@use "../../../shared/responsive/mobile-list-item" as item;
 .perfil-layout {
   display: grid;
   gap: 24px;
@@ -59,4 +60,23 @@
 
 @media (max-width: 900px) {
   .perfil-layout { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 760px) {
+  .perfil-layout { gap: 16px; min-width: 0; }
+  .perfil-mobile-item, .perfil-usuario-mobile {
+    @include item.surface;
+    display: flex; align-items: start; justify-content: space-between; gap: 8px;
+    strong { @include item.heading; }
+    > button[mat-icon-button] { width: 44px; height: 44px; min-width: 44px; flex-shrink: 0; }
+  }
+  .perfil-mobile-item--selected { background: var(--mat-sys-secondary-container); }
+  .perfil-mobile-item__select { flex: 1; min-width: 0; min-height: 44px; padding: 0; border: 0; background: transparent; text-align: left; color: inherit; cursor: pointer; }
+  .perfil-mobile-item__select:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: 2px; }
+  .perfil-mobile-item__select strong, .perfil-mobile-item__select span { display: block; overflow-wrap: anywhere; }
+  .perfil-mobile-item__select span { font-size: 12px; line-height: 16px; color: var(--mat-sys-on-surface-variant); margin-top: 4px; }
+  .perfil-usuario-mobile .usuario-identidade { min-width: 0; align-items: start; gap: 8px; }
+  .perfil-usuario-mobile .usuario-identidade div { min-width: 0; overflow-wrap: anywhere; }
+  .perfil-usuario-mobile img { flex-shrink: 0; }
+  .perfil-mobile-menu__destructive { --mat-menu-item-label-text-color: var(--mat-sys-error); --mat-menu-item-icon-color: var(--mat-sys-error); }
 }

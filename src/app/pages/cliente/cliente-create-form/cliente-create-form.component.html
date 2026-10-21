@@ -1,0 +1,114 @@
+<form [id]="formId" [formGroup]="form" class="cliente-dialog-form" [attr.aria-busy]="salvando" (ngSubmit)="salvar()">
+      <section class="cliente-dialog-section" [attr.aria-labelledby]="quickMobile ? null : 'novo-cliente-dados-basicos'">
+        <header *ngIf="!quickMobile" class="cliente-dialog-section__header">
+          <strong id="novo-cliente-dados-basicos">Dados básicos</strong>
+          <span>Nome, contato e documento do cliente.</span>
+        </header>
+
+        <div class="cliente-dialog-grid">
+          <app-input-texto-restrito #clientField data-client-field="nome"
+            [control]="nomeControl"
+            label="Nome"
+            placeholder="Digite o nome do cliente"
+            autocomplete="name"
+            inputmode="text"
+            requiredError="Nome obrigatório">
+          </app-input-texto-restrito>
+
+          <app-input-telefone #clientField data-client-field="telefone"
+            [control]="telefoneControl"
+            label="Telefone"
+            placeholder="Digite o telefone do cliente">
+          </app-input-telefone>
+
+          <app-input-email #clientField data-client-field="email"
+            [control]="emailControl"
+            label="E-mail"
+            placeholder="Digite o e-mail">
+          </app-input-email>
+
+          <ng-container *ngIf="!quickMobile" [ngTemplateOutlet]="documentField"></ng-container>
+        </div>
+      </section>
+
+      <section class="cliente-dialog-section" [attr.aria-labelledby]="quickMobile ? 'novo-cliente-adicionais-toggle' : 'novo-cliente-endereco'">
+        <button *ngIf="quickMobile" id="novo-cliente-adicionais-toggle" class="cliente-additional-toggle" type="button"
+          [attr.aria-expanded]="additionalExpanded" aria-controls="novo-cliente-adicionais" (click)="toggleAdditional()">
+          <span><strong>Informações adicionais</strong><small>CPF/CNPJ e endereço · Opcional</small></span>
+          <mat-icon aria-hidden="true">{{ additionalExpanded ? 'expand_less' : 'expand_more' }}</mat-icon>
+        </button>
+        <header *ngIf="!quickMobile" class="cliente-dialog-section__header">
+          <strong id="novo-cliente-endereco">Endereço</strong>
+          <span>Dados opcionais para entrega ou cadastro.</span>
+        </header>
+
+        <div id="novo-cliente-adicionais" [hidden]="quickMobile && !additionalExpanded">
+          <ng-container *ngIf="quickMobile" [ngTemplateOutlet]="documentField"></ng-container>
+          <div class="cliente-dialog-grid cliente-dialog-grid--address">
+            <app-input-cep #clientField data-client-field="endereco.cep"
+              class="cliente-dialog-cep"
+              [control]="cepControl"
+              label="CEP"
+              placeholder="00000-000"
+              [autoBuscar]="false"
+              [showSearchButton]="true"
+              searchButtonText="Buscar endereço"
+              (enderecoEncontrado)="onEnderecoEncontrado($event)">
+            </app-input-cep>
+
+            <app-input-texto-restrito #clientField data-client-field="endereco.logradouro"
+              class="cliente-dialog-grid__wide"
+              [control]="logradouroControl"
+              label="Logradouro"
+              placeholder="Rua, avenida..."
+              autocomplete="street-address">
+            </app-input-texto-restrito>
+
+            <app-input-texto-restrito #clientField data-client-field="endereco.numero"
+              [control]="numeroControl"
+              label="Número"
+              placeholder="Nº"
+              inputmode="numeric">
+            </app-input-texto-restrito>
+
+            <app-input-texto-restrito #clientField data-client-field="endereco.bairro"
+              [control]="bairroControl"
+              label="Bairro"
+              placeholder="Informe o bairro">
+            </app-input-texto-restrito>
+
+            <app-input-texto-restrito #clientField data-client-field="endereco.cidade"
+              [control]="cidadeControl"
+              label="Cidade"
+              placeholder="Informe a cidade">
+            </app-input-texto-restrito>
+
+            <app-input-texto-restrito #clientField data-client-field="endereco.estado"
+              [control]="estadoControl"
+              label="Estado"
+              placeholder="UF"
+              [maxlength]="2">
+            </app-input-texto-restrito>
+
+            <app-input-texto-restrito #clientField data-client-field="endereco.complemento"
+              class="cliente-dialog-grid__wide"
+              [control]="complementoControl"
+              label="Complemento"
+              placeholder="Apartamento, bloco, referência...">
+            </app-input-texto-restrito>
+          </div>
+        </div>
+      </section>
+    </form>
+
+<ng-template #documentField>
+  <app-input-documento #clientField data-client-field="documento"
+    [control]="documentoControl"
+    label="CPF ou CNPJ"
+    placeholder="Opcional">
+  </app-input-documento>
+  <p *ngIf="quickMobile && documentoControl.invalid && documentoControl.touched" class="cliente-field-error" role="alert">
+    CPF ou CNPJ inválido
+  </p>
+</ng-template>
+

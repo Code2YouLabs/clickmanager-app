@@ -1,5 +1,6 @@
+<ng-template #desktopPerfil>
 <mat-card class="cardWithShadow">
-  <mat-tab-group class="account-setting-tabs" mat-stretch-tabs="false" animationDuration="0ms" [selectedIndex]="selectedTabIndex">
+  <mat-tab-group class="account-setting-tabs" mat-stretch-tabs="false" animationDuration="0ms" [selectedIndex]="selectedTabIndex" (selectedIndexChange)="selectedTabIndex = $event">
 
     <!-- Aba Conta -->
     <mat-tab label="Conta">
@@ -14,7 +15,91 @@
                     Altere sua foto de perfil aqui
                   </mat-card-subtitle>
 
-                  <div class="text-center m-t-24">
+                  <ng-container [ngTemplateOutlet]="fotoContent"></ng-container>
+
+                </mat-card-content>
+              </mat-card>
+            </div>
+            <div class="col-sm-6">
+              <mat-card class="cardWithShadow">
+                <mat-card-content>
+                  <mat-card-title>Alterar Senha</mat-card-title>
+                  <mat-card-subtitle class="f-s-14">
+                    Para alterar sua senha, confirme abaixo
+                  </mat-card-subtitle>
+
+                  <ng-container [ngTemplateOutlet]="senhaContent"></ng-container>
+                </mat-card-content>
+              </mat-card>
+
+            </div>
+
+            <!-- Dados Pessoais e Endereço -->
+            <div class="col-12">
+              <mat-card class="cardWithShadow">
+                <mat-card-content>
+                  <mat-card-title>Dados Pessoais</mat-card-title>
+                  <mat-card-subtitle class="f-s-14">
+                    Para alterar seus dados pessoais, edite sua senha atua clique em salve abaixo.
+                  </mat-card-subtitle>
+
+                  <ng-container [ngTemplateOutlet]="dadosContent"></ng-container>
+
+                  <h4 class="f-s-16 f-w-600 m-t-32 m-b-16">Endereço</h4>
+                  <ng-container [ngTemplateOutlet]="enderecoContent"></ng-container>
+                </mat-card-content>
+              </mat-card>
+            </div>
+          </div>
+        </mat-card-content>
+        <div class="text-right p-24 p-t-0">
+          <button mat-flat-button class="m-r-8" type="submit">Salvar</button>
+      <button mat-flat-button class="bg-error text-white" type="button" (click)="cancelar()">Cancelar</button>
+    </div>
+  </form>
+</mat-tab>
+
+    <mat-tab label="Preferências">
+      <mat-card-content class="p-y-24">
+        <mat-card class="cardWithShadow">
+          <mat-card-content class="p-y-24">
+            <mat-card-title>Onboarding</mat-card-title>
+            <mat-card-subtitle class="f-s-14">
+              Revise ou reabra o passo a passo inicial da empresa.
+            </mat-card-subtitle>
+            <button
+              mat-stroked-button
+              color="primary"
+              class="m-t-12"
+              type="button"
+              *ngIf="isProprietario"
+              (click)="abrirOnboarding()">
+              Abrir onboarding
+            </button>
+            <div class="text-muted f-s-13 m-t-8" *ngIf="!isProprietario">
+              Disponível apenas para o proprietário.
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </mat-card-content>
+    </mat-tab>
+
+
+    <!-- Aba Notificações -->
+    <mat-tab label="Notificações">
+      <mat-card-content class="p-y-24">
+        <app-notificacoes [embedded]="true" [selectedNotificacaoId]="notificacaoSelecionadaId"></app-notificacoes>
+      </mat-card-content>
+    </mat-tab>
+  </mat-tab-group>
+
+</mat-card>
+
+</ng-template>
+
+<ng-template #fotoContent>
+  <ng-container [formGroup]="form">
+<div class="text-center m-t-24">
                     <img [src]="imagemPreview || imagemOriginal" (error)="usarImagemPadrao($event)"
                       class="rounded-circle" width="120" />
 
@@ -34,19 +119,12 @@
                     <span class="f-s-14 m-t-24 d-block">Formatos permitidos: JPG, GIF ou PNG. Tamanho será ajustado
                       automaticamente.</span>
                   </div>
+  </ng-container>
+</ng-template>
 
-                </mat-card-content>
-              </mat-card>
-            </div>
-            <div class="col-sm-6">
-              <mat-card class="cardWithShadow">
-                <mat-card-content>
-                  <mat-card-title>Alterar Senha</mat-card-title>
-                  <mat-card-subtitle class="f-s-14">
-                    Para alterar sua senha, confirme abaixo
-                  </mat-card-subtitle>
-
-                  <mat-label class="f-s-14 f-w-600 m-b-8 d-block">Senha Atual</mat-label>
+<ng-template #senhaContent>
+  <ng-container [formGroup]="form">
+<mat-label class="f-s-14 f-w-600 m-b-8 d-block">Senha Atual</mat-label>
                   <!-- Senha Atual -->
                   <mat-form-field appearance="outline" class="w-100" color="primary">
                     <input matInput type="password" formControlName="senhaAtual" />
@@ -64,21 +142,12 @@
                   <mat-form-field appearance="outline" class="w-100" color="primary">
                     <input matInput type="password" formControlName="confirmarNovaSenha" />
                   </mat-form-field>
-                </mat-card-content>
-              </mat-card>
+  </ng-container>
+</ng-template>
 
-            </div>
-
-            <!-- Dados Pessoais e Endereço -->
-            <div class="col-12">
-              <mat-card class="cardWithShadow">
-                <mat-card-content>
-                  <mat-card-title>Dados Pessoais</mat-card-title>
-                  <mat-card-subtitle class="f-s-14">
-                    Para alterar seus dados pessoais, edite sua senha atua clique em salve abaixo.
-                  </mat-card-subtitle>
-
-                  <div class="row m-t-24">
+<ng-template #dadosContent>
+  <ng-container [formGroup]="form">
+<div class="row m-t-24">
                     <div class="col-sm-6">
 
                       <mat-label class="f-s-14 f-w-600 m-b-8 d-block">Nome completo *</mat-label>
@@ -105,9 +174,12 @@
                       </mat-form-field>
                     </div>
                   </div>
+  </ng-container>
+</ng-template>
 
-                  <h4 class="f-s-16 f-w-600 m-t-32 m-b-16">Endereço</h4>
-                  <div formGroupName="enderecoRequest">
+<ng-template #enderecoContent>
+  <ng-container [formGroup]="form">
+<div formGroupName="enderecoRequest">
                     <div class="row">
                       <div class="col-sm-6">
                         <mat-label class="f-s-14 f-w-600 m-b-8 d-block">CEP *</mat-label>
@@ -181,50 +253,42 @@
                       </div>
                     </div>
                   </div>
-                </mat-card-content>
-              </mat-card>
-            </div>
-          </div>
-        </mat-card-content>
-        <div class="text-right p-24 p-t-0">
-          <button mat-flat-button class="m-r-8" type="submit">Salvar</button>
-      <button mat-flat-button class="bg-error text-white" type="button" (click)="cancelar()">Cancelar</button>
-    </div>
-  </form>
-</mat-tab>
+  </ng-container>
+</ng-template>
 
-    <mat-tab label="Preferências">
-      <mat-card-content class="p-y-24">
-        <mat-card class="cardWithShadow">
-          <mat-card-content class="p-y-24">
-            <mat-card-title>Onboarding</mat-card-title>
-            <mat-card-subtitle class="f-s-14">
-              Revise ou reabra o passo a passo inicial da empresa.
-            </mat-card-subtitle>
-            <button
-              mat-stroked-button
-              color="primary"
-              class="m-t-12"
-              type="button"
-              *ngIf="isProprietario"
-              (click)="abrirOnboarding()">
-              Abrir onboarding
-            </button>
-            <div class="text-muted f-s-13 m-t-8" *ngIf="!isProprietario">
-              Disponível apenas para o proprietário.
-            </div>
-          </mat-card-content>
-        </mat-card>
-      </mat-card-content>
-    </mat-tab>
-
-
-    <!-- Aba Notificações -->
-    <mat-tab label="Notificações">
-      <mat-card-content class="p-y-24">
-        <app-notificacoes [embedded]="true" [selectedNotificacaoId]="notificacaoSelecionadaId"></app-notificacoes>
-      </mat-card-content>
-    </mat-tab>
-  </mat-tab-group>
-
-</mat-card>
+@if (isMobile) {
+  <app-page-card titulo="Meu perfil" [mostrarDivisor]="true" class="mobile-profile">
+    <app-view-mode-toggle [options]="mobileTabs" [value]="mobileTab" ariaLabel="Seções do perfil" (valueChange)="selecionarAbaMobile($event)" />
+    <form id="perfil-mobile-form" class="mobile-profile__form" [hidden]="selectedTabIndex !== 0" [formGroup]="form" (ngSubmit)="salvarMobile()">
+      <app-section-card title="Dados pessoais" [mobilePlain]="true" [mobileCollapsible]="true" [mobileExpanded]="mobileSection === 'dados'" [mobileSummary]="form.get('nome')?.value || 'Nome, telefone e e-mail'" (mobileExpandedChange)="expandirSecao('dados', $event)">
+        <ng-container [ngTemplateOutlet]="dadosContent"></ng-container>
+      </app-section-card>
+      <app-section-card title="Endereço" [mobilePlain]="true" [mobileCollapsible]="true" [mobileExpanded]="mobileSection === 'endereco'" mobileSummary="Endereço de contato" (mobileExpandedChange)="expandirSecao('endereco', $event)">
+        <ng-container [ngTemplateOutlet]="enderecoContent"></ng-container>
+      </app-section-card>
+      <app-section-card title="Foto de perfil" [mobilePlain]="true" [mobileCollapsible]="true" [mobileExpanded]="mobileSection === 'foto'" mobileSummary="Selecionar ou redefinir foto" (mobileExpandedChange)="expandirSecao('foto', $event)">
+        <ng-container [ngTemplateOutlet]="fotoContent"></ng-container>
+      </app-section-card>
+      <app-section-card title="Senha" [mobilePlain]="true" [mobileCollapsible]="true" [mobileExpanded]="mobileSection === 'senha'" mobileSummary="Confirme a senha atual para salvar" (mobileExpandedChange)="expandirSecao('senha', $event)">
+        <ng-container [ngTemplateOutlet]="senhaContent"></ng-container>
+      </app-section-card>
+    </form>
+    @if (selectedTabIndex === 1) {
+      <app-section-card title="Onboarding" subtitle="Revise ou reabra o passo a passo inicial da empresa." [mobilePlain]="true">
+        @if (isProprietario) {
+          <button mat-stroked-button color="primary" type="button" (click)="abrirOnboarding()">Abrir onboarding</button>
+        } @else { <p class="text-muted">Disponível apenas para o proprietário.</p> }
+      </app-section-card>
+    }
+    @if (selectedTabIndex === 2) {
+      <app-notificacoes [embedded]="true" [mobileLayout]="true" [selectedNotificacaoId]="notificacaoSelecionadaId" />
+    }
+    @if (selectedTabIndex === 0) {
+      <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true"
+        actionType="submit" actionForm="perfil-mobile-form" bottomAnchorSelector=".mobile-bottom-nav"
+        bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+        secondaryActionText="Cancelar" secondaryActionAriaLabel="Restaurar dados do perfil" [secondaryActionDisabled]="salvando" (secondaryAction)="cancelar()"
+        [actionText]="salvando ? 'Salvando...' : 'Salvar perfil'" actionIcon="save" actionAriaLabel="Salvar perfil" [actionDisabled]="salvando" [loading]="salvando" />
+    }
+  </app-page-card>
+} @else { <ng-container [ngTemplateOutlet]="desktopPerfil"></ng-container> }

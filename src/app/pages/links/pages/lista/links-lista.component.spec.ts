@@ -1,3 +1,4 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -62,6 +63,7 @@ describe('LinksListaComponent', () => {
     await TestBed.configureTestingModule({
       imports: [LinksListaComponent, NoopAnimationsModule, RouterTestingModule.withRoutes([])],
       providers: [
+        { provide: BreakpointObserver, useValue: { observe: () => of({ matches: false, breakpoints: {} }), isMatched: () => false } },
         { provide: LinksService, useValue: { listarPaginas: () => of(paginas), alterarPublicacao: () => of({ ...paginas[0], itens: [], identidade: null }), tornarPrincipal: () => of({ ...paginas[0], itens: [], identidade: null }), excluirPagina: () => of(void 0) } },
         { provide: EmpresaIdentidadePublicaService, useValue: { buscar: () => of({ nome: 'Empresa', slug: 'empresa-de-teste', logoUrl: null }) } },
         { provide: PresencaPublicaService, useValue: { buscar: () => of({ slugPublico: 'empresa-de-teste', dominioProprio: null, dominioProprioAtivo: false }) } },

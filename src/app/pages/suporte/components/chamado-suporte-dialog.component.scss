@@ -16,3 +16,10 @@
     grid-template-columns: 1fr;
   }
 }
+
+:host(.mobile-side-panel__layout) {
+  .mobile-side-panel__header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  h2 { margin: 0; font-size: 18px; line-height: 24px; }
+  .mobile-side-panel__header button { flex-shrink: 0; }
+  .dialog-form, .grid-two { min-width: 0; gap: 12px; }
+}

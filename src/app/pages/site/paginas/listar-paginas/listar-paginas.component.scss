@@ -1,3 +1,4 @@
+@use '../../../../shared/responsive/mobile-list-item' as mobile-item;
 .pagina-title-cell {
   min-width: 0;
   display: grid;
@@ -70,4 +71,11 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+@media (max-width: 760px) {
+  .pagina-mobile-card { @include mobile-item.surface; gap: 8px; }
+  .pagina-mobile-card__head > :first-child { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+  .pagina-mobile-card__head button { flex: 0 0 44px; width: 44px; height: 44px; }
+  .site-mobile-destructive { --mat-menu-item-label-text-color: var(--mat-sys-error); --mat-menu-item-icon-color: var(--mat-sys-error); }
 }

@@ -1,8 +1,8 @@
 <app-page-card
   titulo="Servidor de E-mail"
   subtitulo="Configure o servidor SMTP usado pelo ClickManager para envio de e-mails."
-  [formState]="pageFormState"
-  [footerActions]="footerActions"
+  [formState]="isMobile ? undefined : pageFormState"
+  [footerActions]="isMobile ? [] : footerActions"
   [saving]="salvando"
   savingText="Salvando..."
   [actionsDisabled]="carregando || !!erro || semPermissao || testando"
@@ -29,7 +29,7 @@
     </div>
   } @else {
     <form [id]="formId" [formGroup]="form" (ngSubmit)="salvar()" class="email-form">
-      <app-section-card titulo="Servidor SMTP">
+      <app-section-card [mobilePlain]="isMobile" titulo="Servidor SMTP">
         <div class="email-grid email-grid--smtp">
           <app-input-texto-restrito
             [control]="hostControl"
@@ -46,7 +46,7 @@
         </div>
       </app-section-card>
 
-      <app-section-card titulo="Credenciais e remetente">
+      <app-section-card [mobilePlain]="isMobile" titulo="Credenciais e remetente">
         <button actions mat-stroked-button color="primary" type="button" (click)="testar()" [disabled]="testando || carregando || salvando">
           @if (testando) {
             <mat-spinner diameter="18"></mat-spinner>
@@ -76,5 +76,13 @@
         </div>
       </app-section-card>
     </form>
+  }
+
+  @if (isMobile && (!!pageFormState)) {
+    <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true"
+      actionType="submit" [actionForm]="formId" bottomAnchorSelector=".mobile-bottom-nav"
+      bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+      secondaryActionText="Cancelar" secondaryActionAriaLabel="Restaurar formulário" [secondaryActionDisabled]="salvando || !formState.canReset" (secondaryAction)="formState.reset()"
+      [actionText]="salvando ? 'Salvando...' : 'Salvar configuração'" actionIcon="save" actionAriaLabel="Salvar configuração" [actionDisabled]="!podeSalvar" [loading]="salvando" />
   }
 </app-page-card>

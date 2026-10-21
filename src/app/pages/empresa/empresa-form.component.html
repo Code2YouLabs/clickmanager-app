@@ -205,14 +205,35 @@
     titulo="Dados da empresa"
     subtitulo="Mantenha dados cadastrais, identidade pública e canais digitais atualizados."
     [mostrarDivisor]="true"
-    [formState]="pageFormState"
-    [footerActions]="footerActions"
+    [formState]="isMobile ? undefined : pageFormState"
+    [footerActions]="isMobile ? [] : footerActions"
     [saving]="savingAtual"
     [savingText]="savingTextAtual"
     [actionsDisabled]="actionsDisabledAtual"
     (footerAction)="onFooterAction($event)">
+      @if (isMobile) {
+        <div class="empresa-mobile-sections">
+          <app-section-card [mobilePlain]="true" [mobileCollapsible]="true" titulo="1. Empresa" mobileSummary="Cadastro, contato e endereço" [mobileExpanded]="mobileSection === 0" (mobileExpandedChange)="setMobileSection(0, $event)"><ng-container *ngTemplateOutlet="empresaPane0"></ng-container></app-section-card>
+          <app-section-card [mobilePlain]="true" [mobileCollapsible]="true" titulo="2. Identidade Pública" mobileSummary="Nome público, logo e favicon" [mobileExpanded]="mobileSection === 1" (mobileExpandedChange)="setMobileSection(1, $event)"><ng-container *ngTemplateOutlet="empresaPane1"></ng-container></app-section-card>
+          <app-section-card [mobilePlain]="true" [mobileCollapsible]="true" titulo="3. Redes Sociais" mobileSummary="Canais digitais da empresa" [mobileExpanded]="mobileSection === 2" (mobileExpandedChange)="setMobileSection(2, $event)"><ng-container *ngTemplateOutlet="empresaPane2"></ng-container></app-section-card>
+        </div>
+      } @else {
       <mat-tab-group mat-stretch-tabs="false" animationDuration="0ms" dynamicHeight [preserveContent]="true" [(selectedIndex)]="abaSelecionada">
         <mat-tab label="Empresa">
+            <ng-container *ngTemplateOutlet="empresaPane0"></ng-container>
+        </mat-tab>
+
+        <mat-tab label="Identidade Pública">
+            <ng-container *ngTemplateOutlet="empresaPane1"></ng-container>
+        </mat-tab>
+
+        <mat-tab label="Redes Sociais">
+            <ng-container *ngTemplateOutlet="empresaPane2"></ng-container>
+        </mat-tab>
+      </mat-tab-group>
+      }
+      <ng-template #empresaPane0>
+
           <form id="empresa-dados-form" class="empresa-tab-panel" [formGroup]="form" (ngSubmit)="salvarEmpresa()">
             <div class="empresa-config-state" *ngIf="carregandoEmpresa">
               <mat-spinner diameter="32"></mat-spinner>
@@ -226,7 +247,7 @@
             </div>
 
             <ng-container *ngIf="!carregandoEmpresa && !erroEmpresa">
-              <app-section-card title="Dados da empresa">
+              <app-section-card [mobilePlain]="isMobile" title="Dados da empresa">
                   <div class="row g-3">
                     <div class="col-md-6">
                       <app-input-texto-restrito class="m-b-16" [control]="nomeControl" label="Nome da Empresa"
@@ -262,13 +283,14 @@
                   </div>
               </app-section-card>
 
-              <app-endereco-form [enderecoFormGroup]="enderecoGroup"></app-endereco-form>
+              <app-endereco-form [mobilePlain]="isMobile" [enderecoFormGroup]="enderecoGroup"></app-endereco-form>
             </ng-container>
           </form>
-        </mat-tab>
 
-        <mat-tab label="Identidade Pública">
-          <div class="empresa-tab-panel">
+      </ng-template>
+      <ng-template #empresaPane1>
+
+          <div id="empresa-identidade-form" class="empresa-tab-panel">
             <div class="empresa-config-state" *ngIf="carregandoIdentidade">
               <mat-spinner diameter="32"></mat-spinner>
               <span>Carregando identidade pública...</span>
@@ -281,7 +303,7 @@
             </div>
 
             <ng-container *ngIf="!carregandoIdentidade && !erroIdentidade">
-              <app-section-card
+              <app-section-card [mobilePlain]="isMobile"
                 title="Identidade Pública"
                 subtitle="Defina como sua empresa é apresentada nos recursos públicos do ClickManager.">
 
@@ -308,7 +330,7 @@
                   </div>
               </app-section-card>
 
-              <app-section-card title="Mídia pública">
+              <app-section-card [mobilePlain]="isMobile" title="Mídia pública">
 
                   <div class="row g-3">
                     <div class="col-md-6">
@@ -370,9 +392,10 @@
               </app-section-card>
             </ng-container>
           </div>
-        </mat-tab>
 
-        <mat-tab label="Redes Sociais">
+      </ng-template>
+      <ng-template #empresaPane2>
+
           <form id="empresa-redes-form" class="empresa-tab-panel" [formGroup]="form" (ngSubmit)="salvarRedes()">
             <div class="empresa-config-state" *ngIf="carregandoEmpresa">
               <mat-spinner diameter="32"></mat-spinner>
@@ -386,7 +409,7 @@
             </div>
 
             <ng-container *ngIf="!carregandoEmpresa && !erroEmpresa">
-              <app-section-card
+              <app-section-card [mobilePlain]="isMobile"
                 title="Redes Sociais"
                 subtitle="Ajuste os links públicos usados no site, no ClickLink e nos materiais da empresa.">
 
@@ -418,7 +441,16 @@
               </app-section-card>
             </ng-container>
           </form>
-        </mat-tab>
-      </mat-tab-group>
+
+      </ng-template>
+
+    @if (isMobile && !actionsDisabledAtual) {
+      <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true"
+        [actionForm]="mobileFormId" bottomAnchorSelector=".mobile-bottom-nav"
+        bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+        secondaryActionText="Cancelar" secondaryActionAriaLabel="Restaurar seção" [secondaryActionDisabled]="savingAtual || !pageFormState.canReset" (secondaryAction)="pageFormState.reset()"
+        [actionText]="savingAtual ? 'Salvando...' : mobileSaveLabel" actionIcon="save" [actionAriaLabel]="mobileSaveLabel"
+        [actionDisabled]="!!footerActions[0].disabled || savingAtual" [loading]="savingAtual" (action)="salvarMobile()" />
+    }
   </app-page-card>
 </ng-template>

@@ -5,12 +5,12 @@ import { MatDialog, MatDialogRef, MatDialogState } from '@angular/material/dialo
 import { Subject, takeUntil } from 'rxjs';
 import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { CommonModule } from '@angular/common';
-import { afterNextRender, Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild, TemplateRef, ViewContainerRef, ElementRef, inject } from '@angular/core';
+import { afterRender, signal, afterNextRender, Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges, ViewChild, TemplateRef, ViewContainerRef, ElementRef, inject } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { MaterialModule } from 'src/app/material.module';
 import { SectionCardComponent } from '../section-card/section-card.component';
 import { InputPesquisaComponent } from '../inputs/input-pesquisa/input-pesquisa.component';
-import { DataTableFilter, DataTableFilterValue, DataTableFilterState, DataTableSearchConfig } from '../data-table/data-table.models';
+import { DataTableFilterSortChange, DataTableMobileSort, DataTableSort, DataTableFilter, DataTableFilterValue, DataTableFilterState, DataTableSearchConfig } from '../data-table/data-table.models';
 
 // Compatibility types for the existing flat/string filter consumer.
 export type ListFilterOption = { value: string; label: string };
@@ -30,6 +30,10 @@ export interface ListFilterChip { filterKey: string; filterLabel: string; value:
 })
 export class ListFilterBarComponent implements OnChanges, OnDestroy {
   @Input() mobileCompact = true;
+  @Input() mobileSort: DataTableMobileSort | null = null;
+  @Output() filterSortChange = new EventEmitter<DataTableFilterSortChange>();
+  draftSort: DataTableSort = { active: '', direction: '' };
+  readonly compareSort = (a: DataTableSort, b: DataTableSort): boolean => a?.active === b?.active && a?.direction === b?.direction;
   // 'sheet' remains an API alias for consumers; the only overlay presentation is the full-screen panel.
   @Input() mobileFilterPresentation: 'sheet' | 'inline' = 'sheet';
   @Input() customFilterTemplate?: TemplateRef<ListFilterTemplateContext>;
@@ -43,7 +47,8 @@ export class ListFilterBarComponent implements OnChanges, OnDestroy {
   @ViewChild('mobileFilterAction', { static: true }) private mobileFilterAction!: TemplateRef<unknown>;
   readonly mobileHeaderHost = inject(MOBILE_HEADER_ACTIONS, { optional: true });
   private unregisterHeaderAction?: () => void;
-  get hasFilterFields(): boolean { return !!(this.filters.length || this.hasCustomFilters || this.customFilterTemplate); }
+  readonly headerFilterVisible = signal(false);
+  get hasFilterFields(): boolean { return !!(this.filters.length || this.hasCustomFilters || this.customFilterTemplate || this.mobileSort); }
   get filterTriggerInHeader(): boolean { return !!this.mobileHeaderHost?.enabled(); }
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly dialog = inject(MatDialog);
@@ -59,9 +64,12 @@ export class ListFilterBarComponent implements OnChanges, OnDestroy {
   get hasDraftFilters(): boolean { return Object.keys(this.withoutEmptyFilters(this.draftFilters)).length > 0; }
 
   constructor() {
+    // A projected header is checked before its filter bar. Publish visibility only
+    // after rendering, so changing filter/sort inputs cannot invalidate that check.
+    afterRender(() => this.headerFilterVisible.set(this.useMobilePanel && this.hasFilterFields));
     afterNextRender(() => {
       this.unregisterHeaderAction = this.mobileHeaderHost?.register({
-        template: this.mobileFilterAction, visible: () => this.useMobilePanel && this.hasFilterFields,
+        template: this.mobileFilterAction, visible: () => this.headerFilterVisible(),
       });
     });
     this.breakpoints.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => {
@@ -78,6 +86,7 @@ export class ListFilterBarComponent implements OnChanges, OnDestroy {
   }
   openMobileFilters(): void {
     if (!this.useMobilePanel || this.panelRef) return;
+    this.draftSort = { ...(this.mobileSort?.value || { active: '', direction: '' }) };
     this.draftFilters = this.copyState(this.internalFilters); this.draftKeys.clear(); this.draftCleared = false;
     this.mobileFilterTrigger?.nativeElement.focus({ preventScroll: true });
     const ref = openMobileSidePanel(this.dialog, this.mobileFilterPanel, {
@@ -97,7 +106,12 @@ export class ListFilterBarComponent implements OnChanges, OnDestroy {
     const cleared = this.draftCleared;
     const next = this.copyState(this.draftFilters);
     this.closeMobileFilters(); this.internalFilters = next;
-    if (!changed.length && !cleared) return;
+    const sortChanged = this.mobileSort && !this.compareSort(this.draftSort, this.mobileSort.value);
+    if (!changed.length && !cleared && !sortChanged) return;
+    if (this.mobileSort) {
+      this.filterSortChange.emit({ filters: next, sort: { ...this.draftSort } });
+      return;
+    }
     if (cleared) this.clear.emit();
     if (this.presentation === 'flat') {
       changed.forEach(key => { const value = next[key]; if (typeof value === 'string') this.filterChange.emit({ key, value }); });

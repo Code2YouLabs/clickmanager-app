@@ -1,3 +1,5 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { PageEvent } from '@angular/material/paginator';
@@ -37,6 +39,7 @@ import { SitePaginaService } from '../../services/site-pagina.service';
   styleUrl: './listar-paginas.component.scss',
 })
 export class ListarPaginasComponent implements OnInit, OnDestroy {
+  isMobile = false;
   paginas: SitePaginaResponse[] = [];
   totalPaginas = 0;
   carregando = false;
@@ -114,8 +117,13 @@ export class ListarPaginasComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly dialog: MatDialog,
     private readonly toastr: ToastrService,
-    private readonly authService: AuthService
-  ) {}
+    private readonly authService: AuthService,
+    breakpoints?: BreakpointObserver
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+  }
+
+  novaPagina(): void { this.router.navigate(['/page/site/paginas/nova']); }
 
   ngOnInit(): void {
     this.carregarPaginas();

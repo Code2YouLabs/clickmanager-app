@@ -1,7 +1,18 @@
-<section class="setup-progress" [class.setup-progress--onboarding]="onboarding"
+<section class="setup-progress" [class.setup-progress--compact]="compact" [class.setup-progress--onboarding]="onboarding"
   [class.setup-progress--finished]="onboarding && !exibicaoAtiva"
   [class.setup-progress--attention]="onboarding && (!!job.erros || !!job.alertaPreparacao || job.status === 'ERRO')" aria-label="Progresso da preparação">
-      @if (onboarding) {
+      @if (compact) {
+        <div class="setup-progress__compact-summary" role="status">
+          <strong>{{ ativa ? titulo : job.status === 'ERRO' ? titulo : 'Catálogo pronto para importar' }}</strong>
+          @if (ativa) {
+            <span>{{ job.processados }} de {{ job.total }} itens processados</span>
+            <mat-progress-bar mode="determinate" [value]="percentual" aria-label="Itens processados" />
+          } @else {
+            <span>{{ job.criados }} adicionados · {{ job.duplicados }} já existiam</span>
+            @if (job.erros) { <span>{{ job.erros }} não puderam ser adicionados</span> }
+          }
+        </div>
+      } @else if (onboarding) {
         <div class="setup-progress__heading">
           @if (!exibicaoAtiva) {
             <div class="setup-progress__outcome" aria-hidden="true"><mat-icon>{{ job.erros || job.alertaPreparacao || job.status === 'ERRO' ? 'info' : 'check_circle' }}</mat-icon></div>

@@ -24,6 +24,7 @@ interface PreparationTask { label: string; state: TaskState; detail?: string; ca
 })
 export class SetupProgressComponent implements OnChanges, OnDestroy {
   @Input({ required: true }) job!: SetupProgress;
+  @Input() compact = false;
   @Input() onboarding = false;
   @Input() animarEtapas = false;
   @Output() etapasConcluidas = new EventEmitter<void>();

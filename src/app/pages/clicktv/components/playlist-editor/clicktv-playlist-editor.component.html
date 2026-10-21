@@ -2,12 +2,15 @@
   <app-page-card
     [titulo]="titulo"
     [subtitulo]="subtitulo"
-    botaoTexto="Voltar"
+    [botaoTexto]="isMobile ? undefined : 'Voltar'"
     botaoIcone="arrow_back"
     [botaoRota]="['/page/clicktv/playlists']"
     [saving]="salvando || refreshingPlaylist"
     savingText="Atualizando playlist..."
+    [primaryAction]="isMobile && podeExibirEditor ? { label: 'Adicionar mídia', icon: 'add', permission: 'CLICKTV_PLAYLISTS_GERENCIAR', disabled: salvando } : null"
+    (primaryActionClick)="abrirBiblioteca(bibliotecaPanel)"
     [mostrarDivisor]="true">
+    @if (isMobile) { <a page-mobile-header-actions mat-button [routerLink]="['/page/clicktv/playlists']" [disabled]="salvando"><mat-icon>arrow_back</mat-icon>Voltar</a> }
 
     @if (carregandoPlaylist) {
       <div class="clicktv-state">
@@ -35,7 +38,70 @@
       </div>
     } @else if (podeExibirEditor) {
       <div class="editor-layout">
-        <app-section-card title="Biblioteca de mídias" subtitle="Adicione mídias disponíveis à sequência." class="library">
+        @if (!isMobile) {
+          <app-section-card title="Biblioteca de mídias" subtitle="Adicione mídias disponíveis à sequência." class="library"><ng-container *ngTemplateOutlet="bibliotecaConteudo"></ng-container></app-section-card>
+        }
+
+
+        <app-section-card [mobilePlain]="isMobile" title="Sequência de reprodução" subtitle="Operações são salvas individualmente." class="sequence">
+          @for (item of playlist?.itens || []; track trackByItem($index, item); let i = $index) {
+            <article class="sequence-item">
+              <div class="sequence-order">{{ i + 1 }}</div>
+              <mat-icon>{{ item.midiaTipo === 'VIDEO' ? 'movie' : 'image' }}</mat-icon>
+              <div class="sequence-info">
+                <strong>{{ item.midiaNome }}</strong>
+                <small>{{ item.midiaTipo }} · {{ item.midiaStatus }}</small>
+              </div>
+              @if (item.midiaTipo === 'IMAGEM') {
+                <mat-form-field appearance="outline" class="duration">
+                  <mat-label>Segundos</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    min="1"
+                    [(ngModel)]="item.duracaoSegundos"
+                    [disabled]="salvando"
+                    (change)="salvarItem(item)" />
+                </mat-form-field>
+              }
+              <mat-slide-toggle
+                [(ngModel)]="item.ativo"
+                [disabled]="salvando"
+                (change)="salvarItem(item)"
+                *temPermissao="'CLICKTV_PLAYLISTS_GERENCIAR'">
+                Ativo
+              </mat-slide-toggle>
+              @if (isMobile) {
+                <button mat-icon-button class="sequence-menu" type="button" [matMenuTriggerFor]="sequenceMenu" [matMenuTriggerData]="{ item: item, index: i }" aria-label="Abrir ações da mídia" *temPermissao="'CLICKTV_PLAYLISTS_GERENCIAR'"><mat-icon>more_vert</mat-icon></button>
+              } @else {
+              <div class="clicktv-actions" *temPermissao="'CLICKTV_PLAYLISTS_GERENCIAR'">
+                <button mat-icon-button type="button" (click)="mover(item,-1)" [disabled]="salvando || i === 0" matTooltip="Mover para cima" aria-label="Mover para cima">
+                  <mat-icon>arrow_upward</mat-icon>
+                </button>
+                <button mat-icon-button type="button" (click)="mover(item,1)" [disabled]="salvando || i === (playlist?.itens?.length || 0)-1" matTooltip="Mover para baixo" aria-label="Mover para baixo">
+                  <mat-icon>arrow_downward</mat-icon>
+                </button>
+                <button mat-icon-button type="button" color="warn" (click)="remover(item)" [disabled]="salvando" matTooltip="Remover" aria-label="Remover">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+              }
+            </article>
+          } @empty {
+            <div class="clicktv-state">
+              <mat-icon>playlist_add</mat-icon>
+              <strong>Playlist vazia</strong>
+              <span>Escolha uma mídia na biblioteca para adicioná-la.</span>
+            </div>
+          }
+        </app-section-card>
+      </div>
+    }
+  </app-page-card>
+</section>
+
+<ng-template #bibliotecaConteudo>
+
           <div class="library-search">
             <app-input-pesquisa
               placeholder="Buscar mídia"
@@ -90,57 +156,19 @@
               }
             </div>
           }
-        </app-section-card>
 
-        <app-section-card title="Sequência de reprodução" subtitle="Operações são salvas individualmente." class="sequence">
-          @for (item of playlist?.itens || []; track trackByItem($index, item); let i = $index) {
-            <article class="sequence-item">
-              <div class="sequence-order">{{ i + 1 }}</div>
-              <mat-icon>{{ item.midiaTipo === 'VIDEO' ? 'movie' : 'image' }}</mat-icon>
-              <div class="sequence-info">
-                <strong>{{ item.midiaNome }}</strong>
-                <small>{{ item.midiaTipo }} · {{ item.midiaStatus }}</small>
-              </div>
-              @if (item.midiaTipo === 'IMAGEM') {
-                <mat-form-field appearance="outline" class="duration">
-                  <mat-label>Segundos</mat-label>
-                  <input
-                    matInput
-                    type="number"
-                    min="1"
-                    [(ngModel)]="item.duracaoSegundos"
-                    [disabled]="salvando"
-                    (change)="salvarItem(item)" />
-                </mat-form-field>
-              }
-              <mat-slide-toggle
-                [(ngModel)]="item.ativo"
-                [disabled]="salvando"
-                (change)="salvarItem(item)"
-                *temPermissao="'CLICKTV_PLAYLISTS_GERENCIAR'">
-                Ativo
-              </mat-slide-toggle>
-              <div class="clicktv-actions" *temPermissao="'CLICKTV_PLAYLISTS_GERENCIAR'">
-                <button mat-icon-button type="button" (click)="mover(item,-1)" [disabled]="salvando || i === 0" matTooltip="Mover para cima" aria-label="Mover para cima">
-                  <mat-icon>arrow_upward</mat-icon>
-                </button>
-                <button mat-icon-button type="button" (click)="mover(item,1)" [disabled]="salvando || i === (playlist?.itens?.length || 0)-1" matTooltip="Mover para baixo" aria-label="Mover para baixo">
-                  <mat-icon>arrow_downward</mat-icon>
-                </button>
-                <button mat-icon-button type="button" color="warn" (click)="remover(item)" [disabled]="salvando" matTooltip="Remover" aria-label="Remover">
-                  <mat-icon>delete</mat-icon>
-                </button>
-              </div>
-            </article>
-          } @empty {
-            <div class="clicktv-state">
-              <mat-icon>playlist_add</mat-icon>
-              <strong>Playlist vazia</strong>
-              <span>Escolha uma mídia na biblioteca para adicioná-la.</span>
-            </div>
-          }
-        </app-section-card>
-      </div>
-    }
-  </app-page-card>
-</section>
+</ng-template>
+<ng-template #bibliotecaPanel>
+  <section class="mobile-side-panel__layout">
+    <header class="mobile-side-panel__header library-panel__header"><h2>Biblioteca de mídias</h2><button mat-icon-button mat-dialog-close type="button" aria-label="Fechar biblioteca"><mat-icon>close</mat-icon></button></header>
+    <div class="mobile-side-panel__body"><ng-container *ngTemplateOutlet="bibliotecaConteudo"></ng-container></div>
+    <footer class="mobile-side-panel__footer"><button mat-stroked-button mat-dialog-close type="button">Concluir</button></footer>
+  </section>
+</ng-template>
+<mat-menu #sequenceMenu="matMenu" xPosition="before">
+  <ng-template matMenuContent let-item="item" let-index="index">
+    <button mat-menu-item type="button" (click)="mover(item, -1)" [disabled]="salvando || index === 0"><mat-icon>arrow_upward</mat-icon>Mover para cima</button>
+    <button mat-menu-item type="button" (click)="mover(item, 1)" [disabled]="salvando || index === (playlist?.itens?.length || 0) - 1"><mat-icon>arrow_downward</mat-icon>Mover para baixo</button>
+    <button mat-menu-item type="button" class="mobile-item-destructive" (click)="remover(item)" [disabled]="salvando"><mat-icon>delete</mat-icon>Remover mídia</button>
+  </ng-template>
+</mat-menu>

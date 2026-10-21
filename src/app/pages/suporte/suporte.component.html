@@ -1,12 +1,21 @@
 <app-page-card
   titulo="Suporte"
   subtitulo="Abra chamados e acompanhe o histórico de atendimento."
+  [primaryAction]="isMobile ? { label: 'Novo chamado', icon: 'add' } : null"
+  (primaryActionClick)="abrirNovoChamado()"
   [mostrarDivisor]="true"
 >
+  @if (!isMobile) {
   <button page-header-actions mat-flat-button color="primary" type="button" (click)="abrirNovoChamado()">
     <mat-icon>add</mat-icon>
     Novo chamado
   </button>
+  }
+  @if (isMobile && !mobileLista) {
+    <button page-mobile-header-actions mat-stroked-button type="button" (click)="mobileLista = true" aria-label="Voltar à lista de chamados">
+      <mat-icon>arrow_back</mat-icon> Chamados
+    </button>
+  }
 
   <div class="support-shell">
     <div class="support-summary" aria-label="Resumo dos chamados carregados">
@@ -21,8 +30,14 @@
     </div>
 
     <div class="support-layout">
+      @if (!isMobile || mobileLista) {
       <aside class="support-sidebar" aria-label="Lista de chamados">
         <div class="sidebar-top">
+          @if (isMobile) {
+            <app-list-filter-bar placeholder="Buscar chamados" [searchControl]="buscaControl" [searchValue]="buscaControl.value"
+              [filters]="filtrosMobile" (searchChange)="aplicarFiltroBusca($event)" (stateChange)="aplicarFiltrosMobile($event)" />
+            <small class="search-hint">A busca considera os chamados carregados.</small>
+          } @else {
           <app-input-pesquisa
             placeholder="Buscar chamados"
             [showLabel]="false"
@@ -41,6 +56,7 @@
             valueKey="value"
             [showNull]="false">
           </app-input-options>
+          }
         </div>
 
         <div class="sidebar-list">
@@ -103,6 +119,8 @@
           }
         </div>
       </aside>
+      }
+      @if (!isMobile || !mobileLista) {
 
       <section class="support-detail" aria-label="Detalhe do chamado">
         @if(detalheEstado === 'loading') {
@@ -198,6 +216,7 @@
         </div>
         }
       </section>
+      }
     </div>
   </div>
 </app-page-card>

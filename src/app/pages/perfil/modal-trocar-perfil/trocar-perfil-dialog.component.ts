@@ -10,6 +10,7 @@ import { Perfil } from 'src/app/models/perfil.model';
 import { Usuario } from 'src/app/models/usuario/usuario.model';
 
 interface TrocarPerfilDialogData {
+  mobilePanel?: boolean;
   usuario: Usuario;
   perfis: Perfil[];
 }
@@ -17,11 +18,13 @@ interface TrocarPerfilDialogData {
 @Component({
   selector: 'app-trocar-perfil-dialog',
   standalone: true,
+  host: { '[class.mobile-side-panel__layout]': 'mobilePanel' },
   templateUrl: './trocar-perfil-dialog.component.html',
   styleUrls: ['./trocar-perfil-dialog.component.scss'],
   imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatButtonModule, MatIconModule, InputOptionsComponent],
 })
 export class TrocarPerfilDialogComponent implements OnInit {
+  get mobilePanel(): boolean { return !!this.data?.mobilePanel; }
   form!: FormGroup<{ perfilId: FormControl<number | null> }>;
   perfis: Perfil[] = [];
 

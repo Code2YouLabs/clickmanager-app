@@ -3,7 +3,7 @@
   subtitulo="Gerencie produtos habilitados para calculo de materiais."
   [mostrarDivisor]="true">
 
-  <app-section-card titulo="Produtos habilitados" [divider]="true">
+  <app-section-card [mobilePlain]="isMobile" titulo="Produtos habilitados" [divider]="true">
     <div class="loading-row" *ngIf="carregando()">
       <mat-progress-spinner diameter="28" mode="indeterminate"></mat-progress-spinner>
       <span>Carregando produtos...</span>
@@ -32,7 +32,7 @@
     </div>
   </app-section-card>
 
-  <app-section-card titulo="Adicionar produto" subtitulo="Busque no Produto Central e habilite a calculadora." [divider]="true">
+  <app-section-card [mobilePlain]="isMobile" titulo="Adicionar produto" subtitulo="Busque no Produto Central e habilite a calculadora." [divider]="true">
     <mat-form-field appearance="outline" class="search-field">
       <mat-label>Busca de produtos</mat-label>
       <input matInput [formControl]="buscaControl" placeholder="Nome ou codigo">

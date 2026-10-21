@@ -1,4 +1,6 @@
-<app-page-card titulo="Produtos gráficos" subtitulo="Configuração de venda para produtos do Catálogo">
+<app-page-card titulo="Produtos gráficos" subtitulo="Configuração de venda para produtos do Catálogo"
+  [primaryAction]="isMobile ? novaAcao : null" (primaryActionClick)="novoMobile()">
+      @if (!isMobile) {
       <div page-header-actions>
         <button mat-icon-button type="button" matTooltip="Ajuda" aria-label="Ajuda" (click)="abrirAjuda()">
           <mat-icon>help_outline</mat-icon>
@@ -8,10 +10,12 @@
           Novo produto
         </button>
       </div>
+      }
 
       <app-data-table
         [columns]="columns"
         [data]="produtos"
+        [actions]="isMobile ? mobileActions : []" (action)="onMobileAction($event)"
         [filters]="tableFilters"
         [filterState]="filterState"
         [search]="searchConfig"
@@ -22,7 +26,8 @@
         [forbidden]="acessoNegado"
         tableLabel="Produtos gráficos"
         (retry)="carregar()"
-        [sort]="sort"
+        [sort]="sort" mobileSortPlacement="filters" mobileSortLabel="Ordenar produtos por"
+        (filterSortChange)="onFilterSortChange($event)"
         filtersLabel="Filtros"
         clearFiltersLabel="Limpar filtros"
         [emptyState]="{
@@ -37,8 +42,15 @@
         (pageChange)="onPageChange($event)"
         (sortChange)="onSortChange($event)">
 
-        <div data-table-toolbar-actions>
-          <button mat-stroked-button color="primary" (click)="abrirBiblioteca()"><mat-icon>library_books</mat-icon>Biblioteca de produtos</button>
+        <div data-table-toolbar-actions class="produto-list-toolbar">
+          @if (isMobile) {
+            <button mat-button color="primary" type="button" (click)="abrirBiblioteca()"><mat-icon>library_books</mat-icon>Biblioteca de produtos</button>
+          } @else {
+            <button mat-stroked-button color="primary" (click)="abrirBiblioteca()"><mat-icon>library_books</mat-icon>Biblioteca de produtos</button>
+          }
+          @if (isMobile) {
+            <button mat-icon-button type="button" matTooltip="Ajuda" aria-label="Ajuda" (click)="abrirAjuda()"><mat-icon>help_outline</mat-icon></button>
+          }
         </div>
 
         <ng-template appDataTableCell="imagem" let-row>
@@ -104,6 +116,32 @@
               <mat-icon>delete</mat-icon>
             </button>
           </div>
+        </ng-template>
+        <ng-template [appDataTableItem]="produtos" let-produto let-itemActions="actions" let-emit="emitAction">
+          <article class="produto-mobile-item" [attr.aria-label]="produto.catalogoProdutoNome || 'Produto'">
+            <img class="produto-thumb" [src]="imagemProduto(produto)" [alt]="produto.catalogoProdutoNome || 'Produto'" loading="lazy" decoding="async" />
+            <div class="produto-mobile-item__content">
+              <strong>{{ produto.catalogoProdutoNome || '-' }}</strong>
+              @if (configuracaoLinha(produto); as configuracao) { <small>{{ configuracao }}</small> }
+              @if (produto.catalogoProdutoDescricao) {
+                <p class="produto-mobile-item__description" [attr.title]="produto.catalogoProdutoDescricao">{{ produto.catalogoProdutoDescricao }}</p>
+              }
+            </div>
+            @if (itemActions.length) {
+              <button class="produto-mobile-item__menu" mat-icon-button type="button" [matMenuTriggerFor]="produtoMenu"
+                [disabled]="carregando" [attr.aria-label]="'Ações do produto ' + (produto.catalogoProdutoNome || 'produto')"><mat-icon>more_vert</mat-icon></button>
+              <mat-menu #produtoMenu="matMenu" xPosition="before">
+                <ng-template matMenuContent>
+                  @for (itemAction of itemActions; track itemAction.id) {
+                    <button mat-menu-item type="button" [disabled]="carregando || itemAction.disabled?.(produto)"
+                      [class.produto-mobile-menu__destructive]="itemAction.color === 'warn'" (click)="emit(produto, itemAction.id)">
+                      <mat-icon [color]="itemAction.color || null">{{ itemAction.icon }}</mat-icon><span>{{ itemAction.label }}</span>
+                    </button>
+                  }
+                </ng-template>
+              </mat-menu>
+            }
+          </article>
         </ng-template>
       </app-data-table>
     </app-page-card>

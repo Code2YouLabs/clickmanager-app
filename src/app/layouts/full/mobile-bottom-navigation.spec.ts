@@ -11,17 +11,17 @@ function build(permissions = ['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER', 'SMARTCALC_
 }
 
 describe('Atalhos inferiores da Gráfica a partir do menu autorizado', () => {
-  it('ordena Pedidos, Atalhos, SmartCalc, Dashboard com SmartCalc central', () => {
+  it('ordena Pedidos, Atalhos, SmartCalc, Dashboard e Suporte com SmartCalc central', () => {
     const items = build();
-    expect(items.map(item => item.key)).toEqual(['pedidos', 'atalhos', 'smartcalc', 'dashboard']);
-    expect(items.map(item => item.icon)).toEqual(['file-text', 'grid-dots', 'calculator', 'layout-dashboard']);
+    expect(items.map(item => item.key)).toEqual(['pedidos', 'atalhos', 'smartcalc', 'dashboard', 'suporte']);
+    expect(items.map(item => item.icon)).toEqual(['file-text', 'grid-dots', 'calculator', 'layout-dashboard', 'lifebuoy']);
     expect(items.filter(item => item.special).map(item => item.key)).toEqual(['smartcalc']);
     expect(items[2].route).toBe('/smartcalc');
   });
 
-  it('sem módulo SmartCalc usa Catálogo, Atalhos, Pedidos, Dashboard', () => {
+  it('sem módulo SmartCalc usa Catálogo, Atalhos, Pedidos, Dashboard e Suporte', () => {
     const items = build(undefined, ['GRAFICA']);
-    expect(items.map(item => item.key)).toEqual(['catalogo', 'atalhos', 'pedidos', 'dashboard']);
+    expect(items.map(item => item.key)).toEqual(['catalogo', 'atalhos', 'pedidos', 'dashboard', 'suporte']);
     expect(items[2].special).toBeTrue();
     expect(items[0].route).toBe('/page/grafica/produtos');
     expect(items[2].route).toBe('/page/grafica/comercial/pedidos');
@@ -29,35 +29,35 @@ describe('Atalhos inferiores da Gráfica a partir do menu autorizado', () => {
 
   it('permissão SmartCalc ausente produz a mesma alternativa, sem item desabilitado', () => {
     expect(build(['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER']).map(item => item.key))
-      .toEqual(['catalogo', 'atalhos', 'pedidos', 'dashboard']);
+      .toEqual(['catalogo', 'atalhos', 'pedidos', 'dashboard', 'suporte']);
   });
 
   it('não oferece Pedidos ou Catálogo sem suas permissões; mantém a rota real SmartCalc central', () => {
     const items = build(['SMARTCALC_USAR']);
-    expect(items.map(item => item.key)).toEqual(['atalhos', 'smartcalc']);
+    expect(items.map(item => item.key)).toEqual(['atalhos', 'smartcalc', 'suporte']);
     expect(items.filter(item => item.special).map(item => item.route)).toEqual(['/smartcalc']);
   });
 
   it('sem Pedidos e SmartCalc acessíveis mantém Dashboard como fallback seguro', () => {
-    expect(build([]).map(item => item.key)).toEqual(['atalhos', 'dashboard']);
+    expect(build([]).map(item => item.key)).toEqual(['atalhos', 'dashboard', 'suporte']);
     expect(build([])[1].special).toBeTrue();
   });
 
   it('com Pedidos autorizado, mas sem Catálogo ou SmartCalc, não preenche a barra com Catálogo proibido', () => {
-    expect(build(['PEDIDOS_VER']).map(item => item.key)).toEqual(['atalhos', 'pedidos']);
+    expect(build(['PEDIDOS_VER']).map(item => item.key)).toEqual(['atalhos', 'pedidos', 'suporte']);
   });
 
-  it('usa Clientes autorizado como alternativa para manter quatro posições quando possível', () => {
+  it('usa Clientes autorizado como alternativa para manter cinco posições quando possível', () => {
     expect(build(['PEDIDOS_VER', 'CLIENTE_VER']).map(item => item.key))
-      .toEqual(['clientes', 'atalhos', 'pedidos', 'dashboard']);
+      .toEqual(['clientes', 'atalhos', 'pedidos', 'dashboard', 'suporte']);
   });
 
   it('respeita o módulo GRAFICA exigido pelas rotas, mesmo para proprietário', () => {
     const items = build([], [], true);
-    expect(items.map(item => item.key)).toEqual(['atalhos', 'dashboard']);
+    expect(items.map(item => item.key)).toEqual(['atalhos', 'dashboard', 'suporte']);
     expect(items.some(item => item.key === 'pedidos' || item.key === 'catalogo' || item.key === 'smartcalc')).toBeFalse();
     expect(build([], ['GRAFICA', 'SMARTCALC'], true).map(item => item.key))
-      .toEqual(['pedidos', 'atalhos', 'smartcalc', 'dashboard']);
+      .toEqual(['pedidos', 'atalhos', 'smartcalc', 'dashboard', 'suporte']);
   });
 
   it('Catálogo cobre seus cadastros e não inclui Comercial no estado ativo', () => {
@@ -66,4 +66,11 @@ describe('Atalhos inferiores da Gráfica a partir do menu autorizado', () => {
     expect(item.startsWith).not.toContain('/page/grafica');
     expect(item.startsWith?.some(path => path.includes('/comercial'))).toBeFalse();
   });
+  it('Suporte usa a rota existente e respeita a disponibilidade no menu autorizado', () => {
+    const item = build().find(item => item.key === 'suporte')!;
+    expect(item.route).toBe('/page/suporte'); expect(item.startsWith).toEqual(['/page/suporte']);
+    expect(buildGraficaMobileBottomNav([], () => true).map(item => item.key)).toEqual(['atalhos']);
+    expect(buildGraficaMobileBottomNav([{ route: '/page/suporte', disabled: true }], () => true).some(item => item.key === 'suporte')).toBeFalse();
+  });
+
 });

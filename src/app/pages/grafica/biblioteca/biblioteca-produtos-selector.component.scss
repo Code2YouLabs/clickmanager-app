@@ -1,3 +1,4 @@
+@use "../../../shared/responsive/mobile-list-item" as item;
 :host { display: block; }
 .biblioteca-resultados > [hidden] { display: none; }
 p { color: var(--mat-sys-on-surface-variant, #526075); }
@@ -125,4 +126,28 @@ details { margin-top: 12px; summary { cursor: pointer; } }
   :host(.biblioteca-selector--onboarding) {
     .biblioteca-mobile-controls, .biblioteca-mobile-bulk { margin-bottom: 4px; }
   }
+}
+
+// Only the product-list side panel opts in; desktop and onboarding stay unchanged.
+:host(.biblioteca-selector--mobile-panel) {
+  min-width: 0;
+  .biblioteca-toolbar { gap: 8px; }
+  .biblioteca-toolbar mat-form-field { min-width: 0; width: 100%; }
+  .biblioteca-acoes__bulk { min-width: 0; }
+  .biblioteca-acoes__bulk button { height: auto; min-height: 44px; white-space: normal; }
+  .biblioteca-lista article { min-width: 0; overflow-wrap: anywhere; }
+}
+
+:host(.biblioteca-selector--mobile-panel) {
+  .biblioteca-toolbar { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .biblioteca-mobile-selection { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0 8px; font-size: 12px; line-height: 16px; color: var(--mat-sys-on-surface-variant); }
+  .biblioteca-mobile-selection button { min-height: 44px; }
+  .biblioteca-mobile-list { padding: 0; }
+  .biblioteca-mobile-item { display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: start; gap: 4px; padding: 8px 0; border-bottom: 1px solid var(--mat-sys-outline-variant); }
+  .biblioteca-mobile-item mat-checkbox { min-width: 44px; min-height: 44px; }
+  .biblioteca-mobile-item__content { min-width: 0; cursor: pointer; padding: 4px 0; }
+  .biblioteca-mobile-item strong { @include item.heading; font-weight: 600; }
+  .biblioteca-mobile-item strong, .biblioteca-mobile-item__description { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
+  .biblioteca-mobile-item__description { margin-top: 2px; font-size: 12px; line-height: 16px; color: var(--mat-sys-on-surface-variant); }
+  .biblioteca-mobile-item small { display: block; font-size: 12px; line-height: 16px; color: var(--mat-sys-on-surface-variant); }
 }

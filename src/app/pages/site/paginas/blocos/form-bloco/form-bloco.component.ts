@@ -14,6 +14,7 @@ import { SitePaginaBlocoService } from 'src/app/pages/site/services/site-pagina-
 import { BlocoImageUploadComponent } from '../bloco-image-upload/bloco-image-upload.component';
 
 export interface FormBlocoDialogData {
+  mobilePanel?: boolean;
   paginaId: number;
   bloco?: SitePaginaBlocoResponse | null;
   proximaOrdem?: number;
@@ -21,6 +22,7 @@ export interface FormBlocoDialogData {
 
 @Component({
   selector: 'app-form-bloco',
+  host: { '[class.mobile-side-panel__layout]': 'mobilePanel' },
   standalone: true,
   imports: [
     CommonModule,
@@ -35,6 +37,7 @@ export interface FormBlocoDialogData {
   styleUrl: './form-bloco.component.scss',
 })
 export class FormBlocoComponent implements OnInit {
+  get mobilePanel(): boolean { return !!this.data.mobilePanel; }
   readonly tipos: Array<{ value: SitePaginaBlocoTipo; label: string; disabled?: boolean }> = [
     { value: 'TEXTO', label: 'Texto' },
     { value: 'IMAGEM', label: 'Imagem' },

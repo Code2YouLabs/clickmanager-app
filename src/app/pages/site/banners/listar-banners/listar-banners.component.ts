@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatRippleModule } from '@angular/material/core';
@@ -15,7 +15,14 @@ import { ToastrService } from 'ngx-toastr';
 import { CardHeaderComponent } from 'src/app/components/card-header/card-header.component';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { InputPesquisaComponent } from 'src/app/components/inputs/input-pesquisa/input-pesquisa.component';
-import { MobileFabActionComponent } from 'src/app/components/mobile-fab-action/mobile-fab-action.component';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { Subject, takeUntil } from 'rxjs';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { AuthService } from 'src/app/services/auth.service';
+import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
+import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
+import { DataTableItemDirective } from 'src/app/components/data-table/data-table-item.directive';
+import { DataTableAction, DataTableActionEvent, DataTableColumn, DataTablePagination, DataTableSearchConfig } from 'src/app/components/data-table/data-table.models';
 import { TemPermissaoDirective } from 'src/app/diretivas/tem-permissao.directive';
 import { resolveStorageImageUrl } from 'src/app/pages/storage/utils/storage-media-url.util';
 import { SiteBannerResponse } from '../../models/site-banner.models';
@@ -38,13 +45,39 @@ import { SiteBannerService } from '../../services/site-banner.service';
     TablerIconsModule,
     CardHeaderComponent,
     InputPesquisaComponent,
-    MobileFabActionComponent,
+    PageCardComponent, DataTableComponent, DataTableItemDirective,
     TemPermissaoDirective,
   ],
   templateUrl: './listar-banners.component.html',
   styleUrl: './listar-banners.component.scss',
 })
-export class ListarBannersComponent implements OnInit {
+export class ListarBannersComponent implements OnInit, OnDestroy {
+  private readonly destroy$ = new Subject<void>();
+  erro: string | null = null;
+  semPermissao = false;
+  readonly colunasMobile: DataTableColumn<SiteBannerResponse>[] = [{ key: 'titulo', label: 'Banner' }];
+  readonly acoesMobile: DataTableAction<SiteBannerResponse>[] = [
+    { id: 'subir', label: 'Mover para cima', icon: 'keyboard_arrow_up', visible: () => this.authService.temPermissao('SITE_BANNERS_EDITAR'), disabled: banner => this.banners.indexOf(banner) === 0 },
+    { id: 'descer', label: 'Mover para baixo', icon: 'keyboard_arrow_down', visible: () => this.authService.temPermissao('SITE_BANNERS_EDITAR'), disabled: banner => this.banners.indexOf(banner) === this.banners.length - 1 },
+    { id: 'editar', label: 'Editar banner', icon: 'edit', visible: () => this.authService.temPermissao('SITE_BANNERS_EDITAR') },
+    { id: 'status', label: 'Ativar/desativar', icon: 'toggle_on', visible: () => this.authService.temPermissao('SITE_BANNERS_EDITAR') },
+    { id: 'excluir', label: 'Excluir banner', icon: 'delete', color: 'warn', visible: () => this.authService.temPermissao('SITE_BANNERS_EXCLUIR') },
+  ];
+  get searchConfig(): DataTableSearchConfig { return { enabled: true, placeholder: 'Buscar banner...', debounceMs: 300, value: this.termoPesquisa }; }
+  get pagination(): DataTablePagination { return { pageIndex: this.pagina, pageSize: this.tamanhoPagina, totalItems: this.totalBanners, pageSizeOptions: [10, 20, 50] }; }
+  onAcao(event: DataTableActionEvent<SiteBannerResponse>): void {
+    const action = this.acoesMobile.find(action => action.id === event.action);
+    if (!action || action.visible?.(event.row) === false || action.disabled?.(event.row)) return;
+    switch (event.action) {
+      case 'subir': this.mover(event.row, -1); break;
+      case 'descer': this.mover(event.row, 1); break;
+      case 'editar': this.editar(event.row); break;
+      case 'status': this.alterarStatus(event.row); break;
+      case 'excluir': this.excluir(event.row); break;
+    }
+  }
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
+
   banners: SiteBannerResponse[] = [];
   totalBanners = 0;
   carregando = false;
@@ -52,8 +85,6 @@ export class ListarBannersComponent implements OnInit {
   tamanhoPagina = 10;
   termoPesquisa = '';
   isMobileView = false;
-  mobileFabCompact = false;
-  bannerSelecionadoMenu: SiteBannerResponse | null = null;
   readonly colunasExibidas = ['imagem', 'titulo', 'ordem', 'status', 'vigencia', 'acoes'];
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -62,33 +93,31 @@ export class ListarBannersComponent implements OnInit {
     private readonly siteBannerService: SiteBannerService,
     private readonly router: Router,
     private readonly dialog: MatDialog,
-    private readonly toastr: ToastrService
-  ) {}
+    private readonly toastr: ToastrService,
+    private readonly authService: AuthService,
+    breakpoints: BreakpointObserver
+  ) {
+    // Keep the established initial page sizes; resizing must not reset pagination.
+    this.isMobileView = breakpoints.isMatched(MOBILE_FOUNDATION_QUERY);
+    this.tamanhoPagina = this.isMobileView ? 20 : 10;
+    breakpoints.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobileView = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+  }
 
   ngOnInit(): void {
-    this.atualizarViewport();
     this.carregarBanners();
-  }
-
-  @HostListener('window:resize')
-  onWindowResize(): void {
-    this.atualizarViewport();
-  }
-
-  @HostListener('window:scroll')
-  onWindowScroll(): void {
-    this.mobileFabCompact = (window.scrollY || document.documentElement.scrollTop || 0) > 96;
   }
 
   carregarBanners(): void {
     this.carregando = true;
+    this.erro = null;
+    this.semPermissao = false;
     this.siteBannerService
       .listar({
         page: this.pagina,
         size: this.tamanhoPagina,
         sort: 'ordem,asc',
         textoPesquisa: this.termoPesquisa,
-      })
+      }).pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
           if (Array.isArray(response)) {
@@ -101,8 +130,10 @@ export class ListarBannersComponent implements OnInit {
 
           this.carregando = false;
         },
-        error: () => {
+        error: (error) => {
           this.carregando = false;
+          this.semPermissao = error?.status === 403;
+          this.erro = this.semPermissao ? null : 'Não foi possível carregar os banners do site.';
           this.toastr.error('Não foi possível carregar os banners do site.');
         },
       });
@@ -198,11 +229,6 @@ export class ListarBannersComponent implements OnInit {
     this.router.navigate(['/page/site/banners/novo']);
   }
 
-  selecionarBannerMenu(banner: SiteBannerResponse, event: Event): void {
-    event.stopPropagation();
-    this.bannerSelecionadoMenu = banner;
-  }
-
   trackByBanner(index: number, banner: SiteBannerResponse): number {
     return banner.id ?? index;
   }
@@ -247,12 +273,4 @@ export class ListarBannersComponent implements OnInit {
     return date.toLocaleDateString('pt-BR');
   }
 
-  private atualizarViewport(): void {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    this.isMobileView = window.innerWidth <= 768;
-    this.tamanhoPagina = this.isMobileView ? 20 : 10;
-  }
 }

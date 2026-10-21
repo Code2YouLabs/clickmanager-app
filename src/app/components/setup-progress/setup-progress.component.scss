@@ -61,3 +61,11 @@
     }
   }
 }
+
+.setup-progress--compact {
+  padding: 8px 0; border: 0; border-radius: 0;
+  .setup-progress__compact-summary { display: grid; gap: 4px; font-size: 14px; line-height: 20px; }
+  .setup-progress__compact-summary span { color: var(--mat-sys-on-surface-variant); }
+  mat-progress-bar { margin: 4px 0; }
+  p, details { margin: 8px 0 0; font-size: 14px; line-height: 20px; }
+}

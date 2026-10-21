@@ -1,12 +1,17 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
+import { DataTableItemDirective } from 'src/app/components/data-table/data-table-item.directive';
+import { MatMenuModule } from '@angular/material/menu';
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ToastrService } from 'ngx-toastr';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Subject, takeUntil } from 'rxjs';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
 import { DataTableCellDirective } from 'src/app/components/data-table/data-table-cell.directive';
 import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
@@ -29,9 +34,13 @@ import { TrocarPerfilDialogComponent } from '../modal-trocar-perfil/trocar-perfi
   styleUrls: ['./gerenciar-perfil.component.scss'],
   standalone: true,
   imports: [CommonModule, MatButtonModule, MatIconModule, MatListModule, MatProgressSpinnerModule,
-    PageCardComponent, SectionCardComponent, DataTableComponent, DataTableCellDirective],
+    PageCardComponent, SectionCardComponent, DataTableComponent, DataTableCellDirective, DataTableItemDirective, MatMenuModule],
 })
-export class GerenciarPerfilComponent implements OnInit {
+export class GerenciarPerfilComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  private readonly destroy$ = new Subject<void>();
+  readonly novaAcao = { label: 'Novo perfil', icon: 'add', permission: 'PERFIS_PERMISSOES_CADASTRAR' };
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
   perfis: Perfil[] = [];
   usuarios: Usuario[] = [];
   perfilSelecionado?: Perfil;
@@ -40,6 +49,7 @@ export class GerenciarPerfilComponent implements OnInit {
   carregandoUsuarios = false;
   erroUsuarios: string | null = null;
   readonly imagemUtil = ImagemUtil;
+  readonly colunasPerfis: DataTableColumn<Perfil>[] = [{ key: 'nome', label: 'Perfil' }];
   readonly colunasUsuarios: DataTableColumn<Usuario>[] = [
     { key: 'usuario', label: 'Usuário' },
     { key: 'perfil', label: 'Perfil', width: '180px' },
@@ -54,7 +64,8 @@ export class GerenciarPerfilComponent implements OnInit {
     private dialog: MatDialog,
     private toastrService: ToastrService,
     private authService: AuthService,
-  ) {}
+    breakpoints?: BreakpointObserver,
+  ) { breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches); }
 
   ngOnInit(): void {
     if (this.podeVer) this.carregarPerfis(false);
@@ -123,7 +134,7 @@ export class GerenciarPerfilComponent implements OnInit {
           return;
         }
         const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-          data: { title: 'Excluir Perfil', message: 'Deseja realmente excluir este perfil?', confirmText: 'Excluir', confirmColor: 'warn' },
+          data: { title: 'Excluir Perfil', message: 'Deseja realmente excluir este perfil?', confirmText: 'Excluir', confirmColor: 'warn', ...(this.isMobile ? { type: 'destructive' } : {}) },
           width: '400px',
         });
         dialogRef.afterClosed().subscribe(confirmado => {
@@ -164,9 +175,11 @@ export class GerenciarPerfilComponent implements OnInit {
 
   openDialogTrocarPerfil(usuario: Usuario): void {
     if (!this.podeEditar) return;
-    const dialogRef = this.dialog.open(TrocarPerfilDialogComponent, {
-      data: { usuario, perfis: this.perfis }, autoFocus: false, width: '600px', maxWidth: 'calc(100vw - 32px)',
-    });
+    const dialogRef = this.isMobile
+      ? openMobileSidePanel(this.dialog, TrocarPerfilDialogComponent, { data: { usuario, perfis: this.perfis, mobilePanel: true }, ariaLabel: 'Alterar perfil' })
+      : this.dialog.open(TrocarPerfilDialogComponent, {
+        data: { usuario, perfis: this.perfis }, autoFocus: false, width: '600px', maxWidth: 'calc(100vw - 32px)',
+      });
     dialogRef.afterClosed().subscribe(result => {
       if (!result?.novoPerfilId || !result?.usuarioId) return;
       this.perfilService.trocarPerfil(result.usuarioId, result.novoPerfilId).subscribe({
@@ -210,10 +223,12 @@ export class GerenciarPerfilComponent implements OnInit {
   }
 
   private abrirDialog(action: 'Add' | 'Edit', perfil: Partial<Perfil>, permissoesCatalogo: PermissaoCatalogo[], perfilProprietario: boolean): void {
-    const dialogRef = this.dialog.open(PerfilDialogComponent, {
-      data: { action, perfil, permissoesCatalogo, perfilProprietario },
-      autoFocus: false, width: '860px', maxWidth: 'calc(100vw - 32px)',
-    });
+    const dialogRef = this.isMobile
+      ? openMobileSidePanel(this.dialog, PerfilDialogComponent, { data: { action, perfil, permissoesCatalogo, perfilProprietario, mobilePanel: true }, ariaLabel: action === 'Add' ? 'Novo perfil' : 'Editar perfil' })
+      : this.dialog.open(PerfilDialogComponent, {
+        data: { action, perfil, permissoesCatalogo, perfilProprietario },
+        autoFocus: false, width: '860px', maxWidth: 'calc(100vw - 32px)',
+      });
     dialogRef.afterClosed().subscribe(result => {
       if (result?.event !== 'Save') return;
       const payload = this.montarPayloadPerfil(result.data);

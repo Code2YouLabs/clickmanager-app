@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
 import { InputOptionsComponent } from 'src/app/components/inputs/input-options/input-options.component';
 import { InputTextareaComponent } from 'src/app/components/inputs/input-textarea/input-textarea.component';
@@ -17,6 +17,7 @@ import { SuporteService } from '../services/suporte.service';
 
 @Component({
   selector: 'app-chamado-suporte-dialog',
+  host: { '[class.mobile-side-panel__layout]': 'mobilePanel' },
   standalone: true,
   imports: [
     CommonModule,
@@ -31,6 +32,7 @@ import { SuporteService } from '../services/suporte.service';
   styleUrl: './chamado-suporte-dialog.component.scss'
 })
 export class ChamadoSuporteDialogComponent {
+  readonly mobilePanel = !!inject<{ mobilePanel?: boolean }>(MAT_DIALOG_DATA, { optional: true })?.mobilePanel;
   salvando = false;
 
   readonly categorias: Array<{ value: ChamadoSuporteCategoria; label: string }> = [

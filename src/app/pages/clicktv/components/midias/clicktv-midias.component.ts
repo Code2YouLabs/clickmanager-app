@@ -1,3 +1,10 @@
+import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
+import { DataTableItemDirective } from 'src/app/components/data-table/data-table-item.directive';
+import { ComponentType } from '@angular/cdk/portal';
+import { MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
+import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse, HttpEventType } from '@angular/common/http';
 import { Component, OnDestroy, OnInit } from '@angular/core';
@@ -23,11 +30,12 @@ import {
 @Component({
   selector: 'app-clicktv-midias',
   standalone: true,
-  imports: [CommonModule, MaterialModule, PageCardComponent, ListFilterBarComponent, TemPermissaoDirective],
+  imports: [DataTableComponent, DataTableItemDirective,CommonModule, MaterialModule, PageCardComponent, ListFilterBarComponent, TemPermissaoDirective],
   templateUrl: './clicktv-midias.component.html',
   styleUrls: ['../../clicktv.scss'],
 })
 export class ClickTvMidiasComponent implements OnInit, OnDestroy {
+  isMobile = false;
   midias: ClickTvMidia[] = [];
   total = 0;
   page = 0;
@@ -75,8 +83,17 @@ export class ClickTvMidiasComponent implements OnInit, OnDestroy {
   constructor(
     private readonly service: ClickTvService,
     private readonly dialog: MatDialog,
-    private readonly toastr: ToastrService
-  ) {}
+    private readonly toastr: ToastrService,
+    breakpoints?: BreakpointObserver
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+  }
+
+  private abrirDialog<T, D = unknown>(component: ComponentType<T>, config: MatDialogConfig<D>): MatDialogRef<T> {
+    return this.isMobile
+      ? openMobileSidePanel(this.dialog, component, { ...config, data: { ...config.data, mobilePanel: true } })
+      : this.dialog.open(component, config);
+  }
 
   ngOnInit(): void {
     this.carregar$
@@ -155,7 +172,7 @@ export class ClickTvMidiasComponent implements OnInit, OnDestroy {
 
   enviar(): void {
     if (this.uploadEmAndamento) return;
-    this.dialog.open(ClickTvUploadDialogComponent, { width: '560px' }).afterClosed().subscribe((result) => {
+    this.abrirDialog(ClickTvUploadDialogComponent, { width: '560px' }).afterClosed().subscribe((result) => {
       if (!result) return;
       this.uploadProgresso = 0;
       this.uploadEmAndamento = true;
@@ -185,13 +202,13 @@ export class ClickTvMidiasComponent implements OnInit, OnDestroy {
       midia: this.service.detalharMidia(midia.id),
       utilizacoes: this.service.utilizacoesMidia(midia.id),
     }).subscribe({
-      next: (data) => this.dialog.open(ClickTvMidiaPreviewDialogComponent, { width: '820px', data }),
+      next: (data) => this.abrirDialog(ClickTvMidiaPreviewDialogComponent, { width: '820px', data }),
       error: () => this.toastr.error('Não foi possível abrir a mídia.'),
     });
   }
 
   renomear(midia: ClickTvMidia): void {
-    this.dialog.open(ClickTvNameDialogComponent, {
+    this.abrirDialog(ClickTvNameDialogComponent, {
       width: '500px',
       data: { titulo: 'Renomear mídia', nome: midia.nome },
     }).afterClosed().subscribe((nome) => {

@@ -5,3 +5,12 @@
   flex-direction: column;
   gap: 16px;
 }
+
+@media (max-width: 760px) {
+  :host.mobile-side-panel__layout {
+    .settings-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .settings-panel-header h2 { margin: 0; min-width: 0; font-size: 18px; line-height: 24px; overflow-wrap: anywhere; }
+    .settings-panel-header button { flex-shrink: 0; }
+    .dialog-content, form { min-width: 0; overflow-wrap: anywhere; }
+  }
+}

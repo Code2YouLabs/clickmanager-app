@@ -82,3 +82,14 @@ export interface DataTableProgressiveState {
   error?: string | null;
   restartRequired?: boolean;
 }
+
+/** Atomic mobile filter/sort application; sorting is not counted as an active filter. */
+export interface DataTableFilterSortChange {
+  filters: DataTableFilterState;
+  sort: DataTableSort;
+}
+export interface DataTableMobileSort {
+  label: string;
+  value: DataTableSort;
+  options: { label: string; value: DataTableSort }[];
+}

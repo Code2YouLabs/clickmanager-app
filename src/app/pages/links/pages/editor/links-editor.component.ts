@@ -1,6 +1,12 @@
+import { LinksShareDialogComponent } from '../../components/share-dialog/links-share-dialog.component';
+import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
+import { MobileTotalBarComponent } from 'src/app/components/mobile-total-bar/mobile-total-bar.component';
+import { Subject, takeUntil } from 'rxjs';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -46,6 +52,8 @@ import { LinksService } from '../../services/links.service';
 import { buildMailtoUrl, buildTelefoneUrl, buildWhatsappUrl, normalizarTelefoneParaUrl } from '../../utils/links-item-url.util';
 import { buildClickLinkPublicUrl } from '../../utils/links-url.util';
 
+type MobileLinkSection = 'geral' | 'links' | 'aparencia';
+
 interface LinkEmpresaSugestao extends PaginaLinksItemRequest {
   origem: string;
 }
@@ -59,6 +67,7 @@ interface LinkEmpresaSugestao extends PaginaLinksItemRequest {
     RouterModule,
     MaterialModule,
     PageCardComponent,
+    MobileTotalBarComponent,
     SectionCardComponent,
     DataTableComponent,
     DataTableCellDirective,
@@ -72,7 +81,29 @@ interface LinkEmpresaSugestao extends PaginaLinksItemRequest {
   templateUrl: './links-editor.component.html',
   styleUrls: ['../../links.scss', './links-editor.component.scss'],
 })
-export class LinksEditorComponent implements OnInit {
+export class LinksEditorComponent implements OnInit, OnDestroy {
+  isMobile = false;
+  mobileSection: MobileLinkSection | null = 'geral';
+
+  setMobileSection(section: MobileLinkSection, expanded: boolean): void {
+    this.mobileSection = expanded ? section : null;
+  }
+
+  get geralInvalida(): boolean { return this.tituloControl.invalid || this.descricaoControl.invalid; }
+
+  get aparenciaInvalida(): boolean {
+    return ['tema', 'corPrincipal', 'corFundo', 'formatoBotao'].some(name => this.form.get(name)?.invalid);
+  }
+
+  compartilharMobile(): void {
+    if (!this.pagina || !this.urlPublica()) return;
+    openMobileSidePanel(this.dialog, LinksShareDialogComponent, {
+      data: { titulo: this.pagina.titulo, url: this.urlPublica(), slug: this.identidade?.slug || '', mobilePanel: true },
+    });
+  }
+
+  private readonly destroy$ = new Subject<void>();
+  ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
   pagina: PaginaLinksDetalhe | null = null;
   identidade: LinksIdentidadePublica | null = null;
   presenca: PresencaPublicaResponse | null = null;
@@ -135,8 +166,13 @@ export class LinksEditorComponent implements OnInit {
     private readonly empresaService: EmpresaFormService,
     private readonly authService: AuthService,
     private readonly toastr: ToastrService,
-    private readonly dialog: MatDialog
-  ) {}
+    private readonly dialog: MatDialog,
+    breakpoints?: BreakpointObserver
+  ) {
+    breakpoints?.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches);
+    const state = this.router.getCurrentNavigation?.()?.extras.state;
+    if (!this.isNova && state?.['clickLinkMobileSection'] === 'links') this.mobileSection = 'links';
+  }
 
   ngOnInit(): void {
     if (!this.podeVer()) {
@@ -221,16 +257,19 @@ export class LinksEditorComponent implements OnInit {
     ];
   }
 
-  salvarOuCriar(): void {
+  salvarOuCriar(continuarEmLinks = false): void {
     if (this.salvandoPagina || this.semPermissao || this.erro || !this.podeEditarPagina()) {
       return;
     }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.toastr.warning('Informe um título válido para a página.');
+      if (this.isMobile) this.mobileSection = this.tituloControl.invalid || this.descricaoControl.invalid ? 'geral' : 'aparencia';
+      this.toastr.warning(this.isMobile && !this.tituloControl.invalid
+        ? (this.descricaoControl.invalid ? 'Revise a descrição da página.' : 'Revise as configurações de aparência.')
+        : 'Informe um título válido para a página.');
       return;
     }
-    this.isNova ? this.criarPagina() : this.salvarPagina();
+    this.isNova ? this.criarPagina(continuarEmLinks) : this.salvarPagina();
   }
 
   salvarPagina(): void {
@@ -246,14 +285,18 @@ export class LinksEditorComponent implements OnInit {
     });
   }
 
-  criarPagina(): void {
+  criarPagina(continuarEmLinks = false): void {
     if (this.salvandoPagina) return;
     this.salvandoPagina = true;
     this.linksService.criarPagina(this.payloadPagina()).subscribe({
       next: (pagina) => {
         this.salvandoPagina = false;
         this.toastr.success('Página criada.');
-        this.router.navigate(['/page/links', pagina.id]);
+        if (this.isMobile && continuarEmLinks) {
+          this.router.navigate(['/page/links', pagina.id], { state: { clickLinkMobileSection: 'links' } });
+        } else {
+          this.router.navigate(['/page/links', pagina.id]);
+        }
       },
       error: (error) => this.tratarErro(error, 'Não foi possível criar a página.'),
     });
@@ -305,12 +348,15 @@ export class LinksEditorComponent implements OnInit {
 
   abrirItem(item?: PaginaLinksItem): void {
     if (!this.pagina || this.salvandoItem || !this.podeEditarPagina()) return;
-    const dialogRef = this.dialog.open(LinksItemDialogComponent, {
+    const config = {
       width: window.innerWidth <= 640 ? '100vw' : '620px',
       maxWidth: window.innerWidth <= 640 ? '100vw' : '90vw',
       panelClass: 'links-item-dialog-panel',
       data: { item: item || null, ordem: item ? item.ordem : this.pagina.itens.length },
-    });
+    };
+    const dialogRef = this.isMobile
+      ? openMobileSidePanel<LinksItemDialogComponent, import('../../components/item-dialog/links-item-dialog.component').LinksItemDialogData, PaginaLinksItemRequest>(this.dialog, LinksItemDialogComponent, { ...config, data: { ...config.data, mobilePanel: true } })
+      : this.dialog.open(LinksItemDialogComponent, config);
 
     dialogRef.afterClosed().subscribe((payload: PaginaLinksItemRequest | undefined) => {
       if (!payload) return;
@@ -503,14 +549,16 @@ export class LinksEditorComponent implements OnInit {
   }
 
   visualizarMobile(): void {
-    this.dialog.open(LinksPreviewDialogComponent, {
+    const config = {
       width: '100vw',
       height: '100dvh',
       maxWidth: '100vw',
       maxHeight: '100dvh',
       panelClass: 'links-preview-dialog-panel',
       data: this.previewModel(),
-    });
+    };
+    if (this.isMobile) openMobileSidePanel(this.dialog, LinksPreviewDialogComponent, { ...config, data: { ...config.data, mobilePanel: true } });
+    else this.dialog.open(LinksPreviewDialogComponent, config);
   }
 
   itensOrdenados(): PaginaLinksItem[] {

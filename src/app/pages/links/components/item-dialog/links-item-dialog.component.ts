@@ -13,18 +13,21 @@ import {
 } from '../../utils/links-item-url.util';
 
 export interface LinksItemDialogData {
+  mobilePanel?: boolean;
   item?: PaginaLinksItem | null;
   ordem?: number | null;
 }
 
 @Component({
   selector: 'app-links-item-dialog',
+  host: { '[class.mobile-side-panel__layout]': 'mobilePanel' },
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, MaterialModule],
   templateUrl: './links-item-dialog.component.html',
   styleUrls: ['./links-item-dialog.component.scss'],
 })
 export class LinksItemDialogComponent implements OnInit {
+  get mobilePanel(): boolean { return !!this.data.mobilePanel; }
   readonly tipos = TIPOS_ITEM_LINKS;
   readonly form = this.fb.group({
     tipo: new FormControl<TipoItemLinks>('LINK', { nonNullable: true, validators: [Validators.required] }),

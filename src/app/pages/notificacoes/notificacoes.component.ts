@@ -1,12 +1,17 @@
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormControl } from '@angular/forms';
+import { DataTableFilter, DataTableFilterState } from 'src/app/components/data-table/data-table.models';
+import { ListFilterBarComponent } from 'src/app/components/list-filter-bar/list-filter-bar.component';
+import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
 import { CommonModule, DatePipe } from '@angular/common';
-import { Component, Input, OnChanges, OnInit, SimpleChanges, signal } from '@angular/core';
+import { Component, DestroyRef, Input, OnChanges, OnInit, SimpleChanges, TemplateRef, ViewChild, ViewContainerRef, afterNextRender, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { TablerIconsModule } from 'angular-tabler-icons';
 import { NgScrollbarModule } from 'ngx-scrollbar';
 import { ToastrService } from 'ngx-toastr';
 import { MaterialModule } from 'src/app/material.module';
 import { AuthService } from 'src/app/services/auth.service';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { NotificacaoItem } from './models/notificacao.model';
 import { NotificacaoEnviarDialogComponent } from './components/notificacao-enviar-dialog.component';
 import { NotificacaoService } from './services/notificacao.service';
@@ -15,12 +20,42 @@ import { ManualLinkComponent } from 'src/app/components/manual-link/manual-link.
 @Component({
   selector: 'app-notificacoes',
   standalone: true,
-  imports: [CommonModule, MaterialModule, NgScrollbarModule, TablerIconsModule, RouterModule, DatePipe, ManualLinkComponent],
+  imports: [ListFilterBarComponent, CommonModule, MaterialModule, NgScrollbarModule, TablerIconsModule, RouterModule, DatePipe, ManualLinkComponent],
   templateUrl: './notificacoes.component.html',
   styleUrl: './notificacoes.component.scss'
 })
 export class AppNotificacoesComponent implements OnInit, OnChanges {
   @Input() embedded = false;
+  @Input() mobileLayout = false;
+  @ViewChild('notificacaoMobilePanel', { static: true }) private mobilePanel!: TemplateRef<unknown>;
+  private readonly viewContainerRef = inject(ViewContainerRef);
+  private readonly destroyRef = inject(DestroyRef);
+  private panelRef: MatDialogRef<unknown> | null = null;
+  private viewReady = false;
+  private mobileRequested: NotificacaoItem | null = null;
+  mobileDetalheErro: string | null = null;
+  readonly buscaControl = new FormControl('', { nonNullable: true });
+  readonly filtrosMobile: DataTableFilter[] = [{ key: 'naoLidas', label: 'Leitura', type: 'select', options: [{ value: true, label: 'Somente não lidas' }] }];
+
+  aplicarFiltroMobile(state: DataTableFilterState): void {
+    if ((state['naoLidas'] === true) !== this.somenteNaoLidas) this.toggleSomenteNaoLidas();
+  }
+  abrirNotificacaoMobile(item: NotificacaoItem): void {
+    this.mobileRequested = item;
+    this.selecionarNotificacao(item);
+    this.abrirDetalheMobile();
+  }
+  private abrirDetalheMobile(): void {
+    if (!this.mobileLayout || !this.viewReady || this.panelRef) return;
+    const ref = openMobileSidePanel(this.dialog, this.mobilePanel, { viewContainerRef: this.viewContainerRef, ariaLabel: 'Notificação' });
+    this.panelRef = ref;
+    ref.afterClosed().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      if (this.panelRef === ref) this.panelRef = null;
+    });
+  }
+  fecharDetalheMobile(): void { this.panelRef?.close(); }
+  tentarDetalheMobile(): void { if (this.mobileRequested) this.selecionarNotificacao(this.mobileRequested); }
+
   @Input() selectedNotificacaoId: number | null = null;
 
   sidePanelOpened = signal(true);
@@ -47,10 +82,16 @@ export class AppNotificacoesComponent implements OnInit, OnChanges {
     private readonly route: ActivatedRoute,
     private readonly authService: AuthService,
     private readonly dialog: MatDialog
-  ) {}
+  ) {
+    afterNextRender(() => {
+      this.viewReady = true;
+      if (this.mobileLayout && this.selecionada()?.id === this.selectedNotificacaoId) this.abrirDetalheMobile();
+    });
+    this.destroyRef.onDestroy(() => this.fecharDetalheMobile());
+  }
   
   ngOnInit(): void {
-    this.authService.usuario$.subscribe(() => {
+    this.authService.usuario$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.podeEnviarNotificacao = this.authService.temAlgumaPermissao(this.permissoesEnviarNotificacao);
     });
     this.carregarLista(true);
@@ -58,6 +99,7 @@ export class AppNotificacoesComponent implements OnInit, OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if ('selectedNotificacaoId' in changes && this.embedded) {
+      this.mobileRequested = null;
       this.aplicarSelecaoPorInput();
     }
   }
@@ -67,7 +109,11 @@ export class AppNotificacoesComponent implements OnInit, OnChanges {
   }
 
   aplicarFiltro(event: Event): void {
-    this.busca = String((event.target as HTMLInputElement)?.value || '');
+    this.aplicarFiltroTexto(String((event.target as HTMLInputElement)?.value || ''));
+  }
+
+  aplicarFiltroTexto(value: string): void {
+    this.busca = value;
     const termo = this.busca.trim().toLowerCase();
     if (!termo) {
       this.notificacoesFiltradas.set(this.notificacoes());
@@ -103,10 +149,15 @@ export class AppNotificacoesComponent implements OnInit, OnChanges {
   }
 
   selecionarNotificacao(notificacao: NotificacaoItem, navegar = true): void {
+    this.mobileDetalheErro = null;
     this.carregandoDetalhe = true;
-    this.service.buscarPorId$(notificacao.id).subscribe({
+    this.service.buscarPorId$(notificacao.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (detalhe) => {
         this.selecionada.set(detalhe);
+        if (this.mobileLayout && detalhe.id === this.selectedNotificacaoId && !this.mobileRequested) {
+          this.mobileRequested = notificacao;
+          this.abrirDetalheMobile();
+        }
         if (!this.embedded && navegar) {
           this.router.navigate(['/apps/notificacoes', detalhe.id], { replaceUrl: true });
         }
@@ -114,7 +165,8 @@ export class AppNotificacoesComponent implements OnInit, OnChanges {
       },
       error: (err) => {
         this.carregandoDetalhe = false;
-        this.toastr.error(err?.userMessage || 'Não foi possível abrir a notificação.');
+        this.mobileDetalheErro = err?.userMessage || 'Não foi possível abrir a notificação.';
+        this.toastr.error(this.mobileDetalheErro!);
       }
     });
   }
@@ -173,11 +225,10 @@ export class AppNotificacoesComponent implements OnInit, OnChanges {
 
   abrirDialogEnvio(): void {
     if (!this.podeEnviarNotificacao) return;
-    const dialogRef = this.dialog.open(NotificacaoEnviarDialogComponent, {
-      width: '720px',
-      maxWidth: '95vw',
-      disableClose: true
-    });
+    const config = { width: '720px', maxWidth: '95vw', disableClose: true, data: { mobilePanel: this.mobileLayout } };
+    const dialogRef = this.mobileLayout
+      ? openMobileSidePanel(this.dialog, NotificacaoEnviarDialogComponent, config)
+      : this.dialog.open(NotificacaoEnviarDialogComponent, config);
 
     dialogRef.afterClosed().subscribe((enviou) => {
       if (!enviou) return;
@@ -187,7 +238,7 @@ export class AppNotificacoesComponent implements OnInit, OnChanges {
 
   private carregarLista(resolverSelecao = true): void {
     this.carregandoLista = true;
-    this.service.listar$(this.somenteNaoLidas, this.pagina, this.tamanho).subscribe({
+    this.service.listar$(this.somenteNaoLidas, this.pagina, this.tamanho).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: (res) => {
         this.naoLidas = Number(res.naoLidas || 0);
         this.notificacoes.set(res.itens || []);

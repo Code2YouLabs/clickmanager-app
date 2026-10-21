@@ -9,11 +9,12 @@ import { InputCepComponent } from 'src/app/components/inputs/input-cep/input-cep
 import { TutorialService } from 'src/app/shared/tutorial/tutorial.service';
 import { CepUtilService } from 'src/app/utils/cep-util.service';
 import { ClienteService } from '../cliente.service';
+import { ClienteCreateFormComponent } from '../cliente-create-form/cliente-create-form.component';
 import { ClienteCreateDialogComponent, ClienteCreateDialogData } from './cliente-create-dialog.component';
 
 describe('ClienteCreateDialogComponent — cadastro rápido mobile', () => {
   let fixture: ComponentFixture<ClienteCreateDialogComponent>;
-  let component: ClienteCreateDialogComponent;
+  let component: ClienteCreateFormComponent;
   let viewport: BehaviorSubject<any>;
   let save: Subject<any>;
   let lookup: Subject<any>;
@@ -30,9 +31,9 @@ describe('ClienteCreateDialogComponent — cadastro rápido mobile', () => {
     viewport.next({ matches: mobile, breakpoints: {} });
     TestBed.overrideProvider(MAT_DIALOG_DATA, { useValue: data });
     fixture = TestBed.createComponent(ClienteCreateDialogComponent);
-    component = fixture.componentInstance;
     document.body.appendChild(fixture.nativeElement);
     fixture.detectChanges();
+    component = fixture.debugElement.query(By.directive(ClienteCreateFormComponent)).componentInstance;
   }
   beforeEach(() => {
     viewport = new BehaviorSubject({ matches: true, breakpoints: {} });

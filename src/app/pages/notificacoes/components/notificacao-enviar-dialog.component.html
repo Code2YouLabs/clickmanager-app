@@ -1,6 +1,10 @@
-<h2 mat-dialog-title>Enviar notificação</h2>
+@if (mobilePanel) {
+  <header class="mobile-side-panel__header"><h2>Enviar notificação</h2>
+    <button mat-icon-button type="button" aria-label="Fechar envio de notificação" (click)="cancelar()" [disabled]="salvando"><mat-icon>close</mat-icon></button>
+  </header>
+} @else { <h2 mat-dialog-title>Enviar notificação</h2> }
 
-<mat-dialog-content class="dialog-content">
+<mat-dialog-content class="dialog-content" [class.mobile-side-panel__body]="mobilePanel">
   <form [formGroup]="form" class="dialog-form">
     <mat-form-field appearance="outline" class="w-100">
       <mat-label>Título</mat-label>
@@ -64,7 +68,7 @@
   </form>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end">
+<mat-dialog-actions align="end" [class.mobile-side-panel__footer]="mobilePanel">
   <button mat-stroked-button type="button" (click)="cancelar()" [disabled]="salvando">Cancelar</button>
   <button mat-flat-button color="primary" type="button" (click)="enviar()" [disabled]="salvando || form.invalid">
     {{ salvando ? 'Enviando...' : 'Enviar' }}

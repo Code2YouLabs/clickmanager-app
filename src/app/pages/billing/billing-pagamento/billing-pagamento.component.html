@@ -1,3 +1,4 @@
+<ng-template #desktopPagamento>
 
 
 <mat-card class="cardWithShadow billing-card-full billing-card-container">
@@ -33,6 +34,25 @@
       }
     </div>
 
+    <ng-container [ngTemplateOutlet]="resumoPlano"></ng-container>
+
+    <div class="m-t-16 d-flex flex-wrap gap-10 align-items-center">
+      <button mat-flat-button color="primary" (click)="irParaPagamento()" [disabled]="loading">
+        <mat-icon *ngIf="loading" class="m-r-6">hourglass_top</mat-icon>
+        Pagar agora
+      </button>
+      <button mat-stroked-button color="primary" (click)="voltar()">Voltar</button>
+    </div>
+
+    <div class="m-t-12 text-muted f-s-13" *ngIf="ownerDenied || billing?.proprietario === false">
+      Somente o proprietário pode regularizar a assinatura.
+    </div>
+  </mat-card-content>
+</mat-card>
+
+</ng-template>
+
+<ng-template #resumoPlano>
     <div class="selected-plan-summary m-t-24" *ngIf="planoSelecionado as plano">
       <div class="selected-plan-summary__label">Plano selecionado</div>
       <div class="selected-plan-summary__badge" *ngIf="benefitCodeSelecionado as code">
@@ -55,16 +75,44 @@
       </div>
     </div>
 
-    <div class="m-t-16 d-flex flex-wrap gap-10 align-items-center">
-      <button mat-flat-button color="primary" (click)="irParaPagamento()" [disabled]="loading">
-        <mat-icon *ngIf="loading" class="m-r-6">hourglass_top</mat-icon>
-        Pagar agora
-      </button>
-      <button mat-stroked-button color="primary" (click)="voltar()">Voltar</button>
-    </div>
+</ng-template>
 
-    <div class="m-t-12 text-muted f-s-13" *ngIf="ownerDenied || billing?.proprietario === false">
-      Somente o proprietário pode regularizar a assinatura.
+@if (isMobile) {
+  <app-page-card titulo="Regularizar assinatura" [mostrarDivisor]="true" class="billing-mobile">
+    <button page-mobile-header-actions mat-button type="button" (click)="voltar()" [disabled]="loading"><mat-icon>arrow_back</mat-icon>Voltar</button>
+    <div id="billing-mobile-content" class="billing-mobile__content">
+      <div class="billing-mobile__intro">
+        <h2>Planos do ClickManager</h2>
+        <p>{{ billing?.message || 'Selecione um plano e conclua o pagamento para manter o acesso da sua empresa ao ClickManager.' }}</p>
+        @if (billing?.expiresAt) { <p>Vencimento: {{ billing?.expiresAt | date:'dd/MM/yyyy' }}</p> }
+      </div>
+      @if (carregandoPlanos) {
+        <div class="billing-mobile__state" role="status"><mat-spinner diameter="28" />Carregando planos...</div>
+      } @else if (erroPlanos) {
+        <div class="billing-mobile__state" role="alert"><p>{{ erroPlanos }}</p><button mat-stroked-button type="button" (click)="tentarNovamente()">Tentar novamente</button></div>
+      } @else if (!planos.length) {
+        <div class="billing-mobile__state"><strong>Nenhum plano disponível</strong><p>Tente carregar os planos novamente.</p><button mat-stroked-button type="button" (click)="tentarNovamente()">Recarregar planos</button></div>
+      } @else {
+        <div class="billing-mobile__plans">
+          @for (plano of planos; track plano.id) {
+            <app-section-card [class.billing-mobile__plan--featured]="!!plano.destaque?.trim()" [title]="plano.nome" [mobilePlain]="true" [mobileCollapsible]="true"
+              [mobileExpanded]="mobilePlanoAberto === plano.id" (mobileExpandedChange)="expandirPlano(plano.id, $event)"
+              [mobileSummary]="(planoSelecionado?.id === plano.id ? 'Selecionado · ' : '') + (precoMensal(plano) | currency:(plano.moeda || 'BRL'):'symbol-narrow':'1.2-2':'pt-BR') + '/mês'">
+              @if (plano.destaque?.trim()) { <span section-card-actions class="billing-mobile__plan-badge">{{ plano.destaque }}</span> }
+              <app-pricing-card [plano]="plano" [popular]="false" [imgSrc]="plano.imgSrc" [ativo]="planoSelecionado?.id === plano.id" [mostrarAnual]="false"
+                [mobileCompact]="true" [selecionarTexto]="planoSelecionado?.id === plano.id ? 'Selecionado' : 'Selecionar plano'" (escolher)="selecionar(plano)" />
+            </app-section-card>
+          }
+        </div>
+        <ng-container [ngTemplateOutlet]="resumoPlano"></ng-container>
+      }
+      @if (ownerDenied || billing?.proprietario === false || usuario?.proprietario === false) {
+        <p class="billing-mobile__notice" role="status">Somente o proprietário pode regularizar a assinatura.</p>
+      }
     </div>
-  </mat-card-content>
-</mat-card>
+    <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true"
+      actionForm="billing-mobile-content" bottomAnchorSelector=".mobile-bottom-nav"
+      bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+      [actionText]="loading ? 'Aguarde...' : 'Pagar agora'" actionIcon="payments" actionAriaLabel="Pagar o plano selecionado" [actionDisabled]="!podePagarMobile" [loading]="loading" (action)="pagarMobile()" />
+  </app-page-card>
+} @else { <ng-container [ngTemplateOutlet]="desktopPagamento"></ng-container> }
