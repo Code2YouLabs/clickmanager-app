@@ -38,8 +38,23 @@ describe('Regularizar assinatura — fundação mobile', () => {
   });
   afterEach(() => { fixture?.destroy(); sessionStorage.removeItem('billing_selected_plan'); sessionStorage.removeItem('billing_checkout_result'); });
   it('usa PageCard, Voltar no cabeçalho, planos expansíveis e um rodapé compartilhado', async () => {
-    await create(); expect(root().querySelector('app-page-card')).not.toBeNull(); expect(root().querySelectorAll('app-section-card').length).toBe(3); expect(root().querySelectorAll('.section-card__toggle[aria-expanded="true"]').length).toBe(1); expect(root().querySelectorAll('app-mobile-total-bar').length).toBe(1); expect(root().querySelectorAll('button').length).toBeGreaterThan(0);
-    const back = root().querySelector<HTMLButtonElement>('[page-mobile-header-actions]')!; expect(back.textContent).toContain('Voltar'); back.click(); expect(navigate).toHaveBeenCalledWith(['/billing/blocked']);
+    await create(); expect(root().querySelector('app-page-card')).not.toBeNull(); expect(root().querySelectorAll('app-section-card').length).toBe(3); expect(root().querySelectorAll('.section-card__toggle[aria-expanded="true"]').length).toBe(0); expect(root().querySelectorAll('app-mobile-total-bar').length).toBe(1); expect(root().querySelectorAll('button').length).toBeGreaterThan(0);
+    const back = root().querySelector<HTMLButtonElement>('[page-mobile-header-actions]')!; expect(back.textContent).toContain('Voltar'); back.click(); expect(navigate).toHaveBeenCalledWith(['/billing/minha-assinatura']);
+  });
+  it('todos os planos iniciam recolhidos e destaque permanece visível sem alterar seleção', async () => {
+    await create();
+    expect(c().mobilePlanoAberto).toBeNull();
+    expect(root().querySelectorAll('.section-card__body[hidden]').length).toBe(3);
+    const featured = root().querySelector('.billing-mobile__plan--featured')!;
+    expect(featured.querySelector('.billing-mobile__plan-badge')?.textContent).toContain('Mais vendido');
+    expect(featured.querySelector('.section-card__toggle')?.getAttribute('aria-expanded')).toBe('false');
+    expect(c().planoSelecionado?.id).toBe(1);
+    expect(api.checkoutAssinatura).not.toHaveBeenCalled();
+    c().expandirPlano(2, true); c().expandirPlano(2, false); await settle();
+    expect(c().mobilePlanoAberto).toBeNull(); expect(featured.querySelector('.billing-mobile__plan-badge')).not.toBeNull();
+  });
+  it('Voltar desktop conserva o destino original', async () => {
+    viewport.next({ matches: false, breakpoints: {} }); await create(); c().voltar(); expect(navigate).toHaveBeenCalledWith(['/billing/blocked']);
   });
   it('Voltar mantém o returnUrl existente', async () => {
     query.returnUrl = '/billing/minha-assinatura'; await create(); root().querySelector<HTMLButtonElement>('[page-mobile-header-actions]')!.click(); expect(navigateByUrl).toHaveBeenCalledWith('/billing/minha-assinatura');
@@ -49,7 +64,7 @@ describe('Regularizar assinatura — fundação mobile', () => {
     root().querySelectorAll('app-pricing-card button')[1].dispatchEvent(new MouseEvent('click', { bubbles: true })); await settle(); expect(c().planoSelecionado?.id).toBe(2); expect(sessionStorage.getItem('billing_selected_plan')).toBe('2'); expect(root().querySelector('.selected-plan-summary')?.textContent).toContain('Semestral Pro'); expect(c().precoMensal(planos[1])).toBeCloseTo(107.9); expect(root().querySelector('.selected-plan-summary')?.textContent).toContain('647,40'); expect(api.checkoutAssinatura).not.toHaveBeenCalled();
   });
   it('preserva preferência por planoId e ordenação dos planos', async () => {
-    query.planoId = '3'; await create(); expect(c().planos.map(p => p.id)).toEqual([1, 2, 3]); expect(c().planoSelecionado?.id).toBe(3); expect(c().mobilePlanoAberto).toBe(3);
+    query.planoId = '3'; await create(); expect(c().planos.map(p => p.id)).toEqual([1, 2, 3]); expect(c().planoSelecionado?.id).toBe(3); expect(c().mobilePlanoAberto).toBeNull();
   });
   it('pagar usa handler e endpoint atuais uma vez, sem iniciar pagamento ao selecionar', async () => {
     const pending = new Subject<any>(); api.checkoutAssinatura.and.returnValue(pending); await create(); c().selecionar(planos[2]); root().querySelector<HTMLButtonElement>('.mobile-total-bar__cta')!.click(); c().pagarMobile(); await settle(); expect(api.checkoutAssinatura).toHaveBeenCalledOnceWith(3); expect(root().querySelector<HTMLButtonElement>('.mobile-total-bar__cta')!.disabled).toBeTrue();

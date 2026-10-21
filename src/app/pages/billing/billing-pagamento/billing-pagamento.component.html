@@ -95,9 +95,10 @@
       } @else {
         <div class="billing-mobile__plans">
           @for (plano of planos; track plano.id) {
-            <app-section-card [title]="plano.nome" [mobilePlain]="true" [mobileCollapsible]="true"
+            <app-section-card [class.billing-mobile__plan--featured]="!!plano.destaque?.trim()" [title]="plano.nome" [mobilePlain]="true" [mobileCollapsible]="true"
               [mobileExpanded]="mobilePlanoAberto === plano.id" (mobileExpandedChange)="expandirPlano(plano.id, $event)"
               [mobileSummary]="(planoSelecionado?.id === plano.id ? 'Selecionado · ' : '') + (precoMensal(plano) | currency:(plano.moeda || 'BRL'):'symbol-narrow':'1.2-2':'pt-BR') + '/mês'">
+              @if (plano.destaque?.trim()) { <span section-card-actions class="billing-mobile__plan-badge">{{ plano.destaque }}</span> }
               <app-pricing-card [plano]="plano" [popular]="false" [imgSrc]="plano.imgSrc" [ativo]="planoSelecionado?.id === plano.id" [mostrarAnual]="false"
                 [mobileCompact]="true" [selecionarTexto]="planoSelecionado?.id === plano.id ? 'Selecionado' : 'Selecionar plano'" (escolher)="selecionar(plano)" />
             </app-section-card>

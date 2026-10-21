@@ -114,7 +114,6 @@ export class BillingPagamentoComponent implements OnInit, OnDestroy {
           null;
 
         this.planoSelecionado = planoPreferido;
-        if (this.mobilePlanoAberto === null) this.mobilePlanoAberto = this.planoSelecionado?.id ?? null;
         if (this.planoSelecionado?.id) {
           sessionStorage.setItem('billing_selected_plan', this.planoSelecionado.id.toString());
         }
@@ -305,7 +304,7 @@ export class BillingPagamentoComponent implements OnInit, OnDestroy {
     if (this.returnUrl) {
       this.router.navigateByUrl(this.returnUrl);
     } else {
-      this.router.navigate(['/billing/blocked']);
+      this.router.navigate([this.isMobile ? '/billing/minha-assinatura' : '/billing/blocked']);
     }
   }
 
