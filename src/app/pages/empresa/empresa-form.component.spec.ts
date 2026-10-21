@@ -1,3 +1,4 @@
+import { BreakpointObserver } from '@angular/cdk/layout';
 import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
@@ -84,6 +85,7 @@ describe('EmpresaFormComponent', () => {
     TestBed.configureTestingModule({
       imports: [EmpresaFormComponent, NoopAnimationsModule, TablerIconsModule.pick(TablerIcons)],
       providers: [
+        { provide: BreakpointObserver, useValue: { observe: () => of({ matches: false, breakpoints: {} }) } },
         { provide: EmpresaFormService, useValue: empresaService },
         { provide: EmpresaIdentidadePublicaService, useValue: identidadeService },
         { provide: AuthService, useValue: { usuario$: of({ empresa: { id: 1 } }), getJwtId: () => 1 } },
