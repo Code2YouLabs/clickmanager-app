@@ -73,6 +73,16 @@ describe('HeaderComponent', () => {
     TestBed.resetTestingModule();
   });
 
+  it('abrir aviso encerrado não consome contador de mensagens acionáveis', () => {
+    const c = fixture.componentInstance;
+    const marcar = spyOn(TestBed.inject(NotificacaoService), 'marcarComoLida$');
+    c.notificacoesNaoLidas = 2;
+    const item = {id:7, lida:false, nivel:'CRITICO', invalidadaEm:'2026-11-12T15:00:00Z'} as any;
+    c.notificacoes = [item];c.abrirNotificacao(item);
+    expect(c.possuiNotificacaoCriticaNaoLida()).toBeFalse();
+    expect(marcar).not.toHaveBeenCalled();expect(c.notificacoesNaoLidas).toBe(2);
+  });
+
   it('exibe atalho acessível para a Central de Ajuda no header', () => {
     const ajudaButtons = Array.from(
       fixture.nativeElement.querySelectorAll('button[aria-label="Abrir Central de Ajuda"]')

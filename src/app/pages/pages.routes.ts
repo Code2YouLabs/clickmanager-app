@@ -584,6 +584,13 @@ export const PagesRoutes: Routes = [
     }
   },
   {
+    path: 'comercial/pedidos/:id',
+    loadComponent: () => import('./grafica/comercial/comercial-editor.component').then(m => m.ComercialEditorComponent),
+    canActivate: [featureModuleGuard, permissionGuard],
+    data: {featureKey: 'PEDIDOS', requiredPermission: ['PEDIDOS_VER'], tipo: 'pedidos', pedidoCanonico: true,
+      title: 'Pedido', urls: [{title: 'Pedido'}]}
+  },
+  {
     path: 'grafica/comercial/pedidos',
     loadComponent: () => import('./grafica/comercial/comercial-list.component').then((m) => m.ComercialListComponent),
     canActivate: [featureModuleGuard, permissionGuard],

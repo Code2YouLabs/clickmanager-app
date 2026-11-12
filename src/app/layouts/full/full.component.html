@@ -300,7 +300,7 @@
     <div class="mobile-notification-list">
       @for(notification of notificacoes; track notification.id) {
       <div class="mobile-notification-row" [class.mobile-notification-row--swiped]="swipedNotificationId === notification.id">
-        @if(!notification.lida) {
+        @if(!notification.lida && !notification.invalidadaEm) {
         <button type="button" class="mobile-notification-row__action"
           (click)="marcarNotificacaoComoLidaMobile(notification, $event)">
           <i-tabler name="check" class="icon-16 d-flex"></i-tabler>
@@ -308,7 +308,7 @@
         </button>
         }
 
-        <button type="button" class="mobile-notification-item" [class.mobile-notification-item--unread]="!notification.lida"
+        <button type="button" class="mobile-notification-item" [class.mobile-notification-item--unread]="!notification.lida && !notification.invalidadaEm"
           (click)="abrirNotificacaoMobile(notification)"
           (touchstart)="onNotificationTouchStart($event)"
           (touchend)="onNotificationTouchEnd($event, notification)">
@@ -324,7 +324,7 @@
           <span class="mobile-notification-item__content">
             <span class="mobile-notification-item__head">
               <span class="mobile-notification-item__title-line">
-                @if(!notification.lida) {
+                @if(!notification.lida && !notification.invalidadaEm) {
                 <span class="mobile-notification-item__dot" aria-hidden="true"></span>
                 }
                 <strong>{{ notification.titulo }}</strong>
@@ -332,7 +332,8 @@
               <span class="mobile-notification-item__time">{{ formatarTempoNotificacao(notification.criadaEm) }}</span>
             </span>
             <span class="mobile-notification-item__summary">{{ resumoNotificacao(notification) }}</span>
-            @if(!notification.lida) {
+            @if(notification.invalidadaEm) { <span class="mobile-notification-item__time">Aviso encerrado</span> }
+            @if(!notification.lida && !notification.invalidadaEm) {
             <span class="mobile-notification-item__badge">não lida</span>
             }
           </span>

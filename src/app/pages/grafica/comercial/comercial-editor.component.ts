@@ -1446,6 +1446,12 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   }
 
   voltar(): void {
+    if (this.route.snapshot?.data?.['pedidoCanonico']) {
+      const usuarioId = this.authService.getUsuario()?.id;
+      this.router.navigate(usuarioId ? ['/theme-pages/account-setting', usuarioId] : ['/apps/notificacoes'],
+        usuarioId ? { queryParams: { tab: 'notificacoes' } } : undefined);
+      return;
+    }
     this.router.navigate(['/page/grafica/comercial', this.tipo]);
   }
 

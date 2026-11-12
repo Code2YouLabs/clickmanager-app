@@ -11,6 +11,7 @@ export interface NotificacaoItem {
   tipoDestino: NotificacaoTipoDestino;
   criadaEm: string;
   criadaPorUsuarioId?: number | null;
+  invalidadaEm?: string | null;
   lida: boolean;
   lidaEm?: string | null;
 }

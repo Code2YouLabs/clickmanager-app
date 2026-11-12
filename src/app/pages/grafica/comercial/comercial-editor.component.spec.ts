@@ -12,6 +12,12 @@ const editoresCriados: ComercialEditorComponent[] = [];
 afterEach(() => { editoresCriados.splice(0).forEach(editor => editor.ngOnDestroy()); });
 
 describe('ComercialEditorComponent', () => {
+  it('volta do detalhe canônico à central existente sem exigir Gráfica', () => {
+    const editor = criarEditor();
+    (editor as any).route.snapshot = {data:{pedidoCanonico:true}};
+    editor.voltar();
+    expect((editor as any).router.navigate).toHaveBeenCalledWith(['/theme-pages/account-setting',1], {queryParams:{tab:'notificacoes'}});
+  });
   it('define submit associado ao form e comandos distintos para conversão', () => {
     const editor = criarEditor('orcamentos'); editor.ngOnInit();
     expect(editor.footerActions.find(action => action.id === 'salvar')).toEqual(jasmine.objectContaining({ type: 'submit', form: 'comercial-editor-form', disabled: true }));
