@@ -52,6 +52,13 @@
               (finalizarPedido)="alterarStatus('PRONTO')">
             </app-pedido-fluxo-controles>
 
+            <app-section-card *ngIf="tipo === 'pedidos' && pedidoId" titulo="Previsão de entrega" [mobilePlain]="isMobile">
+              <ng-container *ngIf="pedidoId && pedido">
+                <app-pedido-prazo-indicador [prazo]="pedido.prazo"></app-pedido-prazo-indicador>
+                <button *ngIf="podeEditarPrevisao" mat-button type="button" (click)="editarPrevisao()">Editar previsão</button>
+              </ng-container>
+            </app-section-card>
+
             <app-section-card *ngIf="mostrarFluxoOrcamento && orcamento" titulo="Fluxo do orçamento" [divider]="true">
               <div class="orcamento-flow">
                 <div class="orcamento-meta-grid">
@@ -128,6 +135,10 @@
               (buscaRapida)="abrirBuscaRapida()"
               (removerItem)="remover($event)">
             </app-itens-pedido-section>
+            <app-section-card *ngIf="tipo === 'pedidos' && !pedidoId" titulo="Previsão de entrega" [mobilePlain]="isMobile">
+              <app-pedido-previsao-form (estado)="previsaoValida=$event"></app-pedido-previsao-form>
+            </app-section-card>
+
 
             @if (isMobile) {
               <app-section-card titulo="Observações" data-editor-section="observacoes" [mobilePlain]="true" [mobileCollapsible]="true"

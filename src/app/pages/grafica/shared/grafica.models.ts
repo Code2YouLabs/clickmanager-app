@@ -341,6 +341,8 @@ export interface GraficaOrcamentoItemResponse {
 export type GraficaProdutoPage = CatalogoPaginaResponse<GraficaProduto>;
 
 export interface GraficaPagina<T> {
+  referenciaEm?: string;
+  proximaMudancaEm?: string | null;
   content: T[];
   totalElements: number;
   totalPages: number;
@@ -388,6 +390,7 @@ export interface ComposicaoComercialResolvida {
 }
 
 export interface GraficaComercialComposicaoRequest {
+  previsao?: import('src/app/models/pedido/pedido-prazo.model').PedidoPrevisaoDefinicao;
   empresaId?: number | null;
   clienteId?: number | null;
   clienteNome?: string | null;
@@ -481,6 +484,7 @@ export interface RascunhoComercialResponse {
 }
 
 export interface PedidoComercialResumo {
+  prazo?: import('src/app/models/pedido/pedido-prazo.model').PedidoPrazo | null;
   pedidoId?: number;
   id?: number;
   numero: string;

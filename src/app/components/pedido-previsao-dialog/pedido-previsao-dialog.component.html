@@ -1,0 +1,8 @@
+<h2 mat-dialog-title>{{data.pedido ? 'Editar previsão de entrega' : 'Previsão do novo pedido'}}</h2>
+<mat-dialog-content>
+ <app-pedido-previsao-form [edicao]="!!data.pedido" [prazo]="data.pedido?.prazo || null" (estado)="valida=$event"></app-pedido-previsao-form>
+ <p *ngIf="erro" role="alert">{{erro}}</p><p *ngIf="aviso" role="status">{{aviso}}</p>
+ <button *ngIf="conflito" mat-stroked-button type="button" [disabled]="ocupado" (click)="recarregar()">Recarregar dados</button>
+</mat-dialog-content>
+<mat-dialog-actions align="end"><button mat-button type="button" [disabled]="ocupado" [mat-dialog-close]="null">Cancelar</button>
+ <button mat-flat-button color="primary" type="button" [disabled]="!valida || ocupado || conflito || !editavel" (click)="salvar()">{{ocupado ? 'Salvando…' : data.pedido ? 'Salvar previsão' : 'Criar pedido'}}</button></mat-dialog-actions>

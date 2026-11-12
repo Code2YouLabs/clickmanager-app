@@ -1,0 +1,1 @@
+.previsao-campos {display:grid;grid-template-columns:minmax(0,1fr) minmax(100px,.55fr);gap:12px;margin-top:12px} .previsao-form {min-width:0} p {margin:8px 0} .previsao-nota {font-size:12px} .previsao-aviso {border-left:3px solid var(--mat-sys-error,#ba1a1a);padding-left:12px} @media(max-width:360px){.previsao-campos{grid-template-columns:1fr}}

@@ -1,3 +1,8 @@
+import { PedidoPrevisaoFormComponent } from 'src/app/components/pedido-previsao-form/pedido-previsao-form.component';
+import { PedidoPrevisaoDialogComponent } from 'src/app/components/pedido-previsao-dialog/pedido-previsao-dialog.component';
+import { PedidoPrazoIndicadorComponent } from 'src/app/components/pedido-prazo-indicador/pedido-prazo-indicador.component';
+import { PedidoPrevisaoDefinicao } from 'src/app/models/pedido/pedido-prazo.model';
+import { PedidoPrazoRelogio } from 'src/app/shared/pedido-prazo/pedido-prazo-relogio';
 import { ClienteResponse } from 'src/app/models/cliente/cliente-response.model';
 import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
 import { CommonModule } from '@angular/common';
@@ -185,6 +190,7 @@ export class GraficaServicoWizardDialogComponent {
     InputOptionsComponent,
     PedidoFluxoControlesComponent,
     PedidoDocumentosAcoesComponent,
+    PedidoPrevisaoFormComponent, PedidoPrazoIndicadorComponent,
     StatusBadgeComponent,
     TutorialTargetDirective,
   ],
@@ -192,6 +198,26 @@ export class GraficaServicoWizardDialogComponent {
   styleUrl: './comercial-editor.component.scss',
 })
 export class ComercialEditorComponent implements OnInit, OnDestroy {
+  @ViewChild(PedidoPrevisaoFormComponent) previsaoForm?: PedidoPrevisaoFormComponent;
+  previsaoValida = false;
+  private prazoRelogio = new PedidoPrazoRelogio(() => {
+    if (this.tipo === 'pedidos' && this.pedidoId) this.graficaService.buscarPedidoComercial(this.pedidoId, true)
+      .pipe(takeUntil(this.destroy$)).subscribe({next:p => {if (this.pedido && this.pedido.id === p.id) {this.pedido={...this.pedido,prazo:p.prazo,status:p.status}; this.prazoRelogio.limpar(); if(p.prazo)this.prazoRelogio.agendar(p.prazo);}}, error:()=>this.toastr.error('Não foi possível atualizar o prazo. Recarregue para tentar novamente.')});
+  });
+  get podeEditarPrevisao() { return !!this.pedido?.prazo && this.authService.temPermissao('PEDIDOS_EDITAR') && ['AGUARDANDO_PAGAMENTO','PENDENTE','EM_PRODUCAO'].includes(this.pedido.status); }
+  editarPrevisao() {
+    if (!this.podeEditarPrevisao) return;
+    this.dialog.open(PedidoPrevisaoDialogComponent, {width:'520px', maxWidth:'96vw', data:{pedido:this.pedido}})
+      .afterClosed().pipe(takeUntil(this.destroy$)).subscribe(p => {if (p?.prazo) this.aplicarPedido(p);});
+  }
+  private previsaoDialogAberto = false;
+  private escolherPrevisao(criar: (p: PedidoPrevisaoDefinicao) => void) {
+    if (this.previsaoDialogAberto || !this.authService.temPermissao('PEDIDOS_CADASTRAR')) return;
+    this.previsaoDialogAberto = true;
+    this.dialog.open(PedidoPrevisaoDialogComponent, {width:'520px', maxWidth:'96vw', data:{}})
+      .afterClosed().pipe(takeUntil(this.destroy$)).subscribe(p => {this.previsaoDialogAberto=false; if (p?.modo) criar(p);});
+  }
+
   isMobile = false;
   get mobileCriacao(): boolean { return this.isMobile && !this.pedidoId; }
   get mobilePedidoNovo(): boolean { return this.isMobile && this.tipo === 'pedidos' && !this.pedidoId; }
@@ -732,6 +758,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
         alterarStatus: this.orcamentoEditavel,
       };
     }
+    if (this.tipo === 'pedidos' && this.pedidoId && !this.authService.temPermissao('PEDIDOS_EDITAR')) return {editarCliente:false, editarItens:false, observacoes:false, pagamentos:this.fluxoPedido?.permissoes.pagamentos || false, alterarStatus:false};
     return this.fluxoPedido?.permissoes || {
       editarCliente: true,
       editarItens: true,
@@ -742,11 +769,11 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   }
 
   get statusOptionsFluxo(): string[] {
-    return (this.fluxoPedido?.proximasTransicoes || []).map(transicao => transicao.status);
+    return this.transicoesFluxo.map(transicao => transicao.status);
   }
 
   get transicoesFluxo(): { status: string; label: string; bloqueado: boolean; motivo?: string }[] {
-    return (this.fluxoPedido?.proximasTransicoes || []).map(transicao => ({
+    return (this.fluxoPedido?.proximasTransicoes || []).filter(t => t.status !== 'CANCELADO' || this.authService.temPermissao('PEDIDOS_EXCLUIR')).map(transicao => ({
       status: transicao.status,
       label: transicao.label,
       bloqueado: !transicao.permitida,
@@ -796,7 +823,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   }
 
   get podeSalvar(): boolean {
-    return this.pendenciasSalvar.length === 0 && !this.pedidoId;
+    return this.pendenciasSalvar.length === 0 && !this.pedidoId && (this.tipo !== 'pedidos' || this.previsaoValida);
   }
 
   get podeConcluirRascunho(): boolean {
@@ -871,6 +898,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.prazoRelogio.destruir();
     this.fecharPagamentosMobile(); this.ajustesPanelRef?.close(); this.observacaoPanelRef?.close(); this.acoesPedidoConfirmacaoRef?.close(); this.acoesPedidoPanelRef?.close();
     clearTimeout(this.tutorialRevealTimer); clearTimeout(this.focusTimer);
     this.destroy$.next();
@@ -965,6 +993,8 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
 
   private aplicarPedido(pedido: PedidoComercialDetalhe, clienteCompleto?: any): void {
     this.pedido = pedido;
+    this.prazoRelogio.limpar();
+    if (pedido.prazo) this.prazoRelogio.agendar(pedido.prazo);
     this.itens = (pedido.itens || []).map((item) => this.itemComercialResolvido(item));
     this.clienteConfirmado = pedido.clienteId ? {
       id: pedido.clienteId,
@@ -1212,11 +1242,20 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     this.salvarComo(this.tipo);
   }
 
-  salvarComo(destino: ComercialTipo): void {
+  salvarComo(destino: ComercialTipo, escolhida?: PedidoPrevisaoDefinicao): void {
+    if (destino === 'pedidos' && !this.authService.temPermissao('PEDIDOS_CADASTRAR')) return;
+    if (destino === 'pedidos' && this.tipo !== 'pedidos' && !escolhida) {
+      this.escolherPrevisao(p => this.salvarComo(destino, p)); return;
+    }
     if (!this.podeSalvar || this.salvando) return;
     const composicao = this.comercialComposicaoRequest(destino);
     if (!composicao) return;
     const { origemId, origemTipo, body } = composicao;
+    if (destino === 'pedidos') {
+      const definicao = escolhida || this.previsaoForm?.definicao();
+      if (!definicao) return;
+      body.previsao = definicao;
+    }
     const action = destino === 'pedidos'
       ? origemTipo === 'SERVICO'
         ? this.graficaService.criarPedidoServico(origemId, body)
@@ -1235,7 +1274,9 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     });
   }
 
-  concluirRascunho(destino: 'pedidos' | 'orcamentos'): void {
+  concluirRascunho(destino: 'pedidos' | 'orcamentos', previsao?: PedidoPrevisaoDefinicao): void {
+    if (this.salvando) return;
+    if (destino === 'pedidos' && !previsao && this.pedidoId) {this.escolherPrevisao(p => this.concluirRascunho(destino, p)); return;}
     if (this.tipo !== 'rascunhos' || this.salvando) return;
     if (!this.pedidoId) {
       this.salvarComo(destino);
@@ -1243,7 +1284,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
     }
     if (!this.podeConcluirRascunho) return;
     const action = destino === 'pedidos'
-      ? this.graficaService.converterRascunhoParaPedido(this.pedidoId)
+      ? this.graficaService.converterRascunhoParaPedido(this.pedidoId, previsao)
       : this.graficaService.converterRascunhoParaOrcamento(this.pedidoId);
     this.salvando = true;
     action.pipe(finalize(() => this.salvando = false)).subscribe({
@@ -1634,7 +1675,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
   }
 
   alterarStatus(status: string): void {
-    if (!this.pedidoId || !this.permissoesFluxo.alterarStatus) return;
+    if (!this.pedidoId || !this.permissoesFluxo.alterarStatus || !this.authService.temPermissao('PEDIDOS_EDITAR') || (status === 'CANCELADO' && !this.authService.temPermissao('PEDIDOS_EXCLUIR'))) return;
     this.carregandoStatus = true;
     if (this.acoesPedidoPanelRef) this.acoesPedidoPanelRef.disableClose = true;
     this.graficaService.alterarStatusPedidoComercial(this.pedidoId, status)
@@ -1669,10 +1710,13 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
       });
   }
 
-  aprovarOrcamentoECriarPedido(): void {
+  aprovarOrcamentoECriarPedido(previsao?: PedidoPrevisaoDefinicao): void {
+    if (this.carregandoStatus) return;
+    if (!this.authService.temPermissao('PEDIDOS_CADASTRAR') || !this.authService.temPermissao('ORCAMENTOS_EDITAR')) return;
+    if (!previsao) {this.escolherPrevisao(p => this.aprovarOrcamentoECriarPedido(p)); return;}
     if (!this.pedidoId || !this.orcamentoEditavel) return;
     this.carregandoStatus = true;
-    this.graficaService.aprovarOrcamentoECriarPedido(this.pedidoId)
+    this.graficaService.aprovarOrcamentoECriarPedido(this.pedidoId, previsao)
       .pipe(finalize(() => this.carregandoStatus = false))
       .subscribe({
         next: (pedido) => {

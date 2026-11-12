@@ -1,3 +1,5 @@
+import { PedidoPrazoService } from 'src/app/services/pedido-prazo.service';
+import { of as prazoOf } from 'rxjs';
 import { ClienteCreateDialogComponent } from '../../cliente/cliente-create-dialog/cliente-create-dialog.component';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { registerLocaleData } from '@angular/common';
@@ -38,6 +40,7 @@ describe('Financeiro e pagamentos do editor mobile', () => {
     registerLocaleData(ptBr, 'pt-BR'); step.set(null);
     viewport = new BehaviorSubject({ matches: true, breakpoints: {} });
     TestBed.configureTestingModule({ imports: [ComercialEditorComponent, NoopAnimationsModule], providers: [
+        {provide:PedidoPrazoService,useValue:{configuracao:()=>prazoOf({parametros:{prazo:7,unidade:'DIAS',atencaoHoras:24,atrasoCriticoHoras:48}})}},
       provideRouter([]), provideHttpClient(),
       { provide: LOCALE_ID, useValue: 'pt-BR' },
       { provide: ActivatedRoute, useValue: { data: of({ tipo: 'pedidos' }), paramMap: of(new Map()) } },

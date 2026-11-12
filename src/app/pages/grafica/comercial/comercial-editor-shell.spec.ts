@@ -1,3 +1,5 @@
+import { PedidoPrazoService } from 'src/app/services/pedido-prazo.service';
+import { of as prazoOf } from 'rxjs';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { By } from '@angular/platform-browser';
 import { fakeAsync, tick } from '@angular/core/testing';
@@ -20,6 +22,7 @@ describe('ComercialEditorComponent shell e formulário nativo', () => {
   beforeEach(() => {
     registerLocaleData(ptBr, 'pt-BR');
     TestBed.configureTestingModule({ imports: [ComercialEditorComponent, NoopAnimationsModule], providers: [
+        {provide:PedidoPrazoService,useValue:{configuracao:()=>prazoOf({parametros:{prazo:7,unidade:'DIAS',atencaoHoras:24,atrasoCriticoHoras:48}})}},
       provideRouter([]), provideHttpClient(),
       { provide: BreakpointObserver, useValue: { observe: () => of({ matches: false, breakpoints: {} }) } },
       { provide: GraficaProdutoService, useValue: {} },

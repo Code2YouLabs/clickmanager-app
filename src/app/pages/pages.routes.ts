@@ -590,7 +590,7 @@ export const PagesRoutes: Routes = [
     data: {
       ...GRAFICA_ROUTE_DATA,
       featureKey: 'GRAFICA',
-      requiredPermission: ['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER'],
+      requiredPermission: ['PEDIDOS_VER'],
       tipo: 'pedidos',
       title: 'Pedidos Comerciais',
       urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Pedidos' }]
@@ -603,7 +603,7 @@ export const PagesRoutes: Routes = [
     data: {
       ...GRAFICA_ROUTE_DATA,
       featureKey: 'GRAFICA',
-      requiredPermission: ['PEDIDOS_CADASTRAR', 'GRAFICA_PRODUTOS_VER'],
+      requiredPermission: ['PEDIDOS_CADASTRAR'],
       tipo: 'pedidos',
       title: 'Novo Pedido Comercial',
       urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Novo pedido' }]
@@ -616,7 +616,7 @@ export const PagesRoutes: Routes = [
     data: {
       ...GRAFICA_ROUTE_DATA,
       featureKey: 'GRAFICA',
-      requiredPermission: ['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER'],
+      requiredPermission: ['PEDIDOS_VER'],
       formato: 'completo',
       title: 'Impressão do Pedido',
       urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Pedido' }, { title: 'Impressão' }]
@@ -629,7 +629,7 @@ export const PagesRoutes: Routes = [
     data: {
       ...GRAFICA_ROUTE_DATA,
       featureKey: 'GRAFICA',
-      requiredPermission: ['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER'],
+      requiredPermission: ['PEDIDOS_VER'],
       formato: 'duas-vias',
       title: 'Duas vias do Pedido',
       urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Pedido' }, { title: 'Duas vias' }]
@@ -642,7 +642,7 @@ export const PagesRoutes: Routes = [
     data: {
       ...GRAFICA_ROUTE_DATA,
       featureKey: 'GRAFICA',
-      requiredPermission: ['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER'],
+      requiredPermission: ['PEDIDOS_VER'],
       formato: 'etiqueta',
       title: 'Etiqueta do Pedido',
       urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Pedido' }, { title: 'Etiqueta' }]
@@ -655,7 +655,7 @@ export const PagesRoutes: Routes = [
     data: {
       ...GRAFICA_ROUTE_DATA,
       featureKey: 'GRAFICA',
-      requiredPermission: ['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER'],
+      requiredPermission: ['PEDIDOS_VER'],
       title: 'WhatsApp do Pedido',
       urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Pedido' }, { title: 'WhatsApp' }]
     }
@@ -667,7 +667,7 @@ export const PagesRoutes: Routes = [
     data: {
       ...GRAFICA_ROUTE_DATA,
       featureKey: 'GRAFICA',
-      requiredPermission: ['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER'],
+      requiredPermission: ['PEDIDOS_VER'],
       tipo: 'pedidos',
       title: 'Pedido Comercial',
       urls: [{ title: 'Gráfica' }, { title: 'Comercial' }, { title: 'Pedido' }]
@@ -1464,6 +1464,12 @@ export const PagesRoutes: Routes = [
         { title: 'Editar Configuração' }
       ]
     }
+  },
+  {
+    path: 'config/pedidos',
+    loadComponent: () => import('./config/pedidos/pedidos-config.component').then(m => m.PedidosConfigComponent),
+    canActivate: [permissionGuard],
+    data: {requiredPermission: ['PEDIDOS_CONFIGURAR'], title: 'Configuração de Pedidos'}
   },
   {
     path: 'config/aplicativos-atalhos',

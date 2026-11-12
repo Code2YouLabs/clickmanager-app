@@ -1,3 +1,4 @@
+import { AuthService } from 'src/app/services/auth.service';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { By } from '@angular/platform-browser';
 import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
@@ -56,6 +57,7 @@ describe('ComercialListComponent', () => {
     primeiroPedidoTutorial.targetPedidoKanban.and.returnValue('');
     Object.defineProperty(primeiroPedidoTutorial, 'pedidoAcompanhadoId', { get: () => pedidoAcompanhadoId });
     TestBed.configureTestingModule({ imports: [ComercialListComponent, NoopAnimationsModule], providers: [
+      {provide:AuthService,useValue:{temPermissao:()=>true}},
       { provide: BreakpointObserver, useValue: { observe: () => viewport } },
       { provide: GraficaProdutoService, useValue: service }, { provide: Router, useValue: router },
       { provide: MatDialog, useValue: dialog }, { provide: ToastrService, useValue: toastr },
