@@ -29,6 +29,7 @@
         expandAriaLabel="Expandir detalhes"
         [emptyState]="isMobile ? mobileEmptyState : emptyState"
         [rowKey]="rowKey"
+        [rowAccent]="tipo === 'pedidos' ? acentoPedido : null"
         (searchChange)="buscar($event)"
         (pageChange)="paginar($event)"
         (action)="onAction($event)">
@@ -78,7 +79,9 @@
           <ng-container [ngTemplateOutlet]="pedidoFinanceiro" [ngTemplateOutletContext]="{ $implicit: item }"></ng-container>
         </ng-template>
           <ng-template [appDataTableItem]="itensFiltrados" let-item let-itemActions="actions" let-emit="emitAction" let-expanded="expanded" let-toggle="toggle">
-            <article class="pedido-mobile-item" [attr.aria-label]="(tipo === 'pedidos' ? 'Pedido' : tipo === 'orcamentos' ? 'Orçamento' : 'Rascunho') + ' ' + referencia(item)">
+            <article class="pedido-mobile-item"
+              [class.pedido-mobile-item--accent]="tipo === 'pedidos' && !!acentoPedido(item)"
+              [style.--pedido-prazo-accent]="tipo === 'pedidos' ? acentoPedido(item) : null" [attr.aria-label]="(tipo === 'pedidos' ? 'Pedido' : tipo === 'orcamentos' ? 'Orçamento' : 'Rascunho') + ' ' + referencia(item)">
               <header><strong>{{ referencia(item) }}</strong>@if (tipo === 'pedidos' || item.status) {<span class="status-pill" [attr.title]="statusLabel(item.status)" [attr.aria-label]="statusLabel(item.status)">{{ statusMobileLabel(item.status) }}</span>}</header>
               <p class="pedido-mobile-item__cliente">{{ cliente(item) || (tipo === 'pedidos' ? 'Balcão' : 'Sem cliente informado') }}</p>
               <app-pedido-prazo-indicador *ngIf="tipo === 'pedidos'" [prazo]="item.prazo"></app-pedido-prazo-indicador>
@@ -147,6 +150,7 @@
         [columns]="kanbanColumnsFiltradas"
         [trackBy]="kanbanTrackBy"
         [cardAriaLabel]="pedidoCardAriaLabel"
+        [cardAccent]="acentoPedido"
         [dragEnabled]="kanbanDragEnabled"
         [isDragDisabled]="isPedidoDragDisabled"
         [dropState]="kanbanDropState"

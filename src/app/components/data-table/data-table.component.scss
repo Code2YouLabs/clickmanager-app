@@ -121,3 +121,8 @@
   .data-table-progressive__error { width: 100%; text-align: center; }
   .data-table-progressive__error p { margin: 0 0 8px; overflow-wrap: anywhere; color: var(--mat-sys-error); }
 }
+
+// Inset mantém a largura e o alinhamento das células, inclusive ao expandir a linha.
+.data-table__row--accent > td:first-child {
+  box-shadow: inset 5px 0 0 var(--data-table-row-accent);
+}

@@ -1,3 +1,4 @@
+import { acentoPrazo } from 'src/app/shared/pedido-prazo/pedido-prazo-acento';
 import { AuthService } from 'src/app/services/auth.service';
 import { PedidoPrazoIndicadorComponent } from 'src/app/components/pedido-prazo-indicador/pedido-prazo-indicador.component';
 import { PEDIDO_PRAZO_FILTROS } from 'src/app/models/pedido/pedido-prazo.model';
@@ -72,6 +73,7 @@ type PedidoKanbanSnapshot = Pick<PedidoKanbanColumn, 'items' | 'count' | 'total'
 })
 export class ComercialListComponent implements OnInit, OnDestroy {
   readonly auth = inject(AuthService);
+  readonly acentoPedido = (item: PedidoComercialResumo): string | null => acentoPrazo(item.prazo);
   prazoFiltro: string | null = null;
   sort: DataTableSort = {active:'', direction:''};
   private prazoRelogio = new PedidoPrazoRelogio(() => this.revalidarPrazos());

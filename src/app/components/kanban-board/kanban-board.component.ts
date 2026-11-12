@@ -88,6 +88,8 @@ export class KanbanBoardComponent<T = unknown> implements AfterContentInit, OnDe
   @Input() retryLabel = 'Tentar novamente';
   @Input() loadMoreLabel = 'Carregar mais';
   @Input() trackBy: (item: T) => unknown = (item) => (item as Record<string, unknown>)?.['id'] ?? item;
+  /** Decoração opcional; o board não interpreta status de domínio. */
+  @Input() cardAccent: ((item: T) => string | null) | null = null;
   @Input() cardAriaLabel: (item: T, column: KanbanColumnState<T>) => string = () => 'Abrir item';
   @Input() dragEnabled = false;
   @Input() dragStartDelay: number | { touch: number; mouse: number } = { touch: 180, mouse: 0 };

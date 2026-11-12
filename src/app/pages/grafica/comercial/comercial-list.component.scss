@@ -66,3 +66,7 @@
     .expanded-detail strong { min-width: 0; max-width: 65%; text-align: right; overflow-wrap: anywhere; }
   }
 }
+
+.pedido-mobile-item.pedido-mobile-item--accent {
+  border-inline-start: 5px solid var(--pedido-prazo-accent);
+}
