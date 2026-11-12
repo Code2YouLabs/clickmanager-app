@@ -1,14 +1,61 @@
-<app-page-card titulo="Configuração de Pedidos" subtitulo="Prazo padrão e acompanhamento da entrega">
- <p>As alterações valem para novos pedidos. Previsões e limites de pedidos existentes serão preservados.</p>
- <p *ngIf="carregando" role="status">Carregando configurações…</p>
- <div *ngIf="erro" role="alert">{{erro}} <button mat-button type="button" (click)="carregar()">Tentar novamente</button></div>
- <form *ngIf="carregada" [formGroup]="form" (ngSubmit)="salvar()">
- <div class="config-campos">
- <mat-form-field appearance="outline"><mat-label>Prazo padrão</mat-label><input matInput type="number" formControlName="prazo" min="1" [max]="limite" step="1"><mat-hint>De 1 a {{limite}}</mat-hint></mat-form-field>
- <mat-form-field appearance="outline"><mat-label>Unidade</mat-label><mat-select formControlName="unidade"><mat-option value="DIAS">Dias corridos</mat-option><mat-option value="HORAS">Horas</mat-option></mat-select></mat-form-field>
- <mat-form-field appearance="outline"><mat-label>Atenção antes da previsão</mat-label><input matInput type="number" formControlName="atencaoHoras" min="0" max="87600" step="1"><span matTextSuffix>horas</span><mat-hint>De 0 a 87600 horas</mat-hint></mat-form-field>
- <mat-form-field appearance="outline"><mat-label>Atraso para considerar crítico</mat-label><input matInput type="number" formControlName="atrasoCriticoHoras" min="1" max="87600" step="1"><span matTextSuffix>horas</span><mat-hint>De 1 a 87600 horas</mat-hint></mat-form-field>
- </div><p *ngIf="invalido" role="status">Informe valores inteiros dentro dos limites indicados.</p>
- <button mat-flat-button color="primary" type="submit" [disabled]="invalido || salvando">{{salvando ? 'Salvando…' : 'Salvar configurações'}}</button>
- </form>
+<app-page-card
+  titulo="Configuração de Pedidos"
+  subtitulo="Prazo padrão e acompanhamento da entrega"
+  [mostrarDivisor]="true"
+  [formState]="isMobile ? undefined : pageFormState"
+  [footerActions]="isMobile ? [] : footerActions"
+  [saving]="salvando"
+  savingText="Salvando..."
+  [actionsDisabled]="carregando || !!erro || !carregada">
+  @if (carregando) {
+    <div class="config-state" role="status" aria-busy="true">
+      <mat-spinner diameter="32"></mat-spinner>
+      <span>Carregando configurações de Pedidos...</span>
+    </div>
+  } @else if (erro) {
+    <div class="config-state" role="alert">
+      <mat-icon>error_outline</mat-icon>
+      <strong>Não foi possível carregar as configurações</strong>
+      <span>{{ erro }}</span>
+      <button mat-stroked-button color="primary" type="button" (click)="carregar()">Tentar novamente</button>
+    </div>
+  } @else if (carregada) {
+    <form [id]="formId" [formGroup]="form" (ngSubmit)="salvar()" class="config-form">
+      <p class="config-info">As alterações valem para novos pedidos. Previsões e limites de pedidos existentes serão preservados.</p>
+
+      <app-section-card titulo="Prazo padrão" [mobilePlain]="isMobile">
+        <div class="config-grid">
+          <div>
+            <app-input-numerico [control]="form.controls.prazo" label="Prazo padrão"></app-input-numerico>
+            <small class="config-hint">Informe um valor inteiro de 1 a {{ limite }}.</small>
+          </div>
+          <app-input-options [control]="form.controls.unidade" label="Unidade"
+            [options]="unidadeOptions" [showNull]="false"></app-input-options>
+        </div>
+      </app-section-card>
+
+      <app-section-card titulo="Acompanhamento do prazo" [mobilePlain]="isMobile">
+        <div class="config-grid">
+          <div>
+            <app-input-numerico [control]="form.controls.atencaoHoras" label="Antecedência de atenção (horas)"></app-input-numerico>
+            <small class="config-hint">Tempo antes da previsão para sinalizar atenção. De 0 a 87600 horas.</small>
+          </div>
+          <div>
+            <app-input-numerico [control]="form.controls.atrasoCriticoHoras" label="Atraso crítico após a previsão (horas)"></app-input-numerico>
+            <small class="config-hint">Tempo de atraso para dar maior destaque ao pedido. De 1 a 87600 horas.</small>
+          </div>
+        </div>
+      </app-section-card>
+    </form>
+  }
+
+  @if (isMobile && pageFormState) {
+    <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true"
+      actionType="submit" [actionForm]="formId" bottomAnchorSelector=".mobile-bottom-nav"
+      bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+      secondaryActionText="Cancelar" secondaryActionAriaLabel="Restaurar formulário"
+      [secondaryActionDisabled]="salvando || !formState.canReset" (secondaryAction)="formState.reset()"
+      [actionText]="salvando ? 'Salvando...' : 'Salvar configuração'" actionIcon="save"
+      actionAriaLabel="Salvar configuração" [actionDisabled]="!podeSalvar" [loading]="salvando" />
+  }
 </app-page-card>

@@ -36,4 +36,11 @@ Mantidos shell, cores de prioridade, componentes e espaçamentos existentes. A v
 
 A integração técnica backend foi executada com o serviço canônico real de Pedido, central real, proxies transacionais reais e PostgreSQL descartável, usando Clock e autorização controlados. A documentação operacional contém os passos, os testes e os limites exatos. Isso é distinto das capturas com APIs simuladas: **não foi executada uma sessão ponta a ponta de navegador com login real no backend completo**.
 
-Antes de disponibilizar: ensaiar essa sessão e o changelog no ambiente alvo, revisar perfis customizados, atualizar todas as instâncias/leitores antes de ativar o worker e dimensionar os lotes. Worker desativado por padrão. Não houve push, merge, deploy ou envio externo.
+Antes de disponibilizar: ensaiar essa sessão e o changelog no ambiente alvo, revisar perfis customizados, atualizar todas as instâncias/leitores antes de ativar o worker e dimensionar os lotes. Worker ativo por padrão após o ajuste validado localmente; use `PEDIDO_ALERTAS_ENABLED=false` durante implantação gradual ou para suspender emissões. Não houve push, merge, deploy ou envio externo.
+
+
+## Refinamentos de interface posteriores
+
+- Lista e Kanban recebem faixa lateral de 5px conforme a situação enviada pelo backend. Cards do Kanban também usam contorno suave; ícones, textos, fundo claro, estado neutro e foco permanecem. O mesmo acento é aplicado à listagem mobile. Os componentes genéricos expõem decoração opcional, sem interpretar regras de Pedido.
+- Configuração de Pedidos segue o padrão de Servidor de E-mail: PageCard, SectionCard, InputNumerico, InputOptions, PageFormState e MobileTotalBar. Cancelar restaura a base carregada; a API continua recebendo inteiros, inclusive quando o input compartilhado emite texto. Limites e retry preservados.
+- Validação: 122 testes de tabela/Kanban/listagem aprovados; 65 testes de configuração/inputs/padrões mobile aprovados; build de produção aprovado e conferência visual desktop/mobile com dados fictícios.
