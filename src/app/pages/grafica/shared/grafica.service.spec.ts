@@ -1,6 +1,17 @@
 import { GraficaProdutoService } from './grafica.service';
 
 describe('GraficaProdutoService', () => {
+  it('envia o escopo de pedidos abertos junto com prazo, ordenação e paginação', () => {
+    const api = jasmine.createSpyObj('ApiService', ['get']); const service = new GraficaProdutoService(api);
+    service.listarPedidosComerciais(2,20,null,'SEM_PREVISAO','previsaoEntrega,asc',true,true);
+    const args=api.get.calls.mostRecent().args;
+    expect(args[0]).toBe('api/comercial/pedidos');
+    expect(args[1].get('somenteAbertos')).toBe('true');
+    expect(args[1].get('page')).toBe('2');
+    expect(args[1].get('prazo')).toBe('SEM_PREVISAO');
+    expect(args[1].get('sort')).toBe('previsaoEntrega,asc');
+    service.listarPedidosComerciais();expect(api.get.calls.mostRecent().args[1].has('somenteAbertos')).toBeFalse();
+  });
   it('envia o status de rascunho usando o contrato já existente no backend', () => {
     const api = jasmine.createSpyObj('ApiService', ['get']); const service = new GraficaProdutoService(api);
     service.listarRascunhosComerciais(2, 20, 'ABERTO');

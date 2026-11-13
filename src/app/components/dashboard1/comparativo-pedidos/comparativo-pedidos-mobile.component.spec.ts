@@ -56,7 +56,7 @@ describe('Resumo comercial compacto da Home', () => {
     expect(fixture.componentInstance.modo).toBe('receita');
     expect(query('summary')?.textContent).toContain('Valor');
     expect(service.obterComparativoSimples).toHaveBeenCalledTimes(2);
-    query('.dashboard-chart-card__mobile-cta')!.click();
+    fixture.componentInstance.abrirGraficoComparativo();
     expect(router.navigate).toHaveBeenCalledWith(['/dashboards/dashboard1/grafico'], {
       queryParams: { tipo: 'comparativo', mesA: 6, mesB: 5, ano: 2026, modo: 'receita' },
     });

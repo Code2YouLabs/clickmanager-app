@@ -3,6 +3,10 @@
   title="Receita por forma de pagamento"
   subtitle="Acompanhe os recebimentos por período."
   [divider]="true">
+  <button section-card-actions mat-stroked-button type="button" class="dashboard-chart-action"
+    aria-label="Ver gráfico de receita por forma de pagamento" (click)="abrirGraficoReceita()">
+    <mat-icon>open_in_full</mat-icon>Ver gráfico
+  </button>
   <div class="dashboard-receita-card__content">
     <div class="dashboard-receita-card__top">
       <div class="dashboard-receita-card__summary">
@@ -65,10 +69,5 @@
       </div>
     </div>
 
-    <div class="dashboard-receita-card__footer">
-      <button mat-flat-button color="primary" type="button" class="dashboard-receita-card__detail-btn" (click)="abrirGraficoReceita()">
-        Ver gráfico →
-      </button>
-    </div>
   </div>
 </app-section-card>

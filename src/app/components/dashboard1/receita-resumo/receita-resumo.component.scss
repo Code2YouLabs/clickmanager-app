@@ -1,3 +1,5 @@
+@use '../chart-action';
+
 :host {
   display: block;
   height: 100%;
@@ -64,15 +66,7 @@
   flex: 0 0 auto;
 }
 
-.dashboard-receita-card__detail-btn {
-  width: 100%;
-  min-height: 42px;
-  border-radius: 999px;
-}
 
-.dashboard-receita-card__footer {
-  display: flex;
-}
 
 .dashboard-receita-card__filters {
   display: flex;
@@ -285,17 +279,7 @@
     font-size: 0.8rem;
   }
 
-  .dashboard-receita-card__footer {
-    justify-content: flex-end;
-  }
 
-  .dashboard-receita-card__detail-btn {
-    width: 188px;
-    min-width: 188px;
-    min-height: 40px;
-    padding: 0 18px;
-    font-weight: 700;
-  }
 }
 
 @media (max-width: 767px) {
@@ -327,9 +311,6 @@
     display: none;
   }
 
-  .dashboard-receita-card__detail-btn {
-    min-height: 36px;
-  }
 
   .dashboard-receita-card__filters {
     gap: 6px;

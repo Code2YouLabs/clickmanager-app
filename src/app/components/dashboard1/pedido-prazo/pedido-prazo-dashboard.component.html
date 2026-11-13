@@ -1,0 +1,42 @@
+<app-section-card title="Previsão de entrega" subtitle="Pedidos abertos por situação do prazo">
+  @if (erro) {
+    <div class="prazo-feedback" role="alert">{{ erro }} <button mat-button (click)="carregar()">Tentar novamente</button></div>
+  } @else {
+  @if (dados; as d) {
+    <div class="prazo-metricas" [attr.aria-busy]="carregando">
+      <button class="prazo-metrica" (click)="abrirFiltro('DENTRO_DO_PRAZO')" [disabled]="carregando">
+        <app-metric-card label="Dentro do prazo" [value]="'' + d.dentroDoPrazo" detail="Pedidos abertos" icon="circle-check" [compact]="true" [accentColor]="acento('DENTRO_DO_PRAZO')" />
+      </button>
+      <button class="prazo-metrica" (click)="abrirFiltro('PROXIMO_DO_PRAZO')" [disabled]="carregando">
+        <app-metric-card label="Próximos do prazo" [value]="'' + d.proximosDoPrazo" detail="Precisam de atenção" icon="clock" [compact]="true" [accentColor]="acento('PROXIMO_DO_PRAZO')" />
+      </button>
+      <button class="prazo-metrica" (click)="abrirFiltro('ATRASADO')" [disabled]="carregando">
+        <app-metric-card label="Atrasados" [value]="'' + d.atrasados" [detail]="d.atrasosCriticos + ' em atraso crítico'" icon="alert-triangle" [compact]="true" [accentColor]="acento('ATRASADO')" />
+      </button>
+      <button class="prazo-metrica" (click)="abrirFiltro('SEM_PREVISAO')" [disabled]="carregando">
+        <app-metric-card label="Sem previsão" [value]="'' + d.semPrevisao" detail="Pedidos abertos" icon="calendar-off" [compact]="true" accentColor="#738297" />
+      </button>
+    </div>
+    @if (d.atrasosCriticos > 0) {
+      <div class="prazo-acoes">
+        <button mat-button (click)="abrirFiltro('ATRASO_CRITICO')" [disabled]="carregando">Ver {{ d.atrasosCriticos }} em atraso crítico</button>
+      </div>
+    }
+    @if (d.prioridades.length) {
+      <ul class="prazo-prioridades">
+        @for (pedido of d.prioridades; track pedido.id) {
+          <li>
+            <button class="prazo-pedido" [style.border-inline-start-color]="acentoPedido(pedido.prazo)" (click)="abrirPedido(pedido.id)" [disabled]="carregando">
+              <span class="prazo-pedido-identificacao"><strong>{{ pedido.numero }}</strong><span>{{ pedido.clienteNome }}</span></span>
+              <app-pedido-prazo-indicador [prazo]="pedido.prazo" />
+              <span class="prazo-abrir" aria-hidden="true">›</span>
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  } @else {
+    <p class="prazo-feedback" role="status">Carregando prazos de entrega…</p>
+  }
+  }
+</app-section-card>

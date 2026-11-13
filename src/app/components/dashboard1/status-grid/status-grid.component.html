@@ -40,13 +40,13 @@
     type="button"
     class="status-grid__item status-grid__item--{{ item.tone }}"
     (click)="abrirStatus(item)">
-    @if (compactMobile) {
-      <span class="status-grid__label">{{ item.label }}</span>
-    }
-    <strong class="status-grid__value">{{ item.quantidade }}</strong>
-    @if (!compactMobile) {
-      <span class="status-grid__label">{{ item.label }}</span>
-    }
-    <small class="status-grid__amount">{{ formatBRL(item.valor) }}</small>
+    <app-metric-card
+      [label]="item.label"
+      [value]="'' + item.quantidade"
+      [detail]="formatBRL(item.valor)"
+      [icon]="icones[item.status] || 'info-circle'"
+      [compact]="true"
+      [accentColor]="corStatus(item)">
+    </app-metric-card>
   </button>
 </ng-template>

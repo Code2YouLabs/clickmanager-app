@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 import { DashboardService, GraficaDashboardIndicador } from '../dashboard.service';
+import { MetricCardComponent } from '../../metric-card/metric-card.component';
 import { SectionCardComponent } from '../../section-card/section-card.component';
 
 interface StatusGridItem {
@@ -18,7 +19,7 @@ interface StatusGridItem {
 @Component({
   selector: 'app-status-grid',
   standalone: true,
-  imports: [CommonModule, SectionCardComponent],
+  imports: [CommonModule, SectionCardComponent, MetricCardComponent],
   templateUrl: './status-grid.component.html',
   styleUrls: ['./status-grid.component.scss'],
 })
@@ -50,6 +51,13 @@ export class AppStatusGridComponent implements OnInit, OnChanges, OnDestroy {
     'VENCIDO',
     'CANCELADO',
   ];
+
+  readonly cores = {neutral:'#738297', warning:'#d49a27', info:'#4285bc', primary:'#265ac1', success:'#349266', danger:'#cf6658'};
+  corStatus(item: StatusGridItem): string { return this.cores[item.tone]; }
+  readonly icones: Record<string, string> = {
+    AGUARDANDO_PAGAMENTO:'credit-card', PENDENTE:'clock', EM_PRODUCAO:'settings', PRONTO:'circle-check', ENTREGUE:'truck-delivery',
+    ABERTO:'file-text', ENVIADO:'send', APROVADO:'circle-check', RECUSADO:'circle-x', VENCIDO:'clock', CANCELADO:'circle-x',
+  };
 
   constructor(
     private dashboardService: DashboardService,
