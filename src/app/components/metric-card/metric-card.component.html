@@ -1,4 +1,4 @@
-<article class="metric-card metric-card--{{ accent }}" [class.is-disabled]="disabled">
+<article class="metric-card metric-card--{{ accent }}" [class.is-disabled]="disabled" [class.metric-card--compact]="compact" [class.metric-card--custom]="accentColor" [style.--metric-accent]="accentColor">
   <div class="metric-card__content">
     <span [title]="label">{{ label }}</span>
     <strong [title]="value">{{ value }}</strong>

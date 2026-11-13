@@ -1,8 +1,10 @@
+import { PedidoPrazoDashboardComponent } from 'src/app/components/dashboard1/pedido-prazo/pedido-prazo-dashboard.component';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { DashboardMobileStickyDirective } from './dashboard-mobile-sticky.directive';
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatIconModule } from '@angular/material/icon';
 import { AppReceitaResumoComponent } from 'src/app/components/dashboard1/receita-resumo/receita-resumo.component';
 import { AppComparativoPedidosComponent } from 'src/app/components/dashboard1/comparativo-pedidos/comparativo-pedidos.component';
@@ -41,7 +43,7 @@ interface DashboardQuickAction {
 }
 
 interface DashboardRefreshState {
-  id: 'comparativo' | 'status' | 'receita';
+  id: 'comparativo' | 'status' | 'receita' | 'prazo';
   refreshing: boolean;
 }
 
@@ -50,9 +52,11 @@ interface DashboardRefreshState {
   standalone: true,
   imports: [
     CommonModule,
+    PedidoPrazoDashboardComponent,
     DashboardMobileStickyDirective,
     MatButtonModule,
     MatIconModule,
+    MatMenuModule,
     PageCardComponent,
     SectionCardComponent,
     MetricCardComponent,
@@ -91,7 +95,7 @@ export class AppDashboard1Component implements OnInit, OnDestroy {
     {
       label: 'Rascunhos',
       description: 'Continuar atendimentos',
-      icon: 'draft',
+      icon: 'drafts',
       route: '/page/grafica/comercial/rascunhos',
       requiredPermission: ['GRAFICA_PRODUTOS_VER'],
     },
@@ -137,8 +141,10 @@ export class AppDashboard1Component implements OnInit, OnDestroy {
   }
 
   get visibleQuickActions(): DashboardQuickAction[] {
-    return this.isMobile ? this.quickActions.filter(action => action.route !== '/page/grafica/comercial/pedidos/novo') : this.quickActions;
+    return this.quickActions;
   }
+
+  get podeVerPrazos(): boolean { return this.authService.temPermissao('PEDIDOS_VER') && this.featureFlagService.isEnabled('PEDIDOS') && this.featureFlagService.isEnabled('GRAFICA'); }
 
   get podeCriarPedido(): boolean {
     return this.temAcesso(['PEDIDOS_CADASTRAR']);

@@ -1,0 +1,13 @@
+.dashboard-chart-action {
+  min-height: 36px;
+  padding-inline: 12px;
+  border-color: var(--mat-sys-outline-variant, #dbe4ef);
+  color: var(--mat-sys-primary, #265ac1);
+  background: var(--mat-sys-surface, #fff);
+  white-space: nowrap;
+  font-size: .8125rem;
+  mat-icon { width: 18px; height: 18px; font-size: 18px; }
+}
+@media (max-width: 1023px) {
+  .dashboard-chart-action { min-height: 44px; border-radius: 12px; }
+}

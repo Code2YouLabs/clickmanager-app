@@ -120,3 +120,34 @@
   font-size: 1.1rem;
   line-height: 1.25;
 }
+
+.metric-card--compact {
+  position: relative;
+  height: 100%;
+  min-height: 124px;
+  padding: 14px;
+  border-radius: 10px;
+  gap: 0;
+  font-family: inherit;
+  .metric-card__content { width: 100%; }
+  .metric-card__icon { position: absolute; top: 14px; right: 14px; width: 24px; height: 24px; background: transparent; }
+  .metric-card__icon i-tabler { width: 24px; height: 24px; }
+  .metric-card__content > span {
+    padding-inline-end: 32px;
+    min-height: 2.5em;
+    font-size: .875rem;
+    font-weight: 600;
+    line-height: 1.25;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  strong { margin: 6px 0 4px; font-size: 1.625rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  small { min-height: 1.25em; font-size: .8125rem; font-weight: 500; line-height: 1.25; color: var(--mat-sys-on-surface-variant, #64748b); }
+}
+.metric-card--custom {
+  background: var(--mat-app-background-color, #fff);
+  border-color: #dbe7ff;
+  border-inline-start: 5px solid var(--metric-accent);
+  .metric-card__icon { color: var(--metric-accent); background: transparent; }
+  .metric-card__content > span { color: #172554; }
+}

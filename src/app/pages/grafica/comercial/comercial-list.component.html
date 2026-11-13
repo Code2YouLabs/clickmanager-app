@@ -15,7 +15,7 @@
         [search]="{ enabled: true, label: isMobile && viewMode === 'kanban' ? 'Buscar nos cards carregados' : 'Buscar nesta página', mobileHint: progressiveList ? 'A busca considera apenas os ' + configuracao.plural + ' carregados.' : undefined, placeholder: progressiveList ? 'Pesquisar ' + configuracao.plural + ' carregados' : isMobile && viewMode === 'kanban' ? 'Referência, cliente ou status nos cards carregados' : 'Referência, cliente ou status nesta página', debounceMs: 250, value: busca }"
         [pagination]="pagination"
         mobileLoadMode="progressive"
-        [progressiveState]="{ contextKey: tipo + ':' + statusFiltro + ':' + prazoFiltro + ':' + sort.active + ':' + sort.direction, loadedCount: itens.length, loading: carregandoMais, error: erroMais, restartRequired: reiniciarLista }"
+        [progressiveState]="{ contextKey: tipo + ':' + somenteAbertos + ':' + statusFiltro + ':' + prazoFiltro + ':' + sort.active + ':' + sort.direction, loadedCount: itens.length, loading: carregandoMais, error: erroMais, restartRequired: reiniciarLista }"
         [loadMoreLabel]="'Carregar mais ' + configuracao.plural" [itemsLabel]="configuracao.plural"
         [loading]="carregando && !itens.length"
         [refreshing]="carregando && !!itens.length"

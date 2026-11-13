@@ -22,12 +22,26 @@ describe('Consulta temporal de lista e Kanban', () => {
   expect(c.pagina).toBe(0);expect(service.listarPedidosComerciais).toHaveBeenCalledWith(0,10,'PENDENTE','ATRASADO','previsaoEntrega,desc');
   expect(c.filters.find(x=>x.key==='prazo')?.options.length).toBe(6);
  });
+ it('preserva o escopo do dashboard na lista, paginação e Kanban',()=>{
+  params.next(convertToParamMap({somenteAbertos:'true',prazo:'SEM_PREVISAO',sort:'previsaoEntrega,asc'}));
+  expect(c.filterState['somenteAbertos']).toBeTrue();
+  expect(service.listarPedidosComerciais).toHaveBeenCalledWith(0,10,null,'SEM_PREVISAO','previsaoEntrega,asc',false,true);
+  c.alterarVisualizacao('kanban');
+  expect(service.listarPedidosComerciais).toHaveBeenCalledWith(0,20,'PENDENTE','SEM_PREVISAO','previsaoEntrega,asc',false,true);
+  params.next(convertToParamMap({}));
+  expect(c.somenteAbertos).toBeFalse();
+ });
  it('descarta respostas de colunas antigas depois de trocar o filtro',()=>{
   c.alterarVisualizacao('kanban');const anteriores=[...requests];
   params.next(convertToParamMap({prazo:'ATRASO_CRITICO'}));
   anteriores.forEach(s=>s.next({content:[{id:999,status:'PENDENTE'}],totalElements:1}));
   expect(c.kanbanColumns.every(x=>!x.items.some((p:any)=>p.id===999))).toBeTrue();
   expect(service.listarPedidosComerciais).toHaveBeenCalledWith(0,20,'PENDENTE','ATRASO_CRITICO',null);
+ });
+ it('reconsulta após concluir produção no recorte de abertos, mesmo sem filtro temporal',()=>{
+  c.somenteAbertos=true;const spy=spyOn<any>(c,'revalidarPrazos');
+  (c as any).aplicarStatusRetornado(1,{id:1,status:'PRONTO'},{items:[]});
+  expect(spy).toHaveBeenCalled();
  });
  it('mantém nulos por último e desempate estável após movimentação',()=>{
   c.sort={active:'previsaoEntrega',direction:'desc'};

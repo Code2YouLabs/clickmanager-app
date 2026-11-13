@@ -14,13 +14,15 @@ import { AppStatusGridComponent } from 'src/app/components/dashboard1/status-gri
 import { MetricCardComponent } from 'src/app/components/metric-card/metric-card.component';
 import { AuthService } from 'src/app/services/auth.service';
 import { FeatureFlagService } from 'src/app/services/feature-flag.service';
+import { PedidoPrazoDashboardComponent } from 'src/app/components/dashboard1/pedido-prazo/pedido-prazo-dashboard.component';
 import { AppDashboard1Component } from './dashboard1.component';
 
-@Component({ selector: 'app-comparativo-pedidos, app-status-grid, app-receita-resumo', standalone: true, template: '' })
+@Component({ selector: 'app-comparativo-pedidos, app-status-grid, app-receita-resumo, app-pedido-prazo-dashboard', standalone: true, template: '' })
 class WidgetStub {
+  abrirGraficoComparativo = jasmine.createSpy('abrirGraficoComparativo');
   @Input() refreshToken = 0;
   @Input() compactMobile = false;
-  @Output() refreshState = new EventEmitter<{ id: 'comparativo' | 'status' | 'receita'; refreshing: boolean }>();
+  @Output() refreshState = new EventEmitter<{ id: 'comparativo' | 'status' | 'receita' | 'prazo'; refreshing: boolean }>();
 }
 
 const resumo = {
@@ -42,10 +44,12 @@ describe('Dashboard — composição mobile compartilhando dados e widgets', () 
   let smartcalc: boolean;
   const query = (selector: string): HTMLElement | null => fixture.nativeElement.querySelector(selector);
   const count = (selector: string): number => fixture.nativeElement.querySelectorAll(selector).length;
+  const menuItems = () => Array.from(document.querySelectorAll<HTMLButtonElement>('.dashboard-shortcut-item'));
+  const abrirAtalhos = async () => { query('.dashboard-shortcuts-trigger')!.click(); fixture.detectChanges(); await fixture.whenStable(); };
   const refresh = () => query('button[aria-label="Atualizar dashboard"]') as HTMLButtonElement;
 
   beforeEach(() => {
-    permissions = new Set(['GRAFICA_PRODUTOS_VER', 'SMARTCALC_USAR']); smartcalc = true;
+    permissions = new Set(['GRAFICA_PRODUTOS_VER', 'SMARTCALC_USAR', 'PEDIDOS_CADASTRAR']); smartcalc = true;
     layout = new BehaviorSubject<{ matches: boolean }>({ matches: true });
     service = jasmine.createSpyObj<DashboardService>('DashboardService', ['obterVisaoGeralGrafica']);
     service.obterVisaoGeralGrafica.and.returnValue(of(resumo));
@@ -57,13 +61,13 @@ describe('Dashboard — composição mobile compartilhando dados e widgets', () 
         { provide: AuthService, useValue: { temPermissao: (key: string) => permissions.has(key) } },
         { provide: FeatureFlagService, useValue: { carregar: () => of({}), isEnabled: () => smartcalc } },
       ],
-    }).overrideComponent(AppDashboard1Component, { remove: { imports: [AppComparativoPedidosComponent, AppReceitaResumoComponent, AppStatusGridComponent] }, add: { imports: [WidgetStub] } });
+    }).overrideComponent(AppDashboard1Component, { remove: { imports: [AppComparativoPedidosComponent, AppReceitaResumoComponent, AppStatusGridComponent, PedidoPrazoDashboardComponent] }, add: { imports: [WidgetStub] } });
     router = TestBed.inject(Router); spyOn(router, 'navigate').and.resolveTo(true);
     fixture = TestBed.createComponent(AppDashboard1Component); fixture.detectChanges();
   });
   afterEach(() => fixture.destroy());
 
-  it('mostra apenas o título e as duas ações compactas, com Novo pedido em uma única posição', () => {
+  it('mostra título, atualização e Atalhos, sem Novo pedido fora do menu', () => {
     expect(count('.dashboard-mobile-toolbar')).toBe(1);
     expect(query('.dashboard-mobile-toolbar h2')?.textContent).toBe('Visão geral');
     expect(count('.dashboard-mobile-toolbar button')).toBe(2);
@@ -100,33 +104,67 @@ describe('Dashboard — composição mobile compartilhando dados e widgets', () 
     expect(refresh().disabled).toBeFalse();
   });
 
-  it('preserva quatro métricas, formatação, ícones e navegação autorizada', () => {
+  it('exibe prazos somente com acesso aos Pedidos e integra sua atualização', () => {
+    expect(query('app-pedido-prazo-dashboard')).toBeNull();
+    permissions.add('PEDIDOS_VER'); fixture.detectChanges();
+    const widget = fixture.debugElement.query(By.css('app-pedido-prazo-dashboard')).componentInstance as WidgetStub;
+    widget.refreshState.emit({id:'prazo',refreshing:true});fixture.detectChanges();expect(refresh().disabled).toBeTrue();
+    widget.refreshState.emit({id:'prazo',refreshing:false});fixture.detectChanges();expect(refresh().disabled).toBeFalse();
+    permissions.delete('PEDIDOS_VER');fixture.detectChanges();expect(query('app-pedido-prazo-dashboard')).toBeNull();
+  });
+
+  it('preserva quatro métricas, formatação, ícones e navegação autorizada', async () => {
     const cards = fixture.debugElement.queryAll(By.directive(MetricCardComponent));
     expect(cards.map(element => element.componentInstance.label)).toEqual(['Receita do mês', 'Pedidos', 'Orçamentos', 'Rascunhos']);
     expect(cards[0].componentInstance.value).toContain('1.234.567,89');
     expect(cards.map(element => element.componentInstance.icon)).toEqual(['cash', 'clipboard-list', 'file-dollar', 'edit']);
     const button = query('.dashboard-kpi-button')!; button.click();
     expect(router.navigate).toHaveBeenCalledWith(['/dashboards/dashboard1/grafico'], { queryParams: { tipo: 'receita' } });
-    query('.dashboard-mobile-toolbar__new')!.click();
+    await abrirAtalhos();
+    expect(menuItems().filter(b=>b.textContent?.includes('Novo pedido')).length).toBe(1);
+    menuItems().find(b=>b.textContent?.includes('Novo pedido'))!.click();
     expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial/pedidos/novo']);
   });
 
   it('oculta Novo pedido e atalhos não autorizados sem alterar a informação dos indicadores', () => {
     permissions.clear(); fixture.componentInstance.carregarResumo(); fixture.detectChanges();
-    expect(query('.dashboard-mobile-toolbar__new')).toBeNull();
+    expect(query('.dashboard-shortcuts-trigger')).toBeNull();
     expect(query('.dashboard-quick-section')).toBeNull();
     expect(count('app-metric-card')).toBe(4);
     expect(count('.dashboard-kpi-button')).toBe(1); // Receita mantém a navegação existente.
   });
 
-  it('preserva no desktop o filtro SmartCalc e a ação de Rascunhos', () => {
+  it('preserva no menu desktop o filtro SmartCalc e a ação de Rascunhos', async () => {
     layout.next({ matches: false });
     smartcalc = false; fixture.componentInstance.carregarResumo(); fixture.detectChanges();
-    expect(query('.quick-actions')?.textContent).not.toContain('SmartCalc');
-    expect(query('.quick-actions')?.textContent).toContain('Rascunhos');
-    const rascunhos = Array.from(fixture.nativeElement.querySelectorAll('.quick-action')).find((button: any) => button.textContent.includes('Rascunhos')) as HTMLButtonElement;
+    await abrirAtalhos();
+    expect(menuItems().some(b=>b.textContent?.includes('SmartCalc'))).toBeFalse();
+    expect(menuItems().some(b=>b.textContent?.includes('Novo pedido'))).toBeTrue();
+    const rascunhos = menuItems().find(b=>b.textContent?.includes('Rascunhos'))!;
     rascunhos.click();
     expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial/rascunhos']);
+  });
+
+  it('inclui SmartCalc no menu mobile e preserva sua navegação', async () => {
+    await abrirAtalhos();
+    expect(menuItems().length).toBe(3);
+    menuItems().find(b=>b.textContent?.includes('SmartCalc'))!.click();
+    expect(router.navigate).toHaveBeenCalledWith(['/smartcalc']);
+  });
+
+  it('não mostra Novo pedido sem permissão, mantendo os demais atalhos', async () => {
+    permissions.delete('PEDIDOS_CADASTRAR');fixture.componentInstance.carregarResumo();fixture.detectChanges();
+    await abrirAtalhos();
+    expect(menuItems().some(b=>b.textContent?.includes('Novo pedido'))).toBeFalse();
+    expect(menuItems().length).toBe(2);
+  });
+
+  it('abre o gráfico pela ação no cabeçalho e preserva a instância com os filtros', () => {
+    const widget = fixture.debugElement.query(By.css('app-comparativo-pedidos')).componentInstance as WidgetStub;
+    const button = query('[aria-label="Ver gráfico de evolução comercial"]')!;
+    expect(button.closest('.section-card__actions')).not.toBeNull();
+    button.click();expect(widget.abrirGraficoComparativo).toHaveBeenCalledTimes(1);
+    expect(query('.dashboard-chart-card__mobile-cta')).toBeNull();
   });
 
   it('preserva erro, dados anteriores e retry usando o mesmo serviço', () => {
@@ -140,7 +178,7 @@ describe('Dashboard — composição mobile compartilhando dados e widgets', () 
     expect(service.obterVisaoGeralGrafica).toHaveBeenCalledTimes(3);
   });
 
-  it('mantém desktop com descrição, botão Atualizar e atalho Novo pedido, sem duplicar widgets ou consultas', () => {
+  it('mantém desktop com descrição, Atualizar e Atalhos, sem painel ou widgets duplicados', () => {
     const widgets = fixture.debugElement.queryAll(By.directive(WidgetStub)).map(element => element.componentInstance);
     layout.next({ matches: false }); fixture.detectChanges();
     expect(query('.dashboard-mobile-toolbar')).toBeNull();
@@ -148,8 +186,9 @@ describe('Dashboard — composição mobile compartilhando dados e widgets', () 
     expect(query('app-card-header')?.textContent).toContain('Dashboard');
     expect(query('app-card-header')?.textContent).toContain('Acompanhe receita, atendimento e operação da gráfica.');
     expect(query('.dashboard-actions')?.textContent).toContain('Atualizar');
-    expect(query('.dashboard-actions')?.textContent).toContain('Novo pedido');
-    expect(query('.quick-actions')?.textContent).toContain('Novo pedido');
+    expect(query('.dashboard-actions')?.textContent).toContain('Atalhos');
+    expect(query('.dashboard-actions')?.textContent).not.toContain('Novo pedido');
+    expect(query('.quick-actions')).toBeNull();
     expect(fixture.debugElement.queryAll(By.directive(WidgetStub)).map(element => element.componentInstance)).toEqual(widgets);
     expect(service.obterVisaoGeralGrafica).toHaveBeenCalledTimes(1);
     layout.next({ matches: true }); fixture.detectChanges();
