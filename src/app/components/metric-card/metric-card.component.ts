@@ -18,5 +18,7 @@ export class MetricCardComponent {
   @Input() info = '';
   @Input() icon = 'info-circle';
   @Input() accent: MetricCardAccent = 'primary';
+  @Input() accentColor: string | null = null;
+  @Input() compact = false;
   @Input() disabled = false;
 }

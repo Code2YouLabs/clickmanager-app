@@ -1,3 +1,5 @@
+@use '../../../components/dashboard1/chart-action';
+
 :host {
   display: block;
 }
@@ -85,28 +87,29 @@
 .dashboard-secondary-grid {
   --dashboard-status-top-card-height: 356px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   align-items: start;
 }
 
-.dashboard-chart-section,
-.dashboard-quick-section {
+.dashboard-delivery-section { margin-bottom: 14px; }
+
+.dashboard-revenue-section {
+  margin-bottom: 14px;
   min-width: 0;
-  height: 100%;
 }
+
+.dashboard-secondary-grid > * { min-width: 0; }
 
 .dashboard-chart-section {
-  grid-column: span 3;
+  min-width: 0;
+  height: 100%;
+  grid-column: span 4;
 }
 
-.dashboard-quick-section {
-  grid-column: span 1;
-}
 
 :host ::ng-deep .dashboard-page .page-card,
 :host ::ng-deep .dashboard-chart-section .section-card,
-:host ::ng-deep .dashboard-quick-section .section-card,
 :host ::ng-deep app-status-grid {
   height: 100%;
 }
@@ -116,7 +119,7 @@
 }
 
 :host ::ng-deep .dashboard-chart-section .section-card,
-:host ::ng-deep .dashboard-quick-section .section-card,
+:host ::ng-deep app-pedido-prazo-dashboard .section-card,
 :host ::ng-deep app-status-grid .status-grid-card .section-card,
 :host ::ng-deep app-receita-resumo .dashboard-receita-card .section-card {
   border-radius: 16px;
@@ -130,20 +133,14 @@
   min-height: var(--dashboard-status-top-card-height);
 }
 
-:host ::ng-deep .dashboard-chart-section .section-card,
-:host ::ng-deep .dashboard-quick-section .section-card {
+:host ::ng-deep .dashboard-chart-section .section-card {
   display: flex;
   flex-direction: column;
 }
 
-:host ::ng-deep .dashboard-chart-section .section-card__body,
-:host ::ng-deep .dashboard-quick-section .section-card__body {
+:host ::ng-deep .dashboard-chart-section .section-card__body {
   flex: 1;
   padding-top: 0;
-}
-
-:host ::ng-deep .dashboard-quick-section .section-card__body {
-  display: flex;
 }
 
 :host ::ng-deep .dashboard-chart-section app-comparativo-pedidos .dashboard-chart-card,
@@ -153,76 +150,12 @@
   border-radius: 0;
 }
 
+:host ::ng-deep app-pedido-prazo-dashboard .mat-mdc-card,
 :host ::ng-deep app-status-grid .mat-mdc-card,
 :host ::ng-deep app-receita-resumo .mat-mdc-card {
   margin: 0;
 }
 
-.quick-actions {
-  display: grid;
-  width: 100%;
-  align-content: start;
-  gap: 10px;
-}
-
-.quick-action {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 68px;
-  padding: 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  background: #fff;
-  color: #111827;
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
-
-  &:hover,
-  &:focus-visible {
-    border-color: rgba(37, 99, 235, 0.35);
-    box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
-    outline: none;
-    transform: translateY(-1px);
-  }
-}
-
-.quick-action__icon {
-  display: inline-grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  background: #eff6ff;
-  color: #2563eb;
-  flex: 0 0 auto;
-
-  mat-icon {
-    width: 20px;
-    height: 20px;
-    font-size: 20px;
-  }
-}
-
-.quick-action__copy {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-
-  strong {
-    color: #111827;
-    font-size: 14px;
-    font-weight: 800;
-  }
-
-  small {
-    color: #64748b;
-    font-size: 12px;
-    font-weight: 600;
-  }
-}
 
 @media (max-width: 1199px) {
   .dashboard-kpis {
@@ -234,10 +167,7 @@
     grid-template-columns: 1fr;
   }
 
-  .dashboard-chart-section,
-  .dashboard-quick-section {
-    grid-column: auto;
-  }
+  .dashboard-chart-section { grid-column: auto; }
 
   :host ::ng-deep app-status-grid,
   :host ::ng-deep app-receita-resumo,
@@ -278,22 +208,18 @@
 
   .dashboard-mobile-toolbar__actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
   .dashboard-mobile-toolbar__refresh { width: 44px; height: 44px; padding: 10px; }
-  .dashboard-mobile-toolbar__new { white-space: nowrap; min-height: 44px; padding-inline: 12px; }
+
   .dashboard-mobile-toolbar__refresh[aria-busy='true'] mat-icon { animation: dashboard-refresh 1s linear infinite; }
 
   .dashboard-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); order: 1; gap: 8px; margin: 0; }
-  .dashboard-main-grid, .dashboard-secondary-grid { display: contents; }
-  .dashboard-quick-section { order: 2; }
-  app-status-grid { order: 3; }
-  .dashboard-chart-section { order: 4; }
-  app-receita-resumo { order: 5; }
+  .dashboard-main-grid, .dashboard-secondary-grid, .dashboard-revenue-section { display: contents; }
+
+  .dashboard-chart-section { order: 3; }
+  app-receita-resumo { order: 4; }
+  app-pedido-prazo-dashboard { order: 5; margin-bottom: 0; }
+  app-status-grid { order: 6; }
   .dashboard-feedback { flex-wrap: wrap; margin: 0; }
 
-  .quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .quick-action { min-height: 64px; padding: 8px; gap: 8px; align-items: flex-start; }
-  .quick-action__icon { width: 32px; height: 32px; }
-  .quick-action__copy { overflow-wrap: anywhere; }
-  .quick-action__copy strong { font-size: 0.875rem; }
 
   :host ::ng-deep .dashboard-page {
     // PageCard stays the desktop foundation; its legacy header is replaced only here.
@@ -327,32 +253,12 @@
 
     app-status-grid, app-receita-resumo { min-width: 0; height: auto; }
     app-status-grid .status-grid-stack { gap: 12px; }
-    app-status-grid .status-grid { gap: 8px; }
-    app-status-grid .status-grid__item {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-areas: 'label' 'count' 'amount';
-      align-content: center;
-      align-items: center;
-      min-height: 80px;
-      padding: 12px;
-      gap: 4px 8px;
-      border-radius: 12px;
-    }
-    app-status-grid .status-grid__value { grid-area: count; font-size: 1.5rem; overflow-wrap: anywhere; }
-    app-status-grid .status-grid__label {
-      grid-area: label;
-      min-height: 2.3em;
-      font-size: 0.75rem;
-      overflow-wrap: anywhere;
-    }
-    app-status-grid .status-grid__amount { grid-area: amount; font-size: 0.75rem; overflow-wrap: anywhere; }
     .status-grid-feedback, .dashboard-chart-card__feedback, .dashboard-receita-card__feedback { flex-wrap: wrap; }
 
-    .dashboard-quick-section .section-card, .dashboard-chart-section .section-card,
-    app-status-grid .section-card, app-receita-resumo .section-card { margin: 0; padding: 12px; min-height: 0; height: auto; }
-    .dashboard-quick-section .subtitle, .dashboard-chart-section .subtitle,
-    app-status-grid .subtitle, app-receita-resumo .subtitle { font-size: 0.75rem; }
+    .dashboard-chart-section .section-card,
+    app-status-grid .section-card, app-pedido-prazo-dashboard .section-card, app-receita-resumo .section-card { margin: 0; padding: 12px; min-height: 0; height: auto; }
+    .dashboard-chart-section .subtitle,
+    app-status-grid .subtitle, app-pedido-prazo-dashboard .subtitle, app-receita-resumo .subtitle { font-size: 0.75rem; }
 
     .dashboard-chart-card__header, .dashboard-chart-card__desktop-summary, .dashboard-chart-card__canvas { display: none; }
     .dashboard-chart-card__content { gap: 12px; }
@@ -371,8 +277,6 @@
     .dashboard-chart-card__mobile-line span { font-size: 0.75rem; }
     .dashboard-chart-card__mobile-line strong { font-size: 1rem; overflow-wrap: anywhere; }
     .dashboard-chart-card__mobile-insights strong { font-size: 0.875rem; }
-    .dashboard-chart-card__footer { display: flex; }
-    .dashboard-chart-card__mobile-cta, .dashboard-receita-card__detail-btn { min-height: 44px; }
 
     .dashboard-receita-card__top h2 { font-size: 1.125rem; overflow-wrap: anywhere; }
     .dashboard-receita-card__summary { min-width: 0; }
@@ -405,7 +309,7 @@
     border: 1px solid var(--mat-sys-outline-variant, #e2e8f0);
     mat-icon { margin: 0; }
   }
-  .dashboard-mobile-toolbar__new { height: 44px; border-radius: 12px; }
+
 
   :host ::ng-deep .dashboard-page {
     > .page-card { margin: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
@@ -417,6 +321,7 @@
 
     .dashboard-chart-section .section-card,
     app-status-grid .section-card,
+    app-pedido-prazo-dashboard .section-card,
     app-receita-resumo .section-card {
       border: 1px solid var(--mat-sys-outline-variant, #e2e8f0);
       border-radius: 12px;
@@ -429,22 +334,6 @@
     .section-card__title .subtitle { font-size: 0.75rem; line-height: 1.25; }
 
     app-status-grid .status-grid-stack { gap: 16px; }
-    app-status-grid .status-grid { grid-auto-rows: 1fr; gap: 0 12px; }
-    app-status-grid .status-grid__item {
-      min-width: 0;
-      min-height: 88px;
-      padding: 8px 4px;
-      border-width: 0 0 1px;
-      border-style: solid;
-      border-radius: 0;
-      background: transparent;
-      box-shadow: none;
-    }
-    app-status-grid .status-grid__value { font-size: 1.125rem; }
-    app-status-grid .status-grid__item:hover,
-    app-status-grid .status-grid__item:focus-visible { box-shadow: none; transform: none; background: var(--mat-sys-surface-container, #f8fafc); }
-    app-status-grid .status-grid__item:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: -2px; }
-
     .dashboard-chart-card { background: transparent; border: 0; border-radius: 0; box-shadow: none; }
     .dashboard-chart-card__content { display: flex; flex-direction: column; gap: 12px; }
     .dashboard-chart-card__mobile-summary { order: 0; gap: 8px; }
@@ -463,12 +352,6 @@
     .dashboard-chart-card__periods-selection { display: block; margin-top: 4px; color: var(--mat-sys-on-surface-variant); font-size: 0.75rem; }
     .dashboard-chart-card__periods summary:focus-visible { outline: 2px solid var(--mat-sys-primary); outline-offset: -2px; border-radius: 4px; }
     .dashboard-chart-card__periods[open] .dashboard-chart-card__filters { padding-bottom: 8px; }
-    .dashboard-chart-card__footer { order: 3; }
-
-    .dashboard-chart-card__footer,
-    .dashboard-receita-card__footer { border-top: 1px solid var(--mat-sys-outline-variant, #e2e8f0); padding-top: 12px; margin: 0; }
-    .dashboard-chart-card__mobile-cta,
-    .dashboard-receita-card__detail-btn { width: 100%; border-radius: 12px; }
 
     .dashboard-receita-card__summary { gap: 4px 8px; }
     .dashboard-receita-card__summary h2 { flex-basis: 100%; }
@@ -494,3 +377,18 @@
 
 @keyframes dashboard-refresh { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .dashboard-mobile-toolbar__refresh mat-icon { animation: none !important; } }
+
+.dashboard-shortcuts-trigger {
+  min-height: 40px;
+  border-color: var(--mat-sys-outline-variant, #dbe4ef);
+  color: var(--mat-sys-primary, #265ac1);
+  background: var(--mat-sys-surface, #fff);
+  mat-icon { width: 20px; height: 20px; font-size: 20px; }
+}
+.dashboard-shortcut-item { min-height: 64px; min-width: 248px; }
+.dashboard-shortcut-copy { display: grid; gap: 2px; padding-block: 8px; }
+.dashboard-shortcut-label { font-size: .875rem; font-weight: 600; line-height: 1.4; }
+.dashboard-shortcut-description { font-size: .75rem; line-height: 1.4; color: var(--mat-sys-on-surface-variant, #64748b); }
+@media (max-width: 1023px) {
+  .dashboard-shortcuts-trigger { min-height: 44px; padding-inline: 12px; border-radius: 12px; }
+}

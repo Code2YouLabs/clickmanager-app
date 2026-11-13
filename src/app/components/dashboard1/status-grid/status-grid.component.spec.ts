@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { TablerIconsModule } from 'angular-tabler-icons';
+import * as TablerIcons from 'angular-tabler-icons/icons';
 import { Router } from '@angular/router';
 import { DashboardService } from '../dashboard.service';
 import { of, throwError } from 'rxjs';
@@ -99,7 +101,7 @@ describe('AppStatusGridComponent — apresentação compartilhada', () => {
     const items = statuses.map(([codigo, label], index) => ({ codigo, label, quantidade: index + 1, valor: 25.5 }));
     service.obterResumoGrafica.and.returnValue(of({ pedidoStatus: items.slice(0, 5), orcamentoStatus: items.slice(5) } as any));
     await TestBed.configureTestingModule({
-      imports: [AppStatusGridComponent, NoopAnimationsModule],
+      imports: [AppStatusGridComponent, NoopAnimationsModule, TablerIconsModule.pick(TablerIcons)],
       providers: [{ provide: DashboardService, useValue: service }, { provide: Router, useValue: router }],
     }).compileComponents();
     fixture = TestBed.createComponent(AppStatusGridComponent);
@@ -113,9 +115,9 @@ describe('AppStatusGridComponent — apresentação compartilhada', () => {
     expect(grids[1].querySelectorAll('button').length).toBe(6);
     expect(buttons().length).toBe(statuses.length);
     buttons().forEach((button, index) => {
-      expect(button.querySelector('.status-grid__label')?.textContent?.trim()).toBe(statuses[index][1]);
-      expect(button.querySelector('.status-grid__value')?.textContent?.trim()).toBe(String(index + 1));
-      expect(button.querySelector('.status-grid__amount')?.textContent?.replace(/\s/g, ' ').trim()).toBe('R$ 25,50');
+      expect(button.querySelector('.metric-card__content > span')?.textContent?.trim()).toBe(statuses[index][1]);
+      expect(button.querySelector('.metric-card__content > strong')?.textContent?.trim()).toBe(String(index + 1));
+      expect(button.querySelector('.metric-card__content > small')?.textContent?.replace(/\s/g, ' ').trim()).toBe('R$ 25,50');
       expect(button.classList.contains(`status-grid__item--${statuses[index][2]}`)).toBeTrue();
     });
   });
@@ -123,11 +125,11 @@ describe('AppStatusGridComponent — apresentação compartilhada', () => {
   it('usa nome, quantidade e valor na ordem de leitura mobile, inclusive para nomes longos', () => {
     fixture.detectChanges();
     buttons().forEach(button => {
-      expect(Array.from(button.children).map(child => child.className)).toEqual([
-        'status-grid__label', 'status-grid__value', 'status-grid__amount',
+      expect(Array.from(button.querySelector('.metric-card__content')!.children).map(child => child.tagName)).toEqual([
+        'SPAN', 'STRONG', 'SMALL',
       ]);
     });
-    expect(buttons()[0].firstElementChild?.textContent?.trim()).toBe('Aguardando pagamento');
+    expect(buttons()[0].querySelector('.metric-card__content > span')?.textContent?.trim()).toBe('Aguardando pagamento');
   });
 
   it('mantém as ações e filtros de todos os status nos botões nativos', () => {
@@ -148,20 +150,20 @@ describe('AppStatusGridComponent — apresentação compartilhada', () => {
     fixture.detectChanges();
     expect(buttons().length).toBe(11);
     buttons().forEach((button, index) => {
-      expect(button.querySelector('.status-grid__label')?.textContent?.trim()).toBeTruthy();
-      expect(button.querySelector('.status-grid__value')?.textContent?.trim()).toBe('0');
-      expect(button.querySelector('.status-grid__amount')?.textContent?.replace(/\s/g, ' ').trim()).toBe('R$ 0,00');
+      expect(button.querySelector('.metric-card__content > span')?.textContent?.trim()).toBeTruthy();
+      expect(button.querySelector('.metric-card__content > strong')?.textContent?.trim()).toBe('0');
+      expect(button.querySelector('.metric-card__content > small')?.textContent?.replace(/\s/g, ' ').trim()).toBe('R$ 0,00');
       expect(button.classList.contains(`status-grid__item--${statuses[index][2]}`)).toBeTrue();
     });
   });
 
-  it('preserva a ordem original do desktop ao mudar de breakpoint, sem novas consultas', () => {
+  it('mantém a apresentação compartilhada ao mudar de breakpoint, sem novas consultas', () => {
     fixture.detectChanges();
     fixture.componentRef.setInput('compactMobile', false);
     fixture.detectChanges();
     buttons().forEach(button => {
-      expect(Array.from(button.children).map(child => child.className)).toEqual([
-        'status-grid__value', 'status-grid__label', 'status-grid__amount',
+      expect(Array.from(button.querySelector('.metric-card__content')!.children).map(child => child.tagName)).toEqual([
+        'SPAN', 'STRONG', 'SMALL',
       ]);
     });
     buttons()[0].click();
@@ -175,6 +177,6 @@ describe('AppStatusGridComponent — apresentação compartilhada', () => {
     fixture = TestBed.createComponent(AppStatusGridComponent);
     fixture.detectChanges();
     expect(fixture.componentInstance.compactMobile).toBeFalse();
-    expect(buttons()[0].firstElementChild?.className).toBe('status-grid__value');
+    expect(buttons()[0].querySelector('app-metric-card')).not.toBeNull();
   });
 });

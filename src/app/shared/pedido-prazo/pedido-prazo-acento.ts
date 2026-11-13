@@ -11,6 +11,8 @@ const ACENTOS: Record<PedidoPrazoSituacao, string | null> = {
   CANCELADO: null,
 };
 
+export function acentoSituacaoPrazo(situacao: PedidoPrazoSituacao): string | null { return ACENTOS[situacao]; }
+
 export function acentoPrazo(prazo?: PedidoPrazo | null): string | null {
   return prazo?.situacao ? ACENTOS[prazo.situacao] ?? null : null;
 }

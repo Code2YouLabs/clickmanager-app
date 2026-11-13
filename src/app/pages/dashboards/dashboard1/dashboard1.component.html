@@ -6,9 +6,10 @@
       [disabled]="loading || atualizando" [attr.aria-busy]="loading || atualizando" (click)="atualizarDashboard()">
       <mat-icon>{{ loading || atualizando ? 'sync' : 'refresh' }}</mat-icon>
     </button>
-    @if (podeCriarPedido) {
-    <button mat-flat-button color="primary" type="button" class="dashboard-mobile-toolbar__new"
-      (click)="navegar('/page/grafica/comercial/pedidos/novo')">Novo pedido</button>
+    @if (visibleQuickActions.length) {
+    <button mat-stroked-button type="button" class="dashboard-shortcuts-trigger" [matMenuTriggerFor]="atalhosMenu">
+      <mat-icon>bolt</mat-icon>Atalhos<mat-icon iconPositionEnd>expand_more</mat-icon>
+    </button>
     }
   </div>
 </header>
@@ -24,9 +25,9 @@
     <button mat-stroked-button type="button" (click)="atualizarDashboard()" [disabled]="loading || atualizando">
       {{ atualizando ? 'Atualizando...' : 'Atualizar' }}
     </button>
-    @if (podeCriarPedido) {
-    <button mat-flat-button color="primary" type="button" (click)="navegar('/page/grafica/comercial/pedidos/novo')">
-      Novo pedido
+    @if (visibleQuickActions.length) {
+    <button mat-stroked-button type="button" class="dashboard-shortcuts-trigger" [matMenuTriggerFor]="atalhosMenu">
+      <mat-icon>bolt</mat-icon>Atalhos<mat-icon iconPositionEnd>expand_more</mat-icon>
     </button>
     }
     }
@@ -80,35 +81,29 @@
       title="Evolução comercial"
       subtitle="Compare pedidos e receita por período."
       [divider]="true">
-      <app-comparativo-pedidos
+      <button section-card-actions mat-stroked-button type="button" class="dashboard-chart-action"
+        aria-label="Ver gráfico de evolução comercial" (click)="comparativo.abrirGraficoComparativo()">
+        <mat-icon>open_in_full</mat-icon>Ver gráfico
+      </button>
+      <app-comparativo-pedidos #comparativo
         [compactMobile]="isMobile"
         [refreshToken]="refreshToken"
         (refreshState)="onWidgetRefreshState($event)">
       </app-comparativo-pedidos>
     </app-section-card>
 
-    @if (!isMobile) {
-    <app-section-card
-      class="dashboard-quick-section"
-      title="Atalhos"
-      subtitle="Ações frequentes da operação."
-      [divider]="true">
-      <div class="quick-actions">
-        @for (action of visibleQuickActions; track action.route) {
-          <button type="button" class="quick-action" (click)="navegar(action.route)">
-            <span class="quick-action__icon">
-              <mat-icon>{{ action.icon }}</mat-icon>
-            </span>
-            <span class="quick-action__copy">
-              <strong>{{ action.label }}</strong>
-              <small>{{ action.description }}</small>
-            </span>
-          </button>
-        }
-      </div>
-    </app-section-card>
-    }
   </section>
+
+  <section class="dashboard-revenue-section">
+    <app-receita-resumo
+      [refreshToken]="refreshToken"
+      (refreshState)="onWidgetRefreshState($event)">
+    </app-receita-resumo>
+  </section>
+
+  @if (podeVerPrazos) {
+    <app-pedido-prazo-dashboard class="dashboard-delivery-section" [refreshToken]="refreshToken" (refreshState)="onWidgetRefreshState($event)" />
+  }
 
   <section class="dashboard-secondary-grid">
     <app-status-grid
@@ -116,9 +111,17 @@
       [refreshToken]="refreshToken"
       (refreshState)="onWidgetRefreshState($event)">
     </app-status-grid>
-    <app-receita-resumo
-      [refreshToken]="refreshToken"
-      (refreshState)="onWidgetRefreshState($event)">
-    </app-receita-resumo>
   </section>
 </app-page-card>
+
+<mat-menu #atalhosMenu="matMenu" xPosition="before">
+  @for (action of visibleQuickActions; track action.route) {
+    <button mat-menu-item type="button" class="dashboard-shortcut-item" (click)="navegar(action.route)">
+      <mat-icon>{{ action.icon }}</mat-icon>
+      <span class="dashboard-shortcut-copy">
+        <span class="dashboard-shortcut-label">{{ action.label }}</span>
+        <span class="dashboard-shortcut-description">{{ action.description }}</span>
+      </span>
+    </button>
+  }
+</mat-menu>

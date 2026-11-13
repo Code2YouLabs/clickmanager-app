@@ -75,6 +75,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   readonly auth = inject(AuthService);
   readonly acentoPedido = (item: PedidoComercialResumo): string | null => acentoPrazo(item.prazo);
   prazoFiltro: string | null = null;
+  somenteAbertos = false;
   sort: DataTableSort = {active:'', direction:''};
   private prazoRelogio = new PedidoPrazoRelogio(() => this.revalidarPrazos());
   get podeCriarPedido() {return this.tipo !== 'pedidos' || this.auth.temPermissao('PEDIDOS_CADASTRAR');}
@@ -83,11 +84,14 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   private aplicarConsulta(state: DataTableFilterState, sort = this.sort) {
     const queryParams: Record<string,string | number | boolean | null | unknown> = {status:state['status'] || null};
     if ('prazo' in state || this.prazoFiltro) queryParams['prazo']=state['prazo'] || null;
+    if ('somenteAbertos' in state || this.somenteAbertos) queryParams['somenteAbertos'] = state['somenteAbertos'] === true || state['somenteAbertos'] === 'true' ? true : null;
     if (sort.active || this.sort.active) queryParams['sort']=sort.active && sort.direction ? `${sort.active},${sort.direction}` : null;
     this.router.navigate([], {relativeTo:this.route, queryParams, queryParamsHandling:'merge'});
   }
   private refreshSilencioso = false;
   private pedidosPagina(page: number, size: number, status?: string | null) {
+    if (this.somenteAbertos) return this.graficaService.listarPedidosComerciais(page,size,status,this.prazoFiltro,
+      this.sort.active && this.sort.direction ? `${this.sort.active},${this.sort.direction}` : null, this.refreshSilencioso, true);
     if (this.refreshSilencioso) return this.graficaService.listarPedidosComerciais(page,size,status,this.prazoFiltro,
       this.sort.active && this.sort.direction ? `${this.sort.active},${this.sort.direction}` : null, true);
     return this.prazoFiltro || this.sort.active ? this.graficaService.listarPedidosComerciais(page,size,status,this.prazoFiltro,
@@ -208,9 +212,10 @@ export class ComercialListComponent implements OnInit, OnDestroy {
       value, label: value.toLowerCase().replace(/_/g, ' ').replace(/^./, char => char.toUpperCase()),
     })) }];
     if (this.tipo === 'pedidos') filtros.push({key:'prazo',label:'Prazo de entrega',type:'select',options:PEDIDO_PRAZO_FILTROS});
+    if (this.tipo === 'pedidos') filtros.push({key:'somenteAbertos',label:'Acompanhamento',type:'select',options:[{value:true,label:'Somente pedidos abertos'}]});
     return filtros;
   }
-  get filterState(): DataTableFilterState { return this.tipo === 'pedidos' ? { status: this.statusFiltro, prazo:this.prazoFiltro } : {status:this.statusFiltro}; }
+  get filterState(): DataTableFilterState { return this.tipo === 'pedidos' ? { status: this.statusFiltro, prazo:this.prazoFiltro, ...(this.somenteAbertos ? {somenteAbertos:true} : {}) } : {status:this.statusFiltro}; }
   filtrar(state: DataTableFilterState): void {
     this.aplicarConsulta(state);
   }
@@ -275,6 +280,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
       this.tipo = tipo;
       this.statusFiltro = params.get('status');
       this.prazoFiltro = params.get('prazo');
+      this.somenteAbertos = params.get('somenteAbertos') === 'true';
       const [active,direction] = (params.get('sort') || '').split(',');
       this.sort = active === 'previsaoEntrega' && (direction === 'asc' || direction === 'desc') ? {active, direction} : {active:'', direction:''};
       this.columns = this.columns.filter(c => c.key !== 'previsaoEntrega');
@@ -750,7 +756,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   private aplicarStatusRetornado(pedidoId: number, pedido: PedidoComercialDetalhe, target: PedidoKanbanColumn): void {
-    if (this.prazoFiltro) {this.revalidarPrazos(); return;}
+    if (this.prazoFiltro || this.somenteAbertos) {this.revalidarPrazos(); return;}
     target.items = target.items.map((item) => this.pedidoId(item) === pedidoId
       ? { ...item, ...pedido, status: pedido.status || item.status }
       : item);
@@ -814,7 +820,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   private resetKanbanSeContextoMudou(): void {
-    const contexto = `${this.statusFiltro || '__todos__'}|${this.prazoFiltro || ''}|${this.sort.active},${this.sort.direction}`;
+    const contexto = `${this.statusFiltro || '__todos__'}|${this.prazoFiltro || ''}|${this.sort.active},${this.sort.direction}|${this.somenteAbertos}`;
     if (contexto === this.kanbanContextKey) {
       return;
     }
@@ -907,7 +913,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   private garantirPedidoTutorialNoKanban(): void {
-    if (this.prazoFiltro || this.sort.active) return;
+    if (this.prazoFiltro || this.sort.active || this.somenteAbertos) return;
     const pedidoId = this.primeiroPedidoTutorial.pedidoAcompanhadoId;
     if (!pedidoId || this.pedidoEstaNoKanban(pedidoId) || this.tutorialPedidoLoadId === pedidoId) {
       return;
