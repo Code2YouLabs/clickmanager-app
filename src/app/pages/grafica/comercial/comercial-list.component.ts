@@ -1,3 +1,9 @@
+import { acentoPrazo } from 'src/app/shared/pedido-prazo/pedido-prazo-acento';
+import { AuthService } from 'src/app/services/auth.service';
+import { PedidoPrazoIndicadorComponent } from 'src/app/components/pedido-prazo-indicador/pedido-prazo-indicador.component';
+import { PEDIDO_PRAZO_FILTROS } from 'src/app/models/pedido/pedido-prazo.model';
+import { PedidoPrazoRelogio } from 'src/app/shared/pedido-prazo/pedido-prazo-relogio';
+import { DataTableSort, DataTableFilterSortChange } from 'src/app/components/data-table/data-table.models';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { PedidoTrocarStatusDialogComponent } from 'src/app/components/pedido-fluxo-controles/pedido-trocar-status-dialog.component';
@@ -58,7 +64,7 @@ type PedidoKanbanSnapshot = Pick<PedidoKanbanColumn, 'items' | 'count' | 'total'
     DataTableCellDirective,
     DataTableItemDirective,
     ViewModeToggleComponent,
-    KanbanBoardComponent,
+    KanbanBoardComponent, PedidoPrazoIndicadorComponent,
     KanbanCardDirective,
     TutorialTargetDirective,
   ],
@@ -66,6 +72,32 @@ type PedidoKanbanSnapshot = Pick<PedidoKanbanColumn, 'items' | 'count' | 'total'
   styleUrl: './comercial-list.component.scss',
 })
 export class ComercialListComponent implements OnInit, OnDestroy {
+  readonly auth = inject(AuthService);
+  readonly acentoPedido = (item: PedidoComercialResumo): string | null => acentoPrazo(item.prazo);
+  prazoFiltro: string | null = null;
+  sort: DataTableSort = {active:'', direction:''};
+  private prazoRelogio = new PedidoPrazoRelogio(() => this.revalidarPrazos());
+  get podeCriarPedido() {return this.tipo !== 'pedidos' || this.auth.temPermissao('PEDIDOS_CADASTRAR');}
+  ordenar(sort: DataTableSort) {this.aplicarConsulta(this.filterState, sort);}
+  filtrarOrdenar(e: DataTableFilterSortChange) {this.aplicarConsulta(e.filters, e.sort);}
+  private aplicarConsulta(state: DataTableFilterState, sort = this.sort) {
+    const queryParams: Record<string,string | number | boolean | null | unknown> = {status:state['status'] || null};
+    if ('prazo' in state || this.prazoFiltro) queryParams['prazo']=state['prazo'] || null;
+    if (sort.active || this.sort.active) queryParams['sort']=sort.active && sort.direction ? `${sort.active},${sort.direction}` : null;
+    this.router.navigate([], {relativeTo:this.route, queryParams, queryParamsHandling:'merge'});
+  }
+  private refreshSilencioso = false;
+  private pedidosPagina(page: number, size: number, status?: string | null) {
+    if (this.refreshSilencioso) return this.graficaService.listarPedidosComerciais(page,size,status,this.prazoFiltro,
+      this.sort.active && this.sort.direction ? `${this.sort.active},${this.sort.direction}` : null, true);
+    return this.prazoFiltro || this.sort.active ? this.graficaService.listarPedidosComerciais(page,size,status,this.prazoFiltro,
+      this.sort.active && this.sort.direction ? `${this.sort.active},${this.sort.direction}` : null)
+      : this.graficaService.listarPedidosComerciais(page,size,status);
+  }
+  private revalidarPrazos() {
+    if (this.tipo !== 'pedidos') return;
+    this.prazoRelogio.limpar(); this.pagina=0; this.kanbanContextKey=''; this.resetKanbanSeContextoMudou(); this.refreshSilencioso=true; this.carregar(); this.refreshSilencioso=false;
+  }
   readonly primeiroPedidoTargets = PRIMEIRO_PEDIDO_TARGETS;
   itens: any[] = [];
   isMobile = false;
@@ -172,13 +204,15 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   get titulo(): string { return this.configuracao.titulo; }
   get subtitulo(): string { return this.configuracao.subtitulo; }
   get filters(): DataTableFilter[] {
-    return [{ key: 'status', label: 'Status', type: 'select', options: this.configuracao.status.map(value => ({
+    const filtros: DataTableFilter[] = [{ key: 'status', label: 'Status', type: 'select', options: this.configuracao.status.map(value => ({
       value, label: value.toLowerCase().replace(/_/g, ' ').replace(/^./, char => char.toUpperCase()),
     })) }];
+    if (this.tipo === 'pedidos') filtros.push({key:'prazo',label:'Prazo de entrega',type:'select',options:PEDIDO_PRAZO_FILTROS});
+    return filtros;
   }
-  get filterState(): DataTableFilterState { return { status: this.statusFiltro }; }
+  get filterState(): DataTableFilterState { return this.tipo === 'pedidos' ? { status: this.statusFiltro, prazo:this.prazoFiltro } : {status:this.statusFiltro}; }
   filtrar(state: DataTableFilterState): void {
-    this.router.navigate([], { relativeTo: this.route, queryParams: { status: state['status'] || null }, queryParamsHandling: 'merge' });
+    this.aplicarConsulta(state);
   }
 
   get pagination(): DataTablePagination {
@@ -203,7 +237,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   get kanbanDragEnabled(): boolean {
-    return this.podeAlternarKanban && this.viewMode === 'kanban' && !this.statusFiltro;
+    return this.auth.temPermissao('PEDIDOS_EDITAR') && this.podeAlternarKanban && this.viewMode === 'kanban' && !this.statusFiltro;
   }
 
   get kanbanColumnsFiltradas(): KanbanColumnState<PedidoComercialResumo>[] {
@@ -240,6 +274,12 @@ export class ComercialListComponent implements OnInit, OnDestroy {
       if (tipo !== this.tipo || (this.progressiveList && params.get('status') !== this.statusFiltro)) { this.itens = []; this.totalItens = 0; }
       this.tipo = tipo;
       this.statusFiltro = params.get('status');
+      this.prazoFiltro = params.get('prazo');
+      const [active,direction] = (params.get('sort') || '').split(',');
+      this.sort = active === 'previsaoEntrega' && (direction === 'asc' || direction === 'desc') ? {active, direction} : {active:'', direction:''};
+      this.columns = this.columns.filter(c => c.key !== 'previsaoEntrega');
+      if (tipo === 'pedidos') this.columns.splice(3,0,{key:'previsaoEntrega',label:'Previsão de entrega',sortable:true,width:'220px'});
+      this.prazoRelogio.limpar();
       this.pagina = 0;
       if (!this.podeAlternarKanban) {
         this.viewMode = 'lista';
@@ -262,6 +302,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.prazoRelogio.destruir();
     this.request?.unsubscribe();
     this.document.body.classList.remove('cm-kanban-focus-mode');
     this.destroy$.next(); this.destroy$.complete();
@@ -286,6 +327,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
         this.carregando = false;
         this.itens = this.progressiveList ? this.validateFirstBatch(page?.content || []) : page?.content || [];
         this.totalItens = page?.totalElements ?? this.itens.length;
+        if (this.tipo === 'pedidos') this.prazoRelogio.agendar(page);
       },
       error: (error) => {
         if (version !== this.listRequestVersion) return;
@@ -297,7 +339,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   novo(): void {
-    this.router.navigate(['/page/grafica/comercial', this.tipo, 'novo']);
+    if (this.podeCriarPedido) this.router.navigate(['/page/grafica/comercial', this.tipo, 'novo']);
   }
 
   abrir(item: any): void {
@@ -322,7 +364,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
 
   private listarPagina(page: number): Observable<GraficaPagina<any>> {
     return this.tipo === 'pedidos'
-      ? this.graficaService.listarPedidosComerciais(page, this.tamanho, this.statusFiltroPedido())
+      ? this.pedidosPagina(page, this.tamanho, this.statusFiltroPedido())
       : this.tipo === 'orcamentos'
         ? this.graficaService.listarOrcamentosComerciais(page, this.tamanho, this.statusFiltroOrcamento())
         : this.graficaService.listarRascunhosComerciais(page, this.tamanho, this.statusFiltro);
@@ -424,7 +466,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
       .subscribe({
         next: fluxo => {
           const opcoes = (fluxo.proximasTransicoes || [])
-            .filter(transicao => transicao.status !== source.id && this.kanbanColumns.some(column => column.id === transicao.status))
+            .filter(transicao => (transicao.status !== 'CANCELADO' || this.auth.temPermissao('PEDIDOS_EXCLUIR')) && transicao.status !== source.id && this.kanbanColumns.some(column => column.id === transicao.status))
             .map(transicao => ({ status: transicao.status, label: transicao.label,
               bloqueado: !transicao.permitida, motivo: transicao.motivo || undefined }));
           if (!fluxo.permissoes.alterarStatus || !opcoes.some(opcao => !opcao.bloqueado)) {
@@ -534,6 +576,9 @@ export class ComercialListComponent implements OnInit, OnDestroy {
             return;
           }
 
+          if (event.targetColumn.id === 'CANCELADO' && !this.auth.temPermissao('PEDIDOS_EXCLUIR')) {
+            this.restaurarMovimentoPedido(event, source, sourceSnapshot, target, targetSnapshot, originalStatus); return;
+          }
           if (event.targetColumn.id === 'CANCELADO') {
             this.confirmarCancelamento(event.item, fluxo.label).subscribe((confirmado) => {
               if (confirmado !== true) {
@@ -705,6 +750,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   private aplicarStatusRetornado(pedidoId: number, pedido: PedidoComercialDetalhe, target: PedidoKanbanColumn): void {
+    if (this.prazoFiltro) {this.revalidarPrazos(); return;}
     target.items = target.items.map((item) => this.pedidoId(item) === pedidoId
       ? { ...item, ...pedido, status: pedido.status || item.status }
       : item);
@@ -712,6 +758,12 @@ export class ComercialListComponent implements OnInit, OnDestroy {
 
   private ordenarPedidosPorData(items: PedidoComercialResumo[]): PedidoComercialResumo[] {
     return [...items].sort((a, b) => {
+      if (this.sort.active === 'previsaoEntrega') {
+        const pa=a.prazo?.previsaoEntrega, pb=b.prazo?.previsaoEntrega;
+        if (!pa || !pb) return pa ? -1 : pb ? 1 : this.pedidoId(a)-this.pedidoId(b);
+        const delta = new Date(pa).getTime()-new Date(pb).getTime();
+        return (this.sort.direction === 'desc' ? -delta : delta) || this.pedidoId(a)-this.pedidoId(b);
+      }
       const dataA = new Date(this.dataCriacao(a) || 0).getTime();
       const dataB = new Date(this.dataCriacao(b) || 0).getTime();
       return dataB - dataA;
@@ -762,7 +814,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   private resetKanbanSeContextoMudou(): void {
-    const contexto = this.statusFiltro || '__todos__';
+    const contexto = `${this.statusFiltro || '__todos__'}|${this.prazoFiltro || ''}|${this.sort.active},${this.sort.direction}`;
     if (contexto === this.kanbanContextKey) {
       return;
     }
@@ -821,13 +873,16 @@ export class ComercialListComponent implements OnInit, OnDestroy {
     column.error = null;
     column.forbidden = false;
 
-    this.graficaService.listarPedidosComerciais(page, column.pageSize, status)
-      .pipe(finalize(() => {
+    const contexto = this.kanbanContextKey;
+    this.pedidosPagina(page, column.pageSize, status)
+      .pipe(takeUntil(this.destroy$), finalize(() => {
         column.loading = false;
         column.loadingMore = false;
       }))
       .subscribe({
         next: (response) => {
+          if (contexto !== this.kanbanContextKey || !this.kanbanColumns.includes(column)) return;
+          this.prazoRelogio.agendar(response);
           const content = response?.content || [];
           column.items = reset ? content : this.mergePedidos(column.items, content);
           column.page = response?.number ?? page;
@@ -837,6 +892,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
           this.garantirPedidoTutorialNoKanban();
         },
         error: (error) => {
+          if (contexto !== this.kanbanContextKey || !this.kanbanColumns.includes(column)) return;
           column.forbidden = error?.status === 403;
           column.error = 'Tente novamente para atualizar esta etapa.';
           if (reset) {
@@ -851,6 +907,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   private garantirPedidoTutorialNoKanban(): void {
+    if (this.prazoFiltro || this.sort.active) return;
     const pedidoId = this.primeiroPedidoTutorial.pedidoAcompanhadoId;
     if (!pedidoId || this.pedidoEstaNoKanban(pedidoId) || this.tutorialPedidoLoadId === pedidoId) {
       return;

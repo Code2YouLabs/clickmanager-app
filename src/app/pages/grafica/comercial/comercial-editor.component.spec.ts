@@ -8,7 +8,16 @@ import {
 import { GraficaProdutoBuscaRapidaDialogComponent } from './grafica-produto-busca-rapida-dialog.component';
 import { PrimeiroPedidoTutorialService } from './primeiro-pedido/primeiro-pedido-tutorial.service';
 
+const editoresCriados: ComercialEditorComponent[] = [];
+afterEach(() => { editoresCriados.splice(0).forEach(editor => editor.ngOnDestroy()); });
+
 describe('ComercialEditorComponent', () => {
+  it('volta do detalhe canônico à central existente sem exigir Gráfica', () => {
+    const editor = criarEditor();
+    (editor as any).route.snapshot = {data:{pedidoCanonico:true}};
+    editor.voltar();
+    expect((editor as any).router.navigate).toHaveBeenCalledWith(['/theme-pages/account-setting',1], {queryParams:{tab:'notificacoes'}});
+  });
   it('define submit associado ao form e comandos distintos para conversão', () => {
     const editor = criarEditor('orcamentos'); editor.ngOnInit();
     expect(editor.footerActions.find(action => action.id === 'salvar')).toEqual(jasmine.objectContaining({ type: 'submit', form: 'comercial-editor-form', disabled: true }));
@@ -48,7 +57,7 @@ describe('ComercialEditorComponent', () => {
     const response = new Subject<any>(); const service = (editor as any).graficaService;
     service.converterRascunhoParaPedido.and.returnValue(response);
     editor.onFooterAction('pedidos'); editor.onFooterAction('pedidos');
-    expect(service.converterRascunhoParaPedido).toHaveBeenCalledOnceWith(9);
+    expect(service.converterRascunhoParaPedido).toHaveBeenCalledOnceWith(9, {modo:'SEM_PREVISAO'});
     response.next({ id: 22 }); response.complete();
     expect((editor as any).router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial', 'pedidos', 22]);
     expect(editor.salvando).toBeFalse();
@@ -593,7 +602,7 @@ function criarEditor(tipo = 'pedidos'): ComercialEditorComponent {
     'registrarPedidoCriado',
   ]);
   primeiroPedidoTutorial.registrarPedidoCriado.and.returnValue(of(false));
-  return new ComercialEditorComponent(
+  const editor = new ComercialEditorComponent(
     { data: of({ tipo }), paramMap: of(new Map()) } as any,
     jasmine.createSpyObj('Router', ['navigate']) as any,
     jasmine.createSpyObj('MatDialog', ['open']) as any,
@@ -604,11 +613,15 @@ function criarEditor(tipo = 'pedidos'): ComercialEditorComponent {
     authServiceMock() as any,
     primeiroPedidoTutorial as any,
   );
+  editor.previsaoValida=true; editor.previsaoForm={definicao:()=>({modo:'SEM_PREVISAO'})} as any;
+  editoresCriados.push(editor);
+  (editor as any).dialog.open.and.returnValue({afterClosed:()=>of({modo:'SEM_PREVISAO'})});
+  return editor;
 }
 
 function authServiceMock() {
   return {
-    getUsuario: () => ({ id: 1, nome: 'Leonardo Barros', username: 'leo' }),
+    temPermissao: () => true, getUsuario: () => ({ id: 1, nome: 'Leonardo Barros', username: 'leo' }),
   };
 }
 

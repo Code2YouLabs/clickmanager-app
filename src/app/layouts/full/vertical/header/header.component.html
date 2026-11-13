@@ -187,11 +187,12 @@
         <div class="m-l-16 notification-menu-content">
           <div class="d-flex align-items-center gap-8 notification-menu-head">
             <h5 class="f-s-14 f-w-600 m-0 notification-menu-title">{{ notification.titulo }}</h5>
-            @if(!notification.lida) {
+            @if(!notification.lida && !notification.invalidadaEm) {
             <span class="f-s-12 text-primary f-w-600 notification-menu-badge">nova</span>
             }
           </div>
           <span class="d-block notification-menu-summary">{{ resumoNotificacao(notification) }}</span>
+          @if(notification.invalidadaEm) { <span class="d-block text-muted f-s-12">Aviso encerrado</span> }
           <span class="d-block text-muted f-s-12 notification-menu-time">{{ formatarTempoNotificacao(notification.criadaEm) }}</span>
         </div>
       </div>

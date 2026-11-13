@@ -91,7 +91,8 @@ export class NotificacaoService {
       titulo: String(raw?.['titulo'] || ''),
       resumo: raw?.['resumo'] ?? null,
       conteudo: raw?.['conteudo'] ?? null,
-      link: raw?.['link'] ?? null,
+      link: raw?.['invalidadaEm'] ? null : raw?.['link'] ?? null,
+      invalidadaEm: raw?.['invalidadaEm'] ?? null,
       nivel: nivel === 'SUCESSO' || nivel === 'ATENCAO' || nivel === 'CRITICO' ? nivel : 'INFO',
       tipoDestino:
         tipoDestino === 'USUARIOS_ESPECIFICOS' || tipoDestino === 'TODAS_EMPRESAS'

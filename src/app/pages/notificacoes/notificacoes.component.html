@@ -60,18 +60,19 @@
             (click)="selecionarNotificacao(n)"
             [ngClass]="statusNivelClass(n.nivel)"
             [class.selected]="n.id === selecionada()?.id"
-            [class.unread]="!n.lida"
+            [class.unread]="!n.lida && !n.invalidadaEm"
             [class.read]="n.lida"
           >
             <div class="notify-line">
               <span class="level-dot" [ngClass]="statusNivelClass(n.nivel)"></span>
               <div class="notify-main">
                 <span class="notify-title">{{ n.titulo }}</span>
-                <span class="notify-badge" *ngIf="!n.lida">Nova</span>
+                <span class="notify-badge" *ngIf="!n.lida && !n.invalidadaEm">Nova</span>
               </div>
-              <span class="notify-time">{{ dataRelativa(n.criadaEm) }}</span>
+              <span class="notify-time">{{ n.invalidadaEm ? 'Encerrado' : dataRelativa(n.criadaEm) }}</span>
             </div>
-            <div class="notify-resumo">{{ n.resumo || n.conteudo || 'Sem resumo' }}</div>
+            <div class="notify-resumo">{{ n.resumo || n.conteudo || 'Sem resumo' }}
+            @if (n.invalidadaEm) { <span class="notify-time">Aviso encerrado · mantido no histórico</span> }</div>
           </mat-list-item>
           }
           } @else {
@@ -131,6 +132,7 @@
               </mat-chip>
             </div>
 
+            @if (item.invalidadaEm) { <p role="status">Aviso encerrado. Mantido no histórico; não requer ação.</p> }
             <div class="detail-meta">
               <span>{{ item.criadaEm | date:'dd/MM/yyyy HH:mm' }}</span>
               <span *ngIf="item.lida && item.lidaEm">• Lida em {{ item.lidaEm | date:'dd/MM/yyyy HH:mm' }}</span>
@@ -142,7 +144,7 @@
               {{ item.conteudo || 'Sem conteúdo detalhado.' }}
             </div>
 
-            <div class="detail-actions" *ngIf="item.link && !mobileLayout">
+            <div class="detail-actions" *ngIf="item.link && !item.invalidadaEm && !mobileLayout">
               <button mat-flat-button color="primary" (click)="abrirLink(item.link)">
                 Abrir link relacionado
               </button>
@@ -172,9 +174,10 @@
     @else if (notificacoesFiltradas().length) {
       <div class="mobile-notifications__list">
         @for (n of notificacoesFiltradas(); track n.id) {
-          <button type="button" class="notify-item mobile-notifications__item" [ngClass]="statusNivelClass(n.nivel)" [class.unread]="!n.lida" (click)="abrirNotificacaoMobile(n)">
-            <span class="mobile-notifications__item-head"><strong>{{ n.titulo }}</strong>@if (!n.lida) { <span class="notify-badge">Nova</span> }</span>
-            <span class="notify-resumo">{{ n.resumo || n.conteudo || 'Sem resumo' }}</span>
+          <button type="button" class="notify-item mobile-notifications__item" [ngClass]="statusNivelClass(n.nivel)" [class.unread]="!n.lida && !n.invalidadaEm" (click)="abrirNotificacaoMobile(n)">
+            <span class="mobile-notifications__item-head"><strong>{{ n.titulo }}</strong>@if (!n.lida && !n.invalidadaEm) { <span class="notify-badge">Nova</span> }</span>
+            <span class="notify-resumo">{{ n.resumo || n.conteudo || 'Sem resumo' }}
+            @if (n.invalidadaEm) { <span class="notify-time">Aviso encerrado · mantido no histórico</span> }</span>
             <span class="notify-time">{{ dataRelativa(n.criadaEm) }}</span>
           </button>
         }
@@ -196,7 +199,7 @@
     </div>
     <footer class="mobile-side-panel__footer">
       <button mat-stroked-button type="button" (click)="fecharDetalheMobile()">Voltar</button>
-      @if (!carregandoDetalhe && !mobileDetalheErro && selecionada()?.link) {
+      @if (!carregandoDetalhe && !mobileDetalheErro && selecionada()?.link && !selecionada()?.invalidadaEm) {
         <button mat-flat-button color="primary" type="button" (click)="abrirLink(selecionada()?.link)">Abrir link relacionado</button>
       }
     </footer>

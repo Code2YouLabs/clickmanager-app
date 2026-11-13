@@ -166,6 +166,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   abrirNotificacao(item: NotificacaoItem): void {
     if (!item?.id) return;
+    if (item.invalidadaEm) { this.abrirCentralNotificacoes(item.id); return; }
     this.notificacaoService.marcarComoLida$(item.id).subscribe({
       next: () => {
         this.notificacoesNaoLidas = Math.max(0, this.notificacoesNaoLidas - (item.lida ? 0 : 1));
@@ -201,7 +202,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.notificacaoService.marcarTodasComoLidas$().subscribe({
       next: () => {
         this.notificacoesNaoLidas = 0;
-        this.notificacoes = this.notificacoes.map((n) => ({ ...n, lida: true }));
+        this.notificacoes = this.notificacoes.map((n) => n.invalidadaEm ? n : ({ ...n, lida: true }));
       },
       error: () => {}
     });
@@ -213,7 +214,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   possuiNotificacaoCriticaNaoLida(): boolean {
     return this.notificacoes.some(
-      (item) => !item.lida && String(item?.nivel || '').toUpperCase() === 'CRITICO'
+      (item) => !item.lida && !item.invalidadaEm && String(item?.nivel || '').toUpperCase() === 'CRITICO'
     );
   }
 

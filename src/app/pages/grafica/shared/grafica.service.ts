@@ -1,5 +1,6 @@
+import { SILENT_REQUEST } from 'src/app/interceptors/loading.interceptor';
 import { Injectable } from '@angular/core';
-import { HttpParams, HttpResponse } from '@angular/common/http';
+import { HttpContext, HttpParams, HttpResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiService } from 'src/app/services/api.service';
 import {
@@ -224,24 +225,26 @@ export class GraficaProdutoService {
     return this.api.post<RascunhoComercialResponse>(`api/comercial/rascunhos/${id}/descartar`, {});
   }
 
-  converterRascunhoParaPedido(id: number): Observable<GraficaComercialDestinoResponse> {
-    return this.api.post<GraficaComercialDestinoResponse>(`api/comercial/rascunhos/${id}/converter/pedido`, {});
+  converterRascunhoParaPedido(id: number, previsao?: import('src/app/models/pedido/pedido-prazo.model').PedidoPrevisaoDefinicao): Observable<GraficaComercialDestinoResponse> {
+    return this.api.post<GraficaComercialDestinoResponse>(`api/comercial/rascunhos/${id}/converter/pedido`, previsao ? {previsao} : {});
   }
 
   converterRascunhoParaOrcamento(id: number): Observable<GraficaComercialDestinoResponse> {
     return this.api.post<GraficaComercialDestinoResponse>(`api/comercial/rascunhos/${id}/converter/orcamento`, {});
   }
 
-  listarPedidosComerciais(page = 0, size = 20, status?: string | null): Observable<GraficaPagina<PedidoComercialResumo>> {
+  listarPedidosComerciais(page = 0, size = 20, status?: string | null, prazo?: string | null, sort?: string | null, silencioso = false): Observable<GraficaPagina<PedidoComercialResumo>> {
     let params = new HttpParams().set('page', page).set('size', size);
     if (status) {
       params = params.set('status', status);
     }
-    return this.api.get<GraficaPagina<PedidoComercialResumo>>('api/comercial/pedidos', params);
+    if (prazo) params = params.set('prazo', prazo);
+    if (sort) params = params.set('sort', sort);
+    return silencioso ? this.api.get<GraficaPagina<PedidoComercialResumo>>('api/comercial/pedidos', params, new HttpContext().set(SILENT_REQUEST,true)) : this.api.get<GraficaPagina<PedidoComercialResumo>>('api/comercial/pedidos', params);
   }
 
-  buscarPedidoComercial(id: number): Observable<PedidoComercialDetalhe> {
-    return this.api.get<PedidoComercialDetalhe>(`api/comercial/pedidos/${id}`);
+  buscarPedidoComercial(id: number, silencioso = false): Observable<PedidoComercialDetalhe> {
+    return silencioso ? this.api.get<PedidoComercialDetalhe>(`api/comercial/pedidos/${id}`, undefined, new HttpContext().set(SILENT_REQUEST,true)) : this.api.get<PedidoComercialDetalhe>(`api/comercial/pedidos/${id}`);
   }
 
   gerarImpressaoPedidoComercial(id: number, formato: 'completo' | 'duas-vias' | 'etiqueta'): Observable<HttpResponse<Blob>> {
@@ -328,8 +331,8 @@ export class GraficaProdutoService {
     return this.api.patch<OrcamentoComercialDetalhe>(`api/orcamentos/${id}/observacao-interna`, { observacaoInterna });
   }
 
-  aprovarOrcamentoECriarPedido(id: number): Observable<PedidoCriadoResponse> {
-    return this.api.post<PedidoCriadoResponse>(`api/orcamentos/${id}/aprovar-pedido`, {});
+  aprovarOrcamentoECriarPedido(id: number, previsao?: import('src/app/models/pedido/pedido-prazo.model').PedidoPrevisaoDefinicao): Observable<PedidoCriadoResponse> {
+    return this.api.post<PedidoCriadoResponse>(`api/orcamentos/${id}/aprovar-pedido`, previsao ? {previsao} : {});
   }
 
   gerarImpressaoOrcamento(id: number): Observable<HttpResponse<Blob>> {

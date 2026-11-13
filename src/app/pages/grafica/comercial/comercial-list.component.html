@@ -1,5 +1,5 @@
 <app-page-card
-  [primaryAction]="{ label: configuracao.novo, tutorialTarget: tipo === 'pedidos' ? primeiroPedidoTargets.novo : '' }"
+  [primaryAction]="podeCriarPedido ? { label: configuracao.novo, tutorialTarget: tipo === 'pedidos' ? primeiroPedidoTargets.novo : '' } : null"
   (primaryActionClick)="novo()"
   [appTutorialTarget]="tipo === 'pedidos' ? primeiroPedidoTargets.lista : ''"
   [titulo]="titulo"
@@ -15,20 +15,21 @@
         [search]="{ enabled: true, label: isMobile && viewMode === 'kanban' ? 'Buscar nos cards carregados' : 'Buscar nesta página', mobileHint: progressiveList ? 'A busca considera apenas os ' + configuracao.plural + ' carregados.' : undefined, placeholder: progressiveList ? 'Pesquisar ' + configuracao.plural + ' carregados' : isMobile && viewMode === 'kanban' ? 'Referência, cliente ou status nos cards carregados' : 'Referência, cliente ou status nesta página', debounceMs: 250, value: busca }"
         [pagination]="pagination"
         mobileLoadMode="progressive"
-        [progressiveState]="{ contextKey: tipo, loadedCount: itens.length, loading: carregandoMais, error: erroMais, restartRequired: reiniciarLista }"
+        [progressiveState]="{ contextKey: tipo + ':' + statusFiltro + ':' + prazoFiltro + ':' + sort.active + ':' + sort.direction, loadedCount: itens.length, loading: carregandoMais, error: erroMais, restartRequired: reiniciarLista }"
         [loadMoreLabel]="'Carregar mais ' + configuracao.plural" [itemsLabel]="configuracao.plural"
         [loading]="carregando && !itens.length"
         [refreshing]="carregando && !!itens.length"
         [showTable]="viewMode === 'lista'"
         [error]="erro" [forbidden]="acessoNegado"
         [tableLabel]="titulo" [filters]="filters" [filterState]="filterState"
-        (filterChange)="filtrar($event)" (retry)="carregar()"
+        [sort]="sort" mobileSortPlacement="filters" (sortChange)="ordenar($event)" (filterSortChange)="filtrarOrdenar($event)" (filterChange)="filtrar($event)" (retry)="carregar()"
         [actions]="actions"
         actionsMode="buttons"
         [expandable]="true"
         expandAriaLabel="Expandir detalhes"
         [emptyState]="isMobile ? mobileEmptyState : emptyState"
         [rowKey]="rowKey"
+        [rowAccent]="tipo === 'pedidos' ? acentoPedido : null"
         (searchChange)="buscar($event)"
         (pageChange)="paginar($event)"
         (action)="onAction($event)">
@@ -69,6 +70,7 @@
           <span class="status-pill">{{ statusLabel(item.status) }}</span>
         </ng-template>
 
+        <ng-template appDataTableCell="previsaoEntrega" let-item><app-pedido-prazo-indicador [prazo]="item.prazo"></app-pedido-prazo-indicador></ng-template>
         <ng-template appDataTableCell="total" let-item>
           {{ total(item) | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
         </ng-template>
@@ -77,9 +79,12 @@
           <ng-container [ngTemplateOutlet]="pedidoFinanceiro" [ngTemplateOutletContext]="{ $implicit: item }"></ng-container>
         </ng-template>
           <ng-template [appDataTableItem]="itensFiltrados" let-item let-itemActions="actions" let-emit="emitAction" let-expanded="expanded" let-toggle="toggle">
-            <article class="pedido-mobile-item" [attr.aria-label]="(tipo === 'pedidos' ? 'Pedido' : tipo === 'orcamentos' ? 'Orçamento' : 'Rascunho') + ' ' + referencia(item)">
+            <article class="pedido-mobile-item"
+              [class.pedido-mobile-item--accent]="tipo === 'pedidos' && !!acentoPedido(item)"
+              [style.--pedido-prazo-accent]="tipo === 'pedidos' ? acentoPedido(item) : null" [attr.aria-label]="(tipo === 'pedidos' ? 'Pedido' : tipo === 'orcamentos' ? 'Orçamento' : 'Rascunho') + ' ' + referencia(item)">
               <header><strong>{{ referencia(item) }}</strong>@if (tipo === 'pedidos' || item.status) {<span class="status-pill" [attr.title]="statusLabel(item.status)" [attr.aria-label]="statusLabel(item.status)">{{ statusMobileLabel(item.status) }}</span>}</header>
               <p class="pedido-mobile-item__cliente">{{ cliente(item) || (tipo === 'pedidos' ? 'Balcão' : 'Sem cliente informado') }}</p>
+              <app-pedido-prazo-indicador *ngIf="tipo === 'pedidos'" [prazo]="item.prazo"></app-pedido-prazo-indicador>
               <div class="pedido-mobile-item__summary">
                 @if (tipo === 'pedidos' || dataCriacao(item)) {
                   <time [attr.datetime]="dataCriacao(item) || null">{{ dataCriacao(item) | date:'dd/MM/yyyy HH:mm' }}</time>
@@ -145,6 +150,7 @@
         [columns]="kanbanColumnsFiltradas"
         [trackBy]="kanbanTrackBy"
         [cardAriaLabel]="pedidoCardAriaLabel"
+        [cardAccent]="acentoPedido"
         [dragEnabled]="kanbanDragEnabled"
         [isDragDisabled]="isPedidoDragDisabled"
         [dropState]="kanbanDropState"
@@ -161,6 +167,7 @@
             [class.pedido-kanban-card--pending]="pedidoMovendo(pedido)">
             <strong>{{ referencia(pedido) }}</strong>
             <span>{{ cliente(pedido) || 'Balcão' }}</span>
+            <app-pedido-prazo-indicador [prazo]="pedido.prazo"></app-pedido-prazo-indicador>
             <time [attr.datetime]="dataCriacao(pedido) || null">
               {{ dataCriacao(pedido) | date:'dd/MM/yyyy HH:mm' }}
             </time>

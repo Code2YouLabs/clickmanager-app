@@ -108,6 +108,8 @@ export class DataTableComponent<T = unknown>
   @Input() expandAriaLabel = 'Expandir linha';
   @Input() sort: DataTableSort = { active: '', direction: '' };
   @Input() emptyState: DataTableEmptyState = {};
+  /** Acento visual opcional; a semântica e a cor pertencem ao consumidor. */
+  @Input() rowAccent: ((row: T) => string | null) | null = null;
   @Input() rowKey: keyof T | string | ((row: T) => unknown) = 'id';
   @Input() filtersLabel = 'Filtros';
   @Input() clearFiltersLabel = 'Limpar filtros';

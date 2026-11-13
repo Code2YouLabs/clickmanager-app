@@ -171,6 +171,8 @@
         mat-row
         *matRowDef="let row; columns: displayedColumns"
         class="data-table__row"
+        [class.data-table__row--accent]="!!rowAccent?.(row)"
+        [style.--data-table-row-accent]="rowAccent?.(row) || null"
         [class.data-table__row--expanded]="isExpanded(row)"
         (click)="onRowClick(row)">
       </tr>

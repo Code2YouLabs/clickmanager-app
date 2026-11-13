@@ -276,3 +276,8 @@
     .kanban-mobile-nav button { min-width: 44px; min-height: 44px; }
   }
 }
+
+.kanban-card.kanban-card--accent {
+  border-color: color-mix(in srgb, var(--kanban-card-accent) 28%, #e2e8f0);
+  border-inline-start: 5px solid var(--kanban-card-accent);
+}

@@ -1,0 +1,169 @@
+[
+  {
+    "name": "config",
+    "width": 1440,
+    "findings": [
+      {
+        "level": "WARN",
+        "id": "panel-void",
+        "width": 1440,
+        "message": "1 card(s) hold a blank band inside: 52px in \"Configuração de Pedidos\".",
+        "fix": "A card stretches to its neighbour only when it has content to fill. Keep a legend or a note directly under its chart (only an action or a total may sit at a stretched card's foot), let a short card keep its own height (align-items: start), and let a filtered block shrink to its rows."
+      },
+      {
+        "level": "FAIL",
+        "id": "no-title",
+        "width": 1440,
+        "message": "The screen has no h1.",
+        "fix": "Name the screen in an h1 at the top of the canvas (18–28px): \"Overview\", \"Payouts\", the project's name."
+      }
+    ]
+  },
+  {
+    "name": "lista",
+    "width": 1440,
+    "findings": [
+      {
+        "level": "FAIL",
+        "id": "heavy-shadow",
+        "width": 1440,
+        "message": "1 panel shadow(s) heavy enough to read as floating: rgba(17, 24, 39, 0.12) 0px 6px 24px 0px",
+        "fix": "Panels sit on the ground: separate them with a fill one step from the ground or a quiet 1px border. A shadow, if any, is under 8% black with a small blur. Real overlays (menus, dialogs, popovers) may float."
+      },
+      {
+        "level": "WARN",
+        "id": "panel-void",
+        "width": 1440,
+        "message": "1 card(s) hold a blank band inside: 52px in \"Pedidos\".",
+        "fix": "A card stretches to its neighbour only when it has content to fill. Keep a legend or a note directly under its chart (only an action or a total may sit at a stretched card's foot), let a short card keep its own height (align-items: start), and let a filtered block shrink to its rows."
+      },
+      {
+        "level": "FAIL",
+        "id": "no-title",
+        "width": 1440,
+        "message": "The screen has no h1.",
+        "fix": "Name the screen in an h1 at the top of the canvas (18–28px): \"Overview\", \"Payouts\", the project's name."
+      }
+    ]
+  },
+  {
+    "name": "novo",
+    "width": 1440,
+    "findings": [
+      {
+        "level": "FAIL",
+        "id": "heavy-shadow",
+        "width": 1440,
+        "message": "9 panel shadow(s) heavy enough to read as floating: rgba(15, 23, 42, 0.08) 0px 10px 30px 0px | rgba(15, 23, 42, 0.08) 0px 10px 30px 0px | rgba(17, 24, 39, 0.12) 0px 6px 24px 0px",
+        "fix": "Panels sit on the ground: separate them with a fill one step from the ground or a quiet 1px border. A shadow, if any, is under 8% black with a small blur. Real overlays (menus, dialogs, popovers) may float."
+      },
+      {
+        "level": "FAIL",
+        "id": "no-title",
+        "width": 1440,
+        "message": "The screen has no h1.",
+        "fix": "Name the screen in an h1 at the top of the canvas (18–28px): \"Overview\", \"Payouts\", the project's name."
+      }
+    ]
+  },
+  {
+    "name": "detalhe",
+    "width": 1440,
+    "findings": [
+      {
+        "level": "FAIL",
+        "id": "heavy-shadow",
+        "width": 1440,
+        "message": "8 panel shadow(s) heavy enough to read as floating: rgba(17, 24, 39, 0.12) 0px 6px 24px 0px | rgba(17, 24, 39, 0.12) 0px 6px 24px 0px | rgba(15, 23, 42, 0.08) 0px 10px 30px 0px",
+        "fix": "Panels sit on the ground: separate them with a fill one step from the ground or a quiet 1px border. A shadow, if any, is under 8% black with a small blur. Real overlays (menus, dialogs, popovers) may float."
+      },
+      {
+        "level": "FAIL",
+        "id": "no-title",
+        "width": 1440,
+        "message": "The screen has no h1.",
+        "fix": "Name the screen in an h1 at the top of the canvas (18–28px): \"Overview\", \"Payouts\", the project's name."
+      }
+    ]
+  },
+  {
+    "name": "config",
+    "width": 390,
+    "findings": [
+      {
+        "level": "FAIL",
+        "id": "tiny-text",
+        "width": 390,
+        "message": "5 text blocks under 11px: Catálogo 10px, Atalhos 10px, Pedidos 10px, Dashboard 10px.",
+        "fix": "Nothing below 11px; secondary text 12px, data 13–14px."
+      },
+      {
+        "level": "FAIL",
+        "id": "no-title",
+        "width": 390,
+        "message": "The screen has no h1.",
+        "fix": "Name the screen in an h1 at the top of the canvas (18–28px): \"Overview\", \"Payouts\", the project's name."
+      }
+    ]
+  },
+  {
+    "name": "lista",
+    "width": 390,
+    "findings": [
+      {
+        "level": "FAIL",
+        "id": "tiny-text",
+        "width": 390,
+        "message": "5 text blocks under 11px: Catálogo 10px, Atalhos 10px, Pedidos 10px, Dashboard 10px.",
+        "fix": "Nothing below 11px; secondary text 12px, data 13–14px."
+      },
+      {
+        "level": "FAIL",
+        "id": "no-title",
+        "width": 390,
+        "message": "The screen has no h1.",
+        "fix": "Name the screen in an h1 at the top of the canvas (18–28px): \"Overview\", \"Payouts\", the project's name."
+      }
+    ]
+  },
+  {
+    "name": "novo",
+    "width": 390,
+    "findings": [
+      {
+        "level": "FAIL",
+        "id": "tiny-text",
+        "width": 390,
+        "message": "5 text blocks under 11px: Catálogo 10px, Atalhos 10px, Pedidos 10px, Dashboard 10px.",
+        "fix": "Nothing below 11px; secondary text 12px, data 13–14px."
+      },
+      {
+        "level": "FAIL",
+        "id": "no-title",
+        "width": 390,
+        "message": "The screen has no h1.",
+        "fix": "Name the screen in an h1 at the top of the canvas (18–28px): \"Overview\", \"Payouts\", the project's name."
+      }
+    ]
+  },
+  {
+    "name": "detalhe",
+    "width": 390,
+    "findings": [
+      {
+        "level": "FAIL",
+        "id": "tiny-text",
+        "width": 390,
+        "message": "5 text blocks under 11px: Catálogo 10px, Atalhos 10px, Pedidos 10px, Dashboard 10px.",
+        "fix": "Nothing below 11px; secondary text 12px, data 13–14px."
+      },
+      {
+        "level": "FAIL",
+        "id": "no-title",
+        "width": 390,
+        "message": "The screen has no h1.",
+        "fix": "Name the screen in an h1 at the top of the canvas (18–28px): \"Overview\", \"Payouts\", the project's name."
+      }
+    ]
+  }
+]
