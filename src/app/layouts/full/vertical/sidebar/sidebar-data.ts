@@ -53,7 +53,7 @@ export const navItems: NavItem[] = [
         iconName: 'shopping-cart',
         bgcolor: 'primary',
         route: '/page/grafica/comercial/pedidos',
-        requiredPermission: ['PEDIDOS_VER', 'GRAFICA_PRODUTOS_VER'],
+        requiredPermission: ['PEDIDOS_VER'],
         allowedEmpresaTipos: grafica,
         tutorialTarget: 'primeiro-pedido-menu-pedidos',
     },
@@ -320,6 +320,10 @@ export const navItems: NavItem[] = [
                 route: '/page/config/presenca-publica',
                 requiredPermission: ['DADOS_EMPRESA'],
                 allowedEmpresaTipos: todosSegmentos,
+            },
+            {
+                displayName: 'Pedidos', iconName: 'point', bgcolor: 'transparent',
+                route: '/page/config/pedidos', requiredPermission: ['PEDIDOS_CONFIGURAR'], allowedEmpresaTipos: todosSegmentos,
             },
             {
                 displayName: 'Aplicativos e atalhos',

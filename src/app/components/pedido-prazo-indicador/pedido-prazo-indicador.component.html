@@ -1,0 +1,6 @@
+<div class="prazo" [attr.data-situacao]="situacao">
+ <span class="prazo__situacao"><mat-icon aria-hidden="true">{{icone}}</mat-icon>{{labels[situacao]}}</span>
+ <time *ngIf="prazo?.previsaoEntrega as data" [attr.datetime]="data">{{exata(data)}} · Brasília</time>
+ <span *ngIf="!prazo?.previsaoEntrega && situacao === 'PRODUCAO_CONCLUIDA'">Sem previsão</span>
+ <span *ngIf="prazo?.producaoConcluidaEm as data">Concluída em {{exata(data)}}</span>
+</div>

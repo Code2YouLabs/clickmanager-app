@@ -1,3 +1,5 @@
+import { PedidoPrazoService } from 'src/app/services/pedido-prazo.service';
+import { of as prazoOf } from 'rxjs';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { registerLocaleData } from '@angular/common';
 import ptBr from '@angular/common/locales/pt';
@@ -50,6 +52,7 @@ describe('Ações do pedido em painel lateral mobile', () => {
     service.buscarFluxoPedidoComercial.and.returnValue(of(flow()));
     service.alterarStatusPedidoComercial.and.callFake((id: number, status: string) => of(order(id, status)));
     TestBed.configureTestingModule({ imports: [ComercialEditorComponent, NoopAnimationsModule], providers: [
+        {provide:PedidoPrazoService,useValue:{configuracao:()=>prazoOf({parametros:{prazo:7,unidade:'DIAS',atencaoHoras:24,atrasoCriticoHoras:48}})}},
       provideRouter([]), provideHttpClient(), { provide: LOCALE_ID, useValue: 'pt-BR' },
       { provide: ActivatedRoute, useValue: { data: of({ tipo: 'pedidos' }), paramMap: params } },
       { provide: BreakpointObserver, useValue: { observe: () => viewport } }, { provide: GraficaProdutoService, useValue: service },

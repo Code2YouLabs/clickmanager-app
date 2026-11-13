@@ -1,3 +1,4 @@
+import { AuthService } from 'src/app/services/auth.service';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { BehaviorSubject } from 'rxjs';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
@@ -64,7 +65,8 @@ describe('ComercialListComponent Kanban', () => {
     TestBed.configureTestingModule({
       imports: [ComercialListComponent, NoopAnimationsModule],
       providers: [
-        { provide: BreakpointObserver, useValue: { observe: () => viewport } },
+        {provide:AuthService,useValue:{temPermissao:()=>true}},
+      { provide: BreakpointObserver, useValue: { observe: () => viewport } },
         { provide: GraficaProdutoService, useValue: service },
         { provide: Router, useValue: router },
         { provide: MatDialog, useValue: dialog },

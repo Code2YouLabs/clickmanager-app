@@ -515,7 +515,7 @@ export class FullComponent implements OnInit, OnDestroy {
     if (!item?.id) return;
 
     this.marcarNotificacaoComoLidaLocal(item);
-    if (!item.lida) {
+    if (!item.lida && !item.invalidadaEm) {
       this.notificacaoService.marcarComoLida$(item.id).subscribe({ error: () => {} });
     }
 
@@ -526,7 +526,7 @@ export class FullComponent implements OnInit, OnDestroy {
   marcarNotificacaoComoLidaMobile(item: NotificacaoItem, event?: Event): void {
     event?.stopPropagation();
 
-    if (!item?.id || item.lida) {
+    if (!item?.id || item.lida || item.invalidadaEm) {
       this.swipedNotificationId = null;
       return;
     }
@@ -539,7 +539,7 @@ export class FullComponent implements OnInit, OnDestroy {
   marcarTodasNotificacoesComoLidasMobile(): void {
     if (!this.notificacoesNaoLidas) return;
 
-    this.notificacoes = this.notificacoes.map((item) => ({ ...item, lida: true }));
+    this.notificacoes = this.notificacoes.map((item) => item.invalidadaEm ? item : ({ ...item, lida: true }));
     this.notificacoesNaoLidas = 0;
     this.swipedNotificationId = null;
     this.notificacaoService.marcarTodasComoLidas$().subscribe({ error: () => {} });
@@ -574,7 +574,7 @@ export class FullComponent implements OnInit, OnDestroy {
 
   possuiNotificacaoCriticaNaoLida(): boolean {
     return this.notificacoes.some(
-      (item) => !item.lida && String(item?.nivel || '').toUpperCase() === 'CRITICO'
+      (item) => !item.lida && !item.invalidadaEm && String(item?.nivel || '').toUpperCase() === 'CRITICO'
     );
   }
 
@@ -616,7 +616,7 @@ export class FullComponent implements OnInit, OnDestroy {
   onNotificationTouchEnd(event: TouchEvent, item: NotificacaoItem): void {
     const endX = event.changedTouches?.[0]?.clientX ?? null;
 
-    if (this.notificationTouchStartX == null || endX == null || item.lida) {
+    if (this.notificationTouchStartX == null || endX == null || item.lida || item.invalidadaEm) {
       this.notificationTouchStartX = null;
       return;
     }
@@ -887,6 +887,7 @@ export class FullComponent implements OnInit, OnDestroy {
   }
 
   private marcarNotificacaoComoLidaLocal(item: NotificacaoItem): void {
+    if (item.invalidadaEm) return;
     this.notificacoesNaoLidas = Math.max(0, this.notificacoesNaoLidas - (item.lida ? 0 : 1));
     this.notificacoes = this.notificacoes.map((n) => (n.id === item.id ? { ...n, lida: true } : n));
   }

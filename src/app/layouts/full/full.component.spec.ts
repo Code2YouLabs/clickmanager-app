@@ -120,6 +120,18 @@ describe('FullComponent — cabeçalho mobile global', () => {
 
   afterEach(() => fixture?.destroy());
 
+  it('abrir aviso encerrado no mobile preserva contador e histórico de leitura', () => {
+    const c = fixture.componentInstance;
+    const central = spyOn<any>(c, 'abrirCentralNotificacoes');
+    const item = {id:7,lida:false,nivel:'CRITICO',invalidadaEm:'2026-11-12T15:00:00Z'} as any;
+    notifications.marcarComoLida$ = jasmine.createSpy().and.returnValue(of({}));
+    c.notificacoesNaoLidas = 2; c.notificacoes = [item];
+    c.abrirNotificacaoMobile(item);
+    expect(central).toHaveBeenCalledWith(7);expect(notifications.marcarComoLida$).not.toHaveBeenCalled();
+    expect(c.notificacoesNaoLidas).toBe(2);expect(c.notificacoes[0].lida).toBeFalse();
+    expect(c.possuiNotificacaoCriticaNaoLida()).toBeFalse();
+  });
+
   it('renderiza uma única estrutura completa no Dashboard, Pedidos, criação, edição e detalhes', async () => {
     for (const url of ['/dashboards/dashboard1', '/page/grafica/comercial/pedidos', '/page/cliente/criar', '/page/cliente/editar/7', '/page/cliente/7']) {
       await navigate(url);

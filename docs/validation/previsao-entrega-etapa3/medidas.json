@@ -1,0 +1,20 @@
+[
+  {
+    "width": 1440,
+    "estado": {
+      "path": "/apps/notificacoes/8",
+      "overflow": false,
+      "invalidado": true,
+      "acao": false
+    }
+  },
+  {
+    "width": 390,
+    "estado": {
+      "path": "/theme-pages/account-setting/91",
+      "overflow": false,
+      "invalidado": true,
+      "acao": false
+    }
+  }
+]

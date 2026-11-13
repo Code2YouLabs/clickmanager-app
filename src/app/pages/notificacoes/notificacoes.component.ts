@@ -165,6 +165,8 @@ export class AppNotificacoesComponent implements OnInit, OnChanges {
       },
       error: (err) => {
         this.carregandoDetalhe = false;
+        this.selecionada.set(null);
+        this.notificacoes.set([]); this.notificacoesFiltradas.set([]); this.naoLidas = 0;
         this.mobileDetalheErro = err?.userMessage || 'Não foi possível abrir a notificação.';
         this.toastr.error(this.mobileDetalheErro!);
       }
@@ -172,6 +174,24 @@ export class AppNotificacoesComponent implements OnInit, OnChanges {
   }
 
   abrirLink(link?: string | null): void {
+    const item = this.selecionada();
+    if (!item || item.invalidadaEm || !link) return;
+    this.service.buscarPorId$(item.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: atual => {
+        this.selecionada.set(atual);
+        if (!atual.invalidadaEm && atual.link) this.navegarLink(atual.link);
+        else this.carregarLista(false);
+      },
+      error: () => {
+        this.selecionada.set(null);
+        this.notificacoes.set([]); this.notificacoesFiltradas.set([]); this.naoLidas = 0;
+        this.toastr.error('Esta notificação não está mais disponível para seu acesso.');
+        this.carregarLista(false);
+      }
+    });
+  }
+
+  private navegarLink(link: string): void {
     const destino = String(link || '').trim();
     if (!destino) return;
 
@@ -321,7 +341,7 @@ export class AppNotificacoesComponent implements OnInit, OnChanges {
   }
 
   private marcarComoLidaSeNecessario(item: NotificacaoItem): void {
-    if (item.lida) {
+    if (item.lida || item.invalidadaEm) {
       this.carregandoDetalhe = false;
       return;
     }

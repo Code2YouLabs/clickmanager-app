@@ -67,6 +67,8 @@
                 <div class="kanban-item">
                 <button
                   class="kanban-card"
+                  [class.kanban-card--accent]="!!cardAccent?.(item)"
+                  [style.--kanban-card-accent]="cardAccent?.(item) || null"
                   [class.kanban-card--drag-enabled]="dragEnabled && !cardDisabled(item, column)"
                   [class.kanban-card--drag-disabled]="dragEnabled && cardDisabled(item, column)"
                   type="button"

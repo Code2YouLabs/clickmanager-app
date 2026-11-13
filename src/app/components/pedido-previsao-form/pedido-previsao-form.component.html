@@ -1,0 +1,16 @@
+<div class="previsao-form">
+ <mat-checkbox [(ngModel)]="habilitada" [ngModelOptions]="{standalone:true}" (change)="alternar()">Definir previsão de entrega</mat-checkbox>
+ <p *ngIf="carregando" role="status">Carregando prazo padrão…</p>
+ <div *ngIf="erro" role="alert">{{erro}} <button mat-button type="button" (click)="carregar()">Tentar novamente</button></div>
+ <div class="previsao-campos" *ngIf="habilitada && (!carregando && !erro || edicao)">
+   <app-input-data label="Data de entrega" [control]="data"></app-input-data>
+   <div><mat-label class="f-s-14 f-w-600 m-b-8 d-block">Horário</mat-label><mat-form-field appearance="outline" class="w-100"><input aria-label="Horário de entrega" matInput type="time" [(ngModel)]="hora" [ngModelOptions]="{standalone:true}" (ngModelChange)="editada()" required></mat-form-field></div>
+ </div>
+ <p class="previsao-nota" *ngIf="habilitada">Horário de Brasília · America/Sao_Paulo</p>
+ <p *ngIf="habilitada && automatica && parametros">Previsão estimada. O prazo de {{parametros.prazo}} {{parametros.unidade === 'DIAS' ? 'dias corridos' : 'horas'}} será calculado na criação.</p>
+ <button *ngIf="habilitada && !automatica && !edicao && parametros" mat-button type="button" (click)="padrao()">Voltar ao prazo padrão</button>
+ <p *ngIf="habilitada && !automatica && !dataHora" role="alert">Informe uma data e horário válidos.</p>
+ <div *ngIf="passada" class="previsao-aviso" role="status"><p>A data escolhida já passou. Ela será mantida.</p>
+  <mat-checkbox [(ngModel)]="confirmadoPassado" [ngModelOptions]="{standalone:true}" (change)="notificar()">Confirmo manter esta data passada</mat-checkbox>
+ </div>
+</div>
