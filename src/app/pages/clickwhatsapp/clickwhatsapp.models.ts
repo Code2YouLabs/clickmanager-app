@@ -161,3 +161,27 @@ export function falha(erro: unknown): { status: number; codigo: string; mensagem
 export function motivo(codigo: string): string {
   return ERROS[codigo] ?? 'A operação precisa de atenção. Consulte o estado atual.';
 }
+
+export type ResultadoInvestigacao = 'RESOLVIDA_COM_EVIDENCIA' | 'PERMANECE_INCERTA' | 'EVIDENCIA_CONTRADITORIA' | 'SEM_TRANSMISSAO' | 'INVESTIGACAO_INDISPONIVEL';
+
+export interface OcorrenciaOperacional {
+  podeInvestigar: boolean;
+  ocorrencia: {
+    mensagem: string;
+    tentativa: string;
+    iniciadaEm: string;
+    fase: Fase;
+    resultado: ResultadoInvestigacao;
+    motivo: string;
+    evidencia: { estado: string; recebidaEm: string } | null;
+    historico: { registradaEm: string; ator: number; resultado: ResultadoInvestigacao; motivo: string; anterior: string; posterior: string }[];
+  };
+}
+
+export interface ItemOcorrencia {
+  mensagem: string;
+  conexao: string;
+  tentativa: string;
+  iniciadaEm: string;
+  fase: Fase;
+}

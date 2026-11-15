@@ -2,7 +2,7 @@ import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { SILENT_REQUEST } from 'src/app/interceptors/loading.interceptor';
 import { environment } from 'src/environments/environment';
-import { Configuracao, Detalhe, Direito, Estado, Filtro, ItemHistorico, Mensagem, OperacaoEnvio, Periodo, Preferencia, Qr, Resumo, Tentativa, Webhook } from './clickwhatsapp.models';
+import { Configuracao, Detalhe, Direito, Estado, Filtro, ItemHistorico, ItemOcorrencia, Mensagem, OcorrenciaOperacional, OperacaoEnvio, Periodo, Preferencia, Qr, Resumo, Tentativa, Webhook } from './clickwhatsapp.models';
 
 @Injectable({ providedIn: 'root' })
 export class ClickWhatsAppService {
@@ -44,6 +44,17 @@ export class ClickWhatsAppService {
   }
   tentativas(id: string, mensagem: string) {
     return this.http.get<Tentativa[]>(this.conexao(id) + '/mensagens/' + encodeURIComponent(mensagem) + '/tentativas', this.options());
+  }
+  ocorrencias(pagina: number) {
+    return this.http.get<ItemOcorrencia[]>(this.base + '/ocorrencias', {
+      ...this.options(), params: new HttpParams().set('pagina', pagina),
+    });
+  }
+  ocorrencia(id: string, mensagem: string, investigar = false) {
+    const url = this.conexao(id) + '/mensagens/' + encodeURIComponent(mensagem);
+    return investigar
+      ? this.http.post<OcorrenciaOperacional>(url + '/investigar', null, this.options())
+      : this.http.get<OcorrenciaOperacional>(url + '/ocorrencia', this.options());
   }
   resumo(p: Periodo) {
     return this.http.get<Resumo>(this.base + '/resumo', { ...this.options(), params: this.periodo(p).set('fuso', 'America/Sao_Paulo') });

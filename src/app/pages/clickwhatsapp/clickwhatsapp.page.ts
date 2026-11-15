@@ -23,7 +23,7 @@ import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile
 import { MobileFabActionComponent } from 'src/app/components/mobile-fab-action/mobile-fab-action.component';
 import { AuthService } from 'src/app/services/auth.service';
 import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
-import { Configuracao, CONFIRMACOES, Detalhe, ESTADOS, falha, Fase, Confirmacao, FASES, Filtro, ItemHistorico, motivo, novaOperacao, Periodo, Qr, Resumo, Tentativa, Webhook, WEBHOOKS } from './clickwhatsapp.models';
+import { Configuracao, CONFIRMACOES, Detalhe, ESTADOS, falha, Fase, Confirmacao, FASES, Filtro, ItemHistorico, ItemOcorrencia, motivo, novaOperacao, OcorrenciaOperacional, Periodo, Qr, Resumo, Tentativa, Webhook, WEBHOOKS } from './clickwhatsapp.models';
 import { ClickWhatsAppEnvioStore, contextoEnvio } from './clickwhatsapp-envio.store';
 import { ClickWhatsAppService } from './clickwhatsapp.service';
 
@@ -55,6 +55,7 @@ export class ClickWhatsAppPage implements OnInit {
 
   @ViewChild('telaQr') telaQr!: TemplateRef<unknown>;
   @ViewChild('telaEnvio') telaEnvio!: TemplateRef<unknown>;
+  @ViewChild('telaOcorrencia') telaOcorrencia!: TemplateRef<unknown>;
   @ViewChild('telaDetalhe') telaDetalhe!: TemplateRef<unknown>;
   @ViewChild('telaFiltros') telaFiltros!: TemplateRef<unknown>;
 
@@ -68,6 +69,28 @@ export class ClickWhatsAppPage implements OnInit {
   verificandoConexao = false;
   verificacaoFalhou = false;
   private proximaVerificacao = 0;
+  ocorrencia: OcorrenciaOperacional | null = null;
+  lendoOcorrencia = false;
+  private alvoOcorrencia: Pick<ItemHistorico['mensagem'], 'id' | 'conexao'> | null = null;
+  readonly resultadosInvestigacao = {
+    RESOLVIDA_COM_EVIDENCIA: 'Resolvida com evidência',
+    PERMANECE_INCERTA: 'Resultado ainda incerto',
+    EVIDENCIA_CONTRADITORIA: 'Evidência contraditória',
+    SEM_TRANSMISSAO: 'Falha anterior à transmissão',
+    INVESTIGACAO_INDISPONIVEL: 'Investigação indisponível',
+  };
+  readonly motivosInvestigacao: Record<string, string> = {
+    MENSAGEM_TERMINAL: 'Esta mensagem está encerrada e permanece preservada.',
+    ACEITE_COMPROVADO: 'Há evidência de aceite desta tentativa.',
+    FALHA_ANTES_DA_TRANSMISSAO: 'O processamento registrou que a chamada não foi transmitida.',
+    IDENTIFICADORES_DIVERGENTES: 'Os identificadores da evidência divergem. A confirmação permanece bloqueada.',
+    SEM_EVIDENCIA_CONCLUSIVA: 'Ainda não há confirmação confiável desta tentativa.',
+    SEM_IDENTIFICADOR_WHATSAPP: 'A tentativa não tem um identificador WhatsApp confirmado.',
+  };
+  readonly estadosEvidencia: Record<string, string> = {
+    PENDING: 'Aceita pelo provedor', SERVER_ACK: 'Confirmada pelo servidor',
+    DELIVERY_ACK: 'Entregue', READ: 'Lida',
+  };
   detalhe: Detalhe | null = null;
   tentativas: Tentativa[] | null = null;
   erroTentativas = '';
@@ -100,6 +123,16 @@ export class ClickWhatsAppPage implements OnInit {
     };
     return labels[resultado] ?? 'Resultado desconhecido';
   }
+  listaOcorrencias: ItemOcorrencia[] | null = null;
+  paginaOcorrencias = 0;
+  carregandoOcorrencias = false;
+  erroOcorrencias = '';
+  readonly colunasOcorrencias: DataTableColumn<ItemOcorrencia>[] = [
+    { key: 'iniciadaEm', label: 'Data da tentativa' }, { key: 'fase', label: 'Situação da mensagem' },
+    { key: 'detalhe', label: 'Investigação' },
+  ];
+  readonly chaveOcorrencia = (item: ItemOcorrencia) => item.tentativa;
+
   readonly colunas: DataTableColumn<ItemHistorico>[] = [
     { key: 'data', label: 'Data' }, { key: 'destino', label: 'Destinatário' },
     { key: 'fase', label: 'Situação' }, { key: 'confirmacao', label: 'Confirmação' }, { key: 'detalhe', label: 'Detalhe' },
@@ -155,6 +188,10 @@ export class ClickWhatsAppPage implements OnInit {
     this.proximaVerificacao = Date.now() + 5000;
     this.verificandoConexao = this.verificacaoFalhou = false;
     this.itens = [];
+    this.listaOcorrencias = null;
+    this.paginaOcorrencias = 0;
+    this.carregandoOcorrencias = false;
+    this.erroOcorrencias = '';
     this.resumo = null;
     this.webhook = null;
     this.acao = '';
@@ -193,6 +230,7 @@ export class ClickWhatsAppPage implements OnInit {
       } else if (!config.acoesPermitidas?.consultarHistorico) {
         this.consulta++;
         this.itens = [];
+        this.listaOcorrencias = null;
         this.resumo = null;
       }
     } catch (erro) {
@@ -294,6 +332,8 @@ export class ClickWhatsAppPage implements OnInit {
     this.qrModal = undefined;
     this.qr = null;
     this.detalhe = null;
+    this.ocorrencia = this.alvoOcorrencia = null;
+    this.lendoOcorrencia = false;
     this.tentativas = null;
     this.erroModal = this.erroTentativas = '';
     this.numero = this.texto = '';
@@ -560,6 +600,66 @@ export class ClickWhatsAppPage implements OnInit {
       if (atual()) { this.itens = []; this.erroHistorico = falha(erro).mensagem; }
     } finally {
       if (atual()) this.lendo = false;
+    }
+  }
+
+  async listarOcorrencias(delta = 0) {
+    if (!this.acoes?.consultarHistorico || this.carregandoOcorrencias) return;
+    const sessao = this.sessao;
+    const pagina = this.paginaOcorrencias + delta;
+    if (pagina < 0) return;
+    this.carregandoOcorrencias = true;
+    this.erroOcorrencias = '';
+    try {
+      const itens = await this.ler(this.api.ocorrencias(pagina).pipe(timeout(12000)));
+      if (sessao !== this.sessao || !this.acoes?.consultarHistorico) return;
+      this.listaOcorrencias = itens;
+      this.paginaOcorrencias = pagina;
+    } catch (e) {
+      if (sessao === this.sessao) this.erroOcorrencias = falha(e).mensagem;
+    } finally {
+      if (sessao === this.sessao) this.carregandoOcorrencias = false;
+    }
+  }
+
+  verOcorrencias() {
+    if (this.lendo || !this.acoes?.consultarHistorico) return;
+    this.filtro = { ...this.filtro, fase: this.filtro.fase === 'INCERTA' ? '' : 'INCERTA', pagina: 0 };
+    void this.carregarConsultas(false);
+  }
+
+  ehOcorrencia(item: ItemHistorico) {
+    return item.mensagem.fase === 'INCERTA'
+      || ['RESULTADO_INCERTO', 'ID_PROVEDOR_CONFLITANTE'].includes(item.mensagem.erro ?? '');
+  }
+
+  abrirOcorrencia(item: { mensagem: Pick<ItemHistorico['mensagem'], 'id' | 'conexao'> }) {
+    if (!this.acoes?.consultarHistorico || !this.abrir(this.telaOcorrencia, 'Ocorrência de envio')) return;
+    this.alvoOcorrencia = item.mensagem;
+    void this.carregarOcorrencia();
+  }
+
+  async carregarOcorrencia(investigar = false) {
+    const ref = this.modal;
+    const alvo = this.alvoOcorrencia;
+    if (!ref || !alvo || this.lendoOcorrencia || (investigar && !this.ocorrencia?.podeInvestigar)) return;
+    const aberta = () => this.modal === ref && ref.getState() === MatDialogState.OPEN;
+    this.lendoOcorrencia = true;
+    this.erroModal = '';
+    try {
+      const ocorrencia = await this.ler(this.api.ocorrencia(alvo.conexao, alvo.id, investigar)
+        .pipe(timeout(12000), takeUntil(ref.beforeClosed())));
+      if (!aberta()) return;
+      this.ocorrencia = ocorrencia;
+      if (investigar) {
+        void this.carregarConsultas();
+        if (this.listaOcorrencias) void this.listarOcorrencias();
+        void this.carregar();
+      }
+    } catch (e) {
+      if (aberta()) this.erroModal = falha(e).mensagem;
+    } finally {
+      if (aberta()) this.lendoOcorrencia = false;
     }
   }
 

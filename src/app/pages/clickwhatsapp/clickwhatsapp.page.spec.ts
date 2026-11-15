@@ -298,6 +298,68 @@ describe('ClickWhatsApp', () => {
     expect(painel?.textContent).toContain('Tentativa 1');
     expect(painel?.textContent).not.toMatch(/Reenviar|Liberar|Confirmar entrega/);
   });
+  it('investiga ocorrência sem chamar envio e atualiza histórico no painel mobile', async () => {
+    mobile = true;
+    await iniciar({ ...config, acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: false } });
+    page.config = { ...config, acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: true } };
+    page.verOcorrencias();
+    const lista = http.expectOne(r => r.url === base + '/mensagens');
+    expect(lista.request.params.get('fase')).toBe('INCERTA');
+    lista.flush([{ mensagem, destinatarioMascarado: '***0123', conteudoDisponivel: false }]);
+    await estabilizar();
+    page.abrirOcorrencia(page.itens[0]);
+    const url = conexao + '/mensagens/mensagem-teste';
+    const caso = { mensagem: mensagem.id, tentativa: 't1', fase: 'INCERTA', resultado: 'PERMANECE_INCERTA',
+      motivo: 'SEM_IDENTIFICADOR_WHATSAPP', evidencia: null, historico: [] };
+    http.expectOne(url + '/ocorrencia').flush({ podeInvestigar: true, ocorrencia: caso });
+    await estabilizar();
+    expect(document.querySelector('.mobile-side-panel')?.textContent).toContain('Resultado ainda incerto');
+    void page.carregarOcorrencia(true);
+    const investigacao = http.expectOne(url + '/investigar');
+    expect(investigacao.request.method).toBe('POST');
+    expect(investigacao.request.body).toBeNull();
+    investigacao.flush({ podeInvestigar: true, ocorrencia: { ...caso, fase: 'ACEITA',
+      resultado: 'RESOLVIDA_COM_EVIDENCIA', motivo: 'ACEITE_COMPROVADO' } });
+    await Promise.resolve();
+    http.expectOne(r => r.url === base + '/mensagens').flush([]);
+    http.expectOne(r => r.url === base + '/resumo').flush({ ...page.filtro, mensagens: {} });
+    http.expectOne(base + '/configuracao').flush(page.config);
+    await estabilizar();
+    expect(document.querySelector('.mobile-side-panel')?.textContent).toContain('Resolvida com evidência');
+    expect(document.querySelector('.mobile-side-panel')?.textContent).not.toMatch(/Reenviar|Investigar evidências/);
+    http.expectNone(r => r.method === 'POST' && r.url.endsWith('/mensagens'));
+  });
+
+  it('lista ocorrências resolvidas e limita investigação à decisão do backend', async () => {
+    await iniciar();
+    page.config = { ...config, acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: true } };
+    void page.listarOcorrencias();
+    const lista = http.expectOne(base + '/ocorrencias?pagina=0');
+    lista.flush([{ mensagem: mensagem.id, conexao: 'conexao-teste', tentativa: 't1',
+      iniciadaEm: mensagem.criadaEm, fase: 'ACEITA' }]);
+    await estabilizar();
+    expect(page.listaOcorrencias?.length).toBe(1);
+    page.abrirOcorrencia({ mensagem });
+    http.expectOne(conexao + '/mensagens/mensagem-teste/ocorrencia').flush({
+      podeInvestigar: false, ocorrencia: { mensagem: mensagem.id, tentativa: 't1', iniciadaEm: mensagem.criadaEm,
+        fase: 'INCERTA', resultado: 'PERMANECE_INCERTA', motivo: 'SEM_IDENTIFICADOR_WHATSAPP', evidencia: null, historico: [] },
+    });
+    await estabilizar();
+    expect(document.querySelector('mat-dialog-content')?.textContent).toContain('Os despachos desta conexão seguem suspensos');
+    void page.carregarOcorrencia(true);
+    http.expectNone(r => r.method === 'POST');
+    expect(document.querySelector('mat-dialog-actions')?.textContent).not.toContain('Investigar evidências');
+    void page.carregarOcorrencia();
+    http.expectOne(conexao + '/mensagens/mensagem-teste/ocorrencia').flush({ codigo: 'APLICACAO_BLOQUEADA' },
+      {status: 403, statusText: 'Forbidden'});
+    await estabilizar();
+    expect(page.erroModal).toContain('indisponível neste ambiente');
+    usuario$.next(null);
+    await estabilizar();
+    expect(page.listaOcorrencias).toBeNull();
+    expect(page.ocorrencia).toBeNull();
+  });
+
   it('mostra manutenção pós-revogação e conserva a projeção de instância preparada', async () => {
     await iniciar({
       ...config,
