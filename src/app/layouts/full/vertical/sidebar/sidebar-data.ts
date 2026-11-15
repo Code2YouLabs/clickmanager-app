@@ -287,6 +287,12 @@ export const navItems: NavItem[] = [
         ]
     },
     {
+        displayName: 'ClickWhatsApp',
+        iconName: 'message-circle',
+        bgcolor: 'primary',
+        route: '/page/clickwhatsapp',
+    },
+    {
         navCap: 'Configurações',
         allowedEmpresaTipos: todosSegmentos,
     },

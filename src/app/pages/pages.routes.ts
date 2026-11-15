@@ -1497,6 +1497,11 @@ export const PagesRoutes: Routes = [
     }
   },
   {
+    path: 'clickwhatsapp',
+    loadComponent: () => import('./clickwhatsapp/clickwhatsapp.page').then(m => m.ClickWhatsAppPage),
+    data: { title: 'ClickWhatsApp' },
+  },
+  {
     path: 'clicktv',
     loadChildren: () =>
       import('./clicktv/clicktv.routes').then((m) => m.CLICKTV_ROUTES),
