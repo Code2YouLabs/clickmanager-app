@@ -21,56 +21,74 @@
           <div class="aviso" role="status"><strong>Resultado incerto</strong><p>Não foi possível determinar o resultado de uma tentativa. Novos despachos estão suspensos nesta conexão.</p></div>
         }
         @if (!direitoAtivo) {
-          <p>{{ c.permissoes.habilitar && c.direito.global ? 'Habilite o ClickWhatsApp para começar a configurar sua conexão.' : 'O recurso está desabilitado para esta empresa.' }}</p>
+          <p>{{ acoes?.habilitarDireito ? 'Habilite o ClickWhatsApp para começar a configurar sua conexão.' : 'O recurso está desabilitado para esta empresa.' }}</p>
         }
         <div class="acoes">
-          @if (c.permissoes.habilitar && (direitoAtivo || c.direito.global)) {
-            <button mat-stroked-button type="button" [disabled]="!!acao" (click)="direito(!direitoAtivo)">
-              {{ acao === 'direito' ? 'Salvando…' : (direitoAtivo ? 'Desabilitar ClickWhatsApp' : 'Habilitar ClickWhatsApp') }}
+          @if (acoes?.habilitarDireito || acoes?.desabilitarDireito) {
+            <button mat-stroked-button type="button" [disabled]="!!acao" (click)="direito(!!acoes?.habilitarDireito)">
+              {{ acao === 'direito' ? 'Salvando…' : (acoes?.habilitarDireito ? 'Habilitar ClickWhatsApp' : 'Desabilitar ClickWhatsApp') }}
             </button>
           }
-          @if (podeEnviar && !mobile) {
+          @if (podeEnviar && !pendente && !mobile) {
             <button mat-flat-button color="primary" type="button" (click)="abrirEnvio()"><mat-icon>add</mat-icon>Nova mensagem</button>
           }
         </div>
       </app-section-card>
 
-      @if (c.permissoes.configurar) {
+      @if (pendente) {
+        <div class="aviso largura-total" role="status">
+          <strong>Solicitação sem confirmação</strong>
+          <p>Confira a solicitação anterior antes de iniciar uma nova mensagem.</p>
+          <button mat-button type="button" (click)="abrirEnvio()">Ver solicitação</button>
+        </div>
+      }
+
+      @if (c.provisionamento || possuiControlesConexao) {
         <app-section-card title="Conexão WhatsApp" [mobilePlain]="true">
           @if (c.conexao) {
+            @if (c.provisionamento; as p) { <p>{{ situacoesProvisionamento[p.situacao] }}</p> }
             @if (c.estado?.observadoEm) {
               <p class="muted">Última observação {{ c.estado?.observadoEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</p>
             }
             @if (c.estado?.motivo; as codigo) { <p class="aviso">{{ motivo(codigo) }}</p> }
             <div class="acoes">
-              @if (c.estado?.observado !== 'ABERTA') {
+              @if (acoes?.provisionar) {
                 <button mat-stroked-button type="button" [disabled]="!!acao" (click)="conexao('provisionar')">{{ acao === 'provisionar' ? 'Provisionando…' : 'Provisionar conexão' }}</button>
+              }
+              @if (acoes?.gerarQr) {
                 <button mat-flat-button color="primary" type="button" [disabled]="!!acao" (click)="abrirQr()">Obter QR</button>
               }
-              <button mat-stroked-button type="button" [disabled]="!!acao" (click)="conexao('reconciliar')">{{ acao === 'reconciliar' ? 'Atualizando…' : 'Atualizar estado' }}</button>
-              @if (c.preferencia; as p) {
-                <button mat-stroked-button type="button" [disabled]="!!acao" (click)="preferencia(p.pausada)">{{ acao === 'preferencia' ? 'Salvando…' : (p.pausada ? 'Retomar envios' : 'Pausar envios') }}</button>
+              @if (acoes?.reconciliar) {
+                <button mat-stroked-button type="button" [disabled]="!!acao" (click)="conexao('reconciliar')">{{ acao === 'reconciliar' ? 'Atualizando…' : 'Atualizar estado' }}</button>
+              }
+              @if (acoes?.pausarEnvios) {
+                <button mat-stroked-button type="button" [disabled]="!!acao" (click)="preferencia(false)">Pausar envios</button>
+              }
+              @if (acoes?.retomarEnvios) {
+                <button mat-stroked-button type="button" [disabled]="!!acao" (click)="preferencia(true)">Retomar envios</button>
               }
             </div>
+            @if (acoes?.consultarWebhook || acoes?.configurarWebhook || acoes?.desconectar) {
             <details class="avancado">
               <summary>Configurações avançadas</summary>
               <div class="avancado-corpo">
                 <div><strong>Webhook</strong><p class="muted">{{ webhook ? webhooks[webhook] : 'Consulte a configuração desta conexão.' }}</p></div>
                 <div class="acoes">
-                  <button mat-button type="button" [disabled]="!!acao" (click)="consultarWebhook()">Consultar webhook</button>
-                  <button mat-stroked-button type="button" [disabled]="!!acao" (click)="consultarWebhook(true)">Configurar webhook</button>
-                  <button mat-button color="warn" type="button" [disabled]="!!acao" (click)="conexao('desconectar')">Desconectar WhatsApp</button>
+                  @if (acoes?.consultarWebhook) { <button mat-button type="button" [disabled]="!!acao" (click)="consultarWebhook()">Consultar webhook</button> }
+                  @if (acoes?.configurarWebhook) { <button mat-stroked-button type="button" [disabled]="!!acao" (click)="consultarWebhook(true)">Configurar webhook</button> }
+                  @if (acoes?.desconectar) { <button mat-button color="warn" type="button" [disabled]="!!acao" (click)="conexao('desconectar')">Desconectar WhatsApp</button> }
                 </div>
               </div>
             </details>
-          } @else {
+            }
+          } @else if (acoes?.criarConexao) {
             <p>Registre uma conexão para começar o pareamento.</p>
             <button mat-flat-button color="primary" type="button" [disabled]="!!acao" (click)="criar()">{{ acao === 'criar' ? 'Registrando…' : 'Criar conexão' }}</button>
           }
         </app-section-card>
       }
 
-      @if (c.permissoes.consultar) {
+      @if (acoes?.consultarHistorico) {
         <app-section-card title="Resumo operacional" [mobilePlain]="true" class="largura-total">
           @if (lendoResumo) { <mat-progress-bar mode="indeterminate" aria-label="Carregando resumo" /> }
           @if (erroResumo) { <p class="aviso" role="alert">{{ erroResumo }}</p> }
@@ -119,7 +137,7 @@
         </app-section-card>
       }
     </div>
-    @if (mobile && podeEnviar) {
+    @if (mobile && podeEnviar && !pendente) {
       <app-mobile-fab-action placement="page" label="Nova mensagem" (action)="abrirEnvio()" />
     }
   }
@@ -153,9 +171,25 @@
 </ng-template>
 
 <ng-template #telaEnvio>
-  <h2 mat-dialog-title class="mobile-side-panel__header">Nova mensagem</h2>
+  <h2 mat-dialog-title class="mobile-side-panel__header">{{ pendente ? 'Solicitação de mensagem' : 'Nova mensagem' }}</h2>
   <mat-dialog-content class="mobile-side-panel__body">
-    <p>Registre uma mensagem de texto na fila de envio.</p>
+    @if (pendente && !enviando) {
+      <p class="aviso" role="status">{{ pendente.mensagem }}</p>
+      @if (validadeEncerrada) { <p>A validade original terminou. Consulte o histórico, se disponível, antes de criar outra mensagem.</p> }
+      @else if (!podeEnviar || pendente.conexao !== config?.conexao) {
+        <p>A solicitação só pode ser repetida na conexão original, com os envios autorizados.</p>
+      }
+    } @else if (!enviando) {
+      <p>Registre uma mensagem de texto na fila de envio.</p>
+    }
+    @if (confirmandoFechamento) {
+      <section class="aviso" aria-label="Fechar solicitação">
+        <strong>{{ confirmandoDescarte ? 'Descartar a solicitação local?' : 'Fechar com a solicitação pendente?' }}</strong>
+        <p>{{ confirmandoDescarte
+          ? 'O registro pode já existir na fila. Criar outra mensagem pode duplicar a solicitação.'
+          : 'O resultado do registro ainda não foi confirmado. Você pode guardar os dados nesta sessão e voltar para verificar.' }}</p>
+      </section>
+    }
     <div class="campos">
       <mat-form-field appearance="outline">
         <mat-label>Número internacional</mat-label>
@@ -171,10 +205,19 @@
     @if (enviando) { <mat-progress-bar mode="indeterminate" aria-label="Registrando mensagem" /> }
   </mat-dialog-content>
   <mat-dialog-actions class="mobile-side-panel__footer" align="end">
-    <button mat-button mat-dialog-close type="button" [disabled]="enviando">Fechar</button>
-    <button mat-flat-button color="primary" type="button" [disabled]="enviando || (!!operacao && !podeRepetir)" (click)="enviar()">
-      {{ podeRepetir ? 'Repetir solicitação' : 'Adicionar à fila' }}
-    </button>
+    @if (confirmandoDescarte) {
+      <button mat-button type="button" (click)="confirmandoDescarte = false">Voltar</button>
+      <button mat-flat-button color="warn" type="button" (click)="descartarEnvio()">Descartar mesmo assim</button>
+    } @else if (confirmandoFechamento) {
+      <button mat-button type="button" (click)="confirmandoFechamento = false">Continuar aqui</button>
+      <button mat-button type="button" (click)="confirmandoDescarte = true">Descartar</button>
+      <button mat-flat-button color="primary" mat-dialog-close type="button">Guardar e fechar</button>
+    } @else {
+      <button mat-button type="button" [disabled]="enviando" (click)="solicitarFechamentoEnvio()">Fechar</button>
+      <button mat-flat-button color="primary" type="button" [disabled]="enviando || !podeEnviar || (!!operacao && !podeRepetir)" (click)="enviar()">
+        {{ operacao ? 'Repetir solicitação' : 'Adicionar à fila' }}
+      </button>
+    }
   </mat-dialog-actions>
 </ng-template>
 

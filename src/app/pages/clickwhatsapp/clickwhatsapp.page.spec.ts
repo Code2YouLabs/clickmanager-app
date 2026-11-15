@@ -20,6 +20,12 @@ describe('ClickWhatsApp', () => {
     direito: { global: true, local: true, revisaoGlobal: 1, revisaoLocal: 1, revisaoEmpresa: 1 },
     aplicacaoAutorizada: true,
     permissoes: { habilitar: true, configurar: true, enviar: true, consultar: false },
+    acoesPermitidas: {
+      habilitarDireito: false, desabilitarDireito: true, criarConexao: false, provisionar: false,
+      gerarQr: true, reconciliar: true, consultarWebhook: true, configurarWebhook: true,
+      pausarEnvios: true, retomarEnvios: false, desconectar: true, enviarMensagem: true, consultarHistorico: false,
+    },
+    provisionamento: { situacao: 'PROVISIONADA' },
     conexao: 'conexao-teste', preferencia: { pausada: false, versao: 8, quarentena: false, motivo: null },
     estado: { observado: 'DESCONHECIDO', observadoEm: null, motivo: null }, motivos: [],
   };
@@ -72,7 +78,7 @@ describe('ClickWhatsApp', () => {
   }
 
   it('ignora proprietário para ações e trata estado desconhecido sem executar efeitos', async () => {
-    await iniciar({ ...config, permissoes: { habilitar: false, configurar: false, consultar: false, enviar: false } });
+    await iniciar({ ...config, acoesPermitidas: Object.fromEntries(Object.keys(config.acoesPermitidas).map(k => [k, false])) as unknown as Configuracao['acoesPermitidas'] });
     expect(fixture.nativeElement.textContent).toContain('Estado precisa ser atualizado');
     page.criar();
     page.direito(false);
@@ -82,7 +88,7 @@ describe('ClickWhatsApp', () => {
   });
 
   it('habilita e cria o vínculo sem provisionamento ou campos de autoridade', async () => {
-    const inativa = { ...config, direito: { ...config.direito, local: false }, conexao: null, preferencia: null, estado: null };
+    const inativa = { ...config, acoesPermitidas: { ...config.acoesPermitidas, habilitarDireito: true, desabilitarDireito: false }, direito: { ...config.direito, local: false }, conexao: null, preferencia: null, estado: null };
     await iniciar(inativa);
     page.direito(true);
     const direito = http.expectOne(base + '/direito');
@@ -90,7 +96,7 @@ describe('ClickWhatsApp', () => {
     expect(direito.request.body).toEqual({ habilitado: true });
     direito.flush({ mudou: true, direito: config.direito });
     await Promise.resolve();
-    http.expectOne(base + '/configuracao').flush({ ...config, conexao: null });
+    http.expectOne(base + '/configuracao').flush({ ...config, conexao: null, acoesPermitidas: { ...config.acoesPermitidas, criarConexao: true } });
     await estabilizar();
     page.criar();
     const criar = http.expectOne(base + '/conexoes');
@@ -117,7 +123,7 @@ describe('ClickWhatsApp', () => {
   });
 
   it('separa provisionamento, atualização de estado, webhook e desconexão', async () => {
-    await iniciar();
+    await iniciar({ ...config, provisionamento: { situacao: 'NAO_PROVISIONADA' }, acoesPermitidas: { ...config.acoesPermitidas, provisionar: true } });
     page.conexao('provisionar');
     const provisionar = http.expectOne(conexao + '/provisionar');
     expect(provisionar.request.body).toBeNull();
@@ -213,7 +219,7 @@ describe('ClickWhatsApp', () => {
   it('mostra lista mobile, resumo cumulativo e detalhe indisponível sem retry para INCERTA', async () => {
     mobile = true;
     fixture.detectChanges();
-    http.expectOne(base + '/configuracao').flush({ ...config, permissoes: { ...config.permissoes, consultar: true } });
+    http.expectOne(base + '/configuracao').flush({ ...config, acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: true } });
     await Promise.resolve();
     const lista = http.expectOne(r => r.url === base + '/mensagens');
     expect(lista.request.params.keys().sort()).toEqual(['fim', 'inicio', 'pagina', 'tamanho']);
@@ -235,4 +241,89 @@ describe('ClickWhatsApp', () => {
     expect(painel?.textContent).toContain('Tentativa 1');
     expect(painel?.textContent).not.toMatch(/Reenviar|Liberar|Confirmar entrega/);
   });
+  it('mostra manutenção pós-revogação e conserva a projeção de instância preparada', async () => {
+    await iniciar({
+      ...config,
+      direito: { ...config.direito, local: false },
+      permissoes: { ...config.permissoes, configurar: false, enviar: false },
+      acoesPermitidas: {
+        ...config.acoesPermitidas, habilitarDireito: true, desabilitarDireito: false, provisionar: false,
+        gerarQr: false, configurarWebhook: false, enviarMensagem: false,
+      },
+    });
+    const conteudo = fixture.nativeElement.textContent;
+    expect(conteudo).toContain('Instância preparada.');
+    expect(conteudo).toContain('Estado precisa ser atualizado');
+    expect(conteudo).toContain('Atualizar estado');
+    expect(conteudo).toContain('Consultar webhook');
+    expect(conteudo).toContain('Desconectar WhatsApp');
+    expect(conteudo).not.toMatch(/Provisionar conexão|Obter QR|Nova mensagem|Configurar webhook/);
+  });
+
+  it('fecha o painel guardando a operação e repete a chave e o corpo ao reabrir', async () => {
+    mobile = true;
+    await iniciar();
+    page.abrirEnvio();
+    page.numero = '+15555550123';
+    page.texto = 'Teste fictício';
+    void page.enviar();
+    const envio = http.expectOne(conexao + '/mensagens');
+    envio.error(new ProgressEvent('error'));
+    await estabilizar();
+    page.solicitarFechamentoEnvio();
+    await estabilizar();
+    const painel = document.querySelector('.mobile-side-panel');
+    expect(painel?.textContent).toContain('Fechar com a solicitação pendente?');
+    Array.from(painel!.querySelectorAll('button')).find(b => b.textContent?.includes('Guardar e fechar'))!.click();
+    await estabilizar();
+    expect(fixture.nativeElement.textContent).toContain('Ver solicitação');
+    page.abrirEnvio();
+    expect(page.numero).toBe('+15555550123');
+    void page.enviar();
+    const repeticao = http.expectOne(conexao + '/mensagens');
+    expect(repeticao.request.body).toEqual(envio.request.body);
+    expect(repeticao.request.headers.get('Idempotency-Key')).toBe(envio.request.headers.get('Idempotency-Key'));
+    repeticao.flush(mensagem, { status: 202, statusText: 'Accepted' });
+    await estabilizar();
+    expect(page.pendente).toBeNull();
+  });
+
+  for (const [tipo, novo] of [['empresa', { id: 1, empresa: { id: 2 } }], ['usuário', { id: 2 }]] as const) {
+    it(`limpa a operação quando troca de ${tipo}`, async () => {
+      await iniciar();
+      page.abrirEnvio();
+      page.numero = '+15555550123';
+      page.texto = 'Teste fictício';
+      void page.enviar();
+      http.expectOne(conexao + '/mensagens').error(new ProgressEvent('error'));
+      await estabilizar();
+      usuario$.next(novo as Usuario);
+      http.expectOne(base + '/configuracao').flush(config);
+      await estabilizar();
+      expect(page.pendente).toBeNull();
+      expect(page.texto).toBe('');
+    });
+  }
+
+  it('bloqueia expiração e conflito sem criar nova chave automaticamente', async () => {
+    await iniciar();
+    page.abrirEnvio();
+    page.numero = '+15555550123';
+    page.texto = 'Teste fictício';
+    void page.enviar();
+    const req = http.expectOne(conexao + '/mensagens');
+    req.flush({ codigo: 'IDEMPOTENCIA_CONFLITO' }, { status: 409, statusText: 'Conflict' });
+    await Promise.resolve();
+    http.expectOne(base + '/configuracao').flush(config);
+    await estabilizar();
+    expect(page.podeRepetir).toBeFalse();
+    expect(page.operacao?.chave).toBe(req.request.headers.get('Idempotency-Key') ?? undefined);
+    page.pendente!.repetivel = true;
+    const agora = spyOn(Date, 'now').and.returnValue(Date.parse(req.request.body.expiraEm) + 1);
+    await page.enviar();
+    expect(page.validadeEncerrada).toBeTrue();
+    http.expectNone(conexao + '/mensagens');
+    agora.and.callThrough();
+  });
+
 });

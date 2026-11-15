@@ -1,6 +1,6 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, OnInit, TemplateRef, ViewChild } from '@angular/core';
+import { Component, DestroyRef, inject, NgZone, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,7 +11,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { ToastrService } from 'ngx-toastr';
-import { distinctUntilChanged, firstValueFrom, map, Observable, Subject, takeUntil } from 'rxjs';
+import { distinctUntilChanged, firstValueFrom, map, Observable, Subject, takeUntil, timeout } from 'rxjs';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
@@ -23,7 +23,8 @@ import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile
 import { MobileFabActionComponent } from 'src/app/components/mobile-fab-action/mobile-fab-action.component';
 import { AuthService } from 'src/app/services/auth.service';
 import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
-import { Configuracao, CONFIRMACOES, Detalhe, ESTADOS, falha, Fase, Confirmacao, FASES, Filtro, ItemHistorico, motivo, novaOperacao, OperacaoEnvio, Periodo, Qr, Resumo, Tentativa, Webhook, WEBHOOKS } from './clickwhatsapp.models';
+import { Configuracao, CONFIRMACOES, Detalhe, ESTADOS, falha, Fase, Confirmacao, FASES, Filtro, ItemHistorico, motivo, novaOperacao, Periodo, Qr, Resumo, Tentativa, Webhook, WEBHOOKS } from './clickwhatsapp.models';
+import { ClickWhatsAppEnvioStore, contextoEnvio } from './clickwhatsapp-envio.store';
 import { ClickWhatsAppService } from './clickwhatsapp.service';
 
 @Component({
@@ -36,10 +37,12 @@ import { ClickWhatsAppService } from './clickwhatsapp.service';
   styleUrl: './clickwhatsapp.page.scss',
 })
 export class ClickWhatsAppPage implements OnInit {
+  private readonly envios = inject(ClickWhatsAppEnvioStore);
   private readonly api = inject(ClickWhatsAppService);
   private readonly auth = inject(AuthService);
   private readonly dialog = inject(MatDialog);
   private readonly toast = inject(ToastrService);
+  private readonly zone = inject(NgZone);
   private readonly destroy = inject(DestroyRef);
   private readonly breakpoints = inject(BreakpointObserver);
   private readonly troca = new Subject<void>();
@@ -66,8 +69,11 @@ export class ClickWhatsAppPage implements OnInit {
   buscandoDetalhe = false;
   numero = '';
   texto = '';
-  operacao: OperacaoEnvio | null = null;
-  podeRepetir = false;
+  confirmandoFechamento = false;
+  confirmandoDescarte = false;
+  private modalEnvio?: MatDialogRef<unknown>;
+  private validadeTimer?: ReturnType<typeof setTimeout>;
+  validadeEncerrada = false;
   enviando = false;
   itens: ItemHistorico[] = [];
   resumo: Resumo | null = null;
@@ -105,7 +111,7 @@ export class ClickWhatsAppPage implements OnInit {
 
   ngOnInit() {
     this.auth.usuario$.pipe(
-      map(u => u ? String(u.id) + '/' + String(u.empresa?.id) : null),
+      map(contextoEnvio),
       distinctUntilChanged(), takeUntilDestroyed(this.destroy),
     ).subscribe(contexto => {
       this.limparContexto();
@@ -114,10 +120,25 @@ export class ClickWhatsAppPage implements OnInit {
   }
 
   get direitoAtivo() { return !!(this.config?.direito.global && this.config.direito.local); }
-  get podeEnviar() {
-    return !!(this.config?.conexao && this.config.permissoes.enviar && this.config.preferencia?.pausada === false
-      && !this.config.preferencia.quarentena);
+  get acoes() { return this.config?.acoesPermitidas; }
+  get podeEnviar() { return !!this.acoes?.enviarMensagem; }
+  get pendente() { return this.envios.pendente; }
+  get operacao() { return this.pendente?.operacao ?? null; }
+  get podeRepetir() {
+    return !!(this.pendente?.repetivel && this.podeEnviar && this.pendente.conexao === this.config?.conexao
+      && !this.validadeEncerrada);
   }
+  get possuiControlesConexao() {
+    const a = this.acoes;
+    return !!a && (a.criarConexao || a.provisionar || a.gerarQr || a.reconciliar || a.consultarWebhook
+      || a.configurarWebhook || a.pausarEnvios || a.retomarEnvios || a.desconectar);
+  }
+  readonly situacoesProvisionamento = {
+    NAO_PROVISIONADA: 'Conexão registrada. Prepare a instância para continuar.',
+    EM_ANDAMENTO: 'Preparando a instância.',
+    PROVISIONADA: 'Instância preparada.',
+    DESCONHECIDA: 'Não foi possível confirmar a preparação da instância.',
+  };
   get mobile() { return this.breakpoints.isMatched(MOBILE_FOUNDATION_QUERY); }
   readonly chaveLinha = (item: ItemHistorico) => item.mensagem.id;
 
@@ -151,15 +172,15 @@ export class ClickWhatsAppPage implements OnInit {
       if (sessao !== this.sessao) return;
       this.config = config;
       if (anterior && (anterior.conexao !== config.conexao
-        || (anterior.permissoes.configurar && !config.permissoes.configurar)
-        || (anterior.permissoes.consultar && !config.permissoes.consultar)
-        || (anterior.permissoes.enviar && !config.permissoes.enviar))) {
+        || (anterior.acoesPermitidas?.gerarQr && !config.acoesPermitidas?.gerarQr)
+        || (anterior.acoesPermitidas?.consultarHistorico && !config.acoesPermitidas?.consultarHistorico)
+        || (anterior.acoesPermitidas?.enviarMensagem && !config.acoesPermitidas?.enviarMensagem))) {
         this.webhook = null;
         this.modal?.close();
       }
-      if (config.permissoes.consultar && (inicial || !anterior?.permissoes.consultar)) {
+      if (config.acoesPermitidas?.consultarHistorico && (inicial || !anterior?.acoesPermitidas?.consultarHistorico)) {
         void this.carregarConsultas();
-      } else if (!config.permissoes.consultar) {
+      } else if (!config.acoesPermitidas?.consultarHistorico) {
         this.consulta++;
         this.itens = [];
         this.resumo = null;
@@ -209,7 +230,7 @@ export class ClickWhatsAppPage implements OnInit {
   }
 
   direito(ativo: boolean) {
-    if (!this.config?.permissoes.habilitar) return;
+    if (!(ativo ? this.acoes?.habilitarDireito : this.acoes?.desabilitarDireito)) return;
     const alterar = () => void this.executar('direito', this.api.direito(ativo), () =>
       this.atualizar(ativo ? 'ClickWhatsApp habilitado.' : 'ClickWhatsApp desabilitado.'));
     if (ativo) alterar();
@@ -217,12 +238,12 @@ export class ClickWhatsAppPage implements OnInit {
   }
 
   criar() {
-    if (this.config?.permissoes.configurar) void this.executar('criar', this.api.criar(), () => this.atualizar('Conexão registrada.'));
+    if (this.acoes?.criarConexao) void this.executar('criar', this.api.criar(), () => this.atualizar('Conexão registrada.'));
   }
 
   conexao(acao: 'provisionar' | 'reconciliar' | 'desconectar') {
     const id = this.config?.conexao;
-    if (!id || !this.config?.permissoes.configurar) return;
+    if (!id || !this.acoes?.[acao]) return;
     const executar = () => void this.executar(acao, this.api[acao](id), estado => {
       if (estado.motivo) this.toast.warning(motivo(estado.motivo));
       return this.atualizar(estado.motivo ? undefined : ({
@@ -235,14 +256,14 @@ export class ClickWhatsAppPage implements OnInit {
 
   preferencia(ativa: boolean) {
     const c = this.config;
-    if (!c?.conexao || !c.preferencia || !c.permissoes.configurar) return;
+    if (!c?.conexao || !c.preferencia || !(ativa ? this.acoes?.retomarEnvios : this.acoes?.pausarEnvios)) return;
     void this.executar('preferencia', this.api.preferencia(c.conexao, ativa, c.preferencia.versao),
       () => this.atualizar(ativa ? 'Preferência de envio ativada.' : 'Envios pausados.'));
   }
 
   consultarWebhook(configurar = false) {
     const id = this.config?.conexao;
-    if (!id || !this.config?.permissoes.configurar) return;
+    if (!id || !(configurar ? this.acoes?.configurarWebhook : this.acoes?.consultarWebhook)) return;
     void this.executar('webhook', configurar ? this.api.configurarWebhook(id) : this.api.webhook(id), r => {
       this.webhook = r.situacao;
     });
@@ -265,19 +286,20 @@ export class ClickWhatsAppPage implements OnInit {
     this.tentativas = null;
     this.erroModal = this.erroTentativas = '';
     this.numero = this.texto = '';
-    this.operacao = null;
-    this.podeRepetir = this.enviando = this.buscandoDetalhe = false;
+    clearTimeout(this.validadeTimer);
+    this.confirmandoFechamento = this.confirmandoDescarte = this.validadeEncerrada = false;
+    this.enviando = this.buscandoDetalhe = false;
   }
 
   abrirQr() {
-    if (!this.config?.permissoes.configurar || !this.config.conexao) return;
+    if (!this.acoes?.gerarQr || !this.config?.conexao) return;
     if (this.abrir(this.telaQr, 'Conectar WhatsApp', false)) void this.solicitarQr();
   }
 
   async solicitarQr() {
     const ref = this.modal;
     const id = this.config?.conexao;
-    if (!ref || !id || !this.config?.permissoes.configurar || this.acao) return;
+    if (!ref || !id || !this.acoes?.gerarQr || this.acao) return;
     this.qr = null;
     this.erroModal = '';
     clearTimeout(this.qrTimer);
@@ -307,53 +329,106 @@ export class ClickWhatsAppPage implements OnInit {
   }
 
   abrirEnvio() {
-    if (this.podeEnviar) this.abrir(this.telaEnvio, 'Nova mensagem');
+    if (!this.podeEnviar && !this.pendente) return;
+    const ref = this.abrir(this.telaEnvio, this.pendente ? 'Solicitação pendente' : 'Nova mensagem');
+    if (!ref) return;
+    this.modalEnvio = ref;
+    ref.disableClose = true;
+    ref.keydownEvents().pipe(takeUntil(ref.beforeClosed())).subscribe(e => {
+      if (e.key === 'Escape') this.solicitarFechamentoEnvio();
+    });
+    ref.backdropClick().pipe(takeUntil(ref.beforeClosed())).subscribe(() => this.solicitarFechamentoEnvio());
+    ref.beforeClosed().subscribe(() => { if (this.modalEnvio === ref) this.modalEnvio = undefined; });
+    if (this.pendente) {
+      this.numero = this.pendente.operacao.corpo.numero;
+      this.texto = this.pendente.operacao.corpo.texto;
+      this.observarValidade();
+    }
+  }
+
+  solicitarFechamentoEnvio() {
+    if (this.enviando) return;
+    if (this.pendente) this.confirmandoFechamento = true;
+    else this.modalEnvio?.close();
+  }
+
+  descartarEnvio() {
+    if (!this.confirmandoDescarte || this.enviando) return;
+    this.envios.pendente = null;
+    this.modalEnvio?.close();
+  }
+
+  private observarValidade() {
+    clearTimeout(this.validadeTimer);
+    const validade = this.operacao?.corpo.expiraEm;
+    if (!validade) return;
+    const restantes = Date.parse(validade) - Date.now();
+    this.validadeEncerrada = restantes <= 0;
+    if (!this.validadeEncerrada) {
+      this.validadeTimer = this.zone.runOutsideAngular(() => setTimeout(() => {
+        this.zone.run(() => { this.validadeEncerrada = true; });
+      }, restantes));
+    }
   }
 
   async enviar() {
-    const ref = this.modal;
+    const ref = this.modalEnvio;
     const id = this.config?.conexao;
-    if (!ref || !id || !this.podeEnviar || this.enviando) return;
-    const primeiraTentativa = !this.operacao;
-    if (!this.operacao) {
+    if (!ref || !id || !this.podeEnviar || this.enviando || this.confirmandoFechamento) return;
+    const repeticao = !!this.pendente;
+    if (this.pendente) {
+      this.observarValidade();
+      if (!this.podeRepetir) return;
+    } else {
       const numero = this.numero.trim();
       if (!/^\+?[1-9]\d{7,14}$/.test(numero) || !this.texto.trim() || new TextEncoder().encode(this.texto).length > 4096) {
         this.erroModal = 'Informe um número internacional e uma mensagem de até 4096 bytes.';
         return;
       }
-      this.operacao = novaOperacao(numero, this.texto);
-    } else if (!this.podeRepetir) return;
-
+      this.envios.pendente = {
+        conexao: id,
+        operacao: novaOperacao(numero, this.texto),
+        mensagem: 'A confirmação do registro ainda não foi recebida.',
+        repetivel: true,
+      };
+      this.observarValidade();
+    }
     this.enviando = true;
-    ref.disableClose = true;
     this.erroModal = '';
-    const operacao = this.operacao;
+    const envio = this.pendente!;
     const sessao = this.sessao;
     try {
-      await this.ler(this.api.enviar(id, operacao));
-      if (sessao !== this.sessao) return;
+      const resposta = await this.ler(this.api.enviar(id, envio.operacao).pipe(timeout(20_000)));
+      if (sessao !== this.sessao || this.pendente !== envio) return;
+      if (resposta.status !== 202 || !resposta.body?.id) {
+        envio.mensagem = 'A confirmação do registro não foi recebida. É possível repetir a mesma solicitação.';
+        return;
+      }
+      this.envios.pendente = null;
       ref.close();
       this.toast.success('Mensagem adicionada à fila.');
-      if (this.config?.permissoes.consultar) {
-        // O fim do filtro é exclusivo. Estender o período inicial até a nova leitura.
+      if (this.acoes?.consultarHistorico) {
         const agora = new Date().toISOString();
         if (Date.now() - Date.parse(this.filtro.fim) < 60_000) this.filtro = { ...this.filtro, fim: agora, pagina: 0 };
         void this.carregarConsultas();
       }
     } catch (erro) {
-      if (sessao !== this.sessao || this.modal !== ref) return;
+      if (sessao !== this.sessao || this.pendente !== envio) return;
       const e = falha(erro);
-      this.podeRepetir = e.status === 0 || [502, 503, 504].includes(e.status);
-      this.erroModal = this.podeRepetir
-        ? e.mensagem + ' Você pode repetir a mesma solicitação, com os mesmos dados.'
-        : e.mensagem;
-      if (e.status === 400 && primeiraTentativa) this.operacao = null;
+      const rejeicaoConhecida = [400, 401, 402, 403, 404].includes(e.status)
+        || (e.status === 503 && ['SAIDA_CAPACIDADE', 'CHAVE_MENSAGEM_INVALIDA'].includes(e.codigo));
+      if (rejeicaoConhecida && !repeticao) {
+        this.envios.pendente = null;
+        this.erroModal = e.mensagem;
+      } else if (rejeicaoConhecida || e.status === 409) {
+        envio.repetivel = e.status !== 409 && [401, 402, 403, 503].includes(e.status);
+        envio.mensagem = e.mensagem + (repeticao ? ' O resultado da primeira solicitação continua sem confirmação.' : '');
+      } else {
+        envio.mensagem = 'A confirmação do registro não foi recebida. Repita a mesma solicitação para preservar os dados originais.';
+      }
       if ([403, 404, 409].includes(e.status)) void this.carregar();
     } finally {
-      if (sessao === this.sessao) {
-        this.enviando = false;
-        ref.disableClose = false;
-      }
+      if (sessao === this.sessao) this.enviando = false;
     }
   }
 
@@ -398,7 +473,7 @@ export class ClickWhatsAppPage implements OnInit {
   }
 
   async carregarConsultas(incluirResumo = true) {
-    if (!this.config?.permissoes.consultar) return;
+    if (!this.acoes?.consultarHistorico) return;
     const sessao = this.sessao;
     const consulta = ++this.consulta;
     const atual = () => this.sessao === sessao && this.consulta === consulta;
@@ -425,7 +500,7 @@ export class ClickWhatsAppPage implements OnInit {
   }
 
   async abrirDetalhe(item: ItemHistorico) {
-    if (!this.config?.permissoes.consultar) return;
+    if (!this.acoes?.consultarHistorico) return;
     const ref = this.abrir(this.telaDetalhe, 'Detalhe da mensagem');
     if (!ref) return;
     this.buscandoDetalhe = true;

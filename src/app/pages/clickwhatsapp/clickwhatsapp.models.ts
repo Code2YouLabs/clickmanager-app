@@ -19,7 +19,26 @@ export interface Direito {
   revisaoLocal: number;
   revisaoEmpresa: number;
 }
+export interface AcoesPermitidas {
+  habilitarDireito: boolean;
+  desabilitarDireito: boolean;
+  criarConexao: boolean;
+  provisionar: boolean;
+  gerarQr: boolean;
+  reconciliar: boolean;
+  consultarWebhook: boolean;
+  configurarWebhook: boolean;
+  pausarEnvios: boolean;
+  retomarEnvios: boolean;
+  desconectar: boolean;
+  enviarMensagem: boolean;
+  consultarHistorico: boolean;
+}
+
+export type SituacaoProvisionamento = 'NAO_PROVISIONADA' | 'EM_ANDAMENTO' | 'PROVISIONADA' | 'DESCONHECIDA';
 export interface Configuracao {
+  acoesPermitidas: AcoesPermitidas;
+  provisionamento: { situacao: SituacaoProvisionamento } | null;
   direito: Direito;
   aplicacaoAutorizada: boolean;
   permissoes: { habilitar: boolean; configurar: boolean; enviar: boolean; consultar: boolean };

@@ -31,7 +31,7 @@ export class ClickWhatsAppService {
   }
   enviar(id: string, operacao: OperacaoEnvio) {
     return this.http.post<Mensagem>(this.conexao(id) + '/mensagens', operacao.corpo, {
-      ...this.options(), headers: { 'Idempotency-Key': operacao.chave },
+      ...this.options(), headers: { 'Idempotency-Key': operacao.chave }, observe: 'response',
     });
   }
   historico(f: Filtro) {
