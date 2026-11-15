@@ -1,5 +1,5 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DOCUMENT } from '@angular/common';
 import { Component, DestroyRef, inject, NgZone, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
@@ -49,6 +49,8 @@ export class ClickWhatsAppPage implements OnInit {
   private sessao = 0;
   private consulta = 0;
   private modal?: MatDialogRef<unknown>;
+  private readonly documento = inject(DOCUMENT);
+  private qrModal?: MatDialogRef<unknown>;
   private qrTimer?: ReturnType<typeof setTimeout>;
 
   @ViewChild('telaQr') telaQr!: TemplateRef<unknown>;
@@ -63,6 +65,9 @@ export class ClickWhatsAppPage implements OnInit {
   webhook: Webhook | null = null;
   qr: Qr | null = null;
   erroModal = '';
+  verificandoConexao = false;
+  verificacaoFalhou = false;
+  private proximaVerificacao = 0;
   detalhe: Detalhe | null = null;
   tentativas: Tentativa[] | null = null;
   erroTentativas = '';
@@ -105,11 +110,12 @@ export class ClickWhatsAppPage implements OnInit {
   faseInput: Filtro['fase'] = '';
   erroPeriodo = '';
 
-  constructor() {
-    this.destroy.onDestroy(() => this.limparContexto());
-  }
-
   ngOnInit() {
+    const timer = this.zone.runOutsideAngular(() => setInterval(() => this.verificarPeriodicamente(), 5000));
+    this.destroy.onDestroy(() => {
+      clearInterval(timer);
+      this.limparContexto();
+    });
     this.auth.usuario$.pipe(
       map(contextoEnvio),
       distinctUntilChanged(), takeUntilDestroyed(this.destroy),
@@ -146,6 +152,8 @@ export class ClickWhatsAppPage implements OnInit {
     this.sessao++;
     this.troca.next();
     this.config = null;
+    this.proximaVerificacao = Date.now() + 5000;
+    this.verificandoConexao = this.verificacaoFalhou = false;
     this.itens = [];
     this.resumo = null;
     this.webhook = null;
@@ -168,11 +176,13 @@ export class ClickWhatsAppPage implements OnInit {
     this.carregando = !anterior;
     this.erroConfig = '';
     try {
-      const config = await this.ler(this.api.configuracao());
+      const config = await this.ler(this.api.configuracao().pipe(timeout(12000)));
       if (sessao !== this.sessao) return;
       this.config = config;
+      this.verificacaoFalhou = false;
       if (anterior && (anterior.conexao !== config.conexao
-        || (anterior.acoesPermitidas?.gerarQr && !config.acoesPermitidas?.gerarQr)
+        || (this.qrModal && (!config.direito.local || !config.direito.global || !config.aplicacaoAutorizada
+          || (!config.acoesPermitidas?.gerarQr && config.estado?.observado !== 'ABERTA')))
         || (anterior.acoesPermitidas?.consultarHistorico && !config.acoesPermitidas?.consultarHistorico)
         || (anterior.acoesPermitidas?.enviarMensagem && !config.acoesPermitidas?.enviarMensagem))) {
         this.webhook = null;
@@ -281,6 +291,7 @@ export class ClickWhatsAppPage implements OnInit {
 
   private limparModal() {
     clearTimeout(this.qrTimer);
+    this.qrModal = undefined;
     this.qr = null;
     this.detalhe = null;
     this.tentativas = null;
@@ -293,11 +304,15 @@ export class ClickWhatsAppPage implements OnInit {
 
   abrirQr() {
     if (!this.acoes?.gerarQr || !this.config?.conexao) return;
-    if (this.abrir(this.telaQr, 'Conectar WhatsApp', false)) void this.solicitarQr();
+    const ref = this.abrir(this.telaQr, 'Conectar WhatsApp', false);
+    if (ref) {
+      this.qrModal = ref;
+      void this.solicitarQr();
+    }
   }
 
   async solicitarQr() {
-    const ref = this.modal;
+    const ref = this.qrModal;
     const id = this.config?.conexao;
     if (!ref || !id || !this.acoes?.gerarQr || this.acao) return;
     this.qr = null;
@@ -307,24 +322,73 @@ export class ClickWhatsAppPage implements OnInit {
     const sessao = this.sessao;
     try {
       // Cancelar a leitura ao fechar o diálogo e nunca guardar o resultado em serviço global.
-      const qr = await this.ler(this.api.qr(id).pipe(takeUntil(ref.beforeClosed())));
+      const qr = await this.ler(this.api.qr(id).pipe(timeout(30000), takeUntil(ref.beforeClosed())));
       if (this.modal !== ref || ref.getState() !== MatDialogState.OPEN || sessao !== this.sessao) return;
       if (qr.situacao === 'DISPONIVEL' && !/^data:image\/png;base64,[a-zA-Z0-9+/=\r\n]+$/.test(qr.imagem ?? '')) {
         this.erroModal = 'O código retornado está indisponível.';
         return;
       }
       this.qr = qr.situacao === 'DISPONIVEL' ? qr : { ...qr, imagem: null };
-      if (qr.expiraEm) {
-        this.qrTimer = setTimeout(() => {
-          this.qr = null;
-          this.erroModal = 'O código expirou. Solicite um novo QR.';
-        }, Math.max(0, Math.min(Date.parse(qr.expiraEm) - Date.now(), 2147483647)));
+      if (qr.situacao === 'DISPONIVEL') {
+        const validade = Date.parse(qr.expiraEm ?? '');
+        const espera = Number.isFinite(validade) ? Math.max(0, validade - Date.now()) : 90000;
+        this.zone.runOutsideAngular(() => {
+          this.qrTimer = setTimeout(() => this.zone.run(() => {
+            this.qr = null;
+            this.erroModal = 'O pareamento não foi confirmado a tempo. Verifique a conexão ou solicite um novo QR.';
+          }), Math.min(espera, 2147483647));
+        });
       }
       if (qr.situacao === 'JA_CONECTADA') void this.carregar();
     } catch (e) {
       if (this.modal === ref && ref.getState() === MatDialogState.OPEN && sessao === this.sessao) this.erroModal = falha(e).mensagem;
     } finally {
       if (sessao === this.sessao) this.acao = '';
+    }
+  }
+
+  private verificarPeriodicamente() {
+    if (this.documento.hidden || this.acao || this.verificandoConexao || !this.direitoAtivo) return;
+    const aguardandoQr = this.qr?.situacao === 'DISPONIVEL';
+    if (!aguardandoQr && Date.now() < this.proximaVerificacao) return;
+    if (this.modal && !aguardandoQr) return;
+    if (this.config?.provisionamento?.situacao !== 'PROVISIONADA') return;
+    this.proximaVerificacao = Date.now() + 30000;
+    this.zone.run(() => {
+      if (this.acoes?.reconciliar) void this.verificarConexao();
+      else if (!aguardandoQr) void this.carregar();
+    });
+  }
+
+  async verificarConexao() {
+    const id = this.config?.conexao;
+    if (!id || !this.acoes?.reconciliar || this.acao || this.verificandoConexao) return;
+    const sessao = this.sessao;
+    const ref = this.qrModal;
+    this.verificandoConexao = true;
+    this.acao = 'verificarConexao';
+    try {
+      const request = this.api.reconciliar(id).pipe(timeout(12000));
+      const estado = await this.ler(ref ? request.pipe(takeUntil(ref.beforeClosed())) : request);
+      if (sessao !== this.sessao || this.config?.conexao !== id) return;
+      this.config = { ...this.config, estado };
+      this.verificacaoFalhou = estado.observado === 'DESCONHECIDO';
+      if (ref && this.qrModal === ref && estado.observado === 'ABERTA') {
+        clearTimeout(this.qrTimer);
+        this.erroModal = '';
+        this.qr = { situacao: 'JA_CONECTADA', imagem: null, expiraEm: null };
+      }
+      if (!ref || estado.observado === 'ABERTA') await this.carregar();
+    } catch (erro) {
+      if (sessao !== this.sessao || (ref && this.qrModal !== ref)) return;
+      const { status } = falha(erro);
+      this.verificacaoFalhou = true;
+      if ([401, 402, 403, 404].includes(status)) await this.carregar();
+    } finally {
+      if (sessao === this.sessao) {
+        this.verificandoConexao = false;
+        this.acao = '';
+      }
     }
   }
 

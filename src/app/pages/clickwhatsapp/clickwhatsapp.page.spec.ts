@@ -1,7 +1,7 @@
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, fakeAsync, flushMicrotasks, TestBed, tick } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
@@ -184,6 +184,63 @@ describe('ClickWhatsApp', () => {
     expect(page.config).toBeNull();
   });
 
+  it('confirma o QR por reconciliação e observa desconexão sem emitir outro QR', fakeAsync(() => {
+    spyOnProperty(document, 'hidden', 'get').and.returnValue(false);
+    fixture.detectChanges();
+    http.expectOne(base + '/configuracao').flush(config);
+    flushMicrotasks();
+    fixture.detectChanges();
+    page.abrirQr();
+    http.expectOne(conexao + '/qr').flush({ situacao: 'DISPONIVEL', imagem: 'data:image/png;base64,AA==', expiraEm: null });
+    flushMicrotasks();
+
+    tick(5000);
+    http.expectOne(conexao + '/reconciliar').flush({ ...config.estado, observado: 'CONECTANDO' });
+    flushMicrotasks();
+    expect(page.qr?.situacao).toBe('DISPONIVEL');
+
+    tick(5000);
+    const aberta: Configuracao = { ...config, estado: { ...config.estado!, observado: 'ABERTA' },
+      acoesPermitidas: { ...config.acoesPermitidas, gerarQr: false } };
+    http.expectOne(conexao + '/reconciliar').flush(aberta.estado);
+    flushMicrotasks();
+    http.expectOne(base + '/configuracao').flush(aberta);
+    flushMicrotasks();
+    expect(page.qr?.situacao).toBe('JA_CONECTADA');
+    expect(page.qr?.imagem).toBeNull();
+    expect(TestBed.inject(MatDialog).openDialogs.length).toBe(1);
+
+    TestBed.inject(MatDialog).closeAll();
+    tick(500);
+    tick(30000);
+    const fechada: Configuracao = { ...config, estado: { ...config.estado!, observado: 'FECHADA' } };
+    http.expectOne(conexao + '/reconciliar').flush(fechada.estado);
+    flushMicrotasks();
+    http.expectOne(base + '/configuracao').flush(fechada);
+    flushMicrotasks();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.estado-conexao').textContent).toContain('Desconectada');
+    http.expectNone(conexao + '/qr');
+    fixture.destroy();
+  }));
+
+  it('limita a espera do QR sem solicitar outro código automaticamente', fakeAsync(() => {
+    spyOnProperty(document, 'hidden', 'get').and.returnValue(true);
+    fixture.detectChanges();
+    http.expectOne(base + '/configuracao').flush(config);
+    flushMicrotasks();
+    fixture.detectChanges();
+    page.abrirQr();
+    http.expectOne(conexao + '/qr').flush({ situacao: 'DISPONIVEL', imagem: 'data:image/png;base64,AA==',
+      expiraEm: new Date(Date.now() + 1000).toISOString() });
+    flushMicrotasks();
+    tick(1000);
+    expect(page.qr).toBeNull();
+    expect(page.erroModal).toContain('não foi confirmado a tempo');
+    http.expectNone(conexao + '/qr');
+    fixture.destroy();
+  }));
+
   it('repete a mesma chave, corpo e validade após perda de transporte e cria nova chave em nova mensagem', async () => {
     await iniciar();
     page.abrirEnvio();
@@ -253,11 +310,12 @@ describe('ClickWhatsApp', () => {
     });
     const conteudo = fixture.nativeElement.textContent;
     expect(conteudo).toContain('Instância preparada.');
-    expect(conteudo).toContain('Estado precisa ser atualizado');
+    expect(fixture.nativeElement.querySelector('.situacao').textContent).toContain('Desabilitado');
+    expect(fixture.nativeElement.querySelector('.estado-conexao')).toBeNull();
     expect(conteudo).toContain('Atualizar estado');
     expect(conteudo).toContain('Consultar webhook');
     expect(conteudo).toContain('Desconectar WhatsApp');
-    expect(conteudo).not.toMatch(/Provisionar conexão|Obter QR|Nova mensagem|Configurar webhook/);
+    expect(conteudo).not.toMatch(/Provisionar conexão|Conectar WhatsApp|Nova mensagem|Configurar webhook/);
   });
 
   it('fecha o painel guardando a operação e repete a chave e o corpo ao reabrir', async () => {

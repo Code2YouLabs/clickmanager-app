@@ -8,22 +8,18 @@
   @if (config; as c) {
     <div class="painel">
       <p class="subtitulo-mobile">Conecte o WhatsApp da sua empresa e acompanhe seus envios.</p>
-      <app-section-card title="Situação da empresa" [mobilePlain]="true">
-        <div class="situacao">
-          <div class="indicador"><span>ClickWhatsApp</span><strong>{{ direitoAtivo ? 'Habilitado' : 'Desabilitado' }}</strong></div>
-          <div class="indicador"><span>WhatsApp</span><strong>{{ c.estado ? (estados[c.estado.observado] || estados.DESCONHECIDO) : (c.conexao ? 'Estado indisponível' : 'Sem conexão') }}</strong></div>
-          <div class="indicador"><span>Envios</span><strong>{{ c.preferencia ? (c.preferencia.pausada ? 'Pausados' : 'Ativos') : 'Indisponíveis' }}</strong></div>
-        </div>
-        @if (!c.aplicacaoAutorizada) {
-          <p class="aviso">O ClickWhatsApp está indisponível neste ambiente.</p>
+      <section class="situacao" aria-label="Situação da empresa">
+        <div class="indicador"><span>ClickWhatsApp</span><strong>{{ direitoAtivo ? 'Habilitado' : 'Desabilitado' }}</strong></div>
+        @if (direitoAtivo) {
+          <div class="indicador" role="status">
+            <span>WhatsApp</span>
+            <strong class="estado-conexao" [class.conectada]="!verificacaoFalhou && c.estado?.observado === 'ABERTA'">
+              {{ verificacaoFalhou ? 'Não foi possível verificar' : c.estado ? (estados[c.estado.observado] || estados.DESCONHECIDO) : (c.conexao ? 'Estado indisponível' : 'Sem conexão') }}
+            </strong>
+          </div>
+          <div class="indicador"><span>Envios</span><strong>{{ c.preferencia ? (c.preferencia.quarentena ? 'Em quarentena' : c.preferencia.pausada ? 'Pausados' : 'Ativos') : 'Indisponíveis' }}</strong></div>
         }
-        @if (c.preferencia?.quarentena) {
-          <div class="aviso" role="status"><strong>Resultado incerto</strong><p>Não foi possível determinar o resultado de uma tentativa. Novos despachos estão suspensos nesta conexão.</p></div>
-        }
-        @if (!direitoAtivo) {
-          <p>{{ acoes?.habilitarDireito ? 'Habilite o ClickWhatsApp para começar a configurar sua conexão.' : 'O recurso está desabilitado para esta empresa.' }}</p>
-        }
-        <div class="acoes">
+        <div class="acoes situacao-acoes">
           @if (acoes?.habilitarDireito || acoes?.desabilitarDireito) {
             <button mat-stroked-button type="button" [disabled]="!!acao" (click)="direito(!!acoes?.habilitarDireito)">
               {{ acao === 'direito' ? 'Salvando…' : (acoes?.habilitarDireito ? 'Habilitar ClickWhatsApp' : 'Desabilitar ClickWhatsApp') }}
@@ -33,7 +29,13 @@
             <button mat-flat-button color="primary" type="button" (click)="abrirEnvio()"><mat-icon>add</mat-icon>Nova mensagem</button>
           }
         </div>
-      </app-section-card>
+      </section>
+      @if (!c.aplicacaoAutorizada) {
+        <p class="aviso" role="status">O ClickWhatsApp está indisponível neste ambiente.</p>
+      }
+      @if (c.preferencia?.quarentena && direitoAtivo) {
+        <div class="aviso" role="status"><strong>Resultado incerto</strong><p>Não foi possível determinar o resultado de uma tentativa. Novos despachos estão suspensos nesta conexão.</p></div>
+      }
 
       @if (pendente) {
         <div class="aviso largura-total" role="status">
@@ -43,7 +45,7 @@
         </div>
       }
 
-      @if (c.provisionamento || possuiControlesConexao) {
+      @if ((direitoAtivo && c.provisionamento) || possuiControlesConexao) {
         <app-section-card title="Conexão WhatsApp" [mobilePlain]="true">
           @if (c.conexao) {
             @if (c.provisionamento; as p) { <p>{{ situacoesProvisionamento[p.situacao] }}</p> }
@@ -56,7 +58,7 @@
                 <button mat-stroked-button type="button" [disabled]="!!acao" (click)="conexao('provisionar')">{{ acao === 'provisionar' ? 'Provisionando…' : 'Provisionar conexão' }}</button>
               }
               @if (acoes?.gerarQr) {
-                <button mat-flat-button color="primary" type="button" [disabled]="!!acao" (click)="abrirQr()">Obter QR</button>
+                <button mat-flat-button color="primary" type="button" [disabled]="!!acao" (click)="abrirQr()">Conectar WhatsApp</button>
               }
               @if (acoes?.reconciliar) {
                 <button mat-stroked-button type="button" [disabled]="!!acao" (click)="conexao('reconciliar')">{{ acao === 'reconciliar' ? 'Atualizando…' : 'Atualizar estado' }}</button>
@@ -150,22 +152,31 @@
 <ng-template #telaQr>
   <h2 mat-dialog-title>Conectar WhatsApp</h2>
   <mat-dialog-content>
-    @if (acao === 'qr') { <mat-progress-bar mode="indeterminate" aria-label="Solicitando QR" /> }
+    @if (acao === 'qr') {
+      <p role="status">Preparando o QR…</p>
+      <mat-progress-bar mode="indeterminate" aria-label="Solicitando QR" />
+    }
     @if (erroModal) { <p class="aviso" role="alert">{{ erroModal }}</p> }
     @if (qr; as q) {
       @switch (q.situacao) {
         @case ('DISPONIVEL') {
-          <p>Abra o WhatsApp no celular e escaneie este código para conectar.</p>
+          <p>No WhatsApp do celular, abra <strong>Dispositivos conectados</strong> e escaneie o código.</p>
+          @if (acoes?.reconciliar) {
+            <p class="muted" role="status">{{ verificacaoFalhou ? 'Não foi possível verificar agora. Vamos tentar novamente.' : config?.estado?.observado === 'CONECTANDO' ? 'Conectando ao WhatsApp…' : 'Aguardando confirmação do WhatsApp…' }}</p>
+          }
           @if (q.imagem) { <img class="qr" [src]="q.imagem" alt="QR para conectar o WhatsApp" /> }
           @if (q.expiraEm) { <p class="muted">Expira às {{ q.expiraEm | date:'HH:mm:ss':'-0300' }} (Brasília).</p> }
         }
-        @case ('JA_CONECTADA') { <p>O WhatsApp já está conectado.</p> }
+        @case ('JA_CONECTADA') { <p class="qr-sucesso" role="status"><mat-icon aria-hidden="true">check_circle</mat-icon> WhatsApp conectado com sucesso.</p> }
         @case ('INDISPONIVEL') { <p>O QR está indisponível. Solicite um novo código quando estiver pronto para escanear.</p> }
       }
     }
   </mat-dialog-content>
   <mat-dialog-actions align="end">
-    @if (qr?.situacao !== 'JA_CONECTADA') { <button mat-stroked-button type="button" [disabled]="!!acao" (click)="solicitarQr()">Solicitar novo QR</button> }
+    @if (qr?.situacao !== 'JA_CONECTADA' && acoes?.reconciliar) {
+      <button mat-button type="button" [disabled]="!!acao" (click)="verificarConexao()">Verificar conexão</button>
+    }
+    @if (qr?.situacao !== 'JA_CONECTADA' && acoes?.gerarQr) { <button mat-stroked-button type="button" [disabled]="!!acao" (click)="solicitarQr()">Solicitar novo QR</button> }
     <button mat-button mat-dialog-close type="button">Fechar</button>
   </mat-dialog-actions>
 </ng-template>
