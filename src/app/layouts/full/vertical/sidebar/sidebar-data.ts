@@ -289,8 +289,15 @@ export const navItems: NavItem[] = [
     {
         displayName: 'ClickWhatsApp',
         iconName: 'message-circle',
+        keyboardNavigation: true,
         bgcolor: 'primary',
         route: '/page/clickwhatsapp',
+        children: [
+            { displayName: 'Visão geral', iconName: 'point', keyboardNavigation: true, route: '/page/clickwhatsapp', exactRoute: true },
+            { displayName: 'Mensagens', iconName: 'point', keyboardNavigation: true, route: '/page/clickwhatsapp/mensagens' },
+            { displayName: 'Automações', iconName: 'point', keyboardNavigation: true, route: '/page/clickwhatsapp/automacoes' },
+            { displayName: 'Configurações', iconName: 'point', keyboardNavigation: true, route: '/page/clickwhatsapp/configuracoes' },
+        ],
     },
     {
         navCap: 'Configurações',

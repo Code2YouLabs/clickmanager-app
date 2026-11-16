@@ -1,26 +1,23 @@
-<app-section-card title="Automações de Pedidos" [mobilePlain]="true">
-  <p>Escolha quais acontecimentos devem avisar o cliente. Todas as automações começam desativadas.</p>
-  @if (!operacional) { <p class="aviso" role="status">A configuração permanece disponível. O envio depende do WhatsApp conectado, das autorizações e dos envios ativos no momento do processamento.</p> }
+<app-section-card title="Configuração por acontecimento" [mobilePlain]="true">
+  @if (!operacional) {
+    <p class="aviso" role="status">A configuração permanece disponível. O processamento depende da conexão, das autorizações e das preferências de envio.</p>
+  }
   @if (!aberto) { <button mat-stroked-button type="button" (click)="abrir()">Configurar automações</button> }
   @else {
-    @if (ocupado) { <mat-progress-bar mode="indeterminate" aria-label="Processando automações" /> }
-    @if (erro) { <p class="aviso" role="alert">{{ erro }}</p> }
-    <div class="acoes"><button mat-button type="button" [disabled]="ocupado || confirmando" (click)="abrir()">Atualizar configurações e registros</button><button mat-button type="button" [disabled]="ocupado || confirmando" (click)="recolher()">Recolher configurações</button></div>
+    @if (ocupado && !rascunho) { <mat-progress-bar mode="indeterminate" aria-label="Consultando automações" /> }
+    @if (erro && !rascunho) { <p class="aviso" role="alert">{{ erro }}</p> }
+    <div class="cabecalho">
+      @if (painel; as p) { <p><strong>{{ ativas }} de {{ p.itens.length }} automações ativas</strong></p> }
+      <button mat-button type="button" [disabled]="ocupado || !!rascunho" (click)="abrir()">Atualizar configurações e registros</button>
+    </div>
     @if (painel; as p) {
-      @if (!p.podeAtivar) { <p class="aviso">Para ativar, são necessárias autorização do recurso e permissões de configuração e envio. É possível revisar ou desativar configurações existentes.</p> }
-      <p class="variaveis">Variáveis disponíveis: @for (v of p.variaveis; track v) { <code>{{ '{' + v + '}' }}</code> }</p>
-      <p class="muted">A prévia usa dados demonstrativos e não envia mensagens. Alterações só passam a valer após salvar.</p>
       @for (item of p.itens; track item.tipo) {
         <section class="automacao" [attr.aria-label]="item.nome">
-          <div class="cabecalho">
-            <div><h3>{{ item.nome }}</h3><p>{{ item.descricao }}</p></div>
-            <mat-slide-toggle [(ngModel)]="item.ativa" [disabled]="ocupado || confirmando || (!p.podeAtivar && !item.ativa)">{{ item.ativa ? 'Ativada' : 'Desativada' }}</mat-slide-toggle>
+          <div><h3>{{ item.nome }}</h3><p>{{ item.descricao }}</p></div>
+          <div class="acoes linha-acoes">
+            <span class="estado" [class.ativa]="item.ativa">{{ item.ativa ? 'Ativada' : 'Desativada' }}</span>
+            <button mat-stroked-button type="button" [attr.aria-label]="'Editar ' + item.nome" (click)="editar(item, telaEditor)">Editar</button>
           </div>
-          <div class="edicao">
-            <mat-form-field appearance="outline" subscriptSizing="dynamic"><mat-label>Mensagem de {{ item.nome.toLowerCase() }}</mat-label><textarea matInput [(ngModel)]="item.modelo" rows="4" maxlength="2000" [readonly]="ocupado || confirmando"></textarea><mat-hint>Até 2000 caracteres; o conteúdo final respeita o limite de texto do envio.</mat-hint></mat-form-field>
-            <div class="previa"><strong>Pré-visualização demonstrativa</strong><p>{{ item.previa }}</p></div>
-          </div>
-          <div class="acoes"><button mat-button type="button" [disabled]="ocupado || confirmando" (click)="previa(item)">Atualizar prévia</button><button mat-stroked-button type="button" [disabled]="ocupado || confirmando || (item.ativa && !p.podeAtivar)" (click)="salvar(item)">Salvar {{ item.nome.toLowerCase() }}</button></div>
         </section>
       }
       <section class="registros" aria-label="Registros de automações">
@@ -31,10 +28,46 @@
             <div>@if (r.fase) { <strong>{{ fases[r.fase] }}</strong> } @else { <strong>{{ r.resultado === 'PENDENTE' ? 'Aguardando preparação' : r.resultado === 'ENFILEIRADA' ? 'Adicionada à fila · estado indisponível' : 'Ignorada' }}</strong> }
             @if (r.confirmacao) { <span>{{ confirmacoes[r.confirmacao] }}</span> }
             @if (r.motivo) { <span>{{ motivos[r.motivo] || 'Processamento indisponível' }}</span> }
-            @if (historico && r.mensagem) { <a mat-button [routerLink]="['/page/clickwhatsapp']" [queryParams]="{mensagem:r.mensagem,conexao:r.conexao}">Ver mensagem</a> }</div>
+            @if (historico && r.mensagem) { <a mat-button [routerLink]="['/page/clickwhatsapp/mensagens']" [queryParams]="{mensagem:r.mensagem,conexao:r.conexao}">Ver mensagem</a> }</div>
           </div>
         } @empty { <p>Nenhuma ocorrência registrada após a implantação.</p> }
       </section>
     }
   }
 </app-section-card>
+
+<ng-template #telaEditor>
+  @if (rascunho; as item) {
+    <h2 mat-dialog-title class="mobile-side-panel__header">{{ item.nome }}</h2>
+    <mat-dialog-content class="mobile-side-panel__body">
+      <p>{{ item.descricao }}</p>
+      <p><strong>{{ item.ativa ? 'Ativada' : 'Desativada' }}</strong></p>
+      <button mat-stroked-button type="button"
+        [disabled]="ocupado || confirmando || alterado || (!item.ativa && !painel?.podeAtivar)"
+        (click)="alternarAtivacao()">{{ item.ativa ? 'Desativar automação' : 'Ativar automação' }}</button>
+      @if (alterado) { <p class="muted">Salve o template para alterar a ativação.</p> }
+      @if (!painel?.podeAtivar) { <p class="muted">A ativação exige autorização do recurso e permissão de envio.</p> }
+      <p class="variaveis">Variáveis disponíveis
+        @for (v of painel?.variaveis; track v) { <code>{{ '{' + v + '}' }}</code> }
+      </p>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Mensagem</mat-label>
+        <textarea matInput [(ngModel)]="item.modelo" rows="6" maxlength="2000" [readonly]="ocupado || confirmando"></textarea>
+        <mat-hint align="end">{{ item.modelo.length }} / 2000</mat-hint>
+      </mat-form-field>
+      @if (erro) { <p class="aviso" role="alert">{{ erro }}</p> }
+      <div class="previa">
+        <strong>Pré-visualização demonstrativa</strong>
+        <p>{{ item.previa }}</p>
+        <button mat-button type="button" [disabled]="ocupado || confirmando" (click)="previa(item)">Atualizar prévia</button>
+      </div>
+      @if (ocupado) { <mat-progress-bar mode="indeterminate" aria-label="Processando automação" /> }
+    </mat-dialog-content>
+    <mat-dialog-actions class="mobile-side-panel__footer" align="end">
+      <button mat-button type="button" [disabled]="ocupado || confirmando" (click)="fecharEditor()">Fechar</button>
+      <button mat-flat-button color="primary" type="button"
+        [disabled]="!alterado || ocupado || confirmando || (item.ativa && !painel?.podeAtivar)"
+        (click)="salvarTexto()">Salvar template</button>
+    </mat-dialog-actions>
+  }
+</ng-template>

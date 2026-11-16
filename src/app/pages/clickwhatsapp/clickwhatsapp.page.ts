@@ -1,5 +1,5 @@
 import { AutomacoesPedidoComponent } from './automacoes/automacoes-pedido.component';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { Component, DestroyRef, inject, NgZone, OnInit, TemplateRef, ViewChild } from '@angular/core';
@@ -32,7 +32,7 @@ import { ClickWhatsAppService } from './clickwhatsapp.service';
 @Component({
   selector: 'app-clickwhatsapp',
   standalone: true,
-  imports: [AutomacoesPedidoComponent, CommonModule, FormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatInputModule,
+  imports: [RouterModule, AutomacoesPedidoComponent, CommonModule, FormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatInputModule,
     MatSelectModule, MatProgressBarModule, PageCardComponent, SectionCardComponent, DataTableComponent,
     DataTableCellDirective, DataTableItemDirective, MobileFabActionComponent],
   templateUrl: './clickwhatsapp.page.html',
@@ -62,7 +62,20 @@ export class ClickWhatsAppPage implements OnInit {
   @ViewChild('telaDetalhe') telaDetalhe!: TemplateRef<unknown>;
   @ViewChild('telaFiltros') telaFiltros!: TemplateRef<unknown>;
 
-  editandoAutomacoes = false;
+  readonly area = (this.rota.snapshot?.data?.['area'] ?? 'visao') as 'visao' | 'mensagens' | 'automacoes' | 'configuracoes';
+  readonly titulos = { visao: 'ClickWhatsApp', mensagens: 'Mensagens', automacoes: 'Automações de Pedidos', configuracoes: 'Configurações do ClickWhatsApp' };
+  readonly subtitulos = {
+    visao: 'Gerencie as mensagens da sua empresa.',
+    mensagens: 'Consulte os envios e acompanhe suas confirmações.',
+    automacoes: 'Configure os avisos enviados automaticamente durante o andamento dos pedidos.',
+    configuracoes: 'Gerencie a conexão e as preferências de envio.',
+  };
+  exibindoOcorrencias = this.rota.snapshot?.queryParamMap?.get('vista') === 'ocorrencias';
+  @ViewChild(AutomacoesPedidoComponent) automacoes?: AutomacoesPedidoComponent;
+  podeSair() { return this.automacoes?.podeSair() ?? true; }
+  get areaEnvio() { return this.area === 'visao' || this.area === 'mensagens'; }
+  get podeAbrirConfiguracoes() { return this.possuiControlesConexao || this.acoes?.habilitarDireito || this.acoes?.desabilitarDireito; }
+
   config: Configuracao | null = null;
   carregando = false;
   erroConfig = '';
@@ -186,7 +199,6 @@ export class ClickWhatsAppPage implements OnInit {
   readonly chaveLinha = (item: ItemHistorico) => item.mensagem.id;
 
   private limparContexto() {
-    this.editandoAutomacoes = false;
     this.sessao++;
     this.troca.next();
     this.config = null;
@@ -221,7 +233,6 @@ export class ClickWhatsAppPage implements OnInit {
       const config = await this.ler(this.api.configuracao().pipe(timeout(12000)));
       if (sessao !== this.sessao) return;
       this.config = config;
-      if (!config.configurarAutomacoes) this.editandoAutomacoes = false;
       this.verificacaoFalhou = false;
       if (anterior && (anterior.conexao !== config.conexao
         || (this.qrModal && (!config.direito.local || !config.direito.global || !config.aplicacaoAutorizada
@@ -232,10 +243,14 @@ export class ClickWhatsAppPage implements OnInit {
         this.modal?.close();
       }
       if (config.acoesPermitidas?.consultarHistorico && (inicial || !anterior?.acoesPermitidas?.consultarHistorico)) {
-        void this.carregarConsultas();
+        if (this.area === 'visao') void this.carregarConsultas();
+        else if (this.area === 'mensagens') {
+          if (this.exibindoOcorrencias) void this.listarOcorrencias();
+          else void this.carregarConsultas(false);
+        }
         const mensagem=this.rota.snapshot?.queryParamMap?.get('mensagem');
         const conexao=this.rota.snapshot?.queryParamMap?.get('conexao');
-        if(inicial && mensagem && conexao) void this.abrirDetalhe({mensagem: {id: mensagem, conexao}});
+        if(inicial && this.areaEnvio && mensagem && conexao) void this.abrirDetalhe({mensagem: {id: mensagem, conexao}});
       } else if (!config.acoesPermitidas?.consultarHistorico) {
         this.consulta++;
         this.itens = [];
@@ -590,20 +605,26 @@ export class ClickWhatsAppPage implements OnInit {
     const sessao = this.sessao;
     const consulta = ++this.consulta;
     const atual = () => this.sessao === sessao && this.consulta === consulta;
-    const filtro = this.filtro;
+    if (!this.areaEnvio) return;
+    const periodo = this.filtro;
+    const fimRecentes = Date.now();
+    const filtro = this.area === 'visao'
+      ? { inicio: new Date(fimRecentes - 93 * 86400_000).toISOString(),
+          fim: new Date(fimRecentes).toISOString(), pagina: 0, tamanho: 5, fase: '' as const }
+      : periodo;
     this.lendo = true;
     this.erroHistorico = '';
-    if (incluirResumo || this.lendoResumo) {
+    if (this.area === 'visao' && (incluirResumo || this.lendoResumo)) {
       this.lendoResumo = true;
       this.erroResumo = '';
-      void this.ler(this.api.resumo(filtro)).then(r => {
+      void this.ler(this.api.resumo(periodo)).then(r => {
         if (atual()) this.resumo = r;
       }).catch(e => {
         if (atual()) { this.resumo = null; this.erroResumo = falha(e).mensagem; }
       }).finally(() => { if (atual()) this.lendoResumo = false; });
     }
     try {
-      const itens = await this.ler(this.api.historico(filtro));
+      const itens = await this.ler(this.api.historico(filtro).pipe(timeout(12000)));
       if (atual()) this.itens = itens;
     } catch (erro) {
       if (atual()) { this.itens = []; this.erroHistorico = falha(erro).mensagem; }
@@ -631,8 +652,21 @@ export class ClickWhatsAppPage implements OnInit {
     }
   }
 
+  selecionarHistorico(ocorrencias: boolean) {
+    this.exibindoOcorrencias = ocorrencias;
+    if (ocorrencias && !this.listaOcorrencias) void this.listarOcorrencias();
+    if (!ocorrencias) void this.carregarConsultas(false);
+  }
+
+  periodoRapido(dias: 0 | 7 | 30) {
+    const fim = Date.now();
+    const inicio = dias ? fim - dias * 86400_000 : Math.min(fim - 1, Date.parse(this.dataLocal(new Date(fim).toISOString()).slice(0, 10) + 'T00:00:00-03:00'));
+    this.filtro = { ...this.filtro, inicio: new Date(inicio).toISOString(), fim: new Date(fim).toISOString(), pagina: 0 };
+    void this.carregarConsultas();
+  }
+
   verOcorrencias() {
-    if (this.lendo || !this.acoes?.consultarHistorico) return;
+    if (this.lendo || !this.acoes?.consultarHistorico || this.area !== 'mensagens') return;
     this.filtro = { ...this.filtro, fase: this.filtro.fase === 'INCERTA' ? '' : 'INCERTA', pagina: 0 };
     void this.carregarConsultas(false);
   }

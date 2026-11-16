@@ -24,6 +24,9 @@ describe('Automações de Pedidos', () => {
       { provide: AuthService, useValue: { usuario$: usuario } }, { provide: MatDialog, useValue: { open: confirmar } },
       { provide: ToastrService, useValue: { success: jasmine.createSpy() } },
     ] });
+    TestBed.overrideComponent(AutomacoesPedidoComponent, {
+      add: { providers: [{ provide: MatDialog, useValue: { open: confirmar } }] },
+    });
     http = TestBed.inject(HttpTestingController);
   });
   afterEach(() => http.verify());
@@ -72,4 +75,54 @@ describe('Automações de Pedidos', () => {
     expect(f.nativeElement.textContent).toContain('Na fila'); expect(f.nativeElement.textContent).toContain('Sem confirmação');
     expect(f.nativeElement.textContent).toContain('Enfileirar não confirma entrega');
   }));
+  it('mantém a lista compacta e salva o template sem alterar a ativação', fakeAsync(() => {
+    const f = criar(); abrir(f);
+    expect(f.nativeElement.querySelector('textarea')).toBeNull();
+    expect(f.nativeElement.textContent).toContain('0 de 1 automações ativas');
+    const c = f.componentInstance;
+    c.original = c.painel!.itens[0];
+    c.rascunho = { ...c.original, modelo: 'Texto revisado' };
+    void c.alternarAtivacao();
+    flushMicrotasks();
+    http.expectNone(base + '/CRIADO');
+    void c.salvarTexto();
+    flushMicrotasks();
+    const request = http.expectOne(base + '/CRIADO');
+    expect(request.request.body).toEqual({ ativa: false, modelo: 'Texto revisado', revisao: 0 });
+    request.flush({ ...painel, itens: [{ ...painel.itens[0], modelo: 'Texto revisado', revisao: 1 }] });
+    flushMicrotasks();
+    expect(c.alterado).toBeFalse();
+    void c.alternarAtivacao();
+    flushMicrotasks();
+    const ativacao = http.expectOne(base + '/CRIADO');
+    expect(ativacao.request.body).toEqual({ ativa: true, modelo: 'Texto revisado', revisao: 1 });
+    ativacao.flush(painel);
+    flushMicrotasks();
+  }));
+
+  it('pede confirmação antes de sair do painel com texto não salvo', fakeAsync(() => {
+    const f = criar(); abrir(f);
+    const ref = {
+      beforeClosed: () => of(), afterClosed: () => of(),
+      keydownEvents: () => of(), backdropClick: () => of(),
+      updateSize() { return this; }, updatePosition() { return this; }, close: jasmine.createSpy('close'),
+    };
+    confirmar.and.returnValue(ref);
+    const c = f.componentInstance;
+    f.nativeElement.querySelector('button[aria-label="Editar Pedido criado"]').click();
+    c.rascunho!.modelo = 'Ainda sem salvar';
+    confirmar.and.returnValue({ afterClosed: () => of(false) });
+    let podeSair = true;
+    void c.podeSair().then(valor => { podeSair = valor; });
+    flushMicrotasks();
+    expect(podeSair).toBeFalse();
+    expect(c.rascunho?.modelo).toBe('Ainda sem salvar');
+    confirmar.and.returnValue({ afterClosed: () => of(true) });
+    void c.fecharEditor();
+    flushMicrotasks();
+    expect(ref.close).toHaveBeenCalledTimes(1);
+    expect(c.rascunho).toBeNull();
+    http.expectNone(base + '/CRIADO');
+  }));
+
 });

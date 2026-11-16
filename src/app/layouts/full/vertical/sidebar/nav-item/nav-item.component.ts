@@ -66,7 +66,7 @@ export class AppNavItemComponent implements OnChanges {
   }
 
   isItemActive(item: NavItem): boolean {
-    return !!item.route && !item.children?.length && this.router.isActive(item.route, false);
+    return !!item.route && !item.children?.length && this.router.isActive(item.route, { paths: item.exactRoute ? 'exact' : 'subset', queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored' });
   }
 
   private hasActiveChild(item: NavItem | undefined): boolean {
@@ -81,6 +81,12 @@ export class AppNavItemComponent implements OnChanges {
 
       return this.hasActiveChild(child);
     });
+  }
+
+  onNavigationKey(event: Event): void {
+    if (!this.item.keyboardNavigation) return;
+    event.preventDefault();
+    this.onItemSelected(this.item);
   }
 
   onItemSelected(item: NavItem) {

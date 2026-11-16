@@ -47,3 +47,12 @@
   .acoes button, .paginacao button, .avancado summary { min-height: 44px; }
   .paginacao { justify-content: center; }
 }
+
+.observacao { margin: -4px 0 0; }
+.periodo { margin: 0 0 14px; }
+.alternancia { margin: 0; }
+.alternancia [aria-pressed='true'] { background: var(--mat-sys-primary-container, #e8f1ff); }
+@media (max-width: 760px) {
+  .metricas { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .metricas > div { padding: 10px; min-width: 0; overflow-wrap: anywhere; }
+}

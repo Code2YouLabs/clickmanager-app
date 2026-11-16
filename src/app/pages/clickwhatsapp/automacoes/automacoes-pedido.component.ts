@@ -1,15 +1,17 @@
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpContext } from '@angular/common/http';
-import { Component, DestroyRef, EventEmitter, inject, Input, Output } from '@angular/core';
+import { Component, DestroyRef, inject, Input, OnInit, TemplateRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { BreakpointObserver } from '@angular/cdk/layout';
+import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
+import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { ToastrService } from 'ngx-toastr';
 import { firstValueFrom, Subject, takeUntil, timeout } from 'rxjs';
 import { AuthService } from 'src/app/services/auth.service';
@@ -25,13 +27,74 @@ interface Registro { ocorrencia: string; pedido: number; origem: string; tipo: s
 export interface PainelAutomacoes { itens: AutomacaoPedido[]; variaveis: string[]; recentes: Registro[]; podeAtivar: boolean; }
 @Component({
   selector: 'app-automacoes-pedido', standalone: true,
-  imports: [RouterModule, CommonModule, FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSlideToggleModule, MatProgressBarModule, SectionCardComponent],
+  imports: [RouterModule, CommonModule, FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatDialogModule, MatProgressBarModule, SectionCardComponent],
   templateUrl: './automacoes-pedido.component.html', styleUrl: './automacoes-pedido.component.scss',
 })
-export class AutomacoesPedidoComponent {
+export class AutomacoesPedidoComponent implements OnInit {
   @Input() operacional = false;
   @Input() historico = false;
-  @Output() edicaoChange = new EventEmitter<boolean>();
+
+  @Input() carregarAoEntrar = false;
+  private readonly breakpoints = inject(BreakpointObserver);
+  private editor?: MatDialogRef<unknown>;
+  rascunho: AutomacaoPedido | null = null;
+  original: AutomacaoPedido | null = null;
+  get alterado() { return !!this.rascunho && this.rascunho.modelo !== this.original?.modelo; }
+  get ativas() { return this.painel?.itens.filter(i => i.ativa).length ?? 0; }
+
+  ngOnInit() { if (this.carregarAoEntrar) void this.abrir(); }
+
+  editar(item: AutomacaoPedido, tela: TemplateRef<unknown>) {
+    if (this.editor || this.ocupado) return;
+    this.original = item;
+    this.rascunho = { ...item };
+    this.erro = '';
+    const ref = openMobileSidePanel(this.dialog, tela, {
+      ariaLabel: item.nome, disableClose: true, closeOnNavigation: false,
+    }, this.breakpoints.isMatched(MOBILE_FOUNDATION_QUERY) ? undefined : '560px');
+    this.editor = ref;
+    ref.keydownEvents().pipe(takeUntil(ref.afterClosed())).subscribe(e => {
+      if (e.key === 'Escape' && !this.confirmando) { e.preventDefault(); void this.fecharEditor(); }
+    });
+    ref.backdropClick().pipe(takeUntil(ref.afterClosed())).subscribe(() => void this.fecharEditor());
+    ref.afterClosed().subscribe(() => {
+      if (this.editor === ref) this.editor = undefined;
+    });
+  }
+
+  async podeSair() {
+    if (!this.editor) return true;
+    if (this.ocupado || this.confirmando) return false;
+    if (!this.alterado) return true;
+    this.confirmando = true;
+    try {
+      return !!await firstValueFrom(this.dialog.open(ConfirmDialogComponent, { data: {
+        title: 'Descartar alterações?',
+        message: 'O texto editado ainda não foi salvo.',
+        confirmText: 'Descartar',
+        type: 'destructive',
+      } }).afterClosed());
+    } finally { this.confirmando = false; }
+  }
+
+  async fecharEditor() {
+    const ref = this.editor;
+    if (ref && await this.podeSair() && this.editor === ref) {
+      this.rascunho = this.original = null;
+      ref.close();
+    }
+  }
+
+  salvarTexto() {
+    if (this.rascunho && this.original) return this.salvar({ ...this.rascunho, ativa: this.original.ativa }, 'texto');
+    return Promise.resolve();
+  }
+
+  alternarAtivacao() {
+    if (this.original && !this.alterado) return this.salvar({ ...this.original, ativa: !this.original.ativa }, 'ativacao');
+    return Promise.resolve();
+  }
+
   private readonly http = inject(HttpClient);
   private readonly dialog = inject(MatDialog);
   private readonly toast = inject(ToastrService);
@@ -58,10 +121,11 @@ export class AutomacoesPedidoComponent {
       const contexto = contextoEnvio(u);
       if (this.contexto !== contexto) {
         this.contexto = contexto; this.sessao++; this.troca.next();
+        this.editor?.close(); this.rascunho = this.original = null;
         this.painel = null; this.aberto = false; this.ocupado = false; this.erro = '';
       }
     });
-    inject(DestroyRef).onDestroy(() => { this.sessao++; this.troca.next(); });
+    inject(DestroyRef).onDestroy(() => { this.sessao++; this.troca.next(); this.editor?.close(); });
   }
   private opcoes() { return { context: new HttpContext().set(SILENT_REQUEST, true) }; }
   private async executar(acao: () => Promise<void>) {
@@ -78,31 +142,38 @@ export class AutomacoesPedidoComponent {
     return f.mensagem;
   }
   async abrir() {
-    this.aberto = true; this.edicaoChange.emit(true);
+    this.aberto = true;
     await this.executar(async () => { const s = this.sessao; const p = await this.ler(this.http.get<PainelAutomacoes>(this.base, this.opcoes())); if (s === this.sessao) this.painel = p; });
   }
-  recolher() { if (!this.ocupado && !this.confirmando) { this.aberto = false; this.edicaoChange.emit(false); } }
   async previa(item: AutomacaoPedido) {
     await this.executar(async () => {
       const s = this.sessao;
       const p = await this.ler(this.http.post<{ texto: string }>(this.base + '/previa', { modelo: item.modelo }, this.opcoes()));
-      if (s === this.sessao) item.previa = p.texto;
+      if (s === this.sessao && (!this.rascunho || this.rascunho === item)) item.previa = p.texto;
     });
   }
-  async salvar(item: AutomacaoPedido) {
+  async salvar(item: AutomacaoPedido, modo: 'texto' | 'ativacao' = 'ativacao') {
     if (this.ocupado || this.confirmando || (item.ativa && !this.painel?.podeAtivar)) return;
     const s = this.sessao;
     const snapshot = { ativa: item.ativa, modelo: item.modelo, revisao: item.revisao };
     this.confirmando = true;
     const confirmado = await firstValueFrom(this.dialog.open(ConfirmDialogComponent, { data: {
-      title: 'Salvar automação', message: snapshot.ativa ? 'Novas ocorrências deste acontecimento poderão gerar mensagens ao cliente. A conexão e as autorizações serão verificadas no processamento.' : 'Esta automação ficará desativada. Mensagens já transmitidas preservam seu resultado.',
+      title: modo === 'texto' ? 'Salvar template' : 'Salvar automação', message: modo === 'texto' ? 'O novo texto será usado em ocorrências futuras. O estado de ativação permanece igual.' : snapshot.ativa ? 'Novas ocorrências deste acontecimento poderão gerar mensagens ao cliente. A conexão e as autorizações serão verificadas no processamento.' : 'Esta automação ficará desativada. Mensagens já transmitidas preservam seu resultado.',
       confirmText: 'Salvar configuração',
     }, maxWidth: 'calc(100vw - 24px)' }).afterClosed());
     this.confirmando = false;
     if (!confirmado || s !== this.sessao) return;
     await this.executar(async () => {
       const p = await this.ler(this.http.put<PainelAutomacoes>(this.base + '/' + encodeURIComponent(item.tipo), snapshot, this.opcoes()));
-      if (s === this.sessao) { this.painel = p; this.toast.success('Automação salva.'); }
+      if (s === this.sessao) {
+        this.painel = p;
+        const salvo = p.itens.find(i => i.tipo === item.tipo);
+        if (salvo && this.rascunho?.tipo === salvo.tipo) {
+          this.original = salvo;
+          this.rascunho = { ...salvo };
+        }
+        this.toast.success('Automação salva.');
+      }
     });
   }
   nome(tipo: string) { return this.painel?.itens.find(i => i.tipo === tipo)?.nome ?? 'Automação de Pedido'; }

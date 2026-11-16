@@ -4,7 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ComponentFixture, fakeAsync, flushMicrotasks, TestBed, tick } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { BehaviorSubject, of } from 'rxjs';
 import { Usuario } from 'src/app/models/usuario/usuario.model';
@@ -39,15 +39,17 @@ describe('ClickWhatsApp', () => {
   let page: ClickWhatsAppPage;
   let usuario$: BehaviorSubject<Usuario | null>;
   let mobile: boolean;
+  let rota: { snapshot: { data: { area: string }; queryParamMap: ReturnType<typeof convertToParamMap> } };
   let toast: jasmine.SpyObj<ToastrService>;
 
   beforeEach(() => {
     mobile = false;
+    rota = { snapshot: { data: { area: 'visao' }, queryParamMap: convertToParamMap({}) } };
     usuario$ = new BehaviorSubject<Usuario | null>({ id: 1, proprietario: true });
     toast = jasmine.createSpyObj('ToastrService', ['error', 'warning', 'success']);
     TestBed.configureTestingModule({
       imports: [ClickWhatsAppPage],
-      providers: [provideRouter([]), provideNoopAnimations(), provideHttpClient(), provideHttpClientTesting(),
+      providers: [provideRouter([]), { provide: ActivatedRoute, useValue: rota }, provideNoopAnimations(), provideHttpClient(), provideHttpClientTesting(),
         { provide: AuthService, useValue: { usuario$ } },
         { provide: ToastrService, useValue: toast },
         { provide: BreakpointObserver, useValue: {
@@ -280,6 +282,7 @@ describe('ClickWhatsApp', () => {
     await Promise.resolve();
     const lista = http.expectOne(r => r.url === base + '/mensagens');
     expect(lista.request.params.keys().sort()).toEqual(['fim', 'inicio', 'pagina', 'tamanho']);
+    expect(lista.request.params.get('tamanho')).toBe('5');
     lista.flush([{ mensagem, destinatarioMascarado: '***0123', conteudoDisponivel: false }]);
     const resumo = http.expectOne(r => r.url === base + '/resumo');
     expect(resumo.request.params.get('fuso')).toBe('America/Sao_Paulo');
@@ -302,6 +305,7 @@ describe('ClickWhatsApp', () => {
     mobile = true;
     await iniciar({ ...config, acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: false } });
     page.config = { ...config, acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: true } };
+    Object.defineProperty(page, 'area', { value: 'mensagens' });
     page.verOcorrencias();
     const lista = http.expectOne(r => r.url === base + '/mensagens');
     expect(lista.request.params.get('fase')).toBe('INCERTA');
@@ -322,7 +326,6 @@ describe('ClickWhatsApp', () => {
       resultado: 'RESOLVIDA_COM_EVIDENCIA', motivo: 'ACEITE_COMPROVADO' } });
     await Promise.resolve();
     http.expectOne(r => r.url === base + '/mensagens').flush([]);
-    http.expectOne(r => r.url === base + '/resumo').flush({ ...page.filtro, mensagens: {} });
     http.expectOne(base + '/configuracao').flush(page.config);
     await estabilizar();
     expect(document.querySelector('.mobile-side-panel')?.textContent).toContain('Resolvida com evidência');
@@ -361,6 +364,7 @@ describe('ClickWhatsApp', () => {
   });
 
   it('mostra manutenção pós-revogação e conserva a projeção de instância preparada', async () => {
+    Object.defineProperty(page, 'area', { value: 'configuracoes' });
     await iniciar({
       ...config,
       direito: { ...config.direito, local: false },
@@ -444,6 +448,36 @@ describe('ClickWhatsApp', () => {
     expect(page.validadeEncerrada).toBeTrue();
     http.expectNone(conexao + '/mensagens');
     agora.and.callThrough();
+  });
+
+  it('abre ocorrências diretamente em Mensagens, sem consultar resumo ou histórico em paralelo', async () => {
+    fixture.destroy();
+    rota.snapshot.data.area = 'mensagens';
+    rota.snapshot.queryParamMap = convertToParamMap({ vista: 'ocorrencias' });
+    fixture = TestBed.createComponent(ClickWhatsAppPage);
+    page = fixture.componentInstance;
+    fixture.detectChanges();
+    http.expectOne(base + '/configuracao').flush({ ...config,
+      acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: true } });
+    await Promise.resolve();
+    http.expectOne(r => r.url === base + '/ocorrencias').flush([]);
+    await estabilizar();
+    http.expectNone(r => [base + '/resumo', base + '/mensagens'].includes(r.url));
+    expect(fixture.nativeElement.textContent).toContain('Nenhuma ocorrência registrada');
+    expect(fixture.nativeElement.querySelector('app-data-table')).toBeNull();
+  });
+
+  it('mostra os controles técnicos exclusivamente em Configurações', async () => {
+    await iniciar();
+    expect(fixture.nativeElement.textContent).not.toContain('Configurar webhook');
+    fixture.destroy();
+    rota.snapshot.data.area = 'configuracoes';
+    fixture = TestBed.createComponent(ClickWhatsAppPage);
+    page = fixture.componentInstance;
+    await iniciar();
+    expect(fixture.nativeElement.textContent).toContain('Configurar webhook');
+    expect(fixture.nativeElement.textContent).toContain('Desconectar WhatsApp');
+    expect(fixture.nativeElement.textContent).not.toContain('Nova mensagem');
   });
 
 });

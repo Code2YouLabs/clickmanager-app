@@ -1,4 +1,9 @@
-<app-page-card titulo="ClickWhatsApp" subtitulo="Conecte o WhatsApp da sua empresa e acompanhe seus envios.">
+<app-page-card [titulo]="titulos[area]" [subtitulo]="subtitulos[area]">
+  <div page-header-actions>
+    @if (areaEnvio && podeEnviar && !pendente && !mobile) {
+      <button mat-flat-button color="primary" type="button" (click)="abrirEnvio()"><mat-icon>add</mat-icon>Nova mensagem</button>
+    }
+  </div>
   @if (carregando) {
     <mat-progress-bar mode="indeterminate" aria-label="Carregando ClickWhatsApp" />
   }
@@ -7,37 +12,19 @@
   }
   @if (config; as c) {
     <div class="painel">
-      <p class="subtitulo-mobile">Conecte o WhatsApp da sua empresa e acompanhe seus envios.</p>
-      <section class="situacao" aria-label="Situação da empresa">
-        <div class="indicador"><span>ClickWhatsApp</span><strong>{{ direitoAtivo ? 'Habilitado' : 'Desabilitado' }}</strong></div>
-        @if (direitoAtivo) {
-          <div class="indicador" role="status">
-            <span>WhatsApp</span>
-            <strong class="estado-conexao" [class.conectada]="!verificacaoFalhou && c.estado?.observado === 'ABERTA'">
-              {{ verificacaoFalhou ? 'Não foi possível verificar' : c.estado ? (estados[c.estado.observado] || estados.DESCONHECIDO) : (c.conexao ? 'Estado indisponível' : 'Sem conexão') }}
-            </strong>
-          </div>
-          <div class="indicador"><span>Envios</span><strong>{{ c.preferencia ? (c.preferencia.quarentena ? 'Em quarentena' : c.preferencia.pausada ? 'Pausados' : 'Ativos') : 'Indisponíveis' }}</strong></div>
-        }
-        <div class="acoes situacao-acoes">
-          @if (acoes?.habilitarDireito || acoes?.desabilitarDireito) {
-            <button mat-stroked-button type="button" [disabled]="!!acao" (click)="direito(!!acoes?.habilitarDireito)">
-              {{ acao === 'direito' ? 'Salvando…' : (acoes?.habilitarDireito ? 'Habilitar ClickWhatsApp' : 'Desabilitar ClickWhatsApp') }}
-            </button>
-          }
-          @if (podeEnviar && !pendente && !mobile) {
-            <button mat-flat-button color="primary" type="button" (click)="abrirEnvio()"><mat-icon>add</mat-icon>Nova mensagem</button>
-          }
-        </div>
-      </section>
+
+      <p class="subtitulo-mobile">{{ subtitulos[area] }}</p>
       @if (!c.aplicacaoAutorizada) {
         <p class="aviso" role="status">O ClickWhatsApp está indisponível neste ambiente.</p>
+      }
+      @if (area !== 'visao' && area !== 'configuracoes' && !direitoAtivo) {
+        <p class="aviso" role="status">O ClickWhatsApp está desabilitado para esta empresa.</p>
       }
       @if (c.preferencia?.quarentena && direitoAtivo) {
         <div class="aviso" role="status"><strong>Resultado incerto</strong><p>Não foi possível determinar o resultado de uma tentativa. Novos despachos estão suspensos nesta conexão.</p></div>
       }
 
-      @if (pendente) {
+      @if (areaEnvio && pendente) {
         <div class="aviso largura-total" role="status">
           <strong>Solicitação sem confirmação</strong>
           <p>Confira a solicitação anterior antes de iniciar uma nova mensagem.</p>
@@ -45,110 +32,208 @@
         </div>
       }
 
-      @if ((direitoAtivo && c.provisionamento) || possuiControlesConexao) {
-        <app-section-card title="Conexão WhatsApp" [mobilePlain]="true">
-          @if (c.conexao) {
-            @if (c.provisionamento; as p) { <p>{{ situacoesProvisionamento[p.situacao] }}</p> }
-            @if (c.estado?.observadoEm) {
-              <p class="muted">Última observação {{ c.estado?.observadoEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</p>
-            }
-            @if (c.estado?.motivo; as codigo) { <p class="aviso">{{ motivo(codigo) }}</p> }
-            <div class="acoes">
-              @if (acoes?.provisionar) {
-                <button mat-stroked-button type="button" [disabled]="!!acao" (click)="conexao('provisionar')">{{ acao === 'provisionar' ? 'Provisionando…' : 'Provisionar conexão' }}</button>
-              }
-              @if (acoes?.gerarQr) {
-                <button mat-flat-button color="primary" type="button" [disabled]="!!acao" (click)="abrirQr()">Conectar WhatsApp</button>
-              }
-              @if (acoes?.reconciliar) {
-                <button mat-stroked-button type="button" [disabled]="!!acao" (click)="conexao('reconciliar')">{{ acao === 'reconciliar' ? 'Atualizando…' : 'Atualizar estado' }}</button>
-              }
-              @if (acoes?.pausarEnvios) {
-                <button mat-stroked-button type="button" [disabled]="!!acao" (click)="preferencia(false)">Pausar envios</button>
-              }
-              @if (acoes?.retomarEnvios) {
-                <button mat-stroked-button type="button" [disabled]="!!acao" (click)="preferencia(true)">Retomar envios</button>
-              }
-            </div>
-            @if (acoes?.consultarWebhook || acoes?.configurarWebhook || acoes?.desconectar) {
-            <details class="avancado">
-              <summary>Configurações avançadas</summary>
-              <div class="avancado-corpo">
-                <div><strong>Webhook</strong><p class="muted">{{ webhook ? webhooks[webhook] : 'Consulte a configuração desta conexão.' }}</p></div>
-                <div class="acoes">
-                  @if (acoes?.consultarWebhook) { <button mat-button type="button" [disabled]="!!acao" (click)="consultarWebhook()">Consultar webhook</button> }
-                  @if (acoes?.configurarWebhook) { <button mat-stroked-button type="button" [disabled]="!!acao" (click)="consultarWebhook(true)">Configurar webhook</button> }
-                  @if (acoes?.desconectar) { <button mat-button color="warn" type="button" [disabled]="!!acao" (click)="conexao('desconectar')">Desconectar WhatsApp</button> }
-                </div>
+
+      @switch (area) {
+        @case ('visao') {
+          <ng-container [ngTemplateOutlet]="situacao" />
+          @if (acoes?.consultarHistorico) {
+            <app-section-card title="Resumo operacional" [mobilePlain]="true" class="largura-total">
+              <div class="acoes periodo" aria-label="Período de consulta">
+                <button mat-button type="button" (click)="periodoRapido(0)">Hoje</button>
+                <button mat-button type="button" (click)="periodoRapido(7)">Últimos 7 dias</button>
+                <button mat-button type="button" (click)="periodoRapido(30)">Últimos 30 dias</button>
+                <button mat-button type="button" (click)="abrirFiltros()">Personalizar</button>
               </div>
-            </details>
-            }
-          } @else if (acoes?.criarConexao) {
-            <p>Registre uma conexão para começar o pareamento.</p>
-            <button mat-flat-button color="primary" type="button" [disabled]="!!acao" (click)="criar()">{{ acao === 'criar' ? 'Registrando…' : 'Criar conexão' }}</button>
+              @if (lendoResumo) { <mat-progress-bar mode="indeterminate" aria-label="Carregando resumo" /> }
+              @if (erroResumo) { <p class="aviso" role="alert">{{ erroResumo }}</p> }
+              @if (resumo; as r) {
+                <div class="metricas">
+                  <div><span>Mensagens</span><strong>{{ r.mensagens.total }}</strong></div>
+                  <div><span>Aceitas</span><strong>{{ r.mensagens.aceitas }}</strong></div>
+                  <div><span>Entregues</span><strong>{{ r.mensagens.entregues }}</strong></div>
+                  <div><span>Lidas</span><strong>{{ r.mensagens.lidas }}</strong></div>
+                  <div><span>Falhas</span><strong>{{ r.mensagens.falhas }}</strong></div>
+                  <div><span>Na fila agora</span><strong>{{ r.mensagens.backlogAtual }}</strong></div>
+                  <div><span>Incertas agora</span><strong>{{ r.mensagens.incertasAtuais }}</strong></div>
+                </div>
+                <p class="muted">Aceitas, entregues e lidas são contagens cumulativas. Falhas podem se sobrepor às confirmações. Fila e incertezas atuais incluem mensagens de fora do período.</p>
+                <p class="muted">{{ r.inicio | date:'dd/MM/yyyy HH:mm':'-0300' }} a {{ r.fim | date:'dd/MM/yyyy HH:mm':'-0300' }} · {{ r.fuso }}<br>Calculado às {{ r.calculadoEm | date:'HH:mm':'-0300' }}</p>
+              }
+            </app-section-card>
+
+            <app-section-card title="Ocorrências que exigem atenção" [mobilePlain]="true">
+              @if (resumo; as r) {
+                @if (r.mensagens.incertasAtuais > 0) {
+                  <p><strong>{{ r.mensagens.incertasAtuais }} com resultado incerto</strong></p>
+                  <p class="muted">Investigue as evidências para determinar o resultado.</p>
+                } @else {
+                  <strong>Nenhuma ocorrência pendente</strong>
+                  <p class="muted">Não há mensagens com resultado incerto que exijam investigação.</p>
+                }
+                <a mat-button routerLink="/page/clickwhatsapp/mensagens" [queryParams]="{ vista: 'ocorrencias' }">Ver ocorrências</a>
+              } @else {
+                <p class="muted">{{ lendoResumo ? 'Consultando ocorrências…' : 'Situação das ocorrências indisponível.' }}</p>
+              }
+            </app-section-card>
+
+            <ng-container [ngTemplateOutlet]="historico" />
           }
-        </app-section-card>
+        }
+        @case ('mensagens') {
+          @if (acoes?.consultarHistorico) {
+            <div class="acoes alternancia" role="group" aria-label="Visualização de mensagens">
+              <button mat-stroked-button type="button" [attr.aria-pressed]="!exibindoOcorrencias" (click)="selecionarHistorico(false)">Histórico</button>
+              <button mat-stroked-button type="button" [attr.aria-pressed]="exibindoOcorrencias" (click)="selecionarHistorico(true)">Ocorrências</button>
+            </div>
+            @if (exibindoOcorrencias) {
+              <app-section-card title="Ocorrências" [mobilePlain]="true">
+                <p>Consulte tentativas que ficaram incertas e acompanhe a investigação.</p>
+                <button mat-stroked-button type="button" [disabled]="carregandoOcorrencias" (click)="listarOcorrencias()">Atualizar ocorrências</button>
+                @if (carregandoOcorrencias) { <mat-progress-bar mode="indeterminate" aria-label="Consultando ocorrências" /> }
+                @if (erroOcorrencias) { <p class="aviso" role="alert">{{ erroOcorrencias }}</p> }
+                @if (listaOcorrencias?.length && listaOcorrencias; as ocorrencias) {
+                  <app-data-table [columns]="colunasOcorrencias" [data]="ocorrencias" [rowKey]="chaveOcorrencia"
+                    [retryEnabled]="false" tableLabel="Ocorrências" [emptyState]="{title: 'Nenhuma ocorrência registrada'}">
+                    <ng-template appDataTableCell="iniciadaEm" let-item>{{ item.iniciadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</ng-template>
+                    <ng-template appDataTableCell="fase" let-item>{{ rotuloFase(item.fase) }}</ng-template>
+                    <ng-template appDataTableCell="detalhe" let-item>
+                      <button mat-button type="button" (click)="abrirOcorrencia({mensagem: {id: item.mensagem, conexao: item.conexao}})">Ver ocorrência</button>
+                    </ng-template>
+                    <ng-template [appDataTableItem]="ocorrencias" let-item>
+                      <button class="item-mobile" type="button" (click)="abrirOcorrencia({mensagem: {id: item.mensagem, conexao: item.conexao}})">
+                        <strong>{{ rotuloFase(item.fase) }}</strong>
+                        <span>{{ item.iniciadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</span>
+                        <span>Ver ocorrência</span>
+                      </button>
+                    </ng-template>
+                  </app-data-table>
+                  <div class="paginacao">
+                    <button mat-button type="button" [disabled]="carregandoOcorrencias || paginaOcorrencias === 0" (click)="listarOcorrencias(-1)">Anterior</button>
+                    <span>Página {{ paginaOcorrencias + 1 }}</span>
+                    <button mat-button type="button" [disabled]="carregandoOcorrencias || ocorrencias.length < 20" (click)="listarOcorrencias(1)">Próxima</button>
+                  </div>
+                } @else if (listaOcorrencias && !carregandoOcorrencias) { <p>Nenhuma ocorrência registrada.</p>
+                  @if (paginaOcorrencias > 0) {
+                    <button mat-button type="button" (click)="listarOcorrencias(-1)">Página anterior</button>
+                  } }
+              </app-section-card>
+
+
+            } @else { <ng-container [ngTemplateOutlet]="historico" /> }
+          } @else { <p class="muted">O histórico está indisponível para este acesso.</p> }
+        }
+        @case ('automacoes') {
+          @if (c.configurarAutomacoes) {
+            <app-automacoes-pedido [carregarAoEntrar]="true" [operacional]="podeEnviar && c.estado?.observado === 'ABERTA' && !verificacaoFalhou" [historico]="!!acoes?.consultarHistorico" />
+          } @else { <p class="muted">A configuração de automações está indisponível para este acesso.</p> }
+        }
+        @case ('configuracoes') {
+          <ng-container [ngTemplateOutlet]="situacao" />
+          @if ((direitoAtivo && c.provisionamento) || possuiControlesConexao) {
+            <app-section-card title="Conexão WhatsApp" [mobilePlain]="true">
+              @if (c.conexao) {
+                @if (c.provisionamento; as p) { <p>{{ situacoesProvisionamento[p.situacao] }}</p> }
+                @if (c.estado?.observadoEm) {
+                  <p class="muted">Última observação {{ c.estado?.observadoEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</p>
+                }
+                @if (c.estado?.motivo; as codigo) { <p class="aviso">{{ motivo(codigo) }}</p> }
+                <div class="acoes">
+                  @if (acoes?.provisionar) {
+                    <button mat-stroked-button type="button" [disabled]="!!acao" (click)="conexao('provisionar')">{{ acao === 'provisionar' ? 'Provisionando…' : 'Provisionar conexão' }}</button>
+                  }
+                  @if (acoes?.gerarQr) {
+                    <button mat-flat-button color="primary" type="button" [disabled]="!!acao" (click)="abrirQr()">Conectar WhatsApp</button>
+                  }
+                  @if (acoes?.reconciliar) {
+                    <button mat-stroked-button type="button" [disabled]="!!acao" (click)="conexao('reconciliar')">{{ acao === 'reconciliar' ? 'Atualizando…' : 'Atualizar estado' }}</button>
+                  }
+                  @if (acoes?.pausarEnvios) {
+                    <button mat-stroked-button type="button" [disabled]="!!acao" (click)="preferencia(false)">Pausar envios</button>
+                  }
+                  @if (acoes?.retomarEnvios) {
+                    <button mat-stroked-button type="button" [disabled]="!!acao" (click)="preferencia(true)">Retomar envios</button>
+                  }
+                </div>
+                @if (acoes?.consultarWebhook || acoes?.configurarWebhook) {
+                <details class="avancado">
+                  <summary>Configurações avançadas</summary>
+                  <div class="avancado-corpo">
+                    <div><strong>Webhook</strong><p class="muted">{{ webhook ? webhooks[webhook] : 'Consulte a configuração desta conexão.' }}</p></div>
+                    <div class="acoes">
+                      @if (acoes?.consultarWebhook) { <button mat-button type="button" [disabled]="!!acao" (click)="consultarWebhook()">Consultar webhook</button> }
+                      @if (acoes?.configurarWebhook) { <button mat-stroked-button type="button" [disabled]="!!acao" (click)="consultarWebhook(true)">Configurar webhook</button> }
+                    </div>
+                  </div>
+                </details>
+                }
+              } @else if (acoes?.criarConexao) {
+                <p>Registre uma conexão para começar o pareamento.</p>
+                <button mat-flat-button color="primary" type="button" [disabled]="!!acao" (click)="criar()">{{ acao === 'criar' ? 'Registrando…' : 'Criar conexão' }}</button>
+              }
+            </app-section-card>
+          }
+
+
+          @if (acoes?.habilitarDireito || acoes?.desabilitarDireito || acoes?.desconectar) {
+            <app-section-card title="Administração do módulo" [mobilePlain]="true">
+              <div class="acoes">
+                @if (acoes?.habilitarDireito || acoes?.desabilitarDireito) {
+                  <button mat-stroked-button type="button" [disabled]="!!acao" (click)="direito(!!acoes?.habilitarDireito)">
+                    {{ acao === 'direito' ? 'Salvando…' : (acoes?.habilitarDireito ? 'Habilitar ClickWhatsApp' : 'Desabilitar ClickWhatsApp') }}
+                  </button>
+                }
+                  @if (acoes?.desconectar) { <button mat-button color="warn" type="button" [disabled]="!!acao" (click)="conexao('desconectar')">Desconectar WhatsApp</button> }
+
+              </div>
+            </app-section-card>
+          }
+          @if (!podeAbrirConfiguracoes) { <p class="muted">As ações de configuração estão indisponíveis para este acesso.</p> }
+        }
       }
+    </div>
+    @if (areaEnvio && mobile && podeEnviar && !pendente) {
+      <app-mobile-fab-action placement="page" label="Nova mensagem" (action)="abrirEnvio()" />
+    }
+  }
+</app-page-card>
 
-      @if (c.configurarAutomacoes) { <app-automacoes-pedido class="largura-total" [operacional]="podeEnviar" [historico]="!!acoes?.consultarHistorico" (edicaoChange)="editandoAutomacoes = $event" /> }
+<ng-template #situacao>
+  @if (config; as c) {
+    <section class="situacao" aria-label="Situação da empresa">
+      <div class="indicador"><span>ClickWhatsApp</span><strong>{{ direitoAtivo ? 'Habilitado' : 'Desabilitado' }}</strong></div>
+      @if (direitoAtivo) {
+        <div class="indicador" role="status">
+          <span>WhatsApp</span>
+          <strong class="estado-conexao" [class.conectada]="!verificacaoFalhou && c.estado?.observado === 'ABERTA'">
+            {{ verificacaoFalhou ? 'Não foi possível verificar' : c.estado ? (estados[c.estado.observado] || estados.DESCONHECIDO) : (c.conexao ? 'Estado indisponível' : 'Sem conexão') }}
+          </strong>
+        </div>
+        <div class="indicador"><span>Envios</span><strong>{{ c.preferencia ? (c.preferencia.quarentena ? 'Em quarentena' : c.preferencia.pausada ? 'Pausados' : 'Preferência ativa') : 'Indisponíveis' }}</strong></div>
+      }
+      <div class="acoes situacao-acoes">
+        @if (area === 'visao' && podeAbrirConfiguracoes) {
+          <a mat-button routerLink="/page/clickwhatsapp/configuracoes">Configurações de conexão</a>
+        }
+      </div>
+    </section>
+    @if (c.estado?.observadoEm) {
+      <p class="muted observacao">Última observação {{ c.estado?.observadoEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</p>
+    }
+  }
+</ng-template>
 
-      @if (acoes?.consultarHistorico) {
-        <app-section-card title="Resumo operacional" [mobilePlain]="true" class="largura-total">
-          @if (lendoResumo) { <mat-progress-bar mode="indeterminate" aria-label="Carregando resumo" /> }
-          @if (erroResumo) { <p class="aviso" role="alert">{{ erroResumo }}</p> }
-          @if (resumo; as r) {
-            <div class="metricas">
-              <div><span>Mensagens</span><strong>{{ r.mensagens.total }}</strong></div>
-              <div><span>Aceitas</span><strong>{{ r.mensagens.aceitas }}</strong></div>
-              <div><span>Entregues</span><strong>{{ r.mensagens.entregues }}</strong></div>
-              <div><span>Lidas</span><strong>{{ r.mensagens.lidas }}</strong></div>
-              <div><span>Falhas</span><strong>{{ r.mensagens.falhas }}</strong></div>
-              <div><span>Na fila agora</span><strong>{{ r.mensagens.backlogAtual }}</strong></div>
-              <div><span>Incertas agora</span><strong>{{ r.mensagens.incertasAtuais }}</strong></div>
-            </div>
-            <p class="muted">Aceitas, entregues e lidas são contagens cumulativas. Fila e incertezas atuais incluem mensagens de fora do período.</p>
-            <p class="muted">{{ r.inicio | date:'dd/MM/yyyy HH:mm':'-0300' }} a {{ r.fim | date:'dd/MM/yyyy HH:mm':'-0300' }} · {{ r.fuso }}<br>Calculado às {{ r.calculadoEm | date:'HH:mm':'-0300' }}</p>
-          }
-        </app-section-card>
-
-        <app-section-card title="Ocorrências" [mobilePlain]="true">
-          <p>Consulte tentativas que ficaram incertas e acompanhe a investigação.</p>
-          <button mat-stroked-button type="button" [disabled]="carregandoOcorrencias" (click)="listarOcorrencias()">Consultar ocorrências</button>
-          @if (carregandoOcorrencias) { <mat-progress-bar mode="indeterminate" aria-label="Consultando ocorrências" /> }
-          @if (erroOcorrencias) { <p class="aviso" role="alert">{{ erroOcorrencias }}</p> }
-          @if (listaOcorrencias; as ocorrencias) {
-            <app-data-table [columns]="colunasOcorrencias" [data]="ocorrencias" [rowKey]="chaveOcorrencia"
-              [retryEnabled]="false" tableLabel="Ocorrências" [emptyState]="{title: 'Nenhuma ocorrência registrada'}">
-              <ng-template appDataTableCell="iniciadaEm" let-item>{{ item.iniciadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</ng-template>
-              <ng-template appDataTableCell="fase" let-item>{{ rotuloFase(item.fase) }}</ng-template>
-              <ng-template appDataTableCell="detalhe" let-item>
-                <button mat-button type="button" (click)="abrirOcorrencia({mensagem: {id: item.mensagem, conexao: item.conexao}})">Ver ocorrência</button>
-              </ng-template>
-              <ng-template [appDataTableItem]="ocorrencias" let-item>
-                <button class="item-mobile" type="button" (click)="abrirOcorrencia({mensagem: {id: item.mensagem, conexao: item.conexao}})">
-                  <strong>{{ rotuloFase(item.fase) }}</strong>
-                  <span>{{ item.iniciadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</span>
-                  <span>Ver ocorrência</span>
-                </button>
-              </ng-template>
-            </app-data-table>
-            <div class="paginacao">
-              <button mat-button type="button" [disabled]="carregandoOcorrencias || paginaOcorrencias === 0" (click)="listarOcorrencias(-1)">Anterior</button>
-              <span>Página {{ paginaOcorrencias + 1 }}</span>
-              <button mat-button type="button" [disabled]="carregandoOcorrencias || ocorrencias.length < 20" (click)="listarOcorrencias(1)">Próxima</button>
-            </div>
-          }
-        </app-section-card>
-
-        <app-section-card title="Histórico de mensagens" [mobilePlain]="true" class="largura-total">
+<ng-template #historico>
+        <app-section-card [title]="area === 'visao' ? 'Últimas mensagens' : 'Histórico de mensagens'" [mobilePlain]="true" class="largura-total">
+          @if (area === 'mensagens') {
           <div class="acoes historico-acoes">
             <button mat-stroked-button type="button" (click)="abrirFiltros()"><mat-icon>filter_list</mat-icon>Filtros</button>
             <button mat-stroked-button type="button" [disabled]="lendo" [attr.aria-pressed]="filtro.fase === 'INCERTA'" (click)="verOcorrencias()">{{ filtro.fase === 'INCERTA' ? 'Mostrar todas' : 'Ocorrências incertas' }}</button>
             <button mat-button type="button" [disabled]="lendo" (click)="carregarConsultas()">Atualizar histórico</button>
           </div>
+          }
           <app-data-table [columns]="colunas" [data]="itens" [rowKey]="chaveLinha" [loading]="lendo"
             [error]="erroHistorico || null" [retryEnabled]="false" tableLabel="Histórico de mensagens"
-            [emptyState]="{ title: filtro.fase === 'INCERTA' ? 'Nenhuma ocorrência incerta no período' : 'Nenhuma mensagem no período', description: 'Altere os filtros para consultar outro período.' }">
+            [emptyState]="{ title: filtro.fase === 'INCERTA' ? 'Nenhuma ocorrência incerta no período' : (area === 'visao' ? 'Nenhuma mensagem registrada ainda.' : 'Nenhuma mensagem no período'), description: 'Altere os filtros para consultar outro período.' }">
             <ng-template appDataTableCell="data" let-item>{{ item.mensagem.criadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</ng-template>
             <ng-template appDataTableCell="destino" let-item>{{ item.destinatarioMascarado || 'Indisponível' }}</ng-template>
             <ng-template appDataTableCell="fase" let-item><ng-container [ngTemplateOutlet]="fase" [ngTemplateOutletContext]="{ $implicit: item }" /></ng-template>
@@ -165,19 +250,18 @@
               @if (ehOcorrencia(item)) { <button mat-button type="button" (click)="abrirOcorrencia(item)">Ver ocorrência</button> }
             </ng-template>
           </app-data-table>
+          @if (area === 'visao') {
+            <p class="muted">Últimos 93 dias</p>
+            <a mat-button routerLink="/page/clickwhatsapp/mensagens">Ver todas as mensagens</a>
+          } @else {
           <div class="paginacao" aria-label="Paginação do histórico">
             <button mat-button type="button" [disabled]="lendo || filtro.pagina === 0" (click)="pagina(-1)">Anterior</button>
             <span>Página {{ filtro.pagina + 1 }}</span>
             <button mat-button type="button" [disabled]="lendo || itens.length < filtro.tamanho" (click)="pagina(1)">Próxima</button>
           </div>
+          }
         </app-section-card>
-      }
-    </div>
-    @if (mobile && podeEnviar && !pendente && !editandoAutomacoes) {
-      <app-mobile-fab-action placement="page" label="Nova mensagem" (action)="abrirEnvio()" />
-    }
-  }
-</app-page-card>
+</ng-template>
 
 <ng-template #fase let-item>
   <span class="etiqueta" [class.incerta]="item.mensagem.fase === 'INCERTA'">{{ rotuloFase(item.mensagem.fase) }}</span>
@@ -273,10 +357,12 @@
     <div class="campos">
       <mat-form-field appearance="outline"><mat-label>Início</mat-label><input matInput type="datetime-local" [(ngModel)]="inicioInput" /></mat-form-field>
       <mat-form-field appearance="outline"><mat-label>Fim</mat-label><input matInput type="datetime-local" [(ngModel)]="fimInput" /></mat-form-field>
+      @if (area === 'mensagens') {
       <mat-form-field appearance="outline"><mat-label>Situação</mat-label><mat-select [(ngModel)]="faseInput">
         <mat-option value="">Todas</mat-option>
         @for (opcao of fases | keyvalue; track opcao.key) { <mat-option [value]="opcao.key">{{ opcao.value }}</mat-option> }
       </mat-select></mat-form-field>
+      }
     </div>
     @if (erroPeriodo) { <p class="aviso" role="alert">{{ erroPeriodo }}</p> }
   </mat-dialog-content>

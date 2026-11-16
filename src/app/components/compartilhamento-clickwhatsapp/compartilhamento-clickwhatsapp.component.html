@@ -13,7 +13,7 @@
       <strong>Mensagem adicionada à fila.</strong>
       <p>{{ situacao }}</p>
       @if (disponibilidade?.podeConsultarHistorico) {
-        <a mat-button routerLink="/page/clickwhatsapp" [queryParams]="{mensagem: e.resultado.id, conexao: e.resultado.conexao}">Ver detalhe no ClickWhatsApp</a>
+        <a mat-button routerLink="/page/clickwhatsapp/mensagens" [queryParams]="{mensagem: e.resultado.id, conexao: e.resultado.conexao}">Ver detalhe no ClickWhatsApp</a>
       }
     } @else {
       <p>{{ e.mensagem }}</p>
@@ -50,5 +50,5 @@
 }
 @if (!carregando && !integrado && !contextoAlterado) {
   <button mat-button type="button" (click)="consultar()">Verificar disponibilidade</button>
-  @if (disponibilidade?.podeConfigurar) { <a mat-button routerLink="/page/clickwhatsapp">Configurar ClickWhatsApp</a> }
+  @if (disponibilidade?.podeConfigurar) { <a mat-button routerLink="/page/clickwhatsapp/configuracoes">Configurar ClickWhatsApp</a> }
 }
