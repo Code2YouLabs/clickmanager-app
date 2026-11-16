@@ -90,6 +90,8 @@
         </app-section-card>
       }
 
+      @if (c.configurarAutomacoes) { <app-automacoes-pedido class="largura-total" [operacional]="podeEnviar" [historico]="!!acoes?.consultarHistorico" (edicaoChange)="editandoAutomacoes = $event" /> }
+
       @if (acoes?.consultarHistorico) {
         <app-section-card title="Resumo operacional" [mobilePlain]="true" class="largura-total">
           @if (lendoResumo) { <mat-progress-bar mode="indeterminate" aria-label="Carregando resumo" /> }
@@ -171,7 +173,7 @@
         </app-section-card>
       }
     </div>
-    @if (mobile && podeEnviar && !pendente) {
+    @if (mobile && podeEnviar && !pendente && !editandoAutomacoes) {
       <app-mobile-fab-action placement="page" label="Nova mensagem" (action)="abrirEnvio()" />
     }
   }

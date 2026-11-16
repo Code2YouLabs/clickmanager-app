@@ -37,6 +37,7 @@ export interface AcoesPermitidas {
 
 export type SituacaoProvisionamento = 'NAO_PROVISIONADA' | 'EM_ANDAMENTO' | 'PROVISIONADA' | 'DESCONHECIDA';
 export interface Configuracao {
+  configurarAutomacoes?: boolean;
   acoesPermitidas: AcoesPermitidas;
   provisionamento: { situacao: SituacaoProvisionamento } | null;
   direito: Direito;

@@ -1,3 +1,4 @@
+import { AutomacoesPedidoComponent } from './automacoes/automacoes-pedido.component';
 import { ActivatedRoute } from '@angular/router';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { CommonModule, DOCUMENT } from '@angular/common';
@@ -31,7 +32,7 @@ import { ClickWhatsAppService } from './clickwhatsapp.service';
 @Component({
   selector: 'app-clickwhatsapp',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatInputModule,
+  imports: [AutomacoesPedidoComponent, CommonModule, FormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatInputModule,
     MatSelectModule, MatProgressBarModule, PageCardComponent, SectionCardComponent, DataTableComponent,
     DataTableCellDirective, DataTableItemDirective, MobileFabActionComponent],
   templateUrl: './clickwhatsapp.page.html',
@@ -61,6 +62,7 @@ export class ClickWhatsAppPage implements OnInit {
   @ViewChild('telaDetalhe') telaDetalhe!: TemplateRef<unknown>;
   @ViewChild('telaFiltros') telaFiltros!: TemplateRef<unknown>;
 
+  editandoAutomacoes = false;
   config: Configuracao | null = null;
   carregando = false;
   erroConfig = '';
@@ -184,6 +186,7 @@ export class ClickWhatsAppPage implements OnInit {
   readonly chaveLinha = (item: ItemHistorico) => item.mensagem.id;
 
   private limparContexto() {
+    this.editandoAutomacoes = false;
     this.sessao++;
     this.troca.next();
     this.config = null;
@@ -218,6 +221,7 @@ export class ClickWhatsAppPage implements OnInit {
       const config = await this.ler(this.api.configuracao().pipe(timeout(12000)));
       if (sessao !== this.sessao) return;
       this.config = config;
+      if (!config.configurarAutomacoes) this.editandoAutomacoes = false;
       this.verificacaoFalhou = false;
       if (anterior && (anterior.conexao !== config.conexao
         || (this.qrModal && (!config.direito.local || !config.direito.global || !config.aplicacaoAutorizada
