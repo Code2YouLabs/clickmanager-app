@@ -1,0 +1,54 @@
+@if (carregando || enviando) { <mat-progress-bar mode="indeterminate" aria-label="Verificando compartilhamento" /> }
+@if (!carregando && aviso) { <p class="aviso" role="status">{{ aviso }}</p> }
+@if (erro) { <p class="aviso" role="alert">{{ erro }}</p> }
+@if (!carregando && (disponibilidade?.habilitado !== false || envio) && !contextoAlterado) {
+  <label class="telefone">Número internacional para este envio
+    <input type="tel" [(ngModel)]="numero" [ngModelOptions]="{standalone: true}" [readonly]="bloqueado" autocomplete="off" />
+    <small>Inclua o código do país e o DDD. O cadastro do cliente será preservado.</small>
+  </label>
+}
+@if (envio; as e) {
+  <div class="resultado" role="status">
+    @if (e.resultado) {
+      <strong>Mensagem adicionada à fila.</strong>
+      <p>{{ situacao }}</p>
+      @if (disponibilidade?.podeConsultarHistorico) {
+        <a mat-button routerLink="/page/clickwhatsapp" [queryParams]="{mensagem: e.resultado.id, conexao: e.resultado.conexao}">Ver detalhe no ClickWhatsApp</a>
+      }
+    } @else {
+      <p>{{ e.mensagem }}</p>
+    }
+    <button mat-button type="button" [disabled]="enviando" (click)="acompanhar()">{{ e.resultado ? 'Atualizar situação' : 'Recuperar solicitação' }}</button>
+    <button mat-button type="button" [disabled]="enviando" (click)="novoEnvio()">Preparar outro envio</button>
+  </div>
+}
+@if (!mobile) {
+  <div class="actions">
+    <button mat-stroked-button type="button" (click)="copiar.emit()"><mat-icon>content_copy</mat-icon>Copiar</button>
+    @if (integrado && !envio?.resultado) {
+      <button mat-flat-button type="button" [disabled]="enviando || carregando || contextoAlterado || !identidadePronta || envio?.repetivel === false" (click)="enviar()">{{ envio ? 'Repetir mesma solicitação' : 'Enviar pelo ClickWhatsApp' }}</button>
+    }
+    @if (disponibilidade?.habilitado === false) {
+      <button mat-flat-button color="primary" type="button" [disabled]="enviando || carregando || contextoAlterado || !identidadePronta || !manualPermitido" (click)="abrirManual()"><mat-icon>chat</mat-icon>Abrir no WhatsApp</button>
+    } @else {
+      <button mat-stroked-button type="button" [disabled]="enviando || carregando || contextoAlterado || !identidadePronta || !manualPermitido" (click)="abrirManual()">Abrir no WhatsApp</button>
+    }
+  </div>
+} @else {
+  <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true"
+    actionType="button" actionForm="whatsapp-mobile-editor" bottomAnchorSelector=".mobile-bottom-nav"
+    bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+    secondaryActionText="Copiar" secondaryActionIcon="content_copy" secondaryActionAriaLabel="Copiar mensagem completa"
+    [secondaryActionDisabled]="contextoAlterado || !mensagem.value"
+    [actionText]="integrado && !envio?.resultado ? (envio ? 'Repetir solicitação' : 'Enviar pelo ClickWhatsApp') : 'Abrir WhatsApp'"
+    actionIcon="chat" actionAriaLabel="Compartilhar mensagem revisada"
+    [actionDisabled]="enviando || carregando || contextoAlterado || !identidadePronta || !manualPermitido"
+    (secondaryAction)="copiar.emit()" (action)="integrado && !envio?.resultado ? enviar() : abrirManual()" />
+  @if (integrado) {
+    <button mat-button type="button" [disabled]="enviando || carregando || contextoAlterado || !identidadePronta" (click)="abrirManual()">Abrir no WhatsApp</button>
+  }
+}
+@if (!carregando && !integrado && !contextoAlterado) {
+  <button mat-button type="button" (click)="consultar()">Verificar disponibilidade</button>
+  @if (disponibilidade?.podeConfigurar) { <a mat-button routerLink="/page/clickwhatsapp">Configurar ClickWhatsApp</a> }
+}

@@ -1,5 +1,7 @@
+import { Subscription } from 'rxjs';
+import { CompartilhamentoClickWhatsAppComponent } from 'src/app/components/compartilhamento-clickwhatsapp/compartilhamento-clickwhatsapp.component';
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, OnDestroy } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,6 +19,7 @@ import { montarMensagemOrcamentoComercialWhatsApp, telefoneWhatsAppBR } from './
   selector: 'app-orcamento-comercial-whatsapp-page',
   standalone: true,
   imports: [
+    CompartilhamentoClickWhatsAppComponent,
     CommonModule,
     RouterModule,
     ReactiveFormsModule,
@@ -27,187 +30,15 @@ import { montarMensagemOrcamentoComercialWhatsApp, telefoneWhatsAppBR } from './
     PageCardComponent,
     SectionCardComponent,
   ],
-  template: `
-    <app-page-card
-      titulo="Compartilhar Orçamento"
-      [subtitulo]="subtituloPagina"
-      [botaoTexto]="'Voltar'"
-      [botaoRota]="voltarLink"
-      [mostrarDivisor]="true">
-
-      <div class="whatsapp-page">
-        <app-section-card titulo="Mensagem para WhatsApp" subtitulo="Revise a mensagem antes de enviar." [divider]="true">
-          <div class="state-panel" *ngIf="carregando">
-            <mat-spinner diameter="34"></mat-spinner>
-            <span>Carregando orçamento...</span>
-          </div>
-
-          <div class="error-panel" *ngIf="!carregando && erro">
-            <mat-icon>error_outline</mat-icon>
-            <div>
-              <strong>Não foi possível carregar a mensagem.</strong>
-              <span>{{ erro }}</span>
-            </div>
-            <div class="error-actions">
-              <button mat-stroked-button color="primary" type="button" [routerLink]="voltarLink">
-                Voltar
-              </button>
-              <button mat-flat-button color="primary" type="button" (click)="carregarOrcamento()">
-                Tentar novamente
-              </button>
-            </div>
-          </div>
-
-          <ng-container *ngIf="!carregando && !erro">
-            <div class="pedido-context" *ngIf="orcamento as item">
-              <div>
-                <span>Número</span>
-                <strong>{{ item.protocolo || '—' }}</strong>
-              </div>
-              <div>
-                <span>Cliente</span>
-                <strong>{{ item.nomeCliente || 'Cliente não informado' }}</strong>
-              </div>
-              <div>
-                <span>Telefone</span>
-                <strong>{{ item.telefoneCliente || '—' }}</strong>
-              </div>
-            </div>
-
-            <app-input-textarea
-              [control]="mensagemControl"
-              label="Mensagem"
-              placeholder="Mensagem do orçamento"
-              [rows]="16"
-              [maxlength]="4000">
-            </app-input-textarea>
-
-            <div class="actions">
-              <button mat-stroked-button type="button" (click)="copiar()">
-                <mat-icon>content_copy</mat-icon>
-                Copiar
-              </button>
-              <button mat-flat-button color="primary" type="button" (click)="abrirWhatsApp()">
-                <mat-icon>chat</mat-icon>
-                Abrir no WhatsApp
-              </button>
-            </div>
-          </ng-container>
-        </app-section-card>
-      </div>
-    </app-page-card>
-  `,
-  styles: [`
-    .whatsapp-page {
-      max-width: 920px;
-      margin: 0 auto;
-    }
-
-    .pedido-context {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      margin-bottom: 16px;
-      padding: 12px;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      background: #f8fafc;
-    }
-
-    .pedido-context span,
-    .pedido-context strong {
-      display: block;
-    }
-
-    .pedido-context span {
-      color: #64748b;
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .pedido-context strong {
-      margin-top: 2px;
-      color: #0f172a;
-      font-size: 14px;
-      line-height: 1.3;
-    }
-
-    .actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      margin-top: 12px;
-      flex-wrap: wrap;
-    }
-
-    .actions button {
-      border-radius: 999px;
-    }
-
-    .state-panel,
-    .error-panel {
-      min-height: 280px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      border: 1px dashed #cbd5e1;
-      border-radius: 12px;
-      color: #64748b;
-      background: #f8fafc;
-    }
-
-    .error-panel {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
-      justify-content: flex-start;
-      align-items: start;
-      max-width: 680px;
-      min-height: auto;
-      margin: 24px auto;
-      padding: 18px;
-      border-color: #fecaca;
-      color: #991b1b;
-      background: #fff7f7;
-    }
-
-    .error-panel strong,
-    .error-panel span {
-      display: block;
-    }
-
-    .error-panel span {
-      margin-top: 3px;
-      color: #7f1d1d;
-    }
-
-    .error-actions {
-      grid-column: 1 / -1;
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      margin-top: 12px;
-    }
-
-    @media (max-width: 768px) {
-      .pedido-context {
-        grid-template-columns: 1fr;
-      }
-
-      .actions,
-      .error-actions {
-        flex-direction: column;
-      }
-
-      .actions button,
-      .error-actions button {
-        width: 100%;
-      }
-    }
-  `],
+  templateUrl: './orcamento-comercial-whatsapp-page.component.html',
+  styleUrl: './orcamento-comercial-whatsapp-page.component.scss',
 })
-export class OrcamentoComercialWhatsappPageComponent implements OnInit {
+export class OrcamentoComercialWhatsappPageComponent implements OnInit, OnDestroy {
+  private routeChanges?: Subscription;
+  private leitura?: Subscription;
+  editorBloqueado = false;
+  limiteMensagem: number | null = 4000;
+  readonly telefoneCompartilhamento = telefoneWhatsAppBR;
   orcamento: OrcamentoComercialDetalhe | null = null;
   mensagemControl = new FormControl('', { nonNullable: true });
   carregando = false;
@@ -221,8 +52,10 @@ export class OrcamentoComercialWhatsappPageComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.carregarOrcamento();
+    this.routeChanges = this.route.paramMap.subscribe(params => this.carregarOrcamento(Number(params.get('id'))));
   }
+
+  ngOnDestroy() { this.routeChanges?.unsubscribe(); this.leitura?.unsubscribe(); }
 
   get subtituloPagina(): string {
     return this.orcamento?.protocolo ? `WhatsApp · ${this.orcamento.protocolo}` : 'WhatsApp';
@@ -233,8 +66,9 @@ export class OrcamentoComercialWhatsappPageComponent implements OnInit {
     return id ? ['/page/grafica/comercial/orcamentos', id] : ['/page/grafica/comercial/orcamentos'];
   }
 
-  carregarOrcamento(): void {
-    const id = Number(this.route.snapshot.paramMap.get('id'));
+  carregarOrcamento(id = Number(this.route.snapshot.paramMap.get('id'))): void {
+    this.leitura?.unsubscribe();
+    this.orcamento = null;
     if (!id) {
       this.erro = 'Orçamento inválido.';
       return;
@@ -242,7 +76,7 @@ export class OrcamentoComercialWhatsappPageComponent implements OnInit {
 
     this.carregando = true;
     this.erro = null;
-    this.graficaService.buscarOrcamentoComercial(id).subscribe({
+    this.leitura = this.graficaService.buscarOrcamentoComercial(id).subscribe({
       next: orcamento => {
         this.orcamento = orcamento;
         this.mensagemControl.setValue(montarMensagemOrcamentoComercialWhatsApp(orcamento, true));
@@ -265,14 +99,14 @@ export class OrcamentoComercialWhatsappPageComponent implements OnInit {
       .catch(() => this.toastr.error('Não foi possível copiar.'));
   }
 
-  abrirWhatsApp(): void {
+  abrirWhatsApp(revisado?: { numero: string; texto: string }): void {
     if (!this.orcamento) return;
-    const phone = telefoneWhatsAppBR(this.orcamento.telefoneCliente);
+    const phone = revisado?.numero ?? telefoneWhatsAppBR(this.orcamento.telefoneCliente);
     if (!phone) {
       this.toastr.error('Telefone do cliente não encontrado ou inválido.');
       return;
     }
-    window.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(this.mensagemControl.value)}`;
+    window.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(revisado?.texto ?? this.mensagemControl.value)}`;
   }
 
   private errorMessage(error: any, fallback: string): string {

@@ -1,3 +1,4 @@
+import { RevisaoDocumentoService } from 'src/app/components/compartilhamento-clickwhatsapp/revisao-documento.service';
 import { CommonModule, DatePipe } from '@angular/common';
 import { HttpResponse } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
@@ -32,7 +33,7 @@ import { TelefonePipe } from 'src/app/pipe/telefone.pipe';
 import { AuthService } from 'src/app/services/auth.service';
 import { FeatureFlagService } from 'src/app/services/feature-flag.service';
 import { OrcamentoService } from 'src/app/services/orcamento.service';
-import { montarUrlWhatsAppOrcamento } from '../shared/orcamento-whatsapp.util';
+import { montarMensagemWhatsAppOrcamento, montarUrlWhatsAppOrcamento } from '../shared/orcamento-whatsapp.util';
 
 type StatusOption = {
   value: OrcamentoStatus;
@@ -114,6 +115,7 @@ export class DetalheOrcamentoComponent implements OnInit {
     private readonly featureFlagService: FeatureFlagService,
     private readonly dialog: MatDialog,
     private readonly toastr: ToastrService,
+    private readonly revisaoWhatsApp: RevisaoDocumentoService,
   ) {}
 
   ngOnInit(): void {
@@ -197,6 +199,7 @@ export class DetalheOrcamentoComponent implements OnInit {
     this.orcamentoService.detalhar(id).subscribe({
       next: (response) => {
         this.orcamento = response;
+        this.revisaoWhatsApp.preparar('/api/orcamentos/' + response.id + '/clickwhatsapp');
         this.observacaoInterna = response.observacaoInterna || '';
         this.carregando = false;
       },
@@ -302,6 +305,13 @@ export class DetalheOrcamentoComponent implements OnInit {
   }
 
   abrirWhatsApp(): void {
+    if (!this.orcamento) return;
+    const documento = this.orcamento;
+    this.revisaoWhatsApp.abrir('/api/orcamentos/' + documento.id + '/clickwhatsapp', this.telefoneNormalizado() || '',
+      montarMensagemWhatsAppOrcamento(documento), () => this.abrirWhatsAppManual());
+  }
+
+  private abrirWhatsAppManual(): void {
     const telefone = this.telefoneNormalizado();
     if (!telefone || !this.orcamento) {
       this.toastr.info('Este orçamento não possui telefone para WhatsApp.');

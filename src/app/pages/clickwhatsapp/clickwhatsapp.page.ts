@@ -1,3 +1,4 @@
+import { ActivatedRoute } from '@angular/router';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { Component, DestroyRef, inject, NgZone, OnInit, TemplateRef, ViewChild } from '@angular/core';
@@ -37,6 +38,7 @@ import { ClickWhatsAppService } from './clickwhatsapp.service';
   styleUrl: './clickwhatsapp.page.scss',
 })
 export class ClickWhatsAppPage implements OnInit {
+  private readonly rota = inject(ActivatedRoute);
   private readonly envios = inject(ClickWhatsAppEnvioStore);
   private readonly api = inject(ClickWhatsAppService);
   private readonly auth = inject(AuthService);
@@ -227,6 +229,9 @@ export class ClickWhatsAppPage implements OnInit {
       }
       if (config.acoesPermitidas?.consultarHistorico && (inicial || !anterior?.acoesPermitidas?.consultarHistorico)) {
         void this.carregarConsultas();
+        const mensagem=this.rota.snapshot?.queryParamMap?.get('mensagem');
+        const conexao=this.rota.snapshot?.queryParamMap?.get('conexao');
+        if(inicial && mensagem && conexao) void this.abrirDetalhe({mensagem: {id: mensagem, conexao}});
       } else if (!config.acoesPermitidas?.consultarHistorico) {
         this.consulta++;
         this.itens = [];
@@ -663,7 +668,7 @@ export class ClickWhatsAppPage implements OnInit {
     }
   }
 
-  async abrirDetalhe(item: ItemHistorico) {
+  async abrirDetalhe(item: {mensagem: {id: string; conexao: string}}) {
     if (!this.acoes?.consultarHistorico) return;
     const ref = this.abrir(this.telaDetalhe, 'Detalhe da mensagem');
     if (!ref) return;
