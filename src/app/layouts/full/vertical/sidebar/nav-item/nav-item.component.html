@@ -3,13 +3,7 @@
   {{ item.navCap }}
 </div>
 } @if(!item.navCap && !item.external && !item.twoLines) {
-<a mat-list-item (click)="onItemSelected(item)"
-  [attr.tabindex]="item.keyboardNavigation ? 0 : null"
-  [attr.role]="item.keyboardNavigation ? (item.children?.length ? 'button' : 'link') : null"
-  [attr.aria-expanded]="item.keyboardNavigation && item.children?.length ? expanded : null"
-  [attr.aria-current]="item.keyboardNavigation && isItemActive(item) ? 'page' : null"
-  (keydown.enter)="onNavigationKey($event)"
-  (keydown.space)="onNavigationKey($event)" [ngClass]="{
+<a mat-list-item (click)="onItemSelected(item)" [ngClass]="{
       'mat-toolbar mat-primary activeMenu': isItemActive(item),
       expanded: expanded,
       disabled: item.disabled

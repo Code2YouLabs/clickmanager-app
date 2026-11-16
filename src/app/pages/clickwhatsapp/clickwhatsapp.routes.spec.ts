@@ -10,6 +10,7 @@ describe('Destinos do ClickWhatsApp', () => {
       .find(group => group.title === 'Presença Digital')?.items.find(item => item.displayName === 'ClickWhatsApp');
     expect(desktop?.children?.map(item => item.route)).toEqual(destinos);
     expect(mobile?.children?.map(item => item.route)).toEqual(destinos);
+    expect(desktop?.children?.map(item => item.bgcolor)).toEqual(destinos.map(() => 'transparent'));
     expect(desktop?.children?.[0].exactRoute).toBeTrue();
     expect(CLICKWHATSAPP_ROUTES[0].pathMatch).toBe('full');
     expect(CLICKWHATSAPP_ROUTES[2].canDeactivate?.length).toBe(1);

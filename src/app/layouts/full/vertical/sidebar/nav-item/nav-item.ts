@@ -13,7 +13,6 @@ export interface NavItem {
     subtext?: string;
     route?: string;
     exactRoute?: boolean;
-    keyboardNavigation?: boolean;
     children?: NavItem[];
     ddType?: string;
     bgcolor?:string;
