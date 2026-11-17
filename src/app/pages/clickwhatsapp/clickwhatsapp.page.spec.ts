@@ -224,6 +224,8 @@ describe('ClickWhatsApp', () => {
     tick(500);
     tick(10000);
     const fechada: Configuracao = { ...config, estado: { ...config.estado!, observado: 'FECHADA' } };
+    http.expectOne(conexao + '/reconciliar').flush(fechada.estado);
+    flushMicrotasks();
     http.expectOne(base + '/configuracao').flush(fechada);
     flushMicrotasks();
     fixture.detectChanges();
@@ -756,7 +758,7 @@ describe('ClickWhatsApp', () => {
     void page.prepararConexao(); http.expectOne(base + '/configuracao').flush({ ...config, provisionamento: { situacao: 'EM_ANDAMENTO' } }); flushMicrotasks();
     expect(page.falhaConexaoImpeditiva).toBeTrue(); http.expectNone(r => r.method === 'POST'); fixture.destroy();
   }));
-  it('acompanhamento é limitado e fechar painel interrompe reconciliação', fakeAsync(() => {
+  it('acompanhamento QR é limitado e fechar retoma apenas observação técnica periódica', fakeAsync(() => {
     spyOnProperty(document, 'hidden', 'get').and.returnValue(false);
     fixture.detectChanges(); http.expectOne(base + '/configuracao').flush(config); flushMicrotasks(); fixture.detectChanges();
     page.abrirQr(); http.expectOne(base + '/configuracao').flush(config); flushMicrotasks();
@@ -767,8 +769,22 @@ describe('ClickWhatsApp', () => {
     }
     tick(20000); http.expectNone(conexao + '/reconciliar');
     TestBed.inject(MatDialog).closeAll(); tick(500); expect(page.qr).toBeNull();
-    tick(30000); http.expectNone(conexao + '/reconciliar');
+    tick(10000); http.expectOne(conexao + '/reconciliar').flush({ ...config.estado, observado: 'ABERTA', observadoEm: new Date().toISOString() }); flushMicrotasks();
+    http.expectNone(conexao + '/qr'); http.expectNone(conexao + '/provisionar');
     const consultas = http.match(base + '/configuracao'); consultas.forEach(req => { if (!req.cancelled) req.flush(config); }); flushMicrotasks();
+    fixture.destroy();
+  }));
+
+  it('renova confirmação vencida sem abrir QR e observa desconexão no provedor', fakeAsync(() => {
+    spyOnProperty(document, 'hidden', 'get').and.returnValue(false);
+    fixture.detectChanges(); http.expectOne(base + '/configuracao').flush({ ...config,
+      estado: { observado: 'ABERTA', observadoEm: new Date(Date.now() - 61000).toISOString(), motivo: null } });
+    flushMicrotasks(); tick(5000);
+    http.expectOne(conexao + '/reconciliar').flush({ observado: 'FECHADA', observadoEm: new Date().toISOString(), motivo: null });
+    flushMicrotasks(); http.expectOne(base + '/configuracao').flush({ ...config,
+      estado: { observado: 'FECHADA', observadoEm: new Date().toISOString(), motivo: null } }); flushMicrotasks();
+    expect(page.config?.estado?.observado).toBe('FECHADA');
+    http.expectNone(conexao + '/qr'); http.expectNone(conexao + '/provisionar'); http.expectNone(conexao + '/desconectar');
     fixture.destroy();
   }));
 

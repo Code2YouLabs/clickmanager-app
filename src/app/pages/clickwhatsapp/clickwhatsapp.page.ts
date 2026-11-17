@@ -616,7 +616,13 @@ export class ClickWhatsAppPage implements OnInit {
       if (aguardandoQr && this.acoes?.reconciliar && this.verificacoesQr < 30) {
         this.verificacoesQr++;
         void this.verificarConexao();
-      } else if (!this.modal) void this.carregar();
+      } else if (!this.modal) {
+        const observadaEm = Date.parse(this.config?.estado?.observadoEm ?? '');
+        const vencendo = !Number.isFinite(observadaEm) || Date.now() - observadaEm >= 30000;
+        if (this.acoes?.reconciliar && this.config?.provisionamento?.situacao === 'PROVISIONADA' && vencendo) {
+          void this.verificarConexao();
+        } else void this.carregar();
+      }
     });
   }
 
