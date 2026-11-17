@@ -1,5 +1,5 @@
 import { TablerIconsModule } from 'angular-tabler-icons';
-import { IconBrandWhatsapp, IconMessageCircle, IconSend } from 'angular-tabler-icons/icons';
+import { IconBrandWhatsapp, IconMessageCircle, IconSend, IconChecks, IconEye } from 'angular-tabler-icons/icons';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -50,7 +50,7 @@ describe('ClickWhatsApp', () => {
     usuario$ = new BehaviorSubject<Usuario | null>({ id: 1, proprietario: true });
     toast = jasmine.createSpyObj('ToastrService', ['error', 'warning', 'success']);
     TestBed.configureTestingModule({
-      imports: [ClickWhatsAppPage, TablerIconsModule.pick({ IconBrandWhatsapp, IconMessageCircle, IconSend })],
+      imports: [ClickWhatsAppPage, TablerIconsModule.pick({ IconBrandWhatsapp, IconMessageCircle, IconSend, IconChecks, IconEye })],
       providers: [provideRouter([]), { provide: ActivatedRoute, useValue: rota }, provideNoopAnimations(), provideHttpClient(), provideHttpClientTesting(),
         { provide: AuthService, useValue: { usuario$ } },
         { provide: ToastrService, useValue: toast },
@@ -83,7 +83,7 @@ describe('ClickWhatsApp', () => {
 
   it('ignora proprietário para ações e trata estado desconhecido sem executar efeitos', async () => {
     await iniciar({ ...config, acoesPermitidas: Object.fromEntries(Object.keys(config.acoesPermitidas).map(k => [k, false])) as unknown as Configuracao['acoesPermitidas'] });
-    expect(fixture.nativeElement.textContent).toContain('Estado precisa ser atualizado');
+    expect(fixture.nativeElement.textContent).toContain('Conexão não confirmada');
     page.criar();
     page.direito(false);
     page.abrirEnvio();
@@ -227,7 +227,7 @@ describe('ClickWhatsApp', () => {
     http.expectOne(base + '/configuracao').flush(fechada);
     flushMicrotasks();
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.estado-conexao').textContent).toContain('Desconectada');
+    expect(fixture.nativeElement.querySelector('.situacao-visao').textContent).toContain('WhatsApp desconectado');
     http.expectNone(conexao + '/qr');
     fixture.destroy();
   }));
@@ -300,24 +300,26 @@ describe('ClickWhatsApp', () => {
     await estabilizar();
   });
 
-  it('mostra lista mobile, resumo cumulativo e detalhe indisponível sem retry para INCERTA', async () => {
+  it('mantém resumo mobile e detalhe indisponível sem retry para INCERTA', async () => {
     mobile = true;
+    fixture.destroy();
+    fixture = TestBed.createComponent(ClickWhatsAppPage);
+    page = fixture.componentInstance;
     fixture.detectChanges();
     http.expectOne(base + '/configuracao').flush({ ...config, acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: true } });
     await Promise.resolve();
-    const lista = http.expectOne(r => r.url === base + '/mensagens');
-    expect(lista.request.params.keys().sort()).toEqual(['fim', 'inicio', 'pagina', 'tamanho']);
-    expect(lista.request.params.get('tamanho')).toBe('5');
-    lista.flush([{ mensagem, destinatario: '15555550123', conteudoDisponivel: false }]);
+    http.expectNone(r => r.url === base + '/mensagens');
     const resumo = http.expectOne(r => r.url === base + '/resumo');
     expect(resumo.request.params.get('fuso')).toBe('America/Sao_Paulo');
     resumo.flush({ ...page.filtro, fuso: 'America/Sao_Paulo', calculadoEm: mensagem.criadaEm,
       mensagens: { total: 1, aceitas: 0, entregues: 0, lidas: 0, falhas: 0, backlogAtual: 0, incertasAtuais: 1 } });
     await estabilizar();
-    expect(fixture.nativeElement.querySelector('.item-mobile')).not.toBeNull();
-    expect(fixture.nativeElement.querySelectorAll('.tabela-resumo tbody tr').length).toBe(7);
-    expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).not.toBeNull();
-    void page.abrirDetalhe(page.itens[0]);
+    expect(fixture.nativeElement.querySelector('.item-mobile')).toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('app-metric-card').length).toBe(4);
+    expect(fixture.nativeElement.querySelectorAll('.indicadores-operacionais > div').length).toBe(3);
+    expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).toBeNull();
+    expect(fixture.nativeElement.querySelector('button[aria-label="Atualizar dados"]').closest('[card-header-contextual-actions]')).not.toBeNull();
+    void page.abrirDetalhe({ mensagem });
     http.expectOne(conexao + '/mensagens/mensagem-teste').flush({ mensagem, destinatario: null, texto: null, conteudoDisponivel: false });
     await Promise.resolve();
     http.expectOne(conexao + '/mensagens/mensagem-teste/tentativas').flush([{ id: 't1', numero: 1, resultado: 'INCERTA' }]);
@@ -353,7 +355,7 @@ describe('ClickWhatsApp', () => {
     investigacao.flush({ podeInvestigar: true, ocorrencia: { ...caso, fase: 'ACEITA',
       resultado: 'RESOLVIDA_COM_EVIDENCIA', motivo: 'ACEITE_COMPROVADO' } });
     await Promise.resolve();
-    http.expectOne(r => r.url === base + '/mensagens').flush([]);
+    http.expectNone(r => r.url === base + '/mensagens');
     http.expectOne(r => r.url === base + '/ocorrencias').flush([]);
     http.expectOne(r => r.url === base + '/resumo').flush({ mensagens: { incertasAtuais: 0 } });
     http.expectOne(base + '/configuracao').flush(page.config);
@@ -429,7 +431,7 @@ describe('ClickWhatsApp', () => {
     expect(painel?.textContent).toContain('Fechar com a solicitação pendente?');
     Array.from(painel!.querySelectorAll('button')).find(b => b.textContent?.includes('Guardar e fechar'))!.click();
     await estabilizar();
-    expect(fixture.nativeElement.textContent).toContain('Ver solicitação');
+    expect(fixture.nativeElement.textContent).toContain('Consultar em Mensagens');
     page.abrirEnvio();
     expect(page.numero).toBe('+15555550123');
     void page.enviar();
@@ -479,33 +481,21 @@ describe('ClickWhatsApp', () => {
     agora.and.callThrough();
   });
 
-  it('pagina o histórico na Visão geral e abre o detalhe no painel lateral desktop', async () => {
+  it('direciona o histórico para Mensagens e mantém detalhes no painel compartilhado', async () => {
     fixture.detectChanges();
-    http.expectOne(base + '/configuracao').flush({ ...config,
-      acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: true } });
+    http.expectOne(base + '/configuracao').flush({ ...config, acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: true } });
     await Promise.resolve();
-    const item = { mensagem, destinatario: '15555550123', conteudoDisponivel: false };
-    http.expectOne(r => r.url === base + '/mensagens' && r.params.get('tamanho') === '5').flush([item]);
     http.expectOne(r => r.url === base + '/resumo').flush({ ...page.filtro, mensagens: { incertasAtuais: 0 } });
     await estabilizar();
-    const botao = (texto: string) => Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
-      .find(b => b.textContent?.trim() === texto)!;
-    botao('Ver todas as mensagens').click();
-    const historico = http.expectOne(r => r.url === base + '/mensagens' && r.params.get('tamanho') === '20');
-    expect(historico.request.params.get('pagina')).toBe('0');
-    historico.flush(Array.from({ length: 20 }, (_, i) => ({ ...item, mensagem: { ...mensagem, id: 'msg-' + i } })));
-    await estabilizar();
-    botao('Próxima').click();
-    http.expectOne(r => r.url === base + '/mensagens' && r.params.get('pagina') === '1').flush([item]);
-    await estabilizar();
-    botao('Ver detalhe').click();
+    http.expectNone(r => r.url === base + '/mensagens');
+    expect(fixture.nativeElement.textContent).not.toContain('Últimas mensagens');
+    expect(fixture.nativeElement.querySelector('a.visao-mensagens').getAttribute('href')).toContain('/page/clickwhatsapp/mensagens');
+    void page.abrirDetalhe({ mensagem });
     http.expectOne(conexao + '/mensagens/mensagem-teste').flush({ mensagem, destinatario: null, texto: null, conteudoDisponivel: false });
     await Promise.resolve();
     http.expectOne(conexao + '/mensagens/mensagem-teste/tentativas').flush([]);
     await estabilizar();
     expect(document.querySelector('.mobile-side-panel')?.textContent).toContain('Detalhe da mensagem');
-    expect(page.area).toBe('visao');
-    expect(page.paginaHistorico).toBe(1);
   });
 
   it('expande a lista de ocorrências no card da Visão geral e consulta somente ao abrir', async () => {
@@ -513,7 +503,7 @@ describe('ClickWhatsApp', () => {
     http.expectOne(base + '/configuracao').flush({ ...config,
       acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: true } });
     await Promise.resolve();
-    http.expectOne(r => r.url === base + '/mensagens').flush([]);
+    http.expectNone(r => r.url === base + '/mensagens');
     http.expectOne(r => r.url === base + '/resumo').flush({ ...page.filtro, mensagens: { incertasAtuais: 0 } });
     await estabilizar();
     const botao: HTMLButtonElement = fixture.nativeElement.querySelector('[aria-controls="ocorrencias-na-visao"]');
@@ -808,6 +798,142 @@ describe('ClickWhatsApp', () => {
     void page.verificarConexao(); http.expectOne(conexao + '/reconciliar').flush(aberta.estado); await estabilizar();
     http.expectOne(base + '/configuracao').flush(aberta); await estabilizar();
     expect(page.estadoConfiguracao).toBe('Conectado');
+  });
+
+  const valoresResumo = { total: 30, aceitas: 20, entregues: 15, lidas: 10, falhas: 2, backlogAtual: 4, incertasAtuais: 1 };
+  const resumoVisao = (valores = valoresResumo) => ({ inicio: '2026-11-10T10:00:00Z', fim: '2026-11-17T10:00:00Z',
+    calculadoEm: '2026-11-17T10:00:00Z', fuso: 'America/Sao_Paulo', mensagens: valores });
+  async function iniciarResumo(valores = valoresResumo, c = config) {
+    fixture.detectChanges();
+    http.expectOne(base + '/configuracao').flush({ ...c, acoesPermitidas: { ...c.acoesPermitidas, consultarHistorico: true } });
+    await Promise.resolve(); http.expectOne(r => r.url === base + '/resumo').flush(resumoVisao(valores)); await estabilizar();
+  }
+  it('Visão geral mantém sete métricas reais, cumulativas e acesso às três áreas', async () => {
+    await iniciarResumo();
+    const indicadores = fixture.nativeElement.querySelectorAll('app-metric-card');
+    expect(indicadores.length).toBe(4);
+    expect(Array.from(indicadores).map((e: any) => e.textContent)).toEqual([
+      jasmine.stringMatching(/Mensagens.*30/), jasmine.stringMatching(/Aceitas.*20/),
+      jasmine.stringMatching(/Entregues.*15/), jasmine.stringMatching(/Lidas.*10/)]);
+    expect(fixture.nativeElement.textContent).toContain('contagens cumulativas');
+    expect(fixture.nativeElement.textContent).toContain('No período consultado');
+    expect(fixture.nativeElement.textContent).toContain('Situação atual');
+    expect(fixture.nativeElement.querySelectorAll('.indicadores-operacionais > div').length).toBe(3);
+    expect(fixture.nativeElement.querySelector('a[href="/page/clickwhatsapp/configuracoes"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('a[href="/page/clickwhatsapp/mensagens"]')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).not.toMatch(/Últimas mensagens|Nova mensagem|Provisionar|Desconectar WhatsApp/);
+    http.expectNone(r => r.url === base + '/mensagens'); http.expectNone(r => r.method !== 'GET');
+  });
+  for (const [observado, titulo] of [['ABERTA', 'WhatsApp conectado'], ['FECHADA', 'WhatsApp desconectado'], ['DESCONHECIDO', 'Conexão não confirmada']] as const) {
+    it('Visão geral representa ' + observado + ' sem inferir disponibilidade de envio', async () => {
+      await iniciarResumo(valoresResumo, { ...config, estado: { ...config.estado!, observado } });
+      expect(fixture.nativeElement.querySelector('.situacao-titulo').textContent).toBe(titulo);
+      expect(fixture.nativeElement.querySelector('.situacao-visao').textContent).toContain('Preferência de envio');
+      expect(fixture.nativeElement.querySelector('.situacao-visao').textContent).toContain('Ativa');
+    });
+  }
+  it('desativação mantém resumo autorizado e indica preferência pausada', async () => {
+    await iniciarResumo(valoresResumo, { ...config, direito: { ...config.direito, local: false }, preferencia: { ...config.preferencia!, pausada: true } });
+    expect(fixture.nativeElement.querySelector('app-clickwhatsapp-aviso-desativado')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.situacao-visao').textContent).toContain('Pausada');
+    expect(page.resumo?.mensagens.total).toBe(30); http.expectNone(r => r.method !== 'GET');
+  });
+  it('zero é dado válido, sem alerta vazio ou consulta automática de ocorrências', async () => {
+    await iniciarResumo({ total: 0, aceitas: 0, entregues: 0, lidas: 0, falhas: 0, backlogAtual: 0, incertasAtuais: 0 });
+    expect(fixture.nativeElement.textContent).toContain('Nenhuma mensagem registrada no período');
+    expect(fixture.nativeElement.querySelector('.alerta-ocorrencias')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Nenhuma ocorrência pendente');
+    expect(fixture.nativeElement.querySelector('[aria-controls="ocorrencias-na-visao"]')).not.toBeNull();
+    http.expectNone(base + '/ocorrencias');
+  });
+  it('falha histórica não cria incidente ativo e incerteza atual mantém investigação', async () => {
+    await iniciarResumo({ ...valoresResumo, falhas: 7, incertasAtuais: 0 });
+    expect(fixture.nativeElement.querySelector('.alerta-ocorrencias')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.indicadores-operacionais').textContent).toContain('7');
+    page.resumo = resumoVisao({ ...valoresResumo, incertasAtuais: 2 }) as any; fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.alerta-ocorrencias').textContent).toContain('2 ocorrências precisam de atenção');
+    fixture.nativeElement.querySelector('.alerta-ocorrencias button').click();
+    http.expectOne(r => r.url === base + '/ocorrencias').flush([]); await estabilizar();
+    expect(page.ocorrenciasNaVisaoAbertas).toBeTrue(); http.expectNone(r => r.method !== 'GET');
+  });
+  it('período selecionado consulta somente resumo e cancela resposta anterior', async () => {
+    await iniciarResumo(); const antes = page.config;
+    page.periodoRapido(0); const hoje = http.expectOne(r => r.url === base + '/resumo');
+    page.periodoRapido(30); expect(hoje.cancelled).toBeTrue();
+    const mes = http.expectOne(r => r.url === base + '/resumo');
+    expect(mes.request.params.get('fuso')).toBe('America/Sao_Paulo');
+    expect(Date.parse(mes.request.params.get('fim')!) - Date.parse(mes.request.params.get('inicio')!)).toBe(30 * 86400000);
+    mes.flush(resumoVisao({ ...valoresResumo, total: 99 })); await estabilizar();
+    expect(page.periodoSelecionado).toBe('30'); expect(page.resumo?.mensagens.total).toBe(99); expect(page.config).toBe(antes);
+    http.expectNone(base + '/configuracao'); http.expectNone(base + '/mensagens');
+  });
+  it('Personalizar preserva fuso, limite de 93 dias e seleção confirmada', async () => {
+    await iniciarResumo(); page.selecionarPeriodo('personalizado'); await estabilizar();
+    expect(page.periodoSelecionado).toBe('7');
+    page.inicioInput = '2026-01-01T10:00'; page.fimInput = '2026-05-01T10:00'; page.aplicarFiltros();
+    expect(page.erroPeriodo).toContain('93 dias'); http.expectNone(r => r.url === base + '/resumo');
+    page.inicioInput = '2026-11-01T08:00'; page.fimInput = '2026-11-02T09:30'; page.aplicarFiltros();
+    const req = http.expectOne(r => r.url === base + '/resumo');
+    expect(req.request.params.get('inicio')).toBe('2026-11-01T11:00:00.000Z');
+    expect(req.request.params.get('fim')).toBe('2026-11-02T12:30:00.000Z');
+    req.flush(resumoVisao()); await estabilizar(); expect(page.periodoSelecionado).toBe('personalizado');
+  });
+  it('atualização manual preserva período e bloqueia requisições duplicadas', async () => {
+    await iniciarResumo(); page.periodoSelecionado = 'personalizado'; const periodo = { ...page.filtro };
+    void page.atualizarVisao(); void page.atualizarVisao();
+    http.expectOne(base + '/configuracao').flush(page.config); await Promise.resolve(); await Promise.resolve();
+    const req = http.expectOne(r => r.url === base + '/resumo');
+    expect(req.request.params.get('inicio')).toBe(periodo.inicio); expect(req.request.params.get('fim')).toBe(periodo.fim);
+    req.flush(resumoVisao()); await estabilizar();
+    expect(page.atualizandoVisao).toBeFalse(); expect(page.periodoSelecionado).toBe('personalizado');
+    http.expectNone(base + '/mensagens'); http.expectNone(r => r.method !== 'GET');
+  });
+  it('falha isolada no resumo preserva números e situação sem substituir por zero', async () => {
+    await iniciarResumo(); void page.carregarConsultas();
+    http.expectOne(r => r.url === base + '/resumo').flush({}, { status: 503, statusText: 'Unavailable' }); await estabilizar();
+    expect(page.resumo?.mensagens.total).toBe(30); expect(page.config).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Os últimos dados consultados foram mantidos');
+    expect(page.lendoResumo).toBeFalse();
+  });
+  it('falha isolada na configuração mantém resumo autorizado e conexão não confirmada', async () => {
+    await iniciarResumo(); void page.atualizarVisao();
+    http.expectOne(base + '/configuracao').flush({}, { status: 503, statusText: 'Unavailable' }); await Promise.resolve(); await Promise.resolve();
+    http.expectOne(r => r.url === base + '/resumo').flush(resumoVisao()); await estabilizar();
+    expect(page.resumo?.mensagens.total).toBe(30); expect(page.tituloSituacao).toBe('Conexão não confirmada');
+    expect(page.erroConfig).toBeTruthy(); expect(fixture.nativeElement.querySelectorAll('app-metric-card').length).toBe(4);
+  });
+  it('falta de permissão não consulta resumo nem revela métricas', async () => {
+    await iniciar(); expect(fixture.nativeElement.querySelectorAll('app-metric-card').length).toBe(0);
+    expect(fixture.nativeElement.textContent).toContain('consulta dos indicadores está indisponível');
+    http.expectNone(r => r.url === base + '/resumo'); http.expectNone(r => r.url === base + '/ocorrencias');
+  });
+  it('carregamento inicial não cria indicadores fictícios e erro permite recuperação', async () => {
+    fixture.detectChanges(); http.expectOne(base + '/configuracao').flush({ ...config, acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: true } }); await Promise.resolve(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelectorAll('app-metric-card').length).toBe(0); expect(page.lendoResumo).toBeTrue();
+    http.expectOne(r => r.url === base + '/resumo').flush({}, { status: 503, statusText: 'Unavailable' }); await estabilizar();
+    expect(fixture.nativeElement.querySelectorAll('app-metric-card').length).toBe(0); expect(page.erroResumo).toBeTruthy();
+    void page.carregarConsultas(); http.expectOne(r => r.url === base + '/resumo').flush(resumoVisao()); await estabilizar();
+    expect(fixture.nativeElement.querySelectorAll('app-metric-card').length).toBe(4);
+  });
+  it('aplicação bloqueada e estado ausente permanecem explícitos sem mutações', async () => {
+    await iniciar({ ...config, aplicacaoAutorizada: false, conexao: null, estado: null,
+      acoesPermitidas: { ...config.acoesPermitidas, enviarMensagem: false, consultarHistorico: false } });
+    expect(fixture.nativeElement.textContent).toContain('indisponível neste ambiente');
+    expect(fixture.nativeElement.querySelector('.situacao-dados').textContent).toContain('Não configurado');
+    http.expectNone(r => r.method !== 'GET');
+  });
+
+  it('seletor mantém período atual ao cancelar Personalizar e permite navegação por teclado', async () => {
+    await iniciarResumo();
+    const botao = fixture.nativeElement.querySelector('mat-button-toggle[value="personalizado"] button') as HTMLButtonElement;
+    botao.click(); await estabilizar();
+    expect(fixture.nativeElement.querySelector('mat-button-toggle[value="7"] button').getAttribute('aria-checked')).toBe('true');
+    expect(botao.getAttribute('aria-checked')).toBe('false');
+    const cancelar = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.trim() === 'Cancelar')!;
+    cancelar.click(); await estabilizar();
+    expect(page.periodoSelecionado).toBe('7');
+    expect(fixture.nativeElement.querySelector('mat-button-toggle-group').getAttribute('role')).toBe('radiogroup');
+    http.expectNone(r => r.url === base + '/resumo');
   });
 
 });
