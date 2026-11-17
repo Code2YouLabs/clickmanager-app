@@ -62,17 +62,22 @@
 }
 
 .situacao-visao, .desempenho-visao, .operacional-visao { min-width: 0; padding-block: 16px; border-bottom: 1px solid #e5e7eb; }
+.painel-visao { margin-top: -16px; }
 .situacao-visao { padding-top: 0; }
+.operacional-visao { border-bottom: 0; padding-bottom: 0; }
 .visao-cabecalho { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
 .visao-cabecalho h2 { font-size: 18px; font-weight: 600; margin: 0; }
 .situacao-titulo { display: block; font-size: 18px; font-weight: 600; color: #596273; }
 .situacao-titulo.conectado { color: #176344; }
-.situacao-dados { display: flex; flex-wrap: wrap; gap: 12px 40px; margin: 16px 0 8px; }
-.situacao-dados dd { margin: 4px 0 0; font-size: 14px; font-weight: 600; }
-.situacao-nota { margin: 8px 0 0; }
+.situacao-descricao { margin: 8px 0 0; }
+.situacao-dados { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.situacao-dados > span { display: inline-flex; min-width: 0; max-width: 100%; }
 .indicadores-visao { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .legenda-visao { margin: 12px 0 4px; }
-.periodo-visao, .ultima-atualizacao { margin: 4px 0; }
+.periodo-personalizado { margin: 8px 0 0; }
+.ultima-atualizacao { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 4px; }
+.ultima-atualizacao button { --mdc-icon-button-state-layer-size: 32px; padding: 4px; width: 32px; height: 32px; }
+.ultima-atualizacao mat-icon { font-size: 18px; width: 18px; height: 18px; }
 .indicadores-operacionais { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; gap: 16px; }
 .indicadores-operacionais > div { padding: 12px 16px; border: 1px solid #e5e7eb; border-radius: 8px; }
 .indicadores-operacionais dd { font-size: 24px; line-height: 1.25; font-weight: 600; font-variant-numeric: tabular-nums; margin: 8px 0 4px; }
@@ -80,11 +85,12 @@
 .indicadores-operacionais .atencao { border-color: #dfc488; background: #fffbf2; }
 .alerta-ocorrencias { margin-top: 16px; padding: 12px 16px; background: #fff3db; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .alerta-ocorrencias p { font-size: 14px; margin: 4px 0 0; }
-.visao-mensagens { justify-self: end; }
 @media (max-width: 1100px) {
   .desempenho-visao .visao-cabecalho { flex-direction: column; align-items: flex-start; }
 }
 @media (max-width: 760px) {
+  .painel-visao { margin-top: -8px; }
+  .ultima-atualizacao button { --mdc-icon-button-state-layer-size: 44px; padding: 10px; width: 44px; height: 44px; }
   .indicadores-visao { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .visao-cabecalho { gap: 8px; }
   .visao-cabecalho h2 { font-size: 16px; }

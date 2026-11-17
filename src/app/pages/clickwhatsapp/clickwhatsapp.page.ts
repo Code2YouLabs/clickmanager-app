@@ -1,3 +1,4 @@
+import { StatusBadgeComponent } from 'src/app/components/status-badge/status-badge.component';
 import { AvisoDesativadoComponent } from './aviso-desativado.component';
 import { MatSlideToggleModule, MAT_SLIDE_TOGGLE_DEFAULT_OPTIONS } from '@angular/material/slide-toggle';
 import { ConversasComponent } from './conversas/conversas.component';
@@ -48,7 +49,7 @@ interface ConsultaDetalhe {
 @Component({
   selector: 'app-clickwhatsapp',
   standalone: true,
-  imports: [MatButtonToggleModule, AvisoDesativadoComponent, MatSlideToggleModule, RouterModule, AutomacoesPedidoComponent, CommonModule, FormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatInputModule,
+  imports: [StatusBadgeComponent, MatButtonToggleModule, AvisoDesativadoComponent, MatSlideToggleModule, RouterModule, AutomacoesPedidoComponent, CommonModule, FormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatInputModule,
     MatSelectModule, MatProgressBarModule, MatTooltipModule, PageCardComponent, MetricCardComponent, DataTableComponent,
     DataTableCellDirective, DataTableItemDirective, AutoCompleteComponent, ConversasComponent],
   providers: [{ provide: MAT_SLIDE_TOGGLE_DEFAULT_OPTIONS, useValue: { disableToggleValue: true } }],
@@ -175,8 +176,28 @@ export class ClickWhatsAppPage implements OnInit {
     if (!this.direitoAtivo) return 'ClickWhatsApp desativado';
     if (!this.config.conexao) return 'WhatsApp não configurado';
     if (this.verificacaoFalhou || !this.config.estado || this.config.estado.observado === 'DESCONHECIDO') return 'Conexão não confirmada';
+    if (this.config.estado.observado === 'ABERTA' && this.config.preferencia?.quarentena) return 'Envios suspensos';
+    if (this.config.estado.observado === 'ABERTA' && this.config.preferencia?.pausada) return 'Envios pausados';
     return ({ ABERTA: 'WhatsApp conectado', FECHADA: 'WhatsApp desconectado', AUSENTE: 'WhatsApp não configurado',
       CONECTANDO: 'Conectando ao WhatsApp' })[this.config.estado.observado];
+  }
+  get descricaoSituacaoVisao() {
+    if (!this.config?.aplicacaoAutorizada) return 'O ClickWhatsApp está indisponível neste ambiente.';
+    if (!this.direitoAtivo) return 'Ative o ClickWhatsApp nas configurações.';
+    if (this.verificacaoFalhou || (!!this.config.conexao && !this.config.estado) || this.config.estado?.observado === 'DESCONHECIDO') return 'Verifique a conexão nas configurações.';
+    if (!this.config.conexao || ['FECHADA', 'AUSENTE'].includes(this.config.estado?.observado ?? '')) return 'Conecte seu WhatsApp para utilizar os envios.';
+    if (this.config.preferencia?.quarentena) return 'Consulte as ocorrências para verificar os envios.';
+    if (this.config.preferencia?.pausada) return 'Retome os envios nas configurações quando estiver pronto.';
+    return '';
+  }
+  get conexaoBadgeVisao() {
+    return this.estadoConfiguracao === 'Estado desconhecido' ? 'Conexão desconhecida' : this.estadoConfiguracao;
+  }
+  get enviosBadgeVisao() {
+    const preferencia = this.config?.preferencia;
+    if (!preferencia) return 'Envios indisponíveis';
+    if (preferencia.quarentena) return 'Envios em quarentena';
+    return preferencia.pausada ? 'Envios pausados' : 'Envios permitidos';
   }
   readonly motivo = motivo;
   rotuloFase(fase: Fase) { return FASES[fase] ?? 'Situação desconhecida'; }

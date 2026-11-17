@@ -481,7 +481,7 @@ describe('ClickWhatsApp', () => {
     agora.and.callThrough();
   });
 
-  it('direciona o histórico para Mensagens e mantém detalhes no painel compartilhado', async () => {
+  it('mantém detalhes no painel compartilhado sem duplicar a entrada do histórico', async () => {
     fixture.detectChanges();
     http.expectOne(base + '/configuracao').flush({ ...config, acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: true } });
     await Promise.resolve();
@@ -489,7 +489,7 @@ describe('ClickWhatsApp', () => {
     await estabilizar();
     http.expectNone(r => r.url === base + '/mensagens');
     expect(fixture.nativeElement.textContent).not.toContain('Últimas mensagens');
-    expect(fixture.nativeElement.querySelector('a.visao-mensagens').getAttribute('href')).toContain('/page/clickwhatsapp/mensagens');
+    expect(fixture.nativeElement.querySelector('a.visao-mensagens')).toBeNull();
     void page.abrirDetalhe({ mensagem });
     http.expectOne(conexao + '/mensagens/mensagem-teste').flush({ mensagem, destinatario: null, texto: null, conteudoDisponivel: false });
     await Promise.resolve();
@@ -603,8 +603,13 @@ describe('ClickWhatsApp', () => {
       Object.defineProperty(page, 'area', { value: area });
       await iniciar({ ...config, direito: { ...config.direito, local: false },
         acoesPermitidas: { ...config.acoesPermitidas, habilitarDireito: true, enviarMensagem: false, consultarHistorico: false } });
-      expect(fixture.nativeElement.querySelector('app-clickwhatsapp-aviso-desativado')?.textContent).toContain('ClickWhatsApp desativado');
-      expect(fixture.nativeElement.querySelector('app-clickwhatsapp-aviso-desativado a')).not.toBeNull();
+      if (area === 'visao') {
+        expect(fixture.nativeElement.querySelector('.situacao-titulo').textContent).toContain('ClickWhatsApp desativado');
+        expect(fixture.nativeElement.querySelector('a[href="/page/clickwhatsapp/configuracoes"]')).not.toBeNull();
+      } else {
+        expect(fixture.nativeElement.querySelector('app-clickwhatsapp-aviso-desativado')?.textContent).toContain('ClickWhatsApp desativado');
+        expect(fixture.nativeElement.querySelector('app-clickwhatsapp-aviso-desativado a')).not.toBeNull();
+      }
       page.abrirEnvio(); http.expectNone(r => r.method !== 'GET');
     });
   }
@@ -808,7 +813,7 @@ describe('ClickWhatsApp', () => {
     http.expectOne(base + '/configuracao').flush({ ...c, acoesPermitidas: { ...c.acoesPermitidas, consultarHistorico: true } });
     await Promise.resolve(); http.expectOne(r => r.url === base + '/resumo').flush(resumoVisao(valores)); await estabilizar();
   }
-  it('Visão geral mantém sete métricas reais, cumulativas e acesso às três áreas', async () => {
+  it('Visão geral mantém sete métricas reais, cumulativas e acesso às configurações', async () => {
     await iniciarResumo();
     const indicadores = fixture.nativeElement.querySelectorAll('app-metric-card');
     expect(indicadores.length).toBe(4);
@@ -820,7 +825,7 @@ describe('ClickWhatsApp', () => {
     expect(fixture.nativeElement.textContent).toContain('Situação atual');
     expect(fixture.nativeElement.querySelectorAll('.indicadores-operacionais > div').length).toBe(3);
     expect(fixture.nativeElement.querySelector('a[href="/page/clickwhatsapp/configuracoes"]')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('a[href="/page/clickwhatsapp/mensagens"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('a.visao-mensagens')).toBeNull();
     expect(fixture.nativeElement.textContent).not.toMatch(/Últimas mensagens|Nova mensagem|Provisionar|Desconectar WhatsApp/);
     http.expectNone(r => r.url === base + '/mensagens'); http.expectNone(r => r.method !== 'GET');
   });
@@ -828,14 +833,14 @@ describe('ClickWhatsApp', () => {
     it('Visão geral representa ' + observado + ' sem inferir disponibilidade de envio', async () => {
       await iniciarResumo(valoresResumo, { ...config, estado: { ...config.estado!, observado } });
       expect(fixture.nativeElement.querySelector('.situacao-titulo').textContent).toBe(titulo);
-      expect(fixture.nativeElement.querySelector('.situacao-visao').textContent).toContain('Preferência de envio');
-      expect(fixture.nativeElement.querySelector('.situacao-visao').textContent).toContain('Ativa');
+      expect(fixture.nativeElement.querySelector('[aria-label="Preferência de envio: Envios permitidos"]')).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('.situacao-visao').textContent).toContain('Envios permitidos');
     });
   }
   it('desativação mantém resumo autorizado e indica preferência pausada', async () => {
     await iniciarResumo(valoresResumo, { ...config, direito: { ...config.direito, local: false }, preferencia: { ...config.preferencia!, pausada: true } });
-    expect(fixture.nativeElement.querySelector('app-clickwhatsapp-aviso-desativado')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('.situacao-visao').textContent).toContain('Pausada');
+    expect(fixture.nativeElement.querySelector('.situacao-titulo').textContent).toContain('ClickWhatsApp desativado');
+    expect(fixture.nativeElement.querySelector('.situacao-visao').textContent).toContain('Envios pausados');
     expect(page.resumo?.mensagens.total).toBe(30); http.expectNone(r => r.method !== 'GET');
   });
   it('zero é dado válido, sem alerta vazio ou consulta automática de ocorrências', async () => {
@@ -934,6 +939,47 @@ describe('ClickWhatsApp', () => {
     expect(page.periodoSelecionado).toBe('7');
     expect(fixture.nativeElement.querySelector('mat-button-toggle-group').getAttribute('role')).toBe('radiogroup');
     http.expectNone(r => r.url === base + '/resumo');
+  });
+
+  it('refino mantém três badges distintos e explicações técnicas em tooltip acessível', async () => {
+    await iniciarResumo();
+    const situacao = fixture.nativeElement.querySelector('.situacao-visao');
+    expect(situacao.querySelectorAll('app-status-badge').length).toBe(3);
+    expect(situacao.textContent).toContain('Habilitado'); expect(situacao.textContent).toContain('Conexão desconhecida');
+    expect(situacao.textContent).toContain('Envios permitidos'); expect(situacao.textContent).toContain('Verifique a conexão nas configurações.');
+    expect(situacao.textContent).not.toContain('A preferência ativa depende');
+    const preferencia = situacao.querySelector('[aria-label="Preferência de envio: Envios permitidos"]');
+    expect(preferencia.getAttribute('tabindex')).toBe('0'); expect(preferencia.getAttribute('aria-describedby')).toBeTruthy();
+    http.expectNone(r => r.method !== 'GET');
+  });
+  it('período predefinido mostra atualização efetiva e permite inspecionar limites exatos', async () => {
+    await iniciarResumo();
+    expect(fixture.nativeElement.querySelector('.periodo-personalizado')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.periodo-visao')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.ultima-atualizacao').textContent).toContain('Atualizado em 17/11/2026 às 07:00');
+    const limites = fixture.nativeElement.querySelector('button[aria-label="Consultar limites do período"]');
+    expect(limites.getAttribute('aria-describedby')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('a.visao-mensagens')).toBeNull();
+  });
+  it('período personalizado conserva o intervalo retornado e a data da atualização', async () => {
+    await iniciarResumo(); page.periodoSelecionado = 'personalizado'; fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.periodo-personalizado').textContent).toContain('10/11/2026 07:00 a 17/11/2026 07:00');
+    expect(fixture.nativeElement.querySelector('.ultima-atualizacao').textContent).toContain('Atualizado em 17/11/2026 às 07:00');
+    http.expectNone(r => r.url === base + '/resumo');
+  });
+  it('pausa confirmada recebe descrição curta sem afirmar processamento operacional', async () => {
+    await iniciarResumo(valoresResumo, { ...config, estado: { ...config.estado!, observado: 'ABERTA' }, preferencia: { ...config.preferencia!, pausada: true } });
+    expect(fixture.nativeElement.querySelector('.situacao-titulo').textContent).toBe('Envios pausados');
+    expect(fixture.nativeElement.querySelector('.situacao-dados').textContent).toContain('Envios pausados');
+    expect(fixture.nativeElement.textContent).not.toContain('Envios funcionando');
+    http.expectNone(r => r.method !== 'GET');
+  });
+  it('quarentena continua distinta de pausa e não oferece retomada como solução', async () => {
+    await iniciarResumo(valoresResumo, { ...config, estado: { ...config.estado!, observado: 'ABERTA' }, preferencia: { ...config.preferencia!, pausada: true, quarentena: true } });
+    expect(fixture.nativeElement.querySelector('.situacao-titulo').textContent).toBe('Envios suspensos');
+    expect(fixture.nativeElement.querySelector('.situacao-dados').textContent).toContain('Envios em quarentena');
+    expect(fixture.nativeElement.querySelector('.situacao-visao').textContent).not.toContain('Retome');
+    http.expectNone(r => r.method !== 'GET');
   });
 
 });

@@ -22,7 +22,7 @@
     <div class="aviso" role="alert">{{ erroConfig }} <button mat-button type="button" (click)="area === 'visao' ? atualizarVisao() : carregar(true)">Atualizar</button></div>
   }
   @if (config; as c) {
-    <div class="painel">
+    <div class="painel" [class.painel-visao]="area === 'visao'">
 
       <p class="subtitulo-mobile">{{ subtitulos[area] }}</p>
       @if (area !== 'visao' && !c.aplicacaoAutorizada) {
@@ -46,20 +46,19 @@
             <div class="visao-cabecalho"><h2>Situação do ClickWhatsApp</h2>
               @if (podeAbrirConfiguracoes) { <a mat-button routerLink="/page/clickwhatsapp/configuracoes">Configurações</a> }
             </div>
-            @if (!c.aplicacaoAutorizada) {
-              <p class="aviso" role="status">O ClickWhatsApp está indisponível neste ambiente.</p>
-            } @else if (!direitoAtivo) {
-              <app-clickwhatsapp-aviso-desativado [podeConfigurar]="!!acoes?.habilitarDireito" />
-            } @else {
-              <strong class="situacao-titulo" role="status" [class.conectado]="!verificacaoFalhou && c.estado?.observado === 'ABERTA'">{{ tituloSituacao }}</strong>
-              @if (verificacaoFalhou || c.estado?.observado === 'DESCONHECIDO') { <p class="muted">Não foi possível verificar o estado atual do WhatsApp.</p> }
-            }
-            <dl class="situacao-dados">
-              <div><dt>ClickWhatsApp</dt><dd>{{ direitoAtivo ? 'Habilitado' : 'Desativado' }}</dd></div>
-              <div><dt>Conexão WhatsApp</dt><dd>{{ estadoConfiguracao }}</dd></div>
-              <div><dt>Preferência de envio</dt><dd>{{ !c.preferencia ? 'Indisponível' : c.preferencia.quarentena ? 'Em quarentena' : c.preferencia.pausada ? 'Pausada' : 'Ativa' }}</dd></div>
-            </dl>
-            <p class="muted situacao-nota">A preferência ativa depende da conexão e das autorizações para permitir envios.</p>
+            <strong class="situacao-titulo" role="status" [class.conectado]="direitoAtivo && c.aplicacaoAutorizada && !verificacaoFalhou && c.estado?.observado === 'ABERTA' && !c.preferencia?.pausada">{{ tituloSituacao }}</strong>
+            @if (descricaoSituacaoVisao) { <p class="muted situacao-descricao">{{ descricaoSituacaoVisao }}</p> }
+            <div class="situacao-dados" role="list" aria-label="Estados do ClickWhatsApp">
+              <span role="listitem" tabindex="0" [matTooltip]="direitoAtivo ? 'Habilitação empresarial ativa.' : 'Habilitação empresarial desativada.'" [attr.aria-label]="'Habilitação empresarial: ' + (direitoAtivo ? 'Habilitado' : 'Desativado')">
+                <app-status-badge [status]="direitoAtivo ? 'HABILITADO' : 'Desativado'" />
+              </span>
+              <span role="listitem" tabindex="0" matTooltip="Estado da conexão informado pelo backend." [attr.aria-label]="'Conexão WhatsApp: ' + conexaoBadgeVisao">
+                <app-status-badge [status]="conexaoBadgeVisao" />
+              </span>
+              <span role="listitem" tabindex="0" matTooltip="Preferência de envio. Não comprova disponibilidade do processamento: depende da conexão e das autorizações." [attr.aria-label]="'Preferência de envio: ' + enviosBadgeVisao">
+                <app-status-badge [status]="enviosBadgeVisao" />
+              </span>
+            </div>
           </section>
           @if (acoes?.consultarHistorico) {
             <section class="desempenho-visao" aria-label="Desempenho dos envios">
@@ -76,13 +75,19 @@
               @if (resumo; as r) {
                 <div class="indicadores-visao" aria-label="Indicadores de desempenho">
                   @for (metrica of metricasResumo; track metrica.chave) {
-                    <app-metric-card [label]="metrica.rotulo" [value]="(r.mensagens[metrica.chave] | number) ?? '—'" [icon]="metrica.icone" [compact]="true" accentColor="#265ac1" />
+                    <app-metric-card [label]="metrica.rotulo" [value]="(r.mensagens[metrica.chave] | number) ?? '—'" [icon]="metrica.icone" [compact]="true" />
                   }
                 </div>
                 <p class="muted legenda-visao">Aceitas, entregues e lidas são contagens cumulativas.</p>
                 @if (r.mensagens.total === 0) { <p class="muted">Nenhuma mensagem registrada no período.</p> }
-                <p class="muted periodo-visao">{{ r.inicio | date:'dd/MM/yyyy HH:mm':'-0300' }} a {{ r.fim | date:'dd/MM/yyyy HH:mm':'-0300' }} · Brasília</p>
-                <p class="muted ultima-atualizacao">Última atualização em {{ r.calculadoEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</p>
+                @if (periodoSelecionado === 'personalizado') {
+                  <p class="muted periodo-personalizado">{{ r.inicio | date:'dd/MM/yyyy HH:mm':'-0300' }} a {{ r.fim | date:'dd/MM/yyyy HH:mm':'-0300' }}</p>
+                }
+                <div class="ultima-atualizacao muted">
+                  <span>Atualizado em {{ r.calculadoEm | date:'dd/MM/yyyy':'-0300' }} às {{ r.calculadoEm | date:'HH:mm':'-0300' }}</span>
+                  <button mat-icon-button type="button" aria-label="Consultar limites do período"
+                    matTooltip="{{ r.inicio | date:'dd/MM/yyyy HH:mm':'-0300' }} a {{ r.fim | date:'dd/MM/yyyy HH:mm':'-0300' }} · Brasília. O fim é exclusivo."><mat-icon>info_outline</mat-icon></button>
+                </div>
               } @else if (!lendoResumo && !erroResumo) { <p class="muted">Indicadores ainda não consultados.</p> }
             </section>
             <section class="operacional-visao" aria-label="Situação operacional">
@@ -103,7 +108,6 @@
                 @if (ocorrenciasNaVisaoAbertas) { <ng-container [ngTemplateOutlet]="listaDeOcorrencias" /> }
               </div>
             </section>
-            <a mat-button class="visao-mensagens" routerLink="/page/clickwhatsapp/mensagens">Ver mensagens</a>
           } @else { <p class="muted">A consulta dos indicadores está indisponível para este acesso.</p> }
           @if (pendente) { <p class="aviso">Existe uma solicitação sem confirmação. <a mat-button routerLink="/page/clickwhatsapp/mensagens">Consultar em Mensagens</a></p> }
         }
