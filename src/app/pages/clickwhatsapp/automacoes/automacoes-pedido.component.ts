@@ -1,3 +1,4 @@
+import { MOTIVOS_AUTOMACAO } from './automacao-status';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpContext } from '@angular/common/http';
@@ -116,13 +117,7 @@ export class AutomacoesPedidoComponent implements OnInit {
   erro = '';
   readonly fases = FASES;
   readonly confirmacoes = CONFIRMACOES;
-  readonly motivos: Record<string, string> = {
-    AUTOMACAO_DESATIVADA: 'Automação desativada na ocorrência', CONFIGURACAO_ALTERADA: 'Configuração mudou antes do processamento',
-    OCORRENCIA_EXPIRADA: 'Ocorrência expirada', AUTORIZACAO_REVOGADA: 'Autorização indisponível ou revogada',
-    SEM_CONEXAO: 'Sem conexão', TELEFONE_INVALIDO: 'Telefone ausente ou inválido', ENVIOS_PAUSADOS: 'Envios pausados',
-    CONEXAO_NAO_ABERTA: 'Conexão não estava aberta', CONEXAO_NAO_CONFIRMADA: 'Aguardando confirmação da conexão', RESULTADO_INCERTO: 'Conexão em quarentena',
-    SERVICO_MENSAGEM_INDISPONIVEL: 'Serviço de mensagens indisponível', FILA_INDISPONIVEL: 'Preparação será repetida dentro da validade',
-  };
+  readonly motivos = MOTIVOS_AUTOMACAO;
   constructor() {
     inject(AuthService).usuario$.pipe(takeUntilDestroyed()).subscribe(u => {
       const contexto = contextoEnvio(u);

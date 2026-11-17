@@ -103,3 +103,13 @@
 @media (max-width: 380px) {
   .situacao-visao > .visao-cabecalho { flex-wrap: wrap; }
 }
+
+.registro-automacao-visao {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--mat-sys-outline-variant, #e5e7eb);
+  p { margin: 4px 0; }
+}

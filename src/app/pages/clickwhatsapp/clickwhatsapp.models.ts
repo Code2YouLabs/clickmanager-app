@@ -83,11 +83,17 @@ export interface Tentativa {
   respondidaEm: string | null;
   erro: string | null;
 }
+export interface ResumoAutomacoes {
+  aguardandoAgora: number;
+  naoEnviadasNoPeriodo: number;
+  recentes: { ocorrencia: string; pedido: number; tipo: string; resultado: string; motivo: string | null; criadaEm: string; validaAte: string }[];
+}
 export interface Resumo {
   inicio: string;
   fim: string;
   fuso: string;
   calculadoEm: string;
+  automacoes?: ResumoAutomacoes;
   mensagens: { total: number; aceitas: number; entregues: number; lidas: number; falhas: number; backlogAtual: number; incertasAtuais: number };
   conexao: string | null;
   preferencia: Preferencia | null;

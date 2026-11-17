@@ -775,6 +775,21 @@ describe('ClickWhatsApp', () => {
     fixture.destroy();
   }));
 
+  it('visão geral mostra automações pendentes e encerradas sem confundir conexão atual com histórico', async () => {
+    await iniciarResumo();
+    page.resumo = { ...page.resumo!, automacoes: { aguardandoAgora: 1, naoEnviadasNoPeriodo: 1, recentes: [
+      { ocorrencia: 'antiga', pedido: 37, tipo: 'CRIADO', resultado: 'IGNORADA', motivo: 'CONEXAO_NAO_ABERTA', criadaEm: '2026-11-17T21:01:00Z', validaAte: '2026-11-17T21:06:00Z' },
+      { ocorrencia: 'nova', pedido: 38, tipo: 'CRIADO', resultado: 'PENDENTE', motivo: 'CONEXAO_NAO_CONFIRMADA', criadaEm: '2026-11-17T21:22:00Z', validaAte: '2026-11-17T21:27:00Z' },
+    ] } };
+    page.ocorrenciasNaVisaoAbertas = true; fixture.detectChanges();
+    const texto = fixture.nativeElement.querySelector('.operacional-visao').textContent;
+    expect(texto).toContain('1 aguardando envio agora'); expect(texto).toContain('1 não enviadas no período');
+    expect(texto).toContain('Pedido 37'); expect(texto).toContain('Pedido 38');
+    expect(texto).toContain('Não enviada · encerrada'); expect(texto).toContain('Aguardando envio');
+    expect(texto).toContain('Não será reenviada automaticamente');
+    expect(texto).toContain('Conexão não confirmada no processamento daquela ocorrência');
+  });
+
   it('renova confirmação vencida sem abrir QR e observa desconexão no provedor', fakeAsync(() => {
     spyOnProperty(document, 'hidden', 'get').and.returnValue(false);
     fixture.detectChanges(); http.expectOne(base + '/configuracao').flush({ ...config,

@@ -23,10 +23,10 @@
       <section class="registros" aria-label="Registros de automações">
         @if (p.recentes.length) {
         <h3>Últimas ocorrências</h3>
-        <p class="muted">Enfileirar não confirma entrega. Ocorrências ignoradas não serão enviadas ao reconectar.</p>
+        <p class="muted">Enfileirar não confirma entrega. Histórico do processamento, independente do estado atual da conexão. Novas ocorrências aguardam conexão dentro da validade. Ocorrências encerradas não serão reenviadas.</p>
         @for (r of p.recentes; track r.ocorrencia) {
           <div class="registro"><div><strong>{{ nome(r.tipo) }} · Pedido {{ r.pedido }}</strong><span>{{ origem(r.origem) }} · {{ r.criadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</span></div>
-            <div>@if (r.fase) { <strong>{{ fases[r.fase] }}</strong> } @else { <strong>{{ r.resultado === 'PENDENTE' ? 'Aguardando preparação' : r.resultado === 'ENFILEIRADA' ? 'Adicionada à fila · estado indisponível' : 'Ignorada' }}</strong> }
+            <div>@if (r.fase) { <strong>{{ fases[r.fase] }}</strong> } @else { <strong>{{ r.resultado === 'PENDENTE' ? 'Aguardando envio' : r.resultado === 'ENFILEIRADA' ? 'Adicionada à fila · estado indisponível' : 'Não enviada · encerrada' }}</strong> }
             @if (r.confirmacao) { <span>{{ confirmacoes[r.confirmacao] }}</span> }
             @if (r.motivo) { <span>{{ motivos[r.motivo] || 'Processamento indisponível' }}</span> }
             @if (historico && r.mensagem) { <a mat-button [routerLink]="['/page/clickwhatsapp/mensagens']" [queryParams]="{mensagem:r.mensagem,conexao:r.conexao}">Ver mensagem</a> }</div>

@@ -1,3 +1,4 @@
+import { MOTIVOS_AUTOMACAO } from './automacoes/automacao-status';
 import { StatusBadgeComponent } from 'src/app/components/status-badge/status-badge.component';
 import { AvisoDesativadoComponent } from './aviso-desativado.component';
 import { MatSlideToggleModule, MAT_SLIDE_TOGGLE_DEFAULT_OPTIONS } from '@angular/material/slide-toggle';
@@ -209,6 +210,7 @@ export class ClickWhatsAppPage implements OnInit {
     };
     return labels[resultado] ?? 'Resultado desconhecido';
   }
+  readonly motivosAutomacao = MOTIVOS_AUTOMACAO;
   ocorrenciasNaVisaoAbertas = false;
   listaOcorrencias: ItemOcorrencia[] | null = null;
   paginaOcorrencias = 0;
