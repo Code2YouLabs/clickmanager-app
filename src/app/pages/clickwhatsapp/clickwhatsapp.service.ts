@@ -2,7 +2,7 @@ import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { SILENT_REQUEST } from 'src/app/interceptors/loading.interceptor';
 import { environment } from 'src/environments/environment';
-import { Configuracao, Detalhe, Direito, Estado, Filtro, ItemHistorico, ItemOcorrencia, Mensagem, OcorrenciaOperacional, OperacaoEnvio, Periodo, Preferencia, Qr, Resumo, Tentativa, Webhook } from './clickwhatsapp.models';
+import { Conversa, PaginaConversas, Configuracao, Detalhe, Direito, Estado, Filtro, ItemHistorico, ItemOcorrencia, Mensagem, OcorrenciaOperacional, OperacaoEnvio, Periodo, Preferencia, Qr, Resumo, Tentativa, Webhook } from './clickwhatsapp.models';
 
 @Injectable({ providedIn: 'root' })
 export class ClickWhatsAppService {
@@ -39,6 +39,15 @@ export class ClickWhatsAppService {
     if (f.fase) params = params.set('fase', f.fase);
     if (excluirOcorrencias) params = params.set('excluirOcorrencias', true);
     return this.http.get<ItemHistorico[]>(this.base + '/mensagens', { ...this.options(), params });
+  }
+  conversas(f: Filtro, pesquisa: string, pagina: number) {
+    let params = this.periodo(f).set('pagina', pagina).set('pesquisa', pesquisa);
+    if (f.fase) params = params.set('fase', f.fase);
+    return this.http.get<PaginaConversas<Conversa>>(this.base + '/conversas', { ...this.options(), params });
+  }
+  mensagensDaConversa(id: string, f: Filtro, pagina: number) {
+    return this.http.get<PaginaConversas<Detalhe>>(this.base + '/conversas/' + encodeURIComponent(id) + '/mensagens',
+      { ...this.options(), params: this.periodo(f).set('pagina', pagina) });
   }
   detalhe(id: string, mensagem: string) {
     return this.http.get<Detalhe>(this.conexao(id) + '/mensagens/' + encodeURIComponent(mensagem), this.options());

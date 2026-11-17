@@ -65,6 +65,7 @@ export interface ItemHistorico {
   mensagem: Mensagem;
   destinatario: string | null;
   nomeCliente: string | null;
+  clienteId: number | null;
   tipoOrigem: 'AVULSA' | 'PEDIDO_MANUAL' | 'ORCAMENTO_MANUAL' | 'PEDIDO_AUTOMATICO' | 'NAO_IDENTIFICADA';
   conteudoDisponivel: boolean;
 }
@@ -190,3 +191,7 @@ export interface ItemOcorrencia {
   iniciadaEm: string;
   fase: Fase;
 }
+
+export interface PaginaConversas<T> { itens: T[]; temMais: boolean }
+export interface Conversa { id: string; ultima: ItemHistorico; previa: string | null }
+export interface DestinatarioConversa { numero: string; nome: string; clienteId?: number }

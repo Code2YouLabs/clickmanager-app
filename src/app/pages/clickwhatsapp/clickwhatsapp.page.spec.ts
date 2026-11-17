@@ -525,76 +525,56 @@ describe('ClickWhatsApp', () => {
     expect(painel.hidden).toBeTrue();
   });
 
-  it('abre o envio selecionado na própria tela, cancela a leitura anterior e abre os dados no painel lateral', async () => {
+  it('registra pelo compositor e recupera a mesma intenção após perder a resposta', async () => {
     fixture.destroy();
     rota.snapshot.data.area = 'mensagens';
     fixture = TestBed.createComponent(ClickWhatsAppPage);
+    page = fixture.componentInstance;
     fixture.detectChanges();
     http.expectOne(base + '/configuracao').flush({ ...config,
-      acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: true } });
+      acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: true, enviarMensagem: true } });
+    await estabilizar();
+    http.expectOne(r => r.url === base + '/conversas').flush({ itens: [], temMais: false });
+    await estabilizar();
+    page.conversas!.escolherCliente({ id: 9, nome: 'Cliente', telefone: '31987654321' } as any);
+    http.expectOne(r => r.url === base + '/conversas').flush({ itens: [], temMais: false });
+    await estabilizar();
+    page.conversas!.texto = 'Envio pelo compositor';
+    page.conversas!.enviar();
+    const primeira = http.expectOne(conexao + '/mensagens');
+    expect(primeira.request.body.clienteId).toBe(9);
+    const chave = primeira.request.headers.get('Idempotency-Key');
+    primeira.error(new ProgressEvent('error'));
+    await estabilizar();
+    page.conversas!.enviar();
+    const repeticao = http.expectOne(conexao + '/mensagens');
+    expect(repeticao.request.body).toEqual(primeira.request.body);
+    expect(repeticao.request.headers.get('Idempotency-Key')).toBe(chave);
+    repeticao.flush(mensagem, { status: 202, statusText: 'Accepted' });
     await Promise.resolve();
-
-    const outro = { ...mensagem, id: 'outro-envio' };
-    http.expectOne(r => r.url === base + '/mensagens').flush([
-      { mensagem, destinatario: '15555550123', nomeCliente: 'Cliente de teste', tipoOrigem: 'AVULSA' },
-      { mensagem: outro, destinatario: '15555550123', tipoOrigem: 'PEDIDO_AUTOMATICO' },
-    ]);
+    http.expectOne(r => r.url === base + '/conversas').flush({ itens: [], temMais: false });
     await estabilizar();
-    const botoes = fixture.nativeElement.querySelectorAll('.envio-linha');
-    expect(botoes.length).toBe(2);
-    expect(botoes[0].textContent).toContain('Cliente de teste');
-    expect(botoes[0].textContent).not.toContain('15555550123');
-    expect(botoes[1].textContent).toContain('15555550123');
-    expect(botoes[0].textContent).toContain('Mensagem avulsa');
-    expect(botoes[1].textContent).toContain('Automação de pedido');
-    botoes[0].click();
-    const primeira = http.expectOne(conexao + '/mensagens/mensagem-teste');
-    botoes[1].click();
-    expect(primeira.cancelled).toBeTrue();
-    http.expectOne(conexao + '/mensagens/outro-envio').flush({
-      mensagem: outro, destinatario: 'destinatário de teste', texto: 'Segundo envio', conteudoDisponivel: true,
-    });
-    await Promise.resolve();
-    http.expectNone(conexao + '/mensagens/outro-envio/tentativas');
-    await estabilizar();
-
-    expect(botoes[1].getAttribute('aria-current')).toBe('true');
-    expect(fixture.nativeElement.querySelector('[message-detail]').textContent).toContain('Segundo envio');
-    expect(fixture.nativeElement.querySelector('[message-detail]').textContent).not.toContain('Tentativas');
-    expect(fixture.nativeElement.textContent).not.toContain('Respostas recebidas');
-    expect(document.querySelector('.mobile-side-panel')).toBeNull();
-
-    fixture.nativeElement.querySelector('button[aria-label="Mais opções da mensagem"]').click();
-    await estabilizar();
-    const opcao = document.querySelector<HTMLButtonElement>('.mat-mdc-menu-panel [role="menuitem"]');
-    expect(opcao?.textContent).toContain('Dados da mensagem');
-    opcao?.click();
-    http.expectOne(conexao + '/mensagens/outro-envio').flush({ mensagem: outro, conteudoDisponivel: false });
-    await Promise.resolve();
-    http.expectOne(conexao + '/mensagens/outro-envio/tentativas').flush([]);
-    await estabilizar();
-    const painel = document.querySelector('.mobile-side-panel');
-    expect(painel?.textContent).toContain('Tentativas');
-    expect(painel?.textContent).toContain('Válida até');
+    expect(page.pendente).toBeNull();
+    expect(page.conversas!.texto).toBe('');
+    expect(toast.success).toHaveBeenCalledWith('Mensagem adicionada à fila.');
   });
 
-  it('abre somente o histórico sem ocorrências mesmo com a antiga query string', async () => {
+  it('abre Mensagens com a consulta agrupada e sem os controles de ocorrências', async () => {
     fixture.destroy();
     rota.snapshot.data.area = 'mensagens';
-    rota.snapshot.queryParamMap = convertToParamMap({ vista: 'ocorrencias' });
     fixture = TestBed.createComponent(ClickWhatsAppPage);
     page = fixture.componentInstance;
     fixture.detectChanges();
     http.expectOne(base + '/configuracao').flush({ ...config,
       acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: true } });
-    await Promise.resolve();
-    const historico = http.expectOne(r => r.url === base + '/mensagens');
-    expect(historico.request.params.get('excluirOcorrencias')).toBe('true');
-    historico.flush([]);
     await estabilizar();
-    http.expectNone(r => [base + '/resumo', base + '/ocorrencias'].includes(r.url));
+    const consulta = http.expectOne(r => r.url === base + '/conversas');
+    expect(consulta.request.params.get('pagina')).toBe('0');
+    consulta.flush({ itens: [], temMais: false });
+    await estabilizar();
+    expect(fixture.nativeElement.textContent).toContain('Nenhuma conversa ainda');
     expect(fixture.nativeElement.textContent).not.toContain('Ocorrências');
-    expect(fixture.nativeElement.querySelector('app-message-workspace')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('button[aria-label="Atualizar histórico"]')).not.toBeNull();
   });
 
   it('mostra os controles técnicos exclusivamente em Configurações', async () => {

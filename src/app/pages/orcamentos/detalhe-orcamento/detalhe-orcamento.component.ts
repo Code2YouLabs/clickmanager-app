@@ -26,7 +26,7 @@ import { MaterialModule } from 'src/app/material.module';
 import { FormatoImpressaoOrcamento, Orcamento, OrcamentoItem, OrcamentoStatus } from 'src/app/models/orcamento/orcamento.model';
 import { CatalogoProdutoListItem } from 'src/app/pages/catalogo/shared/models/catalogo.models';
 import { CatalogoProdutoService } from 'src/app/pages/catalogo/shared/services/catalogo.service';
-import { ClienteCreateDialogComponent } from 'src/app/pages/cliente/cliente-create-dialog/cliente-create-dialog.component';
+import { abrirCadastroRapido } from 'src/app/pages/cliente/cliente-create-dialog/cliente-create-dialog.component';
 import { GraficaParametro, GraficaPrecificacaoResultado, GraficaProduto } from 'src/app/pages/grafica/shared/grafica.models';
 import { GraficaProdutoService } from 'src/app/pages/grafica/shared/grafica.service';
 import { TelefonePipe } from 'src/app/pipe/telefone.pipe';
@@ -405,15 +405,11 @@ export class DetalheOrcamentoComponent implements OnInit {
       return;
     }
 
-    const dialogRef = this.dialog.open(ClienteCreateDialogComponent, {
-      width: '760px',
-      maxWidth: '96vw',
-      data: {
+    const dialogRef = abrirCadastroRapido(this.dialog, {
         nome: this.nomeCliente,
         telefone: this.telefone,
         email: this.email,
-      },
-    });
+      });
 
     dialogRef.afterClosed().subscribe((cliente) => {
       if (!cliente || !this.orcamento?.id) {

@@ -1,6 +1,10 @@
 <app-page-card [titulo]="titulos[area]" [subtitulo]="subtitulos[area]">
   <div page-header-actions>
-    @if (areaEnvio && podeEnviar && !pendente && !mobile) {
+    @if (area === 'mensagens' && acoes?.consultarHistorico) {
+      <button mat-icon-button type="button" aria-label="Atualizar histórico" matTooltip="Atualizar histórico"
+        [disabled]="carregando || lendoConversas" (click)="conversas?.atualizar()"><mat-icon>refresh</mat-icon></button>
+    }
+    @if (area === 'visao' && podeEnviar && !pendente && !mobile) {
       <button mat-flat-button color="primary" type="button" (click)="abrirEnvio()"><mat-icon>add</mat-icon>Nova mensagem</button>
     }
   </div>
@@ -29,7 +33,7 @@
         </div>
       }
 
-      @if (areaEnvio && pendente) {
+      @if (area === 'visao' && pendente) {
         <div class="aviso largura-total" role="status">
           <strong>Solicitação sem confirmação</strong>
           <p>Confira a solicitação anterior antes de iniciar uma nova mensagem.</p>
@@ -117,8 +121,11 @@
           }
         }
         @case ('mensagens') {
-          @if (acoes?.consultarHistorico) {
-            <ng-container [ngTemplateOutlet]="historicoMensagens" />
+          @if (acoes?.consultarHistorico || podeEnviar || pendente) {
+            <app-clickwhatsapp-conversas [config]="c" [filtro]="filtro" [mobile]="mobile"
+              [enviando]="enviando" [erroEnvio]="erroModal" [podeRepetir]="podeRepetir"
+              (ocupado)="lendoConversas = $event" (filtros)="abrirFiltros()" (registrar)="registrarNaConversa($event)" (repetir)="enviar(true)"
+              (descartar)="descartarNaConversa()" (detalhe)="abrirDetalhe($event)" />
           } @else { <p class="muted">O histórico está indisponível para este acesso.</p> }
         }
         @case ('automacoes') {
@@ -190,7 +197,7 @@
         }
       }
     </div>
-    @if (areaEnvio && mobile && podeEnviar && !pendente) {
+    @if (area === 'visao' && mobile && podeEnviar && !pendente) {
       <app-mobile-fab-action placement="page" label="Nova mensagem" (action)="abrirEnvio()" />
     }
   }
@@ -246,91 +253,6 @@
       <p class="muted observacao">Última observação {{ c.estado?.observadoEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</p>
     }
   }
-</ng-template>
-
-<ng-template #historicoMensagens>
-  <app-message-workspace listLabel="Histórico de envios" detailLabel="Detalhe do envio"
-    [compact]="mobile" [detailOpen]="!!selecionada">
-    <div message-list>
-      <div class="caixa-mensagens-cabecalho">
-        <h2>Envios</h2>
-        <div class="acoes historico-acoes">
-          <button mat-stroked-button type="button" (click)="abrirFiltros()"><mat-icon>filter_list</mat-icon>Filtros</button>
-          <button mat-button type="button" [disabled]="lendo" (click)="carregarConsultas()">Atualizar histórico</button>
-        </div>
-      </div>
-      @if (lendo) {
-        <mat-progress-bar mode="indeterminate" aria-label="Carregando envios" />
-      } @else if (erroHistorico) {
-        <p class="caixa-mensagens-aviso" role="alert">{{ erroHistorico }}</p>
-      } @else {
-        <ul class="envios-lista">
-          @for (item of itens; track chaveLinha(item)) {
-            @let origem = origens[item.tipoOrigem] || origens.NAO_IDENTIFICADA;
-            <li>
-              <button class="envio-linha" type="button" [attr.aria-current]="selecionada === item ? 'true' : null"
-                (click)="selecionarMensagem(item)">
-                <span class="envio-icone" [attr.data-origem]="origem.estilo">
-                  <mat-icon aria-hidden="true">{{ origem.icone }}</mat-icon>
-                </span>
-                <span class="envio-rotulo">
-                  <strong>{{ item.nomeCliente || item.destinatario || 'Destinatário indisponível' }}</strong>
-                  <span class="muted">{{ origem.rotulo }} · {{ rotuloFase(item.mensagem.fase) }}</span>
-                </span>
-                <time class="envio-data muted" [attr.datetime]="item.mensagem.criadaEm">
-                  {{ item.mensagem.criadaEm | date:'dd/MM/yyyy':'-0300' }}
-                </time>
-              </button>
-            </li>
-          } @empty {
-            <li class="caixa-mensagens-aviso">Nenhum envio no período. Você pode ajustar os filtros.</li>
-          }
-        </ul>
-        @if (paginaHistorico > 0 || itens.length >= tamanhoHistorico) {
-          <ng-container [ngTemplateOutlet]="paginacaoMensagens" />
-        }
-      }
-    </div>
-    <div message-detail class="caixa-mensagens-detalhe">
-      @if (selecionada; as item) {
-        <div class="envio-detalhe-cabecalho">
-          @if (mobile) {
-            <button mat-icon-button type="button" (click)="fecharDetalheSelecionado()" aria-label="Voltar para os envios"><mat-icon>arrow_back</mat-icon></button>
-          }
-          <div>
-            <h2>{{ item.nomeCliente || item.destinatario || 'Destinatário indisponível' }}</h2>
-            <span class="muted">Envio de {{ item.mensagem.criadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</span>
-          </div>
-          <button mat-icon-button type="button" [matMenuTriggerFor]="menuEnvio" class="envio-menu"
-            aria-label="Mais opções da mensagem"><mat-icon>more_vert</mat-icon></button>
-          <mat-menu #menuEnvio="matMenu">
-            <button mat-menu-item type="button" (click)="abrirDetalhe(item)">
-              <mat-icon>info_outline</mat-icon>Dados da mensagem
-            </button>
-          </mat-menu>
-        </div>
-        <div class="envio-detalhe-conteudo">
-          @if (leituraSelecionada?.buscando) { <mat-progress-bar mode="indeterminate" aria-label="Carregando mensagem" /> }
-          @if (leituraSelecionada?.erro; as erro) { <p class="aviso" role="alert">{{ erro }}</p> }
-          @if (leituraSelecionada?.detalhe; as detalhe) {
-            @if (detalhe.conteudoDisponivel) {
-              <div class="envio-texto">
-                <p class="texto-mensagem">{{ detalhe.texto }}</p>
-                <time class="envio-hora" [attr.datetime]="detalhe.mensagem.criadaEm">
-                  {{ detalhe.mensagem.criadaEm | date:'HH:mm':'-0300' }}
-                </time>
-              </div>
-            } @else { <p>O conteúdo desta mensagem não está mais disponível.</p> }
-          }
-        </div>
-      } @else {
-        <div class="envio-sem-selecao">
-          <mat-icon aria-hidden="true">chat_bubble_outline</mat-icon>
-          <h2>Selecione um envio</h2>
-        </div>
-      }
-    </div>
-  </app-message-workspace>
 </ng-template>
 
 <ng-template #historico>
@@ -491,7 +413,7 @@
       <mat-form-field appearance="outline"><mat-label>Situação</mat-label><mat-select [(ngModel)]="faseInput">
         <mat-option value="">Todas</mat-option>
         @for (opcao of fases | keyvalue; track opcao.key) {
-          @if (opcao.key !== 'INCERTA') { <mat-option [value]="opcao.key">{{ opcao.value }}</mat-option> }
+          <mat-option [value]="opcao.key">{{ opcao.value }}</mat-option>
         }
       </mat-select></mat-form-field>
       }

@@ -1,0 +1,43 @@
+:host { display: block; min-width: 0; }
+.lista-conversas { max-height: 70dvh; overflow-y: auto; }
+.barra-lista { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 12px; border-bottom: 1px solid var(--mat-sys-outline-variant, #dde4ec); }
+.pesquisa-conversas { flex: 1 1 170px; min-width: 0; }
+.barra-lista button { flex-shrink: 0; }
+ul { margin: 0; padding: 4px; list-style: none; }
+.linha-conversa { display: flex; align-items: center; gap: 10px; padding: 12px 8px; width: 100%; border: 0; border-radius: 8px; background: transparent; color: inherit; font: inherit; text-align: start; cursor: pointer; }
+.linha-conversa:hover, .linha-conversa:focus-visible { background: var(--mat-sys-surface-container, #f2f6fa); }
+.linha-conversa[aria-current='true'] { background: var(--mat-sys-secondary-container, #e4ecff); }
+.avatar { display: grid; place-items: center; width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%; background: var(--mat-sys-primary-container, #e4ecff); }
+.contato { min-width: 0; flex: 1; }
+small { display: block; font-size: .8125rem; color: var(--mat-sys-on-surface-variant, #506078); }
+.previa { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+strong { display: block; overflow-wrap: anywhere; }
+time { white-space: nowrap; font-size: .75rem; }
+.linha-conversa time { align-self: flex-start; }
+.ver-mais { display: block; margin: 8px auto; }
+.mensagem-vazia { padding: 16px; }
+.conversa { display: flex; flex-direction: column; height: 70dvh; min-height: 400px; }
+.cabecalho-conversa { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--mat-sys-outline-variant, #dde4ec); }
+.mensagens { padding: 16px; flex: 1; min-height: 0; overflow-y: auto; }
+.bolha { position: relative; width: fit-content; max-width: 90%; padding: 12px 36px 8px 14px; margin: 0 0 12px auto; border-radius: 12px 12px 2px 12px; background: var(--mat-sys-primary-container, #e4ecff); }
+.bolha p { margin: 0 0 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.bolha footer { display: flex; flex-wrap: wrap; justify-content: end; gap: 4px 8px; color: var(--mat-sys-on-surface-variant, #506078); font-size: .75rem; }
+.opcoes-mensagem { position: absolute; right: 0; top: 0; }
+.compositor { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px; border-top: 1px solid var(--mat-sys-outline-variant, #dde4ec); }
+.compositor mat-form-field { flex: 1; min-width: 0; }
+.compositor textarea { max-height: 120px; resize: vertical; }
+.erro-envio { flex-basis: 100%; }
+.pendencia { padding: 8px 12px; background: #fff3db; }
+.nenhuma-selecionada { display: grid; justify-items: center; align-content: center; height: 100%; padding: 24px; }
+.selecao-destinatario { padding: 12px; }
+.selecao-destinatario mat-form-field { width: 100%; }
+.lista-clientes { max-height: 28dvh; overflow-y: auto; }
+.filtro-ativo { color: var(--mat-sys-primary); background: var(--mat-sys-primary-container); }
+@media (max-width: 760px) {
+  .lista-conversas { max-height: none; overflow: visible; }
+  .conversa { height: calc(100dvh - 160px); min-height: 280px; scroll-margin-top: 80px; }
+  .compositor { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+}
+
+.avatar[data-origem='automatica'] { background: #e2f3e9; color: #176344; }
+.avatar[data-origem='manual'] { background: var(--mat-sys-secondary-container, #e5ecf8); color: var(--mat-sys-on-secondary-container, #243857); }
