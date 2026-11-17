@@ -1,3 +1,5 @@
+import { AvisoDesativadoComponent } from './aviso-desativado.component';
+import { MatSlideToggleModule, MAT_SLIDE_TOGGLE_DEFAULT_OPTIONS } from '@angular/material/slide-toggle';
 import { ConversasComponent } from './conversas/conversas.component';
 import { AutomacoesPedidoComponent } from './automacoes/automacoes-pedido.component';
 import { ActivatedRoute, RouterModule } from '@angular/router';
@@ -28,7 +30,7 @@ import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile
 import { MobileFabActionComponent } from 'src/app/components/mobile-fab-action/mobile-fab-action.component';
 import { AuthService } from 'src/app/services/auth.service';
 import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
-import { DestinatarioConversa, Configuracao, CONFIRMACOES, Detalhe, ESTADOS, falha, Fase, Confirmacao, FASES, Filtro, ItemHistorico, ItemOcorrencia, motivo, novaOperacao, OcorrenciaOperacional, Periodo, Qr, Resumo, Tentativa, Webhook, WEBHOOKS } from './clickwhatsapp.models';
+import { DestinatarioConversa, Configuracao, CONFIRMACOES, Detalhe, ESTADOS, falha, Fase, Confirmacao, FASES, Filtro, ItemHistorico, ItemOcorrencia, motivo, novaOperacao, OcorrenciaOperacional, Periodo, Qr, Resumo, Tentativa, Webhook } from './clickwhatsapp.models';
 import { ClickWhatsAppEnvioStore, contextoEnvio } from './clickwhatsapp-envio.store';
 import { AutoCompleteComponent } from 'src/app/components/inputs/auto-complete/auto-complete.component';
 import { ClienteService } from 'src/app/pages/cliente/cliente.service';
@@ -47,9 +49,10 @@ interface ConsultaDetalhe {
 @Component({
   selector: 'app-clickwhatsapp',
   standalone: true,
-  imports: [RouterModule, AutomacoesPedidoComponent, CommonModule, FormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatInputModule,
+  imports: [AvisoDesativadoComponent, MatSlideToggleModule, RouterModule, AutomacoesPedidoComponent, CommonModule, FormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatInputModule,
     MatSelectModule, MatProgressBarModule, MatTooltipModule, PageCardComponent, SectionCardComponent, MetricCardComponent, DataTableComponent,
     DataTableCellDirective, DataTableItemDirective, MobileFabActionComponent, AutoCompleteComponent, ConversasComponent],
+  providers: [{ provide: MAT_SLIDE_TOGGLE_DEFAULT_OPTIONS, useValue: { disableToggleValue: true } }],
   templateUrl: './clickwhatsapp.page.html',
   styleUrl: './clickwhatsapp.page.scss',
 })
@@ -69,6 +72,9 @@ export class ClickWhatsAppPage implements OnInit {
   private modal?: MatDialogRef<unknown>;
   private readonly documento = inject(DOCUMENT);
   private qrModal?: MatDialogRef<unknown>;
+  etapaConexao: 'preparando' | 'qr' | 'aguardando' | 'expirado' | 'sucesso' | 'falha' = 'preparando';
+  falhaConexaoImpeditiva = false;
+  private verificacoesQr = 0;
   private qrTimer?: ReturnType<typeof setTimeout>;
 
   @ViewChild('telaQr') telaQr!: TemplateRef<unknown>;
@@ -168,7 +174,6 @@ export class ClickWhatsAppPage implements OnInit {
     { chave: 'backlogAtual', rotulo: 'Na fila agora' },
     { chave: 'incertasAtuais', rotulo: 'Incertas agora' },
   ] as const;
-  readonly webhooks = WEBHOOKS;
   readonly motivo = motivo;
   rotuloFase(fase: Fase) { return FASES[fase] ?? 'Situação desconhecida'; }
   rotuloConfirmacao(valor: Confirmacao) { return CONFIRMACOES[valor] ?? 'Confirmação desconhecida'; }
@@ -233,7 +238,7 @@ export class ClickWhatsAppPage implements OnInit {
   }
   get direitoAtivo() { return !!(this.config?.direito.global && this.config.direito.local); }
   get acoes() { return this.config?.acoesPermitidas; }
-  get podeEnviar() { return !!this.acoes?.enviarMensagem; }
+  get podeEnviar() { return this.direitoAtivo && !!this.config?.aplicacaoAutorizada && !!this.acoes?.enviarMensagem; }
   get pendente() { return this.envios.pendente; }
   get operacao() { return this.pendente?.operacao ?? null; }
   get podeRepetir() {
@@ -245,12 +250,6 @@ export class ClickWhatsAppPage implements OnInit {
     return !!a && (a.criarConexao || a.provisionar || a.gerarQr || a.reconciliar || a.consultarWebhook
       || a.configurarWebhook || a.pausarEnvios || a.retomarEnvios || a.desconectar);
   }
-  readonly situacoesProvisionamento = {
-    NAO_PROVISIONADA: 'Conexão registrada. Prepare a instância para continuar.',
-    EM_ANDAMENTO: 'Preparando a instância.',
-    PROVISIONADA: 'Instância preparada.',
-    DESCONHECIDA: 'Não foi possível confirmar a preparação da instância.',
-  };
   get mobile() { return this.breakpoints.isMatched(MOBILE_FOUNDATION_QUERY); }
   readonly chaveLinha = (item: ItemHistorico) => item.mensagem.id;
 
@@ -292,7 +291,9 @@ export class ClickWhatsAppPage implements OnInit {
       if (sessao !== this.sessao) return;
       this.config = config;
       if (this.area === 'mensagens' && this.pendente) this.observarValidade();
-      this.verificacaoFalhou = false;
+      if (!anterior || anterior.conexao !== config.conexao
+        || anterior.estado?.observadoEm !== config.estado?.observadoEm
+        || anterior.estado?.observado !== config.estado?.observado) this.verificacaoFalhou = false;
       if (anterior && (anterior.conexao !== config.conexao
         || (this.qrModal && (!config.direito.local || !config.direito.global || !config.aplicacaoAutorizada
           || (!config.acoesPermitidas?.gerarQr && config.estado?.observado !== 'ABERTA')))
@@ -361,10 +362,11 @@ export class ClickWhatsAppPage implements OnInit {
 
   direito(ativo: boolean) {
     if (!(ativo ? this.acoes?.habilitarDireito : this.acoes?.desabilitarDireito)) return;
+    if (this.acao || this.modal) return;
     const alterar = () => void this.executar('direito', this.api.direito(ativo), () =>
       this.atualizar(ativo ? 'ClickWhatsApp habilitado.' : 'ClickWhatsApp desabilitado.'));
     if (ativo) alterar();
-    else void this.confirmar('Desabilitar ClickWhatsApp', 'Os envios serão pausados e as mensagens ainda na fila poderão ser canceladas. Sua sessão do WhatsApp será mantida.', 'Desabilitar', alterar);
+    else void this.confirmar('Desabilitar ClickWhatsApp', 'Novos envios serão interrompidos. Uma chamada já iniciada pode ser concluída. A sessão e o histórico serão mantidos.', 'Desabilitar', alterar);
   }
 
   criar() {
@@ -380,7 +382,7 @@ export class ClickWhatsAppPage implements OnInit {
         provisionar: 'Provisionamento consultado.', reconciliar: 'Estado atualizado.', desconectar: 'Sessão atualizada.',
       })[acao]);
     });
-    if (acao === 'desconectar') void this.confirmar('Desconectar WhatsApp', 'O WhatsApp será desconectado desta conexão. Isso encerra a sessão e preserva o histórico.', 'Desconectar', executar);
+    if (acao === 'desconectar') void this.confirmar('Desconectar WhatsApp?', 'Seu WhatsApp será desconectado do ClickManager. Para utilizar novamente, será necessário conectá-lo.', 'Desconectar', executar);
     else executar();
   }
 
@@ -414,6 +416,8 @@ export class ClickWhatsAppPage implements OnInit {
   private limparModal() {
     clearTimeout(this.qrTimer);
     this.qrModal = undefined;
+    this.etapaConexao = 'preparando';
+    this.verificacoesQr = 0;
     this.qr = null;
     this.detalheModal = null;
     this.ocorrencia = this.alvoOcorrencia = null;
@@ -426,13 +430,103 @@ export class ClickWhatsAppPage implements OnInit {
     this.enviando = false;
   }
 
+  get verificacoesConcluidas() { return this.verificacoesQr >= 30 && this.etapaConexao === 'aguardando'; }
+
+  get estadoConfiguracao() {
+    if (!this.config?.conexao) return 'Não configurado';
+    if (this.verificacaoFalhou) return 'Estado desconhecido';
+    return ({ ABERTA: 'Conectado', FECHADA: 'Desconectado', AUSENTE: 'Desconectado',
+      CONECTANDO: 'Conectando', DESCONHECIDO: 'Estado desconhecido' })[this.config.estado?.observado ?? 'DESCONHECIDO'];
+  }
+  get podeConectar() {
+    const a = this.acoes;
+    return this.direitoAtivo && !!this.config?.aplicacaoAutorizada && !!a && (a.criarConexao || a.provisionar || a.gerarQr);
+  }
   abrirQr() {
-    if (!this.acoes?.gerarQr || !this.config?.conexao) return;
-    const ref = this.abrir(this.telaQr, 'Conectar WhatsApp', false);
-    if (ref) {
-      this.qrModal = ref;
-      void this.solicitarQr();
-    }
+    if (!this.podeConectar || this.acao) return;
+    const ref = this.abrir(this.telaQr, 'Conectar WhatsApp', true, true);
+    if (!ref) return;
+    this.qrModal = ref;
+    this.etapaConexao = 'preparando';
+    this.falhaConexaoImpeditiva = false;
+    this.verificacoesQr = 0;
+    void this.prepararConexao();
+  }
+
+  async prepararConexao() {
+    const ref = this.qrModal;
+    if (!ref || this.acao || !this.podeConectar) return;
+    const sessao = this.sessao;
+    this.acao = 'prepararConexao';
+    this.erroModal = '';
+    this.etapaConexao = 'preparando';
+    let etapaTecnica = 'configuracao';
+    const vigente = () => this.qrModal === ref && sessao === this.sessao && ref.getState() === MatDialogState.OPEN;
+    const ler = <T>(request: Observable<T>) => {
+      if (!vigente()) return Promise.reject(new Error('CONTEXTO_ENCERRADO'));
+      return this.ler(request.pipe(timeout(30000), takeUntil(ref.beforeClosed())));
+    };
+    const atualizar = async () => {
+      const config = await ler(this.api.configuracao());
+      if (!vigente()) throw new Error('CONTEXTO_ENCERRADO');
+      this.config = config;
+      if (!this.direitoAtivo || !config.aplicacaoAutorizada) throw new Error('PREPARACAO_BLOQUEADA');
+      return config;
+    };
+    try {
+      await atualizar();
+      if (!this.config?.conexao) {
+        if (!this.acoes?.criarConexao) throw new Error('PREPARACAO_BLOQUEADA');
+        etapaTecnica = 'vinculo';
+        const criada = await ler(this.api.criar());
+        const config = await atualizar();
+        if (config.conexao !== criada.id) throw new Error('PREPARACAO_BLOQUEADA');
+      }
+      const id = this.config!.conexao!;
+      const mesmaConexao = () => { if (!vigente() || this.config?.conexao !== id) throw new Error('PREPARACAO_BLOQUEADA'); };
+      if (this.config!.provisionamento?.situacao !== 'PROVISIONADA') {
+        if (this.config!.provisionamento?.situacao !== 'NAO_PROVISIONADA' || !this.acoes?.provisionar) {
+          throw new Error('PREPARACAO_BLOQUEADA');
+        }
+        etapaTecnica = 'provisionamento';
+        await ler(this.api.provisionar(id));
+        const preparada = await atualizar(); mesmaConexao();
+        if (preparada.provisionamento?.situacao !== 'PROVISIONADA') throw new Error('PREPARACAO_BLOQUEADA');
+      }
+      if (!this.acoes?.consultarWebhook) throw new Error('PREPARACAO_BLOQUEADA');
+      etapaTecnica = 'consulta_webhook';
+      let situacao = (await ler(this.api.webhook(id))).situacao;
+      mesmaConexao();
+      if (situacao === 'INCERTO') throw new Error('PREPARACAO_INCERTA');
+      if (situacao !== 'CONFIRMADO') {
+        if (!this.acoes?.configurarWebhook) throw new Error('PREPARACAO_BLOQUEADA');
+        etapaTecnica = 'configuracao_webhook';
+        situacao = (await ler(this.api.configurarWebhook(id))).situacao;
+        mesmaConexao();
+      }
+      if (situacao !== 'CONFIRMADO') throw new Error('PREPARACAO_INCERTA');
+      this.webhook = situacao;
+      if (this.config?.estado?.observado === 'ABERTA') {
+        this.qr = { situacao: 'JA_CONECTADA', imagem: null, expiraEm: null };
+        this.etapaConexao = 'sucesso';
+      } else {
+        if (!this.acoes?.gerarQr) throw new Error('PREPARACAO_BLOQUEADA');
+        this.acao = '';
+        await this.solicitarQr();
+      }
+    } catch (erro) {
+      if (vigente()) {
+        const status = falha(erro).status;
+        console.warn('ClickWhatsApp: preparação não confirmada', { etapa: etapaTecnica, status });
+        this.falhaConexaoImpeditiva = [401, 402, 403, 404].includes(status) || (erro instanceof Error && erro.message === 'PREPARACAO_BLOQUEADA');
+        this.etapaConexao = 'falha';
+        this.qr = null;
+        this.erroModal = this.falhaConexaoImpeditiva
+          ? 'A preparação não está disponível para este acesso ou estado. Feche o painel e verifique a conexão.'
+          : 'Não foi possível confirmar a preparação da conexão. Verifique o estado antes de tentar novamente.';
+        // A recuperação sempre consulta o estado antes de decidir sobre outra mutação.
+      }
+    } finally { if (sessao === this.sessao) this.acao = ''; }
   }
 
   async solicitarQr() {
@@ -443,29 +537,48 @@ export class ClickWhatsAppPage implements OnInit {
     this.erroModal = '';
     clearTimeout(this.qrTimer);
     this.acao = 'qr';
+    this.etapaConexao = 'qr';
+    this.falhaConexaoImpeditiva = false;
     const sessao = this.sessao;
     try {
       // Cancelar a leitura ao fechar o diálogo e nunca guardar o resultado em serviço global.
       const qr = await this.ler(this.api.qr(id).pipe(timeout(30000), takeUntil(ref.beforeClosed())));
       if (this.modal !== ref || ref.getState() !== MatDialogState.OPEN || sessao !== this.sessao) return;
       if (qr.situacao === 'DISPONIVEL' && !/^data:image\/png;base64,[a-zA-Z0-9+/=\r\n]+$/.test(qr.imagem ?? '')) {
+        this.etapaConexao = 'falha';
         this.erroModal = 'O código retornado está indisponível.';
         return;
       }
       this.qr = qr.situacao === 'DISPONIVEL' ? qr : { ...qr, imagem: null };
+      this.etapaConexao = qr.situacao === 'JA_CONECTADA' ? 'sucesso' : qr.situacao === 'DISPONIVEL' ? 'aguardando' : 'falha';
       if (qr.situacao === 'DISPONIVEL') {
+        this.proximaVerificacao = Date.now() + 5000;
         const validade = Date.parse(qr.expiraEm ?? '');
-        const espera = Number.isFinite(validade) ? Math.max(0, validade - Date.now()) : 90000;
-        this.zone.runOutsideAngular(() => {
-          this.qrTimer = setTimeout(() => this.zone.run(() => {
-            this.qr = null;
-            this.erroModal = 'O pareamento não foi confirmado a tempo. Verifique a conexão ou solicite um novo QR.';
-          }), Math.min(espera, 2147483647));
-        });
+        const espera = Math.max(0, validade - Date.now());
+        if (Number.isFinite(validade)) {
+          this.zone.runOutsideAngular(() => {
+            this.qrTimer = setTimeout(() => this.zone.run(() => {
+              this.qr = null;
+              this.etapaConexao = 'expirado';
+              this.erroModal = 'O QR expirou. Gere um novo código para continuar.';
+            }), Math.min(espera, 2147483647));
+          });
+        }
       }
-      if (qr.situacao === 'JA_CONECTADA') void this.carregar();
+      if (qr.situacao === 'JA_CONECTADA') {
+        await this.carregar();
+        if (this.config?.estado?.observado !== 'ABERTA') {
+          this.etapaConexao = 'falha';
+          this.qr = null;
+          this.erroModal = 'A conexão ainda não foi confirmada. Verifique o estado para continuar.';
+        }
+      }
     } catch (e) {
-      if (this.modal === ref && ref.getState() === MatDialogState.OPEN && sessao === this.sessao) this.erroModal = falha(e).mensagem;
+      if (this.modal === ref && ref.getState() === MatDialogState.OPEN && sessao === this.sessao) {
+        this.erroModal = falha(e).mensagem;
+        this.etapaConexao = 'falha';
+        this.falhaConexaoImpeditiva = [401, 402, 403, 404].includes(falha(e).status);
+      }
     } finally {
       if (sessao === this.sessao) this.acao = '';
     }
@@ -473,14 +586,15 @@ export class ClickWhatsAppPage implements OnInit {
 
   private verificarPeriodicamente() {
     if (this.documento.hidden || this.acao || this.verificandoConexao || !this.direitoAtivo) return;
-    const aguardandoQr = this.qr?.situacao === 'DISPONIVEL';
-    if (!aguardandoQr && Date.now() < this.proximaVerificacao) return;
+    const aguardandoQr = !!this.qrModal && this.etapaConexao === 'aguardando';
+    if (Date.now() < this.proximaVerificacao) return;
     if (this.modal && !aguardandoQr) return;
-    if (this.config?.provisionamento?.situacao !== 'PROVISIONADA') return;
-    this.proximaVerificacao = Date.now() + 30000;
+    this.proximaVerificacao = Date.now() + (aguardandoQr ? 10000 : 30000);
     this.zone.run(() => {
-      if (this.acoes?.reconciliar) void this.verificarConexao();
-      else if (!aguardandoQr) void this.carregar();
+      if (aguardandoQr && this.acoes?.reconciliar && this.verificacoesQr < 30) {
+        this.verificacoesQr++;
+        void this.verificarConexao();
+      } else if (!this.modal) void this.carregar();
     });
   }
 
@@ -501,13 +615,19 @@ export class ClickWhatsAppPage implements OnInit {
         clearTimeout(this.qrTimer);
         this.erroModal = '';
         this.qr = { situacao: 'JA_CONECTADA', imagem: null, expiraEm: null };
+        this.etapaConexao = 'sucesso';
       }
       if (!ref || estado.observado === 'ABERTA') await this.carregar();
     } catch (erro) {
       if (sessao !== this.sessao || (ref && this.qrModal !== ref)) return;
       const { status } = falha(erro);
       this.verificacaoFalhou = true;
-      if ([401, 402, 403, 404].includes(status)) await this.carregar();
+      if ([401, 402, 403, 404].includes(status)) {
+        this.falhaConexaoImpeditiva = true;
+        this.etapaConexao = 'falha';
+        this.qr = null;
+        await this.carregar();
+      }
     } finally {
       if (sessao === this.sessao) {
         this.verificandoConexao = false;

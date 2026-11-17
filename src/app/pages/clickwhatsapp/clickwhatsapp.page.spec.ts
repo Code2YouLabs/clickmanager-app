@@ -8,7 +8,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { provideNoopAnimations } from '@angular/platform-browser/animations';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
-import { BehaviorSubject, of } from 'rxjs';
+import { BehaviorSubject, of, Subject } from 'rxjs';
 import { Usuario } from 'src/app/models/usuario/usuario.model';
 import { AuthService } from 'src/app/services/auth.service';
 import { environment } from 'src/environments/environment';
@@ -179,6 +179,10 @@ describe('ClickWhatsApp', () => {
   it('limpa QR e cancela leituras quando o contexto muda', async () => {
     await iniciar();
     page.abrirQr();
+    http.expectOne(base + '/configuracao').flush(config);
+    await estabilizar();
+    http.expectOne(conexao + '/webhook').flush({ situacao: 'CONFIRMADO' });
+    await estabilizar();
     http.expectOne(conexao + '/qr').flush({ situacao: 'DISPONIVEL', imagem: 'data:image/png;base64,AA==', expiraEm: null });
     await estabilizar();
     expect(page.qr?.imagem).toBeTruthy();
@@ -195,6 +199,8 @@ describe('ClickWhatsApp', () => {
     flushMicrotasks();
     fixture.detectChanges();
     page.abrirQr();
+    http.expectOne(base + '/configuracao').flush(config); flushMicrotasks();
+    http.expectOne(conexao + '/webhook').flush({ situacao: 'CONFIRMADO' }); flushMicrotasks();
     http.expectOne(conexao + '/qr').flush({ situacao: 'DISPONIVEL', imagem: 'data:image/png;base64,AA==', expiraEm: null });
     flushMicrotasks();
 
@@ -203,7 +209,7 @@ describe('ClickWhatsApp', () => {
     flushMicrotasks();
     expect(page.qr?.situacao).toBe('DISPONIVEL');
 
-    tick(5000);
+    tick(10000);
     const aberta: Configuracao = { ...config, estado: { ...config.estado!, observado: 'ABERTA' },
       acoesPermitidas: { ...config.acoesPermitidas, gerarQr: false } };
     http.expectOne(conexao + '/reconciliar').flush(aberta.estado);
@@ -216,10 +222,8 @@ describe('ClickWhatsApp', () => {
 
     TestBed.inject(MatDialog).closeAll();
     tick(500);
-    tick(30000);
+    tick(10000);
     const fechada: Configuracao = { ...config, estado: { ...config.estado!, observado: 'FECHADA' } };
-    http.expectOne(conexao + '/reconciliar').flush(fechada.estado);
-    flushMicrotasks();
     http.expectOne(base + '/configuracao').flush(fechada);
     flushMicrotasks();
     fixture.detectChanges();
@@ -235,12 +239,14 @@ describe('ClickWhatsApp', () => {
     flushMicrotasks();
     fixture.detectChanges();
     page.abrirQr();
+    http.expectOne(base + '/configuracao').flush(config); flushMicrotasks();
+    http.expectOne(conexao + '/webhook').flush({ situacao: 'CONFIRMADO' }); flushMicrotasks();
     http.expectOne(conexao + '/qr').flush({ situacao: 'DISPONIVEL', imagem: 'data:image/png;base64,AA==',
       expiraEm: new Date(Date.now() + 1000).toISOString() });
     flushMicrotasks();
     tick(1000);
     expect(page.qr).toBeNull();
-    expect(page.erroModal).toContain('não foi confirmado a tempo');
+    expect(page.erroModal).toContain('QR expirou');
     http.expectNone(conexao + '/qr');
     fixture.destroy();
   }));
@@ -387,7 +393,7 @@ describe('ClickWhatsApp', () => {
     expect(page.ocorrencia).toBeNull();
   });
 
-  it('mostra manutenção pós-revogação e conserva a projeção de instância preparada', async () => {
+  it('mantém manutenção pós-revogação e oculta controles técnicos', async () => {
     Object.defineProperty(page, 'area', { value: 'configuracoes' });
     await iniciar({
       ...config,
@@ -399,13 +405,12 @@ describe('ClickWhatsApp', () => {
       },
     });
     const conteudo = fixture.nativeElement.textContent;
-    expect(conteudo).toContain('Instância preparada.');
-    expect(fixture.nativeElement.querySelector('.situacao').textContent).toContain('Desabilitado');
-    expect(fixture.nativeElement.querySelector('.estado-conexao')).toBeNull();
-    expect(conteudo).toContain('Atualizar estado');
-    expect(conteudo).toContain('Consultar webhook');
+    expect(conteudo).toContain('Ativar ClickWhatsApp');
+    expect(conteudo).toContain('Desativado');
+    expect(conteudo).toContain('Verificar conexão');
     expect(conteudo).toContain('Desconectar WhatsApp');
-    expect(conteudo).not.toMatch(/Provisionar conexão|Conectar WhatsApp|Nova mensagem|Configurar webhook/);
+    expect(conteudo).not.toMatch(/Instância preparada|Consultar webhook|Configurar webhook|Administração do módulo/);
+    expect(fixture.nativeElement.querySelector('button.mat-primary')).toBeNull();
   });
 
   it('fecha o painel guardando a operação e repete a chave e o corpo ao reabrir', async () => {
@@ -578,7 +583,7 @@ describe('ClickWhatsApp', () => {
     expect(fixture.nativeElement.querySelector('button[aria-label="Atualizar histórico"]')).not.toBeNull();
   });
 
-  it('mostra os controles técnicos exclusivamente em Configurações', async () => {
+  it('oculta controles técnicos e concentra conexão em Configurações', async () => {
     await iniciar();
     expect(fixture.nativeElement.textContent).not.toContain('Configurar webhook');
     fixture.destroy();
@@ -586,9 +591,223 @@ describe('ClickWhatsApp', () => {
     fixture = TestBed.createComponent(ClickWhatsAppPage);
     page = fixture.componentInstance;
     await iniciar();
-    expect(fixture.nativeElement.textContent).toContain('Configurar webhook');
+    expect(fixture.nativeElement.textContent).not.toContain('Configurar webhook');
     expect(fixture.nativeElement.textContent).toContain('Desconectar WhatsApp');
     expect(fixture.nativeElement.textContent).not.toContain('Nova mensagem');
+  });
+
+  async function prepararExistente() {
+    page.abrirQr();
+    http.expectOne(base + '/configuracao').flush(config); await estabilizar();
+    http.expectOne(conexao + '/webhook').flush({ situacao: 'CONFIRMADO' }); await estabilizar();
+  }
+  it('configurações apresenta três blocos em ordem e nenhuma mutação ao entrar', async () => {
+    Object.defineProperty(page, 'area', { value: 'configuracoes' }); await iniciar();
+    const blocos = fixture.nativeElement.querySelectorAll('.configuracao-bloco');
+    expect(Array.from(blocos).map((b: any) => b.getAttribute('aria-label'))).toEqual(['Ativar ClickWhatsApp', 'Seu WhatsApp', 'Envio de mensagens']);
+    expect(fixture.nativeElement.textContent).not.toContain('Webhook');
+    http.expectNone(r => r.method !== 'GET');
+  });
+  for (const area of ['visao', 'mensagens', 'automacoes']) {
+    it('avisa desativação em ' + area + ' e conserva acesso de consulta', async () => {
+      Object.defineProperty(page, 'area', { value: area });
+      await iniciar({ ...config, direito: { ...config.direito, local: false },
+        acoesPermitidas: { ...config.acoesPermitidas, habilitarDireito: true, enviarMensagem: false, consultarHistorico: false } });
+      expect(fixture.nativeElement.querySelector('app-clickwhatsapp-aviso-desativado')?.textContent).toContain('ClickWhatsApp desativado');
+      expect(fixture.nativeElement.querySelector('app-clickwhatsapp-aviso-desativado a')).not.toBeNull();
+      page.abrirEnvio(); http.expectNone(r => r.method !== 'GET');
+    });
+  }
+  it('operador recebe aviso sem atalho indevido e switch de direito desabilitado', async () => {
+    Object.defineProperty(page, 'area', { value: 'configuracoes' });
+    usuario$.next({ id: 2, proprietario: false });
+    await iniciar({ ...config, direito: { ...config.direito, local: false }, acoesPermitidas: { ...config.acoesPermitidas, habilitarDireito: false, desabilitarDireito: false } });
+    expect(fixture.nativeElement.querySelector('button[aria-label="Ativar ClickWhatsApp"]').disabled).toBeTrue();
+    page.direito(true); http.expectNone(base + '/direito');
+  });
+  it('erro na habilitação conserva estado anterior e evita duplicidade', async () => {
+    await iniciar({ ...config, direito: { ...config.direito, local: false }, acoesPermitidas: { ...config.acoesPermitidas, habilitarDireito: true } });
+    page.direito(true); page.direito(true);
+    http.expectOne(base + '/direito').flush({}, { status: 503, statusText: 'Unavailable' }); await estabilizar();
+    expect(page.config?.direito.local).toBeFalse(); expect(toast.error).toHaveBeenCalled();
+    http.expectNone(conexao + '/preferencia');
+  });
+  it('conectar existente consulta preparação e webhook antes de QR, sem reprovisionar', async () => {
+    await iniciar(); await prepararExistente();
+    http.expectNone(conexao + '/provisionar'); http.expectNone(base + '/conexoes'); http.expectNone(conexao + '/webhook');
+    http.expectOne(conexao + '/qr').flush({ situacao: 'DISPONIVEL', imagem: 'data:image/png;base64,AA==', expiraEm: null }); await estabilizar();
+    expect(document.querySelector('.mobile-side-panel')).not.toBeNull(); expect(page.etapaConexao).toBe('aguardando');
+    expect(localStorage.getItem('qr')).toBeNull(); expect(sessionStorage.getItem('qr')).toBeNull();
+  });
+  it('orquestra vínculo novo, provisionamento e configuração confirmada antes do QR', async () => {
+    const semConexao: Configuracao = { ...config, conexao: null, estado: null, provisionamento: null, preferencia: null,
+      acoesPermitidas: { ...config.acoesPermitidas, criarConexao: true, gerarQr: false } };
+    await iniciar(semConexao); page.abrirQr(); http.expectOne(base + '/configuracao').flush(semConexao); await estabilizar();
+    http.expectOne(base + '/conexoes').flush({ id: 'conexao-teste', estado: 'NAO_PROVISIONADA' }); await estabilizar();
+    const registrada: Configuracao = { ...config, provisionamento: { situacao: 'NAO_PROVISIONADA' }, acoesPermitidas: { ...config.acoesPermitidas, provisionar: true, gerarQr: false } };
+    http.expectOne(base + '/configuracao').flush(registrada); await estabilizar();
+    http.expectOne(conexao + '/provisionar').flush(config.estado); await estabilizar();
+    http.expectOne(base + '/configuracao').flush(config); await estabilizar();
+    http.expectOne(conexao + '/webhook').flush({ situacao: 'NAO_CONFIGURADO' }); await estabilizar();
+    const webhook = http.expectOne(conexao + '/webhook'); expect(webhook.request.method).toBe('POST');
+    webhook.flush({ situacao: 'CONFIRMADO' }); await estabilizar();
+    http.expectOne(conexao + '/qr').flush({ situacao: 'DISPONIVEL', imagem: 'data:image/png;base64,AA==', expiraEm: null }); await estabilizar();
+    expect(page.etapaConexao).toBe('aguardando'); http.expectNone(conexao + '/preferencia');
+  });
+  it('falha de webhook impede QR e não expõe detalhes técnicos', async () => {
+    await iniciar(); page.abrirQr(); http.expectOne(base + '/configuracao').flush(config); await estabilizar();
+    http.expectOne(conexao + '/webhook').flush({ situacao: 'NAO_CONFIGURADO' }); await estabilizar();
+    http.expectOne(conexao + '/webhook').flush({ situacao: 'INCERTO' }); await estabilizar();
+    expect(page.etapaConexao).toBe('falha'); expect(page.qr).toBeNull();
+    expect(page.erroModal).not.toMatch(/https?:|webhook|token|secret/i); http.expectNone(conexao + '/qr');
+  });
+  it('webhook incerto exige consulta antes de nova mutação', async () => {
+    await iniciar(); page.abrirQr(); http.expectOne(base + '/configuracao').flush(config); await estabilizar();
+    http.expectOne(conexao + '/webhook').flush({ situacao: 'INCERTO' }); await estabilizar();
+    expect(page.etapaConexao).toBe('falha'); http.expectNone(r => r.method === 'POST');
+    void page.prepararConexao(); http.expectOne(base + '/configuracao').flush(config); await estabilizar();
+    http.expectOne(conexao + '/webhook').flush({ situacao: 'CONFIRMADO' }); await estabilizar();
+    http.expectOne(conexao + '/qr').flush({ situacao: 'JA_CONECTADA', imagem: null, expiraEm: null }); await estabilizar();
+    http.expectOne(base + '/configuracao').flush({ ...config, estado: { ...config.estado!, observado: 'ABERTA' } }); await estabilizar();
+    expect(page.etapaConexao).toBe('sucesso');
+  });
+  it('não provisiona situação desconhecida nem repete provisionamento em andamento', async () => {
+    const incerta: Configuracao = { ...config, provisionamento: { situacao: 'DESCONHECIDA' }, acoesPermitidas: { ...config.acoesPermitidas, provisionar: true } };
+    await iniciar(incerta); page.abrirQr(); http.expectOne(base + '/configuracao').flush(incerta); await estabilizar();
+    expect(page.falhaConexaoImpeditiva).toBeTrue(); http.expectNone(r => r.method === 'POST');
+  });
+  it('fechar durante preparação cancela consulta e impede a próxima etapa', async () => {
+    await iniciar(); page.abrirQr(); const consulta = http.expectOne(base + '/configuracao');
+    TestBed.inject(MatDialog).closeAll(); await estabilizar();
+    expect(consulta.cancelled).toBeTrue(); expect(page.qr).toBeNull(); http.expectNone(r => r.method === 'POST');
+  });
+  it('sem validade do provedor não inventa expiração nem gera QR em loop', fakeAsync(() => {
+    spyOnProperty(document, 'hidden', 'get').and.returnValue(true);
+    fixture.detectChanges(); http.expectOne(base + '/configuracao').flush(config); flushMicrotasks(); fixture.detectChanges();
+    page.abrirQr(); http.expectOne(base + '/configuracao').flush(config); flushMicrotasks();
+    http.expectOne(conexao + '/webhook').flush({ situacao: 'CONFIRMADO' }); flushMicrotasks();
+    http.expectOne(conexao + '/qr').flush({ situacao: 'DISPONIVEL', imagem: 'data:image/png;base64,AA==', expiraEm: null }); flushMicrotasks();
+    tick(120000); expect(page.qr?.situacao).toBe('DISPONIVEL'); http.expectNone(r => r.method === 'POST');
+    fixture.detectChanges();
+    const novoQr = Array.from(document.querySelectorAll('button')).find(b => b.textContent?.trim() === 'Gerar novo QR');
+    expect(novoQr).toBeDefined(); novoQr!.click();
+    http.expectOne(conexao + '/qr').flush({ situacao: 'DISPONIVEL', imagem: 'data:image/png;base64,AA==', expiraEm: null }); flushMicrotasks();
+    expect(page.qr?.situacao).toBe('DISPONIVEL'); fixture.destroy();
+  }));
+  it('QR expirado é limpo e somente ação explícita solicita outro', fakeAsync(() => {
+    spyOnProperty(document, 'hidden', 'get').and.returnValue(true);
+    fixture.detectChanges(); http.expectOne(base + '/configuracao').flush(config); flushMicrotasks(); fixture.detectChanges();
+    page.abrirQr(); http.expectOne(base + '/configuracao').flush(config); flushMicrotasks();
+    http.expectOne(conexao + '/webhook').flush({ situacao: 'CONFIRMADO' }); flushMicrotasks();
+    http.expectOne(conexao + '/qr').flush({ situacao: 'DISPONIVEL', imagem: 'data:image/png;base64,AA==', expiraEm: new Date(Date.now()+1000).toISOString() }); flushMicrotasks();
+    tick(1000); expect(page.etapaConexao).toBe('expirado'); expect(page.qr).toBeNull(); http.expectNone(conexao + '/qr');
+    void page.solicitarQr(); http.expectOne(conexao + '/qr').flush({ situacao: 'INDISPONIVEL', imagem: null, expiraEm: null }); flushMicrotasks(); fixture.destroy();
+  }));
+  it('timeout de estado não afirma desconexão e não gera QR automaticamente', fakeAsync(() => {
+    spyOnProperty(document, 'hidden', 'get').and.returnValue(true);
+    fixture.detectChanges(); http.expectOne(base + '/configuracao').flush({ ...config, estado: { ...config.estado!, observado: 'ABERTA' } }); flushMicrotasks();
+    void page.verificarConexao(); const req = http.expectOne(conexao + '/reconciliar'); tick(12000); flushMicrotasks();
+    expect(req.cancelled).toBeTrue(); expect(page.estadoConfiguracao).toBe('Estado desconhecido'); expect(page.config?.estado?.observado).toBe('ABERTA');
+    http.expectNone(conexao + '/qr'); fixture.destroy();
+  }));
+  it('troca de ator durante preparação cancela a leitura e limpa painel', async () => {
+    await iniciar(); page.abrirQr(); const req = http.expectOne(base + '/configuracao');
+    usuario$.next({ id: 2, proprietario: false }); await estabilizar();
+    expect(req.cancelled).toBeTrue(); expect(page.qr).toBeNull();
+    http.expectOne(base + '/configuracao').flush(config); await estabilizar(); http.expectNone(r => r.method === 'POST');
+  });
+
+  it('confirma desabilitação sem repetir cliques e sem logout', async () => {
+    await iniciar(); const dialog = fixture.debugElement.injector.get(MatDialog);
+    const confirmacao = new Subject<boolean>();
+    spyOn(dialog, 'open').and.returnValue({ afterClosed: () => confirmacao } as any);
+    page.direito(false); page.direito(false); expect(dialog.open).toHaveBeenCalledTimes(1);
+    confirmacao.next(false); confirmacao.complete(); await estabilizar();
+    http.expectNone(base + '/direito'); http.expectNone(conexao + '/desconectar');
+    expect(page.config?.direito.local).toBeTrue();
+  });
+  it('falha de logout preserva direito e histórico e não altera preferência', async () => {
+    await iniciar(); const dialog = fixture.debugElement.injector.get(MatDialog);
+    spyOn(dialog, 'open').and.returnValue({ afterClosed: () => of(true) } as any);
+    page.conexao('desconectar'); await estabilizar();
+    http.expectOne(conexao + '/desconectar').flush({}, { status: 503, statusText: 'Unavailable' }); await estabilizar();
+    expect(page.config?.direito.local).toBeTrue(); expect(page.config?.preferencia?.versao).toBe(8);
+    http.expectNone(conexao + '/preferencia'); http.expectNone(base + '/direito'); expect(toast.error).toHaveBeenCalled();
+  });
+  it('direito inativo impede QR e novos envios mesmo com preferência ativa', async () => {
+    await iniciar({ ...config, direito: { ...config.direito, local: false } });
+    expect(page.podeEnviar).toBeFalse(); expect(page.podeConectar).toBeFalse();
+    page.abrirQr(); page.abrirEnvio(); http.expectNone(r => r.method === 'POST');
+  });
+  it('troca de vínculo durante preparação não consulta nem altera outra conexão', async () => {
+    await iniciar({ ...config, conexao: null, acoesPermitidas: { ...config.acoesPermitidas, criarConexao: true } });
+    page.abrirQr(); http.expectOne(base + '/configuracao').flush({ ...config, conexao: null, acoesPermitidas: { ...config.acoesPermitidas, criarConexao: true } }); await estabilizar();
+    http.expectOne(base + '/conexoes').flush({ id: 'conexao-teste', estado: 'NAO_PROVISIONADA' }); await estabilizar();
+    http.expectOne(base + '/configuracao').flush({ ...config, conexao: 'outra-conexao' }); await estabilizar();
+    expect(page.falhaConexaoImpeditiva).toBeTrue(); http.expectNone(r => r.url.includes('/outra-conexao/'));
+  });
+  it('recusa imagem QR incompatível sem persistir ou renderizar conteúdo', async () => {
+    await iniciar(); await prepararExistente();
+    http.expectOne(conexao + '/qr').flush({ situacao: 'DISPONIVEL', imagem: 'https://exemplo.invalid/qr', expiraEm: null }); await estabilizar();
+    expect(page.qr).toBeNull(); expect(page.etapaConexao).toBe('falha'); expect(document.querySelector('img.qr')).toBeNull();
+  });
+  it('timeout de provisionamento não repete mutação e exige reconsulta na recuperação', fakeAsync(() => {
+    spyOnProperty(document, 'hidden', 'get').and.returnValue(true);
+    const c: Configuracao = { ...config, provisionamento: { situacao: 'NAO_PROVISIONADA' }, acoesPermitidas: { ...config.acoesPermitidas, provisionar: true } };
+    fixture.detectChanges(); http.expectOne(base + '/configuracao').flush(c); flushMicrotasks(); fixture.detectChanges();
+    page.abrirQr(); http.expectOne(base + '/configuracao').flush(c); flushMicrotasks();
+    const req = http.expectOne(conexao + '/provisionar'); tick(30000); flushMicrotasks();
+    expect(req.cancelled).toBeTrue(); expect(page.etapaConexao).toBe('falha'); http.expectNone(r => r.method === 'POST');
+    void page.prepararConexao(); http.expectOne(base + '/configuracao').flush({ ...config, provisionamento: { situacao: 'EM_ANDAMENTO' } }); flushMicrotasks();
+    expect(page.falhaConexaoImpeditiva).toBeTrue(); http.expectNone(r => r.method === 'POST'); fixture.destroy();
+  }));
+  it('acompanhamento é limitado e fechar painel interrompe reconciliação', fakeAsync(() => {
+    spyOnProperty(document, 'hidden', 'get').and.returnValue(false);
+    fixture.detectChanges(); http.expectOne(base + '/configuracao').flush(config); flushMicrotasks(); fixture.detectChanges();
+    page.abrirQr(); http.expectOne(base + '/configuracao').flush(config); flushMicrotasks();
+    http.expectOne(conexao + '/webhook').flush({ situacao: 'CONFIRMADO' }); flushMicrotasks();
+    http.expectOne(conexao + '/qr').flush({ situacao: 'DISPONIVEL', imagem: 'data:image/png;base64,AA==', expiraEm: null }); flushMicrotasks();
+    for (let i=0; i<30; i++) {
+      tick(i===0?5000:10000); http.expectOne(conexao + '/reconciliar').flush({ ...config.estado, observado: 'CONECTANDO' }); flushMicrotasks();
+    }
+    tick(20000); http.expectNone(conexao + '/reconciliar');
+    TestBed.inject(MatDialog).closeAll(); tick(500); expect(page.qr).toBeNull();
+    tick(30000); http.expectNone(conexao + '/reconciliar');
+    const consultas = http.match(base + '/configuracao'); consultas.forEach(req => { if (!req.cancelled) req.flush(config); }); flushMicrotasks();
+    fixture.destroy();
+  }));
+
+  it('desativação conserva a consulta autorizada de conversas e bloqueia novos envios', async () => {
+    Object.defineProperty(page, 'area', { value: 'mensagens' });
+    await iniciar({ ...config, direito: { ...config.direito, local: false },
+      acoesPermitidas: { ...config.acoesPermitidas, enviarMensagem: false, consultarHistorico: true } });
+    http.expectOne(r => r.url === base + '/conversas').flush({ itens: [], temMais: false }); await estabilizar();
+    expect(fixture.nativeElement.textContent).toContain('ClickWhatsApp desativado');
+    expect(fixture.nativeElement.textContent).toContain('Nenhuma conversa ainda');
+    expect(page.podeEnviar).toBeFalse(); page.abrirEnvio(); http.expectNone(r => r.method !== 'GET');
+  });
+  it('desativação permite ler templates anteriores sem habilitar automações', async () => {
+    Object.defineProperty(page, 'area', { value: 'automacoes' });
+    await iniciar({ ...config, configurarAutomacoes: true, direito: { ...config.direito, local: false },
+      acoesPermitidas: { ...config.acoesPermitidas, enviarMensagem: false } });
+    http.expectOne(base + '/automacoes/pedidos').flush({ podeAtivar: false, variaveis: ['cliente_nome'], recentes: [],
+      itens: [{ tipo: 'CRIADO', nome: 'Pedido criado', descricao: '', ativa: false, modelo: 'Texto anterior {cliente_nome}', previa: 'Texto anterior demonstrativo', revisao: 9 }] }); await estabilizar();
+    expect(page.automacoes?.painel?.itens[0].modelo).toBe('Texto anterior {cliente_nome}');
+    expect(page.automacoes?.painel?.itens[0].revisao).toBe(9);
+    void page.automacoes?.salvar({ ...page.automacoes.painel!.itens[0], ativa: true }); await estabilizar();
+    http.expectNone(r => r.method !== 'GET');
+  });
+
+  it('releitura da mesma observação antiga não apaga falha de verificação', async () => {
+    const aberta: Configuracao = { ...config, estado: { observado: 'ABERTA', observadoEm: '2026-11-17T10:00:00Z', motivo: null } };
+    await iniciar(aberta); void page.verificarConexao();
+    http.expectOne(conexao + '/reconciliar').flush({}, { status: 503, statusText: 'Unavailable' }); await estabilizar();
+    expect(page.estadoConfiguracao).toBe('Estado desconhecido');
+    void page.carregar(); http.expectOne(base + '/configuracao').flush(aberta); await estabilizar();
+    expect(page.estadoConfiguracao).toBe('Estado desconhecido');
+    void page.verificarConexao(); http.expectOne(conexao + '/reconciliar').flush(aberta.estado); await estabilizar();
+    http.expectOne(base + '/configuracao').flush(aberta); await estabilizar();
+    expect(page.estadoConfiguracao).toBe('Conectado');
   });
 
 });
