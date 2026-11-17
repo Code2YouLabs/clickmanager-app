@@ -150,7 +150,7 @@ export class ConversasComponent implements OnChanges {
         const atualizada = this.conversas.find(c => c.id === this.selecionada?.id);
         if (atualizada) this.selecionada = atualizada;
       } else if (this.destino) {
-        const nova = this.conversas.find(c => c.ultima.destinatario === this.destino?.numero);
+        const nova = this.conversas.find(c => this.mesmoDestinatario(c, this.destino!));
         if (nova) { this.selecionada = nova; void this.carregarMensagens(); }
       }
     } catch (erro) {
@@ -252,20 +252,27 @@ export class ConversasComponent implements OnChanges {
     void this.abrirDestino({ numero: '55' + this.telefone.value, nome: this.telefone.value });
   }
 
+  private mesmoDestinatario(conversa: Conversa, destino: DestinatarioConversa) {
+    const cliente = conversa.ultima.clienteId;
+    return destino.clienteId != null
+      ? cliente === destino.clienteId
+      : cliente == null && conversa.ultima.destinatario === destino.numero;
+  }
+
   private async abrirDestino(destino: DestinatarioConversa) {
     this.voltar();
     this.destino = destino;
     this.escolhendo = false;
     this.focarConversa();
-    const existente = this.conversas.find(c => c.ultima.destinatario === destino.numero);
+    const existente = this.conversas.find(c => this.mesmoDestinatario(c, destino));
     if (existente) { this.selecionada = existente; void this.carregarMensagens(); return; }
     if (!this.config.acoesPermitidas.consultarHistorico) return;
     const versao = this.versaoMensagens;
     try {
-      const resultado = await firstValueFrom(this.api.conversas(this.filtro, destino.numero, 0)
+      const resultado = await firstValueFrom(this.api.conversas(this.filtro, destino.clienteId ? '' : destino.numero, 0, destino.clienteId, !destino.clienteId)
         .pipe(takeUntil(this.cancelarMensagens), takeUntilDestroyed(this.destroy), timeout(15000)));
       if (versao !== this.versaoMensagens || this.destino !== destino) return;
-      const conversa = resultado.itens.find(c => c.ultima.destinatario === destino.numero);
+      const conversa = resultado.itens.find(c => this.mesmoDestinatario(c, destino));
       if (conversa) { this.selecionada = conversa; void this.carregarMensagens(); }
     } catch (erro) {
       if (versao === this.versaoMensagens) this.erroMensagens = falha(erro).mensagem;

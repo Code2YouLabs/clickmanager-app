@@ -40,9 +40,11 @@ export class ClickWhatsAppService {
     if (excluirOcorrencias) params = params.set('excluirOcorrencias', true);
     return this.http.get<ItemHistorico[]>(this.base + '/mensagens', { ...this.options(), params });
   }
-  conversas(f: Filtro, pesquisa: string, pagina: number) {
+  conversas(f: Filtro, pesquisa: string, pagina: number, clienteId?: number, avulsa = false) {
     let params = this.periodo(f).set('pagina', pagina).set('pesquisa', pesquisa);
     if (f.fase) params = params.set('fase', f.fase);
+    if (clienteId != null) params = params.set('clienteId', clienteId);
+    if (avulsa) params = params.set('avulsa', true);
     return this.http.get<PaginaConversas<Conversa>>(this.base + '/conversas', { ...this.options(), params });
   }
   mensagensDaConversa(id: string, f: Filtro, pagina: number) {

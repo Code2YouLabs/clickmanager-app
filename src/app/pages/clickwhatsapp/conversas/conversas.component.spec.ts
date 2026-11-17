@@ -112,6 +112,26 @@ describe('Conversas — fluxos HTTP e composição', () => {
     expect(page.registrar.emit).toHaveBeenCalledWith({ destino: page.destino!, texto: 'Olá' });
   }));
 
+  it('mantém separados dois clientes e uma mensagem avulsa no mesmo telefone', fakeAsync(() => {
+    const a = conversa('a');
+    const b = { ...conversa('b'), ultima: { ...conversa('b').ultima, clienteId: 10, nomeCliente: 'Cliente B' } };
+    lista([a, b]); flushMicrotasks();
+    page.escolherCliente({ id: 10, nome: 'Cliente B', telefone: '(31) 98765-4321' } as any);
+    expect(page.selecionada?.id).toBe('b');
+    http.expectOne(r => r.url.endsWith('/b/mensagens')).flush({ itens: [], temMais: false });
+    flushMicrotasks(); tick();
+    http.expectNone(r => r.url.endsWith('/a/mensagens'));
+    page.voltar();
+    page.telefone.setValue('31987654321'); fixture.detectChanges();
+    page.continuarTelefone();
+    const avulsa = http.expectOne(r => r.url === base + '/conversas');
+    expect(avulsa.request.params.get('avulsa')).toBe('true');
+    avulsa.flush({ itens: [], temMais: false });
+    flushMicrotasks(); tick();
+    expect(page.selecionada).toBeNull();
+    expect(page.destino?.clienteId).toBeUndefined();
+  }));
+
   it('rejeita telefone incompleto e preserva pesquisa ao cancelar cadastro lateral', fakeAsync(() => {
     lista(); flushMicrotasks();
     page.telefone.setValue('31987'); fixture.detectChanges();

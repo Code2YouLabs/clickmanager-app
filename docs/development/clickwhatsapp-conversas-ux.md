@@ -58,8 +58,17 @@ As evidências visuais locais usam dados fictícios nas larguras 1440, 1024, 820
 
 A experiência contém somente envios. Mensagens recebidas, mídias, grupos, atendimento e novas automações continuam fora do recorte. A navegação não declara entrega a partir do aceite.
 
-O backend acrescenta os endpoints de conversas e a migration 153. O custo da primeira indexação retroativa deve ser medido em bases grandes. O histórico anterior permanece compatível e a pesquisa não persiste telefones em claro.
+O backend acrescenta os endpoints de conversas e as migrations 153 e 154. A 154 corrige a projeção anterior por telefone, preservando o histórico original. O custo da primeira indexação retroativa deve ser medido em bases grandes. O histórico anterior permanece compatível e a pesquisa não persiste telefones em claro.
 
 A conferência final também exercitou pesquisa sem resultados, filtros em painel lateral, permissões restritas e salvamento do cadastro pela API simulada, com retorno ao compositor em desktop e mobile. A validação estática TypeScript passou após a remoção dos imports e controles que ficaram sem uso.
 
 As imagens estão em /Users/leonardo.barros/.codex/visualizations/2026/11/13/01a1d560-ecfa-7a73-88ba-690ea8e9ba4e/clickwhatsapp-conversas. Os nomes lista, conversa, filtros, pesquisa-vazia, destinatario, compositor, cadastro e retorno-cadastro identificam os cenários. O número no final do arquivo é a largura do viewport. As imagens de teclado-reduzido usam viewport reduzido, sem alegar teste físico de teclado.
+
+
+## Correção de clientes com telefone compartilhado
+
+A seleção e a atualização de conversas usam clienteId quando o destinatário foi escolhido no cadastro. A busca de conversa específica envia clienteId ao backend e restringe ao cliente autenticado. Para telefone avulso, avulsa=true impede abrir a conversa de um cliente que usa aquele número.
+
+A regressão do compositor verifica dois clientes no mesmo telefone e a abertura de uma nova conversa avulsa separada. O índice anterior é reconstruído pelo backend após aplicar a migration 154. Histórico antigo sem cliente registrado continua associado ao telefone até existir uma identificação confiável.
+
+A correção passou em 43 testes de ClickWhatsApp e no build de produção. A validação visual em 1440 e 390 px reproduziu dois clientes fictícios com o mesmo telefone e comprovou que a lista e a área de mensagens permanecem separadas, inclusive ao selecionar o cliente por Nova mensagem. As evidências cliente-a-mesmo-telefone e cliente-b-mesmo-telefone estão na pasta visual já indicada.
