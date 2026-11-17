@@ -14,6 +14,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { ToastrService } from 'ngx-toastr';
 import { distinctUntilChanged, firstValueFrom, map, Observable, Subject, takeUntil, timeout } from 'rxjs';
+import { MetricCardComponent } from 'src/app/components/metric-card/metric-card.component';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
 import { DataTableComponent } from 'src/app/components/data-table/data-table.component';
@@ -33,7 +34,7 @@ import { ClickWhatsAppService } from './clickwhatsapp.service';
   selector: 'app-clickwhatsapp',
   standalone: true,
   imports: [RouterModule, AutomacoesPedidoComponent, CommonModule, FormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatInputModule,
-    MatSelectModule, MatProgressBarModule, PageCardComponent, SectionCardComponent, DataTableComponent,
+    MatSelectModule, MatProgressBarModule, PageCardComponent, SectionCardComponent, MetricCardComponent, DataTableComponent,
     DataTableCellDirective, DataTableItemDirective, MobileFabActionComponent],
   templateUrl: './clickwhatsapp.page.html',
   styleUrl: './clickwhatsapp.page.scss',
@@ -129,6 +130,15 @@ export class ClickWhatsAppPage implements OnInit {
   readonly fases = FASES;
   readonly confirmacoes = CONFIRMACOES;
   readonly estados = ESTADOS;
+  readonly metricasResumo = [
+    { chave: 'total', rotulo: 'Mensagens', icone: 'message-circle', cor: '#265ac1' },
+    { chave: 'aceitas', rotulo: 'Aceitas', icone: 'send', cor: '#4285bc' },
+    { chave: 'entregues', rotulo: 'Entregues', icone: 'checks', cor: '#349266' },
+    { chave: 'lidas', rotulo: 'Lidas', icone: 'eye', cor: '#349266' },
+    { chave: 'falhas', rotulo: 'Falhas', icone: 'circle-x', cor: '#cf6658' },
+    { chave: 'backlogAtual', rotulo: 'Na fila agora', icone: 'clock', cor: '#738297' },
+    { chave: 'incertasAtuais', rotulo: 'Incertas agora', icone: 'alert-triangle', cor: '#d49a27' },
+  ] as const;
   readonly webhooks = WEBHOOKS;
   readonly motivo = motivo;
   rotuloFase(fase: Fase) { return FASES[fase] ?? 'Situação desconhecida'; }
@@ -175,6 +185,18 @@ export class ClickWhatsAppPage implements OnInit {
     });
   }
 
+  get rotuloConexao() {
+    if (this.verificacaoFalhou) return 'Não foi possível verificar';
+    const estado = this.config?.estado;
+    if (estado) return this.estados[estado.observado] || this.estados.DESCONHECIDO;
+    return this.config?.conexao ? 'Estado indisponível' : 'Sem conexão';
+  }
+  get rotuloPreferencia() {
+    const preferencia = this.config?.preferencia;
+    if (!preferencia) return 'Indisponíveis';
+    if (preferencia.quarentena) return 'Em quarentena';
+    return preferencia.pausada ? 'Pausados' : 'Preferência ativa';
+  }
   get direitoAtivo() { return !!(this.config?.direito.global && this.config.direito.local); }
   get acoes() { return this.config?.acoesPermitidas; }
   get podeEnviar() { return !!this.acoes?.enviarMensagem; }

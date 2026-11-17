@@ -1,3 +1,5 @@
+import { TablerIconsModule } from 'angular-tabler-icons';
+import { IconAlertTriangle, IconBrandWhatsapp, IconChecks, IconCircleX, IconClock, IconEye, IconMessageCircle, IconSend } from 'angular-tabler-icons/icons';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -48,7 +50,7 @@ describe('ClickWhatsApp', () => {
     usuario$ = new BehaviorSubject<Usuario | null>({ id: 1, proprietario: true });
     toast = jasmine.createSpyObj('ToastrService', ['error', 'warning', 'success']);
     TestBed.configureTestingModule({
-      imports: [ClickWhatsAppPage],
+      imports: [ClickWhatsAppPage, TablerIconsModule.pick({ IconAlertTriangle, IconBrandWhatsapp, IconChecks, IconCircleX, IconClock, IconEye, IconMessageCircle, IconSend })],
       providers: [provideRouter([]), { provide: ActivatedRoute, useValue: rota }, provideNoopAnimations(), provideHttpClient(), provideHttpClientTesting(),
         { provide: AuthService, useValue: { usuario$ } },
         { provide: ToastrService, useValue: toast },
@@ -290,6 +292,7 @@ describe('ClickWhatsApp', () => {
       mensagens: { total: 1, aceitas: 0, entregues: 0, lidas: 0, falhas: 0, backlogAtual: 0, incertasAtuais: 1 } });
     await estabilizar();
     expect(fixture.nativeElement.querySelector('.item-mobile')).not.toBeNull();
+    expect(fixture.nativeElement.querySelectorAll('.metricas app-metric-card').length).toBe(7);
     expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).not.toBeNull();
     void page.abrirDetalhe(page.itens[0]);
     http.expectOne(conexao + '/mensagens/mensagem-teste').flush({ mensagem, destinatario: null, texto: null, conteudoDisponivel: false });

@@ -11,13 +11,25 @@
   border-radius: 12px;
 }
 .indicador { display: grid; gap: 2px; }
-.situacao .situacao-acoes { margin: 0 0 0 auto; }
 .estado-conexao.conectada, .qr-sucesso { color: #176344; }
 .qr-sucesso { display: flex; align-items: center; gap: 8px; }
-.metricas { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 138px), 1fr)); gap: 12px; }
-.metricas > div { display: grid; gap: 4px; padding: 12px; border-radius: 8px; background: var(--mat-sys-surface-container-low, #f5f7fa); }
-.indicador span, .metricas span, .muted, dt { color: var(--mat-sys-on-surface-variant, #506078); font-size: .875rem; }
-.metricas strong { font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.cards-conexao, .metricas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  gap: 12px;
+}
+.metricas { grid-template-columns: repeat(auto-fit, minmax(min(100%, max(175px, (100% - 36px) / 4)), 1fr)); }
+.conexao-rodape {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 4px 16px;
+  margin-top: 8px;
+}
+.conexao-rodape p { margin: 0; }
+.conexao-rodape a { margin-inline-start: auto; }
+.indicador span, .muted, dt { color: var(--mat-sys-on-surface-variant, #506078); font-size: .875rem; }
 .acoes, .paginacao, .item-estados { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .acoes { margin-block: 12px 2px; }
 .historico-acoes { margin: 0 0 12px; }
@@ -43,7 +55,6 @@
   .painel { padding-bottom: 72px; gap: 8px; }
   .subtitulo-mobile { display: block; margin: 0 0 8px; font-size: .875rem; }
   .situacao { gap: 8px 16px; }
-  .situacao .situacao-acoes { margin-inline-start: 0; }
   .acoes button, .paginacao button, .avancado summary { min-height: 44px; }
   .paginacao { justify-content: center; }
 }
@@ -54,5 +65,4 @@
 .alternancia [aria-pressed='true'] { background: var(--mat-sys-primary-container, #e8f1ff); }
 @media (max-width: 760px) {
   .metricas { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .metricas > div { padding: 10px; min-width: 0; overflow-wrap: anywhere; }
 }

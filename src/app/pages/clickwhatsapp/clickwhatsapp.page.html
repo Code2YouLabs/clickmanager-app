@@ -35,7 +35,28 @@
 
       @switch (area) {
         @case ('visao') {
-          <ng-container [ngTemplateOutlet]="situacao" />
+          <section class="visao-conexao" aria-label="Situação da empresa">
+            <div class="cards-conexao">
+              <app-metric-card label="ClickWhatsApp" [value]="direitoAtivo ? 'Habilitado' : 'Desabilitado'"
+                icon="message-circle" [compact]="true" [accentColor]="direitoAtivo ? '#265ac1' : '#738297'" />
+              @if (direitoAtivo) {
+                <app-metric-card label="WhatsApp" class="estado-conexao" role="status" icon="brand-whatsapp" [compact]="true"
+                  [value]="rotuloConexao" [accentColor]="!verificacaoFalhou && c.estado?.observado === 'ABERTA' ? '#349266' : '#738297'" />
+                <app-metric-card label="Envios" [value]="rotuloPreferencia" icon="send" [compact]="true"
+                  [accentColor]="c.preferencia?.quarentena || c.preferencia?.pausada ? '#d49a27' : '#738297'" />
+              }
+            </div>
+            @if (c.estado?.observadoEm || podeAbrirConfiguracoes) {
+              <div class="conexao-rodape">
+                @if (c.estado?.observadoEm) {
+                  <p class="muted">Última observação {{ c.estado?.observadoEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</p>
+                }
+                @if (podeAbrirConfiguracoes) {
+                  <a mat-button routerLink="/page/clickwhatsapp/configuracoes">Configurações de conexão</a>
+                }
+              </div>
+            }
+          </section>
           @if (acoes?.consultarHistorico) {
             <app-section-card title="Resumo operacional" [mobilePlain]="true" class="largura-total">
               <div class="acoes periodo" aria-label="Período de consulta">
@@ -48,13 +69,10 @@
               @if (erroResumo) { <p class="aviso" role="alert">{{ erroResumo }}</p> }
               @if (resumo; as r) {
                 <div class="metricas">
-                  <div><span>Mensagens</span><strong>{{ r.mensagens.total }}</strong></div>
-                  <div><span>Aceitas</span><strong>{{ r.mensagens.aceitas }}</strong></div>
-                  <div><span>Entregues</span><strong>{{ r.mensagens.entregues }}</strong></div>
-                  <div><span>Lidas</span><strong>{{ r.mensagens.lidas }}</strong></div>
-                  <div><span>Falhas</span><strong>{{ r.mensagens.falhas }}</strong></div>
-                  <div><span>Na fila agora</span><strong>{{ r.mensagens.backlogAtual }}</strong></div>
-                  <div><span>Incertas agora</span><strong>{{ r.mensagens.incertasAtuais }}</strong></div>
+                  @for (metrica of metricasResumo; track metrica.chave) {
+                    <app-metric-card [label]="metrica.rotulo" [value]="'' + r.mensagens[metrica.chave]"
+                      [icon]="metrica.icone" [accentColor]="metrica.cor" [compact]="true" />
+                  }
                 </div>
                 <p class="muted">Aceitas, entregues e lidas são contagens cumulativas. Falhas podem se sobrepor às confirmações. Fila e incertezas atuais incluem mensagens de fora do período.</p>
                 <p class="muted">{{ r.inicio | date:'dd/MM/yyyy HH:mm':'-0300' }} a {{ r.fim | date:'dd/MM/yyyy HH:mm':'-0300' }} · {{ r.fuso }}<br>Calculado às {{ r.calculadoEm | date:'HH:mm':'-0300' }}</p>
@@ -205,16 +223,11 @@
         <div class="indicador" role="status">
           <span>WhatsApp</span>
           <strong class="estado-conexao" [class.conectada]="!verificacaoFalhou && c.estado?.observado === 'ABERTA'">
-            {{ verificacaoFalhou ? 'Não foi possível verificar' : c.estado ? (estados[c.estado.observado] || estados.DESCONHECIDO) : (c.conexao ? 'Estado indisponível' : 'Sem conexão') }}
+            {{ rotuloConexao }}
           </strong>
         </div>
-        <div class="indicador"><span>Envios</span><strong>{{ c.preferencia ? (c.preferencia.quarentena ? 'Em quarentena' : c.preferencia.pausada ? 'Pausados' : 'Preferência ativa') : 'Indisponíveis' }}</strong></div>
+        <div class="indicador"><span>Envios</span><strong>{{ rotuloPreferencia }}</strong></div>
       }
-      <div class="acoes situacao-acoes">
-        @if (area === 'visao' && podeAbrirConfiguracoes) {
-          <a mat-button routerLink="/page/clickwhatsapp/configuracoes">Configurações de conexão</a>
-        }
-      </div>
     </section>
     @if (c.estado?.observadoEm) {
       <p class="muted observacao">Última observação {{ c.estado?.observadoEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</p>
