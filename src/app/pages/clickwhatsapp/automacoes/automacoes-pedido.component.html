@@ -1,4 +1,4 @@
-<app-section-card title="Configuração por acontecimento" [mobilePlain]="true">
+<div class="automacoes-conteudo">
   @if (!operacional) {
     <p class="aviso" role="status">A configuração permanece disponível. O processamento depende da conexão, das autorizações e das preferências de envio.</p>
   }
@@ -8,21 +8,22 @@
     @if (erro && !rascunho) { <p class="aviso" role="alert">{{ erro }}</p> }
     <div class="cabecalho">
       @if (painel; as p) { <p><strong>{{ ativas }} de {{ p.itens.length }} automações ativas</strong></p> }
-      <button mat-button type="button" [disabled]="ocupado || !!rascunho" (click)="abrir()">Atualizar configurações e registros</button>
+      <button mat-icon-button type="button" aria-label="Atualizar automações" matTooltip="Atualizar automações" [disabled]="ocupado || confirmando || !!rascunho" (click)="abrir()"><mat-icon>refresh</mat-icon></button>
     </div>
     @if (painel; as p) {
       @for (item of p.itens; track item.tipo) {
         <section class="automacao" [attr.aria-label]="item.nome">
-          <div><h3>{{ item.nome }}</h3><p>{{ item.descricao }}</p></div>
+          <div><h3>{{ item.nome }}</h3><p>{{ descricao(item) }}</p></div>
           <div class="acoes linha-acoes">
-            <span class="estado" [class.ativa]="item.ativa">{{ item.ativa ? 'Ativada' : 'Desativada' }}</span>
-            <button mat-stroked-button type="button" [attr.aria-label]="'Editar ' + item.nome" (click)="editar(item, telaEditor)">Editar</button>
+            <span class="estado" [class.ativa]="item.ativa">{{ item.ativa ? 'Ativa' : 'Inativa' }}</span>
+            <button mat-stroked-button type="button" [disabled]="ocupado || confirmando" [attr.aria-label]="'Editar ' + item.nome" (click)="editar(item, telaEditor)">Editar</button>
           </div>
         </section>
       }
       <section class="registros" aria-label="Registros de automações">
+        @if (p.recentes.length) {
         <h3>Últimas ocorrências</h3>
-        <p>Enfileirar não confirma entrega. Ocorrências ignoradas não serão enviadas ao reconectar.</p>
+        <p class="muted">Enfileirar não confirma entrega. Ocorrências ignoradas não serão enviadas ao reconectar.</p>
         @for (r of p.recentes; track r.ocorrencia) {
           <div class="registro"><div><strong>{{ nome(r.tipo) }} · Pedido {{ r.pedido }}</strong><span>{{ origem(r.origem) }} · {{ r.criadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</span></div>
             <div>@if (r.fase) { <strong>{{ fases[r.fase] }}</strong> } @else { <strong>{{ r.resultado === 'PENDENTE' ? 'Aguardando preparação' : r.resultado === 'ENFILEIRADA' ? 'Adicionada à fila · estado indisponível' : 'Ignorada' }}</strong> }
@@ -30,44 +31,61 @@
             @if (r.motivo) { <span>{{ motivos[r.motivo] || 'Processamento indisponível' }}</span> }
             @if (historico && r.mensagem) { <a mat-button [routerLink]="['/page/clickwhatsapp/mensagens']" [queryParams]="{mensagem:r.mensagem,conexao:r.conexao}">Ver mensagem</a> }</div>
           </div>
-        } @empty { <p>Nenhuma ocorrência registrada após a implantação.</p> }
+        }
+        } @else { <p class="sem-registros"><mat-icon aria-hidden="true">history</mat-icon>Nenhuma ocorrência recente.</p> }
       </section>
     }
   }
-</app-section-card>
+</div>
 
 <ng-template #telaEditor>
   @if (rascunho; as item) {
     <h2 mat-dialog-title class="mobile-side-panel__header">{{ item.nome }}</h2>
     <mat-dialog-content class="mobile-side-panel__body">
-      <p>{{ item.descricao }}</p>
-      <p><strong>{{ item.ativa ? 'Ativada' : 'Desativada' }}</strong></p>
-      <button mat-stroked-button type="button"
-        [disabled]="ocupado || confirmando || alterado || (!item.ativa && !painel?.podeAtivar)"
-        (click)="alternarAtivacao()">{{ item.ativa ? 'Desativar automação' : 'Ativar automação' }}</button>
-      @if (alterado) { <p class="muted">Salve o template para alterar a ativação.</p> }
-      @if (!painel?.podeAtivar) { <p class="muted">A ativação exige autorização do recurso e permissão de envio.</p> }
-      <p class="variaveis">Variáveis disponíveis
-        @for (v of painel?.variaveis; track v) { <code>{{ '{' + v + '}' }}</code> }
-      </p>
+      <p class="descricao-editor">{{ descricao(item) }}</p>
+      <div class="ativacao">
+        <div><strong>Enviar automaticamente</strong><span class="estado" [class.ativa]="original?.ativa">{{ original?.ativa ? 'Ativa' : 'Inativa' }}</span></div>
+        <mat-slide-toggle aria-label="Enviar automaticamente" [checked]="!!original?.ativa"
+          [disabled]="ocupado || confirmando || alterado || (!original?.ativa && !painel?.podeAtivar)"
+          (toggleChange)="alternarAtivacao()" />
+      </div>
+      @if (alterado) { <p class="ajuda">Salve ou descarte o texto antes de alterar a ativação.</p> }
+      @if (!painel?.podeAtivar) { <p class="ajuda">A ativação exige autorização do recurso e permissão de envio.</p> }
+      <div class="variaveis">
+        <span class="rotulo-variaveis">Inserir variável</span>
+        <div class="chips">
+          @for (v of variaveis; track v) {
+            <button mat-stroked-button type="button" [disabled]="ocupado || confirmando"
+              [attr.aria-label]="'Inserir ' + rotulosVariaveis[v]" [matTooltip]="'{' + v + '}'"
+              (click)="inserirVariavel(v, mensagem)"><mat-icon>add</mat-icon>{{ rotulosVariaveis[v] }}</button>
+          }
+        </div>
+        @if (avisoVariavel) { <p class="ajuda" role="status">{{ avisoVariavel }}</p> }
+      </div>
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>Mensagem</mat-label>
-        <textarea matInput [(ngModel)]="item.modelo" rows="6" maxlength="2000" [readonly]="ocupado || confirmando"></textarea>
+        <textarea #mensagem matInput [(ngModel)]="item.modelo" (ngModelChange)="modeloAlterado()" rows="6" maxlength="2000" [readonly]="ocupado || confirmando" aria-describedby="validacao-modelo"></textarea>
         <mat-hint align="end">{{ item.modelo.length }} / 2000</mat-hint>
       </mat-form-field>
+      @if (!modeloValido) { <p id="validacao-modelo" class="ajuda" role="status">Informe uma mensagem com até 2000 caracteres e use apenas as variáveis disponíveis.</p> }
       @if (erro) { <p class="aviso" role="alert">{{ erro }}</p> }
-      <div class="previa">
-        <strong>Pré-visualização demonstrativa</strong>
-        <p>{{ item.previa }}</p>
-        <button mat-button type="button" [disabled]="ocupado || confirmando" (click)="previa(item)">Atualizar prévia</button>
-      </div>
+      <section class="previa" aria-label="Prévia demonstrativa">
+        <div class="previa-cabecalho"><strong>Prévia da mensagem</strong><span>Demonstrativa</span></div>
+        <div class="previa-fundo"><p class="bolha">{{ item.previa }}</p></div>
+        <p class="previa-status" role="status">{{ estadoPrevia }}</p>
+        @if (atualizandoPrevia) { <mat-progress-bar mode="indeterminate" aria-label="Atualizando prévia" /> }
+        @if (erroPrevia) {
+          <p class="ajuda" role="alert">{{ erroPrevia }}</p>
+          <button mat-button type="button" [disabled]="!modeloValido || ocupado || confirmando" (click)="previa(item)">Tentar novamente</button>
+        }
+      </section>
       @if (ocupado) { <mat-progress-bar mode="indeterminate" aria-label="Processando automação" /> }
     </mat-dialog-content>
     <mat-dialog-actions class="mobile-side-panel__footer" align="end">
-      <button mat-button type="button" [disabled]="ocupado || confirmando" (click)="fecharEditor()">Fechar</button>
+      <button mat-button type="button" [disabled]="ocupado || confirmando" (click)="fecharEditor()">Cancelar</button>
       <button mat-flat-button color="primary" type="button"
-        [disabled]="!alterado || ocupado || confirmando || (item.ativa && !painel?.podeAtivar)"
-        (click)="salvarTexto()">Salvar template</button>
+        [disabled]="!alterado || !modeloValido || ocupado || confirmando || (item.ativa && !painel?.podeAtivar)"
+        (click)="salvarTexto()">{{ ocupado ? 'Salvando…' : 'Salvar' }}</button>
     </mat-dialog-actions>
   }
 </ng-template>

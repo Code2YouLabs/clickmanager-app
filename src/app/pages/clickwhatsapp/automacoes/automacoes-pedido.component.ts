@@ -17,7 +17,9 @@ import { firstValueFrom, Subject, takeUntil, timeout } from 'rxjs';
 import { AuthService } from 'src/app/services/auth.service';
 import { SILENT_REQUEST } from 'src/app/interceptors/loading.interceptor';
 import { ConfirmDialogComponent } from 'src/app/components/dialog/confirm-dialog/confirm-dialog.component';
-import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSlideToggleModule, MAT_SLIDE_TOGGLE_DEFAULT_OPTIONS } from '@angular/material/slide-toggle';
 import { environment } from 'src/environments/environment';
 import { CONFIRMACOES, FASES, falha, Confirmacao, Fase } from '../clickwhatsapp.models';
 import { contextoEnvio } from '../clickwhatsapp-envio.store';
@@ -27,7 +29,8 @@ interface Registro { ocorrencia: string; pedido: number; origem: string; tipo: s
 export interface PainelAutomacoes { itens: AutomacaoPedido[]; variaveis: string[]; recentes: Registro[]; podeAtivar: boolean; }
 @Component({
   selector: 'app-automacoes-pedido', standalone: true,
-  imports: [RouterModule, CommonModule, FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatDialogModule, MatProgressBarModule, SectionCardComponent],
+  imports: [RouterModule, CommonModule, FormsModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatDialogModule, MatProgressBarModule, MatIconModule, MatTooltipModule, MatSlideToggleModule],
+  providers: [{ provide: MAT_SLIDE_TOGGLE_DEFAULT_OPTIONS, useValue: { disableToggleValue: true } }],
   templateUrl: './automacoes-pedido.component.html', styleUrl: './automacoes-pedido.component.scss',
 })
 export class AutomacoesPedidoComponent implements OnInit {
@@ -46,6 +49,9 @@ export class AutomacoesPedidoComponent implements OnInit {
 
   editar(item: AutomacaoPedido, tela: TemplateRef<unknown>) {
     if (this.editor || this.ocupado) return;
+    this.cancelarPrevia();
+    this.erroPrevia = this.avisoVariavel = '';
+    this.estadoPrevia = 'Prévia atualizada';
     this.original = item;
     this.rascunho = { ...item };
     this.erro = '';
@@ -80,13 +86,14 @@ export class AutomacoesPedidoComponent implements OnInit {
   async fecharEditor() {
     const ref = this.editor;
     if (ref && await this.podeSair() && this.editor === ref) {
+      this.cancelarPrevia();
       this.rascunho = this.original = null;
       ref.close();
     }
   }
 
   salvarTexto() {
-    if (this.rascunho && this.original) return this.salvar({ ...this.rascunho, ativa: this.original.ativa }, 'texto');
+    if (this.rascunho && this.original && this.alterado && this.modeloValido) return this.salvar({ ...this.rascunho, ativa: this.original.ativa }, 'texto');
     return Promise.resolve();
   }
 
@@ -121,11 +128,12 @@ export class AutomacoesPedidoComponent implements OnInit {
       const contexto = contextoEnvio(u);
       if (this.contexto !== contexto) {
         this.contexto = contexto; this.sessao++; this.troca.next();
+        this.cancelarPrevia();
         this.editor?.close(); this.rascunho = this.original = null;
         this.painel = null; this.aberto = false; this.ocupado = false; this.erro = '';
       }
     });
-    inject(DestroyRef).onDestroy(() => { this.sessao++; this.troca.next(); this.editor?.close(); });
+    inject(DestroyRef).onDestroy(() => { this.cancelarPrevia(); this.sessao++; this.troca.next(); this.editor?.close(); });
   }
   private opcoes() { return { context: new HttpContext().set(SILENT_REQUEST, true) }; }
   private async executar(acao: () => Promise<void>) {
@@ -142,15 +150,91 @@ export class AutomacoesPedidoComponent implements OnInit {
     return f.mensagem;
   }
   async abrir() {
+    if (this.rascunho || this.confirmando) return;
     this.aberto = true;
     await this.executar(async () => { const s = this.sessao; const p = await this.ler(this.http.get<PainelAutomacoes>(this.base, this.opcoes())); if (s === this.sessao) this.painel = p; });
   }
+  private previaTimer?: ReturnType<typeof setTimeout>;
+  private readonly trocaPrevia = new Subject<void>();
+  private versaoPrevia = 0;
+  atualizandoPrevia = false;
+  erroPrevia = '';
+  estadoPrevia = '';
+  avisoVariavel = '';
+  readonly rotulosVariaveis: Record<string, string> = {
+    cliente_nome: 'Nome do cliente', pedido_numero: 'Número do pedido', previsao_entrega: 'Previsão de entrega',
+  };
+  readonly descricoes: Record<string, string> = {
+    CRIADO: 'Avisa o cliente quando um novo pedido é registrado.',
+    EM_PRODUCAO: 'Informa quando o pedido entra em produção.',
+    PRONTO: 'Avisa quando o pedido está pronto.',
+    ENTREGUE: 'Avisa quando a entrega ou conclusão do pedido é confirmada.',
+    PREVISAO_ALTERADA: 'Informa alterações na previsão de entrega.',
+    CANCELADO: 'Avisa quando o pedido é cancelado.',
+  };
+  descricao(item: AutomacaoPedido) { return this.descricoes[item.tipo] ?? 'Configure o aviso automático deste acontecimento.'; }
+  get variaveis() { return (this.painel?.variaveis ?? []).filter(v => !!this.rotulosVariaveis[v]); }
+  get modeloValido() {
+    const modelo = this.rascunho?.modelo ?? '';
+    if (!modelo.trim() || modelo.length > 2000) return false;
+    const permitidas = this.variaveis;
+    let valido = true;
+    const restante = modelo.replace(/\{([^{}]*)\}/g, (_, v: string) => { if (!permitidas.includes(v)) valido = false; return ''; });
+    return valido && !/[{}]/.test(restante);
+  }
+  inserirVariavel(variavel: string, campo: HTMLTextAreaElement) {
+    if (!this.rascunho || this.ocupado || this.confirmando) return;
+    if (!this.variaveis.includes(variavel)) { this.avisoVariavel = 'Esta variável não está disponível.'; return; }
+    const modelo = this.rascunho.modelo;
+    const inicio = campo.selectionStart ?? modelo.length;
+    const fim = campo.selectionEnd ?? inicio;
+    const token = '{' + variavel + '}';
+    const novo = modelo.slice(0, inicio) + token + modelo.slice(fim);
+    if (novo.length > 2000) { this.avisoVariavel = 'A variável ultrapassa o limite de 2000 caracteres.'; return; }
+    this.rascunho.modelo = novo;
+    campo.value = novo;
+    campo.focus();
+    campo.setSelectionRange(inicio + token.length, inicio + token.length);
+    this.modeloAlterado();
+  }
+  modeloAlterado() {
+    this.cancelarPrevia();
+    this.avisoVariavel = this.erroPrevia = '';
+    if (!this.modeloValido) { this.estadoPrevia = 'Revise o texto e as variáveis para atualizar a prévia.'; return; }
+    this.estadoPrevia = 'Aguardando atualização da prévia';
+    const item = this.rascunho!;
+    this.previaTimer = setTimeout(() => void this.previa(item), 500);
+  }
+  private cancelarPrevia() {
+    clearTimeout(this.previaTimer);
+    this.versaoPrevia++;
+    this.trocaPrevia.next();
+    this.atualizandoPrevia = false;
+  }
   async previa(item: AutomacaoPedido) {
-    await this.executar(async () => {
-      const s = this.sessao;
-      const p = await this.ler(this.http.post<{ texto: string }>(this.base + '/previa', { modelo: item.modelo }, this.opcoes()));
-      if (s === this.sessao && (!this.rascunho || this.rascunho === item)) item.previa = p.texto;
-    });
+    if (!this.contexto || this.ocupado) return;
+    this.cancelarPrevia();
+    const versao = this.versaoPrevia;
+    const s = this.sessao;
+    const modelo = item.modelo;
+    this.atualizandoPrevia = true;
+    this.erroPrevia = '';
+    this.estadoPrevia = 'Atualizando prévia';
+    try {
+      const p = await firstValueFrom(this.http.post<{ texto: string }>(this.base + '/previa', { modelo }, this.opcoes())
+        .pipe(timeout(15000), takeUntil(this.troca), takeUntil(this.trocaPrevia)));
+      if (s === this.sessao && versao === this.versaoPrevia && item.modelo === modelo) {
+        item.previa = p.texto;
+        this.estadoPrevia = 'Prévia atualizada';
+      }
+    } catch (e) {
+      if (s === this.sessao && versao === this.versaoPrevia) {
+        this.erroPrevia = this.mensagemErro(e);
+        this.estadoPrevia = 'Não foi possível atualizar. A prévia anterior foi mantida.';
+      }
+    } finally {
+      if (versao === this.versaoPrevia) this.atualizandoPrevia = false;
+    }
   }
   async salvar(item: AutomacaoPedido, modo: 'texto' | 'ativacao' = 'ativacao') {
     if (this.ocupado || this.confirmando || (item.ativa && !this.painel?.podeAtivar)) return;
@@ -163,12 +247,15 @@ export class AutomacoesPedidoComponent implements OnInit {
     }, maxWidth: 'calc(100vw - 24px)' }).afterClosed());
     this.confirmando = false;
     if (!confirmado || s !== this.sessao) return;
+    this.cancelarPrevia();
     await this.executar(async () => {
       const p = await this.ler(this.http.put<PainelAutomacoes>(this.base + '/' + encodeURIComponent(item.tipo), snapshot, this.opcoes()));
       if (s === this.sessao) {
         this.painel = p;
         const salvo = p.itens.find(i => i.tipo === item.tipo);
         if (salvo && this.rascunho?.tipo === salvo.tipo) {
+          this.erroPrevia = '';
+          this.estadoPrevia = 'Prévia atualizada';
           this.original = salvo;
           this.rascunho = { ...salvo };
         }

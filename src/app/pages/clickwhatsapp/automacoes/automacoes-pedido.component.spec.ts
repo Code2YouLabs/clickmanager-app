@@ -36,7 +36,7 @@ describe('Automações de Pedidos', () => {
   }
   it('não consulta nem ativa automaticamente; permanece configurável desconectada', fakeAsync(() => {
     const f = criar(); http.expectNone(base); expect(f.nativeElement.textContent).toContain('configuração permanece disponível');
-    abrir(f); expect(f.componentInstance.painel!.itens[0].ativa).toBeFalse(); expect(f.nativeElement.textContent).toContain('Desativada');
+    abrir(f); expect(f.componentInstance.painel!.itens[0].ativa).toBeFalse(); expect(f.nativeElement.textContent).toContain('Inativa');
   }));
   it('salva somente após confirmação e mantém revisão do backend', fakeAsync(() => {
     const f = criar(); abrir(f); const c = f.componentInstance; c.painel!.itens[0].ativa = true;
@@ -49,11 +49,12 @@ describe('Automações de Pedidos', () => {
   it('cancelar confirmação preserva configuração sem requests', fakeAsync(() => {
     confirmar.and.returnValue({ afterClosed: () => of(false) }); const f = criar(); abrir(f);
     f.componentInstance.salvar(f.componentInstance.painel!.itens[0]); flushMicrotasks(); http.expectNone(base + '/CRIADO');
+    expect(f.componentInstance.painel?.itens[0].ativa).toBeFalse();
   }));
   it('preview é demonstrativo e erro de variável não vira envio', fakeAsync(() => {
     const f = criar(); abrir(f); const item = f.componentInstance.painel!.itens[0]; item.modelo = '{empresa.segredo}';
     f.componentInstance.previa(item); http.expectOne(base + '/previa').flush({ codigo: 'REQUISICAO_INVALIDA' }, { status: 400, statusText: 'Bad Request' });
-    flushMicrotasks(); expect(f.componentInstance.erro).toContain('variáveis'); expect(item.previa).toBe('Olá Cliente demonstrativo');
+    flushMicrotasks(); expect(f.componentInstance.erroPrevia).toContain('variáveis'); expect(item.previa).toBe('Olá Cliente demonstrativo');
   }));
   it('sem autorização para ativar mantém leitura e permite desativar', fakeAsync(() => {
     const f = criar(); abrir(f, { ...painel, podeAtivar: false }); const c = f.componentInstance;
