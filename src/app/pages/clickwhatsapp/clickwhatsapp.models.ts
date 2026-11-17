@@ -63,7 +63,9 @@ export interface Mensagem {
 }
 export interface ItemHistorico {
   mensagem: Mensagem;
-  destinatarioMascarado: string | null;
+  destinatario: string | null;
+  nomeCliente: string | null;
+  tipoOrigem: 'AVULSA' | 'PEDIDO_MANUAL' | 'ORCAMENTO_MANUAL' | 'PEDIDO_AUTOMATICO' | 'NAO_IDENTIFICADA';
   conteudoDisponivel: boolean;
 }
 export interface Detalhe {
@@ -96,12 +98,12 @@ export interface Qr { situacao: 'DISPONIVEL' | 'INDISPONIVEL' | 'JA_CONECTADA'; 
 export type Webhook = 'NAO_CONFIGURADO' | 'CONFIRMADO' | 'DIVERGENTE' | 'INCERTO' | 'REJEITADO';
 export interface OperacaoEnvio {
   readonly chave: string;
-  readonly corpo: Readonly<{ numero: string; texto: string; expiraEm: string }>;
+  readonly corpo: Readonly<{ numero: string; texto: string; expiraEm: string; clienteId?: number }>;
 }
-export function novaOperacao(numero: string, texto: string, agora = Date.now()): OperacaoEnvio {
+export function novaOperacao(numero: string, texto: string, agora = Date.now(), clienteId?: number): OperacaoEnvio {
   return Object.freeze({
     chave: crypto.randomUUID(),
-    corpo: Object.freeze({ numero, texto, expiraEm: new Date(agora + 3600_000).toISOString() }),
+    corpo: Object.freeze({ numero, texto, ...(clienteId ? { clienteId } : {}), expiraEm: new Date(agora + 3600_000).toISOString() }),
   });
 }
 
@@ -139,6 +141,8 @@ const ERROS: Record<string, string> = {
   CHAVE_MENSAGEM_INVALIDA: 'O serviço de mensagens está temporariamente indisponível.',
   CONTEUDO_INDISPONIVEL: 'O conteúdo desta mensagem está indisponível.',
   CLICKWHATSAPP_INDISPONIVEL: 'O ClickWhatsApp está temporariamente indisponível.',
+  CLIENTE_INACESSIVEL: 'O cliente selecionado não está disponível.',
+  CLIENTE_TELEFONE_DIVERGENTE: 'O telefone do cliente mudou. Selecione o cadastro novamente.',
   DESTINATARIO_INVALIDO: 'Informe um número internacional com código do país.',
   VALIDADE_INVALIDA: 'A validade da solicitação terminou ou está fora do limite.',
   COMANDO_INVALIDO: 'Confira o número e o tamanho da mensagem.',

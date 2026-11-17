@@ -1,5 +1,5 @@
 import { TablerIconsModule } from 'angular-tabler-icons';
-import { IconAlertTriangle, IconBrandWhatsapp, IconChecks, IconCircleX, IconClock, IconEye, IconMessageCircle, IconSend } from 'angular-tabler-icons/icons';
+import { IconBrandWhatsapp, IconMessageCircle, IconSend } from 'angular-tabler-icons/icons';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
@@ -50,7 +50,7 @@ describe('ClickWhatsApp', () => {
     usuario$ = new BehaviorSubject<Usuario | null>({ id: 1, proprietario: true });
     toast = jasmine.createSpyObj('ToastrService', ['error', 'warning', 'success']);
     TestBed.configureTestingModule({
-      imports: [ClickWhatsAppPage, TablerIconsModule.pick({ IconAlertTriangle, IconBrandWhatsapp, IconChecks, IconCircleX, IconClock, IconEye, IconMessageCircle, IconSend })],
+      imports: [ClickWhatsAppPage, TablerIconsModule.pick({ IconBrandWhatsapp, IconMessageCircle, IconSend })],
       providers: [provideRouter([]), { provide: ActivatedRoute, useValue: rota }, provideNoopAnimations(), provideHttpClient(), provideHttpClientTesting(),
         { provide: AuthService, useValue: { usuario$ } },
         { provide: ToastrService, useValue: toast },
@@ -245,6 +245,23 @@ describe('ClickWhatsApp', () => {
     fixture.destroy();
   }));
 
+  it('registra o ID do cliente selecionado e mantém o corpo ao repetir o aceite', async () => {
+    await iniciar();
+    page.abrirEnvio();
+    page.selecionarCliente({ id: 91, nome: 'Cliente escolhido', email: '', telefone: '(31) 98765-4321' });
+    page.texto = 'Mensagem fictícia';
+    void page.enviar();
+    const aceite = http.expectOne(conexao + '/mensagens');
+    expect(aceite.request.body).toEqual(jasmine.objectContaining({ numero: '5531987654321', clienteId: 91 }));
+    aceite.error(new ProgressEvent('error'));
+    await estabilizar();
+    void page.enviar();
+    const repeticao = http.expectOne(conexao + '/mensagens');
+    expect(repeticao.request.body).toEqual(aceite.request.body);
+    repeticao.flush(mensagem, { status: 202, statusText: 'Accepted' });
+    await estabilizar();
+  });
+
   it('repete a mesma chave, corpo e validade após perda de transporte e cria nova chave em nova mensagem', async () => {
     await iniciar();
     page.abrirEnvio();
@@ -285,14 +302,14 @@ describe('ClickWhatsApp', () => {
     const lista = http.expectOne(r => r.url === base + '/mensagens');
     expect(lista.request.params.keys().sort()).toEqual(['fim', 'inicio', 'pagina', 'tamanho']);
     expect(lista.request.params.get('tamanho')).toBe('5');
-    lista.flush([{ mensagem, destinatarioMascarado: '***0123', conteudoDisponivel: false }]);
+    lista.flush([{ mensagem, destinatario: '15555550123', conteudoDisponivel: false }]);
     const resumo = http.expectOne(r => r.url === base + '/resumo');
     expect(resumo.request.params.get('fuso')).toBe('America/Sao_Paulo');
     resumo.flush({ ...page.filtro, fuso: 'America/Sao_Paulo', calculadoEm: mensagem.criadaEm,
       mensagens: { total: 1, aceitas: 0, entregues: 0, lidas: 0, falhas: 0, backlogAtual: 0, incertasAtuais: 1 } });
     await estabilizar();
     expect(fixture.nativeElement.querySelector('.item-mobile')).not.toBeNull();
-    expect(fixture.nativeElement.querySelectorAll('.metricas app-metric-card').length).toBe(7);
+    expect(fixture.nativeElement.querySelectorAll('.tabela-resumo tbody tr').length).toBe(7);
     expect(fixture.nativeElement.querySelector('app-mobile-fab-action')).not.toBeNull();
     void page.abrirDetalhe(page.itens[0]);
     http.expectOne(conexao + '/mensagens/mensagem-teste').flush({ mensagem, destinatario: null, texto: null, conteudoDisponivel: false });
@@ -308,13 +325,15 @@ describe('ClickWhatsApp', () => {
     mobile = true;
     await iniciar({ ...config, acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: false } });
     page.config = { ...config, acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: true } };
-    Object.defineProperty(page, 'area', { value: 'mensagens' });
-    page.verOcorrencias();
-    const lista = http.expectOne(r => r.url === base + '/mensagens');
-    expect(lista.request.params.get('fase')).toBe('INCERTA');
-    lista.flush([{ mensagem, destinatarioMascarado: '***0123', conteudoDisponivel: false }]);
+    fixture.detectChanges();
+    fixture.nativeElement.querySelector('[aria-controls="ocorrencias-na-visao"]').click();
+    http.expectOne(r => r.url === base + '/ocorrencias').flush([
+      { mensagem: mensagem.id, conexao: mensagem.conexao, tentativa: 't1', fase: 'INCERTA', iniciadaEm: mensagem.criadaEm },
+    ]);
     await estabilizar();
-    page.abrirOcorrencia(page.itens[0]);
+    const ocorrencia = fixture.nativeElement.querySelector('#ocorrencias-na-visao button.item-mobile');
+    expect(ocorrencia).not.toBeNull();
+    ocorrencia.click();
     const url = conexao + '/mensagens/mensagem-teste';
     const caso = { mensagem: mensagem.id, tentativa: 't1', fase: 'INCERTA', resultado: 'PERMANECE_INCERTA',
       motivo: 'SEM_IDENTIFICADOR_WHATSAPP', evidencia: null, historico: [] };
@@ -329,6 +348,8 @@ describe('ClickWhatsApp', () => {
       resultado: 'RESOLVIDA_COM_EVIDENCIA', motivo: 'ACEITE_COMPROVADO' } });
     await Promise.resolve();
     http.expectOne(r => r.url === base + '/mensagens').flush([]);
+    http.expectOne(r => r.url === base + '/ocorrencias').flush([]);
+    http.expectOne(r => r.url === base + '/resumo').flush({ mensagens: { incertasAtuais: 0 } });
     http.expectOne(base + '/configuracao').flush(page.config);
     await estabilizar();
     expect(document.querySelector('.mobile-side-panel')?.textContent).toContain('Resolvida com evidência');
@@ -453,7 +474,111 @@ describe('ClickWhatsApp', () => {
     agora.and.callThrough();
   });
 
-  it('abre ocorrências diretamente em Mensagens, sem consultar resumo ou histórico em paralelo', async () => {
+  it('pagina o histórico na Visão geral e abre o detalhe no painel lateral desktop', async () => {
+    fixture.detectChanges();
+    http.expectOne(base + '/configuracao').flush({ ...config,
+      acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: true } });
+    await Promise.resolve();
+    const item = { mensagem, destinatario: '15555550123', conteudoDisponivel: false };
+    http.expectOne(r => r.url === base + '/mensagens' && r.params.get('tamanho') === '5').flush([item]);
+    http.expectOne(r => r.url === base + '/resumo').flush({ ...page.filtro, mensagens: { incertasAtuais: 0 } });
+    await estabilizar();
+    const botao = (texto: string) => Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
+      .find(b => b.textContent?.trim() === texto)!;
+    botao('Ver todas as mensagens').click();
+    const historico = http.expectOne(r => r.url === base + '/mensagens' && r.params.get('tamanho') === '20');
+    expect(historico.request.params.get('pagina')).toBe('0');
+    historico.flush(Array.from({ length: 20 }, (_, i) => ({ ...item, mensagem: { ...mensagem, id: 'msg-' + i } })));
+    await estabilizar();
+    botao('Próxima').click();
+    http.expectOne(r => r.url === base + '/mensagens' && r.params.get('pagina') === '1').flush([item]);
+    await estabilizar();
+    botao('Ver detalhe').click();
+    http.expectOne(conexao + '/mensagens/mensagem-teste').flush({ mensagem, destinatario: null, texto: null, conteudoDisponivel: false });
+    await Promise.resolve();
+    http.expectOne(conexao + '/mensagens/mensagem-teste/tentativas').flush([]);
+    await estabilizar();
+    expect(document.querySelector('.mobile-side-panel')?.textContent).toContain('Detalhe da mensagem');
+    expect(page.area).toBe('visao');
+    expect(page.paginaHistorico).toBe(1);
+  });
+
+  it('expande a lista de ocorrências no card da Visão geral e consulta somente ao abrir', async () => {
+    fixture.detectChanges();
+    http.expectOne(base + '/configuracao').flush({ ...config,
+      acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: true } });
+    await Promise.resolve();
+    http.expectOne(r => r.url === base + '/mensagens').flush([]);
+    http.expectOne(r => r.url === base + '/resumo').flush({ ...page.filtro, mensagens: { incertasAtuais: 0 } });
+    await estabilizar();
+    const botao: HTMLButtonElement = fixture.nativeElement.querySelector('[aria-controls="ocorrencias-na-visao"]');
+    const painel: HTMLElement = fixture.nativeElement.querySelector('#ocorrencias-na-visao');
+    expect(painel.hidden).toBeTrue();
+    http.expectNone(r => r.url === base + '/ocorrencias');
+    botao.click();
+    http.expectOne(r => r.url === base + '/ocorrencias').flush([]);
+    await estabilizar();
+    expect(painel.hidden).toBeFalse();
+    expect(painel.textContent).toContain('Nenhuma ocorrência registrada.');
+    botao.click();
+    fixture.detectChanges();
+    expect(painel.hidden).toBeTrue();
+  });
+
+  it('abre o envio selecionado na própria tela, cancela a leitura anterior e abre os dados no painel lateral', async () => {
+    fixture.destroy();
+    rota.snapshot.data.area = 'mensagens';
+    fixture = TestBed.createComponent(ClickWhatsAppPage);
+    fixture.detectChanges();
+    http.expectOne(base + '/configuracao').flush({ ...config,
+      acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: true } });
+    await Promise.resolve();
+
+    const outro = { ...mensagem, id: 'outro-envio' };
+    http.expectOne(r => r.url === base + '/mensagens').flush([
+      { mensagem, destinatario: '15555550123', nomeCliente: 'Cliente de teste', tipoOrigem: 'AVULSA' },
+      { mensagem: outro, destinatario: '15555550123', tipoOrigem: 'PEDIDO_AUTOMATICO' },
+    ]);
+    await estabilizar();
+    const botoes = fixture.nativeElement.querySelectorAll('.envio-linha');
+    expect(botoes.length).toBe(2);
+    expect(botoes[0].textContent).toContain('Cliente de teste');
+    expect(botoes[0].textContent).not.toContain('15555550123');
+    expect(botoes[1].textContent).toContain('15555550123');
+    expect(botoes[0].textContent).toContain('Mensagem avulsa');
+    expect(botoes[1].textContent).toContain('Automação de pedido');
+    botoes[0].click();
+    const primeira = http.expectOne(conexao + '/mensagens/mensagem-teste');
+    botoes[1].click();
+    expect(primeira.cancelled).toBeTrue();
+    http.expectOne(conexao + '/mensagens/outro-envio').flush({
+      mensagem: outro, destinatario: 'destinatário de teste', texto: 'Segundo envio', conteudoDisponivel: true,
+    });
+    await Promise.resolve();
+    http.expectNone(conexao + '/mensagens/outro-envio/tentativas');
+    await estabilizar();
+
+    expect(botoes[1].getAttribute('aria-current')).toBe('true');
+    expect(fixture.nativeElement.querySelector('[message-detail]').textContent).toContain('Segundo envio');
+    expect(fixture.nativeElement.querySelector('[message-detail]').textContent).not.toContain('Tentativas');
+    expect(fixture.nativeElement.textContent).not.toContain('Respostas recebidas');
+    expect(document.querySelector('.mobile-side-panel')).toBeNull();
+
+    fixture.nativeElement.querySelector('button[aria-label="Mais opções da mensagem"]').click();
+    await estabilizar();
+    const opcao = document.querySelector<HTMLButtonElement>('.mat-mdc-menu-panel [role="menuitem"]');
+    expect(opcao?.textContent).toContain('Dados da mensagem');
+    opcao?.click();
+    http.expectOne(conexao + '/mensagens/outro-envio').flush({ mensagem: outro, conteudoDisponivel: false });
+    await Promise.resolve();
+    http.expectOne(conexao + '/mensagens/outro-envio/tentativas').flush([]);
+    await estabilizar();
+    const painel = document.querySelector('.mobile-side-panel');
+    expect(painel?.textContent).toContain('Tentativas');
+    expect(painel?.textContent).toContain('Válida até');
+  });
+
+  it('abre somente o histórico sem ocorrências mesmo com a antiga query string', async () => {
     fixture.destroy();
     rota.snapshot.data.area = 'mensagens';
     rota.snapshot.queryParamMap = convertToParamMap({ vista: 'ocorrencias' });
@@ -463,11 +588,13 @@ describe('ClickWhatsApp', () => {
     http.expectOne(base + '/configuracao').flush({ ...config,
       acoesPermitidas: { ...config.acoesPermitidas, consultarHistorico: true } });
     await Promise.resolve();
-    http.expectOne(r => r.url === base + '/ocorrencias').flush([]);
+    const historico = http.expectOne(r => r.url === base + '/mensagens');
+    expect(historico.request.params.get('excluirOcorrencias')).toBe('true');
+    historico.flush([]);
     await estabilizar();
-    http.expectNone(r => [base + '/resumo', base + '/mensagens'].includes(r.url));
-    expect(fixture.nativeElement.textContent).toContain('Nenhuma ocorrência registrada');
-    expect(fixture.nativeElement.querySelector('app-data-table')).toBeNull();
+    http.expectNone(r => [base + '/resumo', base + '/ocorrencias'].includes(r.url));
+    expect(fixture.nativeElement.textContent).not.toContain('Ocorrências');
+    expect(fixture.nativeElement.querySelector('app-message-workspace')).not.toBeNull();
   });
 
   it('mostra os controles técnicos exclusivamente em Configurações', async () => {

@@ -34,9 +34,10 @@ export class ClickWhatsAppService {
       ...this.options(), headers: { 'Idempotency-Key': operacao.chave }, observe: 'response',
     });
   }
-  historico(f: Filtro) {
+  historico(f: Filtro, excluirOcorrencias = false) {
     let params = this.periodo(f).set('pagina', f.pagina).set('tamanho', f.tamanho);
     if (f.fase) params = params.set('fase', f.fase);
+    if (excluirOcorrencias) params = params.set('excluirOcorrencias', true);
     return this.http.get<ItemHistorico[]>(this.base + '/mensagens', { ...this.options(), params });
   }
   detalhe(id: string, mensagem: string) {

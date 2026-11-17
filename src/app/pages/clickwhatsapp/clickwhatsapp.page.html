@@ -21,7 +21,12 @@
         <p class="aviso" role="status">O ClickWhatsApp está desabilitado para esta empresa.</p>
       }
       @if (c.preferencia?.quarentena && direitoAtivo) {
-        <div class="aviso" role="status"><strong>Resultado incerto</strong><p>Não foi possível determinar o resultado de uma tentativa. Novos despachos estão suspensos nesta conexão.</p></div>
+        <div class="aviso" role="status">
+          <strong>Envios suspensos</strong>
+          @if (area !== 'mensagens') {
+            <p>Uma tentativa está com resultado incerto nesta conexão.</p>
+          }
+        </div>
       }
 
       @if (areaEnvio && pendente) {
@@ -68,30 +73,44 @@
               @if (lendoResumo) { <mat-progress-bar mode="indeterminate" aria-label="Carregando resumo" /> }
               @if (erroResumo) { <p class="aviso" role="alert">{{ erroResumo }}</p> }
               @if (resumo; as r) {
-                <div class="metricas">
-                  @for (metrica of metricasResumo; track metrica.chave) {
-                    <app-metric-card [label]="metrica.rotulo" [value]="'' + r.mensagens[metrica.chave]"
-                      [icon]="metrica.icone" [accentColor]="metrica.cor" [compact]="true" />
-                  }
-                </div>
-                <p class="muted">Aceitas, entregues e lidas são contagens cumulativas. Falhas podem se sobrepor às confirmações. Fila e incertezas atuais incluem mensagens de fora do período.</p>
-                <p class="muted">{{ r.inicio | date:'dd/MM/yyyy HH:mm':'-0300' }} a {{ r.fim | date:'dd/MM/yyyy HH:mm':'-0300' }} · {{ r.fuso }}<br>Calculado às {{ r.calculadoEm | date:'HH:mm':'-0300' }}</p>
+                <table class="tabela-resumo" aria-label="Indicadores do resumo operacional">
+                  <thead>
+                    <tr><th scope="col">Indicador</th><th scope="col">Quantidade</th></tr>
+                  </thead>
+                  <tbody>
+                    @for (metrica of metricasResumo; track metrica.chave) {
+                      <tr>
+                        <th scope="row">{{ metrica.rotulo }}</th>
+                        <td>{{ r.mensagens[metrica.chave] | number }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+                <p class="muted">Última atualização em {{ r.calculadoEm | date:'dd/MM/yyyy' : '-0300' }} às {{ r.calculadoEm | date:'HH:mm' : '-0300' }}</p>
               }
             </app-section-card>
 
             <app-section-card title="Ocorrências que exigem atenção" [mobilePlain]="true">
-              @if (resumo; as r) {
-                @if (r.mensagens.incertasAtuais > 0) {
-                  <p><strong>{{ r.mensagens.incertasAtuais }} com resultado incerto</strong></p>
-                  <p class="muted">Investigue as evidências para determinar o resultado.</p>
-                } @else {
-                  <strong>Nenhuma ocorrência pendente</strong>
-                  <p class="muted">Não há mensagens com resultado incerto que exijam investigação.</p>
+              <div class="ocorrencias-resumo">
+                <span>
+                  @if (resumo; as r) {
+                    {{ r.mensagens.incertasAtuais > 0
+                      ? r.mensagens.incertasAtuais + ' com resultado incerto'
+                      : 'Nenhuma ocorrência pendente' }}
+                  } @else {
+                    {{ lendoResumo ? 'Consultando ocorrências…' : 'Situação das ocorrências indisponível.' }}
+                  }
+                </span>
+                <button mat-button type="button" [attr.aria-expanded]="ocorrenciasNaVisaoAbertas"
+                  aria-controls="ocorrencias-na-visao" (click)="alternarOcorrenciasNaVisao()">
+                  {{ ocorrenciasNaVisaoAbertas ? 'Recolher ocorrências' : 'Ver ocorrências' }}
+                </button>
+              </div>
+              <div id="ocorrencias-na-visao" [hidden]="!ocorrenciasNaVisaoAbertas">
+                @if (ocorrenciasNaVisaoAbertas) {
+                  <ng-container [ngTemplateOutlet]="listaDeOcorrencias" />
                 }
-                <a mat-button routerLink="/page/clickwhatsapp/mensagens" [queryParams]="{ vista: 'ocorrencias' }">Ver ocorrências</a>
-              } @else {
-                <p class="muted">{{ lendoResumo ? 'Consultando ocorrências…' : 'Situação das ocorrências indisponível.' }}</p>
-              }
+              </div>
             </app-section-card>
 
             <ng-container [ngTemplateOutlet]="historico" />
@@ -99,45 +118,7 @@
         }
         @case ('mensagens') {
           @if (acoes?.consultarHistorico) {
-            <div class="acoes alternancia" role="group" aria-label="Visualização de mensagens">
-              <button mat-stroked-button type="button" [attr.aria-pressed]="!exibindoOcorrencias" (click)="selecionarHistorico(false)">Histórico</button>
-              <button mat-stroked-button type="button" [attr.aria-pressed]="exibindoOcorrencias" (click)="selecionarHistorico(true)">Ocorrências</button>
-            </div>
-            @if (exibindoOcorrencias) {
-              <app-section-card title="Ocorrências" [mobilePlain]="true">
-                <p>Consulte tentativas que ficaram incertas e acompanhe a investigação.</p>
-                <button mat-stroked-button type="button" [disabled]="carregandoOcorrencias" (click)="listarOcorrencias()">Atualizar ocorrências</button>
-                @if (carregandoOcorrencias) { <mat-progress-bar mode="indeterminate" aria-label="Consultando ocorrências" /> }
-                @if (erroOcorrencias) { <p class="aviso" role="alert">{{ erroOcorrencias }}</p> }
-                @if (listaOcorrencias?.length && listaOcorrencias; as ocorrencias) {
-                  <app-data-table [columns]="colunasOcorrencias" [data]="ocorrencias" [rowKey]="chaveOcorrencia"
-                    [retryEnabled]="false" tableLabel="Ocorrências" [emptyState]="{title: 'Nenhuma ocorrência registrada'}">
-                    <ng-template appDataTableCell="iniciadaEm" let-item>{{ item.iniciadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</ng-template>
-                    <ng-template appDataTableCell="fase" let-item>{{ rotuloFase(item.fase) }}</ng-template>
-                    <ng-template appDataTableCell="detalhe" let-item>
-                      <button mat-button type="button" (click)="abrirOcorrencia({mensagem: {id: item.mensagem, conexao: item.conexao}})">Ver ocorrência</button>
-                    </ng-template>
-                    <ng-template [appDataTableItem]="ocorrencias" let-item>
-                      <button class="item-mobile" type="button" (click)="abrirOcorrencia({mensagem: {id: item.mensagem, conexao: item.conexao}})">
-                        <strong>{{ rotuloFase(item.fase) }}</strong>
-                        <span>{{ item.iniciadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</span>
-                        <span>Ver ocorrência</span>
-                      </button>
-                    </ng-template>
-                  </app-data-table>
-                  <div class="paginacao">
-                    <button mat-button type="button" [disabled]="carregandoOcorrencias || paginaOcorrencias === 0" (click)="listarOcorrencias(-1)">Anterior</button>
-                    <span>Página {{ paginaOcorrencias + 1 }}</span>
-                    <button mat-button type="button" [disabled]="carregandoOcorrencias || ocorrencias.length < 20" (click)="listarOcorrencias(1)">Próxima</button>
-                  </div>
-                } @else if (listaOcorrencias && !carregandoOcorrencias) { <p>Nenhuma ocorrência registrada.</p>
-                  @if (paginaOcorrencias > 0) {
-                    <button mat-button type="button" (click)="listarOcorrencias(-1)">Página anterior</button>
-                  } }
-              </app-section-card>
-
-
-            } @else { <ng-container [ngTemplateOutlet]="historico" /> }
+            <ng-container [ngTemplateOutlet]="historicoMensagens" />
           } @else { <p class="muted">O histórico está indisponível para este acesso.</p> }
         }
         @case ('automacoes') {
@@ -215,6 +196,38 @@
   }
 </app-page-card>
 
+<ng-template #listaDeOcorrencias>
+  <p class="muted">Consulte tentativas com resultado incerto e acompanhe as investigações.</p>
+  <button mat-stroked-button type="button" [disabled]="carregandoOcorrencias" (click)="listarOcorrencias()">Atualizar ocorrências</button>
+  @if (carregandoOcorrencias) { <mat-progress-bar mode="indeterminate" aria-label="Consultando ocorrências" /> }
+  @if (erroOcorrencias) { <p class="aviso" role="alert">{{ erroOcorrencias }}</p> }
+  @if (listaOcorrencias?.length && listaOcorrencias; as ocorrencias) {
+    <app-data-table [columns]="colunasOcorrencias" [data]="ocorrencias" [rowKey]="chaveOcorrencia"
+      [retryEnabled]="false" tableLabel="Ocorrências" [emptyState]="{title: 'Nenhuma ocorrência registrada'}">
+      <ng-template appDataTableCell="iniciadaEm" let-item>{{ item.iniciadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</ng-template>
+      <ng-template appDataTableCell="fase" let-item>{{ rotuloFase(item.fase) }}</ng-template>
+      <ng-template appDataTableCell="detalhe" let-item>
+        <button mat-button type="button" (click)="abrirOcorrencia({mensagem: {id: item.mensagem, conexao: item.conexao}})">Ver ocorrência</button>
+      </ng-template>
+      <ng-template [appDataTableItem]="ocorrencias" let-item>
+        <button class="item-mobile" type="button" (click)="abrirOcorrencia({mensagem: {id: item.mensagem, conexao: item.conexao}})">
+          <strong>{{ rotuloFase(item.fase) }}</strong>
+          <span>{{ item.iniciadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</span>
+          <span>Ver ocorrência</span>
+        </button>
+      </ng-template>
+    </app-data-table>
+    <div class="paginacao">
+      <button mat-button type="button" [disabled]="carregandoOcorrencias || paginaOcorrencias === 0" (click)="listarOcorrencias(-1)">Anterior</button>
+      <span>Página {{ paginaOcorrencias + 1 }}</span>
+      <button mat-button type="button" [disabled]="carregandoOcorrencias || ocorrencias.length < 20" (click)="listarOcorrencias(1)">Próxima</button>
+    </div>
+  } @else if (listaOcorrencias && !carregandoOcorrencias) { <p>Nenhuma ocorrência registrada.</p>
+    @if (paginaOcorrencias > 0) {
+      <button mat-button type="button" (click)="listarOcorrencias(-1)">Página anterior</button>
+    } }
+</ng-template>
+
 <ng-template #situacao>
   @if (config; as c) {
     <section class="situacao" aria-label="Situação da empresa">
@@ -235,49 +248,138 @@
   }
 </ng-template>
 
-<ng-template #historico>
-        <app-section-card [title]="area === 'visao' ? 'Últimas mensagens' : 'Histórico de mensagens'" [mobilePlain]="true" class="largura-total">
-          @if (area === 'mensagens') {
-          <div class="acoes historico-acoes">
-            <button mat-stroked-button type="button" (click)="abrirFiltros()"><mat-icon>filter_list</mat-icon>Filtros</button>
-            <button mat-stroked-button type="button" [disabled]="lendo" [attr.aria-pressed]="filtro.fase === 'INCERTA'" (click)="verOcorrencias()">{{ filtro.fase === 'INCERTA' ? 'Mostrar todas' : 'Ocorrências incertas' }}</button>
-            <button mat-button type="button" [disabled]="lendo" (click)="carregarConsultas()">Atualizar histórico</button>
-          </div>
+<ng-template #historicoMensagens>
+  <app-message-workspace listLabel="Histórico de envios" detailLabel="Detalhe do envio"
+    [compact]="mobile" [detailOpen]="!!selecionada">
+    <div message-list>
+      <div class="caixa-mensagens-cabecalho">
+        <h2>Envios</h2>
+        <div class="acoes historico-acoes">
+          <button mat-stroked-button type="button" (click)="abrirFiltros()"><mat-icon>filter_list</mat-icon>Filtros</button>
+          <button mat-button type="button" [disabled]="lendo" (click)="carregarConsultas()">Atualizar histórico</button>
+        </div>
+      </div>
+      @if (lendo) {
+        <mat-progress-bar mode="indeterminate" aria-label="Carregando envios" />
+      } @else if (erroHistorico) {
+        <p class="caixa-mensagens-aviso" role="alert">{{ erroHistorico }}</p>
+      } @else {
+        <ul class="envios-lista">
+          @for (item of itens; track chaveLinha(item)) {
+            @let origem = origens[item.tipoOrigem] || origens.NAO_IDENTIFICADA;
+            <li>
+              <button class="envio-linha" type="button" [attr.aria-current]="selecionada === item ? 'true' : null"
+                (click)="selecionarMensagem(item)">
+                <span class="envio-icone" [attr.data-origem]="origem.estilo">
+                  <mat-icon aria-hidden="true">{{ origem.icone }}</mat-icon>
+                </span>
+                <span class="envio-rotulo">
+                  <strong>{{ item.nomeCliente || item.destinatario || 'Destinatário indisponível' }}</strong>
+                  <span class="muted">{{ origem.rotulo }} · {{ rotuloFase(item.mensagem.fase) }}</span>
+                </span>
+                <time class="envio-data muted" [attr.datetime]="item.mensagem.criadaEm">
+                  {{ item.mensagem.criadaEm | date:'dd/MM/yyyy':'-0300' }}
+                </time>
+              </button>
+            </li>
+          } @empty {
+            <li class="caixa-mensagens-aviso">Nenhum envio no período. Você pode ajustar os filtros.</li>
           }
-          <app-data-table [columns]="colunas" [data]="itens" [rowKey]="chaveLinha" [loading]="lendo"
+        </ul>
+        @if (paginaHistorico > 0 || itens.length >= tamanhoHistorico) {
+          <ng-container [ngTemplateOutlet]="paginacaoMensagens" />
+        }
+      }
+    </div>
+    <div message-detail class="caixa-mensagens-detalhe">
+      @if (selecionada; as item) {
+        <div class="envio-detalhe-cabecalho">
+          @if (mobile) {
+            <button mat-icon-button type="button" (click)="fecharDetalheSelecionado()" aria-label="Voltar para os envios"><mat-icon>arrow_back</mat-icon></button>
+          }
+          <div>
+            <h2>{{ item.nomeCliente || item.destinatario || 'Destinatário indisponível' }}</h2>
+            <span class="muted">Envio de {{ item.mensagem.criadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</span>
+          </div>
+          <button mat-icon-button type="button" [matMenuTriggerFor]="menuEnvio" class="envio-menu"
+            aria-label="Mais opções da mensagem"><mat-icon>more_vert</mat-icon></button>
+          <mat-menu #menuEnvio="matMenu">
+            <button mat-menu-item type="button" (click)="abrirDetalhe(item)">
+              <mat-icon>info_outline</mat-icon>Dados da mensagem
+            </button>
+          </mat-menu>
+        </div>
+        <div class="envio-detalhe-conteudo">
+          @if (leituraSelecionada?.buscando) { <mat-progress-bar mode="indeterminate" aria-label="Carregando mensagem" /> }
+          @if (leituraSelecionada?.erro; as erro) { <p class="aviso" role="alert">{{ erro }}</p> }
+          @if (leituraSelecionada?.detalhe; as detalhe) {
+            @if (detalhe.conteudoDisponivel) {
+              <div class="envio-texto">
+                <p class="texto-mensagem">{{ detalhe.texto }}</p>
+                <time class="envio-hora" [attr.datetime]="detalhe.mensagem.criadaEm">
+                  {{ detalhe.mensagem.criadaEm | date:'HH:mm':'-0300' }}
+                </time>
+              </div>
+            } @else { <p>O conteúdo desta mensagem não está mais disponível.</p> }
+          }
+        </div>
+      } @else {
+        <div class="envio-sem-selecao">
+          <mat-icon aria-hidden="true">chat_bubble_outline</mat-icon>
+          <h2>Selecione um envio</h2>
+        </div>
+      }
+    </div>
+  </app-message-workspace>
+</ng-template>
+
+<ng-template #historico>
+        <app-section-card [title]="!historicoNaVisao ? 'Últimas mensagens' : 'Histórico de mensagens'" [mobilePlain]="true" class="largura-total">
+          <app-data-table class="tabela-mensagens-recentes"
+            [columns]="colunasRecentes" [data]="itens" [rowKey]="chaveLinha" [loading]="lendo"
             [error]="erroHistorico || null" [retryEnabled]="false" tableLabel="Histórico de mensagens"
-            [emptyState]="{ title: filtro.fase === 'INCERTA' ? 'Nenhuma ocorrência incerta no período' : (area === 'visao' ? 'Nenhuma mensagem registrada ainda.' : 'Nenhuma mensagem no período'), description: 'Altere os filtros para consultar outro período.' }">
+            [emptyState]="{ title: 'Nenhuma mensagem registrada ainda.' }">
             <ng-template appDataTableCell="data" let-item>{{ item.mensagem.criadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</ng-template>
-            <ng-template appDataTableCell="destino" let-item>{{ item.destinatarioMascarado || 'Indisponível' }}</ng-template>
-            <ng-template appDataTableCell="fase" let-item><ng-container [ngTemplateOutlet]="fase" [ngTemplateOutletContext]="{ $implicit: item }" /></ng-template>
-            <ng-template appDataTableCell="confirmacao" let-item>{{ rotuloConfirmacao(item.mensagem.confirmacao) }}</ng-template>
+            <ng-template appDataTableCell="destino" let-item><strong>{{ item.destinatario || 'Indisponível' }}</strong></ng-template>
+            <ng-template appDataTableCell="fase" let-item>
+              <ng-container [ngTemplateOutlet]="fase" [ngTemplateOutletContext]="{ $implicit: item, comDescricao: true }" />
+            </ng-template>
             <ng-template appDataTableCell="detalhe" let-item><button mat-button type="button" (click)="abrirDetalhe(item)">Ver detalhe</button>
-              @if (ehOcorrencia(item)) { <button mat-button type="button" (click)="abrirOcorrencia(item)">Ver ocorrência</button> }</ng-template>
+            </ng-template>
             <ng-template [appDataTableItem]="itens" let-item>
               <button class="item-mobile" type="button" (click)="abrirDetalhe(item)">
-                <span class="item-principal"><strong>{{ item.destinatarioMascarado || 'Destinatário indisponível' }}</strong><mat-icon aria-hidden="true">chevron_right</mat-icon></span>
+                <span class="item-principal"><strong>{{ item.destinatario || 'Destinatário indisponível' }}</strong><mat-icon aria-hidden="true">chevron_right</mat-icon></span>
                 <span class="muted">{{ item.mensagem.criadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</span>
                 <span class="item-estados"><ng-container [ngTemplateOutlet]="fase" [ngTemplateOutletContext]="{ $implicit: item }" /> {{ confirmacoes[item.mensagem.confirmacao] }}</span>
                 <small>{{ item.conteudoDisponivel ? 'Conteúdo disponível' : 'Conteúdo indisponível' }}</small>
               </button>
-              @if (ehOcorrencia(item)) { <button mat-button type="button" (click)="abrirOcorrencia(item)">Ver ocorrência</button> }
             </ng-template>
           </app-data-table>
-          @if (area === 'visao') {
-            <p class="muted">Últimos 93 dias</p>
-            <a mat-button routerLink="/page/clickwhatsapp/mensagens">Ver todas as mensagens</a>
-          } @else {
-          <div class="paginacao" aria-label="Paginação do histórico">
-            <button mat-button type="button" [disabled]="lendo || filtro.pagina === 0" (click)="pagina(-1)">Anterior</button>
-            <span>Página {{ filtro.pagina + 1 }}</span>
-            <button mat-button type="button" [disabled]="lendo || itens.length < filtro.tamanho" (click)="pagina(1)">Próxima</button>
-          </div>
-          }
+            <div class="mensagens-rodape">
+              <span class="muted">Últimos 93 dias</span>
+              @if (historicoNaVisao && (paginaHistorico > 0 || itens.length >= tamanhoHistorico)) {
+                <ng-container [ngTemplateOutlet]="paginacaoMensagens" />
+              }
+              <button mat-button type="button" class="alternar-historico" [disabled]="lendo"
+                [attr.aria-expanded]="!!historicoNaVisao" (click)="alternarHistoricoNaVisao()">
+                {{ historicoNaVisao ? 'Recolher histórico' : 'Ver todas as mensagens' }}
+              </button>
+            </div>
         </app-section-card>
 </ng-template>
 
-<ng-template #fase let-item>
-  <span class="etiqueta" [class.incerta]="item.mensagem.fase === 'INCERTA'">{{ rotuloFase(item.mensagem.fase) }}</span>
+<ng-template #paginacaoMensagens>
+  <div class="paginacao" aria-label="Paginação do histórico">
+    <button mat-button type="button" [disabled]="lendo || paginaHistorico === 0" (click)="pagina(-1)">Anterior</button>
+    <span>Página {{ paginaHistorico + 1 }}</span>
+    <button mat-button type="button" [disabled]="lendo || itens.length < tamanhoHistorico" (click)="pagina(1)">Próxima</button>
+  </div>
+</ng-template>
+
+<ng-template #fase let-item let-comDescricao="comDescricao">
+  <span class="etiqueta" [class.incerta]="item.mensagem.fase === 'INCERTA'"
+    [matTooltip]="comDescricao ? rotuloConfirmacao(item.mensagem.confirmacao) : ''"
+    [attr.tabindex]="comDescricao ? 0 : null">{{ rotuloFase(item.mensagem.fase) }}</span>
 </ng-template>
 
 <ng-template #telaQr>
@@ -333,9 +435,24 @@
       </section>
     }
     <div class="campos">
+      @if (!operacao) {
+        @if (clienteSelecionado; as cliente) {
+          <div class="acoes">
+            <strong>{{ cliente.nome }}</strong>
+            <button mat-button type="button" (click)="limparCliente()">Trocar cliente</button>
+          </div>
+        } @else {
+          <app-auto-complete label="Cliente" placeholder="Buscar cliente pelo nome ou telefone"
+            [control]="clienteControl" [buscarFn]="buscarClientes" [displayWith]="mostrarCliente"
+            [minimoCaracteres]="3" (selecionado)="selecionarCliente($event)" />
+          @if (podeCadastrarCliente) {
+            <button mat-button type="button" (click)="criarClienteParaEnvio()"><mat-icon>person_add</mat-icon>Novo cliente</button>
+          }
+        }
+      }
       <mat-form-field appearance="outline">
         <mat-label>Número internacional</mat-label>
-        <input matInput type="tel" inputmode="tel" autocomplete="off" maxlength="16" [(ngModel)]="numero" [readonly]="!!operacao" />
+        <input matInput type="tel" inputmode="tel" autocomplete="off" maxlength="16" [(ngModel)]="numero" [readonly]="!!operacao || !!clienteSelecionado" />
         <mat-hint>Inclua o código do país e o DDD.</mat-hint>
       </mat-form-field>
       <mat-form-field appearance="outline">
@@ -373,7 +490,9 @@
       @if (area === 'mensagens') {
       <mat-form-field appearance="outline"><mat-label>Situação</mat-label><mat-select [(ngModel)]="faseInput">
         <mat-option value="">Todas</mat-option>
-        @for (opcao of fases | keyvalue; track opcao.key) { <mat-option [value]="opcao.key">{{ opcao.value }}</mat-option> }
+        @for (opcao of fases | keyvalue; track opcao.key) {
+          @if (opcao.key !== 'INCERTA') { <mat-option [value]="opcao.key">{{ opcao.value }}</mat-option> }
+        }
       </mat-select></mat-form-field>
       }
     </div>
@@ -424,12 +543,24 @@
 <ng-template #telaDetalhe>
   <h2 mat-dialog-title class="mobile-side-panel__header">Detalhe da mensagem</h2>
   <mat-dialog-content class="mobile-side-panel__body">
-    @if (buscandoDetalhe) { <mat-progress-bar mode="indeterminate" aria-label="Buscando detalhe" /> }
-    @if (erroModal) { <p class="aviso" role="alert">{{ erroModal }}</p> }
-    @if (detalhe; as d) {
+    <ng-container [ngTemplateOutlet]="conteudoDetalhe" [ngTemplateOutletContext]="{ $implicit: detalheModal }" />
+    @if (area === 'mensagens') {
+      <p class="muted">Respostas recebidas no WhatsApp ainda não aparecem no ClickWhatsApp.</p>
+    }
+  </mat-dialog-content>
+  <mat-dialog-actions class="mobile-side-panel__footer" align="end"><button mat-button mat-dialog-close type="button">Fechar</button></mat-dialog-actions>
+</ng-template>
+
+<ng-template #conteudoDetalhe let-leitura>
+    @if (leitura?.buscando) { <mat-progress-bar mode="indeterminate" aria-label="Buscando detalhe" /> }
+    @if (leitura?.erro) { <p class="aviso" role="alert">{{ leitura.erro }}</p> }
+    @if (leitura?.detalhe; as d) {
+      @if (d.conteudoDisponivel) {
+        <div class="envio-texto"><strong>{{ d.destinatario }}</strong><p class="texto-mensagem">{{ d.texto }}</p></div>
+      } @else { <p>O conteúdo desta mensagem não está mais disponível.</p> }
       <dl class="evidencias">
-        <div><dt>Situação</dt><dd>{{ fases[d.mensagem.fase] }}</dd></div>
-        <div><dt>Confirmação</dt><dd>{{ confirmacoes[d.mensagem.confirmacao] }}</dd></div>
+        <div><dt>Situação</dt><dd>{{ rotuloFase(d.mensagem.fase) }}</dd></div>
+        <div><dt>Confirmação</dt><dd>{{ rotuloConfirmacao(d.mensagem.confirmacao) }}</dd></div>
         <div><dt>Criada em</dt><dd>{{ d.mensagem.criadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</dd></div>
         <div><dt>Válida até</dt><dd>{{ d.mensagem.validaAte | date:'dd/MM/yyyy HH:mm':'-0300' }}</dd></div>
         @for (e of [{nome:'Aceita pelo provedor', data:d.mensagem.aceitaEm}, {nome:'Confirmada pelo servidor', data:d.mensagem.servidorEm}, {nome:'Entregue', data:d.mensagem.entregueEm}, {nome:'Lida', data:d.mensagem.lidaEm}]; track e.nome) {
@@ -438,13 +569,10 @@
       </dl>
       @if (d.mensagem.fase === 'INCERTA') { <p class="aviso">{{ motivo('RESULTADO_INCERTO') }}</p> }
       @if (d.mensagem.erro && d.mensagem.erro !== 'RESULTADO_INCERTO') { <p class="aviso">{{ motivo(d.mensagem.erro) }}</p> }
-      @if (d.conteudoDisponivel) {
-        <strong>{{ d.destinatario }}</strong><p class="texto-mensagem">{{ d.texto }}</p>
-      } @else { <p>O conteúdo desta mensagem não está mais disponível.</p> }
       <details class="avancado">
         <summary>Tentativas</summary>
-        @if (erroTentativas) { <p class="aviso">{{ erroTentativas }}</p> }
-        @if (tentativas) {
+        @if (leitura?.erroTentativas) { <p class="aviso">{{ leitura.erroTentativas }}</p> }
+        @if (leitura?.tentativas; as tentativas) {
           @for (t of tentativas; track t.id) {
             <div class="tentativa"><strong>Tentativa {{ t.numero }}</strong><span>{{ rotuloTentativa(t.resultado) }}</span>
               @if (t.chamadaIniciadaEm) { <small>Início {{ t.chamadaIniciadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</small> }
@@ -455,6 +583,4 @@
         }
       </details>
     }
-  </mat-dialog-content>
-  <mat-dialog-actions class="mobile-side-panel__footer" align="end"><button mat-button mat-dialog-close type="button">Fechar</button></mat-dialog-actions>
 </ng-template>

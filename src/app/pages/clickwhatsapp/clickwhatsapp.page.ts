@@ -4,16 +4,19 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { Component, DestroyRef, inject, NgZone, OnInit, TemplateRef, ViewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
+import { FormControl, FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule, MatDialogRef, MatDialogState } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatIconModule } from '@angular/material/icon';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { ToastrService } from 'ngx-toastr';
-import { distinctUntilChanged, firstValueFrom, map, Observable, Subject, takeUntil, timeout } from 'rxjs';
+import { catchError, distinctUntilChanged, firstValueFrom, map, Observable, of, Subject, takeUntil, timeout } from 'rxjs';
+import { MessageWorkspaceComponent } from 'src/app/components/message-workspace/message-workspace.component';
 import { MetricCardComponent } from 'src/app/components/metric-card/metric-card.component';
 import { PageCardComponent } from 'src/app/components/page-card/page-card.component';
 import { SectionCardComponent } from 'src/app/components/section-card/section-card.component';
@@ -28,14 +31,26 @@ import { AuthService } from 'src/app/services/auth.service';
 import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
 import { Configuracao, CONFIRMACOES, Detalhe, ESTADOS, falha, Fase, Confirmacao, FASES, Filtro, ItemHistorico, ItemOcorrencia, motivo, novaOperacao, OcorrenciaOperacional, Periodo, Qr, Resumo, Tentativa, Webhook, WEBHOOKS } from './clickwhatsapp.models';
 import { ClickWhatsAppEnvioStore, contextoEnvio } from './clickwhatsapp-envio.store';
+import { AutoCompleteComponent } from 'src/app/components/inputs/auto-complete/auto-complete.component';
+import { ClienteService } from 'src/app/pages/cliente/cliente.service';
+import { ClienteCreateDialogComponent } from 'src/app/pages/cliente/cliente-create-dialog/cliente-create-dialog.component';
+import { ClienteListagem } from 'src/app/models/cliente/cliente-listagem.model';
 import { ClickWhatsAppService } from './clickwhatsapp.service';
+
+interface ConsultaDetalhe {
+  detalhe: Detalhe | null;
+  tentativas: Tentativa[] | null;
+  erro: string;
+  erroTentativas: string;
+  buscando: boolean;
+}
 
 @Component({
   selector: 'app-clickwhatsapp',
   standalone: true,
   imports: [RouterModule, AutomacoesPedidoComponent, CommonModule, FormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatInputModule,
-    MatSelectModule, MatProgressBarModule, PageCardComponent, SectionCardComponent, MetricCardComponent, DataTableComponent,
-    DataTableCellDirective, DataTableItemDirective, MobileFabActionComponent],
+    MatSelectModule, MatMenuModule, MatProgressBarModule, MatTooltipModule, PageCardComponent, SectionCardComponent, MetricCardComponent, DataTableComponent,
+    DataTableCellDirective, DataTableItemDirective, MobileFabActionComponent, MessageWorkspaceComponent, AutoCompleteComponent],
   templateUrl: './clickwhatsapp.page.html',
   styleUrl: './clickwhatsapp.page.scss',
 })
@@ -71,7 +86,6 @@ export class ClickWhatsAppPage implements OnInit {
     automacoes: 'Configure os avisos enviados automaticamente durante o andamento dos pedidos.',
     configuracoes: 'Gerencie a conexão e as preferências de envio.',
   };
-  exibindoOcorrencias = this.rota.snapshot?.queryParamMap?.get('vista') === 'ocorrencias';
   @ViewChild(AutomacoesPedidoComponent) automacoes?: AutomacoesPedidoComponent;
   podeSair() { return this.automacoes?.podeSair() ?? true; }
   get areaEnvio() { return this.area === 'visao' || this.area === 'mensagens'; }
@@ -109,10 +123,34 @@ export class ClickWhatsAppPage implements OnInit {
     PENDING: 'Aceita pelo provedor', SERVER_ACK: 'Confirmada pelo servidor',
     DELIVERY_ACK: 'Entregue', READ: 'Lida',
   };
-  detalhe: Detalhe | null = null;
-  tentativas: Tentativa[] | null = null;
-  erroTentativas = '';
-  buscandoDetalhe = false;
+  detalheModal: ConsultaDetalhe | null = null;
+  leituraSelecionada: ConsultaDetalhe | null = null;
+  selecionada: ItemHistorico | null = null;
+  private readonly fecharLeitura = new Subject<void>();
+  private readonly clientes = inject(ClienteService);
+  readonly clienteControl = new FormControl<ClienteListagem | string>('', { nonNullable: true });
+  clienteSelecionado: ClienteListagem | null = null;
+
+  readonly buscarClientes = (termo: string) =>
+    this.clientes.listar(0, 20, termo).pipe(
+      map(resposta => resposta.content),
+      catchError(() => {
+        this.erroModal = 'Não foi possível buscar clientes.';
+        return of([]);
+      }),
+    );
+  readonly mostrarCliente = (cliente: ClienteListagem | string | null) =>
+    typeof cliente === 'string' ? cliente : cliente ? [cliente.nome, cliente.telefone].filter(Boolean).join(' · ') : '';
+
+  readonly origens = {
+    AVULSA: { rotulo: 'Mensagem avulsa', icone: 'chat_bubble_outline', estilo: 'avulsa' },
+    PEDIDO_MANUAL: { rotulo: 'Pedido manual', icone: 'receipt_long', estilo: 'manual' },
+    ORCAMENTO_MANUAL: { rotulo: 'Orçamento manual', icone: 'request_quote', estilo: 'manual' },
+    PEDIDO_AUTOMATICO: { rotulo: 'Automação de pedido', icone: 'bolt', estilo: 'automatica' },
+    NAO_IDENTIFICADA: { rotulo: 'Origem indisponível', icone: 'mail_outline', estilo: '' },
+  };
+  get podeCadastrarCliente() { return this.auth.temPermissao?.('CLIENTE_CADASTRAR') ?? false; }
+
   numero = '';
   texto = '';
   confirmandoFechamento = false;
@@ -131,13 +169,13 @@ export class ClickWhatsAppPage implements OnInit {
   readonly confirmacoes = CONFIRMACOES;
   readonly estados = ESTADOS;
   readonly metricasResumo = [
-    { chave: 'total', rotulo: 'Mensagens', icone: 'message-circle', cor: '#265ac1' },
-    { chave: 'aceitas', rotulo: 'Aceitas', icone: 'send', cor: '#4285bc' },
-    { chave: 'entregues', rotulo: 'Entregues', icone: 'checks', cor: '#349266' },
-    { chave: 'lidas', rotulo: 'Lidas', icone: 'eye', cor: '#349266' },
-    { chave: 'falhas', rotulo: 'Falhas', icone: 'circle-x', cor: '#cf6658' },
-    { chave: 'backlogAtual', rotulo: 'Na fila agora', icone: 'clock', cor: '#738297' },
-    { chave: 'incertasAtuais', rotulo: 'Incertas agora', icone: 'alert-triangle', cor: '#d49a27' },
+    { chave: 'total', rotulo: 'Mensagens' },
+    { chave: 'aceitas', rotulo: 'Aceitas' },
+    { chave: 'entregues', rotulo: 'Entregues' },
+    { chave: 'lidas', rotulo: 'Lidas' },
+    { chave: 'falhas', rotulo: 'Falhas' },
+    { chave: 'backlogAtual', rotulo: 'Na fila agora' },
+    { chave: 'incertasAtuais', rotulo: 'Incertas agora' },
   ] as const;
   readonly webhooks = WEBHOOKS;
   readonly motivo = motivo;
@@ -150,6 +188,7 @@ export class ClickWhatsAppPage implements OnInit {
     };
     return labels[resultado] ?? 'Resultado desconhecido';
   }
+  ocorrenciasNaVisaoAbertas = false;
   listaOcorrencias: ItemOcorrencia[] | null = null;
   paginaOcorrencias = 0;
   carregandoOcorrencias = false;
@@ -160,10 +199,14 @@ export class ClickWhatsAppPage implements OnInit {
   ];
   readonly chaveOcorrencia = (item: ItemOcorrencia) => item.tentativa;
 
-  readonly colunas: DataTableColumn<ItemHistorico>[] = [
-    { key: 'data', label: 'Data' }, { key: 'destino', label: 'Destinatário' },
-    { key: 'fase', label: 'Situação' }, { key: 'confirmacao', label: 'Confirmação' }, { key: 'detalhe', label: 'Detalhe' },
+  readonly colunasRecentes: DataTableColumn<ItemHistorico>[] = [
+    { key: 'destino', label: 'Telefone' }, { key: 'data', label: 'Data' },
+    { key: 'fase', label: 'Situação' },
+    { key: 'detalhe', label: 'Ações', align: 'end' },
   ];
+  historicoNaVisao: Filtro | null = null;
+  get paginaHistorico() { return this.historicoNaVisao?.pagina ?? this.filtro.pagina; }
+  get tamanhoHistorico() { return this.historicoNaVisao?.tamanho ?? this.filtro.tamanho; }
   filtro: Filtro = { ...this.periodoInicial(), fase: '', pagina: 0, tamanho: 20 };
   inicioInput = this.dataLocal(this.filtro.inicio);
   fimInput = this.dataLocal(this.filtro.fim);
@@ -226,7 +269,10 @@ export class ClickWhatsAppPage implements OnInit {
     this.config = null;
     this.proximaVerificacao = Date.now() + 5000;
     this.verificandoConexao = this.verificacaoFalhou = false;
+    this.historicoNaVisao = null;
+    this.fecharDetalheSelecionado();
     this.itens = [];
+    this.ocorrenciasNaVisaoAbertas = false;
     this.listaOcorrencias = null;
     this.paginaOcorrencias = 0;
     this.carregandoOcorrencias = false;
@@ -262,26 +308,28 @@ export class ClickWhatsAppPage implements OnInit {
         || (anterior.acoesPermitidas?.consultarHistorico && !config.acoesPermitidas?.consultarHistorico)
         || (anterior.acoesPermitidas?.enviarMensagem && !config.acoesPermitidas?.enviarMensagem))) {
         this.webhook = null;
+        if (anterior.conexao !== config.conexao) this.fecharDetalheSelecionado();
         this.modal?.close();
       }
       if (config.acoesPermitidas?.consultarHistorico && (inicial || !anterior?.acoesPermitidas?.consultarHistorico)) {
         if (this.area === 'visao') void this.carregarConsultas();
-        else if (this.area === 'mensagens') {
-          if (this.exibindoOcorrencias) void this.listarOcorrencias();
-          else void this.carregarConsultas(false);
-        }
+        else if (this.area === 'mensagens') void this.carregarConsultas(false);
         const mensagem=this.rota.snapshot?.queryParamMap?.get('mensagem');
         const conexao=this.rota.snapshot?.queryParamMap?.get('conexao');
         if(inicial && this.areaEnvio && mensagem && conexao) void this.abrirDetalhe({mensagem: {id: mensagem, conexao}});
       } else if (!config.acoesPermitidas?.consultarHistorico) {
         this.consulta++;
+        this.fecharDetalheSelecionado();
+        this.historicoNaVisao = null;
         this.itens = [];
+        this.ocorrenciasNaVisaoAbertas = false;
         this.listaOcorrencias = null;
         this.resumo = null;
       }
     } catch (erro) {
       if (sessao !== this.sessao) return;
       this.config = null;
+      this.fecharDetalheSelecionado();
       this.erroConfig = falha(erro).mensagem;
       this.modal?.close();
     } finally {
@@ -363,10 +411,12 @@ export class ClickWhatsAppPage implements OnInit {
     });
   }
 
-  private abrir(tela: TemplateRef<unknown>, titulo: string, lateral = true) {
+  private abrir(tela: TemplateRef<unknown>, titulo: string, lateral = true, lateralNoDesktop = false) {
     if (this.modal) return null;
     const config = { ariaLabel: titulo, width: '560px', maxWidth: 'calc(100vw - 24px)', maxHeight: 'calc(100dvh - 24px)' };
-    const ref = this.mobile && lateral ? openMobileSidePanel(this.dialog, tela, config) : this.dialog.open(tela, config);
+    const ref = lateral && (this.mobile || lateralNoDesktop)
+      ? openMobileSidePanel(this.dialog, tela, config, this.mobile ? undefined : '560px')
+      : this.dialog.open(tela, config);
     this.modal = ref;
     ref.beforeClosed().subscribe(() => { if (this.modal === ref) this.limparModal(); });
     ref.afterClosed().subscribe(() => { if (this.modal === ref) this.modal = undefined; });
@@ -377,15 +427,15 @@ export class ClickWhatsAppPage implements OnInit {
     clearTimeout(this.qrTimer);
     this.qrModal = undefined;
     this.qr = null;
-    this.detalhe = null;
+    this.detalheModal = null;
     this.ocorrencia = this.alvoOcorrencia = null;
     this.lendoOcorrencia = false;
-    this.tentativas = null;
-    this.erroModal = this.erroTentativas = '';
+    this.erroModal = '';
+    this.limparCliente();
     this.numero = this.texto = '';
     clearTimeout(this.validadeTimer);
     this.confirmandoFechamento = this.confirmandoDescarte = this.validadeEncerrada = false;
-    this.enviando = this.buscandoDetalhe = false;
+    this.enviando = false;
   }
 
   abrirQr() {
@@ -478,9 +528,41 @@ export class ClickWhatsAppPage implements OnInit {
     }
   }
 
+  selecionarCliente(cliente: ClienteListagem) {
+    const telefone = (cliente.telefone ?? '').trim().replace(/[() .-]/g, '');
+    const numero = /^[1-9]\d{9,10}$/.test(telefone) ? '55' + telefone : telefone;
+    if (!/^\+?[1-9]\d{7,14}$/.test(numero)) {
+      this.limparCliente();
+      this.erroModal = 'O cliente selecionado não tem um telefone válido.';
+      return;
+    }
+    this.clienteSelecionado = cliente;
+    this.clienteControl.setValue(cliente);
+    this.numero = numero;
+    this.erroModal = '';
+  }
+
+  limparCliente() {
+    if (this.clienteSelecionado) this.numero = '';
+    this.clienteSelecionado = null;
+    this.clienteControl.setValue('');
+  }
+
+  criarClienteParaEnvio() {
+    const envio = this.modalEnvio;
+    if (!envio || this.operacao || !this.podeCadastrarCliente) return;
+    const cadastro = this.dialog.open(ClienteCreateDialogComponent, {
+      width: '640px', maxWidth: 'calc(100vw - 24px)', data: { mobileMode: 'quick' },
+    });
+    envio.beforeClosed().pipe(takeUntil(cadastro.afterClosed())).subscribe(() => cadastro.close());
+    cadastro.afterClosed().subscribe(cliente => {
+      if (cliente && this.modalEnvio === envio) this.selecionarCliente(cliente);
+    });
+  }
+
   abrirEnvio() {
     if (!this.podeEnviar && !this.pendente) return;
-    const ref = this.abrir(this.telaEnvio, this.pendente ? 'Solicitação pendente' : 'Nova mensagem');
+    const ref = this.abrir(this.telaEnvio, this.pendente ? 'Solicitação pendente' : 'Nova mensagem', true, true);
     if (!ref) return;
     this.modalEnvio = ref;
     ref.disableClose = true;
@@ -537,7 +619,7 @@ export class ClickWhatsAppPage implements OnInit {
       }
       this.envios.pendente = {
         conexao: id,
-        operacao: novaOperacao(numero, this.texto),
+        operacao: novaOperacao(numero, this.texto, Date.now(), this.clienteSelecionado?.id),
         mensagem: 'A confirmação do registro ainda não foi recebida.',
         repetivel: true,
       };
@@ -616,9 +698,24 @@ export class ClickWhatsAppPage implements OnInit {
     void this.carregarConsultas();
   }
 
+  private filtroRecentes(tamanho: number): Filtro {
+    const fim = Date.now();
+    const inicio = fim - 93 * 86400_000;
+    return { inicio: new Date(inicio).toISOString(), fim: new Date(fim).toISOString(), pagina: 0, tamanho, fase: '' };
+  }
+
+  alternarHistoricoNaVisao() {
+    if (this.area !== 'visao' || !this.acoes?.consultarHistorico || this.lendo) return;
+    this.historicoNaVisao = this.historicoNaVisao ? null : this.filtroRecentes(this.filtro.tamanho);
+    this.itens = [];
+    void this.carregarConsultas(false);
+  }
+
   pagina(delta: number) {
-    if (this.lendo || this.filtro.pagina + delta < 0) return;
-    this.filtro = { ...this.filtro, pagina: this.filtro.pagina + delta };
+    const pagina = this.paginaHistorico + delta;
+    if (this.lendo || pagina < 0) return;
+    if (this.historicoNaVisao) this.historicoNaVisao = { ...this.historicoNaVisao, pagina };
+    else this.filtro = { ...this.filtro, pagina };
     void this.carregarConsultas(false);
   }
 
@@ -629,11 +726,7 @@ export class ClickWhatsAppPage implements OnInit {
     const atual = () => this.sessao === sessao && this.consulta === consulta;
     if (!this.areaEnvio) return;
     const periodo = this.filtro;
-    const fimRecentes = Date.now();
-    const filtro = this.area === 'visao'
-      ? { inicio: new Date(fimRecentes - 93 * 86400_000).toISOString(),
-          fim: new Date(fimRecentes).toISOString(), pagina: 0, tamanho: 5, fase: '' as const }
-      : periodo;
+    const filtro = this.area === 'visao' ? (this.historicoNaVisao ?? this.filtroRecentes(5)) : periodo;
     this.lendo = true;
     this.erroHistorico = '';
     if (this.area === 'visao' && (incluirResumo || this.lendoResumo)) {
@@ -646,17 +739,33 @@ export class ClickWhatsAppPage implements OnInit {
       }).finally(() => { if (atual()) this.lendoResumo = false; });
     }
     try {
-      const itens = await this.ler(this.api.historico(filtro).pipe(timeout(12000)));
-      if (atual()) this.itens = itens;
+      const itens = await this.ler(this.api.historico(filtro, this.area === 'mensagens').pipe(timeout(12000)));
+      if (atual()) {
+        this.itens = itens;
+        const selecionada = this.selecionada;
+        if (selecionada) {
+          const atualizada = itens.find(item => item.mensagem.id === selecionada.mensagem.id
+            && item.mensagem.conexao === selecionada.mensagem.conexao);
+          if (atualizada) this.selecionarMensagem(atualizada);
+          else this.fecharDetalheSelecionado();
+        }
+      }
     } catch (erro) {
-      if (atual()) { this.itens = []; this.erroHistorico = falha(erro).mensagem; }
+      if (atual()) { this.fecharDetalheSelecionado(); this.itens = []; this.erroHistorico = falha(erro).mensagem; }
     } finally {
       if (atual()) this.lendo = false;
     }
   }
 
+  alternarOcorrenciasNaVisao() {
+    this.ocorrenciasNaVisaoAbertas = !this.ocorrenciasNaVisaoAbertas;
+    if (this.ocorrenciasNaVisaoAbertas && !this.listaOcorrencias) {
+      void this.listarOcorrencias();
+    }
+  }
+
   async listarOcorrencias(delta = 0) {
-    if (!this.acoes?.consultarHistorico || this.carregandoOcorrencias) return;
+    if (this.area !== 'visao' || !this.acoes?.consultarHistorico || this.carregandoOcorrencias) return;
     const sessao = this.sessao;
     const pagina = this.paginaOcorrencias + delta;
     if (pagina < 0) return;
@@ -674,12 +783,6 @@ export class ClickWhatsAppPage implements OnInit {
     }
   }
 
-  selecionarHistorico(ocorrencias: boolean) {
-    this.exibindoOcorrencias = ocorrencias;
-    if (ocorrencias && !this.listaOcorrencias) void this.listarOcorrencias();
-    if (!ocorrencias) void this.carregarConsultas(false);
-  }
-
   periodoRapido(dias: 0 | 7 | 30) {
     const fim = Date.now();
     const inicio = dias ? fim - dias * 86400_000 : Math.min(fim - 1, Date.parse(this.dataLocal(new Date(fim).toISOString()).slice(0, 10) + 'T00:00:00-03:00'));
@@ -687,19 +790,8 @@ export class ClickWhatsAppPage implements OnInit {
     void this.carregarConsultas();
   }
 
-  verOcorrencias() {
-    if (this.lendo || !this.acoes?.consultarHistorico || this.area !== 'mensagens') return;
-    this.filtro = { ...this.filtro, fase: this.filtro.fase === 'INCERTA' ? '' : 'INCERTA', pagina: 0 };
-    void this.carregarConsultas(false);
-  }
-
-  ehOcorrencia(item: ItemHistorico) {
-    return item.mensagem.fase === 'INCERTA'
-      || ['RESULTADO_INCERTO', 'ID_PROVEDOR_CONFLITANTE'].includes(item.mensagem.erro ?? '');
-  }
-
   abrirOcorrencia(item: { mensagem: Pick<ItemHistorico['mensagem'], 'id' | 'conexao'> }) {
-    if (!this.acoes?.consultarHistorico || !this.abrir(this.telaOcorrencia, 'Ocorrência de envio')) return;
+    if (this.area !== 'visao' || !this.acoes?.consultarHistorico || !this.abrir(this.telaOcorrencia, 'Ocorrência de envio', true, true)) return;
     this.alvoOcorrencia = item.mensagem;
     void this.carregarOcorrencia();
   }
@@ -728,27 +820,60 @@ export class ClickWhatsAppPage implements OnInit {
     }
   }
 
+  fecharDetalheSelecionado() {
+    this.fecharLeitura.next();
+    this.selecionada = null;
+    this.leituraSelecionada = null;
+  }
+
+  selecionarMensagem(item: ItemHistorico) {
+    if (!this.acoes?.consultarHistorico) return;
+    this.fecharDetalheSelecionado();
+    const leitura = this.novaConsultaDetalhe();
+    this.selecionada = item;
+    this.leituraSelecionada = leitura;
+    void this.carregarDetalhe(item, leitura, this.fecharLeitura, () => this.leituraSelecionada === leitura, false);
+  }
+
   async abrirDetalhe(item: {mensagem: {id: string; conexao: string}}) {
     if (!this.acoes?.consultarHistorico) return;
-    const ref = this.abrir(this.telaDetalhe, 'Detalhe da mensagem');
+    const ref = this.abrir(this.telaDetalhe, 'Detalhe da mensagem', true, true);
     if (!ref) return;
-    this.buscandoDetalhe = true;
+    const leitura = this.novaConsultaDetalhe();
+    this.detalheModal = leitura;
+    await this.carregarDetalhe(item, leitura, ref.beforeClosed(),
+      () => this.modal === ref && ref.getState() === MatDialogState.OPEN);
+  }
+
+  private novaConsultaDetalhe(): ConsultaDetalhe {
+    return { detalhe: null, tentativas: null, erro: '', erroTentativas: '', buscando: true };
+  }
+
+  private async carregarDetalhe(
+    item: {mensagem: {id: string; conexao: string}},
+    leitura: ConsultaDetalhe,
+    cancelar: Observable<unknown>,
+    ativa: () => boolean,
+    incluirTentativas = true,
+  ) {
     const { conexao, id } = item.mensagem;
-    const ler = <T>(req: Observable<T>) => this.ler(req.pipe(takeUntil(ref.beforeClosed())));
-    const aberta = () => this.modal === ref && ref.getState() === MatDialogState.OPEN;
+    const ler = <T>(req: Observable<T>) => this.ler(req.pipe(
+      takeUntil(cancelar), takeUntilDestroyed(this.destroy), timeout(12000),
+    ));
     try {
       const detalhe = await ler(this.api.detalhe(conexao, id));
-      if (!aberta()) return;
-      this.detalhe = detalhe;
+      if (!ativa()) return;
+      leitura.detalhe = detalhe;
+      if (!incluirTentativas) return;
       const tentativas = await ler(this.api.tentativas(conexao, id)).catch(e => {
-        if (aberta()) this.erroTentativas = falha(e).mensagem;
+        if (ativa()) leitura.erroTentativas = falha(e).mensagem;
         return null;
       });
-      if (aberta()) this.tentativas = tentativas;
+      if (ativa()) leitura.tentativas = tentativas;
     } catch (e) {
-      if (aberta()) this.erroModal = falha(e).mensagem;
+      if (ativa()) leitura.erro = falha(e).mensagem;
     } finally {
-      if (aberta()) this.buscandoDetalhe = false;
+      if (ativa()) leitura.buscando = false;
     }
   }
 }

@@ -1,5 +1,7 @@
 import {
   Component,
+  DestroyRef,
+  inject,
   Input,
   Output,
   EventEmitter,
@@ -7,6 +9,7 @@ import {
   ViewChild,
   ChangeDetectionStrategy
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Observable, of } from 'rxjs';
@@ -34,6 +37,7 @@ import { MatOptionModule } from '@angular/material/core';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AutoCompleteComponent implements OnInit {
+  private readonly destroy = inject(DestroyRef);
   
   @Input() control!: FormControl;
   @Input() placeholder = 'Buscar...';
@@ -64,7 +68,8 @@ export class AutoCompleteComponent implements OnInit {
           if (typeof valor !== 'string') return of([]);
           if (this.minimoCaracteres > 0 && valor.length < this.minimoCaracteres) return of([]);
           return this.buscarFn(valor);
-        })
+        }),
+        takeUntilDestroyed(this.destroy)
       )
       .subscribe(opcoes => {
         this.buscaExecutada = true;
