@@ -2,11 +2,11 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { debounceTime, distinctUntilChanged, firstValueFrom, Subject, takeUntil, timeout } from 'rxjs';
+import { debounceTime, distinctUntilChanged, firstValueFrom, Subject, takeUntil, tap, timeout } from 'rxjs';
 import { MaterialModule } from 'src/app/material.module';
 import { MessageWorkspaceComponent } from 'src/app/components/message-workspace/message-workspace.component';
 import { InputTelefoneComponent } from 'src/app/components/inputs/input-telefone/input-telefone.component';
-import { MobileFabActionComponent } from 'src/app/components/mobile-fab-action/mobile-fab-action.component';
+import { TelefonePipe } from 'src/app/pipe/telefone.pipe';
 import { ClienteService } from 'src/app/pages/cliente/cliente.service';
 import { ClienteResponse } from 'src/app/models/cliente/cliente-response.model';
 import { abrirCadastroRapido } from 'src/app/pages/cliente/cliente-create-dialog/cliente-create-dialog.component';
@@ -20,7 +20,7 @@ import { Configuracao, Conversa, DestinatarioConversa, Detalhe, Filtro, falha, F
   selector: 'app-clickwhatsapp-conversas',
   standalone: true,
   imports: [CommonModule, FormsModule, ReactiveFormsModule, MaterialModule, MessageWorkspaceComponent,
-    InputTelefoneComponent, MobileFabActionComponent],
+    InputTelefoneComponent, TelefonePipe],
   templateUrl: './conversas.component.html',
   styleUrl: './conversas.component.scss',
 })
@@ -34,6 +34,7 @@ export class ConversasComponent implements OnChanges {
   private readonly cancelarLista = new Subject<void>();
   private readonly cancelarMensagens = new Subject<void>();
   private readonly cancelarClientes = new Subject<void>();
+  @ViewChild('areaLista') areaLista?: ElementRef<HTMLElement>;
   @ViewChild('conversa') areaConversa?: ElementRef<HTMLElement>;
   @ViewChild('rolagem') rolagem?: ElementRef<HTMLElement>;
   @Input({ required: true }) config!: Configuracao;
@@ -66,6 +67,9 @@ export class ConversasComponent implements OnChanges {
   selecionada: Conversa | null = null;
   destino: DestinatarioConversa | null = null;
   escolhendo = false;
+  clienteEscolhido: ClienteResponse | null = null;
+  telefoneManual = false;
+  salvandoTelefone = false;
   texto = '';
   pagina = 0;
   paginaMensagens = 0;
@@ -77,6 +81,7 @@ export class ConversasComponent implements OnChanges {
   erro = '';
   erroMensagens = '';
   erroClientes = '';
+  private encerrado = false;
   private versao = 0;
   private versaoMensagens = 0;
   private versaoClientes = 0;
@@ -93,9 +98,13 @@ export class ConversasComponent implements OnChanges {
         if (!this.termo || this.termo.length >= 3) void this.carregar();
         else { this.cancelarLista.next(); this.versao++; this.lendo = false; this.ocupado.emit(false); this.erro = 'Digite pelo menos 3 caracteres.'; }
       });
-    this.pesquisaCliente.valueChanges.pipe(debounceTime(350), distinctUntilChanged(), takeUntilDestroyed(this.destroy))
+    this.pesquisaCliente.valueChanges.pipe(
+      tap(() => { this.clienteEscolhido = null; this.telefoneManual = false; }),
+      debounceTime(350), distinctUntilChanged(), takeUntilDestroyed(this.destroy),
+    )
       .subscribe(() => void this.buscarClientes());
     this.destroy.onDestroy(() => {
+      this.encerrado = true;
       this.versao++; this.versaoMensagens++; this.versaoClientes++;
       this.cancelarLista.next();
       this.cancelarMensagens.next();
@@ -126,6 +135,13 @@ export class ConversasComponent implements OnChanges {
   get pendente() { return this.envios.pendente; }
   get podeEnviar() { return !!this.config?.acoesPermitidas.enviarMensagem; }
   get podeCriarCliente() { return this.auth.temPermissao('CLIENTE_CADASTRAR'); }
+  get podeEditarCliente() { return this.auth.temPermissao('CLIENTE_EDITAR'); }
+  get numeroCliente() { return this.clienteEscolhido ? this.normalizar(this.clienteEscolhido.telefone || '') : null; }
+  get podeContinuar() {
+    if (this.salvandoTelefone || !this.podeEnviar) return false;
+    if (this.telefoneManual) return this.numeroValido;
+    return !!this.clienteEscolhido && (!!this.numeroCliente || (this.podeEditarCliente && this.numeroValido));
+  }
   get filtrosAtivos() { return !!this.filtro.fase; }
   get numeroValido() { return this.telefone.valid && /^[1-9]\d{9,10}$/.test(this.telefone.value); }
 
@@ -217,6 +233,13 @@ export class ConversasComponent implements OnChanges {
     if (this.pendente) { this.retomar(); return; }
     if (!this.podeEnviar) return;
     this.escolhendo = true;
+    this.clienteEscolhido = null;
+    this.telefoneManual = false;
+    this.telefone.setValue('');
+    this.erroClientes = '';
+    if (this.mobile) setTimeout(() => {
+      if (this.escolhendo) this.areaLista?.nativeElement.scrollIntoView({ block: 'start' });
+    });
     void this.buscarClientes();
   }
 
@@ -242,14 +265,47 @@ export class ConversasComponent implements OnChanges {
   }
 
   escolherCliente(cliente: ClienteResponse) {
-    const numero = this.normalizar(cliente.telefone || '');
-    if (!numero) { this.erroClientes = 'Este cliente não tem telefone válido. Atualize o cadastro de Clientes.'; return; }
-    void this.abrirDestino({ numero, nome: cliente.nome, clienteId: cliente.id });
+    if (this.salvandoTelefone) return;
+    this.clienteEscolhido = cliente;
+    this.telefoneManual = false;
+    this.telefone.setValue('');
+    this.erroClientes = '';
   }
 
-  continuarTelefone() {
-    if (!this.numeroValido) return;
-    void this.abrirDestino({ numero: '55' + this.telefone.value, nome: this.telefone.value });
+  informarNumero() {
+    if (this.salvandoTelefone) return;
+    this.clienteEscolhido = null;
+    this.telefoneManual = !this.telefoneManual;
+    this.erroClientes = '';
+  }
+
+  async continuar() {
+    if (!this.podeContinuar) return;
+    if (this.telefoneManual) {
+      await this.abrirDestino({ numero: '55' + this.telefone.value, nome: this.telefone.value });
+      return;
+    }
+    const cliente = this.clienteEscolhido;
+    if (!cliente) return;
+    if (this.numeroCliente) {
+      await this.abrirDestino({ numero: this.numeroCliente, nome: cliente.nome, clienteId: cliente.id });
+      return;
+    }
+    this.salvandoTelefone = true;
+    this.erroClientes = '';
+    try {
+      const atual = await firstValueFrom(this.clientes.buscarPorId(cliente.id)
+        .pipe(takeUntilDestroyed(this.destroy), timeout(12000)));
+      const salvo = await firstValueFrom(this.clientes.atualizar(cliente.id, {
+        nome: atual.nome, email: atual.email, telefone: this.telefone.value,
+        documento: atual.documento, endereco: atual.endereco,
+      }).pipe(takeUntilDestroyed(this.destroy), timeout(12000)));
+      const numero = this.normalizar(salvo.telefone || '');
+      if (!numero) throw new Error('TELEFONE_INVALIDO');
+      await this.abrirDestino({ numero, nome: salvo.nome, clienteId: salvo.id });
+    } catch (erro) {
+      if (!this.encerrado) this.erroClientes = 'Não foi possível atualizar o telefone do cliente. Confira o cadastro e tente novamente.';
+    } finally { this.salvandoTelefone = false; }
   }
 
   private mesmoDestinatario(conversa: Conversa, destino: DestinatarioConversa) {
@@ -284,7 +340,10 @@ export class ConversasComponent implements OnChanges {
     this.cadastro = abrirCadastroRapido(this.dialog, { nome: this.pesquisaCliente.value, mobileMode: 'quick' });
     this.cadastro.afterClosed().pipe(takeUntilDestroyed(this.destroy)).subscribe(cliente => {
       this.cadastro = undefined;
-      if (cliente) this.escolherCliente(cliente);
+      if (cliente) {
+        this.clientesEncontrados = [cliente, ...this.clientesEncontrados.filter(item => item.id !== cliente.id)];
+        this.escolherCliente(cliente);
+      }
     });
   }
 
@@ -297,6 +356,9 @@ export class ConversasComponent implements OnChanges {
     this.selecionada = null;
     this.destino = null;
     this.escolhendo = false;
+    this.clienteEscolhido = null;
+    this.telefoneManual = false;
+    this.telefone.setValue('');
     this.texto = '';
     this.erroMensagens = '';
     this.lendoMensagens = false;

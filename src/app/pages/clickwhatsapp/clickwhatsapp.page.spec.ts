@@ -537,6 +537,7 @@ describe('ClickWhatsApp', () => {
     http.expectOne(r => r.url === base + '/conversas').flush({ itens: [], temMais: false });
     await estabilizar();
     page.conversas!.escolherCliente({ id: 9, nome: 'Cliente', telefone: '31987654321' } as any);
+    void page.conversas!.continuar();
     http.expectOne(r => r.url === base + '/conversas').flush({ itens: [], temMais: false });
     await estabilizar();
     page.conversas!.texto = 'Envio pelo compositor';

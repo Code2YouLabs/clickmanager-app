@@ -1,31 +1,67 @@
 <app-message-workspace listLabel="Conversas" detailLabel="Mensagens da conversa" [compact]="mobile"
   [detailOpen]="!escolhendo && (!!selecionada || !!destino)">
-  <div message-list class="lista-conversas">
+  <div message-list class="lista-conversas" [class.selecao-aberta]="escolhendo" #areaLista>
     @if (escolhendo) {
-      <div class="barra-lista">
-        <button mat-icon-button type="button" aria-label="Voltar para conversas" (click)="escolhendo = false"><mat-icon>arrow_back</mat-icon></button>
+      <div class="barra-lista cabecalho-selecao">
+        <button mat-icon-button type="button" aria-label="Voltar para conversas" [disabled]="salvandoTelefone"
+          (click)="escolhendo = false"><mat-icon>arrow_back</mat-icon></button>
         <strong>Nova mensagem</strong>
       </div>
       <div class="selecao-destinatario">
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>Pesquisar clientes</mat-label>
-          <input matInput [formControl]="pesquisaCliente" placeholder="Nome ou telefone" />
+          <input matInput [formControl]="pesquisaCliente" placeholder="Nome ou telefone" [readonly]="salvandoTelefone" />
+          <mat-icon matSuffix aria-hidden="true">search</mat-icon>
         </mat-form-field>
-        @if (podeCriarCliente) {
-          <button mat-button type="button" (click)="cadastrar()"><mat-icon>person_add</mat-icon>Novo cliente</button>
-        }
-        @if (lendoClientes) { <mat-progress-bar mode="indeterminate" aria-label="Buscando clientes" /> }
-        @if (erroClientes) { <p role="alert">{{ erroClientes }}</p> }
-        <ul class="lista-clientes">
-          @for (cliente of clientesEncontrados; track cliente.id) {
-            <li><button type="button" class="linha-conversa" (click)="escolherCliente(cliente)">
-              <span class="avatar"><mat-icon>person_outline</mat-icon></span>
-              <span><strong>{{ cliente.nome }}</strong><small>{{ cliente.telefone || 'Sem telefone' }}</small></span>
-            </button></li>
+        <div class="acoes-destinatario">
+          @if (podeCriarCliente) {
+            <button mat-button type="button" [disabled]="salvandoTelefone" (click)="cadastrar()"><mat-icon>person_add</mat-icon>Novo cliente</button>
           }
-        </ul>
-        <app-input-telefone [control]="telefone" placeholder="(31) 99999-9999" />
-        <button mat-stroked-button type="button" [disabled]="!numeroValido" (click)="continuarTelefone()">Continuar</button>
+          <button mat-button type="button" [disabled]="salvandoTelefone" [attr.aria-pressed]="telefoneManual"
+            (click)="informarNumero()"><mat-icon>{{ telefoneManual ? 'person_search' : 'dialpad' }}</mat-icon>{{ telefoneManual ? 'Selecionar cliente' : 'Informar número' }}</button>
+        </div>
+        @if (lendoClientes) { <mat-progress-bar mode="indeterminate" aria-label="Buscando clientes" /> }
+        @if (!telefoneManual) {
+          <ul class="lista-clientes" aria-label="Clientes encontrados">
+            @for (cliente of clientesEncontrados; track cliente.id) {
+              <li><button type="button" class="linha-conversa cliente-opcao" [disabled]="salvandoTelefone"
+                [attr.aria-pressed]="clienteEscolhido?.id === cliente.id" (click)="escolherCliente(cliente)">
+                <span class="avatar"><mat-icon aria-hidden="true">person_outline</mat-icon></span>
+                <span class="contato"><strong>{{ cliente.nome }}</strong><small>{{ cliente.telefone ? (cliente.telefone | telefone) : 'Sem telefone' }}</small></span>
+                @if (clienteEscolhido?.id === cliente.id) { <mat-icon class="cliente-marcado" aria-hidden="true">check_circle</mat-icon> }
+              </button></li>
+            } @empty {
+              @if (!lendoClientes && !erroClientes) { <li class="mensagem-vazia">Nenhum cliente encontrado</li> }
+            }
+          </ul>
+        }
+        @if (telefoneManual || (clienteEscolhido && !numeroCliente)) {
+          <div class="telefone-destinatario">
+            @if (clienteEscolhido) {
+              <p>{{ clienteEscolhido.nome }} está sem telefone válido.</p>
+            }
+            <app-input-telefone [control]="telefone" placeholder="(31) 99999-9999" />
+            @if (clienteEscolhido && !podeEditarCliente) {
+              <p class="erro-destinatario">Seu perfil não permite atualizar o telefone deste cliente.</p>
+            }
+          </div>
+        }
+        @if (erroClientes) { <p class="erro-destinatario" role="alert">{{ erroClientes }}</p> }
+      </div>
+      <div class="confirmacao-destinatario">
+        @if (clienteEscolhido; as cliente) {
+          <div class="destinatario-resumo" aria-live="polite">
+            <strong>{{ cliente.nome }}</strong>
+            <small>{{ numeroCliente ? (cliente.telefone | telefone) : 'O telefone informado será salvo no cadastro.' }}</small>
+          </div>
+        } @else if (telefoneManual && numeroValido) {
+          <div class="destinatario-resumo"><small>Enviar para</small><strong>{{ telefone.value | telefone }}</strong></div>
+        }
+        <button mat-flat-button color="primary" type="button" class="continuar-destinatario"
+          [disabled]="!podeContinuar" (click)="continuar()">
+          {{ salvandoTelefone ? 'Salvando telefone…' : clienteEscolhido && !numeroCliente ? 'Salvar telefone e continuar' : 'Continuar' }}
+          <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+        </button>
       </div>
     } @else {
       <div class="barra-lista">
@@ -35,9 +71,6 @@
         </mat-form-field>
         <button mat-icon-button type="button" [disabled]="!config.acoesPermitidas.consultarHistorico" (click)="filtros.emit()" matTooltip="Filtros" aria-label="Filtros"
           [class.filtro-ativo]="filtrosAtivos"><mat-icon>filter_list</mat-icon></button>
-        @if (podeEnviar && !mobile) {
-          <button mat-button type="button" (click)="novaMensagem()" aria-label="Nova mensagem"><mat-icon>edit</mat-icon>Nova mensagem</button>
-        }
       </div>
       @if (lendo) { <mat-progress-bar mode="indeterminate" aria-label="Carregando conversas" /> }
       @if (erro) { <div role="alert" class="mensagem-vazia">{{ erro }} <button mat-button type="button" (click)="carregar()">Tentar novamente</button></div> }
@@ -64,6 +97,10 @@
         }
       </ul>
       @if (temMais) { <button mat-button type="button" class="ver-mais" [disabled]="lendo" (click)="carregar(true)">Ver mais</button> }
+    }
+    @if (podeEnviar && !escolhendo && (!mobile || (!selecionada && !destino))) {
+      <button mat-fab type="button" class="nova-conversa-fab" (click)="novaMensagem()"
+        aria-label="Nova mensagem" matTooltip="Nova mensagem"><mat-icon>add_comment</mat-icon></button>
     }
   </div>
   <div message-detail class="conversa" #conversa>
@@ -111,6 +148,3 @@
     }
   </div>
 </app-message-workspace>
-@if (mobile && podeEnviar && !escolhendo && !selecionada && !destino) {
-  <app-mobile-fab-action placement="page" label="Nova mensagem" (action)="novaMensagem()" />
-}

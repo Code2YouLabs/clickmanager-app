@@ -98,13 +98,18 @@ describe('Conversas — fluxos HTTP e composição', () => {
     lista(); flushMicrotasks();
     spyOn(page.registrar, 'emit');
     page.escolherCliente({ id: 9, nome: 'Pessoa', telefone: '(31) 98765-4321' } as any);
+    expect(page.destino).toBeNull();
+    expect(page.podeContinuar).toBeTrue();
+    http.expectNone(r => r.url === base + '/conversas');
+    void page.continuar();
     lista(); flushMicrotasks();
     expect(page.destino).toEqual({ numero: '5531987654321', nome: 'Pessoa', clienteId: 9 });
     expect(page.registrar.emit).not.toHaveBeenCalled();
     page.voltar();
     page.telefone.setValue('31987654321');
     fixture.detectChanges();
-    page.continuarTelefone();
+    page.informarNumero();
+    void page.continuar();
     lista(); flushMicrotasks();
     expect(page.destino?.numero).toBe('5531987654321');
     page.texto = 'Olá';
@@ -117,13 +122,15 @@ describe('Conversas — fluxos HTTP e composição', () => {
     const b = { ...conversa('b'), ultima: { ...conversa('b').ultima, clienteId: 10, nomeCliente: 'Cliente B' } };
     lista([a, b]); flushMicrotasks();
     page.escolherCliente({ id: 10, nome: 'Cliente B', telefone: '(31) 98765-4321' } as any);
+    void page.continuar();
     expect(page.selecionada?.id).toBe('b');
     http.expectOne(r => r.url.endsWith('/b/mensagens')).flush({ itens: [], temMais: false });
     flushMicrotasks(); tick();
     http.expectNone(r => r.url.endsWith('/a/mensagens'));
     page.voltar();
     page.telefone.setValue('31987654321'); fixture.detectChanges();
-    page.continuarTelefone();
+    page.informarNumero();
+    void page.continuar();
     const avulsa = http.expectOne(r => r.url === base + '/conversas');
     expect(avulsa.request.params.get('avulsa')).toBe('true');
     avulsa.flush({ itens: [], temMais: false });
@@ -136,7 +143,12 @@ describe('Conversas — fluxos HTTP e composição', () => {
     lista(); flushMicrotasks();
     page.telefone.setValue('31987'); fixture.detectChanges();
     expect(page.numeroValido).toBeFalse();
-    page.pesquisaCliente.setValue('Pessoa'); tick(350);
+    page.escolherCliente({ id: 9, nome: 'Cliente anterior', telefone: '31987654321' } as any);
+    expect(page.podeContinuar).toBeTrue();
+    page.pesquisaCliente.setValue('Pessoa');
+    expect(page.clienteEscolhido).toBeNull();
+    expect(page.podeContinuar).toBeFalse();
+    tick(350);
     http.expectOne(r => r.url.includes('/api/clientes?')).flush({ content: [] });
     flushMicrotasks();
     page.escolhendo = true;
@@ -155,9 +167,68 @@ describe('Conversas — fluxos HTTP e composição', () => {
     page.cadastrar(); fixture.detectChanges();
     TestBed.inject(MatDialog).openDialogs[0].close({ id: 31, nome: 'Novo cliente', telefone: '31987654321' });
     flushMicrotasks(); tick(400);
+    expect(page.clienteEscolhido?.id).toBe(31);
+    expect(page.escolhendo).toBeTrue();
+    void page.continuar();
     lista(); flushMicrotasks();
     expect(page.destino?.clienteId).toBe(31);
     expect(page.escolhendo).toBeFalse();
+  }));
+
+  it('revela telefone somente por escolha manual ou cliente sem telefone e confirma antes de abrir', fakeAsync(() => {
+    lista(); flushMicrotasks();
+    page.novaMensagem();
+    http.expectOne(r => r.url.includes('/api/clientes?')).flush({ content: [
+      { id: 41, nome: 'Com telefone', telefone: '31987654321' }, { id: 42, nome: 'Sem telefone', telefone: '' },
+    ] });
+    flushMicrotasks(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-input-telefone')).toBeNull();
+    const opcoes = fixture.nativeElement.querySelectorAll('.cliente-opcao');
+    opcoes[0].click(); fixture.detectChanges();
+    expect(opcoes[0].getAttribute('aria-pressed')).toBe('true');
+    expect(page.destino).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-input-telefone')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.continuar-destinatario').disabled).toBeFalse();
+    opcoes[1].click(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-input-telefone')).not.toBeNull();
+    expect(page.podeContinuar).toBeFalse();
+    page.informarNumero(); fixture.detectChanges();
+    expect(page.clienteEscolhido).toBeNull();
+    expect(page.telefoneManual).toBeTrue();
+    expect(fixture.nativeElement.querySelector('.lista-clientes')).toBeNull();
+  }));
+
+  it('salva telefone no cadastro existente preservando os demais dados antes de continuar', fakeAsync(() => {
+    lista(); flushMicrotasks();
+    page.escolherCliente({ id: 42, nome: 'Cliente sem telefone', telefone: '' } as any);
+    page.telefone.setValue('31987654321');
+    expect(page.podeContinuar).toBeTrue();
+    void page.continuar();
+    http.expectOne(r => r.url.endsWith('/api/clientes/42')).flush({
+      id: 42, nome: 'Cliente sem telefone', telefone: '', email: 'fixture@example.test', documento: 'documento-fixture',
+      endereco: { cidade: 'Cidade de teste' },
+    });
+    flushMicrotasks();
+    const atualizacao = http.expectOne(r => r.method === 'PUT' && r.url.endsWith('/api/clientes/42'));
+    expect(atualizacao.request.body).toEqual({
+      nome: 'Cliente sem telefone', telefone: '31987654321', email: 'fixture@example.test', documento: 'documento-fixture',
+      endereco: { cidade: 'Cidade de teste' },
+    });
+    atualizacao.flush({ id: 42, nome: 'Cliente sem telefone', telefone: '31987654321' });
+    flushMicrotasks();
+    lista(); flushMicrotasks();
+    expect(page.destino?.clienteId).toBe(42);
+    expect(page.destino?.numero).toBe('5531987654321');
+  }));
+
+  it('exige permissão de edição para preencher telefone de um cliente existente', fakeAsync(() => {
+    lista(); flushMicrotasks();
+    spyOn(TestBed.inject(AuthService), 'temPermissao').and.returnValue(false);
+    page.escolherCliente({ id: 42, nome: 'Cliente sem telefone', telefone: '' } as any);
+    page.telefone.setValue('31987654321');
+    expect(page.podeContinuar).toBeFalse();
+    void page.continuar();
+    http.expectNone(r => r.url.includes('/api/clientes/42'));
   }));
 
   it('recupera intenção pendente e emite somente repetição', fakeAsync(() => {

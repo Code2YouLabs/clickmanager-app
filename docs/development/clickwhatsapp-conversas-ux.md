@@ -12,7 +12,7 @@ O cadastro rápido existente é ClienteCreateDialogComponent com ClienteCreateFo
 
 ConversasComponent concentra a experiência da rota atual de Mensagens. Reutiliza MessageWorkspaceComponent, PageCard, Material, InputTelefoneComponent, MobileFabAction, o painel lateral global, ConfirmDialog, Toastr e o serviço de envio existente.
 
-O cabeçalho da página contém apenas a atualização por ícone com tooltip e nome acessível. A região esquerda reúne pesquisa, filtros por ícone e Nova mensagem. Em mobile, a ação principal usa o FAB existente. A consulta cancela respostas anteriores e aplica debounce de 350 ms. Pesquisa e filtros reiniciam a paginação. Ver mais acrescenta até 15 grupos, remove duplicatas pelo ID e conserva a seleção. Atualização manual preserva a conversa selecionada e mostra carregamento.
+O cabeçalho da página contém apenas a atualização por ícone com tooltip e nome acessível. A região esquerda reúne pesquisa, filtros por ícone e Nova mensagem. A ação Nova mensagem usa um FAB Material circular verde, localizado na região da lista em desktop e acima da navegação inferior em mobile. A consulta cancela respostas anteriores e aplica debounce de 350 ms. Pesquisa e filtros reiniciam a paginação. Ver mais acrescenta até 15 grupos, remove duplicatas pelo ID e conserva a seleção. Atualização manual preserva a conversa selecionada e mostra carregamento.
 
 A região direita contém os envios reais do destinatário, alinhados à direita, e o compositor. As mensagens anteriores são carregadas em lotes de 30. A rolagem mantém a posição de leitura ao carregar anteriores e ao atualizar. Conteúdo expurgado usa Conteúdo indisponível. Dados e tentativas continuam acessíveis pelo menu de cada mensagem, no painel lateral. As ocorrências e investigações permanecem no card da Visão geral.
 
@@ -20,9 +20,9 @@ A aplicação apresenta os estados reais e suas confirmações. Não há bolhas 
 
 ## Nova mensagem e cadastro
 
-Nova mensagem troca temporariamente a região da lista pela escolha do destinatário, com pesquisa de clientes e telefone avulso. A seleção não envia mensagem. Continuar só abre o compositor quando o telefone avulso atende à validação. A máscara é a brasileira existente e a normalização acrescenta 55 internamente.
+Nova mensagem troca temporariamente a região da lista pela escolha do destinatário, com pesquisa de clientes e telefone avulso. A seleção de cliente fica marcada e aguarda confirmação. Continuar abre o compositor somente com cliente de telefone válido ou número avulso válido. A máscara é a brasileira existente e a normalização acrescenta 55 internamente.
 
-O atalho Novo cliente abre o próprio ClienteCreateDialogComponent pelo launcher compartilhado abrirCadastroRapido. A seleção está na lista, portanto há apenas um painel lateral de cadastro. Cancelar preserva a pesquisa. Concluir seleciona o cliente retornado e abre o compositor.
+O atalho Novo cliente abre o próprio ClienteCreateDialogComponent pelo launcher compartilhado abrirCadastroRapido. A seleção está na lista, portanto há apenas um painel lateral de cadastro. Cancelar preserva a pesquisa. Concluir retorna o cliente criado à lista, já selecionado, para confirmar em Continuar.
 
 O launcher também é usado por ComercialEditorComponent e pelos formulários de Orçamento que já consumiam o cadastro rápido. O retorno, a aplicação do cliente e as regras comerciais dos consumidores permanecem os existentes. A apresentação desktop agora usa o mesmo painel lateral.
 
@@ -72,3 +72,18 @@ A seleção e a atualização de conversas usam clienteId quando o destinatário
 A regressão do compositor verifica dois clientes no mesmo telefone e a abertura de uma nova conversa avulsa separada. O índice anterior é reconstruído pelo backend após aplicar a migration 154. Histórico antigo sem cliente registrado continua associado ao telefone até existir uma identificação confiável.
 
 A correção passou em 43 testes de ClickWhatsApp e no build de produção. A validação visual em 1440 e 390 px reproduziu dois clientes fictícios com o mesmo telefone e comprovou que a lista e a área de mensagens permanecem separadas, inclusive ao selecionar o cliente por Nova mensagem. As evidências cliente-a-mesmo-telefone e cliente-b-mesmo-telefone estão na pasta visual já indicada.
+
+
+## Refinamento da seleção de destinatário
+
+O cabeçalho da lista fica dedicado à pesquisa e ao filtro. A ação textual Nova mensagem foi substituída por um único FAB verde circular com nome acessível e tooltip. O componente de FAB compartilhado dos demais módulos permanece com seu comportamento existente.
+
+A seleção apresenta busca no topo, ações secundárias Novo cliente e Informar número, lista de clientes e um rodapé de confirmação. Clicar em um cliente marca a linha e mostra nome e telefone associados no resumo, sem abrir o compositor. Alterar a pesquisa limpa a seleção anterior imediatamente.
+
+O campo de telefone aparece somente no modo manual ou se o cliente escolhido não tem telefone válido. Para cliente já cadastrado nessa situação, a ação explícita Salvar telefone e continuar usa a API de edição existente após consultar os dados atuais, preservando nome, e-mail, documento e endereço. A opção exige CLIENTE_EDITAR. Sem essa permissão, a interface informa o motivo e mantém disponível a opção de número avulso. As regras de autorização do backend permanecem as existentes.
+
+A confirmação fica desabilitada enquanto falta um destinatário válido ou durante o salvamento. O cadastro rápido retorna o cliente ao mesmo passo de confirmação. No mobile, a região é posicionada abaixo do header e o rodapé com a ação permanece acessível, com rolagem na lista. O agrupamento por cliente, a idempotência e o registro de envio continuam nos contratos anteriores.
+
+O refinamento passou em 46 testes focados de ClickWhatsApp e no build de produção. A conferência visual usou 1440, 1024, 820, 390 e 360 px, verificando FAB único, seleção marcada, ausência inicial do input de telefone, modo manual, edição autorizada de telefone ausente e confirmação antes de abrir o compositor. No mobile, foi verificada a posição do CTA acima da navegação inferior. Todas as requisições dessas conferências usaram respostas fictícias interceptadas, inclusive a edição do cliente.
+
+As prévias estão em /Users/leonardo.barros/.codex/visualizations/2026/11/13/01a1d560-ecfa-7a73-88ba-690ea8e9ba4e/clickwhatsapp-destinatario-ux. Nenhuma mensagem real foi enviada e nenhum cadastro real foi alterado durante a validação.
