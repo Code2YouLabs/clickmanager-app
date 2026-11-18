@@ -23,7 +23,7 @@ time { white-space: nowrap; font-size: .75rem; }
 .mensagens { padding: 16px; flex: 1; min-height: 0; overflow-y: auto; }
 .bolha { position: relative; width: fit-content; max-width: 90%; padding: 12px 36px 8px 14px; margin: 0 0 12px auto; border-radius: 12px 12px 2px 12px; background: var(--mat-sys-primary-container, #e4ecff); }
 .bolha p { margin: 0 0 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
-.bolha footer { display: flex; flex-wrap: wrap; justify-content: end; gap: 4px 8px; color: var(--mat-sys-on-surface-variant, #506078); font-size: .75rem; }
+.bolha footer { align-items: center; display: flex; flex-wrap: wrap; justify-content: end; gap: 4px 8px; color: var(--mat-sys-on-surface-variant, #506078); font-size: .75rem; }
 .opcoes-mensagem { position: absolute; right: 0; top: 0; }
 .compositor { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px; border-top: 1px solid var(--mat-sys-outline-variant, #dde4ec); }
 .compositor mat-form-field { flex: 1; min-width: 0; }

@@ -85,7 +85,7 @@
               <span class="contato">
                 <strong>{{ conversa.ultima.nomeCliente || conversa.ultima.destinatario || 'Destinatário indisponível' }}</strong>
                 <small class="previa">{{ conversa.previa || 'Conteúdo indisponível' }}</small>
-                <small>{{ fases[conversa.ultima.mensagem.fase] }}</small>
+                <app-message-status [mensagem]="conversa.ultima.mensagem" />
               </span>
               <time [attr.datetime]="conversa.ultima.mensagem.criadaEm">{{ conversa.ultima.mensagem.criadaEm | date:'dd/MM':'-0300' }}</time>
             </button>
@@ -120,7 +120,7 @@
             <p>{{ item.conteudoDisponivel ? item.texto : 'Conteúdo indisponível' }}</p>
             <footer>
               <time [attr.datetime]="item.mensagem.criadaEm">{{ item.mensagem.criadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</time>
-              <span [matTooltip]="confirmacoes[item.mensagem.confirmacao]">{{ fases[item.mensagem.fase] }} · {{ confirmacoes[item.mensagem.confirmacao] }}</span>
+              <app-message-status [mensagem]="item.mensagem" />
             </footer>
           </article>
         }

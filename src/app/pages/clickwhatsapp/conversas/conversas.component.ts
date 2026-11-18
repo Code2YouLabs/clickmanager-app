@@ -1,3 +1,4 @@
+import { MessageStatusComponent } from 'src/app/components/message-status/message-status.component';
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -14,12 +15,12 @@ import { MatDialog } from '@angular/material/dialog';
 import { AuthService } from 'src/app/services/auth.service';
 import { ClickWhatsAppService } from '../clickwhatsapp.service';
 import { ClickWhatsAppEnvioStore } from '../clickwhatsapp-envio.store';
-import { Configuracao, Conversa, DestinatarioConversa, Detalhe, Filtro, falha, FASES, CONFIRMACOES } from '../clickwhatsapp.models';
+import { Configuracao, Conversa, DestinatarioConversa, Detalhe, Filtro, falha } from '../clickwhatsapp.models';
 
 @Component({
   selector: 'app-clickwhatsapp-conversas',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MaterialModule, MessageWorkspaceComponent,
+  imports: [MessageStatusComponent, CommonModule, FormsModule, ReactiveFormsModule, MaterialModule, MessageWorkspaceComponent,
     InputTelefoneComponent, TelefonePipe],
   templateUrl: './conversas.component.html',
   styleUrl: './conversas.component.scss',
@@ -59,8 +60,6 @@ export class ConversasComponent implements OnChanges {
     PEDIDO_AUTOMATICO: { rotulo: 'Automação de pedido', icone: 'bolt', estilo: 'automatica' },
     NAO_IDENTIFICADA: { rotulo: 'Origem indisponível', icone: 'mail_outline', estilo: '' },
   };
-  readonly fases = FASES;
-  readonly confirmacoes = CONFIRMACOES;
   conversas: Conversa[] = [];
   mensagens: Detalhe[] = [];
   clientesEncontrados: ClienteResponse[] = [];

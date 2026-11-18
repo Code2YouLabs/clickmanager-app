@@ -45,6 +45,22 @@ describe('Conversas — fluxos HTTP e composição', () => {
     http.expectOne(r => r.url === base + '/conversas').flush({ itens, temMais });
   }
 
+  it('usa checks na lista e nos balões sem rótulos visíveis de confirmação', fakeAsync(() => {
+    const c = conversa('c-status'); c.ultima.mensagem.confirmacao = 'LIDA';
+    lista([c]); flushMicrotasks(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.contato app-message-status .lida')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.contato').textContent).not.toContain('Aceita');
+    page.selecionar(c);
+    http.expectOne(r => r.url.endsWith('/c-status/mensagens')).flush({ itens: [
+      { mensagem: { ...c.ultima.mensagem, confirmacao: 'ENTREGUE' }, texto: 'Mensagem de teste', conteudoDisponivel: true },
+    ], temMais: false });
+    flushMicrotasks(); tick(); fixture.detectChanges();
+    const rodape = fixture.nativeElement.querySelector('.bolha footer');
+    expect(rodape.querySelector('mat-icon').textContent).toBe('done_all');
+    expect(rodape.textContent).not.toContain('Entregue'); expect(rodape.textContent).not.toContain('Aceita');
+    expect(rodape.querySelector('[role="img"]').getAttribute('aria-label')).toBe('Entregue');
+  }));
+
   it('acrescenta 15 conversas sem duplicar e preserva a seleção', fakeAsync(() => {
     lista(Array.from({ length: 15 }, (_, i) => conversa('c' + i)), true);
     flushMicrotasks();

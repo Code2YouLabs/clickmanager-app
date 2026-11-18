@@ -87,3 +87,13 @@ A confirmação fica desabilitada enquanto falta um destinatário válido ou dur
 O refinamento passou em 46 testes focados de ClickWhatsApp e no build de produção. A conferência visual usou 1440, 1024, 820, 390 e 360 px, verificando FAB único, seleção marcada, ausência inicial do input de telefone, modo manual, edição autorizada de telefone ausente e confirmação antes de abrir o compositor. No mobile, foi verificada a posição do CTA acima da navegação inferior. Todas as requisições dessas conferências usaram respostas fictícias interceptadas, inclusive a edição do cliente.
 
 As prévias estão em /Users/leonardo.barros/.codex/visualizations/2026/11/13/01a1d560-ecfa-7a73-88ba-690ea8e9ba4e/clickwhatsapp-destinatario-ux. Nenhuma mensagem real foi enviada e nenhum cadastro real foi alterado durante a validação.
+
+## Confirmações por ícone — 18/11/2026
+
+Lista de conversas e rodapé dos balões usam MessageStatusComponent, reutilizável. Remove os rótulos visíveis Aceita/Entregue/Lida dessas duas posições, mantendo data, tooltip focável, descrição acessível e detalhes completos no menu Dados da mensagem.
+
+Mapeamento: relógio para pendência ou aceite apenas do provedor; um check cinza para confirmação do servidor; dois checks cinza para ENTREGUE; dois checks azuis para LIDA. Não confunde aceite HTTP/Evolution com confirmação do servidor WhatsApp. Falha, expiração, cancelamento e resultado incerto conservam ícones próprios, sem apresentar check de sucesso artificial. Sem mudanças nos contratos, correlação, estados do backend ou histórico operacional.
+
+Verificação: suíte ClickWhatsApp e componente de ícones aprovada (131 testes antes do cenário adicional de integração); teste adicional cobre lista/balão sem texto visível, mantendo aria-label. TypeScript e build de desenvolvimento conferidos. Sem alteração de assinatura, estilos globais, sessão ou produção; nenhum envio real.
+
+Resultado final: 131 testes da suíte completa aprovados; rodada adicional de Conversas + MessageStatus com o cenário novo aprovada (25 testes). Total de 132 cenários distintos aprovados. Build e TypeScript aprovados; git diff --check aprovado.
