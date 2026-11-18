@@ -81,6 +81,22 @@ describe('Canal de compartilhamento de documento', () => {
     }));
   }
 
+  it('oferece envio persistente ao aguardar conexão sem abrir WhatsApp automaticamente',fakeAsync(()=>{
+    pronta({...canal,disponivel:true,motivo:'AGUARDANDO_CONEXAO'});
+    expect(fixture.nativeElement.textContent).toContain('Enviar pelo ClickWhatsApp');
+    expect(fixture.nativeElement.textContent).not.toContain('Abrir no WhatsApp');
+    expect(page.aviso).toContain('dentro da validade');
+    http.expectNone(r=>r.method==='POST');
+  }));
+
+  it('ao voltar de outra aba atualiza a preferência sem enviar',fakeAsync(()=>{
+    pronta({...canal,disponivel:false,motivo:'ENVIOS_PAUSADOS'});
+    window.dispatchEvent(new Event('focus'));
+    http.expectOne(url).flush(canal);flushMicrotasks();fixture.detectChanges();
+    expect(page.integrado).toBeTrue();
+    http.expectNone(r=>r.method==='POST');
+  }));
+
   it('erro de disponibilidade continua desconhecido e não abre manual automaticamente',fakeAsync(()=>{
     const manual=jasmine.createSpy();page.manual.subscribe(manual);
     http.expectOne(url).flush({}, {status:503,statusText:'Unavailable'});

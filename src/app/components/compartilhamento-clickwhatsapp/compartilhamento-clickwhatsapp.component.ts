@@ -1,5 +1,5 @@
 import { InputTelefoneComponent } from '../inputs/input-telefone/input-telefone.component';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DOCUMENT } from '@angular/common';
 import { HttpClient, HttpContext, HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, EventEmitter, inject, Input, OnChanges, Output } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -9,7 +9,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDialog } from '@angular/material/dialog';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { firstValueFrom, Subject, takeUntil, timeout } from 'rxjs';
+import { firstValueFrom, fromEvent, merge, Subject, takeUntil, timeout } from 'rxjs';
 import { MobileTotalBarComponent } from '../mobile-total-bar/mobile-total-bar.component';
 import { ConfirmDialogComponent } from '../dialog/confirm-dialog/confirm-dialog.component';
 import { ClickWhatsAppEnvioStore, EnvioDocumento, contextoEnvio } from 'src/app/pages/clickwhatsapp/clickwhatsapp-envio.store';
@@ -78,6 +78,10 @@ export class CompartilhamentoClickWhatsAppComponent implements OnChanges {
   }
 
   constructor() {
+    const documento = inject(DOCUMENT);
+    merge(fromEvent(window, 'focus'), fromEvent(documento, 'visibilitychange')).pipe(takeUntilDestroyed()).subscribe(() => {
+      if(documento.visibilityState === 'visible' && this.endpoint && !this.enviando && !this.envio && !this.contextoAlterado) void this.consultar();
+    });
     inject(AuthService).usuario$.pipe(takeUntilDestroyed()).subscribe(u => {
       const contexto = contextoEnvio(u);
       if (this.contextoInicial === undefined || this.contextoInicial === null) this.contextoInicial = contexto;
@@ -119,7 +123,9 @@ export class CompartilhamentoClickWhatsAppComponent implements OnChanges {
   get aviso() {
     if (this.disponibilidade?.habilitado === false) return '';
     const motivos: Record<string, string> = {
-      ENVIOS_PAUSADOS: 'Os envios pelo ClickWhatsApp estão pausados.',
+      ENVIOS_PAUSADOS: 'Os envios estão pausados. Ative “Envio de mensagens” nas configurações do ClickWhatsApp; conectar o WhatsApp não retoma os envios.',
+      AGUARDANDO_CONEXAO: 'Você pode adicionar à fila. O envio aguardará a reconexão do WhatsApp, dentro da validade da mensagem.',
+      CONEXAO_NAO_PROVISIONADA: 'Prepare a conexão nas configurações do ClickWhatsApp antes de enviar.',
       RESULTADO_INCERTO: 'A conexão está em quarentena por um resultado incerto.',
       CONEXAO_NAO_ABERTA: 'O WhatsApp da empresa está desconectado ou precisa ter o estado atualizado.',
       SERVICO_MENSAGEM_INDISPONIVEL: 'O serviço de mensagens ainda não está configurado para receber solicitações.',
