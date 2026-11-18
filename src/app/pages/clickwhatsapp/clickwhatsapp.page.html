@@ -158,15 +158,27 @@
               </div>
               @if (c.estado?.observadoEm) { <p class="configuracao-ajuda">Última verificação em {{ c.estado?.observadoEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</p> }
             </section>
-            <section class="configuracao-bloco" aria-label="Envio de mensagens">
+            <section class="configuracao-bloco configuracao-envios" aria-label="Envio de mensagens">
               <div class="configuracao-linha">
-                <div><h2>Envio de mensagens</h2><p>Quando ativo, os envios aguardam a reconexão dentro da validade. Pausar não desconecta seu WhatsApp.</p></div>
-                <mat-slide-toggle aria-label="Envio de mensagens" [checked]="!!c.preferencia && !c.preferencia.pausada"
-                  [disabled]="!!acao || !(c.preferencia?.pausada ? acoes?.retomarEnvios : acoes?.pausarEnvios)"
-                  (toggleChange)="preferencia(!!c.preferencia?.pausada)" />
+                <div>
+                  <h2>Envio de mensagens</h2>
+                  <p>
+                    @if (!direitoAtivo) { Sua escolha de pausa está mantida. Reative o ClickWhatsApp para permitir novos envios. }
+                    @else if (c.preferencia?.quarentena) { Consulte as ocorrências para verificar o resultado incerto antes de continuar. }
+                    @else if (c.preferencia?.pausada) { Os envios estão pausados. Retome quando quiser voltar a enviar. }
+                    @else { Os envios estão liberados e aguardam a conexão quando necessário, dentro da validade. }
+                  </p>
+                </div>
+                @if (c.preferencia) {
+                  <button mat-stroked-button type="button" [disabled]="!!acao || !(c.preferencia.pausada ? acoes?.retomarEnvios : acoes?.pausarEnvios)"
+                    (click)="preferencia(c.preferencia.pausada)">
+                    <mat-icon>{{ c.preferencia.pausada ? 'play_arrow' : 'pause' }}</mat-icon>
+                    {{ c.preferencia.pausada ? 'Retomar envios' : 'Pausar envios' }}
+                  </button>
+                }
               </div>
-              <span class="configuracao-estado">{{ !c.preferencia ? 'Indisponível' : c.preferencia.pausada ? 'Pausado' : 'Ativo' }}</span>
-              @if (!direitoAtivo && c.preferencia && !c.preferencia.pausada) { <p class="configuracao-ajuda">A preferência está ativa. Os envios dependem da ativação do ClickWhatsApp.</p> }
+              <span class="configuracao-estado">{{ !c.preferencia ? 'Indisponível' : !direitoAtivo ? 'Bloqueados: ClickWhatsApp desativado' : c.preferencia.quarentena ? 'Envios suspensos: resultado incerto' : c.preferencia.pausada ? 'Envios pausados' : 'Envios liberados' }}</span>
+              <p class="configuracao-ajuda">Pausar não desconecta seu WhatsApp. Desativar e reativar o ClickWhatsApp mantém sua escolha de pausa.</p>
               @if (acao === 'preferencia') { <mat-progress-bar mode="indeterminate" aria-label="Atualizando preferência" /> }
             </section>
           </div>

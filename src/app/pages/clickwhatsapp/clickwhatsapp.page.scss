@@ -113,3 +113,9 @@
   border-bottom: 1px solid var(--mat-sys-outline-variant, #e5e7eb);
   p { margin: 4px 0; }
 }
+
+.configuracao-envios .configuracao-linha > button { flex-shrink: 0; white-space: nowrap; }
+@media (max-width: 600px) {
+  .configuracao-envios .configuracao-linha { flex-direction: column; align-items: stretch; }
+  .configuracao-envios .configuracao-linha > button { align-self: flex-start; }
+}

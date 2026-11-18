@@ -606,6 +606,39 @@ describe('ClickWhatsApp', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Webhook');
     http.expectNone(r => r.method !== 'GET');
   });
+  it('substitui o toggle por ações explícitas de pausar e retomar confirmadas pelo servidor', async () => {
+    Object.defineProperty(page, 'area', { value: 'configuracoes' }); await iniciar();
+    const bloco = () => fixture.nativeElement.querySelector('section[aria-label="Envio de mensagens"]');
+    expect(bloco().querySelector('mat-slide-toggle')).toBeNull();
+    expect(bloco().textContent).toContain('Pausar envios');
+    bloco().querySelector('button').click();fixture.detectChanges();
+    expect(bloco().querySelector('button').disabled).toBeTrue();
+    const pausa=http.expectOne(conexao + '/preferencia');
+    expect(pausa.request.body).toEqual({ativa:false,versao:8});
+    expect(bloco().textContent).not.toContain('Retomar envios');
+    pausa.flush({pausada:true,versao:9});await Promise.resolve();
+    const pausada={...config,preferencia:{...config.preferencia!,pausada:true,versao:9},acoesPermitidas:{...config.acoesPermitidas,pausarEnvios:false,retomarEnvios:true}};
+    http.expectOne(base + '/configuracao').flush(pausada);await estabilizar();
+    expect(bloco().textContent).toContain('Envios pausados');
+    expect(bloco().textContent).toContain('Retomar envios');
+    bloco().querySelector('button').click();fixture.detectChanges();
+    const retoma=http.expectOne(conexao + '/preferencia');
+    expect(retoma.request.body).toEqual({ativa:true,versao:9});
+    retoma.flush({pausada:false,versao:10});await Promise.resolve();
+    http.expectOne(base + '/configuracao').flush({...config,preferencia:{...config.preferencia!,versao:10}});await estabilizar();
+    expect(bloco().textContent).toContain('Envios liberados');
+    expect(bloco().textContent).toContain('Pausar envios');
+  });
+
+  it('inativação informa bloqueio sem dizer que a preferência foi pausada', async () => {
+    Object.defineProperty(page, 'area', { value: 'configuracoes' });
+    await iniciar({...config,direito:{...config.direito,local:false},acoesPermitidas:{...config.acoesPermitidas,retomarEnvios:false}});
+    const bloco=fixture.nativeElement.querySelector('section[aria-label="Envio de mensagens"]');
+    expect(bloco.textContent).toContain('Bloqueados: ClickWhatsApp desativado');
+    expect(page.config?.preferencia?.pausada).toBeFalse();
+    http.expectNone(r=>r.method!=='GET');
+  });
+
   for (const area of ['visao', 'mensagens', 'automacoes']) {
     it('avisa desativação em ' + area + ' e conserva acesso de consulta', async () => {
       Object.defineProperty(page, 'area', { value: area });

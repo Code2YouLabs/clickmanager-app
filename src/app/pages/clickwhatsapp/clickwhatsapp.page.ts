@@ -413,7 +413,7 @@ export class ClickWhatsAppPage implements OnInit {
     const c = this.config;
     if (!c?.conexao || !c.preferencia || !(ativa ? this.acoes?.retomarEnvios : this.acoes?.pausarEnvios)) return;
     void this.executar('preferencia', this.api.preferencia(c.conexao, ativa, c.preferencia.versao),
-      () => this.atualizar(ativa ? 'Preferência de envio ativada.' : 'Envios pausados.'));
+      () => this.atualizar(ativa ? 'Envios retomados.' : 'Envios pausados.'));
   }
 
   consultarWebhook(configurar = false) {

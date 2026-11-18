@@ -123,7 +123,7 @@ export class CompartilhamentoClickWhatsAppComponent implements OnChanges {
   get aviso() {
     if (this.disponibilidade?.habilitado === false) return '';
     const motivos: Record<string, string> = {
-      ENVIOS_PAUSADOS: 'Os envios estão pausados. Ative “Envio de mensagens” nas configurações do ClickWhatsApp; conectar o WhatsApp não retoma os envios.',
+      ENVIOS_PAUSADOS: 'Os envios estão pausados. Use “Retomar envios” nas configurações do ClickWhatsApp; conectar o WhatsApp não retoma os envios.',
       AGUARDANDO_CONEXAO: 'Você pode adicionar à fila. O envio aguardará a reconexão do WhatsApp, dentro da validade da mensagem.',
       CONEXAO_NAO_PROVISIONADA: 'Prepare a conexão nas configurações do ClickWhatsApp antes de enviar.',
       RESULTADO_INCERTO: 'A conexão está em quarentena por um resultado incerto.',
