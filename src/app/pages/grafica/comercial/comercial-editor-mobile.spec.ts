@@ -139,17 +139,17 @@ describe('Editor Novo Pedido mobile', () => {
     expect(document.querySelector('.mobile-side-panel')).toBeNull();
   }));
 
-  it('mantém o modal desktop e respeita os bloqueios de edição', () => {
+  it('abre o cadastro no painel desktop e respeita os bloqueios de edição', fakeAsync(() => {
     viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges();
-    const dialog = fixture.debugElement.injector.get(MatDialog);
-    const open = spyOn(dialog, 'open').and.returnValue({ afterClosed: () => of(null) } as any);
+    const dialog = TestBed.inject(MatDialog);
+    editor.onCriarCliente(); fixture.detectChanges(); tick(400);
+    expect(dialog.openDialogs[0].componentInstance).toBeInstanceOf(ClienteCreateDialogComponent);
+    expect(document.querySelector('.mobile-side-panel')).not.toBeNull();
+    dialog.closeAll(); tick(400);
+    spyOnProperty(editor, 'somenteLeitura', 'get').and.returnValue(true);
     editor.onCriarCliente();
-    expect(open).toHaveBeenCalledWith(ClienteCreateDialogComponent, jasmine.objectContaining({ width: '760px', maxWidth: '96vw' }));
-    expect(open.calls.mostRecent().args[1]?.panelClass).toBeUndefined();
-    open.calls.reset();
-    viewport.next({ matches: true, breakpoints: {} }); fixture.detectChanges();
-    spyOnProperty(editor, 'somenteLeitura', 'get').and.returnValue(true); editor.onCriarCliente(); expect(open).not.toHaveBeenCalled();
-  });
+    expect(dialog.openDialogs.length).toBe(0);
+  }));
 
   it('usa Detalhes e o puxador globais sem duplicar o formulário financeiro', () => {
     editor.clienteConfirmado = client; editor.itens = [item()] as any; fixture.detectChanges();

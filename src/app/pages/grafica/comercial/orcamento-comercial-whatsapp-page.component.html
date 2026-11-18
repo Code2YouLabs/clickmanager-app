@@ -1,0 +1,65 @@
+
+    <app-page-card
+      titulo="Compartilhar Orçamento"
+      [subtitulo]="subtituloPagina"
+      [botaoTexto]="'Voltar'"
+      [botaoRota]="voltarLink"
+      [mostrarDivisor]="true">
+
+      <div class="whatsapp-page">
+        <app-section-card titulo="Mensagem para WhatsApp" subtitulo="Revise a mensagem antes de enviar." [divider]="true">
+          <div class="state-panel" *ngIf="carregando">
+            <mat-spinner diameter="34"></mat-spinner>
+            <span>Carregando orçamento...</span>
+          </div>
+
+          <div class="error-panel" *ngIf="!carregando && erro">
+            <mat-icon>error_outline</mat-icon>
+            <div>
+              <strong>Não foi possível carregar a mensagem.</strong>
+              <span>{{ erro }}</span>
+            </div>
+            <div class="error-actions">
+              <button mat-stroked-button color="primary" type="button" [routerLink]="voltarLink">
+                Voltar
+              </button>
+              <button mat-flat-button color="primary" type="button" (click)="carregarOrcamento()">
+                Tentar novamente
+              </button>
+            </div>
+          </div>
+
+          <ng-container *ngIf="!carregando && !erro">
+            <div class="pedido-context" *ngIf="orcamento as item">
+              <div>
+                <span>Número</span>
+                <strong>{{ item.protocolo || '—' }}</strong>
+              </div>
+              <div>
+                <span>Cliente</span>
+                <strong>{{ item.nomeCliente || 'Cliente não informado' }}</strong>
+              </div>
+              <div>
+                <span>Telefone</span>
+                <strong>{{ item.telefoneCliente || '—' }}</strong>
+              </div>
+            </div>
+
+            <app-input-textarea
+              [control]="mensagemControl"
+              label="Mensagem"
+              placeholder="Mensagem do orçamento"
+              [rows]="16"
+              [maxlength]="limiteMensagem" [readonly]="editorBloqueado">
+            </app-input-textarea>
+
+            @if (orcamento; as o) {
+              <app-compartilhamento-clickwhatsapp [endpoint]="'/api/orcamentos/' + o.id + '/clickwhatsapp'"
+                [mensagem]="mensagemControl" [telefone]="o.telefoneCliente ? telefoneCompartilhamento(o.telefoneCliente) : ''"
+                (bloquearEditor)="editorBloqueado = $event" (canalChange)="limiteMensagem = $event.habilitado ? null : 4000" (copiar)="copiar()" (manual)="abrirWhatsApp($event)" />
+            }
+
+          </ng-container>
+        </app-section-card>
+      </div>
+    </app-page-card>

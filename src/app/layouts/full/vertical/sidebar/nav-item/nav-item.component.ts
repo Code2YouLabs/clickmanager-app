@@ -66,7 +66,10 @@ export class AppNavItemComponent implements OnChanges {
   }
 
   isItemActive(item: NavItem): boolean {
-    return !!item.route && !item.children?.length && this.router.isActive(item.route, false);
+    if (!item.route || item.children?.length) return false;
+    return item.exactRoute
+      ? this.router.isActive(item.route, { paths: 'exact', queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored' })
+      : this.router.isActive(item.route, false);
   }
 
   private hasActiveChild(item: NavItem | undefined): boolean {

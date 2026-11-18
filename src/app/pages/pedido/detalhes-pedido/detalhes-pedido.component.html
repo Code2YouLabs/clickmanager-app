@@ -478,20 +478,10 @@
         }
       </div>
 
-      <div class="pedido-detail-mobile__wa-preview">{{ mobileWhatsAppPreview }}</div>
-
-      <div class="pedido-detail-mobile__wa-actions">
-        <button mat-stroked-button color="primary" type="button" (click)="copiarMensagemWhatsAppMobile()">
-          <mat-icon>content_copy</mat-icon>
-          <span>Copiar</span>
-        </button>
-
-        <button mat-flat-button class="btn-whatsapp" type="button" (click)="enviarWhatsAppMobile()"
-          [disabled]="!pedido.cliente?.telefone">
-          <mat-icon>chat</mat-icon>
-          <span>Abrir WhatsApp</span>
-        </button>
-      </div>
+      <textarea class="pedido-detail-mobile__wa-preview" [formControl]="mensagemCompartilhamento" [readonly]="!integradoCompartilhamento || editorCompartilhamentoBloqueado" aria-label="Mensagem do pedido" rows="12"></textarea>
+      <app-compartilhamento-clickwhatsapp #canalMobile [endpoint]="'/api/pedidos/' + pedido.id + '/clickwhatsapp'"
+        [mensagem]="mensagemCompartilhamento" [telefone]="telefoneCompartilhamento(pedido.cliente?.telefone || '')"
+        (bloquearEditor)="editorCompartilhamentoBloqueado = $event" (canalChange)="integradoCompartilhamento = $event.habilitado" (copiar)="copiarMensagemWhatsAppMobile()" (manual)="enviarWhatsAppMobile($event)" />
     </div>
   </app-mobile-summary-sheet>
   }

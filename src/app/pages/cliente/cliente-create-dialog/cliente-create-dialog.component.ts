@@ -1,8 +1,9 @@
+import { openMobileSidePanel } from 'src/app/components/mobile-side-panel/mobile-side-panel';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { Component, Inject, ViewChild, inject } from '@angular/core';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { map } from 'rxjs';
 import { MaterialModule } from 'src/app/material.module';
 import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
@@ -37,4 +38,10 @@ export class ClienteCreateDialogComponent {
   salvar(): void { this.createForm.salvar(); }
   cancelar(): void { if (!this.salvando) this.dialogRef.close(null); }
   concluir(cliente: ClienteResponse): void { this.dialogRef.close(cliente); }
+}
+
+export function abrirCadastroRapido(dialog: MatDialog, data: ClienteCreateDialogData = {}) {
+  return openMobileSidePanel<ClienteCreateDialogComponent, ClienteCreateDialogData, ClienteResponse | null>(
+    dialog, ClienteCreateDialogComponent, { data, ariaLabel: 'Novo cliente' }, '760px',
+  );
 }

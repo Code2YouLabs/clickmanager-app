@@ -50,13 +50,14 @@ describe('PageCard e ListFilterBar — cabeçalho contextual mobile', () => {
   });
   afterEach(() => { fixture.nativeElement.remove(); TestBed.resetTestingModule(); });
 
-  it('renderiza um acionador à direita do título com o mesmo estado/painel e restaura o foco', async () => {
+  it('renderiza um acionador junto à pesquisa com o mesmo estado/painel e restaura o foco', async () => {
     const header = fixture.nativeElement.querySelector('.card-header');
     expect(header.classList.contains('card-header--mobile-contextual')).toBeTrue();
-    const trigger: HTMLButtonElement = header.querySelector('.list-mobile-toolbar__filter-button');
-    expect(trigger.textContent).toContain('Filtros (1)');
+    expect(header.querySelector('.list-mobile-toolbar__filter-button')).toBeNull();
+    const trigger: HTMLButtonElement = fixture.nativeElement.querySelector('mat-card-content .list-mobile-toolbar__filter-button');
+    expect(trigger.getAttribute('aria-label')).toContain('Filtros (1)');
     expect(fixture.nativeElement.querySelectorAll('.list-mobile-toolbar__filter-button').length).toBe(1);
-    expect(fixture.nativeElement.querySelector('mat-card-content .list-mobile-toolbar__filter-button')).toBeNull();
+    expect(fixture.nativeElement.querySelector('mat-card-content .list-mobile-toolbar__filter-button')).toBe(trigger);
     const bar: ListFilterBarComponent = fixture.debugElement.query(By.directive(ListFilterBarComponent)).componentInstance;
     trigger.click(); await settle();
     expect(bar.mobileFiltersOpen).toBeTrue();
@@ -92,13 +93,13 @@ describe('PageCard e ListFilterBar — cabeçalho contextual mobile', () => {
     expect(context.textContent).toContain('Ajuda contextual');
   });
 
-  it('mantém desktop inline e retorna ao cabeçalho sem duplicar acionadores', async () => {
+  it('mantém painel lateral no desktop e mobile sem duplicar acionadores', async () => {
     viewport.next({ matches: false, breakpoints: {} }); await settle();
     expect(fixture.nativeElement.querySelector('.card-header--mobile-contextual')).toBeNull();
     expect(fixture.nativeElement.querySelector('.card-header').textContent).toContain('Descrição desktop');
     expect(fixture.nativeElement.querySelector('.card-header__primary-action')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('.data-table-toolbar__filter-toggle')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('.list-mobile-toolbar__filter-button')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.data-table-toolbar__filter-toggle')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.list-mobile-toolbar__filter-button')).toBeTruthy();
     viewport.next({ matches: true, breakpoints: {} }); await settle();
     expect(fixture.nativeElement.querySelectorAll('.list-mobile-toolbar__filter-button').length).toBe(1);
   });

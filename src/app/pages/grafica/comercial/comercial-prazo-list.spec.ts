@@ -19,15 +19,15 @@ describe('Consulta temporal de lista e Kanban', () => {
  afterEach(()=>c.ngOnDestroy());
  it('envia prazo e ordenação ao servidor e reinicia paginação',()=>{
   c.pagina=4;params.next(convertToParamMap({status:'PENDENTE',prazo:'ATRASADO',sort:'previsaoEntrega,desc'}));
-  expect(c.pagina).toBe(0);expect(service.listarPedidosComerciais).toHaveBeenCalledWith(0,10,'PENDENTE','ATRASADO','previsaoEntrega,desc');
+  expect(c.pagina).toBe(0);expect(service.listarPedidosComerciais).toHaveBeenCalledWith(0,10,'PENDENTE','ATRASADO','previsaoEntrega,desc',false,false,jasmine.objectContaining({excluirFinalizados:false}));
   expect(c.filters.find(x=>x.key==='prazo')?.options.length).toBe(6);
  });
  it('preserva o escopo do dashboard na lista, paginação e Kanban',()=>{
   params.next(convertToParamMap({somenteAbertos:'true',prazo:'SEM_PREVISAO',sort:'previsaoEntrega,asc'}));
   expect(c.filterState['somenteAbertos']).toBeTrue();
-  expect(service.listarPedidosComerciais).toHaveBeenCalledWith(0,10,null,'SEM_PREVISAO','previsaoEntrega,asc',false,true);
+  expect(service.listarPedidosComerciais).toHaveBeenCalledWith(0,10,null,'SEM_PREVISAO','previsaoEntrega,asc',false,true,jasmine.objectContaining({excluirFinalizados:true}));
   c.alterarVisualizacao('kanban');
-  expect(service.listarPedidosComerciais).toHaveBeenCalledWith(0,20,'PENDENTE','SEM_PREVISAO','previsaoEntrega,asc',false,true);
+  expect(service.listarPedidosComerciais).toHaveBeenCalledWith(0,20,'PENDENTE','SEM_PREVISAO','previsaoEntrega,asc',false,true,jasmine.objectContaining({excluirFinalizados:true}));
   params.next(convertToParamMap({}));
   expect(c.somenteAbertos).toBeFalse();
  });
@@ -36,7 +36,7 @@ describe('Consulta temporal de lista e Kanban', () => {
   params.next(convertToParamMap({prazo:'ATRASO_CRITICO'}));
   anteriores.forEach(s=>s.next({content:[{id:999,status:'PENDENTE'}],totalElements:1}));
   expect(c.kanbanColumns.every(x=>!x.items.some((p:any)=>p.id===999))).toBeTrue();
-  expect(service.listarPedidosComerciais).toHaveBeenCalledWith(0,20,'PENDENTE','ATRASO_CRITICO',null);
+  expect(service.listarPedidosComerciais).toHaveBeenCalledWith(0,20,'PENDENTE','ATRASO_CRITICO','createdAt,desc',false,false,jasmine.objectContaining({excluirFinalizados:true}));
  });
  it('reconsulta após concluir produção no recorte de abertos, mesmo sem filtro temporal',()=>{
   c.somenteAbertos=true;const spy=spyOn<any>(c,'revalidarPrazos');

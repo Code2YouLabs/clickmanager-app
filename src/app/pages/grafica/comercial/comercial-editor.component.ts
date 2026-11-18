@@ -34,7 +34,7 @@ import { Usuario } from 'src/app/models/usuario/usuario.model';
 import { AuthService } from 'src/app/services/auth.service';
 import { TutorialOverlayComponent } from 'src/app/shared/tutorial/tutorial-overlay.component';
 import { TutorialTargetDirective } from 'src/app/shared/tutorial/tutorial-target.directive';
-import { ClienteCreateDialogComponent, ClienteCreateDialogData } from '../../cliente/cliente-create-dialog/cliente-create-dialog.component';
+import { ClienteCreateDialogData, abrirCadastroRapido } from '../../cliente/cliente-create-dialog/cliente-create-dialog.component';
 import { ClienteService } from '../../cliente/cliente.service';
 import { ComercialItemResponse, ComposicaoComercialResolvida, GraficaComercialComposicaoRequest, GraficaComercialDestinoResponse, GraficaOpcao, GraficaParametro, GraficaPrecoFaixa, GraficaPrecoLote, GraficaPrecoPolitica, GraficaPrecificacaoResultado, GraficaProduto, GraficaProdutoAcabamento, GraficaServico, OrcamentoComercialDetalhe, PedidoAjustesFinanceirosRequest, PedidoComercialDetalhe, PedidoFluxoPermissoes, PedidoFluxoResponse, RascunhoComercialResponse, RecebimentoPretendidoRequest, RecebimentoResponse, ResumoFinanceiroOrigem } from '../shared/grafica.models';
 import { GraficaProdutoService } from '../shared/grafica.service';
@@ -1603,12 +1603,7 @@ export class ComercialEditorComponent implements OnInit, OnDestroy {
       }
     }
 
-    const dialogRef = this.isMobile
-      ? openMobileSidePanel<ClienteCreateDialogComponent, ClienteCreateDialogData, ClienteResponse | null>(
-          this.dialog, ClienteCreateDialogComponent, { data: { ...data, mobileMode: 'quick' }, ariaLabel: 'Novo cliente' })
-      : this.dialog.open(ClienteCreateDialogComponent, {
-          width: '760px', maxWidth: '96vw', data,
-        });
+    const dialogRef = abrirCadastroRapido(this.dialog, this.isMobile ? { ...data, mobileMode: 'quick' } : data);
 
     dialogRef.afterClosed().pipe(take(1)).subscribe((cliente) => {
       if (!cliente) {

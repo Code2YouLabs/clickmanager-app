@@ -24,6 +24,7 @@ describe('DetalheOrcamentoComponent', () => {
       { carregar: jasmine.createSpy('carregar').and.returnValue(of({ CLIENTES: true })) } as any,
       { open: jasmine.createSpy('open') } as any,
       { error: jasmine.createSpy('error'), success: jasmine.createSpy('success'), warning: jasmine.createSpy('warning'), info: jasmine.createSpy('info') } as any,
+      { preparar: () => {}, abrir: (_endpoint: string, _numero: string, _texto: string, legado: () => void) => legado() } as any,
     );
   }
 

@@ -21,7 +21,7 @@ export class InputTextareaComponent {
   @Input() placeholder: string = '';
   @Input() rows: number = 5;
   @Input() readonly = false;
-  @Input() maxlength: number = 255;
+  @Input() maxlength: number | null = 255;
 
   get isRequired(): boolean {
     return this.control?.validator?.({} as any)?.['required'] ?? false;

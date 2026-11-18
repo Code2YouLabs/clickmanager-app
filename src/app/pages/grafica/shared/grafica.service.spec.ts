@@ -12,6 +12,14 @@ describe('GraficaProdutoService', () => {
     expect(args[1].get('sort')).toBe('previsaoEntrega,asc');
     service.listarPedidosComerciais();expect(api.get.calls.mostRecent().args[1].has('somenteAbertos')).toBeFalse();
   });
+  it('encaminha datas, cliente e exclusão de encerrados como parâmetros da consulta',()=>{
+    const api=jasmine.createSpyObj('ApiService',['get']);const service=new GraficaProdutoService(api);
+    service.listarPedidosComerciais(1,20,'PRONTO',null,'total,desc',false,false,{criacaoDe:'2026-11-01',criacaoAte:'2026-11-18',entregaDe:'2026-11-19',entregaAte:'2026-11-20',cliente:'Maria',excluirFinalizados:true});
+    const params=api.get.calls.mostRecent().args[1];
+    expect(params.get('criacaoDe')).toBe('2026-11-01');expect(params.get('criacaoAte')).toBe('2026-11-18');
+    expect(params.get('entregaDe')).toBe('2026-11-19');expect(params.get('entregaAte')).toBe('2026-11-20');
+    expect(params.get('cliente')).toBe('Maria');expect(params.get('excluirFinalizados')).toBe('true');expect(params.get('sort')).toBe('total,desc');
+  });
   it('envia o status de rascunho usando o contrato já existente no backend', () => {
     const api = jasmine.createSpyObj('ApiService', ['get']); const service = new GraficaProdutoService(api);
     service.listarRascunhosComerciais(2, 20, 'ABERTO');

@@ -1,3 +1,4 @@
+import { CompartilhamentoClickWhatsAppComponent } from 'src/app/components/compartilhamento-clickwhatsapp/compartilhamento-clickwhatsapp.component';
 import { Component, HostListener, OnInit, inject, signal } from '@angular/core';
 import { HttpClientModule } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
@@ -60,7 +61,7 @@ const MOBILE_FLOW_STEPS = ['RASCUNHO', 'AGUARDANDO_PAGAMENTO', 'PENDENTE', 'EM_P
 @Component({
     selector: 'app-detalhes-pedido',
     standalone: true,
-    imports: [
+    imports: [CompartilhamentoClickWhatsAppComponent,
         CommonModule,
         MatCardModule,
         ReactiveFormsModule,
@@ -429,6 +430,11 @@ export class DetalhesPedidoComponent implements OnInit {
         window.open(`/pedido/imprimir-duas-vias/${this.pedido.id}`, '_blank');
     }
 
+    integradoCompartilhamento = false;
+    editorCompartilhamentoBloqueado = false;
+    mensagemCompartilhamento = new FormControl('', {nonNullable: true});
+    readonly telefoneCompartilhamento = toE164BR;
+
     abrirWhatsApp(): void {
         if (!this.pedido?.id) return;
         if (!this.pedido?.cliente) {
@@ -437,6 +443,7 @@ export class DetalhesPedidoComponent implements OnInit {
         }
 
         if (this.isMobileView()) {
+            this.mensagemCompartilhamento.setValue(this.mobileWhatsAppPreview);
             this.mobileWhatsAppAberto.set(true);
             return;
         }
@@ -449,7 +456,7 @@ export class DetalhesPedidoComponent implements OnInit {
     }
 
     copiarMensagemWhatsAppMobile(): void {
-        const mensagem = this.mobileWhatsAppPreview;
+        const mensagem = this.mensagemCompartilhamento.value || this.mobileWhatsAppPreview;
         if (!mensagem) {
             return;
         }
@@ -459,19 +466,19 @@ export class DetalhesPedidoComponent implements OnInit {
             .catch(() => this.toastr.error('Não foi possível copiar a mensagem.'));
     }
 
-    enviarWhatsAppMobile(): void {
-        if (!this.pedido?.cliente?.telefone) {
+    enviarWhatsAppMobile(revisado?: { numero: string; texto: string }): void {
+        if (!revisado && !this.pedido?.cliente?.telefone) {
             this.toastr.error('Telefone do cliente não encontrado.');
             return;
         }
 
-        const phone = toE164BR(this.pedido.cliente.telefone);
+        const phone = revisado?.numero ?? toE164BR(this.pedido?.cliente?.telefone || '');
         if (!phone) {
             this.toastr.error('Telefone do cliente não encontrado ou inválido.');
             return;
         }
 
-        const encodedMessage = encodeURIComponent(this.mobileWhatsAppSendMessage);
+        const encodedMessage = encodeURIComponent(revisado?.texto ?? this.mobileWhatsAppSendMessage);
         const appUrl = `whatsapp://send?phone=${phone}&text=${encodedMessage}`;
         const webUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
 

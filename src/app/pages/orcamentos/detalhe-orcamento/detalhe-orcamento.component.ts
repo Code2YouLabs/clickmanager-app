@@ -1,3 +1,4 @@
+import { RevisaoDocumentoService } from 'src/app/components/compartilhamento-clickwhatsapp/revisao-documento.service';
 import { CommonModule, DatePipe } from '@angular/common';
 import { HttpResponse } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
@@ -25,14 +26,14 @@ import { MaterialModule } from 'src/app/material.module';
 import { FormatoImpressaoOrcamento, Orcamento, OrcamentoItem, OrcamentoStatus } from 'src/app/models/orcamento/orcamento.model';
 import { CatalogoProdutoListItem } from 'src/app/pages/catalogo/shared/models/catalogo.models';
 import { CatalogoProdutoService } from 'src/app/pages/catalogo/shared/services/catalogo.service';
-import { ClienteCreateDialogComponent } from 'src/app/pages/cliente/cliente-create-dialog/cliente-create-dialog.component';
+import { abrirCadastroRapido } from 'src/app/pages/cliente/cliente-create-dialog/cliente-create-dialog.component';
 import { GraficaParametro, GraficaPrecificacaoResultado, GraficaProduto } from 'src/app/pages/grafica/shared/grafica.models';
 import { GraficaProdutoService } from 'src/app/pages/grafica/shared/grafica.service';
 import { TelefonePipe } from 'src/app/pipe/telefone.pipe';
 import { AuthService } from 'src/app/services/auth.service';
 import { FeatureFlagService } from 'src/app/services/feature-flag.service';
 import { OrcamentoService } from 'src/app/services/orcamento.service';
-import { montarUrlWhatsAppOrcamento } from '../shared/orcamento-whatsapp.util';
+import { montarMensagemWhatsAppOrcamento, montarUrlWhatsAppOrcamento } from '../shared/orcamento-whatsapp.util';
 
 type StatusOption = {
   value: OrcamentoStatus;
@@ -114,6 +115,7 @@ export class DetalheOrcamentoComponent implements OnInit {
     private readonly featureFlagService: FeatureFlagService,
     private readonly dialog: MatDialog,
     private readonly toastr: ToastrService,
+    private readonly revisaoWhatsApp: RevisaoDocumentoService,
   ) {}
 
   ngOnInit(): void {
@@ -197,6 +199,7 @@ export class DetalheOrcamentoComponent implements OnInit {
     this.orcamentoService.detalhar(id).subscribe({
       next: (response) => {
         this.orcamento = response;
+        this.revisaoWhatsApp.preparar('/api/orcamentos/' + response.id + '/clickwhatsapp');
         this.observacaoInterna = response.observacaoInterna || '';
         this.carregando = false;
       },
@@ -302,6 +305,13 @@ export class DetalheOrcamentoComponent implements OnInit {
   }
 
   abrirWhatsApp(): void {
+    if (!this.orcamento) return;
+    const documento = this.orcamento;
+    this.revisaoWhatsApp.abrir('/api/orcamentos/' + documento.id + '/clickwhatsapp', this.telefoneNormalizado() || '',
+      montarMensagemWhatsAppOrcamento(documento), () => this.abrirWhatsAppManual());
+  }
+
+  private abrirWhatsAppManual(): void {
     const telefone = this.telefoneNormalizado();
     if (!telefone || !this.orcamento) {
       this.toastr.info('Este orçamento não possui telefone para WhatsApp.');
@@ -395,15 +405,11 @@ export class DetalheOrcamentoComponent implements OnInit {
       return;
     }
 
-    const dialogRef = this.dialog.open(ClienteCreateDialogComponent, {
-      width: '760px',
-      maxWidth: '96vw',
-      data: {
+    const dialogRef = abrirCadastroRapido(this.dialog, {
         nome: this.nomeCliente,
         telefone: this.telefone,
         email: this.email,
-      },
-    });
+      });
 
     dialogRef.afterClosed().subscribe((cliente) => {
       if (!cliente || !this.orcamento?.id) {

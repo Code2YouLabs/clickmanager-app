@@ -233,7 +233,7 @@ export class GraficaProdutoService {
     return this.api.post<GraficaComercialDestinoResponse>(`api/comercial/rascunhos/${id}/converter/orcamento`, {});
   }
 
-  listarPedidosComerciais(page = 0, size = 20, status?: string | null, prazo?: string | null, sort?: string | null, silencioso = false, somenteAbertos = false): Observable<GraficaPagina<PedidoComercialResumo>> {
+  listarPedidosComerciais(page = 0, size = 20, status?: string | null, prazo?: string | null, sort?: string | null, silencioso = false, somenteAbertos = false, filtros: Record<string,string|boolean|null> = {}): Observable<GraficaPagina<PedidoComercialResumo>> {
     let params = new HttpParams().set('page', page).set('size', size);
     if (status) {
       params = params.set('status', status);
@@ -241,6 +241,7 @@ export class GraficaProdutoService {
     if (prazo) params = params.set('prazo', prazo);
     if (sort) params = params.set('sort', sort);
     if (somenteAbertos) params = params.set('somenteAbertos', true);
+    for (const [key,value] of Object.entries(filtros)) if (value != null && value !== '') params = params.set(key,value);
     return silencioso ? this.api.get<GraficaPagina<PedidoComercialResumo>>('api/comercial/pedidos', params, new HttpContext().set(SILENT_REQUEST,true)) : this.api.get<GraficaPagina<PedidoComercialResumo>>('api/comercial/pedidos', params);
   }
 

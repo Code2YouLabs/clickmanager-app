@@ -1,0 +1,64 @@
+<section aria-label="Histórico de mensagens">
+  <div class="cabecalho"><div><h2>Histórico de mensagens</h2><p>Envios e processamento automático. O período desta tabela é independente dos indicadores.</p></div>
+    <button mat-icon-button aria-label="Atualizar histórico" [disabled]="carregando" (click)="carregar(true)"><mat-icon>refresh</mat-icon></button>
+  </div>
+  @if (resultado?.naoIndexados) { <p role="status">Alguns registros antigos ainda não estão disponíveis para pesquisa. Eles continuam visíveis na listagem.</p> }
+  @if (erroPesquisa) { <p role="status">{{ erroPesquisa }}</p> }
+  <app-data-table [columns]="colunas" [data]="resultado?.itens || []" rowKey="id" [loading]="carregando" [error]="erro"
+    [forbidden]="!permitido" [pagination]="paginacao" [sort]="sort" [filtered]="filtrosAtivos || !!pesquisa"
+    [search]="{ enabled: true, placeholder: 'Pesquisar cliente, telefone ou pedido...', debounceMs: 350, value: pesquisa }"
+    [emptyState]="{ title: 'Nenhum registro encontrado', description: 'Os registros disponíveis aparecerão neste histórico.' }"
+    (searchChange)="pesquisar($event)" (sortChange)="ordenar($event)" (pageChange)="paginar($event)" (retry)="carregar()">
+    <div data-table-toolbar-actions class="barra">
+      <button mat-stroked-button (click)="abrirFiltros()"><mat-icon>filter_list</mat-icon>Filtros{{ filtrosAtivos ? ' ativos' : '' }}</button>
+      <button mat-button (click)="limpar()">Limpar filtros</button>
+    </div>
+    <ng-template appDataTableCell="data" let-r>{{ r.criadoEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</ng-template>
+    <ng-template appDataTableCell="tipo" let-r>{{ tipos[r.tipo] || 'Outra' }} @if (r.acontecimento) { <small>{{ acontecimentos[r.acontecimento] }}</small> }</ng-template>
+    <ng-template appDataTableCell="destinatario" let-r>{{ r.nomeCliente || r.destinatarioMascarado || 'Não disponível' }}</ng-template>
+    <ng-template appDataTableCell="pedido" let-r>{{ r.pedido || '—' }}</ng-template>
+    <ng-template appDataTableCell="situacao" let-r><app-status-badge [status]="badge(r.situacao)" [fullLabel]="situacoes[r.situacao]" /></ng-template>
+    <ng-template appDataTableCell="motivo" let-r><span class="motivo">{{ r.motivoDescricao || '—' }}</span></ng-template>
+    <ng-template appDataTableCell="acoes" let-r><button mat-button (click)="ver(r)">Ver detalhes</button></ng-template>
+    <ng-template [appDataTableItem]="resultado?.itens || []" let-r>
+      <article class="item-mobile"><div><strong>{{ r.nomeCliente || r.destinatarioMascarado || 'Destinatário não disponível' }}</strong><small>{{ r.criadoEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</small></div>
+        <app-status-badge [status]="badge(r.situacao)" [fullLabel]="situacoes[r.situacao]" /><p>{{ tipos[r.tipo] }}{{ r.pedido ? ' · Pedido ' + r.pedido : '' }}</p>
+        @if (r.motivoDescricao) { <p>{{ r.motivoDescricao }}</p> }<button mat-button (click)="ver(r)">Ver detalhes</button>
+      </article>
+    </ng-template>
+  </app-data-table>
+</section>
+<ng-template #filtrosPainel>
+  <h2 mat-dialog-title class="mobile-side-panel__header">Filtros do histórico</h2>
+  <mat-dialog-content class="mobile-side-panel__body">
+    <div class="barra"><button mat-button (click)="rapido(0)">Hoje</button><button mat-button (click)="rapido(7)">Últimos 7 dias</button><button mat-button (click)="rapido(30)">Últimos 30 dias</button></div>
+    <p>Personalize o período em horário de Brasília. O fim é exclusivo.</p>
+    <div class="campos">
+      <mat-form-field appearance="outline"><mat-label>Início</mat-label><input matInput type="datetime-local" [(ngModel)]="rascunho.inicio"></mat-form-field>
+      <mat-form-field appearance="outline"><mat-label>Fim</mat-label><input matInput type="datetime-local" [(ngModel)]="rascunho.fim"></mat-form-field>
+      <mat-form-field appearance="outline"><mat-label>Tipo</mat-label><mat-select [(ngModel)]="rascunho.tipo"><mat-option value="">Todos</mat-option>@for (x of tipos | keyvalue; track x.key) { <mat-option [value]="x.key">{{ x.value }}</mat-option> }</mat-select></mat-form-field>
+      <mat-form-field appearance="outline"><mat-label>Situação</mat-label><mat-select [(ngModel)]="rascunho.situacao"><mat-option value="">Todas</mat-option>@for (x of situacoes | keyvalue; track x.key) { <mat-option [value]="x.key">{{ x.value }}</mat-option> }</mat-select></mat-form-field>
+      @if (rascunho.tipo === 'AUTOMATICA') {
+        <mat-form-field appearance="outline"><mat-label>Acontecimento</mat-label><mat-select [(ngModel)]="rascunho.acontecimento"><mat-option value="">Todos</mat-option>@for (x of acontecimentos | keyvalue; track x.key) { <mat-option [value]="x.key">{{ x.value }}</mat-option> }</mat-select></mat-form-field>
+      }
+      <mat-form-field appearance="outline"><mat-label>Motivo</mat-label><mat-select [(ngModel)]="rascunho.motivo"><mat-option value="">Todos</mat-option>@for (x of resultado?.motivos | keyvalue; track x.key) { <mat-option [value]="x.key">{{ x.value }}</mat-option> }</mat-select></mat-form-field>
+    </div>
+    @if (erroFiltro) { <p role="alert">{{ erroFiltro }}</p> }
+  </mat-dialog-content>
+  <mat-dialog-actions class="mobile-side-panel__footer" align="end"><button mat-button mat-dialog-close>Cancelar</button><button mat-flat-button (click)="aplicar()">Aplicar filtros</button></mat-dialog-actions>
+</ng-template>
+<ng-template #ocorrenciaPainel>
+  <h2 mat-dialog-title class="mobile-side-panel__header">Processamento automático</h2>
+  <mat-dialog-content class="mobile-side-panel__body">
+    @if (lendoDetalhe) { <mat-progress-bar mode="indeterminate" /> } @if (erroDetalhe) { <p role="alert">{{ erroDetalhe }}</p> }
+    @if (detalhe; as r) {
+      <h3>{{ acontecimentos[r.acontecimento || ''] || 'Automação de Pedido' }}</h3>
+      <dl><dt>Pedido</dt><dd>{{ r.pedido }}</dd><dt>Data</dt><dd>{{ r.criadoEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</dd>
+        <dt>Situação</dt><dd>Não enviada</dd><dt>Motivo</dt><dd>{{ r.motivoDescricao || 'Motivo não informado' }}</dd>
+        <dt>Etapa</dt><dd>Preparação da automação</dd><dt>Processamento</dt><dd>{{ r.processamento === 'PENDENTE' ? 'Preparação pendente' : 'Encerrado sem mensagem registrada' }}</dd>
+        <dt>Validade</dt><dd>{{ r.validaAte | date:'dd/MM/yyyy HH:mm':'-0300' }}</dd></dl>
+      <p>Não há mensagem ou tentativa de envio associada a esta ocorrência.</p>
+    }
+  </mat-dialog-content>
+  <mat-dialog-actions class="mobile-side-panel__footer" align="end"><button mat-button mat-dialog-close>Fechar</button></mat-dialog-actions>
+</ng-template>

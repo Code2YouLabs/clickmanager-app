@@ -1,3 +1,4 @@
+import { RevisaoDocumentoService } from 'src/app/components/compartilhamento-clickwhatsapp/revisao-documento.service';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Component, HostListener, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
@@ -30,7 +31,7 @@ import { AuthService } from 'src/app/services/auth.service';
 import { Orcamento, OrcamentoListagemParams, OrcamentoOrigem, OrcamentoResumo, OrcamentoStatus } from 'src/app/models/orcamento/orcamento.model';
 import { OrcamentoResumoService } from 'src/app/services/orcamento-resumo.service';
 import { OrcamentoService } from 'src/app/services/orcamento.service';
-import { montarUrlWhatsAppOrcamento } from '../shared/orcamento-whatsapp.util';
+import { montarMensagemWhatsAppOrcamento, montarUrlWhatsAppOrcamento } from '../shared/orcamento-whatsapp.util';
 
 type PeriodoFiltro = 'TODOS' | 'HOJE' | '7_DIAS' | '30_DIAS' | 'PERSONALIZADO';
 type OrdenacaoFiltro = 'RECENTES' | 'ANTIGOS' | 'MAIOR_VALOR' | 'MENOR_VALOR';
@@ -163,6 +164,7 @@ export class ListarOrcamentosComponent implements OnInit {
     private readonly authService: AuthService,
     private readonly dialog: MatDialog,
     private readonly toastr: ToastrService,
+    private readonly revisaoWhatsApp: RevisaoDocumentoService,
   ) {}
 
   ngOnInit(): void {
@@ -231,6 +233,7 @@ export class ListarOrcamentosComponent implements OnInit {
       .subscribe({
         next: (response) => {
           this.orcamentos = response.content || [];
+          if (this.orcamentos[0]) this.revisaoWhatsApp.preparar('/api/orcamentos/' + this.orcamentos[0].id + '/clickwhatsapp');
           this.totalOrcamentos = response.totalElements || 0;
           this.carregando = false;
         },
@@ -357,6 +360,16 @@ export class ListarOrcamentosComponent implements OnInit {
   }
 
   abrirWhatsApp(orcamento: Orcamento): void {
+    if (this.revisaoWhatsApp.manualAtivo) { this.abrirWhatsAppManual(orcamento); return; }
+    this.orcamentoService.detalhar(orcamento.id).subscribe({
+      next: documento => this.revisaoWhatsApp.abrir('/api/orcamentos/' + documento.id + '/clickwhatsapp',
+        this.telefoneNormalizado(documento) || '', montarMensagemWhatsAppOrcamento(documento),
+        () => this.abrirWhatsAppManual(orcamento)),
+      error: () => this.toastr.error('Não foi possível carregar os dados do orçamento para o WhatsApp.'),
+    });
+  }
+
+  private abrirWhatsAppManual(orcamento: Orcamento): void {
     const telefone = this.telefoneNormalizado(orcamento);
     if (!telefone) {
       this.toastr.info('Este orçamento não possui telefone para WhatsApp.');

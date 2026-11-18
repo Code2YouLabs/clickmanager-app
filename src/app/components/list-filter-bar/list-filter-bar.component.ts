@@ -49,7 +49,7 @@ export class ListFilterBarComponent implements OnChanges, OnDestroy {
   private unregisterHeaderAction?: () => void;
   readonly headerFilterVisible = signal(false);
   get hasFilterFields(): boolean { return !!(this.filters.length || this.hasCustomFilters || this.customFilterTemplate || this.mobileSort); }
-  get filterTriggerInHeader(): boolean { return !!this.mobileHeaderHost?.enabled(); }
+  get filterTriggerInHeader(): boolean { return this.isMobile && this.presentation !== 'section' && !!this.mobileHeaderHost?.enabled(); }
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly dialog = inject(MatDialog);
   private readonly breakpoints = inject(BreakpointObserver);
@@ -59,14 +59,14 @@ export class ListFilterBarComponent implements OnChanges, OnDestroy {
   private draftCleared = false;
   private readonly draftKeys = new Set<string>();
   isMobile = false;
-  get useMobilePanel(): boolean { return this.isMobile && this.mobileFilterPresentation === 'sheet'; }
+  get useMobilePanel(): boolean { return (this.isMobile || this.presentation === 'section') && this.mobileFilterPresentation === 'sheet'; }
   get mobileFiltersOpen(): boolean { return !!this.panelRef; }
   get hasDraftFilters(): boolean { return Object.keys(this.withoutEmptyFilters(this.draftFilters)).length > 0; }
 
   constructor() {
     // A projected header is checked before its filter bar. Publish visibility only
     // after rendering, so changing filter/sort inputs cannot invalidate that check.
-    afterRender(() => this.headerFilterVisible.set(this.useMobilePanel && this.hasFilterFields));
+    afterRender(() => this.headerFilterVisible.set(this.filterTriggerInHeader && this.hasFilterFields));
     afterNextRender(() => {
       this.unregisterHeaderAction = this.mobileHeaderHost?.register({
         template: this.mobileFilterAction, visible: () => this.headerFilterVisible(),
@@ -74,7 +74,7 @@ export class ListFilterBarComponent implements OnChanges, OnDestroy {
     });
     this.breakpoints.observe(MOBILE_FOUNDATION_QUERY).pipe(takeUntil(this.destroy$)).subscribe(state => {
       this.isMobile = state.breakpoints[MOBILE_FOUNDATION_QUERY] ?? state.matches;
-      if (!this.isMobile) this.closeMobileFilters();
+      this.closeMobileFilters();
     });
   }
   ngOnDestroy(): void {
@@ -91,7 +91,7 @@ export class ListFilterBarComponent implements OnChanges, OnDestroy {
     this.mobileFilterTrigger?.nativeElement.focus({ preventScroll: true });
     const ref = openMobileSidePanel(this.dialog, this.mobileFilterPanel, {
       viewContainerRef: this.viewContainerRef, panelClass: 'list-filter-mobile-panel', ariaLabel: this.filtersLabel,
-    });
+    }, this.isMobile ? undefined : '560px');
     this.panelRef = ref;
     ref.afterClosed().pipe(takeUntil(this.destroy$)).subscribe(() => {
       if (this.panelRef === ref) { this.panelRef = null; this.draftKeys.clear(); }

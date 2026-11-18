@@ -1,3 +1,4 @@
+import { pedidoStatusLabel } from './shared/pedido-status.metadata';
 import { ComercialItemResponse, OrcamentoComercialDetalhe, PedidoComercialDetalhe } from '../shared/grafica.models';
 
 function money(value?: number | null): string {
@@ -76,7 +77,7 @@ export function montarMensagemPedidoComercialWhatsApp(pedido: PedidoComercialDet
   return [
     `*PEDIDO ${pedido.numero || pedido.id || ''}*`,
     pedido.clienteNome ? `\n${iconCliente}*Cliente:* ${pedido.clienteNome}` : '',
-    pedido.status ? `\n*Status:* ${pedido.status}` : '',
+    pedido.status ? `\n*Status:* ${pedidoStatusLabel(pedido.status)}` : '',
     pedido.responsavelNome ? `\n*Responsável:* ${pedido.responsavelNome}` : '',
     `\n\n${iconItens}*Itens*`,
     `\n${itens}`,
@@ -100,7 +101,7 @@ export function montarMensagemOrcamentoComercialWhatsApp(orcamento: OrcamentoCom
   return [
     `*ORÇAMENTO ${orcamento.protocolo || orcamento.id || ''}*`,
     orcamento.nomeCliente ? `\n${iconCliente}*Cliente:* ${orcamento.nomeCliente}` : '',
-    orcamento.status ? `\n*Status:* ${orcamento.status}` : '',
+    orcamento.status ? `\n*Status:* ${pedidoStatusLabel(orcamento.status)}` : '',
     orcamento.validoAte ? `\n*Válido até:* ${dateBr(orcamento.validoAte)}` : '',
     orcamento.atendenteNomeSnapshot || orcamento.responsavelNome ? `\n*Responsável:* ${orcamento.atendenteNomeSnapshot || orcamento.responsavelNome}` : '',
     `\n\n${iconItens}*Itens*`,

@@ -287,6 +287,18 @@ export const navItems: NavItem[] = [
         ]
     },
     {
+        displayName: 'ClickWhatsApp',
+        iconName: 'message-circle',
+        bgcolor: 'primary',
+        route: '/page/clickwhatsapp',
+        children: [
+            { displayName: 'Visão geral', iconName: 'point', bgcolor: 'transparent', route: '/page/clickwhatsapp', exactRoute: true },
+            { displayName: 'Mensagens', iconName: 'point', bgcolor: 'transparent', route: '/page/clickwhatsapp/mensagens' },
+            { displayName: 'Automações', iconName: 'point', bgcolor: 'transparent', route: '/page/clickwhatsapp/automacoes' },
+            { displayName: 'Configurações', iconName: 'point', bgcolor: 'transparent', route: '/page/clickwhatsapp/configuracoes' },
+        ],
+    },
+    {
         navCap: 'Configurações',
         allowedEmpresaTipos: todosSegmentos,
     },

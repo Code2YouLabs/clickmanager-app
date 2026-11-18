@@ -56,8 +56,8 @@ describe('ListFilterBarComponent', () => {
     fixture.componentInstance.filters = []; fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Biblioteca');
     bar.toggleFilters(); fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('input[type=date]')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('.data-table-toolbar__filter-toggle').getAttribute('aria-expanded')).toBe('true');
+    expect(TestBed.inject(OverlayContainer).getContainerElement().querySelector('input[type=date]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.list-mobile-toolbar__filter-button').getAttribute('aria-expanded')).toBe('true');
   });
   it('emite uma busca no debounce e sincroniza valor externo sem nova emissao', fakeAsync(() => {
     const input = fixture.nativeElement.querySelector('input[type=search]');
@@ -107,7 +107,7 @@ describe('ListFilterBarComponent', () => {
     buttons[buttons.length - 1].click(); tick(500); fixture.detectChanges();
     expect(state).toHaveBeenCalledOnceWith({ active: false, ids: [0, 2] });
     expect(bar.mobileFiltersOpen).toBeFalse();
-    expect(fixture.nativeElement.querySelector('.list-mobile-toolbar__filter-button').textContent).toContain('(3)');
+    expect(fixture.nativeElement.querySelector('.list-mobile-toolbar__filter-button').getAttribute('aria-label')).toContain('(3)');
     expect(fixture.nativeElement.textContent).toContain('Biblioteca');
   }));
 
@@ -158,7 +158,7 @@ describe('ListFilterBarComponent', () => {
     bar.onFieldChange('active', true);
     viewport.next({ matches: false, breakpoints: {} }); tick(500); fixture.detectChanges();
     expect(bar.mobileFiltersOpen).toBeFalse();
-    expect(fixture.nativeElement.querySelector('app-section-card')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.list-drawer-toolbar')).toBeTruthy();
     expect(TestBed.inject(OverlayContainer).getContainerElement().querySelector('[role="dialog"]')).toBeNull();
     expect(fixture.componentInstance.clears).toBe(0);
     expect(bar.internalFilters).toEqual({ active: false, ids: [0] });
@@ -219,7 +219,7 @@ describe('ListFilterBarComponent', () => {
     edit(overlay, '2026-10-20'); bar.applyMobileFilters(); tick(500);
     expect(emit).toHaveBeenCalledOnceWith({ period: '2026-10-20' });
     viewport.next({ matches: false, breakpoints: {} }); fixture.detectChanges(); bar.toggleFilters(); fixture.detectChanges();
-    edit(fixture.nativeElement, '2026-10-21');
+    edit(overlay, '2026-10-21'); bar.applyMobileFilters(); tick(500);
     expect(emit).toHaveBeenCalledWith({ period: '2026-10-21' });
   }));
 
@@ -361,4 +361,20 @@ describe('ListFilterBarComponent — transição lateral', () => {
     expect(overlay.querySelector('mat-dialog-container')).toBeNull();
     expect(bar.mobileFiltersOpen).toBeFalse();
   }));
+
+  it('filtros date/text usam rascunho no desktop e somente Aplicar confirma', fakeAsync(() => {
+    fixture.componentInstance.filters = [
+      {key:'criacaoDe',label:'Criação de',type:'date',options:[]},
+      {key:'cliente',label:'Cliente',type:'text',options:[]},
+    ];fixture.detectChanges();
+    bar.isMobile=false;
+    const emit=spyOn(bar.stateChange,'emit');bar.openMobileFilters();tick();fixture.detectChanges();
+    const overlay=TestBed.inject(OverlayContainer).getContainerElement();
+    const date=overlay.querySelector<HTMLInputElement>('.data-table-toolbar__filter input[type=date]')!;date.value='2026-11-18';date.dispatchEvent(new Event('input'));
+    const text=overlay.querySelector<HTMLInputElement>('input[type=text]')!;text.value='Maria';text.dispatchEvent(new Event('input'));fixture.detectChanges();
+    expect(emit).not.toHaveBeenCalled();bar.applyMobileFilters();tick(500);
+    expect(emit).toHaveBeenCalledOnceWith({criacaoDe:'2026-11-18',cliente:'Maria'});
+    expect(overlay.querySelector('.list-filter-panel')).toBeNull();
+  }));
+
 });
