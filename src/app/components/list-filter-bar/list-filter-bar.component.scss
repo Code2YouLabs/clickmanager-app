@@ -271,3 +271,24 @@
 @include mobile.mobile-foundation {
   .list-mobile-toolbar__hint { font-size: 12px; line-height: 18px; color: var(--mat-sys-on-surface-variant); }
 }
+
+.list-drawer-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-block: 8px 20px;
+  .list-mobile-toolbar__search { flex: 1 1 240px; min-width: 0; }
+  .list-mobile-toolbar__controls, .list-mobile-toolbar__actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .list-mobile-toolbar__filter-button { min-width: 40px; width: 40px; padding: 8px; }
+}
+
+@media (max-width: 760px) {
+  .list-mobile-toolbar { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .list-mobile-toolbar__title, .list-mobile-toolbar__hint { grid-column: 1 / -1; }
+  .list-mobile-toolbar__controls { display: contents; }
+  .list-mobile-toolbar__filter-button { grid-column: 2; grid-row: 1; width: 44px; padding: 10px; border-radius: 50%; mat-icon { margin: 0; } }
+  .list-mobile-toolbar__actions { grid-column: 1 / -1; }
+  .list-mobile-toolbar__search { grid-column: 1; }
+  .list-mobile-toolbar:has(.list-mobile-toolbar__title) .list-mobile-toolbar__filter-button { grid-row: 2; }
+}

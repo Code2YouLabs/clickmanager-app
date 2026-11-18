@@ -221,14 +221,11 @@ describe('DataTableComponent', () => {
     expect(fixture.nativeElement.querySelector('.custom-name')?.textContent).toContain('Produto: Panfleto');
   });
 
-  it('renderiza busca e filtros dentro do section card padrao', () => {
-    expect(fixture.nativeElement.querySelector('app-section-card.data-table-toolbar-card')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('app-section-card.data-table-toolbar-card--compact')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('.section-card__title')?.textContent).toContain('Buscar produtos');
-    expect(fixture.nativeElement.querySelector('mat-divider')).toBeTruthy();
-    expect(fixture.nativeElement.textContent).toContain('Filtros');
-    expect(fixture.nativeElement.querySelector('.data-table-toolbar__search')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('.data-table-toolbar__filter-toggle')).toBeTruthy();
+  it('renderiza pesquisa e ícone de filtro compartilhado sem accordion', () => {
+    expect(fixture.nativeElement.querySelector('.list-drawer-toolbar')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.list-mobile-toolbar__search')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('button[aria-haspopup="dialog"]')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('mat-expansion-panel')).toBeNull();
     expect(fixture.nativeElement.querySelector('.data-table__header-row')).toBeTruthy();
   });
 
@@ -248,12 +245,12 @@ describe('DataTableComponent', () => {
     fixture.detectChanges();
 
     expect(host.lastFilters).toEqual({ materialId: 10, acabamentoIds: [20, 30] });
-    expect(fixture.nativeElement.textContent).toContain('Filtros (3)');
+    expect(fixture.nativeElement.querySelector('button[aria-haspopup=dialog]').getAttribute('aria-label')).toContain('(3)');
     expect(fixture.nativeElement.textContent).toContain('Limpar filtros');
     expect(fixture.nativeElement.textContent).toContain('Material: Couchê 150g');
     expect(fixture.nativeElement.textContent).toContain('Acabamentos: Laminação');
     expect(fixture.nativeElement.textContent).toContain('Acabamentos: Verniz');
-    expect(fixture.nativeElement.querySelector('app-section-card.data-table-toolbar-card--has-active')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.list-mobile-toolbar__filter-button--active')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('app-section-card.data-table-toolbar-card--compact')).toBeFalsy();
 
     table.onRemoveFilterChip(table.activeFilterChips[1]);
@@ -280,16 +277,14 @@ describe('DataTableComponent', () => {
     expect(table.activeFilterChips.map((chip) => chip.optionLabel)).toEqual(['Laminação']);
   });
 
-  it('exibe filtros dentro do accordion quando expandido', () => {
-    const toggle = fixture.nativeElement.querySelector('.data-table-toolbar__filter-toggle') as HTMLElement;
+  it('abre filtros no painel lateral também no desktop', fakeAsync(() => {
+    const toggle = fixture.nativeElement.querySelector('button[aria-haspopup=dialog]');
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
-
-    table.toggleFilters();
-    fixture.detectChanges();
-
+    table.toggleFilters(); tick(); fixture.detectChanges();
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(fixture.nativeElement.querySelectorAll('.data-table-toolbar__filter')).toHaveSize(2);
-  });
+    expect(document.querySelector('.list-filter-panel')).not.toBeNull();
+    expect(document.querySelectorAll('.list-filter-panel mat-select').length).toBe(2);
+  }));
 
   it('emite sort e paginacao para o container', () => {
     table.onSortChange({ active: 'name', direction: 'asc' });
@@ -438,7 +433,7 @@ describe('DataTableComponent', () => {
 
   it('encaminha opt-in à barra de pesquisa e seção sem mudar filtros tipados', () => {
     host.compact = true; fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.section-card--mobile-plain')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.list-mobile-toolbar')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.input-pesquisa--mobile-compact')).toBeTruthy();
     table.onFilterStateChange({ status: false, zero: 0, none: null });
     expect(host.lastFilters).toEqual({ status: false, zero: 0 });

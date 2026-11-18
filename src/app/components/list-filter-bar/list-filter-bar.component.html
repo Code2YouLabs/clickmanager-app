@@ -1,5 +1,5 @@
 @if (useMobilePanel) {
-  <div class="list-mobile-toolbar">
+  <div class="list-mobile-toolbar" [class.list-drawer-toolbar]="!isMobile">
     @if (mobileShowTitle) { <div class="list-mobile-toolbar__title">{{ toolbarTitle }}</div> }
     @if (search.enabled) {
       <app-input-pesquisa class="list-mobile-toolbar__search"
@@ -15,6 +15,16 @@
       <div class="list-mobile-toolbar__actions"><ng-container [ngTemplateOutlet]="toolbarActions"></ng-container></div>
     </div>
   </div>
+  @if (activeFilterChips.length) {
+    <mat-chip-set class="data-table-toolbar__chips" aria-label="Filtros aplicados">
+      @for (chip of activeFilterChips; track chip.filterKey + '-' + chip.value) {
+        <mat-chip-row (removed)="onRemoveFilterChip(chip)">{{ chip.filterLabel }}: {{ chip.optionLabel }}
+          <button matChipRemove type="button" [attr.aria-label]="'Remover filtro ' + chip.filterLabel"><mat-icon>cancel</mat-icon></button>
+        </mat-chip-row>
+      }
+      <button mat-button type="button" (click)="onClearFilters()">{{ clearFiltersLabel }}</button>
+    </mat-chip-set>
+  }
 } @else {
 @if (presentation === "section") {
 @if (search.enabled || filters.length || hasCustomFilters || customFilterTemplate) {
@@ -122,6 +132,11 @@
             @for (filter of definitions; track filter.key) {
               <mat-form-field appearance="outline" class="data-table-toolbar__filter" [style.flex-basis]="filterWidth(filter)">
                 <mat-label>{{ filter.label }}</mat-label>
+                @if (filter.type === 'date' || filter.type === 'text') {
+                  <input matInput [type]="filter.type === 'date' ? 'date' : 'text'" [value]="selectedFilterValue(filter) || ''"
+                    [placeholder]="filter.placeholder || ''" [attr.maxlength]="filter.type === 'text' ? 160 : null"
+                    (input)="onFieldChange(filter.key, $any($event.target).value)" />
+                } @else {
                 <mat-select
                   [multiple]="isMultiSelectFilter(filter)"
                   [value]="selectedFilterValue(filter)"
@@ -133,6 +148,7 @@
                     <mat-option [value]="option.value" [disabled]="option.disabled">{{ option.label }}</mat-option>
                   }
                 </mat-select>
+                }
               </mat-form-field>
             }
           </div>
@@ -173,9 +189,9 @@
 
 <ng-template #mobileFilterAction>
       @if (filterTriggerInHeader ? headerFilterVisible() : useMobilePanel && hasFilterFields) {
-        <button #mobileFilterTrigger mat-stroked-button type="button" class="list-mobile-toolbar__filter-button" [class.list-mobile-toolbar__filter-button--active]="hasActiveFilters"
+        <button #mobileFilterTrigger mat-icon-button type="button" [matTooltip]="filtersLabel" [attr.aria-label]="filtersLabel + (activeFilterCount ? ' (' + activeFilterCount + ')' : '')" class="list-mobile-toolbar__filter-button" [class.list-mobile-toolbar__filter-button--active]="hasActiveFilters"
           aria-haspopup="dialog" [attr.aria-expanded]="mobileFiltersOpen" (click)="openMobileFilters()">
-          <mat-icon>tune</mat-icon>{{ filtersLabel }}{{ activeFilterCount ? ' (' + activeFilterCount + ')' : '' }}
+          <mat-icon>{{ hasActiveFilters ? 'filter_alt' : 'filter_list' }}</mat-icon>
         </button>
       }
 </ng-template>

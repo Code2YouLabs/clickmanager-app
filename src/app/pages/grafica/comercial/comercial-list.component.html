@@ -7,8 +7,8 @@
   [mostrarDivisor]="true"
   [class.comercial-kanban-expanded]="kanbanExpandedActive">
       <p *ngIf="!isMobile" class="search-scope">{{ isMobile && viewMode === 'kanban'
-        ? 'A busca por texto considera somente os cards carregados. O filtro de status consulta todos os registros.'
-        : 'A busca por texto considera os registros da página atual. O filtro de status consulta todos os registros.' }}</p>
+        ? 'A busca por texto considera somente os cards carregados. Os filtros consultam todos os registros.'
+        : 'A busca por texto considera os registros da página atual. Os filtros consultam todos os registros.' }}</p>
       <app-data-table
         [columns]="columns"
         [data]="itensFiltrados"

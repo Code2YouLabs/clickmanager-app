@@ -76,28 +76,36 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   readonly acentoPedido = (item: PedidoComercialResumo): string | null => acentoPrazo(item.prazo);
   prazoFiltro: string | null = null;
   somenteAbertos = false;
+  criacaoDe: string | null = null;
+  criacaoAte: string | null = null;
+  entregaDe: string | null = null;
+  entregaAte: string | null = null;
+  clienteFiltro: string | null = null;
+  incluirFinalizados = false;
   sort: DataTableSort = {active:'', direction:''};
   private prazoRelogio = new PedidoPrazoRelogio(() => this.revalidarPrazos());
   get podeCriarPedido() {return this.tipo !== 'pedidos' || this.auth.temPermissao('PEDIDOS_CADASTRAR');}
   ordenar(sort: DataTableSort) {this.aplicarConsulta(this.filterState, sort);}
   filtrarOrdenar(e: DataTableFilterSortChange) {this.aplicarConsulta(e.filters, e.sort);}
   private aplicarConsulta(state: DataTableFilterState, sort = this.sort) {
+    for(const [de,ate] of [['criacaoDe','criacaoAte'],['entregaDe','entregaAte']]) {
+      if(state[de] && state[ate] && String(state[de]) > String(state[ate])) { this.toastr.error('A data inicial deve ser anterior ou igual à data final.'); return; }
+    }
     const queryParams: Record<string,string | number | boolean | null | unknown> = {status:state['status'] || null};
     if ('prazo' in state || this.prazoFiltro) queryParams['prazo']=state['prazo'] || null;
     if ('somenteAbertos' in state || this.somenteAbertos) queryParams['somenteAbertos'] = state['somenteAbertos'] === true || state['somenteAbertos'] === 'true' ? true : null;
+    if(this.tipo === 'pedidos') for (const key of ['criacaoDe','criacaoAte','entregaDe','entregaAte','cliente','incluirFinalizados']) queryParams[key] = state[key] || null;
     if (sort.active || this.sort.active) queryParams['sort']=sort.active && sort.direction ? `${sort.active},${sort.direction}` : null;
     this.router.navigate([], {relativeTo:this.route, queryParams, queryParamsHandling:'merge'});
   }
   private refreshSilencioso = false;
   private pedidosPagina(page: number, size: number, status?: string | null) {
-    if (this.somenteAbertos) return this.graficaService.listarPedidosComerciais(page,size,status,this.prazoFiltro,
-      this.sort.active && this.sort.direction ? `${this.sort.active},${this.sort.direction}` : null, this.refreshSilencioso, true);
-    if (this.refreshSilencioso) return this.graficaService.listarPedidosComerciais(page,size,status,this.prazoFiltro,
-      this.sort.active && this.sort.direction ? `${this.sort.active},${this.sort.direction}` : null, true);
-    return this.prazoFiltro || this.sort.active ? this.graficaService.listarPedidosComerciais(page,size,status,this.prazoFiltro,
-      this.sort.active && this.sort.direction ? `${this.sort.active},${this.sort.direction}` : null)
-      : this.graficaService.listarPedidosComerciais(page,size,status);
+    return this.graficaService.listarPedidosComerciais(page,size,status,this.prazoFiltro,
+      this.sort.active && this.sort.direction ? `${this.sort.active},${this.sort.direction}` : 'createdAt,desc',this.refreshSilencioso,this.somenteAbertos,
+      {criacaoDe:this.criacaoDe,criacaoAte:this.criacaoAte,entregaDe:this.entregaDe,entregaAte:this.entregaAte,cliente:this.clienteFiltro,
+        excluirFinalizados:!this.incluirFinalizados && !this.statusFiltro && !['CANCELADO','PRODUCAO_CONCLUIDA'].includes(this.prazoFiltro || '')});
   }
+
   private revalidarPrazos() {
     if (this.tipo !== 'pedidos') return;
     this.prazoRelogio.limpar(); this.pagina=0; this.kanbanContextKey=''; this.resetKanbanSeContextoMudou(); this.refreshSilencioso=true; this.carregar(); this.refreshSilencioso=false;
@@ -213,9 +221,14 @@ export class ComercialListComponent implements OnInit, OnDestroy {
     })) }];
     if (this.tipo === 'pedidos') filtros.push({key:'prazo',label:'Prazo de entrega',type:'select',options:PEDIDO_PRAZO_FILTROS});
     if (this.tipo === 'pedidos') filtros.push({key:'somenteAbertos',label:'Acompanhamento',type:'select',options:[{value:true,label:'Somente pedidos abertos'}]});
+    if (this.tipo === 'pedidos') filtros.push(
+      {key:'criacaoDe',label:'Criação — de',type:'date',options:[]}, {key:'criacaoAte',label:'Criação — até',type:'date',options:[]},
+      {key:'entregaDe',label:'Previsão de entrega — de',type:'date',options:[]}, {key:'entregaAte',label:'Previsão de entrega — até',type:'date',options:[]},
+      {key:'cliente',label:'Cliente',type:'text',placeholder:'Nome do cliente',options:[]},
+      {key:'incluirFinalizados',label:'Pedidos encerrados',type:'select',options:[{value:true,label:'Incluir entregues e cancelados'}]});
     return filtros;
   }
-  get filterState(): DataTableFilterState { return this.tipo === 'pedidos' ? { status: this.statusFiltro, prazo:this.prazoFiltro, ...(this.somenteAbertos ? {somenteAbertos:true} : {}) } : {status:this.statusFiltro}; }
+  get filterState(): DataTableFilterState { return this.tipo === 'pedidos' ? { status: this.statusFiltro, prazo:this.prazoFiltro, criacaoDe:this.criacaoDe,criacaoAte:this.criacaoAte,entregaDe:this.entregaDe,entregaAte:this.entregaAte,cliente:this.clienteFiltro,incluirFinalizados:this.incluirFinalizados || null, ...(this.somenteAbertos ? {somenteAbertos:true} : {}) } : {status:this.statusFiltro}; }
   filtrar(state: DataTableFilterState): void {
     this.aplicarConsulta(state);
   }
@@ -281,9 +294,13 @@ export class ComercialListComponent implements OnInit, OnDestroy {
       this.statusFiltro = params.get('status');
       this.prazoFiltro = params.get('prazo');
       this.somenteAbertos = params.get('somenteAbertos') === 'true';
-      const [active,direction] = (params.get('sort') || '').split(',');
-      this.sort = active === 'previsaoEntrega' && (direction === 'asc' || direction === 'desc') ? {active, direction} : {active:'', direction:''};
+      this.criacaoDe = params.get('criacaoDe'); this.criacaoAte = params.get('criacaoAte');
+      this.entregaDe = params.get('entregaDe'); this.entregaAte = params.get('entregaAte');
+      this.clienteFiltro = params.get('cliente'); this.incluirFinalizados = params.get('incluirFinalizados') === 'true';
+      const [active,direction] = (params.get('sort') || (tipo === 'pedidos' ? 'createdAt,desc' : '')).split(',');
+      this.sort = ['createdAt','previsaoEntrega','numero','clienteNome','status','total'].includes(active) && (direction === 'asc' || direction === 'desc') ? {active, direction} : {active:'', direction:''};
       this.columns = this.columns.filter(c => c.key !== 'previsaoEntrega');
+      this.columns = this.columns.map(c=>({...c,sortable:tipo === 'pedidos',sortKey:c.key === 'referencia'?'numero':c.key === 'cliente'?'clienteNome':c.key}));
       if (tipo === 'pedidos') this.columns.splice(3,0,{key:'previsaoEntrega',label:'Previsão de entrega',sortable:true,width:'220px'});
       this.prazoRelogio.limpar();
       this.pagina = 0;
@@ -756,7 +773,9 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   private aplicarStatusRetornado(pedidoId: number, pedido: PedidoComercialDetalhe, target: PedidoKanbanColumn): void {
-    if (this.prazoFiltro || this.somenteAbertos) {this.revalidarPrazos(); return;}
+    if (this.prazoFiltro || this.somenteAbertos || this.criacaoDe || this.criacaoAte || this.entregaDe || this.entregaAte || this.clienteFiltro
+      || (this.sort.active && (this.sort.active !== 'createdAt' || this.sort.direction !== 'desc'))
+      || (!this.incluirFinalizados && !this.statusFiltro && ['ENTREGUE','CANCELADO'].includes(pedido.status))) {this.revalidarPrazos(); return;}
     target.items = target.items.map((item) => this.pedidoId(item) === pedidoId
       ? { ...item, ...pedido, status: pedido.status || item.status }
       : item);
@@ -820,7 +839,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   private resetKanbanSeContextoMudou(): void {
-    const contexto = `${this.statusFiltro || '__todos__'}|${this.prazoFiltro || ''}|${this.sort.active},${this.sort.direction}|${this.somenteAbertos}`;
+    const contexto = `${this.statusFiltro || '__todos__'}|${this.prazoFiltro || ''}|${this.sort.active},${this.sort.direction}|${this.somenteAbertos}|${this.criacaoDe}|${this.criacaoAte}|${this.entregaDe}|${this.entregaAte}|${this.clienteFiltro}|${this.incluirFinalizados}`;
     if (contexto === this.kanbanContextKey) {
       return;
     }
@@ -846,7 +865,9 @@ export class ComercialListComponent implements OnInit, OnDestroy {
 
   private statusesKanban() {
     const statusFiltrado = PEDIDO_STATUS_METADATA.find((item) => item.status === this.statusFiltro);
-    return statusFiltrado ? [statusFiltrado] : PEDIDO_STATUS_METADATA;
+    if(statusFiltrado)return [statusFiltrado];
+    return this.incluirFinalizados || ['PRODUCAO_CONCLUIDA','CANCELADO'].includes(this.prazoFiltro || '') ? PEDIDO_STATUS_METADATA
+      : PEDIDO_STATUS_METADATA.filter(item=>!['ENTREGUE','CANCELADO'].includes(item.status));
   }
 
   private carregarKanbanInicial(): void {
@@ -913,7 +934,7 @@ export class ComercialListComponent implements OnInit, OnDestroy {
   }
 
   private garantirPedidoTutorialNoKanban(): void {
-    if (this.prazoFiltro || this.sort.active || this.somenteAbertos) return;
+    if (this.prazoFiltro || (this.sort.active && !(this.sort.active === 'createdAt' && this.sort.direction === 'desc')) || this.somenteAbertos || this.criacaoDe || this.criacaoAte || this.entregaDe || this.entregaAte || this.clienteFiltro) return;
     const pedidoId = this.primeiroPedidoTutorial.pedidoAcompanhadoId;
     if (!pedidoId || this.pedidoEstaNoKanban(pedidoId) || this.tutorialPedidoLoadId === pedidoId) {
       return;

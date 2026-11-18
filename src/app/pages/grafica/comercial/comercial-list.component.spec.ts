@@ -74,7 +74,8 @@ describe('ComercialListComponent', () => {
   ] as const) {
     it(`renderiza ${titulo} com contexto e destinos próprios`, () => {
       data.next({ tipo }); fixture.detectChanges();
-      expect(service[method]).toHaveBeenCalledWith(0, 10, null);
+      if(tipo === 'pedidos') expect(service[method]).toHaveBeenCalledWith(0,10,null,null,'createdAt,desc',false,false,jasmine.objectContaining({excluirFinalizados:true}));
+      else expect(service[method]).toHaveBeenCalledWith(0, 10, null);
       expect(fixture.nativeElement.querySelector('[role=heading]').textContent).toContain(titulo);
       expect(fixture.nativeElement.textContent).toContain(component.subtitulo);
       component.novo(); expect(router.navigate).toHaveBeenCalledWith(['/page/grafica/comercial', tipo, 'novo']);
@@ -96,10 +97,10 @@ describe('ComercialListComponent', () => {
   });
   it('aplica status no servidor, pagina e limpa pelo contrato da URL', () => {
     fixture.detectChanges(); params.next(convertToParamMap({ status: 'PRONTO' }));
-    expect(service.listarPedidosComerciais).toHaveBeenCalledWith(0, 10, 'PRONTO');
+    expect(service.listarPedidosComerciais).toHaveBeenCalledWith(0, 10, 'PRONTO', null, 'createdAt,desc', false, false, jasmine.objectContaining({excluirFinalizados:false}));
     component.paginar({ pageIndex: 1, pageSize: 20, length: 21 });
-    expect(service.listarPedidosComerciais).toHaveBeenCalledWith(1, 20, 'PRONTO');
-    component.filtrar({}); expect(router.navigate).toHaveBeenCalledWith([], jasmine.objectContaining({ queryParams: { status: null }, queryParamsHandling: 'merge' }));
+    expect(service.listarPedidosComerciais).toHaveBeenCalledWith(1, 20, 'PRONTO', null, 'createdAt,desc', false, false, jasmine.objectContaining({excluirFinalizados:false}));
+    component.filtrar({}); expect(router.navigate).toHaveBeenCalledWith([], jasmine.objectContaining({ queryParams: jasmine.objectContaining({ status: null }), queryParamsHandling: 'merge' }));
   });
   it('mostra erro inicial e permite retry sem transformar falha em vazio', () => {
     service.listarPedidosComerciais.and.returnValue(throwError(() => ({ status: 500 })));
@@ -260,7 +261,7 @@ describe('ComercialListComponent', () => {
     const more = () => fixture.nativeElement.querySelector('.data-table-progressive__more');
     more().click(); more().click(); fixture.detectChanges();
     expect(service.listarPedidosComerciais.calls.count()).toBe(2);
-    expect(service.listarPedidosComerciais).toHaveBeenCalledWith(1, 10, null);
+    expect(service.listarPedidosComerciais).toHaveBeenCalledWith(1, 10, null, null, 'createdAt,desc', false, false, jasmine.objectContaining({excluirFinalizados:true}));
     expect(component.pagina).toBe(0); expect(component.itens.length).toBe(10);
     expect(more().disabled).toBeTrue(); expect(firstNode.querySelector('.expanded-detail')).toBeTruthy();
     pending.next(responsePage(1)); pending.complete(); fixture.detectChanges();
@@ -269,7 +270,7 @@ describe('ComercialListComponent', () => {
     expect(firstNode.querySelector('.expanded-detail')).toBeTruthy();
     expect(fixture.nativeElement.textContent).toContain('Carregados 20 de 25 pedidos');
     more().click(); fixture.detectChanges();
-    expect(service.listarPedidosComerciais).toHaveBeenCalledWith(2, 10, null);
+    expect(service.listarPedidosComerciais).toHaveBeenCalledWith(2, 10, null, null, 'createdAt,desc', false, false, jasmine.objectContaining({excluirFinalizados:true}));
     expect(component.itens.length).toBe(25); expect(component.pagina).toBe(2);
     expect(new Set(component.itens.map(item => item.id)).size).toBe(25);
     expect(more()).toBeNull(); expect(fixture.nativeElement.querySelector('mat-paginator')).toBeNull();
@@ -286,7 +287,7 @@ describe('ComercialListComponent', () => {
     expect(fixture.nativeElement.querySelectorAll('.pedido-mobile-item').length).toBe(10);
     pending = new Subject<any>();
     fixture.nativeElement.querySelector('.data-table-progressive__error button').click(); fixture.detectChanges();
-    expect(service.listarPedidosComerciais.calls.mostRecent().args).toEqual([1, 10, null]);
+    expect(service.listarPedidosComerciais.calls.mostRecent().args.slice(0,3)).toEqual([1, 10, null]);
     pending.next(responsePage(1)); pending.complete(); fixture.detectChanges(); expect(component.itens.length).toBe(20);
     pending = new Subject<any>();
     fixture.nativeElement.querySelector('.data-table-progressive__more').click(); pending.error({ status: 403 }); fixture.detectChanges();
@@ -317,7 +318,7 @@ describe('ComercialListComponent', () => {
     fixture.nativeElement.querySelector('.data-table-progressive__more').click(); fixture.detectChanges();
     component.buscar('Maria'); params.next(convertToParamMap({ status: 'PRONTO' })); fixture.detectChanges();
     expect(stale.observed).toBeFalse(); expect(component.itens).toEqual([]); expect(component.carregandoMais).toBeFalse();
-    expect(service.listarPedidosComerciais.calls.mostRecent().args).toEqual([0, 10, 'PRONTO']);
+    expect(service.listarPedidosComerciais.calls.mostRecent().args.slice(0,3)).toEqual([0, 10, 'PRONTO']);
     stale.next(responsePage(1)); expect(component.itens).toEqual([]);
     filtered.next({ content: batch(101, 10), totalElements: 12, number: 0 }); fixture.detectChanges();
     expect(component.itens.map(item => item.id)).toEqual(batch(101, 10).map(item => item.id));
@@ -340,7 +341,7 @@ describe('ComercialListComponent', () => {
       expect(new Set(component.itens.map(item => item.id)).size).toBe(10);
       const reset = fixture.nativeElement.querySelector('.data-table-progressive__error button');
       expect(reset.textContent).toContain('Atualizar lista'); reset.click(); fixture.detectChanges();
-      expect(service.listarPedidosComerciais.calls.mostRecent().args).toEqual([0, 10, null]);
+      expect(service.listarPedidosComerciais.calls.mostRecent().args.slice(0,3)).toEqual([0, 10, null]);
       expect(component.reiniciarLista).toBeFalse(); expect(component.erroMais).toBeNull();
     });
   }
@@ -497,8 +498,8 @@ describe('ComercialListComponent', () => {
         filter ? of(commercialPage(0, 1) as any) : index ? pending : of(commercialPage() as any)); startMobile();
       await fixture.whenStable(); fixture.detectChanges();
       const table = fixture.debugElement.query(By.directive(DataTableComponent)).componentInstance as DataTableComponent;
-      expect(table.filterBar?.filterTriggerInHeader).toBeTrue();
-      expect(fixture.nativeElement.querySelector('app-card-header .list-mobile-toolbar__filter-button')).toBeTruthy();
+      expect(table.filterBar?.filterTriggerInHeader).toBeFalse();
+      expect(fixture.nativeElement.querySelector('app-list-filter-bar .list-mobile-toolbar__filter-button')).toBeTruthy();
       expect(table.filters[0].options?.map(option => option.value)).toEqual(component.configuracao.status);
       more().click(); fixture.detectChanges(); expect(pending.observed).toBeTrue();
       table.filterChange.emit({ status });
@@ -655,5 +656,28 @@ describe('ComercialListComponent', () => {
       expect(router.navigate).toHaveBeenCalledOnceWith(['/page/grafica/comercial', tipo, 'novo']);
     });
   }
+
+  it('inicia com abertos e criação decrescente e habilita ordenação das colunas',()=>{
+    fixture.detectChanges();
+    expect(component.sort).toEqual({active:'createdAt',direction:'desc'});
+    expect(service.listarPedidosComerciais.calls.mostRecent().args[7]).toEqual(jasmine.objectContaining({excluirFinalizados:true}));
+    expect(component.columns.every(c=>c.sortable)).toBeTrue();
+    expect(component.columns.find(c=>c.key==='cliente')?.sortKey).toBe('clienteNome');
+    component.ordenar({active:'total',direction:'asc'});
+    expect(router.navigate).toHaveBeenCalledWith([],jasmine.objectContaining({queryParams:jasmine.objectContaining({sort:'total,asc'})}));
+  });
+  it('aplica datas cliente e status no servidor e troca página sem perder filtros',()=>{
+    fixture.detectChanges();params.next(convertToParamMap({status:'ENTREGUE',criacaoDe:'2026-11-01',criacaoAte:'2026-11-18',entregaDe:'2026-11-19',entregaAte:'2026-11-20',cliente:'Maria',sort:'clienteNome,asc'}));
+    component.paginar({pageIndex:1,pageSize:20,length:50});
+    expect(service.listarPedidosComerciais).toHaveBeenCalledWith(1,20,'ENTREGUE',null,'clienteNome,asc',false,false,jasmine.objectContaining({criacaoDe:'2026-11-01',criacaoAte:'2026-11-18',entregaDe:'2026-11-19',entregaAte:'2026-11-20',cliente:'Maria',excluirFinalizados:false}));
+    component.filtrar({criacaoDe:'2026-11-20',criacaoAte:'2026-11-01'});expect(toastr.error).toHaveBeenCalled();
+  });
+
+  it('mantém encerrados fora do Kanban inicial e permite consulta explícita',()=>{
+    fixture.detectChanges();component.alterarVisualizacao('kanban');
+    expect(component.kanbanColumns.some(c=>['ENTREGUE','CANCELADO'].includes(c.status))).toBeFalse();
+    params.next(convertToParamMap({status:'ENTREGUE'}));expect(component.kanbanColumns.map(c=>c.status)).toEqual(['ENTREGUE']);
+    params.next(convertToParamMap({incluirFinalizados:'true'}));expect(component.kanbanColumns.some(c=>c.status==='CANCELADO')).toBeTrue();
+  });
 
 });

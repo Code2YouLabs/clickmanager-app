@@ -61,7 +61,7 @@ describe('Produtos gráficos — listagem mobile compartilhada', () => {
   });
   afterEach(async () => { TestBed.inject(MatDialog).closeAll(); await fixture.whenStable(); fixture.destroy(); TestBed.inject(OverlayContainer).ngOnDestroy(); });
 
-  it('usa cards e placeholder existentes, com Filtros no header e Biblioteca após a busca', async () => {
+  it('usa cards e placeholder existentes, com Filtros junto à busca e Biblioteca após a busca', async () => {
     service.listar.and.returnValue(of(page([product, { ...product, id: 8, imagens: [] }]))); await settle();
     expect(table().useMobileItems).toBeTrue(); expect(root().querySelector('table')).toBeNull();
     expect(root().querySelectorAll('[role="listitem"]').length).toBe(2);
@@ -71,7 +71,8 @@ describe('Produtos gráficos — listagem mobile compartilhada', () => {
     expect(root().querySelector('.produto-mobile-item')!.textContent).toContain('Couchê · A4 · 4x4');
     expect(root().textContent).toContain('Impressão colorida');
     const header = root().querySelector('.card-header')!;
-    expect(header.textContent).toContain('Produtos gráficos'); expect(header.textContent).toContain('Filtros');
+    expect(header.textContent).toContain('Produtos gráficos');
+    expect(root().querySelector('app-list-filter-bar button[aria-haspopup=dialog]')?.getAttribute('aria-label')).toContain('Filtros');
     expect(header.textContent).not.toContain('Voltar'); expect(header.textContent).not.toContain('Novo produto'); expect(header.querySelector('[aria-label="Ajuda"]')).toBeNull();
     expect(root().querySelector('.list-mobile-toolbar__actions')!.textContent).toContain('Biblioteca de produtos');
     expect(root().querySelectorAll('[aria-label="Ajuda"]').length).toBe(1); expect(root().querySelector('app-mobile-fab-action')).not.toBeNull();
@@ -128,14 +129,14 @@ describe('Produtos gráficos — listagem mobile compartilhada', () => {
   }));
   it('reutiliza o painel de filtros com rascunho, aplicação, persistência e limpeza', async () => {
     await settle(); const loads = service.listar.calls.count();
-    root().querySelector<HTMLButtonElement>('.card-header .list-mobile-toolbar__filter-button')!.click(); await settle();
+    root().querySelector<HTMLButtonElement>('app-list-filter-bar .list-mobile-toolbar__filter-button')!.click(); await settle();
     expect(document.querySelector('.list-filter-mobile-panel.mobile-side-panel')).not.toBeNull();
     filter().onFieldChange('materialIds', [1]); filter().onFieldChange('formatoIds', [2]); filter().onFieldChange('corIds', [3]); render();
     expect(service.listar.calls.count()).toBe(loads);
     document.querySelector<HTMLButtonElement>('.list-filter-panel__footer button')!.click(); await settle();
     expect(service.listar.calls.mostRecent().args[0]).toEqual(jasmine.objectContaining({ page: 0, materialIds: [1], formatoIds: [2], corIds: [3] }));
-    expect(root().querySelector('.card-header')!.textContent).toContain('Filtros (3)');
-    root().querySelector<HTMLButtonElement>('.card-header .list-mobile-toolbar__filter-button')!.click(); await settle();
+    expect(root().querySelector('app-list-filter-bar .list-mobile-toolbar__filter-button')!.getAttribute('aria-label')).toContain('Filtros (3)');
+    root().querySelector<HTMLButtonElement>('app-list-filter-bar .list-mobile-toolbar__filter-button')!.click(); await settle();
     expect(filter().selectedFilterValue(component.tableFilters[0])).toEqual([1]);
     document.querySelector<HTMLButtonElement>('.list-filter-panel [aria-label="Limpar filtros"]')!.click(); render();
     document.querySelector<HTMLButtonElement>('.list-filter-panel__footer button')!.click(); await settle();
