@@ -29,7 +29,7 @@ describe('UX das automações com painel Material real', () => {
   afterEach(() => { dialog.closeAll(); http.verify(); });
   function iniciar(p = dados()) {
     const f = TestBed.createComponent(AutomacoesPedidoComponent); dialog = f.debugElement.injector.get(MatDialog); f.detectChanges();
-    void f.componentInstance.abrir(); http.expectOne(base).flush(p); flushMicrotasks(); f.detectChanges(); return f;
+    void f.componentInstance.abrir(); http.expectOne(r => r.url === base).flush(p); flushMicrotasks(); f.detectChanges(); return f;
   }
   function editar(f: ReturnType<typeof iniciar>, nome = nomes[0]) {
     f.nativeElement.querySelector(`button[aria-label="Editar ${nome}"]`).click(); f.detectChanges(); tick();
@@ -49,11 +49,11 @@ describe('UX das automações com painel Material real', () => {
     expect(f.nativeElement.querySelectorAll('.automacao').length).toBe(6);
     expect(f.nativeElement.textContent).toContain('1 de 6 automações ativas');
     expect(f.nativeElement.textContent).not.toContain('Configuração por acontecimento');
-    expect(f.nativeElement.textContent).toContain('Nenhuma ocorrência recente');
+    expect(f.nativeElement.querySelector('.registros')).toBeNull();
     expect(f.nativeElement.textContent).not.toContain('Enfileirar não confirma');
     const atualizar = f.nativeElement.querySelector('button[aria-label="Atualizar automações"]');
     atualizar.click(); f.detectChanges(); atualizar.click();
-    const req = http.expectOne(base); expect(atualizar.disabled).toBeTrue();
+    const req = http.expectOne(r => r.url === base); expect(atualizar.disabled).toBeTrue();
     req.flush({}, { status: 503, statusText: 'Unavailable' }); flushMicrotasks(); f.detectChanges();
     expect(f.componentInstance.painel!.itens.length).toBe(6);
   }));

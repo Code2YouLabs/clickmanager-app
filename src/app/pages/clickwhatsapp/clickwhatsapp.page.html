@@ -97,44 +97,21 @@
               @if (resumo; as r) {
                 <dl class="indicadores-operacionais">
                   <div [class.atencao]="r.mensagens.falhas > 0"><dt matTooltip="Falhas registradas no período consultado. Podem se sobrepor às confirmações." tabindex="0">Falhas</dt><dd>{{ r.mensagens.falhas | number }}</dd><small>No período consultado</small></div>
-                  <div><dt matTooltip="Situação atual no escopo autorizado, incluindo mensagens fora do período." tabindex="0">Na fila agora</dt><dd>{{ r.mensagens.backlogAtual + (r.automacoes?.aguardandoAgora || 0) | number }}</dd><small>Inclui automações aguardando preparação</small></div>
+                  <div><dt matTooltip="Situação atual no escopo autorizado, incluindo mensagens fora do período." tabindex="0">Na fila agora</dt><dd>{{ r.mensagens.backlogAtual | number }}</dd><small>Situação atual</small></div>
                   <div [class.atencao]="r.mensagens.incertasAtuais > 0"><dt matTooltip="Resultados incertos atuais, incluindo mensagens fora do período." tabindex="0">Incertas agora</dt><dd>{{ r.mensagens.incertasAtuais | number }}</dd><small>Situação atual</small></div>
                 </dl>
-                @if (r.automacoes; as a) {
-                  @if (a.aguardandoAgora > 0 || a.naoEnviadasNoPeriodo > 0) {
-                    <div class="alerta-ocorrencias" role="status"><div><strong>Automações de pedidos</strong>
-                      <p>{{ a.aguardandoAgora }} aguardando envio agora · {{ a.naoEnviadasNoPeriodo }} não enviadas no período.</p>
-                      <p>O estado atual da conexão não altera o resultado de ocorrências já encerradas.</p>
-                    </div><button mat-button type="button" (click)="ocorrenciasNaVisaoAbertas || alternarOcorrenciasNaVisao()">Ver detalhes das automações</button></div>
-                  }
-                }
                 @if (r.mensagens.incertasAtuais > 0) {
                   <div class="alerta-ocorrencias" role="status"><div><strong>{{ r.mensagens.incertasAtuais }} {{ r.mensagens.incertasAtuais === 1 ? 'ocorrência precisa' : 'ocorrências precisam' }} de atenção</strong><p>Existem mensagens cujo resultado ainda precisa ser investigado.</p></div><button mat-button type="button" (click)="ocorrenciasNaVisaoAbertas || alternarOcorrenciasNaVisao()">Ver ocorrências</button></div>
                 }
               } @else { <p class="muted">Situação operacional {{ lendoResumo ? 'em consulta…' : 'indisponível.' }}</p> }
               <div id="ocorrencias-na-visao" [hidden]="!ocorrenciasNaVisaoAbertas">
                 @if (ocorrenciasNaVisaoAbertas) {
-                  @if (resumo?.automacoes; as a) {
-                    @if (a.recentes.length) {
-                      <h3>Automações aguardando ou não enviadas</h3>
-                      <p class="muted">Até 20 ocorrências recentes. Pendências incluem outros períodos; encerradas respeitam o período selecionado.</p>
-                      @for (item of a.recentes; track item.ocorrencia) {
-                        <div class="registro-automacao-visao">
-                          <div><strong>Pedido {{ item.pedido }}</strong><p class="muted">Ocorrência em {{ item.criadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</p></div>
-                          <div><strong>{{ item.resultado === 'PENDENTE' ? 'Aguardando envio' : 'Não enviada · encerrada' }}</strong>
-                            <p>{{ motivosAutomacao[item.motivo || ''] || 'Aguardando preparação' }}</p>
-                            @if (item.resultado === 'PENDENTE') { <small>Válida até {{ item.validaAte | date:'dd/MM/yyyy HH:mm':'-0300' }}</small> }
-                            @else { <small>Não será reenviada automaticamente.</small> }
-                          </div>
-                        </div>
-                      }
-                    }
-                  }
                   <h3>Mensagens com resultado incerto</h3>
                   <ng-container [ngTemplateOutlet]="listaDeOcorrencias" />
                 }
               </div>
             </section>
+            <app-historico-unificado [permitido]="!!acoes?.consultarHistorico" (mensagem)="abrirHistorico($event)" />
           } @else { <p class="muted">A consulta dos indicadores está indisponível para este acesso.</p> }
           @if (pendente) { <p class="aviso">Existe uma solicitação sem confirmação. <a mat-button routerLink="/page/clickwhatsapp/mensagens">Consultar em Mensagens</a></p> }
         }
@@ -397,7 +374,18 @@
 <ng-template #telaDetalhe>
   <h2 mat-dialog-title class="mobile-side-panel__header">Detalhe da mensagem</h2>
   <mat-dialog-content class="mobile-side-panel__body">
+    @if (registroHistorico; as h) {
+      <p>{{ h.tipo === 'AVULSA' ? 'Avulsa' : h.tipo === 'AUTOMATICA' ? 'Automática' : 'Outra origem' }}{{ h.pedido ? ' · Pedido ' + h.pedido : '' }}</p>
+      @if (h.acontecimento) { <p>Acontecimento: {{ acontecimentoHistorico(h.acontecimento) }}</p> }
+      @if (h.nomeCliente) { <p>Cliente: {{ h.nomeCliente }}</p> }
+      @if (h.motivoDescricao) { <p>{{ h.motivoDescricao }}</p> }
+    }
     <ng-container [ngTemplateOutlet]="conteudoDetalhe" [ngTemplateOutletContext]="{ $implicit: detalheModal }" />
+    @if (evidenciasHistorico?.ocorrencia; as evidencia) {
+      <h3>Evidências existentes</h3>
+      <p>{{ resultadosInvestigacao[evidencia.resultado] }} · {{ motivosInvestigacao[evidencia.motivo] }}</p>
+      @if (evidencia.evidencia; as e) { <p>{{ estadosEvidencia[e.estado] }} · {{ e.recebidaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</p> }
+    }
     @if (area === 'mensagens') {
       <p class="muted">Respostas recebidas no WhatsApp ainda não aparecem no ClickWhatsApp.</p>
     }

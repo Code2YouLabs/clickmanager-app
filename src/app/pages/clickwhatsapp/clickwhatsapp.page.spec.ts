@@ -1,3 +1,5 @@
+import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { HistoricoUnificadoComponent } from './historico/historico-unificado.component';
 import { TablerIconsModule } from 'angular-tabler-icons';
 import { IconBrandWhatsapp, IconMessageCircle, IconSend, IconChecks, IconEye } from 'angular-tabler-icons/icons';
 import { BreakpointObserver } from '@angular/cdk/layout';
@@ -14,6 +16,9 @@ import { AuthService } from 'src/app/services/auth.service';
 import { environment } from 'src/environments/environment';
 import { Configuracao, Mensagem } from './clickwhatsapp.models';
 import { ClickWhatsAppPage } from './clickwhatsapp.page';
+
+@Component({ selector: 'app-historico-unificado', standalone: true, template: 'Histórico de mensagens' })
+class HistoricoStub { @Input() permitido = true; @Output() mensagem = new EventEmitter<any>(); }
 
 describe('ClickWhatsApp', () => {
   const base = environment.apiUrl + '/api/clickwhatsapp';
@@ -59,6 +64,7 @@ describe('ClickWhatsApp', () => {
         } },
       ],
     });
+    TestBed.overrideComponent(ClickWhatsAppPage, { remove: { imports: [HistoricoUnificadoComponent] }, add: { imports: [HistoricoStub] } });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(ClickWhatsAppPage);
     page = fixture.componentInstance;
@@ -775,19 +781,10 @@ describe('ClickWhatsApp', () => {
     fixture.destroy();
   }));
 
-  it('visão geral mostra automações pendentes e encerradas sem confundir conexão atual com histórico', async () => {
-    await iniciarResumo();
-    page.resumo = { ...page.resumo!, automacoes: { aguardandoAgora: 1, naoEnviadasNoPeriodo: 1, recentes: [
-      { ocorrencia: 'antiga', pedido: 37, tipo: 'CRIADO', resultado: 'IGNORADA', motivo: 'CONEXAO_NAO_ABERTA', criadaEm: '2026-11-17T21:01:00Z', validaAte: '2026-11-17T21:06:00Z' },
-      { ocorrencia: 'nova', pedido: 38, tipo: 'CRIADO', resultado: 'PENDENTE', motivo: 'CONEXAO_NAO_CONFIRMADA', criadaEm: '2026-11-17T21:22:00Z', validaAte: '2026-11-17T21:27:00Z' },
-    ] } };
-    page.ocorrenciasNaVisaoAbertas = true; fixture.detectChanges();
-    const texto = fixture.nativeElement.querySelector('.operacional-visao').textContent;
-    expect(texto).toContain('1 aguardando envio agora'); expect(texto).toContain('1 não enviadas no período');
-    expect(texto).toContain('Pedido 37'); expect(texto).toContain('Pedido 38');
-    expect(texto).toContain('Não enviada · encerrada'); expect(texto).toContain('Aguardando envio');
-    expect(texto).toContain('Não será reenviada automaticamente');
-    expect(texto).toContain('Conexão não confirmada no processamento daquela ocorrência');
+  it('visão geral integra histórico sem alterar os indicadores do núcleo', async () => {
+    await iniciarResumo(); fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-historico-unificado')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.operacional-visao').textContent).not.toContain('Inclui automações');
   });
 
   it('renova confirmação vencida sem abrir QR e observa desconexão no provedor', fakeAsync(() => {
@@ -816,7 +813,7 @@ describe('ClickWhatsApp', () => {
     Object.defineProperty(page, 'area', { value: 'automacoes' });
     await iniciar({ ...config, configurarAutomacoes: true, direito: { ...config.direito, local: false },
       acoesPermitidas: { ...config.acoesPermitidas, enviarMensagem: false } });
-    http.expectOne(base + '/automacoes/pedidos').flush({ podeAtivar: false, variaveis: ['cliente_nome'], recentes: [],
+    http.expectOne(r => r.url === base + '/automacoes/pedidos').flush({ podeAtivar: false, variaveis: ['cliente_nome'], recentes: [],
       itens: [{ tipo: 'CRIADO', nome: 'Pedido criado', descricao: '', ativa: false, modelo: 'Texto anterior {cliente_nome}', previa: 'Texto anterior demonstrativo', revisao: 9 }] }); await estabilizar();
     expect(page.automacoes?.painel?.itens[0].modelo).toBe('Texto anterior {cliente_nome}');
     expect(page.automacoes?.painel?.itens[0].revisao).toBe(9);

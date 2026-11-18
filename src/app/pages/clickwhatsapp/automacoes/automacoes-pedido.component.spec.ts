@@ -32,7 +32,7 @@ describe('Automações de Pedidos', () => {
   afterEach(() => http.verify());
   function criar() { const f = TestBed.createComponent(AutomacoesPedidoComponent); f.detectChanges(); return f; }
   function abrir(f: ReturnType<typeof criar>, dados = painel) {
-    f.componentInstance.abrir(); http.expectOne(base).flush(structuredClone(dados)); flushMicrotasks(); f.detectChanges();
+    f.componentInstance.abrir(); http.expectOne(r => r.url === base).flush(structuredClone(dados)); flushMicrotasks(); f.detectChanges();
   }
   it('não consulta nem ativa automaticamente; permanece configurável desconectada', fakeAsync(() => {
     const f = criar(); http.expectNone(base); expect(f.nativeElement.textContent).toContain('configuração permanece disponível');
@@ -62,7 +62,7 @@ describe('Automações de Pedidos', () => {
     expect(confirmar).not.toHaveBeenCalled();
   }));
   it('troca de empresa cancela leitura e apaga configurações anteriores', fakeAsync(() => {
-    const f = criar(); f.componentInstance.abrir(); const req = http.expectOne(base);
+    const f = criar(); f.componentInstance.abrir(); const req = http.expectOne(r => r.url === base);
     usuario.next({ id: 20, empresa: { id: 2 } }); flushMicrotasks(); expect(req.cancelled).toBeTrue();
     expect(f.componentInstance.painel).toBeNull(); expect(f.componentInstance.aberto).toBeFalse();
   }));
@@ -71,10 +71,11 @@ describe('Automações de Pedidos', () => {
     http.expectOne(base + '/CRIADO').flush({ codigo: 'AUTOMACAO_CONFLITO' }, { status: 409, statusText: 'Conflict' }); flushMicrotasks();
     expect(c.erro).toContain('Atualize'); expect(c.painel!.itens[0].revisao).toBe(0);
   }));
-  it('distingue enfileiramento de entrega e mostra motivo seguro da ocorrência ignorada', fakeAsync(() => {
+  it('omite histórico operacional mesmo quando o contrato legado o contém', fakeAsync(() => {
     const f = criar(); abrir(f, { ...painel, recentes: [{ ocorrencia: 'e1', pedido: 42, origem: 'PEDIDO', tipo: 'CRIADO', resultado: 'ENFILEIRADA', motivo: null, mensagem: 'm1', conexao: 'c1', fase: 'PENDENTE', confirmacao: 'NAO_CONFIRMADA', criadaEm: '2026-11-16T10:00:00Z' }] });
-    expect(f.nativeElement.textContent).toContain('Na fila'); expect(f.nativeElement.textContent).toContain('Sem confirmação');
-    expect(f.nativeElement.textContent).toContain('Enfileirar não confirma entrega');
+    expect(f.nativeElement.querySelector('.registros')).toBeNull();
+    expect(f.nativeElement.textContent).not.toContain('Pedido 42');
+    expect(f.nativeElement.textContent).toContain('Editar');
   }));
   it('mantém a lista compacta e salva o template sem alterar a ativação', fakeAsync(() => {
     const f = criar(); abrir(f);

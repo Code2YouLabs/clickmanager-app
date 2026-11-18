@@ -1,0 +1,10 @@
+:host { display: block; margin-top: 24px; }
+.cabecalho, .barra { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+h2 { margin: 0; } p { color: inherit; margin: 8px 0 16px; }
+small { display: block; margin-top: 4px; }
+.campos { display: grid; gap: 12px; margin-top: 16px; }
+.motivo { display: block; max-width: 26ch; white-space: normal; }
+dt { font-weight: 600; margin-top: 16px; } dd { margin: 4px 0; }
+.item-mobile { padding: 12px 0; overflow-wrap: anywhere; }
+.item-mobile > div { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; }
+@media(max-width: 600px) { .barra { justify-content: flex-start; } .cabecalho { align-items: flex-start; } }

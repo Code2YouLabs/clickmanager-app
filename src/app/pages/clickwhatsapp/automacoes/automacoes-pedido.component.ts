@@ -147,7 +147,7 @@ export class AutomacoesPedidoComponent implements OnInit {
   async abrir() {
     if (this.rascunho || this.confirmando) return;
     this.aberto = true;
-    await this.executar(async () => { const s = this.sessao; const p = await this.ler(this.http.get<PainelAutomacoes>(this.base, this.opcoes())); if (s === this.sessao) this.painel = p; });
+    await this.executar(async () => { const s = this.sessao; const p = await this.ler(this.http.get<PainelAutomacoes>(this.base, { ...this.opcoes(), params: { incluirHistorico: false } })); if (s === this.sessao) this.painel = p; });
   }
   private previaTimer?: ReturnType<typeof setTimeout>;
   private readonly trocaPrevia = new Subject<void>();

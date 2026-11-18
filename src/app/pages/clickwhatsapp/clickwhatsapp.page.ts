@@ -1,4 +1,4 @@
-import { MOTIVOS_AUTOMACAO } from './automacoes/automacao-status';
+import { HistoricoUnificadoComponent, RegistroHistorico } from './historico/historico-unificado.component';
 import { StatusBadgeComponent } from 'src/app/components/status-badge/status-badge.component';
 import { AvisoDesativadoComponent } from './aviso-desativado.component';
 import { MatSlideToggleModule, MAT_SLIDE_TOGGLE_DEFAULT_OPTIONS } from '@angular/material/slide-toggle';
@@ -50,7 +50,7 @@ interface ConsultaDetalhe {
 @Component({
   selector: 'app-clickwhatsapp',
   standalone: true,
-  imports: [StatusBadgeComponent, MatButtonToggleModule, AvisoDesativadoComponent, MatSlideToggleModule, RouterModule, AutomacoesPedidoComponent, CommonModule, FormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatInputModule,
+  imports: [HistoricoUnificadoComponent,StatusBadgeComponent, MatButtonToggleModule, AvisoDesativadoComponent, MatSlideToggleModule, RouterModule, AutomacoesPedidoComponent, CommonModule, FormsModule, MatButtonModule, MatDialogModule, MatFormFieldModule, MatIconModule, MatInputModule,
     MatSelectModule, MatProgressBarModule, MatTooltipModule, PageCardComponent, MetricCardComponent, DataTableComponent,
     DataTableCellDirective, DataTableItemDirective, AutoCompleteComponent, ConversasComponent],
   providers: [{ provide: MAT_SLIDE_TOGGLE_DEFAULT_OPTIONS, useValue: { disableToggleValue: true } }],
@@ -210,7 +210,6 @@ export class ClickWhatsAppPage implements OnInit {
     };
     return labels[resultado] ?? 'Resultado desconhecido';
   }
-  readonly motivosAutomacao = MOTIVOS_AUTOMACAO;
   ocorrenciasNaVisaoAbertas = false;
   listaOcorrencias: ItemOcorrencia[] | null = null;
   paginaOcorrencias = 0;
@@ -956,7 +955,27 @@ export class ClickWhatsAppPage implements OnInit {
     }
   }
 
-  async abrirDetalhe(item: {mensagem: {id: string; conexao: string}}) {
+  acontecimentoHistorico(tipo: string) {
+    const nomes: Record<string,string> = { CRIADO: 'Pedido criado', EM_PRODUCAO: 'Pedido em produção', PRONTO: 'Pedido pronto', ENTREGUE: 'Pedido entregue', PREVISAO_ALTERADA: 'Previsão alterada', CANCELADO: 'Pedido cancelado' };
+    return nomes[tipo] || 'Automação de Pedido';
+  }
+  registroHistorico: RegistroHistorico | null = null;
+  evidenciasHistorico: OcorrenciaOperacional | null = null;
+  async abrirHistorico(item: RegistroHistorico) {
+    if (item.mensagemId && item.conexaoId) {
+      await this.abrirDetalhe({ mensagem: { id: item.mensagemId, conexao: item.conexaoId } }, item);
+      const painel = this.modal;
+      if (item.situacao === 'INCERTA' && painel && this.registroHistorico?.id === item.id) {
+        try {
+          const evidencia = await this.ler(this.api.ocorrencia(item.conexaoId, item.mensagemId).pipe(timeout(12000), takeUntil(painel.beforeClosed())));
+          if (this.modal === painel && this.registroHistorico?.id === item.id) this.evidenciasHistorico = evidencia;
+        } catch { /* Não há evidência adicional consultável; não presume entrega ou falha. */ }
+      }
+    }
+  }
+  async abrirDetalhe(item: {mensagem: {id: string; conexao: string}}, contexto: RegistroHistorico | null = null) {
+    this.registroHistorico = contexto;
+    this.evidenciasHistorico = null;
     if (!this.acoes?.consultarHistorico) return;
     const ref = this.abrir(this.telaDetalhe, 'Detalhe da mensagem', true, true);
     if (!ref) return;
