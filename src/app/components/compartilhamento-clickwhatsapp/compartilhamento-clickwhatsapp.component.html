@@ -2,10 +2,17 @@
 @if (!carregando && aviso) { <p class="aviso" role="status">{{ aviso }}</p> }
 @if (erro) { <p class="aviso" role="alert">{{ erro }}</p> }
 @if (!carregando && (disponibilidade?.habilitado !== false || envio) && !contextoAlterado) {
-  <label class="telefone">Número internacional para este envio
-    <input type="tel" [(ngModel)]="numero" [ngModelOptions]="{standalone: true}" [readonly]="bloqueado" autocomplete="off" />
-    <small>Inclua o código do país e o DDD. O cadastro do cliente será preservado.</small>
-  </label>
+  @if (telefoneBrasileiro) {
+    <div class="telefone">
+      <app-input-telefone [control]="telefoneControl" label="Telefone para este envio" placeholder="(31) 99999-9999" autocomplete="off" />
+      <small>Informe o DDD e o telefone. O cadastro do cliente será preservado.</small>
+    </div>
+  } @else {
+    <label class="telefone">Número internacional para este envio
+      <input type="tel" [(ngModel)]="numero" [ngModelOptions]="{standalone: true}" [readonly]="bloqueado" autocomplete="off" />
+      <small>Inclua o código do país e o DDD. O cadastro do cliente será preservado.</small>
+    </label>
+  }
 }
 @if (envio; as e) {
   <div class="resultado" role="status">
@@ -28,10 +35,12 @@
     @if (integrado && !envio?.resultado) {
       <button mat-flat-button type="button" [disabled]="enviando || carregando || contextoAlterado || !identidadePronta || envio?.repetivel === false" (click)="enviar()">{{ envio ? 'Repetir mesma solicitação' : 'Enviar pelo ClickWhatsApp' }}</button>
     }
-    @if (disponibilidade?.habilitado === false) {
-      <button mat-flat-button color="primary" type="button" [disabled]="enviando || carregando || contextoAlterado || !identidadePronta || !manualPermitido" (click)="abrirManual()"><mat-icon>chat</mat-icon>Abrir no WhatsApp</button>
-    } @else {
-      <button mat-stroked-button type="button" [disabled]="enviando || carregando || contextoAlterado || !identidadePronta || !manualPermitido" (click)="abrirManual()">Abrir no WhatsApp</button>
+    @if (!integrado || envio?.resultado) {
+      @if (disponibilidade?.habilitado === false) {
+        <button mat-flat-button color="primary" type="button" [disabled]="enviando || carregando || contextoAlterado || !identidadePronta || !manualPermitido" (click)="abrirManual()"><mat-icon>chat</mat-icon>Abrir no WhatsApp</button>
+      } @else {
+        <button mat-stroked-button type="button" [disabled]="enviando || carregando || contextoAlterado || !identidadePronta || !manualPermitido" (click)="abrirManual()">Abrir no WhatsApp</button>
+      }
     }
   </div>
 } @else {
@@ -44,9 +53,6 @@
     actionIcon="chat" actionAriaLabel="Compartilhar mensagem revisada"
     [actionDisabled]="enviando || carregando || contextoAlterado || !identidadePronta || !manualPermitido"
     (secondaryAction)="copiar.emit()" (action)="integrado && !envio?.resultado ? enviar() : abrirManual()" />
-  @if (integrado) {
-    <button mat-button type="button" [disabled]="enviando || carregando || contextoAlterado || !identidadePronta" (click)="abrirManual()">Abrir no WhatsApp</button>
-  }
 }
 @if (!carregando && !integrado && !contextoAlterado) {
   <button mat-button type="button" (click)="consultar()">Verificar disponibilidade</button>

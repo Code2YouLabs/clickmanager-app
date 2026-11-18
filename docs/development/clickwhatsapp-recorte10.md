@@ -44,3 +44,11 @@ Backend: 127 testes distintos aprovados com PostgreSQL 14 descartável/fakes, bu
 Nenhum envio real, sessão/webhook, ambiente operacional, configuração de worker ou produção foi alterado. Homologar depois com Empresa, documentos e destinatário explicitamente de teste: modos manual/integrado, aceite único, recuperação, acompanhamento e confirmação real por ACK, verificando que Cliente e status comerciais permanecem intactos.
 
 Próximo recorte: **automações de Pedidos**. Não foram implementados gatilhos comerciais neste recorte.
+
+## Refinamento de apresentação — 18/11/2026
+
+No compartilhamento de documentos, quando o botão integrado está presente, a ação Abrir no WhatsApp fica oculta (desktop/mobile). O compartilhamento manual continua como alternativa quando o integrado não está disponível; proteções de duplicidade e recuperação permanecem.
+
+Telefone brasileiro reutiliza InputTelefoneComponent, mostrando DDD e máscara sem o DDI 55. O destino internacional é preservado/recomposto para o envio; editar o campo não altera o cadastro. Números de outro país já informados mantêm o campo internacional. O resumo do Pedido usa TelefonePipe com remoção de DDI brasileiro opcional; os demais consumidores mantêm o comportamento padrão. DDD 55 não é confundido com DDI e fixo/celular continuam aceitos.
+
+Validação: 40 testes focados de compartilhamento/Pedido/Orçamento/pipe aprovados; TypeScript e build de desenvolvimento aprovados, com avisos Sass preexistentes. Navegador com APIs simuladas em 1440 e 390 px confirmou máscara, exclusividade dos botões e fallback manual, sem POST/PUT ou envio real. Evidências locais em clickwhatsapp-compartilhamento-telefone. git diff --check aprovado. Backend, cadastro, sessão, aviso de assinatura e produção não foram alterados.

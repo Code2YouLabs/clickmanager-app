@@ -165,4 +165,41 @@ describe('Canal de compartilhamento de documento', () => {
     void page.enviar();flushMicrotasks();http.expectNone(r=>r.method==='POST');
     expect(page.envio!.operacao.corpo.expiraEm).toBe(expira);
   }));
+  it('oferece somente o envio integrado quando disponível no desktop e no mobile',fakeAsync(()=>{
+    pronta();
+    expect(fixture.nativeElement.textContent).toContain('Enviar pelo ClickWhatsApp');
+    expect(fixture.nativeElement.textContent).not.toContain('Abrir no WhatsApp');
+    fixture.componentRef.setInput('mobile',true);fixture.detectChanges();pronta();
+    expect(fixture.nativeElement.textContent).toContain('Enviar pelo ClickWhatsApp');
+    expect(fixture.nativeElement.textContent).not.toContain('Abrir no WhatsApp');
+    http.expectNone(r=>r.method==='POST');
+  }));
+
+  it('exibe o telefone brasileiro com máscara sem DDI e mantém o destino internacional',fakeAsync(()=>{
+    pronta();fixture.componentRef.setInput('telefone','5531987531233');fixture.detectChanges();pronta();tick(60);
+    const input=fixture.nativeElement.querySelector('app-input-telefone input') as HTMLInputElement;
+    expect(input.value).toBe('(31) 98753-1233');
+    expect(page.numero).toBe('5531987531233');
+    input.value='(31) 99876-4321';input.dispatchEvent(new Event('input'));fixture.detectChanges();tick(60);
+    void page.enviar();const req=http.expectOne(url);
+    expect(req.request.body.numero).toBe('5531998764321');
+    expect(page.telefone).toBe('5531987531233');
+    req.flush(registrada,{status:202,statusText:'Accepted'});flushMicrotasks();fixture.detectChanges();
+    expect(input.disabled).toBeTrue();
+  }));
+
+  it('preserva DDD 55 e não aceita telefone nacional incompleto',fakeAsync(()=>{
+    pronta();fixture.componentRef.setInput('telefone','5555987654321');fixture.detectChanges();pronta();tick(60);
+    const input=fixture.nativeElement.querySelector('app-input-telefone input') as HTMLInputElement;
+    expect(input.value).toBe('(55) 98765-4321');expect(page.numero).toBe('5555987654321');
+    input.value='(55) 1234';input.dispatchEvent(new Event('input'));fixture.detectChanges();tick(60);
+    void page.enviar();flushMicrotasks();http.expectNone(r=>r.method==='POST');expect(page.erro).toContain('DDD');
+  }));
+
+  it('não remove código de outro país já informado',fakeAsync(()=>{
+    pronta();expect(page.numero).toBe('15555550123');expect(page.telefoneBrasileiro).toBeFalse();
+    void page.enviar();const req=http.expectOne(url);expect(req.request.body.numero).toBe('15555550123');
+    req.flush(registrada,{status:202,statusText:'Accepted'});flushMicrotasks();
+  }));
+
 });

@@ -1,3 +1,4 @@
+import { InputTelefoneComponent } from '../inputs/input-telefone/input-telefone.component';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpContext, HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, EventEmitter, inject, Input, OnChanges, Output } from '@angular/core';
@@ -30,7 +31,7 @@ export interface CanalDocumento {
 @Component({
   selector: 'app-compartilhamento-clickwhatsapp',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, MatButtonModule, MatIconModule, MatProgressBarModule, MobileTotalBarComponent],
+  imports: [InputTelefoneComponent, CommonModule, FormsModule, RouterModule, MatButtonModule, MatIconModule, MatProgressBarModule, MobileTotalBarComponent],
   templateUrl: './compartilhamento-clickwhatsapp.component.html',
   styleUrl: './compartilhamento-clickwhatsapp.component.scss',
 })
@@ -56,7 +57,25 @@ export class CompartilhamentoClickWhatsAppComponent implements OnChanges {
   carregando = false;
   enviando = false;
   erro = '';
-  numero = '';
+  readonly telefoneControl = new FormControl('', { nonNullable: true });
+  telefoneBrasileiro = true;
+  private numeroOriginal = '';
+  get numero() {
+    return this.telefoneBrasileiro
+      ? (this.telefoneControl.value ? '55' + this.telefoneControl.value.replace(/\D/g, '') : '')
+      : this.numeroOriginal;
+  }
+  set numero(valor: string) {
+    this.numeroOriginal = valor;
+    const digitos = valor.replace(/\D/g, '');
+    this.telefoneBrasileiro = !valor || /^55[0-9]{10,11}$/.test(digitos);
+    const nacional = this.telefoneBrasileiro ? digitos.slice(2) : '';
+    if (this.telefoneControl.value !== nacional) this.telefoneControl.setValue(nacional);
+  }
+  private get numeroValido() {
+    return /^[+]?[1-9][0-9]{7,14}$/.test(this.numero)
+      && (!this.telefoneBrasileiro || /^[0-9]{10,11}$/.test(this.telefoneControl.value.replace(/\D/g, '')));
+  }
 
   constructor() {
     inject(AuthService).usuario$.pipe(takeUntilDestroyed()).subscribe(u => {
@@ -86,6 +105,8 @@ export class CompartilhamentoClickWhatsAppComponent implements OnChanges {
   }
 
   private notificarBloqueio(bloqueado: boolean) {
+    if (bloqueado) this.telefoneControl.disable({ emitEvent: false });
+    else this.telefoneControl.enable({ emitEvent: false });
     const geracao = this.geracao;
     queueMicrotask(() => { if (geracao === this.geracao) this.bloquearEditor.emit(bloqueado); });
   }
@@ -148,9 +169,9 @@ export class CompartilhamentoClickWhatsAppComponent implements OnChanges {
       return;
     }
     if (!existente) {
-      if (!/^[+]?[1-9][0-9]{7,14}$/.test(this.numero) || !this.mensagem.value.trim()
+      if (!this.numeroValido || !this.mensagem.value.trim()
           || new TextEncoder().encode(this.mensagem.value).length > d.limiteBytes) {
-        this.erro = 'Informe um número internacional válido e uma mensagem de até ' + d.limiteBytes + ' bytes. Você pode editar ou escolher o compartilhamento manual.';
+        this.erro = 'Informe um ' + (this.telefoneBrasileiro ? 'telefone válido com DDD' : 'número internacional válido') + ' e uma mensagem de até ' + d.limiteBytes + ' bytes. Você pode editar ou escolher o compartilhamento manual.';
         return;
       }
       this.store.documentos.set(this.endpoint, { conexao: d.conexao!, operacao: novaOperacao(this.numero, this.mensagem.value),
@@ -218,7 +239,7 @@ export class CompartilhamentoClickWhatsAppComponent implements OnChanges {
 
   async abrirManual() {
     if (!this.identidadePronta || this.enviando || this.carregando || this.contextoAlterado || !this.manualPermitido) return;
-    if (this.disponibilidade?.habilitado !== false && !/^[+]?[1-9][0-9]{7,14}$/.test(this.numero)) {
+    if (this.disponibilidade?.habilitado !== false && !this.numeroValido) {
       this.erro = 'Informe um número internacional válido para abrir o WhatsApp.';
       return;
     }

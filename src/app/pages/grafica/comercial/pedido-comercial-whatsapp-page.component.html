@@ -19,7 +19,7 @@
               <section class="whatsapp-mobile-recipient" aria-label="Destinatário">
                 <h3>Destinatário</h3>
                 <strong>{{ p.clienteNome || 'Cliente não informado' }}</strong>
-                <span>{{ (p.clienteTelefone | telefone) || 'Telefone não informado' }}</span>
+                <span>{{ (p.clienteTelefone | telefone:true) || 'Telefone não informado' }}</span>
                 <small>Pedido {{ p.numero || (p.id ? '#' + p.id : 'não informado') }}</small>
               </section>
               <section class="whatsapp-mobile-message" aria-label="Mensagem do pedido">
@@ -76,7 +76,7 @@
               </div>
               <div>
                 <span>Telefone</span>
-                <strong>{{ p.clienteTelefone || '—' }}</strong>
+                <strong>{{ (p.clienteTelefone | telefone:true) || '—' }}</strong>
               </div>
             </div>
 
