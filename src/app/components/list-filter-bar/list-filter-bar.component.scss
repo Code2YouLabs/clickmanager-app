@@ -240,28 +240,30 @@
   .list-mobile-toolbar__actions:empty { display: none; }
   .list-mobile-toolbar__actions ::ng-deep [list-filter-actions],
   .list-mobile-toolbar__actions ::ng-deep [data-table-toolbar-actions] { width: 100%; }
-  ::ng-deep .list-filter-mobile-panel {
-    .list-filter-panel { display: flex; flex-direction: column; height: 100%; min-width: 0; overflow: hidden; }
-    .list-filter-panel__header {
-      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
-      padding: calc(8px + env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-right, 0px)) 8px max(8px, env(safe-area-inset-left, 0px));
-      border-bottom: 1px solid var(--mat-sys-outline-variant);
-    }
-    .list-filter-panel__header h2 { flex: 1; min-width: 0; margin: 0; font-size: 18px; line-height: 24px; font-weight: 600; overflow-wrap: anywhere; }
-    .list-filter-panel__header button { min-height: 44px; flex-shrink: 0; }
-    .list-filter-panel__body {
-      flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
-      padding: 16px max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px));
-    }
-    .data-table-toolbar__filters { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; }
-    .data-table-toolbar__filters > * { min-width: 0; max-width: 100%; }
-    .data-table-toolbar__filter { width: 100%; min-width: 0; }
-    .list-filter-panel__footer {
-      flex-shrink: 0; border-top: 1px solid var(--mat-sys-outline-variant);
-      padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
-    }
-    .list-filter-panel__footer button { width: 100%; min-height: 44px; }
+}
+
+// The overlay is rendered outside the host on desktop and mobile alike.
+::ng-deep .list-filter-mobile-panel {
+  .list-filter-panel { display: flex; flex-direction: column; height: 100%; min-width: 0; overflow: hidden; box-sizing: border-box; }
+  .list-filter-panel__header {
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    padding: calc(8px + env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-right, 0px)) 8px max(8px, env(safe-area-inset-left, 0px));
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
   }
+  .list-filter-panel__header h2 { flex: 1; min-width: 0; margin: 0; font-size: 18px; line-height: 24px; font-weight: 600; overflow-wrap: anywhere; }
+  .list-filter-panel__header button { min-height: 44px; flex-shrink: 0; }
+  .list-filter-panel__body {
+    flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
+    padding: 16px max(16px, env(safe-area-inset-right, 0px)) 16px max(16px, env(safe-area-inset-left, 0px));
+  }
+  .data-table-toolbar__filters { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start; }
+  .data-table-toolbar__filters > * { min-width: 0; max-width: 100%; }
+  .data-table-toolbar__filter { width: 100%; min-width: 0; }
+  .list-filter-panel__footer {
+    flex-shrink: 0; border-top: 1px solid var(--mat-sys-outline-variant);
+    padding: 12px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  }
+  .list-filter-panel__footer button { width: 100%; min-height: 44px; }
 }
 
 @include mobile.mobile-foundation {

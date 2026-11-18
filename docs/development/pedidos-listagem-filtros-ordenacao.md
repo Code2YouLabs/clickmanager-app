@@ -39,3 +39,9 @@ Backend: 40 testes de Pedido aprovados em PostgreSQL descartável/serviço/segur
 Build de desenvolvimento com NG_BUILD_MAX_WORKERS=2 aprovado, com avisos Sass preexistentes; TypeScript app/spec noEmit e git diff --check aprovados. Navegador isolado, APIs fictícias: 1440/1024/820/390/360 px sem overflow; lista ordenada, ícone, painel com quatro datas, cliente, aplicação dos filtros e sort por Total conferidos. Evidências locais em `/Users/leonardo.barros/.codex/visualizations/2026/11/13/01a1d560-ecfa-7a73-88ba-690ea8e9ba4e/pedidos-filtros-painel`.
 
 Somente mudanças no componente compartilhado, suas regressões e na listagem/serviço comercial. Aviso de assinatura, cobrança e estilos globais intactos. Sem envio, automação real, mudança de sessão WhatsApp, produção, deploy ou push.
+
+## Correção visual do painel — 18/11/2026
+
+O layout interno do overlay estava dentro do breakpoint mobile, deixando o desktop herdar a disposição horizontal dos filtros e perder o espaçamento do cabeçalho/rodapé. Os estilos específicos de `.list-filter-mobile-panel` agora se aplicam em todos os tamanhos: uma coluna, cabeçalho alinhado, margens internas, corpo com rolagem e botão Aplicar no rodapé. Mantém a largura desktop de 560 px e tela inteira no mobile, sem mudar os filtros, rascunhos ou regras de negócio.
+
+Verificação da correção: 53 testes de ListFilterBar/DataTable/PageCard aprovados; build development aprovado. Navegador isolado em 1440/1024/820/390/360 px: validado display flex do painel, uma coluna de campos, padding mínimo de 16 px, largura desktop de até 560 px, rodapé no limite inferior e ausência de overflow horizontal. Aplicação dos filtros e sort continuam verificados com APIs simuladas.
