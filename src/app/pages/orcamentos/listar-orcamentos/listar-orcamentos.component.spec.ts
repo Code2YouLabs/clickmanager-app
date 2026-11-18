@@ -12,6 +12,7 @@ describe('ListarOrcamentosComponent', () => {
       { temPermissao: (permissao: string) => permissoes.includes(permissao) } as any,
       { open: jasmine.createSpy('open') } as any,
       { error: jasmine.createSpy('error'), success: jasmine.createSpy('success'), info: jasmine.createSpy('info') } as any,
+      { manualAtivo: true, preparar: () => {}, abrir: (_endpoint: string, _numero: string, _texto: string, legado: () => void) => legado() } as any,
     );
   }
 

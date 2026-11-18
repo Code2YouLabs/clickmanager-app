@@ -1,4 +1,7 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Subscription } from 'rxjs';
+import { CompartilhamentoClickWhatsAppComponent } from 'src/app/components/compartilhamento-clickwhatsapp/compartilhamento-clickwhatsapp.component';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -18,73 +21,22 @@ import {
 @Component({
     selector: 'app-imprimir-whatsapp',
     standalone: true,
-    imports: [CommonModule, RouterModule, MatButtonModule, MatIconModule, MatCardModule],
-    template: `
-  <div class="wa-container">
-    <mat-card class="cardWithShadow">
-      <mat-card-content>
-        <div class="row m-b-16 justify-content-between align-items-center">
-          <div class="col">
-            <h2 class="f-s-20 f-w-600 m-0">Mensagem para WhatsApp</h2>
-            <small class="text-muted">Pré-visualização e ações</small>
-          </div>
-          <div class="col-auto">
-            <a mat-stroked-button routerLink="/pedidos">Voltar</a>
-          </div>
-        </div>
-
-        <div class="m-b-16" *ngIf="pedido as p">
-          <div class="m-b-8">
-            <strong>Número:</strong> {{ displayNumero(p) }} |
-            <strong>Status:</strong> {{ p.status }}
-          </div>
-          <div *ngIf="p.nomeOrcamento || p.vencimentoOrcamento">
-            <span *ngIf="p.nomeOrcamento"><strong>Nome do orçamento:</strong> {{ p.nomeOrcamento }}</span>
-            <span *ngIf="p.vencimentoOrcamento" class="m-l-12">
-              <strong>Vencimento:</strong> {{ fmtDate(p.vencimentoOrcamento) }}
-            </span>
-          </div>
-        </div>
-
-        <textarea class="wa-preview" rows="16" [value]="mensagem" readonly></textarea>
-
-        <div class="text-right m-t-16 d-flex gap-8 flex-wrap justify-content-end">
-          <button mat-stroked-button (click)="copiar()">
-            <mat-icon>content_copy</mat-icon>
-            Copiar
-          </button>
-          <button mat-flat-button color="primary" (click)="abrirWhatsApp()">
-            <mat-icon>chat</mat-icon>
-                Abrir no WhatsApp
-                <span *ngIf="pedido?.cliente?.telefone" class="m-l-8">
-                    ({{ pedido?.cliente?.telefone }})
-                </span>
-         </button>
-
-        </div>
-      </mat-card-content>
-    </mat-card>
-  </div>
-  `,
-    styles: [`
-    .wa-container { padding: 16px; }
-    .wa-preview {
-      width: 100%;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-      white-space: pre-wrap;
-      border: 1px solid rgba(0,0,0,0.12);
-      border-radius: 8px;
-      padding: 12px;
-      background: #fafafa;
-    }
-    .gap-8 { gap: 8px; }
-    .m-l-12 { margin-left: 12px; }
-  `]
+    imports: [CompartilhamentoClickWhatsAppComponent, ReactiveFormsModule, CommonModule, RouterModule, MatButtonModule, MatIconModule, MatCardModule],
+    templateUrl: './imprimir-whatsapp.component.html',
+    styleUrl: './imprimir-whatsapp.component.scss',
 })
-export class ImprimirWhatsAppComponent implements OnInit {
+export class ImprimirWhatsAppComponent implements OnInit, OnDestroy {
+    private rotaSub?: Subscription;
+    private carregamento = new Subscription();
+    private versao = 0;
 
+    integradoAtivo = false;
+    editorBloqueado = false;
+    mensagemControl = new FormControl('', { nonNullable: true });
+    readonly telefoneCompartilhamento = toE164BR;
     pedido!: PedidoResponse;
-    mensagem = '';
+    get mensagem() { return this.mensagemControl.value; }
+    set mensagem(valor: string) { this.mensagemControl.setValue(valor); }
     empresaNome = '';
 
     constructor(
@@ -95,20 +47,32 @@ export class ImprimirWhatsAppComponent implements OnInit {
         private usuarioService: UsuarioService
     ) { }
 
+    ngOnDestroy() { this.versao++; this.rotaSub?.unsubscribe(); this.carregamento.unsubscribe(); }
+
     ngOnInit(): void {
-        const id = Number(this.route.snapshot.paramMap.get('id'));
-        this.pedidoService.buscarPorId(id).subscribe(p => {
+        this.rotaSub = this.route.paramMap.subscribe(params => this.carregarPedido(Number(params.get('id'))));
+    }
+
+    private carregarPedido(id: number) {
+        const versao = ++this.versao;
+        this.pedido = undefined!;
+        this.carregamento.unsubscribe();
+        this.carregamento = new Subscription();
+        this.carregamento.add(this.pedidoService.buscarPorId(id).subscribe(p => {
+            if (versao !== this.versao) return;
             this.pedido = p;
 
             const respId = p?.responsavel?.id;
             if (respId) {
                 this.usuarioService.buscarPorId(respId).subscribe({
                     next: (u: any) => {
+                        if (versao !== this.versao) return;
                         this.empresaNome = u?.empresa?.nome || '';
                         this.mensagem = buildPedidoWhatsAppPreviewMessage(this.pedido, this.empresaNome);
                         this.cdr.detectChanges();
                     },
                     error: () => {
+                        if (versao !== this.versao) return;
                         this.empresaNome = '';
                         this.mensagem = buildPedidoWhatsAppPreviewMessage(this.pedido, this.empresaNome);
                         this.cdr.detectChanges();
@@ -118,18 +82,18 @@ export class ImprimirWhatsAppComponent implements OnInit {
                 this.mensagem = buildPedidoWhatsAppPreviewMessage(this.pedido, this.empresaNome);
                 this.cdr.detectChanges();
             }
-        });
+        }));
     }
 
     displayNumero(p: PedidoResponse): string {
         return displayPedidoNumero(p);
     }
 
-    abrirWhatsApp(): void {
-        const mensagemSemIcones = buildPedidoWhatsAppSendMessage(this.pedido, this.empresaNome);
+    abrirWhatsApp(revisado?: { numero: string; texto: string }): void {
+        const mensagemSemIcones = revisado?.texto ?? buildPedidoWhatsAppSendMessage(this.pedido, this.empresaNome);
 
         const telRaw = this.pedido?.cliente?.telefone ?? '';
-        const phone = toE164BR(telRaw);
+        const phone = revisado?.numero ?? toE164BR(telRaw);
 
         if (!phone) {
             this.toastr.error('Telefone do cliente não encontrado ou inválido.');

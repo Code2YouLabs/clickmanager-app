@@ -1,0 +1,93 @@
+:host { display: block; min-width: 0; }
+.lista-conversas { box-sizing: border-box; position: relative; display: flex; flex-direction: column; height: 70dvh; max-height: 70dvh; overflow: hidden; padding-bottom: 80px; }
+.conversas { flex: 1; min-height: 0; overflow-y: auto; }
+.barra-lista { flex-shrink: 0; }
+.barra-lista { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 12px; border-bottom: 1px solid var(--mat-sys-outline-variant, #dde4ec); }
+.pesquisa-conversas { flex: 1 1 170px; min-width: 0; }
+.barra-lista button { flex-shrink: 0; }
+ul { margin: 0; padding: 4px; list-style: none; }
+.linha-conversa { display: flex; align-items: center; gap: 10px; padding: 12px 8px; width: 100%; border: 0; border-radius: 8px; background: transparent; color: inherit; font: inherit; text-align: start; cursor: pointer; }
+.linha-conversa:hover, .linha-conversa:focus-visible { background: var(--mat-sys-surface-container, #f2f6fa); }
+.linha-conversa[aria-current='true'] { background: var(--mat-sys-secondary-container, #e4ecff); }
+.avatar { display: grid; place-items: center; width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%; background: var(--mat-sys-primary-container, #e4ecff); }
+.contato { min-width: 0; flex: 1; }
+small { display: block; font-size: .8125rem; color: var(--mat-sys-on-surface-variant, #506078); }
+.previa { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+strong { display: block; overflow-wrap: anywhere; }
+time { white-space: nowrap; font-size: .75rem; }
+.linha-conversa time { align-self: flex-start; }
+.ver-mais { display: block; margin: 8px auto; }
+.mensagem-vazia { padding: 16px; }
+.conversa { display: flex; flex-direction: column; height: 70dvh; min-height: 400px; }
+.cabecalho-conversa { display: flex; align-items: center; gap: 8px; padding: 16px; border-bottom: 1px solid var(--mat-sys-outline-variant, #dde4ec); }
+.mensagens { padding: 16px; flex: 1; min-height: 0; overflow-y: auto; }
+.bolha { position: relative; width: fit-content; max-width: 90%; padding: 12px 36px 8px 14px; margin: 0 0 12px auto; border-radius: 12px 12px 2px 12px; background: var(--mat-sys-primary-container, #e4ecff); }
+.bolha p { margin: 0 0 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.bolha footer { align-items: center; display: flex; flex-wrap: wrap; justify-content: end; gap: 4px 8px; color: var(--mat-sys-on-surface-variant, #506078); font-size: .75rem; }
+.opcoes-mensagem { position: absolute; right: 0; top: 0; }
+.compositor { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 12px; border-top: 1px solid var(--mat-sys-outline-variant, #dde4ec); }
+.compositor mat-form-field { flex: 1; min-width: 0; }
+.compositor textarea { max-height: 120px; resize: vertical; }
+.erro-envio { flex-basis: 100%; }
+.pendencia { padding: 8px 12px; background: #fff3db; }
+.nenhuma-selecionada { display: grid; justify-items: center; align-content: center; height: 100%; padding: 24px; }
+.selecao-destinatario { padding: 12px; }
+.selecao-destinatario mat-form-field { width: 100%; }
+.lista-clientes { max-height: 28dvh; overflow-y: auto; }
+.filtro-ativo { color: var(--mat-sys-primary); background: var(--mat-sys-primary-container); }
+@media (max-width: 760px) {
+  .lista-conversas { height: auto; max-height: none; overflow: visible; }
+  .conversas { overflow: visible; }
+  .conversa { height: calc(100dvh - 160px); min-height: 280px; scroll-margin-top: 80px; }
+  .compositor { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+}
+
+.avatar[data-origem='automatica'] { background: #e2f3e9; color: #176344; }
+.avatar[data-origem='manual'] { background: var(--mat-sys-secondary-container, #e5ecf8); color: var(--mat-sys-on-secondary-container, #243857); }
+
+.lista-conversas.selecao-aberta { display: flex; flex-direction: column; padding-bottom: 0; height: 70dvh; }
+.cabecalho-selecao { flex-wrap: nowrap; gap: 8px; }
+.cabecalho-selecao strong { font-size: 1rem; font-weight: 600; }
+.selecao-destinatario { display: flex; flex-direction: column; flex: 1; min-height: 0; gap: 12px; overflow-y: auto; }
+.acoes-destinatario { display: flex; flex-wrap: wrap; gap: 4px 8px; }
+.acoes-destinatario button { min-height: 40px; padding-inline: 8px; font-size: .8125rem; }
+.lista-clientes { flex: 1; min-height: 120px; max-height: none; padding: 0; }
+.cliente-opcao { gap: 10px; min-height: 64px; padding: 10px 8px; }
+.cliente-opcao[aria-pressed='true'] { background: var(--mat-sys-secondary-container, #e4ecff); }
+.cliente-marcado { flex-shrink: 0; color: var(--mat-sys-primary); }
+.cliente-opcao .contato strong { font-size: .875rem; font-weight: 600; }
+.telefone-destinatario { padding: 12px; border-radius: 8px; background: var(--mat-sys-surface-container, #f2f6fa); }
+.telefone-destinatario p { margin: 0 0 10px; font-size: .875rem; }
+.confirmacao-destinatario { display: grid; gap: 12px; flex-shrink: 0; padding: 16px; border-top: 1px solid var(--mat-sys-outline-variant, #dde4ec); }
+.destinatario-resumo { min-width: 0; }
+.destinatario-resumo strong { font-size: .875rem; font-weight: 600; }
+.continuar-destinatario { width: 100%; }
+.erro-destinatario { margin: 0; color: var(--mat-sys-error, #a52a2a); font-size: .8125rem; }
+.nova-conversa-fab {
+  position: absolute;
+  display: flex;
+  right: 16px;
+  margin: 0;
+  bottom: 16px;
+  z-index: 2;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #159b5b;
+  color: #fff;
+  --mdc-fab-container-color: #159b5b;
+  --mdc-fab-container-shape: 50%;
+}
+.nova-conversa-fab:focus-visible { outline: 3px solid var(--mat-sys-primary); outline-offset: 3px; }
+
+@media (max-width: 760px) {
+  .lista-conversas.selecao-aberta { height: calc(100dvh - 160px); min-height: 280px; scroll-margin-top: 80px; }
+  .lista-conversas.selecao-aberta .lista-clientes { max-height: 35dvh; }
+  .confirmacao-destinatario { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+  .nova-conversa-fab {
+    position: fixed;
+    right: max(16px, env(safe-area-inset-right, 0px));
+    bottom: calc(var(--mobile-bottom-nav-height, 76px) + 16px);
+    margin: 0;
+  }
+}

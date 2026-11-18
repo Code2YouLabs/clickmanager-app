@@ -1,0 +1,11 @@
+:host { display: block; min-width: 0; }
+.actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.telefone { display: grid; gap: 6px; margin-block: 16px; }
+.telefone input { width: 100%; box-sizing: border-box; padding: 12px; border: 1px solid #dde4ec; border-radius: 8px; font: inherit; color: inherit; background: transparent; }
+.telefone small { color: #506078; }
+.aviso { padding: 12px; border-radius: 8px; background: #fff3db; color: #654500; overflow-wrap: anywhere; }
+.resultado { margin-block: 12px; padding: 12px; border: 1px solid #dde4ec; border-radius: 8px; }
+@media (max-width: 760px) {
+  .actions { flex-direction: column; }
+  .actions button { min-height: 44px; }
+}

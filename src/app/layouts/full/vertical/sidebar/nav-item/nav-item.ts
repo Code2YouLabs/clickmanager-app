@@ -12,6 +12,7 @@ export interface NavItem {
     chipClass?: string;
     subtext?: string;
     route?: string;
+    exactRoute?: boolean;
     children?: NavItem[];
     ddType?: string;
     bgcolor?:string;

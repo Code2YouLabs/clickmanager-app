@@ -1,3 +1,4 @@
+import { CompartilhamentoClickWhatsAppComponent } from 'src/app/components/compartilhamento-clickwhatsapp/compartilhamento-clickwhatsapp.component';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { Subscription } from 'rxjs';
 import { MOBILE_FOUNDATION_QUERY } from 'src/app/shared/responsive/mobile-foundation';
@@ -22,6 +23,7 @@ import { montarMensagemPedidoComercialWhatsApp, telefoneWhatsAppBR } from './ped
   selector: 'app-pedido-comercial-whatsapp-page',
   standalone: true,
   imports: [
+    CompartilhamentoClickWhatsAppComponent,
     CommonModule,
     RouterModule,
     ReactiveFormsModule,
@@ -38,8 +40,12 @@ import { montarMensagemPedidoComercialWhatsApp, telefoneWhatsAppBR } from './ped
   styleUrl: './pedido-comercial-whatsapp-page.component.scss',
 })
 export class PedidoComercialWhatsappPageComponent implements OnInit, OnDestroy {
+  editorBloqueado = false;
+  limiteMensagem: number | null = 4000;
   isMobile = false;
   private readonly layoutChanges?: Subscription;
+  private routeChanges?: Subscription;
+  private leitura?: Subscription;
   pedido: PedidoComercialDetalhe | null = null;
   mensagemControl = new FormControl('', { nonNullable: true });
   carregando = false;
@@ -55,11 +61,13 @@ export class PedidoComercialWhatsappPageComponent implements OnInit, OnDestroy {
     this.layoutChanges = breakpoints?.observe(MOBILE_FOUNDATION_QUERY).subscribe(state => this.isMobile = state.matches);
   }
 
-  ngOnDestroy(): void { this.layoutChanges?.unsubscribe(); }
+  ngOnDestroy(): void { this.layoutChanges?.unsubscribe(); this.routeChanges?.unsubscribe(); this.leitura?.unsubscribe(); }
 
   ngOnInit(): void {
-    this.carregarPedido();
+    this.routeChanges = this.route.paramMap.subscribe(params => this.carregarPedido(Number(params.get('id'))));
   }
+
+  readonly telefoneCompartilhamento = telefoneWhatsAppBR;
 
   get subtituloPagina(): string {
     return this.pedido?.numero ? `WhatsApp · ${this.pedido.numero}` : 'WhatsApp';
@@ -70,8 +78,9 @@ export class PedidoComercialWhatsappPageComponent implements OnInit, OnDestroy {
     return id ? ['/page/grafica/comercial/pedidos', id] : ['/page/grafica/comercial/pedidos'];
   }
 
-  carregarPedido(): void {
-    const id = Number(this.route.snapshot.paramMap.get('id'));
+  carregarPedido(id = Number(this.route.snapshot.paramMap.get('id'))): void {
+    this.leitura?.unsubscribe();
+    this.pedido = null;
     if (!id) {
       this.erro = 'Pedido inválido.';
       return;
@@ -79,7 +88,7 @@ export class PedidoComercialWhatsappPageComponent implements OnInit, OnDestroy {
 
     this.carregando = true;
     this.erro = null;
-    this.graficaService.buscarPedidoComercial(id).subscribe({
+    this.leitura = this.graficaService.buscarPedidoComercial(id).subscribe({
       next: pedido => {
         this.pedido = pedido;
         this.mensagemControl.setValue(montarMensagemPedidoComercialWhatsApp(pedido, true));
@@ -102,14 +111,14 @@ export class PedidoComercialWhatsappPageComponent implements OnInit, OnDestroy {
       .catch(() => this.toastr.error('Não foi possível copiar.'));
   }
 
-  abrirWhatsApp(): void {
+  abrirWhatsApp(revisado?: { numero: string; texto: string }): void {
     if (!this.pedido) return;
-    const phone = telefoneWhatsAppBR(this.pedido.clienteTelefone);
+    const phone = revisado?.numero ?? telefoneWhatsAppBR(this.pedido.clienteTelefone);
     if (!phone) {
       this.toastr.error('Telefone do cliente não encontrado ou inválido.');
       return;
     }
-    window.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(this.mensagemControl.value)}`;
+    window.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(revisado?.texto ?? this.mensagemControl.value)}`;
   }
 
   private errorMessage(error: any, fallback: string): string {

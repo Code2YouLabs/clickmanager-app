@@ -9,7 +9,7 @@ describe('WhatsApp do pedido: contrato preservado pelo painel de ações', () =>
   function setup(result = of(pedido)) {
     const service = { buscarPedidoComercial: jasmine.createSpy().and.returnValue(result) };
     const toastr = jasmine.createSpyObj('Toastr', ['error', 'success']); const cdr = { detectChanges: jasmine.createSpy() };
-    const page = new PedidoComercialWhatsappPageComponent({ snapshot: { paramMap: convertToParamMap({ id: '32' }) } } as any, service as any, toastr, cdr as any);
+    const page = new PedidoComercialWhatsappPageComponent({ paramMap: of(convertToParamMap({ id: '32' })), snapshot: { paramMap: convertToParamMap({ id: '32' }) } } as any, service as any, toastr, cdr as any);
     return { page, toastr, service };
   }
   it('recarrega destinatário e mensagem existentes na rota de revisão', () => {

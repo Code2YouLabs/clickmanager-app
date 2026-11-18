@@ -1,0 +1,9 @@
+<h2 mat-dialog-title>Compartilhar Orçamento</h2>
+<mat-dialog-content>
+  <label>Mensagem
+    <textarea [formControl]="mensagem" [readonly]="bloqueado" rows="12"></textarea>
+  </label>
+  <app-compartilhamento-clickwhatsapp #canal [endpoint]="dados.endpoint" [telefone]="dados.numero" [mensagem]="mensagem"
+    (bloquearEditor)="bloqueado = $event" (copiar)="copiar()" (manual)="manual($event)" />
+</mat-dialog-content>
+<mat-dialog-actions align="end"><button mat-button mat-dialog-close type="button">Fechar</button></mat-dialog-actions>

@@ -496,7 +496,7 @@ export class FullComponent implements OnInit, OnDestroy {
   }
 
   isMobileItemActive(item: NavItem): boolean {
-    if (item.route && this.router.isActive(item.route, { paths: 'subset', queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored' })) {
+    if (item.route && this.router.isActive(item.route, { paths: item.exactRoute ? 'exact' : 'subset', queryParams: 'ignored', fragment: 'ignored', matrixParams: 'ignored' })) {
       return true;
     }
 

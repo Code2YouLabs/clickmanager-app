@@ -1,0 +1,47 @@
+:host { display: block; min-width: 0; scroll-margin-top: 80px; }
+.automacoes-conteudo, mat-dialog-content { min-width: 0; }
+p { line-height: 1.5; }
+.cabecalho { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-bottom: 8px; }
+.cabecalho p { margin: 0; }
+.automacao { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-block: 20px; border-bottom: 1px solid #e5e7eb; }
+h3 { margin: 0 0 6px; font-size: 16px; font-weight: 600; }
+.automacao p { margin: 0; color: #5b6472; font-size: 14px; }
+.linha-acoes { display: flex; align-items: center; gap: 20px; flex-shrink: 0; }
+.estado { display: inline-flex; align-items: center; gap: 6px; color: #596273; font-size: 13px; font-weight: 600; }
+.estado::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.estado.ativa { color: #176344; }
+.aviso { background: #fff5db; padding: 12px 16px; border-radius: 8px; }
+.muted, .registro span { color: #596273; }
+.registros { margin-top: 24px; }
+.registros > p { font-size: 14px; }
+.registro { display: flex; justify-content: space-between; gap: 24px; padding-block: 16px; border-bottom: 1px solid #e5e7eb; }
+.registro span, .registro strong { display: block; }
+.sem-registros { display: flex; align-items: center; gap: 8px; margin: 0; color: #596273; }
+.sem-registros mat-icon { font-size: 20px; width: 20px; height: 20px; }
+.descricao-editor { margin: 0 0 20px; color: #596273; font-size: 14px; }
+.ativacao { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-bottom: 20px; border-bottom: 1px solid #e5e7eb; }
+.ativacao > div { display: flex; flex-direction: column; gap: 4px; }
+.ativacao strong { font-size: 14px; font-weight: 600; }
+.ajuda { margin: 8px 0 0; color: #596273; font-size: 13px; }
+.variaveis { margin-block: 20px 16px; }
+.rotulo-variaveis { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips button { font-size: 12px; padding-inline: 12px; min-height: 36px; }
+.chips mat-icon { font-size: 16px; width: 16px; height: 16px; }
+mat-form-field { width: 100%; }
+textarea { line-height: 1.6; resize: vertical; }
+.previa { margin-block: 24px 8px; min-width: 0; }
+.previa-cabecalho { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
+.previa-cabecalho strong { font-size: 14px; font-weight: 600; }
+.previa-cabecalho span { font-size: 11px; color: #596273; background: #f1f4f8; padding: 4px 8px; border-radius: 6px; }
+.previa-fundo { display: flex; justify-content: flex-end; padding: 16px; background: #f5f7fa; border-radius: 12px; }
+.bolha { white-space: pre-wrap; overflow-wrap: anywhere; min-width: 0; max-width: 95%; padding: 12px 16px; margin: 0; background: #e5efff; color: #172b4d; border-radius: 12px 12px 4px 12px; font-size: 14px; }
+.previa-status { font-size: 12px; color: #596273; margin: 8px 0 0; }
+@media (max-width: 600px) {
+  .automacao { align-items: flex-start; flex-direction: column; gap: 12px; padding-block: 16px; }
+  .linha-acoes { align-self: stretch; justify-content: space-between; }
+  .linha-acoes button, .chips button { min-height: 44px; }
+  .registro { flex-direction: column; gap: 8px; }
+  .previa-fundo { padding: 12px; }
+  .bolha { max-width: 100%; }
+}

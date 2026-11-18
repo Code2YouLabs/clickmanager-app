@@ -1,0 +1,38 @@
+
+  <div class="wa-container">
+    <mat-card class="cardWithShadow">
+      <mat-card-content>
+        <div class="row m-b-16 justify-content-between align-items-center">
+          <div class="col">
+            <h2 class="f-s-20 f-w-600 m-0">Mensagem para WhatsApp</h2>
+            <small class="text-muted">Pré-visualização e ações</small>
+          </div>
+          <div class="col-auto">
+            <a mat-stroked-button routerLink="/pedidos">Voltar</a>
+          </div>
+        </div>
+
+        <div class="m-b-16" *ngIf="pedido as p">
+          <div class="m-b-8">
+            <strong>Número:</strong> {{ displayNumero(p) }} |
+            <strong>Status:</strong> {{ p.status }}
+          </div>
+          <div *ngIf="p.nomeOrcamento || p.vencimentoOrcamento">
+            <span *ngIf="p.nomeOrcamento"><strong>Nome do orçamento:</strong> {{ p.nomeOrcamento }}</span>
+            <span *ngIf="p.vencimentoOrcamento" class="m-l-12">
+              <strong>Vencimento:</strong> {{ fmtDate(p.vencimentoOrcamento) }}
+            </span>
+          </div>
+        </div>
+
+        <textarea class="wa-preview" rows="16" [formControl]="mensagemControl" [readonly]="!integradoAtivo || editorBloqueado"></textarea>
+
+        @if (pedido; as p) {
+          <app-compartilhamento-clickwhatsapp [endpoint]="'/api/pedidos/' + p.id + '/clickwhatsapp'"
+            [mensagem]="mensagemControl" [telefone]="telefoneCompartilhamento(p.cliente?.telefone || '')"
+            (bloquearEditor)="editorBloqueado = $event" (canalChange)="integradoAtivo = $event.habilitado" (copiar)="copiar()" (manual)="abrirWhatsApp($event)" />
+        }
+
+      </mat-card-content>
+    </mat-card>
+  </div>

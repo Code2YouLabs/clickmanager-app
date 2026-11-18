@@ -1,0 +1,440 @@
+<app-page-card [titulo]="titulos[area]" [subtitulo]="subtitulos[area]">
+  @if (area === 'visao' && mobile) {
+    <button page-mobile-header-actions mat-icon-button type="button" aria-label="Atualizar dados" matTooltip="Atualizar dados"
+      [disabled]="carregando || atualizandoVisao || lendoResumo" (click)="atualizarVisao()"><mat-icon>refresh</mat-icon></button>
+  }
+  @if (area !== 'visao' || !mobile) {
+  <div page-header-actions>
+    @if (area === 'mensagens' && acoes?.consultarHistorico) {
+      <button mat-icon-button type="button" aria-label="Atualizar histórico" matTooltip="Atualizar histórico"
+        [disabled]="carregando || lendoConversas" (click)="conversas?.atualizar()"><mat-icon>refresh</mat-icon></button>
+    }
+    @if (area === 'visao') {
+      <button mat-icon-button type="button" aria-label="Atualizar dados" matTooltip="Atualizar dados"
+        [disabled]="carregando || atualizandoVisao || lendoResumo" (click)="atualizarVisao()"><mat-icon>refresh</mat-icon></button>
+    }
+  </div>
+  }
+  @if (carregando || atualizandoVisao) {
+    <mat-progress-bar mode="indeterminate" aria-label="Carregando ClickWhatsApp" />
+  }
+  @if (erroConfig) {
+    <div class="aviso" role="alert">{{ erroConfig }} <button mat-button type="button" (click)="area === 'visao' ? atualizarVisao() : carregar(true)">Atualizar</button></div>
+  }
+  @if (config; as c) {
+    <div class="painel" [class.painel-visao]="area === 'visao'">
+
+      <p class="subtitulo-mobile">{{ subtitulos[area] }}</p>
+      @if (area !== 'visao' && !c.aplicacaoAutorizada) {
+        <p class="aviso" role="status">O ClickWhatsApp está indisponível neste ambiente.</p>
+      }
+      @if (area !== 'configuracoes' && area !== 'visao' && !direitoAtivo) {
+        <app-clickwhatsapp-aviso-desativado [podeConfigurar]="!!acoes?.habilitarDireito" />
+      }
+      @if (area !== 'visao' && c.preferencia?.quarentena && direitoAtivo) {
+        <div class="aviso" role="status">
+          <strong>Envios suspensos</strong>
+          @if (area !== 'mensagens') {
+            <p>Uma tentativa está com resultado incerto nesta conexão.</p>
+          }
+        </div>
+      }
+
+      @switch (area) {
+        @case ('visao') {
+          <section class="situacao-visao" aria-label="Situação do ClickWhatsApp">
+            <div class="visao-cabecalho"><h2>Situação do ClickWhatsApp</h2>
+              @if (podeAbrirConfiguracoes) { <a mat-button routerLink="/page/clickwhatsapp/configuracoes">Configurações</a> }
+            </div>
+            <strong class="situacao-titulo" role="status" [class.conectado]="direitoAtivo && c.aplicacaoAutorizada && !verificacaoFalhou && c.estado?.observado === 'ABERTA' && !c.preferencia?.pausada">{{ tituloSituacao }}</strong>
+            @if (descricaoSituacaoVisao) { <p class="muted situacao-descricao">{{ descricaoSituacaoVisao }}</p> }
+            <div class="situacao-dados" role="list" aria-label="Estados do ClickWhatsApp">
+              <span role="listitem" tabindex="0" [matTooltip]="direitoAtivo ? 'Habilitação empresarial ativa.' : 'Habilitação empresarial desativada.'" [attr.aria-label]="'Habilitação empresarial: ' + (direitoAtivo ? 'Habilitado' : 'Desativado')">
+                <app-status-badge [status]="direitoAtivo ? 'HABILITADO' : 'Desativado'" />
+              </span>
+              <span role="listitem" tabindex="0" matTooltip="Estado da conexão informado pelo backend." [attr.aria-label]="'Conexão WhatsApp: ' + conexaoBadgeVisao">
+                <app-status-badge [status]="conexaoBadgeVisao" />
+              </span>
+              <span role="listitem" tabindex="0" matTooltip="Preferência de envio. Não comprova disponibilidade do processamento: depende da conexão e das autorizações." [attr.aria-label]="'Preferência de envio: ' + enviosBadgeVisao">
+                <app-status-badge [status]="enviosBadgeVisao" />
+              </span>
+            </div>
+          </section>
+          @if (acoes?.consultarHistorico) {
+            <section class="desempenho-visao" aria-label="Desempenho dos envios">
+              <div class="visao-cabecalho"><h2>Desempenho dos envios</h2>
+                <mat-button-toggle-group #periodos="matButtonToggleGroup" aria-label="Período de consulta" [value]="periodoSelecionado" (change)="selecionarPeriodo($event.value); periodos.value = periodoSelecionado" [hideSingleSelectionIndicator]="true">
+                  <mat-button-toggle value="hoje">Hoje</mat-button-toggle>
+                  <mat-button-toggle value="7">Últimos 7 dias</mat-button-toggle>
+                  <mat-button-toggle value="30">Últimos 30 dias</mat-button-toggle>
+                  <mat-button-toggle value="personalizado">Personalizar</mat-button-toggle>
+                </mat-button-toggle-group>
+              </div>
+              @if (lendoResumo) { <mat-progress-bar mode="indeterminate" aria-label="Atualizando indicadores" /> }
+              @if (erroResumo) { <p class="aviso" role="alert">{{ erroResumo }} @if (resumo) { Os últimos dados consultados foram mantidos. } <button mat-button type="button" [disabled]="lendoResumo" (click)="carregarConsultas()">Tentar novamente</button></p> }
+              @if (resumo; as r) {
+                <div class="indicadores-visao" aria-label="Indicadores de desempenho">
+                  @for (metrica of metricasResumo; track metrica.chave) {
+                    <app-metric-card [label]="metrica.rotulo" [value]="(r.mensagens[metrica.chave] | number) ?? '—'" [icon]="metrica.icone" [compact]="true" />
+                  }
+                </div>
+                <p class="muted legenda-visao">Aceitas, entregues e lidas são contagens cumulativas.</p>
+                @if (r.mensagens.total === 0) { <p class="muted">Nenhuma mensagem registrada no período.</p> }
+                @if (periodoSelecionado === 'personalizado') {
+                  <p class="muted periodo-personalizado">{{ r.inicio | date:'dd/MM/yyyy HH:mm':'-0300' }} a {{ r.fim | date:'dd/MM/yyyy HH:mm':'-0300' }}</p>
+                }
+                <div class="ultima-atualizacao muted">
+                  <span>Atualizado em {{ r.calculadoEm | date:'dd/MM/yyyy':'-0300' }} às {{ r.calculadoEm | date:'HH:mm':'-0300' }}</span>
+                  <button mat-icon-button type="button" aria-label="Consultar limites do período"
+                    matTooltip="{{ r.inicio | date:'dd/MM/yyyy HH:mm':'-0300' }} a {{ r.fim | date:'dd/MM/yyyy HH:mm':'-0300' }} · Brasília. O fim é exclusivo."><mat-icon>info_outline</mat-icon></button>
+                </div>
+              } @else if (!lendoResumo && !erroResumo) { <p class="muted">Indicadores ainda não consultados.</p> }
+            </section>
+            <section class="operacional-visao" aria-label="Situação operacional">
+              <div class="visao-cabecalho"><h2>Situação operacional</h2>
+                <button mat-button type="button" [attr.aria-expanded]="ocorrenciasNaVisaoAbertas" aria-controls="ocorrencias-na-visao" (click)="alternarOcorrenciasNaVisao()">{{ ocorrenciasNaVisaoAbertas ? 'Recolher ocorrências' : 'Consultar ocorrências' }}</button>
+              </div>
+              @if (resumo; as r) {
+                <dl class="indicadores-operacionais">
+                  <div [class.atencao]="r.mensagens.falhas > 0"><dt matTooltip="Falhas registradas no período consultado. Podem se sobrepor às confirmações." tabindex="0">Falhas</dt><dd>{{ r.mensagens.falhas | number }}</dd><small>No período consultado</small></div>
+                  <div><dt matTooltip="Situação atual no escopo autorizado, incluindo mensagens fora do período." tabindex="0">Na fila agora</dt><dd>{{ r.mensagens.backlogAtual | number }}</dd><small>Situação atual</small></div>
+                  <div [class.atencao]="r.mensagens.incertasAtuais > 0"><dt matTooltip="Resultados incertos atuais, incluindo mensagens fora do período." tabindex="0">Incertas agora</dt><dd>{{ r.mensagens.incertasAtuais | number }}</dd><small>Situação atual</small></div>
+                </dl>
+                @if (r.mensagens.incertasAtuais > 0) {
+                  <div class="alerta-ocorrencias" role="status"><div><strong>{{ r.mensagens.incertasAtuais }} {{ r.mensagens.incertasAtuais === 1 ? 'ocorrência precisa' : 'ocorrências precisam' }} de atenção</strong><p>Existem mensagens cujo resultado ainda precisa ser investigado.</p></div><button mat-button type="button" (click)="ocorrenciasNaVisaoAbertas || alternarOcorrenciasNaVisao()">Ver ocorrências</button></div>
+                }
+              } @else { <p class="muted">Situação operacional {{ lendoResumo ? 'em consulta…' : 'indisponível.' }}</p> }
+              <div id="ocorrencias-na-visao" [hidden]="!ocorrenciasNaVisaoAbertas">
+                @if (ocorrenciasNaVisaoAbertas) {
+                  <h3>Mensagens com resultado incerto</h3>
+                  <ng-container [ngTemplateOutlet]="listaDeOcorrencias" />
+                }
+              </div>
+            </section>
+            <app-historico-unificado [permitido]="!!acoes?.consultarHistorico" (mensagem)="abrirHistorico($event)" />
+          } @else { <p class="muted">A consulta dos indicadores está indisponível para este acesso.</p> }
+          @if (pendente) { <p class="aviso">Existe uma solicitação sem confirmação. <a mat-button routerLink="/page/clickwhatsapp/mensagens">Consultar em Mensagens</a></p> }
+        }
+        @case ('mensagens') {
+          @if (acoes?.consultarHistorico || podeEnviar || pendente) {
+            <app-clickwhatsapp-conversas [config]="c" [filtro]="filtro" [mobile]="mobile"
+              [enviando]="enviando" [erroEnvio]="erroModal" [podeRepetir]="podeRepetir"
+              (ocupado)="lendoConversas = $event" (filtros)="abrirFiltros()" (registrar)="registrarNaConversa($event)" (repetir)="enviar(true)"
+              (descartar)="descartarNaConversa()" (detalhe)="abrirDetalhe($event)" />
+          } @else { <p class="muted">O histórico está indisponível para este acesso.</p> }
+        }
+        @case ('automacoes') {
+          @if (c.configurarAutomacoes) {
+            <app-automacoes-pedido [carregarAoEntrar]="true" [operacional]="podeEnviar && c.estado?.observado === 'ABERTA' && !verificacaoFalhou" [historico]="!!acoes?.consultarHistorico" />
+          } @else { <p class="muted">A configuração de automações está indisponível para este acesso.</p> }
+        }
+        @case ('configuracoes') {
+          <div class="configuracoes-whatsapp">
+            <section class="configuracao-bloco" aria-label="Ativar ClickWhatsApp">
+              <div class="configuracao-linha">
+                <div><h2>Ativar ClickWhatsApp</h2><p>Permita que sua empresa utilize mensagens pelo WhatsApp.</p></div>
+                <mat-slide-toggle aria-label="Ativar ClickWhatsApp" [checked]="c.direito.local"
+                  [disabled]="!!acao || !(acoes?.habilitarDireito || acoes?.desabilitarDireito)"
+                  (toggleChange)="direito(!c.direito.local)" />
+              </div>
+              <span class="configuracao-estado" [class.positivo]="direitoAtivo">{{ c.direito.local ? 'Ativado' : 'Desativado' }}</span>
+              @if (!(acoes?.habilitarDireito || acoes?.desabilitarDireito)) { <p class="configuracao-ajuda">A ativação está disponível somente ao proprietário autorizado.</p> }
+              @if (acao === 'direito') { <mat-progress-bar mode="indeterminate" aria-label="Atualizando ativação" /> }
+            </section>
+            <section class="configuracao-bloco" aria-label="Seu WhatsApp">
+              <div class="configuracao-linha">
+                <div><h2>Seu WhatsApp</h2><p>Conecte e gerencie o WhatsApp utilizado pela sua empresa.</p></div>
+                <span class="configuracao-estado" role="status" [class.positivo]="!verificacaoFalhou && c.estado?.observado === 'ABERTA'">{{ estadoConfiguracao }}</span>
+              </div>
+              @if (!direitoAtivo) { <p class="configuracao-ajuda">Ative o ClickWhatsApp para conectar seu número.</p> }
+              @if (estadoConfiguracao === 'Estado desconhecido') { <p class="configuracao-ajuda">Não foi possível confirmar a conexão.</p> }
+              @if (c.estado?.motivo) { <p class="configuracao-ajuda">{{ motivo(c.estado!.motivo!) }}</p> }
+              <div class="acoes">
+                @if (podeConectar && c.estado?.observado !== 'ABERTA') {
+                  <button mat-flat-button color="primary" type="button" [disabled]="!!acao" (click)="abrirQr()">{{ c.estado?.observado === 'CONECTANDO' ? 'Acompanhar conexão' : 'Conectar WhatsApp' }}</button>
+                }
+                @if (acoes?.reconciliar) { <button mat-stroked-button type="button" [disabled]="!!acao" (click)="verificarConexao()">{{ verificandoConexao ? 'Verificando…' : 'Verificar conexão' }}</button> }
+                @if (acoes?.desconectar && c.estado?.observado !== 'FECHADA' && c.estado?.observado !== 'AUSENTE') { <button mat-button color="warn" type="button" [disabled]="!!acao" (click)="conexao('desconectar')">Desconectar WhatsApp</button> }
+              </div>
+              @if (c.estado?.observadoEm) { <p class="configuracao-ajuda">Última verificação em {{ c.estado?.observadoEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</p> }
+            </section>
+            <section class="configuracao-bloco configuracao-envios" aria-label="Envio de mensagens">
+              <div class="configuracao-linha">
+                <div>
+                  <h2>Envio de mensagens</h2>
+                  <p>
+                    @if (!direitoAtivo) { Sua escolha de pausa está mantida. Reative o ClickWhatsApp para permitir novos envios. }
+                    @else if (c.preferencia?.quarentena) { Consulte as ocorrências para verificar o resultado incerto antes de continuar. }
+                    @else if (c.preferencia?.pausada) { Os envios estão pausados. Retome quando quiser voltar a enviar. }
+                    @else { Os envios estão liberados e aguardam a conexão quando necessário, dentro da validade. }
+                  </p>
+                </div>
+                @if (c.preferencia) {
+                  <button mat-stroked-button type="button" [disabled]="!!acao || !(c.preferencia.pausada ? acoes?.retomarEnvios : acoes?.pausarEnvios)"
+                    (click)="preferencia(c.preferencia.pausada)">
+                    <mat-icon>{{ c.preferencia.pausada ? 'play_arrow' : 'pause' }}</mat-icon>
+                    {{ c.preferencia.pausada ? 'Retomar envios' : 'Pausar envios' }}
+                  </button>
+                }
+              </div>
+              <span class="configuracao-estado">{{ !c.preferencia ? 'Indisponível' : !direitoAtivo ? 'Bloqueados: ClickWhatsApp desativado' : c.preferencia.quarentena ? 'Envios suspensos: resultado incerto' : c.preferencia.pausada ? 'Envios pausados' : 'Envios liberados' }}</span>
+              <p class="configuracao-ajuda">Pausar não desconecta seu WhatsApp. Desativar e reativar o ClickWhatsApp mantém sua escolha de pausa.</p>
+              @if (acao === 'preferencia') { <mat-progress-bar mode="indeterminate" aria-label="Atualizando preferência" /> }
+            </section>
+          </div>
+        }
+      }
+    </div>
+
+  }
+</app-page-card>
+
+<ng-template #listaDeOcorrencias>
+  <p class="muted">Consulte tentativas com resultado incerto e acompanhe as investigações.</p>
+  <button mat-stroked-button type="button" [disabled]="carregandoOcorrencias" (click)="listarOcorrencias()">Atualizar ocorrências</button>
+  @if (carregandoOcorrencias) { <mat-progress-bar mode="indeterminate" aria-label="Consultando ocorrências" /> }
+  @if (erroOcorrencias) { <p class="aviso" role="alert">{{ erroOcorrencias }}</p> }
+  @if (listaOcorrencias?.length && listaOcorrencias; as ocorrencias) {
+    <app-data-table [columns]="colunasOcorrencias" [data]="ocorrencias" [rowKey]="chaveOcorrencia"
+      [retryEnabled]="false" tableLabel="Ocorrências" [emptyState]="{title: 'Nenhuma ocorrência registrada'}">
+      <ng-template appDataTableCell="iniciadaEm" let-item>{{ item.iniciadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</ng-template>
+      <ng-template appDataTableCell="fase" let-item>{{ rotuloFase(item.fase) }}</ng-template>
+      <ng-template appDataTableCell="detalhe" let-item>
+        <button mat-button type="button" (click)="abrirOcorrencia({mensagem: {id: item.mensagem, conexao: item.conexao}})">Ver ocorrência</button>
+      </ng-template>
+      <ng-template [appDataTableItem]="ocorrencias" let-item>
+        <button class="item-mobile" type="button" (click)="abrirOcorrencia({mensagem: {id: item.mensagem, conexao: item.conexao}})">
+          <strong>{{ rotuloFase(item.fase) }}</strong>
+          <span>{{ item.iniciadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</span>
+          <span>Ver ocorrência</span>
+        </button>
+      </ng-template>
+    </app-data-table>
+    <div class="paginacao">
+      <button mat-button type="button" [disabled]="carregandoOcorrencias || paginaOcorrencias === 0" (click)="listarOcorrencias(-1)">Anterior</button>
+      <span>Página {{ paginaOcorrencias + 1 }}</span>
+      <button mat-button type="button" [disabled]="carregandoOcorrencias || ocorrencias.length < 20" (click)="listarOcorrencias(1)">Próxima</button>
+    </div>
+  } @else if (listaOcorrencias && !carregandoOcorrencias) { <p>Nenhuma ocorrência registrada.</p>
+    @if (paginaOcorrencias > 0) {
+      <button mat-button type="button" (click)="listarOcorrencias(-1)">Página anterior</button>
+    } }
+</ng-template>
+
+<ng-template #telaQr>
+  <h2 mat-dialog-title class="mobile-side-panel__header">Conectar WhatsApp</h2>
+  <mat-dialog-content class="mobile-side-panel__body conexao-painel">
+    @if (etapaConexao === 'preparando' || etapaConexao === 'qr') {
+      <p role="status">{{ etapaConexao === 'preparando' ? 'Preparando conexão…' : 'Preparando QR…' }}</p>
+      <mat-progress-bar mode="indeterminate" aria-label="Preparando conexão" />
+    }
+    @if (erroModal) { <p class="aviso" role="alert">{{ erroModal }}</p> }
+    @if (etapaConexao === 'expirado') { <p>Gere um novo QR quando estiver pronto para escanear.</p> }
+    @if (qr; as q) {
+      @switch (q.situacao) {
+        @case ('DISPONIVEL') {
+          <p>No WhatsApp do celular, abra <strong>Dispositivos conectados</strong> e escaneie o código.</p>
+          @if (q.imagem) { <img class="qr" [src]="q.imagem" alt="QR para conectar o WhatsApp" /> }
+          <p class="muted" role="status">{{ verificacoesConcluidas ? 'A conexão ainda não foi confirmada. Use Verificar conexão para continuar.' : verificacaoFalhou ? 'Não foi possível confirmar agora. Verifique a conexão para continuar.' : config?.estado?.observado === 'CONECTANDO' ? 'Conectando…' : 'Aguardando conexão…' }}</p>
+          @if (q.expiraEm) { <p class="configuracao-ajuda">Expira às {{ q.expiraEm | date:'HH:mm:ss':'-0300' }} (Brasília).</p> }
+        }
+        @case ('JA_CONECTADA') { <p class="qr-sucesso" role="status"><mat-icon aria-hidden="true">check_circle</mat-icon>WhatsApp conectado com sucesso.</p> }
+        @case ('INDISPONIVEL') { <p>O QR está indisponível. Verifique a conexão antes de tentar novamente.</p> }
+      }
+    }
+  </mat-dialog-content>
+  <mat-dialog-actions class="mobile-side-panel__footer" align="end">
+    @if (etapaConexao !== 'sucesso' && acoes?.reconciliar && !falhaConexaoImpeditiva) {
+      <button mat-button type="button" [disabled]="!!acao" (click)="verificarConexao()">Verificar conexão</button>
+    }
+    @if (etapaConexao === 'falha' && !falhaConexaoImpeditiva) {
+      <button mat-stroked-button type="button" [disabled]="!!acao" (click)="prepararConexao()">Tentar novamente</button>
+    }
+    @if ((etapaConexao === 'expirado' || etapaConexao === 'aguardando') && acoes?.gerarQr) {
+      <button mat-stroked-button type="button" [disabled]="!!acao" (click)="solicitarQr()">Gerar novo QR</button>
+    }
+    <button mat-button mat-dialog-close type="button">{{ etapaConexao === 'sucesso' ? 'Concluir' : 'Fechar' }}</button>
+  </mat-dialog-actions>
+</ng-template>
+
+<ng-template #telaEnvio>
+  <h2 mat-dialog-title class="mobile-side-panel__header">{{ pendente ? 'Solicitação de mensagem' : 'Nova mensagem' }}</h2>
+  <mat-dialog-content class="mobile-side-panel__body">
+    @if (pendente && !enviando) {
+      <p class="aviso" role="status">{{ pendente.mensagem }}</p>
+      @if (validadeEncerrada) { <p>A validade original terminou. Consulte o histórico, se disponível, antes de criar outra mensagem.</p> }
+      @else if (!podeEnviar || pendente.conexao !== config?.conexao) {
+        <p>A solicitação só pode ser repetida na conexão original, com os envios autorizados.</p>
+      }
+    } @else if (!enviando) {
+      <p>Registre uma mensagem de texto na fila de envio.</p>
+    }
+    @if (confirmandoFechamento) {
+      <section class="aviso" aria-label="Fechar solicitação">
+        <strong>{{ confirmandoDescarte ? 'Descartar a solicitação local?' : 'Fechar com a solicitação pendente?' }}</strong>
+        <p>{{ confirmandoDescarte
+          ? 'O registro pode já existir na fila. Criar outra mensagem pode duplicar a solicitação.'
+          : 'O resultado do registro ainda não foi confirmado. Você pode guardar os dados nesta sessão e voltar para verificar.' }}</p>
+      </section>
+    }
+    <div class="campos">
+      @if (!operacao) {
+        @if (clienteSelecionado; as cliente) {
+          <div class="acoes">
+            <strong>{{ cliente.nome }}</strong>
+            <button mat-button type="button" (click)="limparCliente()">Trocar cliente</button>
+          </div>
+        } @else {
+          <app-auto-complete label="Cliente" placeholder="Buscar cliente pelo nome ou telefone"
+            [control]="clienteControl" [buscarFn]="buscarClientes" [displayWith]="mostrarCliente"
+            [minimoCaracteres]="3" (selecionado)="selecionarCliente($event)" />
+          @if (podeCadastrarCliente) {
+            <button mat-button type="button" (click)="criarClienteParaEnvio()"><mat-icon>person_add</mat-icon>Novo cliente</button>
+          }
+        }
+      }
+      <mat-form-field appearance="outline">
+        <mat-label>Número internacional</mat-label>
+        <input matInput type="tel" inputmode="tel" autocomplete="off" maxlength="16" [(ngModel)]="numero" [readonly]="!!operacao || !!clienteSelecionado" />
+        <mat-hint>Inclua o código do país e o DDD.</mat-hint>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Mensagem</mat-label>
+        <textarea matInput rows="5" maxlength="4096" autocomplete="off" [(ngModel)]="texto" [readonly]="!!operacao"></textarea>
+      </mat-form-field>
+    </div>
+    @if (erroModal) { <p class="aviso" role="alert">{{ erroModal }}</p> }
+    @if (enviando) { <mat-progress-bar mode="indeterminate" aria-label="Registrando mensagem" /> }
+  </mat-dialog-content>
+  <mat-dialog-actions class="mobile-side-panel__footer" align="end">
+    @if (confirmandoDescarte) {
+      <button mat-button type="button" (click)="confirmandoDescarte = false">Voltar</button>
+      <button mat-flat-button color="warn" type="button" (click)="descartarEnvio()">Descartar mesmo assim</button>
+    } @else if (confirmandoFechamento) {
+      <button mat-button type="button" (click)="confirmandoFechamento = false">Continuar aqui</button>
+      <button mat-button type="button" (click)="confirmandoDescarte = true">Descartar</button>
+      <button mat-flat-button color="primary" mat-dialog-close type="button">Guardar e fechar</button>
+    } @else {
+      <button mat-button type="button" [disabled]="enviando" (click)="solicitarFechamentoEnvio()">Fechar</button>
+      <button mat-flat-button color="primary" type="button" [disabled]="enviando || !podeEnviar || (!!operacao && !podeRepetir)" (click)="enviar()">
+        {{ operacao ? 'Repetir solicitação' : 'Adicionar à fila' }}
+      </button>
+    }
+  </mat-dialog-actions>
+</ng-template>
+
+<ng-template #telaFiltros>
+  <h2 mat-dialog-title class="mobile-side-panel__header">Filtros</h2>
+  <mat-dialog-content class="mobile-side-panel__body">
+    <p class="muted">Horário de Brasília. O fim do período é exclusivo.</p>
+    <div class="campos">
+      <mat-form-field appearance="outline"><mat-label>Início</mat-label><input matInput type="datetime-local" [(ngModel)]="inicioInput" /></mat-form-field>
+      <mat-form-field appearance="outline"><mat-label>Fim</mat-label><input matInput type="datetime-local" [(ngModel)]="fimInput" /></mat-form-field>
+      @if (area === 'mensagens') {
+      <mat-form-field appearance="outline"><mat-label>Situação</mat-label><mat-select [(ngModel)]="faseInput">
+        <mat-option value="">Todas</mat-option>
+        @for (opcao of fases | keyvalue; track opcao.key) {
+          <mat-option [value]="opcao.key">{{ opcao.value }}</mat-option>
+        }
+      </mat-select></mat-form-field>
+      }
+    </div>
+    @if (erroPeriodo) { <p class="aviso" role="alert">{{ erroPeriodo }}</p> }
+  </mat-dialog-content>
+  <mat-dialog-actions class="mobile-side-panel__footer" align="end">
+    <button mat-button mat-dialog-close type="button">Cancelar</button>
+    <button mat-flat-button color="primary" type="button" (click)="aplicarFiltros()">Aplicar filtros</button>
+  </mat-dialog-actions>
+</ng-template>
+
+<ng-template #telaOcorrencia>
+  <h2 mat-dialog-title class="mobile-side-panel__header">Ocorrência de envio</h2>
+  <mat-dialog-content class="mobile-side-panel__body">
+    @if (lendoOcorrencia) { <mat-progress-bar mode="indeterminate" aria-label="Consultando evidências" /> }
+    @if (erroModal) { <p class="aviso" role="alert">{{ erroModal }}</p> }
+    @if (ocorrencia?.ocorrencia; as o) {
+      <div role="status">
+        <strong>{{ resultadosInvestigacao[o.resultado] }}</strong>
+        <p>{{ motivosInvestigacao[o.motivo] }}</p>
+      </div>
+      <p class="muted">Tentativa iniciada em {{ o.iniciadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</p>
+      @if (o.fase === 'INCERTA') {
+        <p class="aviso">Os despachos desta conexão seguem suspensos enquanto houver resultado incerto.</p>
+      }
+      @if (o.evidencia; as evidencia) {
+        <p>Última evidência: {{ estadosEvidencia[evidencia.estado] }} <span class="muted">{{ evidencia.recebidaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</span></p>
+      }
+      <details class="avancado">
+        <summary>Histórico da investigação</summary>
+        @for (decisao of o.historico; track $index) {
+          <div class="tentativa">
+            <strong>{{ resultadosInvestigacao[decisao.resultado] }}</strong>
+            <small>{{ decisao.registradaEm | date:'dd/MM/yyyy HH:mm':'-0300' }} · Operador {{ decisao.ator }}</small>
+          </div>
+        } @empty { <p>Nenhuma decisão registrada.</p> }
+      </details>
+    }
+  </mat-dialog-content>
+  <mat-dialog-actions class="mobile-side-panel__footer" align="end">
+    <button mat-button mat-dialog-close type="button">Fechar</button>
+    @if (ocorrencia?.podeInvestigar && ocorrencia?.ocorrencia?.fase === 'INCERTA') {
+      <button mat-flat-button type="button" [disabled]="lendoOcorrencia" (click)="carregarOcorrencia(true)">Investigar evidências</button>
+    }
+  </mat-dialog-actions>
+</ng-template>
+
+<ng-template #telaDetalhe>
+  <h2 mat-dialog-title class="mobile-side-panel__header">Detalhe da mensagem</h2>
+  <mat-dialog-content class="mobile-side-panel__body">
+    @if (registroHistorico; as h) {
+      <p>{{ h.tipo === 'AVULSA' ? 'Avulsa' : h.tipo === 'AUTOMATICA' ? 'Automática' : 'Outra origem' }}{{ h.pedido ? ' · Pedido ' + h.pedido : '' }}</p>
+      @if (h.acontecimento) { <p>Acontecimento: {{ acontecimentoHistorico(h.acontecimento) }}</p> }
+      @if (h.nomeCliente) { <p>Cliente: {{ h.nomeCliente }}</p> }
+      @if (h.motivoDescricao) { <p>{{ h.motivoDescricao }}</p> }
+    }
+    <ng-container [ngTemplateOutlet]="conteudoDetalhe" [ngTemplateOutletContext]="{ $implicit: detalheModal }" />
+    @if (evidenciasHistorico?.ocorrencia; as evidencia) {
+      <h3>Evidências existentes</h3>
+      <p>{{ resultadosInvestigacao[evidencia.resultado] }} · {{ motivosInvestigacao[evidencia.motivo] }}</p>
+      @if (evidencia.evidencia; as e) { <p>{{ estadosEvidencia[e.estado] }} · {{ e.recebidaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</p> }
+    }
+    @if (area === 'mensagens') {
+      <p class="muted">Respostas recebidas no WhatsApp ainda não aparecem no ClickWhatsApp.</p>
+    }
+  </mat-dialog-content>
+  <mat-dialog-actions class="mobile-side-panel__footer" align="end"><button mat-button mat-dialog-close type="button">Fechar</button></mat-dialog-actions>
+</ng-template>
+
+<ng-template #conteudoDetalhe let-leitura>
+    @if (leitura?.buscando) { <mat-progress-bar mode="indeterminate" aria-label="Buscando detalhe" /> }
+    @if (leitura?.erro) { <p class="aviso" role="alert">{{ leitura.erro }}</p> }
+    @if (leitura?.detalhe; as d) {
+      @if (d.conteudoDisponivel) {
+        <div class="envio-texto"><strong>{{ d.destinatario }}</strong><p class="texto-mensagem">{{ d.texto }}</p></div>
+      } @else { <p>O conteúdo desta mensagem não está mais disponível.</p> }
+      <dl class="evidencias">
+        <div><dt>Situação</dt><dd>{{ rotuloFase(d.mensagem.fase) }}</dd></div>
+        <div><dt>Confirmação</dt><dd>{{ rotuloConfirmacao(d.mensagem.confirmacao) }}</dd></div>
+        <div><dt>Criada em</dt><dd>{{ d.mensagem.criadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</dd></div>
+        <div><dt>Válida até</dt><dd>{{ d.mensagem.validaAte | date:'dd/MM/yyyy HH:mm':'-0300' }}</dd></div>
+        @for (e of [{nome:'Aceita pelo provedor', data:d.mensagem.aceitaEm}, {nome:'Confirmada pelo servidor', data:d.mensagem.servidorEm}, {nome:'Entregue', data:d.mensagem.entregueEm}, {nome:'Lida', data:d.mensagem.lidaEm}]; track e.nome) {
+          @if (e.data) { <div><dt>{{ e.nome }}</dt><dd>{{ e.data | date:'dd/MM/yyyy HH:mm':'-0300' }}</dd></div> }
+        }
+      </dl>
+      @if (d.mensagem.fase === 'INCERTA') { <p class="aviso">{{ motivo('RESULTADO_INCERTO') }}</p> }
+      @if (d.mensagem.erro && d.mensagem.erro !== 'RESULTADO_INCERTO') { <p class="aviso">{{ motivo(d.mensagem.erro) }}</p> }
+      <details class="avancado">
+        <summary>Tentativas</summary>
+        @if (leitura?.erroTentativas) { <p class="aviso">{{ leitura.erroTentativas }}</p> }
+        @if (leitura?.tentativas; as tentativas) {
+          @for (t of tentativas; track t.id) {
+            <div class="tentativa"><strong>Tentativa {{ t.numero }}</strong><span>{{ rotuloTentativa(t.resultado) }}</span>
+              @if (t.chamadaIniciadaEm) { <small>Início {{ t.chamadaIniciadaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</small> }
+              @if (t.respondidaEm) { <small>Resposta {{ t.respondidaEm | date:'dd/MM/yyyy HH:mm':'-0300' }}</small> }
+              @if (t.erro) { <small>{{ motivo(t.erro) }}</small> }
+            </div>
+          } @empty { <p>Nenhuma tentativa registrada.</p> }
+        }
+      </details>
+    }
+</ng-template>

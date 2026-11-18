@@ -38,7 +38,7 @@ describe('Projeção mobile da configuração desktop', () => {
     expect(mobile.find(group => group.title === 'Comercial')?.items.map(item => item.displayName))
       .toEqual(['Pedidos', 'Orçamentos', 'Rascunhos', 'SmartCalc']);
     expect(mobile.find(group => group.title === 'Presença Digital')?.items.map(item => item.displayName))
-      .toEqual(['Meu Site', 'ClickLink', 'ClickTV']);
+      .toEqual(['Meu Site', 'ClickLink', 'ClickTV', 'ClickWhatsApp']);
   });
 
   it('não promove filhos nem inventa grupos para menus sem caption ou níveis adicionais', () => {

@@ -19,22 +19,28 @@
               <section class="whatsapp-mobile-recipient" aria-label="Destinatário">
                 <h3>Destinatário</h3>
                 <strong>{{ p.clienteNome || 'Cliente não informado' }}</strong>
-                <span>{{ (p.clienteTelefone | telefone) || 'Telefone não informado' }}</span>
+                <span>{{ (p.clienteTelefone | telefone:true) || 'Telefone não informado' }}</span>
                 <small>Pedido {{ p.numero || (p.id ? '#' + p.id : 'não informado') }}</small>
               </section>
               <section class="whatsapp-mobile-message" aria-label="Mensagem do pedido">
-                <app-input-textarea [control]="mensagemControl" label="Mensagem" placeholder="Mensagem do pedido" [rows]="12" [maxlength]="4000"></app-input-textarea>
+                <app-input-textarea [control]="mensagemControl" label="Mensagem" placeholder="Mensagem do pedido" [rows]="12" [maxlength]="limiteMensagem" [readonly]="editorBloqueado"></app-input-textarea>
               </section>
             </ng-container>
           </form>
-          <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true"
-            actionType="button" actionForm="whatsapp-mobile-editor" bottomAnchorSelector=".mobile-bottom-nav"
-            bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
-            secondaryActionText="Copiar" secondaryActionIcon="content_copy" secondaryActionAriaLabel="Copiar mensagem completa"
-            [secondaryActionDisabled]="carregando || !!erro || !mensagemControl.value"
-            actionText="Abrir WhatsApp" actionIcon="chat" actionAriaLabel="Abrir pedido no WhatsApp"
-            [actionDisabled]="carregando || !!erro || !pedido" (secondaryAction)="copiar()" (action)="abrirWhatsApp()">
-          </app-mobile-total-bar>
+          @if (carregando || erro || !pedido) {
+            <app-mobile-total-bar appearance="actions" [expandable]="false" [reserveSpace]="true" [avoidKeyboard]="true"
+              actionType="button" actionForm="whatsapp-mobile-editor" bottomAnchorSelector=".mobile-bottom-nav"
+              bottomOffset="var(--mobile-bottom-nav-height, calc(60px + env(safe-area-inset-bottom, 0px)))" [attachedToBottomNav]="true"
+              secondaryActionText="Copiar" secondaryActionIcon="content_copy" secondaryActionAriaLabel="Copiar mensagem completa"
+              [secondaryActionDisabled]="true" actionText="Abrir WhatsApp" actionIcon="chat"
+              actionAriaLabel="Abrir pedido no WhatsApp" [actionDisabled]="true" />
+          }
+          @if (!carregando && !erro && pedido; as p) {
+            <app-compartilhamento-clickwhatsapp [endpoint]="'/api/comercial/pedidos/' + p.id + '/clickwhatsapp'"
+              [mensagem]="mensagemControl" [telefone]="p.clienteTelefone ? telefoneCompartilhamento(p.clienteTelefone) : ''" [mobile]="true"
+              (bloquearEditor)="editorBloqueado = $event" (canalChange)="limiteMensagem = $event.habilitado ? null : 4000" (copiar)="copiar()" (manual)="abrirWhatsApp($event)" />
+          }
+
         } @else {
         <app-section-card titulo="Mensagem para WhatsApp" subtitulo="Revise a mensagem antes de enviar." [divider]="true">
           <div class="state-panel" *ngIf="carregando">
@@ -70,7 +76,7 @@
               </div>
               <div>
                 <span>Telefone</span>
-                <strong>{{ p.clienteTelefone || '—' }}</strong>
+                <strong>{{ (p.clienteTelefone | telefone:true) || '—' }}</strong>
               </div>
             </div>
 
@@ -79,19 +85,15 @@
               label="Mensagem"
               placeholder="Mensagem do pedido"
               [rows]="16"
-              [maxlength]="4000">
+              [maxlength]="limiteMensagem" [readonly]="editorBloqueado">
             </app-input-textarea>
 
-            <div class="actions">
-              <button mat-stroked-button type="button" (click)="copiar()">
-                <mat-icon>content_copy</mat-icon>
-                Copiar
-              </button>
-              <button mat-flat-button color="primary" type="button" (click)="abrirWhatsApp()">
-                <mat-icon>chat</mat-icon>
-                Abrir no WhatsApp
-              </button>
-            </div>
+            @if (pedido; as p) {
+              <app-compartilhamento-clickwhatsapp [endpoint]="'/api/comercial/pedidos/' + p.id + '/clickwhatsapp'"
+                [mensagem]="mensagemControl" [telefone]="p.clienteTelefone ? telefoneCompartilhamento(p.clienteTelefone) : ''"
+                (bloquearEditor)="editorBloqueado = $event" (canalChange)="limiteMensagem = $event.habilitado ? null : 4000" (copiar)="copiar()" (manual)="abrirWhatsApp($event)" />
+            }
+
           </ng-container>
         </app-section-card>
         }

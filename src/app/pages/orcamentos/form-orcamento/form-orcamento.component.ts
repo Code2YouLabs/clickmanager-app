@@ -20,7 +20,7 @@ import {
   OrcamentoUnidadeVenda,
   TipoItemOrcamento,
 } from 'src/app/models/orcamento/orcamento.model';
-import { ClienteCreateDialogComponent } from 'src/app/pages/cliente/cliente-create-dialog/cliente-create-dialog.component';
+import { abrirCadastroRapido } from 'src/app/pages/cliente/cliente-create-dialog/cliente-create-dialog.component';
 import { ClienteService } from 'src/app/pages/cliente/cliente.service';
 import { CatalogoProduto, CatalogoProdutoListItem } from 'src/app/pages/catalogo/shared/models/catalogo.models';
 import { CatalogoProdutoService } from 'src/app/pages/catalogo/shared/services/catalogo.service';
@@ -200,15 +200,11 @@ export class FormOrcamentoComponent implements OnInit {
       return;
     }
 
-    const dialogRef = this.dialog.open(ClienteCreateDialogComponent, {
-      width: '760px',
-      maxWidth: '96vw',
-      data: {
+    const dialogRef = abrirCadastroRapido(this.dialog, {
         nome: this.contatoForm.controls.nomeContato.value,
         telefone: this.contatoForm.controls.telefoneContato.value,
         email: this.contatoForm.controls.emailContato.value,
-      },
-    });
+      });
 
     dialogRef.afterClosed().subscribe((cliente) => {
       if (cliente) {

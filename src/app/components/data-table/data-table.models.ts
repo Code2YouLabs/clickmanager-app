@@ -1,7 +1,7 @@
 import { Sort } from '@angular/material/sort';
 
 export type DataTableAlign = 'start' | 'center' | 'end';
-export type DataTableFilterType = 'select' | 'multi-select';
+export type DataTableFilterType = 'select' | 'multi-select' | 'date' | 'text';
 
 export interface DataTableColumn<T> {
   key: string;
